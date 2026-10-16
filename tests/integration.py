@@ -218,9 +218,10 @@ test fn branches() -> unit {
         self.assertIn("native_http", descriptor["features"])
         self.assertIn("web_request_commands", descriptor["features"])
         self.assertIn("generated_client_helpers", descriptor["api_features"])
-        for field in ("specification", "grammar", "llm_prompt", "web_guide", "server_guide", "api_guide"):
+        self.assertIn("lldb_dap_launch", descriptor["debug_features"])
+        for field in ("specification", "grammar", "llm_prompt", "web_guide", "server_guide", "api_guide", "debug_guide"):
             self.assertTrue((REPO / descriptor[field]).is_file())
-        for kind in ("prompt", "language", "grammar", "protocol", "web", "server", "api"):
+        for kind in ("prompt", "language", "grammar", "protocol", "web", "server", "api", "debug"):
             guide = self.cli("guide", "--kind", kind)
             self.assertEqual(guide["language"], descriptor["version"])
             self.assertEqual(len(guide["hash"]), 64)

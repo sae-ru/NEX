@@ -6,7 +6,7 @@ Commands are local and model-independent. The compiler handles parsing, checking
 
 `nex describe --json` returns `nex.language/1`. Its `version` and `features` describe implemented behavior. `not_yet_supported` makes the boundary explicit. Specification and prompt paths are repository-relative.
 
-`nex guide --kind prompt|language|grammar|protocol|web|server|api --json` returns the matching installed document as `nex.guide/1`, with language version and BLAKE3 content hash. This also works outside the compiler's source checkout.
+`nex guide --kind prompt|language|grammar|protocol|web|server|api|debug --json` returns the matching installed document as `nex.guide/1`, with language version and BLAKE3 content hash. This also works outside the compiler's source checkout.
 
 Language 0.4 supports multi-file programs and structured values in `eval --json`: strings, lists, records and tagged result objects are returned as JSON values. Ordinary native application entries return i64/unit; HTTP and native library entries use their explicit contracts. `nex.graph/2` and `nex.context/2` identify definitions by qualified logical module/name. Other response schemas retain their individual versions. Typed wire JSON is separate from eval/display JSON: i64 wire values are decimal strings.
 
@@ -121,7 +121,7 @@ nex context --symbol app::sum
 nex debug src/main.nex -- -o 'breakpoint set --name nex_3_app_3_sum'
 ```
 
-Use `native_symbol` from context or the graph for the exact debugger name. Qualified NEX symbols have length-prefixed native components, avoiding collisions among module names. Source line information, including imported files, is emitted through MLIR's LLVM debug scope pass. Full NEX expression evaluation and local-variable formatters are pending.
+Use `native_symbol` from context or the graph for the exact debugger name. Qualified NEX symbols have length-prefixed native components, avoiding collisions among module names. Source line information, including imported files, is emitted through MLIR's LLVM debug scope pass. Toolchain 0.8 adds real typed parameter/local records, lexical binding scopes, bounded LLDB previews and a read-only `nex-values` frame report. `nex debug FILE --kind dap --json` and `nex debug FILE --json` return `nex.debug-session/1` with `adapter`, matching `manifest` and an editor `launch` configuration. Plain `nex debug` loads the captured views and launches LLDB. `nex.debug-values/1` reports revision/function/file/line and bounded `{name,type,value}` previews; duplicate shadowed names stay separate. Native build JSON adds `debug_manifest`. Debug artifacts and source projections are checked on cache hits. Full NEX expression evaluation remains pending. See [the debugging guide](debugging.md).
 
 ## Endpoint operations
 

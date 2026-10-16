@@ -69,7 +69,7 @@ int run(const Options &o) {
       "  nex check|eval|build|run|test|emit [file] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
-      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] -- [lldb options]\n"
+      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap] [--json] -- [lldb options]\n"
       "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
       "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library\n";return 0;
   }
@@ -98,8 +98,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server or api");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api or debug");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -293,11 +293,20 @@ int run(const Options &o) {
     if(!o.has("--json")){std::vector<std::string> arguments{result.executable};arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
     auto child=capture({result.executable});print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
   }
-  if(o.command=="debug") {std::vector<std::string> args={"lldb",result.executable};args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);}
+  if(o.command=="debug") {
+    auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap")throw Error("E_OPTION","debug kind must be lldb or dap");
+    auto folder=fs::path(result.executable).parent_path();auto manifest=(folder/"debug.json").string();
+    std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)};
+    if(o.has("--json")||kind=="dap"){
+      llvm::json::Array commands;for(const auto &command:init)commands.push_back(command);
+      print(llvm::json::Object{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter","lldb-dap"},{"launch",llvm::json::Object{{"type","lldb-dap"},{"request","launch"},{"name","NEX"},{"program",result.executable},{"cwd",root.string()},{"stopOnEntry",false},{"initCommands",std::move(commands)}}}});return 0;
+    }
+    std::vector<std::string> args={"lldb",result.executable};for(const auto &command:init){args.push_back("-o");args.push_back(command);}args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
+  }
   auto output=o.get("--output");if(!output.empty()){fs::copy_file(result.executable,output,fs::copy_options::overwrite_existing);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
   auto notices=result.notices;
   if(!output.empty()&&!notices.empty()){notices=fs::absolute(output).string()+".THIRD_PARTY_NOTICES.txt";fs::copy_file(result.notices,notices,fs::copy_options::overwrite_existing);}
-  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()}});
+  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()}});
   else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
 }
 }

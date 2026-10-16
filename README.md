@@ -82,6 +82,15 @@ Language 0.5 adds explicit endpoints referencing checked server handlers. The co
 
 Generate into a new/empty directory before using this client example. Build the reported `server_entry` with `--target server`; serve the browser `dist` with its `--static` option. [The API guide](docs/api.md) documents contracts, statuses, generation, schema limits and SDK use. Older language revisions require explicit `nex migrate`; their archived sources/history are retained.
 
+## Debugging and editor integration
+
+```sh
+./build/nex debug examples/debugging/main.nex
+./build/nex debug examples/debugging/main.nex --kind dap --json
+```
+
+Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies an editor launch configuration for an installed `lldb-dap`. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work. Tracy instrumentation remains pending.
+
 ## Language and LLM interoperability
 
 - [Language specification](docs/language.md) and [EBNF grammar](docs/grammar.ebnf).
@@ -97,4 +106,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.7.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, Tracy, contracts/Z3, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain; building large application products is outside its scope.
+The compiler/toolchain is **0.8.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, Tracy, contracts/Z3, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain; building large application products is outside its scope.

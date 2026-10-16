@@ -42,3 +42,5 @@ After a graph update, run `nex test --revision HEAD --json` and `nex build --rev
 Use compiler diagnostics (code, file, line, column) to repair errors. Report the actual commands and their outcomes. Distinguish compiled/tested behavior from planned support. Preserve the client's/server's execution boundary and declared effects.
 
 ---
+
+For native debugging, query `debug_features` and `nex guide --kind debug --json`. `nex debug FILE --json` returns the frozen executable, manifest and `lldb-dap` launch settings without starting a debugger. At a stopped LLDB frame, `nex-values` returns bounded `nex.debug-values/1` previews with the revision and logical/native function mapping. Shadowed names can occur more than once. Previews can be truncated or unavailable and are not lossless JSON wire values. Fetch fresh frame data after every stop. Full NEX watch-expression evaluation is pending.

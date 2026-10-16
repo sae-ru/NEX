@@ -1,6 +1,7 @@
 #include "nex/backend.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/TargetParser/Host.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/Program.h"
@@ -36,13 +37,66 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
 }
 std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::Bool?"i1":"()";}
 struct Value {std::string name;Type type;bool address=false;};
+// Emit standard MLIR debug attributes alongside the checked source projection.
+// Heap values keep their real handle representation; no fabricated record layout
+// is presented as inline storage to the debugger.
+class DebugInfo {
+  const Program &p; bool optimized; unsigned serial=0;
+  std::ostringstream attributes;
+  std::map<std::string,std::string> files,types;
+  std::string attribute(const std::string &value){auto name="#nex_di_"+std::to_string(serial++);attributes<<name<<" = "<<value<<"\n";return name;}
+public:
+  std::string scope,unit;
+  DebugInfo(const Program &p,bool optimized):p(p),optimized(optimized){
+    auto entry=file(p.path);
+    unit=attribute("#llvm.di_compile_unit<id = distinct[0]<>, sourceLanguage = DW_LANG_C, file = "+entry+", producer = \"NEX " NEX_VERSION "\", isOptimized = "+(optimized?"true":"false")+", emissionKind = Full>");
+  }
+  std::string file(const std::string &path){
+    if(files.contains(path))return files.at(path);
+    auto location=std::filesystem::path(path);
+    return files[path]=attribute("#llvm.di_file<"+json(location.filename().string(),false)+" in "+json(location.parent_path().string(),false)+">");
+  }
+  std::string type(Type t){
+    auto name=typeName(t);if(types.contains(name))return types.at(name);
+    std::string value;
+    if(t==Type::Unit)value="#llvm.di_null_type";
+    else if(t==Type::I64||t==Type::Bool){
+      auto base=attribute("#llvm.di_basic_type<tag = DW_TAG_base_type, name = "+json(t==Type::Bool?"bool":"long long",false)+", sizeInBits = "+(t==Type::Bool?"8":"64")+", encoding = "+(t==Type::Bool?"DW_ATE_boolean":"DW_ATE_signed")+">");
+      value="#llvm.di_derived_type<tag = DW_TAG_typedef, name = "+json(name,false)+", baseType = "+base+">";
+    }
+    else {
+      if(!types.contains("$handle")){
+        auto opaque=attribute("#llvm.di_composite_type<tag = DW_TAG_structure_type, name = \"nex.heap\", flags = FwdDecl>");
+        types["$handle"]=attribute("#llvm.di_derived_type<tag = DW_TAG_pointer_type, baseType = "+opaque+", sizeInBits = 64, alignInBits = 64>");
+      }
+      value="#llvm.di_derived_type<tag = DW_TAG_typedef, name = "+json(name,false)+", baseType = "+types.at("$handle")+">";
+    }
+    return types[name]=attribute(value);
+  }
+  std::string function(const Function &f){
+    auto source=file(p.location(f.span));std::string signature=type(f.result);
+    for(const auto &param:f.params)signature+=", "+type(param.type);
+    auto subroutine=attribute("#llvm.di_subroutine_type<callingConvention = DW_CC_normal, types = "+signature+">");
+    // Each subprogram must be distinct, including functions sharing source lines.
+    return attribute("#llvm.di_subprogram<id = distinct["+std::to_string(serial+1)+"]<>, compileUnit = "+unit+", scope = "+source+", name = "+json(f.name,false)+", linkageName = "+json(nativeSymbol(f.name),false)+", file = "+source+", line = "+std::to_string(f.span.line)+", scopeLine = "+std::to_string(f.span.line)+", subprogramFlags = "+json(optimized?"Definition|Optimized":"Definition",false)+", type = "+subroutine+">");
+  }
+  std::string block(Span span){return attribute("#llvm.di_lexical_block<scope = "+scope+", file = "+file(p.location(span))+", line = "+std::to_string(span.line)+", column = "+std::to_string(span.column)+">");}
+  std::string variable(const std::string &name,Type t,Span span,unsigned argument=0){
+    return attribute("#llvm.di_local_variable<scope = "+scope+", name = "+json(name,false)+", file = "+file(p.location(span))+", line = "+std::to_string(span.line)+", arg = "+std::to_string(argument)+", type = "+type(t)+">");
+  }
+  std::string location(Span span)const {
+    auto point=json(p.location(span),false)+":"+std::to_string(span.line)+":"+std::to_string(span.column);
+    return scope.empty()?" loc("+point+")":" loc(fused<"+scope+">["+point+"])";
+  }
+  std::string str()const{return attributes.str();}
+};
 class Emitter {
-  const Program &p; std::ostringstream out,globals; unsigned serial=0;
+  const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Expr*,std::string> shortSlots;
   std::string fresh(){return "%v"+std::to_string(serial++);}
   std::string label(){return "b"+std::to_string(serial++);}
-  std::string loc(Span s)const{return " loc("+json(p.location(s),false)+":"+std::to_string(s.line)+":"+std::to_string(s.column)+")";}
+  std::string loc(Span s)const{if(prologue){s.line=0;s.column=0;}return debug.location(s);}
   void line(const std::string &s,Span span){out<<"    "<<s<<loc(span)<<"\n";}
   void blockLabel(const std::string &s){out<<"  ^"<<s<<":\n";}
   Value constant(int64_t value,Type type,Span span){
@@ -64,18 +118,22 @@ class Emitter {
   }
   Value load(Value v,Span span,bool retain=true){
     if(v.address){
-      auto n=fresh();line(n+" = memref.load "+v.name+"[] : memref<"+(v.type.heap()?"i64":ty(v.type))+">",span);
-      if(v.type.heap()){auto pointer=fresh();line(pointer+" = llvm.inttoptr "+n+" : i64 to !llvm.ptr",span);n=pointer;}v={n,v.type};
+      auto n=fresh();line(n+" = llvm.load "+v.name+" : !llvm.ptr -> "+ty(v.type),span);v={n,v.type};
     }
     if(retain&&v.type.heap())return call("nex_retain",{v},v.type,span);return v;
   }
   void writeSlot(Value value,const std::string &slot,Span span){
-    auto name=value.name;auto storage=ty(value.type);
-    if(value.type.heap()){name=fresh();storage="i64";line(name+" = llvm.ptrtoint "+value.name+" : !llvm.ptr to i64",span);}
-    line("memref.store "+name+", "+slot+"[] : memref<"+storage+">",span);
+    line("llvm.store "+value.name+", "+slot+" : "+ty(value.type)+", !llvm.ptr",span);
   }
   void store(Value value,const std::string &slot,Span span){
     if(value.type.heap())release(load({slot,value.type,true},span,false),span);writeSlot(value,slot,span);
+  }
+  void describeStorage(const std::string &name,Type type,Span span,const std::string &slot,unsigned argument=0){
+    line("llvm.intr.dbg.declare "+debug.variable(name,type,span,argument)+" = "+slot+" : !llvm.ptr",span);
+  }
+  std::string allocateSlot(Type type,Span span){
+    auto count=constant(1,Type::I64,span);auto slot=fresh();
+    line(slot+" = llvm.alloca "+count.name+" x "+ty(type)+" : (i64) -> !llvm.ptr",span);return slot;
   }
   void cleanup(const std::map<std::string,Value> &scope,Span span){
     for(const auto &[name,value]:scope)if(value.address&&value.type.heap()){
@@ -96,14 +154,14 @@ class Emitter {
   void allocateExpr(E e){
     if(!e)return;
     if(e->kind==Expr::Binary&&(e->text=="&&"||e->text=="||")){
-      auto n=fresh();shortSlots[e.get()]=n;line(n+" = memref.alloca() : memref<i1>",e->span);
+      shortSlots[e.get()]=allocateSlot(Type::Bool,e->span);
     }
     for(auto a:e->args)allocateExpr(a);
   }
   void allocate(const std::vector<S> &body){
     for(auto s:body){
       if(s->kind==Stmt::Let||s->kind==Stmt::Var){
-        auto n=fresh();slots[s.get()]=n;line(n+" = memref.alloca() : memref<"+(s->type.heap()?"i64":ty(s->type))+">",s->span);
+        auto n=allocateSlot(s->type,s->span);slots[s.get()]=n;
         if(s->type.heap())writeSlot(null(s->type,s->span),n,s->span);
       }
       allocateExpr(s->expr);allocate(s->body);allocate(s->alternative);
@@ -199,10 +257,13 @@ class Emitter {
     auto n=fresh();line(n+" = arith.cmpi "+predicates.at(op)+", "+a.name+", "+b.name+" : "+ty(a.type),e->span);return {n,Type::Bool};
   }
   bool statements(const std::vector<S> &body,bool scoped=true){
-    if(scoped)scopes.emplace_back();bool returned=false;
+    auto previousDebugScope=debug.scope;
+    if(scoped){scopes.emplace_back();if(!body.empty())debug.scope=debug.block(body.front()->span);}bool returned=false;
     for(auto s:body){
       switch(s->kind){
-      case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr);auto slot=slots.at(s.get());store(value,slot,s->span);scopes.back()[s->name]={slot,s->type,true};break;}
+      case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr);auto slot=slots.at(s.get());store(value,slot,s->span);
+        // Initializers see the outer binding; the new scope begins afterwards.
+        debug.scope=debug.block(s->span);describeStorage(s->name,s->type,s->span,slot);scopes.back()[s->name]={slot,s->type,true};break;}
       case Stmt::Assign:{auto value=expression(s->expr);store(value,lookup(s->name).name,s->span);break;}
       case Stmt::Expression:release(expression(s->expr),s->span);break;
       case Stmt::Return:{
@@ -225,13 +286,13 @@ class Emitter {
       if(returned)break;
     }
     if(!returned)cleanup(scopes.back(),body.empty()?Span():body.back()->span);
-    if(scoped)scopes.pop_back();return returned;
+    if(scoped)scopes.pop_back();debug.scope=previousDebugScope;return returned;
   }
   void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
     out<<"  func.func private @"<<name<<"("<<arguments<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
-  explicit Emitter(const Program &p):p(p){}
+  explicit Emitter(const Program &p,bool optimized=false):p(p),debug(p,optimized){}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry){
     const auto &main=p.function(entry);
     if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
@@ -257,16 +318,24 @@ public:
     declaration("nex_read_env","!llvm.ptr","!llvm.ptr");declaration("nex_store_get","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_put","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");declaration("nex_store_remove","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_keys","!llvm.ptr, i64","!llvm.ptr");
     auto names=reachable(p,entry);
     for(const auto &f:p.functions)if(names.contains(f.name)){
+      debug.scope=debug.function(f);
       scopes.clear();scopes.emplace_back();slots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
       for(size_t i=0;i<f.params.size();++i){if(i)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
-      call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);allocate(f.body);if(!statements(f.body,false))line("func.return",f.span);out<<"  }"<<loc(f.span)<<"\n";
+      prologue=true;
+      for(size_t i=0;i<f.params.size();++i){
+        const auto &param=f.params[i];auto slot=allocateSlot(param.type,param.span);
+        // Debug storage borrows the parameter and never participates in cleanup.
+        writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1);
+      }
+      allocate(f.body);prologue=false;
+      call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);if(!statements(f.body,false))line("func.return",f.span);out<<"  }"<<loc(f.span)<<"\n";
     }
-    out<<globals.str();if(libraryEntry){out<<"}\n";return out.str();}out<<"  func.func @main() -> i32 {\n";
+    debug.scope.clear();out<<globals.str();if(libraryEntry){out<<"}\n";return debug.str()+out.str();}out<<"  func.func @main() -> i32 {\n";
     auto value=call(nativeSymbol(main.name),{},main.result,main.span);call("nex_runtime_finish",{},Type::Unit,main.span);
     if(main.result==Type::I64){auto n=fresh();line(n+" = arith.trunci "+value.name+" : i64 to i32",main.span);line("func.return "+n+" : i32",main.span);}
     else{auto n=fresh();line(n+" = arith.constant 0 : i32",main.span);line("func.return "+n+" : i32",main.span);}
-    out<<"  }"<<loc(main.span)<<"\n}\n";return out.str();
+    out<<"  }"<<loc(main.span)<<"\n}\n";return debug.str()+out.str();
   }
 };
 std::string lower(const std::string &source,const std::string &sourcePath) {
@@ -285,6 +354,7 @@ std::string lower(const std::string &source,const std::string &sourcePath) {
   if(mlir::failed(pm.run(*module)))throw Error("E_MLIR","MLIR to LLVM conversion failed");
   llvm::LLVMContext llvmContext;auto llvmModule=mlir::translateModuleToLLVMIR(*module,llvmContext,"NEX");
   if(!llvmModule)throw Error("E_LLVM","LLVM translation failed");
+  if(llvm::verifyModule(*llvmModule,&llvm::errs()))throw Error("E_LLVM","translated LLVM IR failed verification");
   llvmModule->setSourceFileName(sourcePath);
   llvmModule->setTargetTriple(llvm::Triple(llvm::sys::getDefaultTargetTriple()));
   for(auto &function:*llvmModule)if(!function.isDeclaration())function.setUWTableKind(llvm::UWTableKind::Default);
@@ -358,12 +428,41 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::string runtimeIdentity;for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
   if(storage)runtimeIdentity+=std::string(NEX_SQLITE_INCLUDE)+NEX_SQLITE_LIBRARY+hash(readFile(NEX_SQLITE_LIBRARY))+hash(readFile((std::filesystem::path(NEX_SQLITE_INCLUDE)/"sqlite3.h").string()));
   if(server)runtimeIdentity+=std::string(NEX_OPENSSL_INCLUDE)+NEX_OPENSSL_SSL+NEX_OPENSSL_CRYPTO+hash(readFile(NEX_OPENSSL_SSL))+hash(readFile(NEX_OPENSSL_CRYPTO))+hash(readFile((std::filesystem::path(NEX_OPENSSL_INCLUDE)/"openssl/ssl.h").string()));
-  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+host+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+  auto formatter=readFile(resourceFile("debug/lldb_nex.py"));
+  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+host+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
   BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string()};
+  auto snapshot=p;snapshot.path=(folder/"source.nex").string();
+  llvm::json::Array debugSources,debugFunctions,heapTypes;std::set<std::string> debugTypes;
+  std::function<void(Type)> collectType=[&](Type type){
+    if(!type.heap()||!debugTypes.insert(typeName(type)).second)return;
+    heapTypes.push_back(typeName(type));
+    if(type.element)collectType(*type.element);
+    if(type.kind==Type::Record)for(const auto &field:p.structure(type.name).fields)collectType(field.type);
+  };
+  std::function<void(const std::vector<S>&)> collectLocals=[&](const auto &body){for(auto s:body){collectType(s->type);collectLocals(s->body);collectLocals(s->alternative);}};
+  for(const auto &f:p.functions)if(names.contains(f.name)){
+    collectType(f.result);for(const auto &param:f.params)collectType(param.type);collectLocals(f.body);
+    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)}});
+  }
+  for(auto &[unitKey,unit]:snapshot.units){
+    auto original=unit.path;unit.path=unitKey==snapshot.entryUnit?snapshot.path:(folder/"sources"/unitKey).string();
+    debugSources.push_back(llvm::json::Object{{"original",original},{"projection",unit.path},{"hash",hash(unit.source)}});
+  }
+  auto debugFile=(folder/"debug.json").string(),formatterFile=(folder/"debugger/lldb_nex.py").string();
+  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/1"},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
+  auto debugIntact=[&](){
+    if(!std::filesystem::is_regular_file(debugFile)||readFile(debugFile)!=debugText||!std::filesystem::is_regular_file(formatterFile)||readFile(formatterFile)!=formatter)return false;
+    for(const auto &[unitKey,unit]:snapshot.units)if(!std::filesystem::is_regular_file(unit.path)||readFile(unit.path)!=unit.source)return false;
+    if(!options.libraryEntry&&llvm::Triple(host).isOSDarwin()){
+      auto symbols=result.executable+".dSYM/Contents/Resources/DWARF/app";auto marker=folder/"debug-symbols.complete";
+      if(!std::filesystem::is_regular_file(symbols)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(symbols))+"\n")return false;
+    }
+    return true;
+  };
   // Validate the entry on cache hits as well.
   emitMLIR(p,options.entry,options.testEntry,options.libraryEntry||server);
-  if(std::filesystem::exists(folder/"complete")&&std::filesystem::exists(result.executable)&&readFile((folder/"complete").string())==hash(key+readFile(result.executable))+"\n"&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))){result.cached=true;return result;}
+  if(std::filesystem::exists(folder/"complete")&&std::filesystem::exists(result.executable)&&readFile((folder/"complete").string())==hash(key+readFile(result.executable))+"\n"&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()){result.cached=true;return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
   auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
@@ -374,10 +473,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
   }
   // Debuggers refer to an immutable projection, not a subsequently edited working file.
-  auto snapshot=p;snapshot.path=(folder/"source.nex").string();
-  for(auto &[key,unit]:snapshot.units){unit.path=key==snapshot.entryUnit?snapshot.path:(folder/"sources"/key).string();writeFile(unit.path,unit.source);}
+  for(const auto &[unitKey,unit]:snapshot.units)writeFile(unit.path,unit.source);
+  writeFile(debugFile,debugText);writeFile(formatterFile,formatter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
-  auto mlir=emitMLIR(snapshot,options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);writeFile(result.llvm,lower(mlir,snapshot.path));
+  auto mlir=Emitter(snapshot,options.profile!="debug").run(options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);writeFile(result.llvm,lower(mlir,snapshot.path));
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto object=(folder/"program.o").string();
   std::vector<std::string> compile={compiler,"-c",result.llvm,"-o",object,"-g",optimization};
@@ -413,6 +512,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(!options.libraryEntry&&llvm::Triple(host).isOSDarwin()) {
     auto dsym=(std::filesystem::path(NEX_LLVM_TOOLS)/"dsymutil").string();
     if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
+    writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }
   if(!result.notices.empty())writeFile(result.notices,notices);
   llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);

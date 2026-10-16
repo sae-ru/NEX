@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.7.0 LANGUAGES C CXX)
+project(NEX VERSION 0.8.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -48,9 +48,9 @@ target_compile_definitions(nex PRIVATE NEX_SQLITE_INCLUDE="${SQLite3_INCLUDE_DIR
 target_compile_definitions(nex PRIVATE NEX_OPENSSL_INCLUDE="${OPENSSL_INCLUDE_DIR}" NEX_OPENSSL_SSL="${OPENSSL_SSL_LIBRARY}" NEX_OPENSSL_CRYPTO="${OPENSSL_CRYPTO_LIBRARY}")
 set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS}")
 install(TARGETS nex RUNTIME DESTINATION bin)
-install(DIRECTORY docs llm runtime examples lib web DESTINATION share/nex
+install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
-  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE)
+  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 enable_testing()
 add_test(NAME integration COMMAND ${Python3_EXECUTABLE}
@@ -65,6 +65,8 @@ add_test(NAME http COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_http.py $<TARGET_FILE:nex>)
 add_test(NAME api COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/api_contracts.py $<TARGET_FILE:nex>)
+add_test(NAME debugging COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/debugging.py $<TARGET_FILE:nex>)
 find_program(NEX_NODE_EXECUTABLE node)
 if(NEX_NODE_EXECUTABLE)
   add_test(NAME web COMMAND ${Python3_EXECUTABLE}

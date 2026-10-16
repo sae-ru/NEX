@@ -97,6 +97,7 @@ class Modules(harness.ToolchainCase):
         (self.root / "model.nex").unlink()
         resources = self.root / "compiler resources"
         shutil.copytree(harness.REPO / "runtime", resources / "runtime")
+        shutil.copytree(harness.REPO / "debug", resources / "debug")
         # The relocated manifest vendors std sources; no SDK lib/ exists here.
         env = {"NEX_RESOURCE_DIR": str(resources)}
         self.assertEqual(self.cli("check", cwd=destination, env=env)["revision"], revision)

@@ -1,0 +1,29 @@
+module debugging::app;
+import "./model.nex" as model;
+
+fn inspect(n: i64, enabled: bool, label: str, person: model::Person) -> i64 !{io} {
+  var total: i64 = n;
+  let items: list<i64> = [n, n + 1];
+  let reply: result<str> = ok(label);
+  let failure: result<i64> = err("EXAMPLE", "recoverable error");
+  let empty: list<str> = [];
+  if enabled {
+    let total: i64 = total + 2;
+    print(total); // break: inner
+  }
+  print(total); // break: outer
+  total = model::increment(total) + len(items);
+  print(label); // break: updated
+  assert(is_ok(reply));
+  assert(person.id == 7);
+  assert(!is_ok(failure) && len(empty) == 0);
+  return total;
+}
+
+fn main() -> i64 !{io} {
+  let person: model::Person = model::Person(7, "Ада\u0000🌍", ["nex", "debug"]);
+  print(inspect(40, true, person.name, person));
+  return 0;
+}
+
+test fn model_test() -> unit { assert(model::increment(40) == 41); }
