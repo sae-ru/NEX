@@ -14,9 +14,10 @@
     "web": "docs/web.md",
     "server": "docs/server.md",
     "api": "docs/api.md",
-    "debug": "docs/debugging.md"
+    "debug": "docs/debugging.md",
+    "build": "docs/incremental.md"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",

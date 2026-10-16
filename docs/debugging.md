@@ -1,4 +1,4 @@
-# Native debugging — NEX toolchain 0.8
+# Native debugging — NEX toolchain 0.9
 
 Source language remains 0.5. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
@@ -33,8 +33,8 @@ function has its own captured `sources/model.nex` and parameter/local records.
 Use `nex context --symbol NAME` to obtain a function's exact `native_symbol` for
 a name breakpoint. Debugger function display may use that native linkage name.
 
-Source paths point to the build's immutable projection, including archived
-sources. A source-based debug command checks the current program; use
+Source paths point to immutable projections in the shared `source-cache/`,
+including archived sources and reused native modules. A source-based debug command checks the current program; use
 `nex debug --revision HASH` to debug a stored revision even after original files
 were changed or deleted. `debug.json` maps original paths to their projections
 and records the semantic revision, build key, function names and native symbols.
@@ -98,7 +98,8 @@ The native build key includes the formatter content. Cache hits verify the
 captured formatter, exact debug manifest, all projected source contents and,
 on macOS, the packaged DWARF image as well as the executable and notices.
 Corruption causes a rebuild. Installed SDKs include the matching debug guide
-and formatter. Keep the build directory and its `.dSYM` when debugging; copying
+and formatter. Keep the build workspace (including `source-cache/`, runtime projections and
+`.dSYM`) when debugging; copying
 only an executable with `-o` does not export this whole debugging workspace.
 
 ```sh
@@ -113,6 +114,6 @@ source projections. The opt-in live run additionally launches LLDB and an actual
 value previews/children and clean completion. It requires host debugger launch
 permission; the normal suite does not silently claim those live checks.
 
-Separate compilation, source expression evaluation, direct browser NEX source
+Function/frontend incremental reuse, source expression evaluation, direct browser NEX source
 maps, crash/core workflows, Tracy instrumentation and other target platforms
 remain parts of the open development plan.

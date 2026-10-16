@@ -520,6 +520,8 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch"}},
     {"debug_guide","docs/debugging.md"},
+    {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index"}},
+    {"build_guide","docs/incremental.md"},
     {"not_yet_supported",llvm::json::Array{"async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};

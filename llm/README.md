@@ -11,7 +11,7 @@ The pack has four coordinated layers:
 3. **Discovery:** `nex describe --json` exposes the implemented version, capabilities, builtin signatures, and unsupported features.
 4. **Feedback protocol:** `context`, `apply`, `check`, `test`, and `build` let a model edit functions across modules atomically and obtain deterministic feedback. Context identifies each symbol's logical module, file and imports; revisions archive complete source bundles.
 
-An installed compiler exposes the documents through `nex guide --kind prompt|language|grammar|protocol|web|server|api --json`. Each response contains a version, content hash and text, so the model can obtain the matching pack without knowing repository paths.
+An installed compiler exposes the documents through `nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build --json`. Each response contains a version, content hash and text, so the model can obtain the matching pack without knowing repository paths.
 
 `AGENTS.md` provides repository entry instructions to coding agents. A chat-only model can receive the prompt, specification, function context, and task as ordinary messages; its returned patch can be applied by a human or external runner. Tool-capable models can invoke the same CLI directly. No provider SDK, hosted model, special tokens, or training run is required.
 
@@ -28,3 +28,5 @@ Recoverable result<T>, typed JSON and server capabilities are described by the m
 The pack is useful for interoperability; it does not by itself prove that every LLM writes correct NEX or that the language saves tokens. Evaluation will record model/version, task, full context and tool output, success rate, repair attempts, and total token usage. A cross-provider coding evaluation remains to be run.
 
 The native debugging guide is available as `nex guide --kind debug --json`. The toolchain advertises its actual debug capabilities separately from language features. Session descriptors connect any compatible DAP client to an installed `lldb-dap`; the read-only `nex-values` command gives models bounded, revision-attributed frame previews. This does not measure cross-model debugging quality or implement a model-specific debugger.
+
+For native incremental compilation, retrieve `nex guide --kind build --json`. Build responses keep per-invocation compiled/reused module counts and a report path; the report contains source/ABI/type fingerprints and dependency indexes. Use normal bounded `context --symbol` queries to investigate a specific function rather than copying a whole build graph into model context. Cached objects never replace source checking or observable test validation.

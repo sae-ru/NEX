@@ -9,6 +9,8 @@ struct BuildResult {
   std::string executable, mlir, llvm, key;
   bool cached = false;
   std::string notices;
+  std::string compilation;
+  unsigned compiledModules = 0, reusedModules = 0;
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);
