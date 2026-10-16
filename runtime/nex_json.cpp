@@ -1,0 +1,81 @@
+#include "nex_json.h"
+#include "third_party/json.hpp"
+#include <functional>
+#include <set>
+
+namespace nexrt {
+namespace {
+using JSON=nlohmann::ordered_json;
+constexpr size_t maxBytes=1024*1024,maxDepth=64,maxItems=10000,maxNodes=100000;
+void reject(const std::string &message){throw DataError("E_JSON",message);}
+JSON parse(const std::string &text){
+  if(text.size()>maxBytes)reject("JSON input exceeds byte limit");
+  try{
+  std::vector<std::set<std::string>> names;size_t events=0;
+  auto callback=[&](int depth,JSON::parse_event_t event,JSON &value){
+    if(size_t(depth)>maxDepth||++events>maxNodes*3)reject("JSON input exceeds depth/node limit");
+    if(event==JSON::parse_event_t::object_start)names.emplace_back();
+    if(event==JSON::parse_event_t::object_end)names.pop_back();
+    if(event==JSON::parse_event_t::key&&!names.back().insert(value.get<std::string>()).second)reject("duplicate JSON object key");
+    return true;
+  };
+  return JSON::parse(text,callback);
+  }catch(const DataError &){reject("invalid JSON text or wire schema");}
+  catch(const JSON::exception &){reject("invalid JSON text or wire schema");}
+  return nullptr;
+}
+std::string encode(const Value &value,size_t depth,size_t &nodes){
+  if(depth>maxDepth||++nodes>maxNodes)reject("JSON value exceeds depth/node limit");
+  if(value.tag==Value::Integer)return nexrt::quoted(std::to_string(value.scalar));
+  if(value.tag==Value::Boolean)return value.scalar?"true":"false";
+  const auto &d=*value.object;
+  if(d.kind==Data::String)return nexrt::quoted(d.text);
+  if(d.kind==Data::Success)return "{\"ok\":"+encode(d.values[0],depth+1,nodes)+"}";
+  if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+nexrt::quoted(d.text)+",\"message\":"+nexrt::quoted(d.values[0].object->text)+"}}";
+  if(d.values.size()>maxItems)reject("JSON collection exceeds item limit");
+  std::string out=d.kind==Data::List?"[":"{";
+  for(size_t i=0;i<d.values.size();++i){if(i)out+=",";if(d.kind==Data::Record)out+=nexrt::quoted(d.names[i])+":";out+=encode(d.values[i],depth+1,nodes);if(out.size()>maxBytes)reject("JSON value exceeds byte limit");}
+  return out+(d.kind==Data::List?"]":"}");
+}
+Value decode(const JSON &value,const JSON &type,const JSON &records,size_t depth,size_t &nodes){
+  if(depth>maxDepth||++nodes>maxNodes)reject("JSON value exceeds depth/node limit");
+  if(type=="i64"){
+    if(!value.is_string())reject("i64 requires a canonical decimal JSON string");
+    const auto &text=value.get_ref<const std::string&>();size_t first=text.starts_with('-')?1:0;
+    if(first==text.size()||(text[first]=='0'&&(first||text.size()!=1))||!std::all_of(text.begin()+first,text.end(),[](char c){return c>='0'&&c<='9';}))reject("i64 requires a canonical decimal JSON string");
+    int64_t integer=0;auto parsed=std::from_chars(text.data(),text.data()+text.size(),integer);
+    if(parsed.ec!=std::errc()||parsed.ptr!=text.data()+text.size())reject("JSON integer is outside i64 range");return Value(integer);
+  }
+  if(type=="bool"){if(!value.is_boolean())reject("expected JSON boolean");return Value(value.get<bool>(),true);}
+  if(type=="str"){if(!value.is_string())reject("expected JSON string");return Value(string(value.get<std::string>()));}
+  if(type.contains("list")){
+    if(!value.is_array()||value.size()>maxItems)reject("expected JSON array within item limit");
+    auto data=std::make_shared<Data>(Data::List);for(const auto &item:value)data->values.push_back(decode(item,type.at("list"),records,depth+1,nodes));return Value(data);
+  }
+  if(type.contains("result")){
+    if(!value.is_object()||value.size()!=1)reject("expected tagged JSON result");
+    if(value.contains("ok"))return success(decode(value.at("ok"),type.at("result"),records,depth+1,nodes));
+    if(!value.contains("error"))reject("expected ok or error result");const auto &error=value.at("error");
+    if(!error.is_object()||error.size()!=2||!error.contains("code")||!error.contains("message")||!error.at("code").is_string()||!error.at("message").is_string())reject("invalid JSON error");
+    return failure(error.at("code").get<std::string>(),error.at("message").get<std::string>());
+  }
+  if(type.contains("record")){
+    auto name=type.at("record").get<std::string>();const auto &fields=records.at(name);
+    if(!value.is_object()||value.size()!=fields.size())reject("JSON record has missing or unknown fields");
+    auto data=std::make_shared<Data>(Data::Record);data->text=name;
+    for(const auto &field:fields){auto key=field.at("name").get<std::string>();if(!value.contains(key))reject("JSON record has missing or unknown fields");data->names.push_back(key);data->values.push_back(decode(value.at(key),field.at("type"),records,depth+1,nodes));}
+    return Value(data);
+  }
+  reject("unsupported wire type");return {};
+}
+}
+std::string encodeJSON(const Value &value){size_t nodes=0;auto text=encode(value,0,nodes);if(text.size()>maxBytes)reject("JSON value exceeds byte limit");return text;}
+Value decodeJSON(const std::string &text,const std::string &schema){
+  try{
+    auto contract=JSON::parse(schema);auto value=parse(text);size_t nodes=0;
+    if(contract.at("schema")!="nex.wire/1")reject("unsupported wire schema");
+    return success(decode(value,contract.at("root"),contract.at("records"),0,nodes));
+  }catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const JSON::exception &){return failure("E_JSON","invalid JSON text or wire schema");}
+}
+}

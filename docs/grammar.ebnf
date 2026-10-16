@@ -1,0 +1,55 @@
+(* NEX 0.5. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
+program       = "module", qualified_name, ";", { import | function | structure | endpoint } ;
+endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
+                "=", qualified_name, ";" ;
+import        = "import", string, "as", identifier, ";" ;
+structure     = [ "pub" ], "struct", identifier, "{", { parameter, ";" }, "}" ;
+function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, "(", [ parameters ], ")",
+                "->", type, [ effects ], block ;
+realm         = "shared" | "client" | "server" ;
+parameters    = parameter, { ",", parameter } ;
+parameter     = identifier, ":", type ;
+type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" | qualified_name ;
+effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
+effect        = "io" | "db" ;
+block         = "{", { statement }, "}" ;
+statement     = declaration | assignment | return | if | while | expression, ";" ;
+declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
+assignment    = identifier, "=", expression, ";" ;
+return        = "return", [ expression ], ";" ;
+if            = "if", expression, block, [ "else", ( block | if ) ] ;
+while         = "while", expression, block ;
+expression    = logical_or ;
+logical_or    = logical_and, { "||", logical_and } ;
+logical_and   = equality, { "&&", equality } ;
+equality      = ordering, { ( "==" | "!=" ), ordering } ;
+ordering      = addition, { ( "<" | "<=" | ">" | ">=" ), addition } ;
+addition      = product, { ( "+" | "-" ), product } ;
+product       = unary, { ( "*" | "/" | "%" ), unary } ;
+unary         = ( "-" | "!" ), unary | postfix ;
+postfix       = primary, { ".", identifier | "[", expression, "]" } ;
+primary       = integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+                [ "(", [ arguments ], ")" ] | "str", "(", [ arguments ], ")" |
+                "(", expression, ")" ;
+list_literal  = "[", [ arguments ], "]" ;
+generic_builtin = ( "decode_json" | "err" ), "<", type, ">", "(", [ arguments ], ")" ;
+string        = '"', { string_char | escape }, '"' ;
+string_char   = ? Unicode scalar except U+0000..U+001F, double quote and backslash ? ;
+escape        = "\\", ( '"' | "\\" | "/" | "b" | "f" | "n" | "r" | "t" |
+                "u", hex, hex, hex, hex ) ;
+hex           = digit | "a" .. "f" | "A" .. "F" ;
+arguments     = expression, { ",", expression } ;
+identifier    = ( letter | "_" ), { letter | digit | "_" } ;
+qualified_name = identifier, { "::", identifier } ;
+integer       = digit, { digit } ;
+letter        = "A" .. "Z" | "a" .. "z" ;
+digit         = "0" .. "9" ;
+(* Keywords cannot be identifiers. Unit parameters, locals and elements are rejected
+   by typing. Escaped surrogate pairs must form a Unicode scalar. Integer range,
+   effects, realm restrictions, constructor arity and returns are semantic checks.
+   Imported names in source use alias::name; arbitrary deep names are module names,
+   not implicit lookup paths. Imports require a literal relative/library .nex path.
+   result is contextual as a type constructor; names such as a local result remain
+   valid. endpoint is contextual at declaration position; its route, method,
+   status, handler realm/signature and public wire types are semantic checks.
+   Unit list/result payloads are rejected. Other generic calls are pending. *)

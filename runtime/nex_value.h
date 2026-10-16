@@ -1,0 +1,139 @@
+#pragma once
+// Shared data primitives; evaluation and generated control flow remain independent.
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <memory>
+#include <stdexcept>
+#include <limits>
+#include <charconv>
+#include <atomic>
+
+namespace nexrt {
+struct DataError : std::runtime_error {
+  std::string code;
+  size_t offset=0;
+  DataError(std::string code,std::string message,size_t offset=0):std::runtime_error(std::move(message)),code(std::move(code)),offset(offset){}
+};
+struct Data;
+struct Value {
+  enum Tag { Integer, Boolean, Object } tag = Integer;
+  int64_t scalar = 0;
+  std::shared_ptr<Data> object;
+  Value()=default;
+  Value(int64_t v,bool boolean=false):tag(boolean?Boolean:Integer),scalar(v){}
+  explicit Value(std::shared_ptr<Data> v):tag(Object),object(std::move(v)){}
+};
+inline std::atomic<int64_t> liveObjects{0};
+struct Data {
+  enum Kind { String, List, Record, Success, Failure } kind;
+  std::string text;
+  std::vector<Value> values;
+  std::vector<std::string> names;
+  explicit Data(Kind kind):kind(kind){++liveObjects;}
+  Data(const Data &other):kind(other.kind),text(other.text),values(other.values),names(other.names){++liveObjects;}
+  ~Data(){--liveObjects;}
+};
+inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
+  std::vector<size_t> offsets;
+  for(size_t i=0;i<text.size();) {
+    if(collect)offsets.push_back(i);auto first=static_cast<unsigned char>(text[i]);
+    unsigned n=first<0x80?1:(first>=0xc2&&first<=0xdf)?2:(first>=0xe0&&first<=0xef)?3:(first>=0xf0&&first<=0xf4)?4:0;
+    if(!n||n>text.size()-i)throw DataError("E_UTF8","invalid UTF-8 string",i);
+    uint32_t code=first & (n==1?0x7f:n==2?0x1f:n==3?0x0f:0x07);
+    for(unsigned j=1;j<n;++j){auto c=static_cast<unsigned char>(text[i+j]);if((c&0xc0)!=0x80)throw DataError("E_UTF8","invalid UTF-8 string",i+j);code=(code<<6)|(c&0x3f);}
+    if((n==2&&code<0x80)||(n==3&&code<0x800)||(n==4&&code<0x10000)||code>0x10ffff||(code>=0xd800&&code<=0xdfff))throw DataError("E_UTF8","invalid Unicode scalar",i);
+    i+=n;
+  }
+  if(collect)offsets.push_back(text.size());return offsets;
+}
+inline std::shared_ptr<Data> string(std::string text) {
+  unicodeOffsets(text,false);auto d=std::make_shared<Data>(Data::String);d->text=std::move(text);return d;
+}
+inline Value success(Value value){auto d=std::make_shared<Data>(Data::Success);d->values.push_back(std::move(value));return Value(d);}
+inline Value failure(std::string code,std::string message){
+  auto d=std::make_shared<Data>(Data::Failure);d->text=std::move(code);d->values.emplace_back(string(std::move(message)));return Value(d);
+}
+inline bool isSuccess(const Value &value){return value.object->kind==Data::Success;}
+inline Value unwrap(const Value &value){
+  if(!isSuccess(value))throw DataError("E_RESULT",value.object->text+": "+value.object->values[0].object->text);
+  return value.object->values[0];
+}
+inline std::string decodeLiteral(const std::string &token) {
+  if(token.size()<2||token.front()!='"'||token.back()!='"')throw DataError("E_STRING","invalid quoted literal");
+  unicodeOffsets(token,false);std::string out;
+  for(size_t i=1;i+1<token.size();++i){
+    auto c=static_cast<unsigned char>(token[i]);
+    if(c!='\\'){if(c<0x20||c=='"')throw DataError("E_STRING","unescaped character in string literal");out+=char(c);continue;}
+    if(++i+1>=token.size())throw DataError("E_STRING","incomplete string escape");
+    switch(token[i]){
+    case '"':out+='"';break;case '\\':out+='\\';break;case '/':out+='/';break;
+    case 'b':out+='\b';break;case 'f':out+='\f';break;case 'n':out+='\n';break;case 'r':out+='\r';break;case 't':out+='\t';break;
+    case 'u':{
+      auto hex=[&](){
+        uint32_t code=0;
+        for(unsigned n=0;n<4;++n){
+          if(++i+1>=token.size())throw DataError("E_STRING","incomplete Unicode escape");
+          char h=token[i];unsigned digit=h>='0'&&h<='9'?h-'0':h>='a'&&h<='f'?h-'a'+10:h>='A'&&h<='F'?h-'A'+10:16;
+          if(digit==16)throw DataError("E_STRING","invalid Unicode escape");code=(code<<4)|digit;
+        }
+        return code;
+      };
+      uint32_t code=hex();
+      if(code>=0xd800&&code<=0xdbff){
+        if(i+2>=token.size()-1||token[i+1]!='\\'||token[i+2]!='u')throw DataError("E_STRING","unpaired high surrogate");
+        i+=2;auto low=hex();if(low<0xdc00||low>0xdfff)throw DataError("E_STRING","invalid low surrogate");code=0x10000+((code-0xd800)<<10)+(low-0xdc00);
+      }else if(code>=0xdc00&&code<=0xdfff)throw DataError("E_STRING","unpaired low surrogate");
+      if(code<0x80)out+=char(code);
+      else if(code<0x800){out+=char(0xc0|(code>>6));out+=char(0x80|(code&0x3f));}
+      else if(code<0x10000){out+=char(0xe0|(code>>12));out+=char(0x80|((code>>6)&0x3f));out+=char(0x80|(code&0x3f));}
+      else{out+=char(0xf0|(code>>18));out+=char(0x80|((code>>12)&0x3f));out+=char(0x80|((code>>6)&0x3f));out+=char(0x80|(code&0x3f));}
+      break;
+    }
+    default:throw DataError("E_STRING","unknown string escape");
+    }
+  }
+  return out;
+}
+inline int64_t length(const std::shared_ptr<Data> &d) {
+  return d->kind==Data::String?int64_t(unicodeOffsets(d->text).size()-1):int64_t(d->values.size());
+}
+inline void bounds(int64_t index,size_t size) {
+  if(index<0||static_cast<uint64_t>(index)>=size)throw DataError("E_BOUNDS","index is outside collection bounds");
+}
+inline Value get(const std::shared_ptr<Data> &d,int64_t index) {
+  if(d->kind==Data::String){auto offsets=unicodeOffsets(d->text);bounds(index,offsets.size()-1);return Value(string(d->text.substr(offsets[index],offsets[index+1]-offsets[index])));}
+  bounds(index,d->values.size());return d->values[index];
+}
+inline std::shared_ptr<Data> slice(const std::shared_ptr<Data> &d,int64_t start,int64_t count) {
+  auto offsets=unicodeOffsets(d->text);auto size=offsets.size()-1;
+  if(start<0||count<0||static_cast<uint64_t>(start)>size||static_cast<uint64_t>(count)>size-static_cast<uint64_t>(start))throw DataError("E_BOUNDS","slice is outside string bounds");
+  return string(d->text.substr(offsets[start],offsets[start+count]-offsets[start]));
+}
+inline bool equal(const Value &a,const Value &b) {
+  if(a.tag!=b.tag)return false;
+  if(a.tag!=Value::Object)return a.scalar==b.scalar;
+  if(a.object==b.object)return true;
+  const auto &x=*a.object,&y=*b.object;
+  if(x.kind!=y.kind||x.text!=y.text||x.names!=y.names||x.values.size()!=y.values.size())return false;
+  for(size_t i=0;i<x.values.size();++i)if(!equal(x.values[i],y.values[i]))return false;
+  return true;
+}
+inline std::string quoted(const std::string &text) {
+  static const char *hex="0123456789abcdef";std::string out="\"";
+  for(unsigned char c:text){if(c=='"'||c=='\\'){out+='\\';out+=char(c);}else if(c<0x20){out+="\\u00";out+=hex[c>>4];out+=hex[c&15];}else out+=char(c);}
+  return out+'"';
+}
+inline std::string representation(const Value &v) {
+  if(v.tag==Value::Integer)return std::to_string(v.scalar);
+  if(v.tag==Value::Boolean)return v.scalar?"true":"false";
+  const auto &d=*v.object;
+  if(d.kind==Data::String)return quoted(d.text);
+  if(d.kind==Data::Success)return "{\"ok\":"+representation(d.values[0])+"}";
+  if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+quoted(d.text)+",\"message\":"+representation(d.values[0])+"}}";
+  std::string text=d.kind==Data::List?"[":"{";
+  for(size_t i=0;i<d.values.size();++i){if(i)text+=",";if(d.kind==Data::Record)text+=quoted(d.names[i])+":";text+=representation(d.values[i]);}
+  return text+(d.kind==Data::List?"]":"}");
+}
+inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:representation(v);}
+}

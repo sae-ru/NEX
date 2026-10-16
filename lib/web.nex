@@ -1,0 +1,35 @@
+module std::web;
+
+pub struct Attribute { name: str; value: str; }
+pub struct Binding { event: str; action: str; }
+pub struct Event { name: str; value: str; path: str; }
+pub struct View {
+  tag: str;
+  text: str;
+  attributes: list<Attribute>;
+  events: list<Binding>;
+  children: list<View>;
+}
+
+pub fn attr(name: str, value: str) -> Attribute { return Attribute(name, value); }
+pub fn on(event: str, action: str) -> Binding { return Binding(event, action); }
+pub fn text(value: str) -> View { return View("text", value, [], [], []); }
+pub fn element(tag: str, attributes: list<Attribute>, events: list<Binding>, children: list<View>) -> View {
+  return View(tag, "", attributes, events, children);
+}
+pub fn button(label: str, action: str) -> View {
+  return element("button", [attr("type", "button")], [on("click", action)], [text(label)]);
+}
+pub fn link(label: str, path: str) -> View {
+  return element("a", [attr("href", path)], [on("navigate", "route")], [text(label)]);
+}
+pub fn input(id: str, value: str, action: str) -> View {
+  return element("input", [attr("id", id), attr("name", id), attr("type", "text"), attr("value", value)], [on("input", action)], []);
+}
+
+test fn view_values_test() -> unit {
+  let value: View = button("Add", "add");
+  assert(value.tag == "button");
+  assert(value.events[0].action == "add");
+  assert(value.children[0].text == "Add");
+}

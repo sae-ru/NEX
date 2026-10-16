@@ -1,0 +1,311 @@
+#include "nex/backend.h"
+#include "nex/project.h"
+#include "nex/web.h"
+#include "nex/api.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/RandomNumberGenerator.h"
+#include "llvm/Support/SHA256.h"
+#include "nex_auth.h"
+#include "nex_json.h"
+#include "llvm/Config/llvm-config.h"
+#include "llvm/TargetParser/Host.h"
+#include <filesystem>
+#include <iostream>
+#include <algorithm>
+#include <functional>
+
+namespace fs=std::filesystem;
+namespace {
+using namespace nex;
+struct Options {
+  std::string command;std::map<std::string,std::string> values;std::set<std::string> flags;
+  std::vector<std::string> positional,extra;
+  bool has(const std::string &name)const{return flags.contains(name);}
+  std::string get(const std::string &name,const std::string &fallback="")const{auto i=values.find(name);return i==values.end()?fallback:i->second;}
+};
+Options options(int argc,char **argv) {
+  Options o;o.command=argc>1?argv[1]:"help";
+  const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth"};
+  for(int i=2;i<argc;++i){
+    std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
+    if(a=="-o")a="--output";
+    if(flagNames.contains(a))o.flags.insert(a);
+    else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);o.values[a]=argv[++i];}
+    else if(a.starts_with("-"))throw Error("E_OPTION","unknown option "+a);
+    else o.positional.push_back(a);
+  }
+  if(o.positional.size()>1)throw Error("E_OPTION","expected at most one source file or directory");return o;
+}
+void print(llvm::json::Value value){std::cout<<json(value)<<'\n';}
+llvm::json::Value parseJSON(const std::string &text) {
+  auto value=llvm::json::parse(text);if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));return std::move(*value);
+}
+std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
+std::string defaultSource(const fs::path &root){
+  if(fs::exists(root/"nex.json")){auto value=parseJSON(readFile((root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","manifest must be an object");return (root/required(*obj,"entry")).string();}
+  return (root/"main.nex").string();
+}
+llvm::json::Value graphSources(const llvm::json::Object &object){
+  if(auto bundle=object.get("bundle"))return *bundle;
+  auto source=required(object,"source");
+  return llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",source}}}};
+}
+Program load(const Options &o,const fs::path &root,Store &store,bool saved=false) {
+  auto rev=o.get("--revision",saved?"HEAD":"");
+  if(rev.empty()){
+    auto path=fs::absolute(o.positional.empty()?defaultSource(root):o.positional[0]).string();
+    auto p=loadProgram(path,root.string(),o.command!="lock");store.save(p);return p;
+  }
+  auto selected=rev=="HEAD"?store.headRevision():rev;
+  if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
+  auto p=loadBundle(store.bundle(selected),root.string());
+  if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
+}
+int run(const Options &o) {
+  if(o.command=="help"||o.command=="--help"||o.command=="-h") {
+    std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api [--json]\n  nex doctor\n"
+      "  nex check|eval|build|run|test|emit [file] [--json]\n"
+      "  nex graph|history [--json]\n  nex context --symbol NAME\n"
+      "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
+      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] -- [lldb options]\n"
+      "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
+      "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library\n";return 0;
+  }
+  if(o.command=="describe"){print(describe());return 0;}
+  if(o.command=="token"){
+    auto user=o.get("--user"),file=o.get("--auth");if(user.empty()||user.size()>256||user.find('\0')!=std::string::npos||file.empty())throw Error("E_OPTION","token requires --user USER and --auth FILE");
+    try{nexrt::unicodeOffsets(user,false);}catch(const nexrt::DataError &){throw Error("E_AUTH","user identifier must be valid UTF-8");}
+    llvm::json::Value value=llvm::json::Object{{"schema","nex.auth/1"},{"tokens",llvm::json::Array{}}};
+    if(fs::exists(file)){
+      auto decoded=nexrt::decodeJSON(readFile(file),nexrt::authenticationSchema);
+      if(!nexrt::isSuccess(decoded))throw Error("E_AUTH","invalid authentication file");value=parseJSON(nexrt::representation(nexrt::unwrap(decoded)));
+      if(value.getAsObject()->getString("schema")!="nex.auth/1")throw Error("E_AUTH","unsupported authentication file version");
+    }
+    auto entries=value.getAsObject()->getArray("tokens");if(entries->size()>=1024)throw Error("E_AUTH","authentication token limit reached");
+    std::set<std::string> hashes;
+    for(const auto &entry:*entries){
+      auto object=entry.getAsObject();auto owner=object->getString("user")->str(),digest=object->getString("sha256")->str();
+      if(owner.empty()||owner.size()>256||owner.find('\0')!=std::string::npos||digest.size()!=64||!std::all_of(digest.begin(),digest.end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');})||!hashes.insert(digest).second)throw Error("E_AUTH","invalid or duplicate authentication entry");
+    }
+    std::array<uint8_t,32> random;if(auto error=llvm::getRandomBytes(random.data(),random.size()))throw Error("E_AUTH","secure token generation failed: "+error.message());
+    auto hex=[](const auto &bytes){std::string out;for(auto byte:bytes){out+="0123456789abcdef"[byte>>4];out+="0123456789abcdef"[byte&15];}return out;};
+    auto token="nex_"+hex(random);auto digest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(token.data()),token.size()));
+    entries->push_back(llvm::json::Object{{"user",user},{"sha256",hex(digest)}});
+    auto output=fs::absolute(file);auto temporary=output;temporary+=".tmp."+hex(random).substr(0,16);
+    writeFile(temporary.string(),json(value)+"\n");fs::permissions(temporary,fs::perms::owner_read|fs::perms::owner_write,fs::perm_options::replace);fs::rename(temporary,output);
+    print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
+  }
+  if(o.command=="guide") {
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server or api");
+    auto text=readFile(resourceFile(files.at(kind)));
+    if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
+  }
+  if(o.command=="doctor") {
+    auto runtime=resourceFile("runtime/runtime.cpp");print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"native_compiler",NEX_CLANG},{"native_sqlite_include",NEX_SQLITE_INCLUDE},{"native_sqlite_library",NEX_SQLITE_LIBRARY},{"runtime",runtime},{"runtime_available",fs::exists(runtime)}});return 0;
+  }
+  if(o.command=="init") {
+    fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
+    if(fs::exists(root/"nex.json")||fs::exists(root/"src/main.nex"))throw Error("E_EXISTS","project already exists; refusing to overwrite");
+    writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry","src/main.nex"}})+"\n");
+    writeFile((root/"src/main.nex").string(),
+      "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
+    print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
+  }
+  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api"};
+  if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
+  if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
+  if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
+  const std::set<std::string> sourceCommands={"check","eval","build","run","test","emit","debug","lock","web","api"};
+  auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
+  if(o.command=="history"){print(store.history());return 0;}
+  if(o.command=="migrate"){
+    auto previous=store.headRevision();std::string original;llvm::json::Value bundle=nullptr;
+    if(o.positional.empty()){original=o.get("--revision","HEAD");if(original=="HEAD")original=previous;bundle=store.bundle(original);}
+    else{
+      auto value=parseJSON(readFile(o.positional[0]));auto obj=value.getAsObject();
+      if(!obj||(required(*obj,"schema")!="nex.graph/1"&&required(*obj,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
+      bundle=graphSources(*obj);original=required(*obj,"revision");
+    }
+    auto p=loadBundle(bundle,root.string());auto rev=store.save(p,previous.empty()?"EMPTY":previous);
+    print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},{"revision",rev},{"language",languageVersion},{"materialized",false}});return 0;
+  }
+  if(o.command=="export") {
+    auto selected=o.get("--revision","HEAD");if(selected=="HEAD")selected=store.headRevision();
+    auto bundle=store.bundle(selected);auto directory=o.get("--directory");
+    if(!directory.empty()){
+      llvm::json::Value lock=nullptr;auto language=store.revisionLanguage(selected);
+      if(language==languageVersion){auto p=loadBundle(bundle,root.string());if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");lock=dependencyLock(p);}
+      exportProject(bundle,directory,language);
+      if(!lock.getAsNull())writeFile((fs::path(directory)/"nex.lock.json").string(),json(lock)+"\n");
+      print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",selected}});return 0;
+    }
+    auto obj=bundle.getAsObject();auto files=obj?obj->getObject("files"):nullptr;
+    if(!files||files->size()!=1)throw Error("E_EXPORT","multi-module projects require export --directory PATH");
+    auto source=store.source(selected);auto output=o.get("--output");
+    if(output.empty())std::cout<<source;else {writeFile(output,source);print(llvm::json::Object{{"ok",true},{"output",output}});}return 0;
+  }
+  if(o.command=="import") {
+    if(o.positional.empty())throw Error("E_OPTION","import requires a graph JSON file");
+    auto value=parseJSON(readFile(o.positional[0]));auto obj=value.getAsObject();
+    if(!obj||(required(*obj,"schema")!="nex.graph/1"&&required(*obj,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
+    if(required(*obj,"language")!=languageVersion)throw Error("E_LANGUAGE_VERSION","graph uses another language version; use nex migrate GRAPH.json to recheck its source");
+    if(required(*obj,"schema")!="nex.graph/2"||!obj->get("bundle"))throw Error("E_SCHEMA","current graphs require nex.graph/2 and a source bundle");
+    auto p=loadBundle(*obj->get("bundle"),root.string());
+    if(required(*obj,"source")!=p.source)throw Error("E_BUNDLE","root source and source bundle disagree");
+    if(revision(p)!=required(*obj,"revision"))throw Error("E_REVISION","graph revision does not match checked source");
+    auto rev=store.save(p);print(llvm::json::Object{{"ok",true},{"revision",rev}});return 0;
+  }
+  if(o.command=="apply") {
+    auto patchFile=o.get("--patch");if(patchFile.empty())throw Error("E_OPTION","apply requires --patch FILE");
+    auto value=parseJSON(readFile(patchFile));auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
+    auto expected=required(*obj,"expected_revision");if(expected.empty())throw Error("E_JSON","expected_revision cannot be empty");
+    auto replacements=obj->getArray("replacements");if(!replacements||replacements->empty())throw Error("E_JSON","replacements must be a nonempty array");
+    auto selected=store.headRevision();
+    if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to an older graph");
+    auto p=loadBundle(store.bundle(selected),root.string());
+    if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");
+    struct Replacement{size_t begin,end;std::string source;};
+    std::map<std::string,std::vector<Replacement>> edits;std::set<std::string> names;
+    for(const auto &item:*replacements){
+      auto entry=item.getAsObject();if(!entry)throw Error("E_JSON","replacement must be an object");
+      auto name=required(*entry,"name"),source=required(*entry,"source");
+      const Endpoint *endpoint=nullptr;for(const auto &candidate:p.endpoints)if(candidate.name==name||(candidate.owner==p.module&&candidate.localName==name))endpoint=&candidate;
+      auto symbol=endpoint?endpoint->name:p.function(name).name;
+      if(!names.insert(symbol).second)throw Error("E_JSON","duplicate replacement");
+      auto fragment=parse("module fragment;\n"+source,"<patch>");
+      if(endpoint){
+        if(fragment.endpoints.size()!=1||fragment.endpoints[0].name!=endpoint->localName||!fragment.functions.empty()||!fragment.structures.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local endpoint");
+        edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source});
+      }else{
+        const auto &f=p.function(name);
+        if(fragment.functions.size()!=1||fragment.functions[0].name!=f.localName||!fragment.structures.empty()||!fragment.imports.empty()||!fragment.endpoints.empty())throw Error("E_PATCH","replacement must define exactly the named local function");
+        edits[f.unit].push_back({f.span.begin,f.span.end,source});
+      }
+    }
+    auto bundle=sourceBundle(p);auto files=bundle.getAsObject()->getObject("files");
+    for(auto &[key,changes]:edits){
+      std::sort(changes.begin(),changes.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
+      auto source=p.units.at(key).source;for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
+    }
+    auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
+    print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
+  }
+  bool saved=o.command=="graph"||o.command=="context";auto p=load(o,root,store,saved);
+  if(o.command=="lock"){
+    auto output=o.get("--output",(root/"nex.lock.json").string());auto lock=dependencyLock(p);
+    if(fs::is_regular_file(output)){
+      auto old=parseJSON(readFile(output));auto previous=old.getAsObject();
+      if(previous&&previous->getString("schema")=="nex.lock/1"&&previous->getString("language")==languageVersion){
+        auto entries=previous->getObject("dependencies");auto current=lock.getAsObject()->getObject("dependencies");
+        if(entries)for(const auto &[key,value]:*entries)if(!current->get(key))(*current)[key]=value;
+      }
+    }
+    writeFile(output,json(lock)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"lock",std::move(lock)}});return 0;
+  }
+  if(o.command=="graph"){auto text=json(store.graph(p))+"\n";auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
+  if(o.command=="context") {
+    auto name=o.get("--symbol");if(name.empty())throw Error("E_OPTION","context requires --symbol NAME");
+    for(const auto &endpoint:p.endpoints)if(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name)){
+      const auto &handler=p.function(endpoint.target);auto descriptor=describeAPI(p);llvm::json::Value contract=nullptr;
+      for(const auto &item:*descriptor.getAsObject()->getArray("endpoints"))if(item.getAsObject()->getString("name")==endpoint.name)contract=item;
+      llvm::json::Array structures;std::set<std::string> seen;
+      std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(const auto &field:s.fields)include(field.type);}};
+      for(const auto &param:handler.params)include(param.type);include(handler.result);
+      llvm::json::Array imports;for(const auto &dependency:p.units.at(endpoint.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"file",dependency.target},{"module",p.units.at(dependency.target).module}});
+      print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",languageVersion},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
+    }
+    const auto &f=p.function(name);llvm::json::Array callees,callers;
+    for(const auto &d:f.dependencies){const auto &fn=p.function(d);callees.push_back(llvm::json::Object{{"name",fn.name},{"source",p.definition(fn)},{"module",fn.owner},{"file",fn.unit}});}
+    for(const auto &fn:p.functions)if(fn.dependencies.contains(f.name))callers.push_back(fn.name);
+    for(const auto &endpoint:p.endpoints)if(endpoint.target==f.name)callers.push_back(endpoint.name);
+    std::set<std::string> needed;
+    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)visitType(*t.element);if(t.kind==Type::Record&&needed.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)visitType(field.type);};
+    std::function<void(E)> visitExpr=[&](E e){if(e){visitType(e->type);for(auto a:e->args)visitExpr(a);}};
+    std::function<void(const std::vector<S>&)> visitBlock=[&](const auto &body){for(auto s:body){visitType(s->type);visitExpr(s->expr);visitBlock(s->body);visitBlock(s->alternative);}};
+    auto visitFunction=[&](const Function &fn){visitType(fn.result);for(const auto &param:fn.params)visitType(param.type);visitBlock(fn.body);};
+    visitFunction(f);for(const auto &dependency:f.dependencies)visitFunction(p.function(dependency));
+    llvm::json::Array structures;for(const auto &s:p.structures)if(needed.contains(s.name))structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"module",s.owner},{"file",s.unit},{"definition",canonical(s)}});
+    llvm::json::Array imports;for(const auto &dependency:p.units.at(f.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"module",p.units.at(dependency.target).module},{"file",dependency.target}});
+    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
+  }
+  if(o.command=="check"){if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"revision",revision(p)},{"functions",int64_t(p.functions.size())}});else std::cout<<"Checked "<<p.functions.size()<<" functions; revision "<<revision(p)<<'\n';return 0;}
+  if(o.command=="api"){auto directory=o.get("--directory");print(directory.empty()?describeAPI(p):generateAPI(p,directory));return 0;}
+  if(o.command=="web"){
+    auto directory=o.get("--directory",o.get("--output"));if(directory.empty())throw Error("E_OPTION","web generation requires --directory PATH");
+    print(generateWebApp(p,directory));return 0;
+  }
+  if(o.command=="build"&&o.get("--target")=="web"){
+    auto output=o.get("--output");
+    if(!output.empty()&&fs::exists(output)&&(!fs::is_directory(output)||!fs::is_empty(output)))throw Error("E_EXISTS","web build output requires a new or empty directory");
+    auto result=buildWebApp(p,(root/".nex/build").string(),o.get("--profile","debug"));
+    if(!output.empty()){
+      auto dist=result.getAsObject()->getString("dist")->str();fs::create_directories(output);
+      fs::copy(dist,output,fs::copy_options::recursive|fs::copy_options::overwrite_existing);(*result.getAsObject())["dist"]=fs::absolute(output).string();
+    }
+    if(o.has("--json"))print(std::move(result));else std::cout<<"Web assets: "<<result.getAsObject()->getString("dist")->str()<<'\n';return 0;
+  }
+  if(o.command=="eval") {
+    uint64_t limit=1000000;
+    if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
+    auto result=evaluate(p,o.get("--entry","main"),limit);
+    if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"value",result.value},{"stdout",result.output},{"steps",int64_t(result.steps)}});else std::cout<<result.output;return 0;
+  }
+  if(o.command=="emit"&&o.get("--kind")=="typescript"){
+    auto module=emitTypeScript(p,{{"entry",o.get("--entry","main")}});auto directory=o.get("--directory"),output=o.get("--output");
+    if(!directory.empty()){writeWebModule(module,directory);print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",revision(p)}});}
+    else if(output.empty())std::cout<<module.source;else writeFile(output,module.source);return 0;
+  }
+  if(o.get("--target")=="server"&&o.command=="test")throw Error("E_OPTION","use native test for server functions; --target server builds the HTTP entry");
+  if(o.get("--target")=="server"&&o.command=="run"&&o.has("--json"))throw Error("E_OPTION","server is long-running; use build --json or run without --json");
+  BuildOptions buildOptions{o.get("--profile","debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library")};
+  auto directory=(root/".nex/build").string();
+  if(o.command=="test") {
+    int count=0;llvm::json::Array tests;
+    for(const auto &f:p.functions)if(f.test){
+      bool web=o.get("--target")=="web";
+      if(web&&f.realm=="server"){tests.push_back(llvm::json::Object{{"name",f.name},{"skipped",true},{"reason","server test excluded from web target"}});continue;}
+      auto expected=evaluate(p,f.name);bool native=!o.has("--interpreter-only");
+      if(native){
+        ProcessResult actual;
+        if(web){
+          auto module=emitTypeScript(p,{{"entry",f.name}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+NEX_BUILD_ID);
+          auto folder=fs::path(directory)/key/"typescript";writeWebModule(module,folder.string());
+          writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
+          writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
+          const char *node=std::getenv("NEX_NODE");actual=capture({node?node:"node","--experimental-strip-types","--no-warnings",(folder/"test.ts").string()});
+        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);actual=capture({result.executable});}
+        if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
+      ++count;tests.push_back(llvm::json::Object{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}});
+    }
+    if(!count)throw Error("E_TEST","no tests found");
+    if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"tests",std::move(tests)}});else std::cout<<count<<" tests passed ("<<(o.has("--interpreter-only")?"interpreter":o.get("--target")=="web"?"interpreter + TypeScript":"interpreter + native")<<")\n";return 0;
+  }
+  if(o.command=="emit"&&o.get("--kind","mlir")=="mlir"){
+    auto text=emitMLIR(p,buildOptions.entry,false,buildOptions.libraryEntry||buildOptions.target=="server");auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;
+  }
+  if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm or typescript");
+  auto result=build(p,directory,buildOptions);
+  if(o.command=="emit") {auto text=readFile(result.llvm);auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
+  if(o.command=="run") {
+    if(!o.has("--json")){std::vector<std::string> arguments{result.executable};arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
+    auto child=capture({result.executable});print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
+  }
+  if(o.command=="debug") {std::vector<std::string> args={"lldb",result.executable};args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);}
+  auto output=o.get("--output");if(!output.empty()){fs::copy_file(result.executable,output,fs::copy_options::overwrite_existing);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
+  auto notices=result.notices;
+  if(!output.empty()&&!notices.empty()){notices=fs::absolute(output).string()+".THIRD_PARTY_NOTICES.txt";fs::copy_file(result.notices,notices,fs::copy_options::overwrite_existing);}
+  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()}});
+  else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
+}
+}
+int main(int argc,char **argv) {
+  bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
+  try{return run(options(argc,argv));}
+  catch(const nex::Error &e){
+    if(machine)print(llvm::json::Object{{"schema","nex.diagnostic/1"},{"ok",false},{"code",e.code},{"message",e.what()},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"file",e.span.file},{"stdout",e.output}});
+    else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.what()<<'\n';}return 1;
+  }catch(const std::exception &e){if(machine)print(llvm::json::Object{{"ok",false},{"code","E_INTERNAL"},{"message",e.what()}});else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
+}

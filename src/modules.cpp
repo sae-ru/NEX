@@ -1,0 +1,212 @@
+#include "nex/language.h"
+#include "llvm/Support/Error.h"
+#include <filesystem>
+#include <functional>
+#include <algorithm>
+#include <cctype>
+
+namespace nex {
+namespace {
+namespace fs=std::filesystem;
+llvm::json::Value decoded(const std::string &text){auto v=llvm::json::parse(text);if(!v)throw Error("E_JSON",llvm::toString(v.takeError()));return std::move(*v);}
+std::string required(const llvm::json::Object &o,const std::string &name){auto value=o.getString(name);if(!value)throw Error("E_BUNDLE","missing string '"+name+"'");return value->str();}
+bool identifier(const std::string &s){
+  if(s.empty()||!(std::isalpha(static_cast<unsigned char>(s[0]))||s[0]=='_'))return false;
+  return std::all_of(s.begin(),s.end(),[](unsigned char c){return std::isalnum(c)||c=='_';});
+}
+void safeKey(const std::string &key){
+  if(key.empty()||key.front()=='/'||key.find_first_of("\\:")!=std::string::npos||key.find('\0')!=std::string::npos||!key.ends_with(".nex")||fs::path(key).lexically_normal().generic_string()!=key)
+    throw Error("E_IMPORT_PATH","source paths must be normalized relative .nex paths");
+  for(const auto &part:fs::path(key))if(part==".."||part==".")throw Error("E_IMPORT_PATH","source path escapes its module root");
+  if(key.starts_with("@")){
+    if(key.starts_with("@std/")&&key.size()>5)return;
+    if(key.starts_with("@pkg/")){auto slash=key.find('/',5);if(slash!=std::string::npos&&identifier(key.substr(5,slash-5)))return;}
+    throw Error("E_IMPORT_PATH","invalid package source key");
+  }
+}
+std::string anchor(const std::string &key){
+  if(key.starts_with("@std/"))return "@std/";
+  if(key.starts_with("@pkg/"))return key.substr(0,key.find('/',5)+1);
+  return "";
+}
+std::string importTarget(const std::string &from,const std::string &path,Span span){
+  try{
+    if(path.find_first_of("\\:")!=std::string::npos||path.find('\0')!=std::string::npos)throw Error("E_IMPORT_PATH","invalid import path");
+    std::string target;
+    if(path.starts_with("./")||path.starts_with("../")){
+      target=(fs::path(from).parent_path()/path).lexically_normal().generic_string();auto base=anchor(from);
+      if(!base.empty()&&!target.starts_with(base))throw Error("E_IMPORT_PATH","relative import escapes its package root");
+    }else if(path.starts_with("std/"))target="@std/"+path.substr(4);
+    else{
+      auto slash=path.find('/');if(slash==std::string::npos||!identifier(path.substr(0,slash)))throw Error("E_IMPORT_PATH","use ./relative.nex, std/name.nex, or a configured package/name.nex");
+      target="@pkg/"+path;
+    }
+    safeKey(target);return target;
+  }catch(Error &e){e.span=span;throw;}
+}
+bool inside(const fs::path &path,const fs::path &base){
+  auto relative=path.lexically_relative(base);if(relative.empty())return path==base;
+  for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();
+}
+struct Symbols{std::map<std::string,bool> functions,structures;};
+class Loader {
+  fs::path root;bool frozen;std::string entry;
+  std::map<std::string,std::string> texts;
+  std::map<std::string,fs::path> packages;
+  std::map<std::string,Program> parsed;
+  std::map<std::string,std::string> owners;
+  std::map<std::string,int> states;
+  std::vector<std::string> stack;
+  std::map<std::string,Symbols> symbols;
+  const std::set<std::string> &builtins=builtinNames();
+  fs::path physical(const std::string &key){
+    if(frozen)return root/(key.starts_with("@")?fs::path(".nex/snapshot")/key:fs::path(key));
+    fs::path base=root;std::string relative=key;
+    if(key.starts_with("@std/")){
+      relative=key.substr(5);
+      if(packages.contains("std"))base=packages.at("std");
+      else return resourceFile("lib/"+relative);
+    }else if(key.starts_with("@pkg/")){
+      auto slash=key.find('/',5);auto name=key.substr(5,slash-5);relative=key.substr(slash+1);
+      if(!packages.contains(name))throw Error("E_IMPORT_PACKAGE","package '"+name+"' is not configured in nex.json libraries");base=packages.at(name);
+    }
+    base=fs::weakly_canonical(base);auto path=fs::weakly_canonical(base/relative);
+    if(!inside(path,base))throw Error("E_IMPORT_PATH","import resolves outside its declared root");
+    if(!fs::is_regular_file(path))throw Error("E_IMPORT_FILE","source file not found: "+path.string());return path;
+  }
+  void visit(const std::string &key,Span importing={}){
+    if(states[key]==2)return;
+    if(states[key]==1){std::string chain;for(const auto &s:stack)chain+=s+" -> ";throw Error("E_IMPORT_CYCLE",chain+key,importing);}
+    if(stack.size()>=128)throw Error("E_IMPORT_DEPTH","module import depth limit exceeded",importing);
+    safeKey(key);if(importing.file.empty())importing.file=key;states[key]=1;stack.push_back(key);
+    fs::path path;
+    try{
+      path=physical(key);
+      if(!texts.contains(key)){if(frozen)throw Error("E_BUNDLE","snapshot is missing source "+key);texts[key]=readFile(path.string());}
+    }catch(Error &e){e.span=importing;throw;}
+    catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
+    Program unit;
+    try{unit=parse(texts.at(key),path.string());}catch(Error &e){e.span.file=key;throw;}
+    if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
+    owners[unit.module]=key;
+    std::function<void(E)> expr=[&](E e){if(e){e->span.file=key;for(auto a:e->args)expr(a);}};
+    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){s->span.file=key;expr(s->expr);block(s->body);block(s->alternative);}};
+    for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
+    for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;}
+    for(auto &endpoint:unit.endpoints){endpoint.span.file=key;endpoint.owner=unit.module;endpoint.localName=endpoint.name;endpoint.unit=key;}
+    std::set<std::string> aliases;
+    for(auto &dependency:unit.imports){dependency.span.file=key;if(!aliases.insert(dependency.alias).second)throw Error("E_IMPORT_ALIAS","duplicate import alias '"+dependency.alias+"'",dependency.span);dependency.target=importTarget(key,dependency.path,dependency.span);}
+    parsed.emplace(key,std::move(unit));
+    for(const auto &dependency:parsed.at(key).imports)visit(dependency.target,dependency.span);
+    stack.pop_back();states[key]=2;
+  }
+  std::string resolve(const std::string &key,const std::string &name,bool type,Span span){
+    if(!type&&builtins.contains(name))return name;
+    auto target=key,local=name;auto separator=name.find("::");
+    bool external=separator!=std::string::npos;
+    if(external){
+      auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
+      if(local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","use an import alias followed by one exported name",span);
+      for(const auto &dependency:parsed.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}
+      if(!found)throw Error("E_IMPORT_ALIAS","unknown import alias '"+alias+"'",span);
+    }
+    const auto &table=symbols.at(target);bool exported=false,found=false;
+    if(table.structures.contains(local)){found=true;exported=table.structures.at(local);}
+    if(!type&&table.functions.contains(local)){found=true;exported=table.functions.at(local);}
+    if(!found)throw Error(type?"E_TYPE":"E_NAME","unknown "+std::string(type?"type '":"function '")+name+"'",span);
+    if(external&&!exported)throw Error("E_VISIBILITY","'"+name+"' is private to module "+parsed.at(target).module,span);
+    return parsed.at(target).module+"::"+local;
+  }
+  void bind(){
+    for(const auto &[key,unit]:parsed){
+      auto &table=symbols[key];std::set<std::string> names;
+      for(const auto &f:unit.functions){if(!names.insert(f.localName).second||builtins.contains(f.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+f.localName+"'",f.span);table.functions[f.localName]=f.exported;}
+      for(const auto &s:unit.structures){if(!names.insert(s.localName).second||builtins.contains(s.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+s.localName+"'",s.span);table.structures[s.localName]=s.exported;}
+    }
+    for(auto &[key,unit]:parsed){
+      std::function<void(Type&,Span)> type=[&](Type &t,Span span){
+        if(t.kind==Type::Record)t.name=resolve(key,t.name,true,span);
+        if(t.kind==Type::List||t.kind==Type::Result){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}
+      };
+      std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto a:e->args)expr(a);}};
+      std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);block(s->body);block(s->alternative);}};
+      for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
+      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;for(auto &field:s.fields)type(field.type,field.span);}
+      for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
+    }
+  }
+public:
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={})
+      :root(fs::weakly_canonical(root)),frozen(frozen),entry(std::move(entry)),texts(std::move(sources)){
+    if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
+      auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
+      if(auto item=obj->get("libraries")){
+        auto libraries=item->getAsObject();if(!libraries)throw Error("E_MANIFEST","libraries must map package names to local directories");
+        for(const auto &[name,path]:*libraries){auto text=path.getAsString();if(!identifier(name.str())||!text||text->empty()||text->find('\0')!=llvm::StringRef::npos)throw Error("E_MANIFEST","invalid library name or directory");packages[name.str()]=fs::weakly_canonical(this->root/text->str());}
+      }
+    }
+  }
+  Program run(){
+    safeKey(entry);if(entry.starts_with("@"))throw Error("E_BUNDLE","entry must be a project source path");visit(entry);
+    if(frozen&&parsed.size()!=texts.size())throw Error("E_BUNDLE","snapshot contains unreachable source files");bind();
+    Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
+    std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
+    for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));}
+    p.imports=p.units.at(entry).imports;check(p);return p;
+  }
+};
+std::string materialized(const std::string &key,const std::string &prefix){
+  if(key.starts_with("@std/"))return prefix+"/std/"+key.substr(5);
+  if(key.starts_with("@pkg/"))return prefix+"/packages/"+key.substr(5);
+  return key;
+}
+}
+Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock){
+  auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
+  if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false).run();
+  auto lock=base/"nex.lock.json";
+  if(enforceLock&&std::filesystem::is_regular_file(lock)){
+    auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();
+    if(!object||object->getString("schema")!="nex.lock/1"||object->getString("language")!=languageVersion||!object->getObject("dependencies"))throw Error("E_LOCK","dependency lock format/version differs; review dependencies and run nex lock");
+    auto current=dependencyLock(p);auto expected=object->getObject("dependencies");
+    for(const auto &[key,value]:*current.getAsObject()->getObject("dependencies"))if(!expected->get(key)||*expected->get(key)!=value)throw Error("E_LOCK","loaded package sources differ from nex.lock.json; review dependencies and run nex lock");
+  }
+  return p;
+}
+Program loadBundle(const llvm::json::Value &bundle,const std::string &root){
+  auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
+  auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
+  std::map<std::string,std::string> sources;
+  for(const auto &[key,value]:*files){safeKey(key.str());auto text=value.getAsString();if(!text)throw Error("E_BUNDLE","source file must contain text");sources[key.str()]=text->str();}
+  return Loader(root,required(*obj,"entry"),true,std::move(sources)).run();
+}
+llvm::json::Value sourceBundle(const Program &p){
+  llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;
+  return llvm::json::Object{{"schema","nex.sources/1"},{"entry",p.entryUnit},{"files",std::move(files)}};
+}
+llvm::json::Value dependencyLock(const Program &p){
+  llvm::json::Object dependencies;
+  for(const auto &[key,unit]:p.units)if(key.starts_with("@"))dependencies[key]=llvm::json::Object{{"module",unit.module},{"source_hash",hash(unit.source)}};
+  return llvm::json::Object{{"schema","nex.lock/1"},{"language",languageVersion},{"dependencies",std::move(dependencies)}};
+}
+void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language){
+  auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
+  auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires files");
+  auto entry=required(*obj,"entry");safeKey(entry);if(entry.starts_with("@")||!files->get(entry))throw Error("E_BUNDLE","invalid entry source");
+  fs::path output=fs::absolute(directory);if(fs::exists(output)&&(!fs::is_directory(output)||!fs::is_empty(output)))throw Error("E_EXISTS","project export requires a new or empty directory");
+  llvm::json::Object libraries;
+  std::string prefix="_nex_deps";
+  for(unsigned suffix=1;;++suffix){bool collision=false;for(const auto &[key,value]:*files)if(!key.str().starts_with("@")&&key.str().starts_with(prefix+"/"))collision=true;if(!collision)break;prefix="_nex_deps_"+std::to_string(suffix);}
+  std::set<std::string> destinations;
+  for(const auto &[key,value]:*files){safeKey(key.str());if(!value.getAsString())throw Error("E_BUNDLE","source must be text");
+    if(!destinations.insert(materialized(key.str(),prefix)).second)throw Error("E_BUNDLE","source paths collide when materialized");
+    if(key.str().starts_with("@std/"))libraries["std"]=prefix+"/std";
+    if(key.str().starts_with("@pkg/")){auto slash=key.str().find('/',5);auto name=key.str().substr(5,slash-5);libraries[name]=prefix+"/packages/"+name;}
+  }
+  // All paths and source values have been checked before writing any file.
+  fs::create_directories(output);
+  for(const auto &[key,value]:*files)writeFile((output/materialized(key.str(),prefix)).string(),value.getAsString()->str());
+  writeFile((output/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",language},{"entry",entry},{"libraries",std::move(libraries)}})+"\n");
+}
+}

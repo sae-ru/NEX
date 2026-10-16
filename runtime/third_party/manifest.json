@@ -1,0 +1,21 @@
+{
+  "schema": "nex.third-party/1",
+  "components": [
+    {
+      "name": "nlohmann/json",
+      "version": "3.12.0",
+      "source": "https://raw.githubusercontent.com/nlohmann/json/v3.12.0/single_include/nlohmann/json.hpp",
+      "file": "json.hpp",
+      "sha256": "aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63",
+      "license": "JSON-LICENSE.MIT"
+    },
+    {
+      "name": "cpp-httplib",
+      "version": "0.61.0",
+      "source": "https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.61.0/httplib.h",
+      "file": "httplib.h",
+      "sha256": "bc77114769db3b3c97e4a6d753dab797c3cadaaa48beead3806298b09702df18",
+      "license": "HTTPLIB-LICENSE"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+module api_example::service;
+import "std/api.nex" as api;
+import "./model.nex" as model;
+
+endpoint list_tasks("GET", "/api/tasks") = list_saved;
+endpoint create_task("POST", "/api/tasks", 201) = create_saved;
+endpoint update_task("PUT", "/api/tasks") = update_saved;
+endpoint delete_task("DELETE", "/api/tasks") = delete_saved;
+
+struct State { next_id: i64; tasks: list<model::Task>; }
+
+server fn load() -> result<State> !{db} {
+  let saved: result<str> = store_get("tasks");
+  if is_ok(saved) { return decode_json<State>(unwrap(saved)); }
+  if error_code(saved) == "NOT_FOUND" { return ok(State(1, [])); }
+  return err(error_code(saved), error_message(saved));
+}
+server fn save(state: State) -> result<bool> !{db} { return store_put("tasks", encode_json(state)); }
+
+server fn list_saved(context: api::Context) -> result<list<model::Task>> !{db} {
+  let loaded: result<State> = load();
+  if !is_ok(loaded) { return err(error_code(loaded), error_message(loaded)); }
+  return ok(unwrap(loaded).tasks);
+}
+server fn create_saved(context: api::Context, input: model::Create) -> result<model::Task> !{db} {
+  if len(input.text) == 0 || len(input.text) > 2000 { return err("VALIDATION", "Task text must contain 1..2000 characters"); }
+  let loaded: result<State> = load();
+  if !is_ok(loaded) { return err(error_code(loaded), error_message(loaded)); }
+  let state: State = unwrap(loaded);
+  if len(state.tasks) >= 5000 { return err("TASK_LIMIT", "Too many tasks"); }
+  let task: model::Task = model::Task(state.next_id, input.text, false);
+  let saved: result<bool> = save(State(state.next_id + 1, push(state.tasks, task)));
+  if !is_ok(saved) { return err(error_code(saved), error_message(saved)); }
+  return ok(task);
+}
+server fn update_saved(context: api::Context, input: model::Update) -> result<list<model::Task>> !{db} {
+  if len(input.text) == 0 || len(input.text) > 2000 { return err("VALIDATION", "Task text must contain 1..2000 characters"); }
+  let loaded: result<State> = load();
+  if !is_ok(loaded) { return err(error_code(loaded), error_message(loaded)); }
+  let state: State = unwrap(loaded);
+  var items: list<model::Task> = []; var found: bool = false; var i: i64 = 0;
+  while i < len(state.tasks) {
+    let task: model::Task = state.tasks[i];
+    if task.id == input.id { items = push(items, model::Task(task.id, input.text, input.complete)); found = true; }
+    else { items = push(items, task); }
+    i = i + 1;
+  }
+  if !found { return err("NOT_FOUND", "Task not found"); }
+  let saved: result<bool> = save(State(state.next_id, items));
+  if !is_ok(saved) { return err(error_code(saved), error_message(saved)); }
+  return ok(items);
+}
+server fn delete_saved(context: api::Context, input: model::Id) -> result<list<model::Task>> !{db} {
+  let loaded: result<State> = load();
+  if !is_ok(loaded) { return err(error_code(loaded), error_message(loaded)); }
+  let state: State = unwrap(loaded);
+  var items: list<model::Task> = []; var found: bool = false; var i: i64 = 0;
+  while i < len(state.tasks) {
+    let task: model::Task = state.tasks[i];
+    if task.id == input.id { found = true; } else { items = push(items, task); }
+    i = i + 1;
+  }
+  if !found { return err("NOT_FOUND", "Task not found"); }
+  let saved: result<bool> = save(State(state.next_id, items));
+  if !is_ok(saved) { return err(error_code(saved), error_message(saved)); }
+  return ok(items);
+}
+
+server fn private_server_value() -> str { return "SERVER_ONLY_TYPED_API_SENTINEL"; }

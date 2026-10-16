@@ -1,0 +1,118 @@
+#include "nex/project.h"
+#include <sqlite3.h>
+#include <random>
+#include "llvm/Support/Error.h"
+
+namespace nex {
+namespace {
+struct Statement {
+  sqlite3 *db;sqlite3_stmt *stmt=nullptr;
+  Statement(sqlite3 *db,const char *sql):db(db){if(sqlite3_prepare_v2(db,sql,-1,&stmt,nullptr)!=SQLITE_OK)throw Error("E_STORE",sqlite3_errmsg(db));}
+  ~Statement(){sqlite3_finalize(stmt);}
+  void bind(int index,const std::string &s){if(sqlite3_bind_text(stmt,index,s.data(),int(s.size()),SQLITE_TRANSIENT)!=SQLITE_OK)throw Error("E_STORE",sqlite3_errmsg(db));}
+  bool row(){int rc=sqlite3_step(stmt);if(rc==SQLITE_ROW)return true;if(rc==SQLITE_DONE)return false;throw Error("E_STORE",sqlite3_errmsg(db));}
+  std::string text(int column){auto p=sqlite3_column_text(stmt,column);return p?std::string(reinterpret_cast<const char*>(p),sqlite3_column_bytes(stmt,column)):"";}
+};
+void sql(sqlite3 *db,const char *text){char *message=nullptr;if(sqlite3_exec(db,text,nullptr,nullptr,&message)!=SQLITE_OK){std::string m=message?message:"database error";sqlite3_free(message);throw Error("E_STORE",m);}}
+std::string head(sqlite3 *db){Statement q(db,"SELECT revision FROM head WHERE id=1");return q.row()?q.text(0):"";}
+std::string nodeId(sqlite3 *db,const std::string &module,const std::string &name){Statement q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,module);q.bind(2,name);return q.row()?q.text(0):"";}
+}
+struct Store::Impl{sqlite3 *db=nullptr;~Impl(){if(db)sqlite3_close(db);}};
+Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>()) {
+  std::filesystem::create_directories(directory);
+  if(sqlite3_open((directory/"graph.db").string().c_str(),&impl->db)!=SQLITE_OK)throw Error("E_STORE","cannot open graph database");
+  sqlite3_busy_timeout(impl->db,5000);
+  sql(impl->db,"PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;"
+    "CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);"
+    "INSERT OR IGNORE INTO metadata VALUES('schema','1');"
+    "CREATE TABLE IF NOT EXISTS revisions(hash TEXT PRIMARY KEY,module TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,created TEXT DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));"
+    "CREATE TABLE IF NOT EXISTS head(id INTEGER PRIMARY KEY CHECK(id=1),revision TEXT NOT NULL REFERENCES revisions(hash));"
+    "CREATE TABLE IF NOT EXISTS node_ids(module TEXT NOT NULL,name TEXT NOT NULL,id TEXT NOT NULL UNIQUE,PRIMARY KEY(module,name));"
+    "CREATE TABLE IF NOT EXISTS nodes(revision TEXT NOT NULL REFERENCES revisions(hash),id TEXT NOT NULL REFERENCES node_ids(id),hash TEXT NOT NULL,canonical TEXT NOT NULL,PRIMARY KEY(revision,id));"
+    "CREATE TABLE IF NOT EXISTS edges(revision TEXT NOT NULL REFERENCES revisions(hash),caller TEXT NOT NULL REFERENCES node_ids(id),callee TEXT NOT NULL REFERENCES node_ids(id),PRIMARY KEY(revision,caller,callee));");
+  std::string version;{Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");if(q.row())version=q.text(0);}
+  if(version=="1"){
+    sql(impl->db,"BEGIN IMMEDIATE");
+    try{
+      {Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");q.row();version=q.text(0);}
+      if(version=="1")sql(impl->db,"ALTER TABLE revisions ADD COLUMN language TEXT NOT NULL DEFAULT '0.1'; UPDATE metadata SET value='2' WHERE key='schema'");
+      else if(version!="2")throw Error("E_SCHEMA","unsupported graph database schema");
+      sql(impl->db,"COMMIT");
+    }
+    catch(...){sql(impl->db,"ROLLBACK");throw;}
+  }else if(version!="2")throw Error("E_SCHEMA","unsupported graph database schema");
+}
+Store::~Store()=default;
+std::string Store::save(const Program &p,const std::string &expected) {
+  if(p.units.empty())throw Error("E_STORE","cannot save a program without its source snapshot");
+  auto db=impl->db;auto rev=revision(p);sql(db,"BEGIN IMMEDIATE");
+  try{
+    if(!expected.empty()&&head(db)!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+    {Statement q(db,"INSERT INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?) ON CONFLICT(hash) DO UPDATE SET language=excluded.language");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,languageVersion);q.row();}
+    for(const auto &f:p.functions){
+      auto id=nodeId(db,f.owner,f.localName);
+      if(id.empty()){
+        std::random_device random;id=hash(p.module+f.name+std::to_string(random())+std::to_string(random())).substr(0,32);
+        Statement q(db,"INSERT INTO node_ids(module,name,id) VALUES(?,?,?)");q.bind(1,f.owner);q.bind(2,f.localName);q.bind(3,id);q.row();
+      }
+      auto data=json(canonical(f),false);
+      Statement q(db,"INSERT OR IGNORE INTO nodes(revision,id,hash,canonical) VALUES(?,?,?,?)");q.bind(1,rev);q.bind(2,id);q.bind(3,hash(data));q.bind(4,data);q.row();
+    }
+    for(const auto &f:p.functions)for(const auto &dependency:f.dependencies){
+      const auto &callee=p.function(dependency);
+      Statement q(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");q.bind(1,rev);q.bind(2,nodeId(db,f.owner,f.localName));q.bind(3,nodeId(db,callee.owner,callee.localName));q.row();
+    }
+    for(const auto &endpoint:p.endpoints){
+      auto local="@endpoint/"+endpoint.localName;auto id=nodeId(db,endpoint.owner,local);
+      if(id.empty()){std::random_device random;id=hash(endpoint.name+std::to_string(random())+std::to_string(random())).substr(0,32);Statement q(db,"INSERT INTO node_ids(module,name,id) VALUES(?,?,?)");q.bind(1,endpoint.owner);q.bind(2,local);q.bind(3,id);q.row();}
+      auto data=json(canonical(endpoint),false);Statement node(db,"INSERT OR IGNORE INTO nodes(revision,id,hash,canonical) VALUES(?,?,?,?)");node.bind(1,rev);node.bind(2,id);node.bind(3,hash(data));node.bind(4,data);node.row();
+      const auto &handler=p.function(endpoint.target);Statement edge(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");edge.bind(1,rev);edge.bind(2,id);edge.bind(3,nodeId(db,handler.owner,handler.localName));edge.row();
+    }
+    {Statement q(db,"INSERT INTO head(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision");q.bind(1,rev);q.row();}
+    sql(db,"COMMIT");return rev;
+  }catch(...){sql(db,"ROLLBACK");throw;}
+}
+llvm::json::Value Store::graph(const Program &p) {
+  llvm::json::Array nodes;
+  for(const auto &f:p.functions){
+    llvm::json::Array deps;for(const auto &d:f.dependencies){const auto &callee=p.function(d);deps.push_back(llvm::json::Object{{"name",d},{"id",nodeId(impl->db,callee.owner,callee.localName)}});}
+    auto data=canonical(f);
+    nodes.push_back(llvm::json::Object{{"id",nodeId(impl->db,f.owner,f.localName)},{"name",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"hash",hash(json(data,false))},{"definition",std::move(data)},
+      {"source",p.definition(f)},{"line",int64_t(f.span.line)},{"dependencies",std::move(deps)}});
+  }
+  llvm::json::Array structures;for(const auto &s:p.structures)structures.push_back(canonical(s));
+  llvm::json::Array endpoints;for(const auto &endpoint:p.endpoints){auto data=canonical(endpoint);const auto &handler=p.function(endpoint.target);endpoints.push_back(llvm::json::Object{{"id",nodeId(impl->db,endpoint.owner,"@endpoint/"+endpoint.localName)},{"name",endpoint.name},{"file",endpoint.unit},{"module",endpoint.owner},{"line",int64_t(endpoint.span.line)},{"source",p.definition(endpoint)},{"definition",data},{"hash",hash(json(data,false))},{"handler_id",nodeId(impl->db,handler.owner,handler.localName)}});}
+  llvm::json::Array modules;
+  for(const auto &[key,unit]:p.units){llvm::json::Array imports;for(const auto &dep:unit.imports)imports.push_back(llvm::json::Object{{"alias",dep.alias},{"path",dep.path},{"target",dep.target},{"module",p.units.at(dep.target).module}});modules.push_back(llvm::json::Object{{"file",key},{"name",unit.module},{"imports",std::move(imports)}});}
+  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
+}
+llvm::json::Value Store::history() {
+  llvm::json::Array rows;Statement q(impl->db,"SELECT hash,module,created,language FROM revisions ORDER BY created DESC,hash");
+  while(q.row())rows.push_back(llvm::json::Object{{"revision",q.text(0)},{"module",q.text(1)},{"created",q.text(2)},{"language",q.text(3)}});
+  return llvm::json::Object{{"schema","nex.history/1"},{"head",head(impl->db)},{"revisions",std::move(rows)}};
+}
+std::string Store::source(const std::string &rev) {
+  auto value=bundle(rev);auto obj=value.getAsObject();auto entry=obj?obj->getString("entry"):std::nullopt;auto files=obj?obj->getObject("files"):nullptr;
+  if(!entry||!files||!files->getString(*entry))throw Error("E_STORE","invalid stored source snapshot");return files->getString(*entry)->str();
+}
+llvm::json::Value Store::bundle(const std::string &rev){
+  std::string text,language;
+  {Statement q(impl->db,"SELECT source,language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);if(!q.row())throw Error("E_REVISION","revision not found; run nex check first");text=q.text(0);language=q.text(1);}
+  if(language=="0.1"||language=="0.2")return llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",text}}}};
+  auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_STORE",llvm::toString(parsed.takeError()));return std::move(*parsed);
+}
+std::string Store::headRevision(){return head(impl->db);}
+std::string Store::revisionLanguage(const std::string &rev){
+  Statement q(impl->db,"SELECT language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);
+  if(!q.row())throw Error("E_REVISION","revision not found");return q.text(0);
+}
+std::filesystem::path projectRoot(std::filesystem::path start) {
+  start=std::filesystem::absolute(start);
+  auto original=start;
+  while(!start.empty()){
+    if(std::filesystem::exists(start/"nex.json"))return start;
+    auto parent=start.parent_path();if(parent==start)break;start=parent;
+  }
+  return original;
+}
+}

@@ -1,0 +1,30 @@
+module arithmetic;
+
+fn sum(n: i64) -> i64 {
+  var total: i64 = 0;
+  var i: i64 = 1;
+  while i <= n {
+    total = total + i;
+    i = i + 1;
+  }
+  return total;
+}
+
+fn factorial(n: i64) -> i64 {
+  if n <= 1 { return 1; }
+  return n * factorial(n - 1);
+}
+
+fn main() -> i64 !{io} {
+  print(sum(10));
+  print(factorial(10));
+  return 0;
+}
+
+test fn arithmetic_test() -> unit {
+  assert(sum(10) == 55);
+  assert(sum(0) == 0);
+  assert(factorial(10) == 3628800);
+  assert((false && (1 / 0 == 0)) == false);
+  assert(true || (1 / 0 == 0));
+}

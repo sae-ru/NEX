@@ -1,0 +1,422 @@
+#include "nex/backend.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/Config/llvm-config.h"
+#include "llvm/Support/Program.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/raw_ostream.h"
+#include "mlir/Conversion/Passes.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/AsmState.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Verifier.h"
+#include "mlir/Parser/Parser.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Export.h"
+#include <cstdlib>
+#include <filesystem>
+#include <sstream>
+#include <functional>
+#include <random>
+
+namespace nex {
+namespace {
+std::set<std::string> reachable(const Program &p,const std::string &entry){
+  std::set<std::string> names;std::function<void(const Function&)> visit=[&](const Function &f){if(names.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
+  visit(p.function(entry));return names;
+}
+std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::Bool?"i1":"()";}
+struct Value {std::string name;Type type;bool address=false;};
+class Emitter {
+  const Program &p; std::ostringstream out,globals; unsigned serial=0;
+  std::vector<std::map<std::string,Value>> scopes;
+  std::map<const Stmt*,std::string> slots;std::map<const Expr*,std::string> shortSlots;
+  std::string fresh(){return "%v"+std::to_string(serial++);}
+  std::string label(){return "b"+std::to_string(serial++);}
+  std::string loc(Span s)const{return " loc("+json(p.location(s),false)+":"+std::to_string(s.line)+":"+std::to_string(s.column)+")";}
+  void line(const std::string &s,Span span){out<<"    "<<s<<loc(span)<<"\n";}
+  void blockLabel(const std::string &s){out<<"  ^"<<s<<":\n";}
+  Value constant(int64_t value,Type type,Span span){
+    auto n=fresh();line(n+" = arith.constant "+std::to_string(value)+" : "+ty(type),span);return {n,type};
+  }
+  Value null(Type type,Span span){auto n=fresh();line(n+" = llvm.mlir.zero : !llvm.ptr",span);return {n,type};}
+  Value call(const std::string &name,const std::vector<Value> &args,Type result,Span span){
+    std::string operands,types;
+    for(const auto &a:args){if(!operands.empty()){operands+=", ";types+=", ";}operands+=a.name;types+=ty(a.type);}
+    auto n=result==Type::Unit?"":fresh();
+    line((n.empty()?"":n+" = ")+"func.call @"+name+"("+operands+") : ("+types+") -> "+ty(result),span);return {n,result};
+  }
+  Value asI64(Value v,Span span){if(v.type==Type::I64)return v;auto n=fresh();line(n+" = arith.extui "+v.name+" : i1 to i64",span);return {n,Type::I64};}
+  Value asBool(Value v,Span span){auto n=fresh();line(n+" = arith.trunci "+v.name+" : i64 to i1",span);return {n,Type::Bool};}
+  void release(Value v,Span span){if(v.type.heap())call("nex_release",{v},Type::Unit,span);}
+  Value lookup(const std::string &name){
+    for(auto i=scopes.rbegin();i!=scopes.rend();++i)if(i->contains(name))return i->at(name);
+    throw Error("E_INTERNAL","missing checked local");
+  }
+  Value load(Value v,Span span,bool retain=true){
+    if(v.address){
+      auto n=fresh();line(n+" = memref.load "+v.name+"[] : memref<"+(v.type.heap()?"i64":ty(v.type))+">",span);
+      if(v.type.heap()){auto pointer=fresh();line(pointer+" = llvm.inttoptr "+n+" : i64 to !llvm.ptr",span);n=pointer;}v={n,v.type};
+    }
+    if(retain&&v.type.heap())return call("nex_retain",{v},v.type,span);return v;
+  }
+  void writeSlot(Value value,const std::string &slot,Span span){
+    auto name=value.name;auto storage=ty(value.type);
+    if(value.type.heap()){name=fresh();storage="i64";line(name+" = llvm.ptrtoint "+value.name+" : !llvm.ptr to i64",span);}
+    line("memref.store "+name+", "+slot+"[] : memref<"+storage+">",span);
+  }
+  void store(Value value,const std::string &slot,Span span){
+    if(value.type.heap())release(load({slot,value.type,true},span,false),span);writeSlot(value,slot,span);
+  }
+  void cleanup(const std::map<std::string,Value> &scope,Span span){
+    for(const auto &[name,value]:scope)if(value.address&&value.type.heap()){
+      release(load(value,span,false),span);writeSlot(null(value.type,span),value.name,span);
+    }
+  }
+  void cleanupAll(Span span){for(auto i=scopes.rbegin();i!=scopes.rend();++i)cleanup(*i,span);}
+  Value rawBytes(const std::string &text,Span span){
+    static const char *hex="0123456789ABCDEF";std::string escaped;
+    for(unsigned char c:text){escaped+='\\';escaped+=hex[c>>4];escaped+=hex[c&15];}
+    escaped+="\\00";auto symbol="nex_bytes_"+std::to_string(serial++),n=fresh();
+    globals<<"  llvm.mlir.global private constant @"<<symbol<<"(\""<<escaped<<"\")\n";
+    line(n+" = llvm.mlir.addressof @"+symbol+" : !llvm.ptr",span);return {n,Type::Str};
+  }
+  Value text(const std::string &text,Span span){
+    auto bytes=rawBytes(text,span);return call("nex_string_new",{bytes,constant(text.size(),Type::I64,span),constant(span.line,Type::I64,span)},Type::Str,span);
+  }
+  void allocateExpr(E e){
+    if(!e)return;
+    if(e->kind==Expr::Binary&&(e->text=="&&"||e->text=="||")){
+      auto n=fresh();shortSlots[e.get()]=n;line(n+" = memref.alloca() : memref<i1>",e->span);
+    }
+    for(auto a:e->args)allocateExpr(a);
+  }
+  void allocate(const std::vector<S> &body){
+    for(auto s:body){
+      if(s->kind==Stmt::Let||s->kind==Stmt::Var){
+        auto n=fresh();slots[s.get()]=n;line(n+" = memref.alloca() : memref<"+(s->type.heap()?"i64":ty(s->type))+">",s->span);
+        if(s->type.heap())writeSlot(null(s->type,s->span),n,s->span);
+      }
+      allocateExpr(s->expr);allocate(s->body);allocate(s->alternative);
+    }
+  }
+  Value get(Value base,Value index,Type result,Span span){
+    auto value=call(result.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{base,index,constant(span.line,Type::I64,span)},result.heap()?result:Type(Type::I64),span);
+    release(base,span);return result==Type::Bool?asBool(value,span):value;
+  }
+  Value expression(E e){
+    if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return constant(e->number,e->type,e->span);
+    if(e->kind==Expr::String)return text(e->text,e->span);
+    if(e->kind==Expr::Name)return load(lookup(e->text),e->span);
+    if(e->kind==Expr::List){
+      auto list=call("nex_list_new",{},e->type,e->span);
+      for(auto item:e->args){
+        auto value=expression(item);
+        if(value.type.heap())call("nex_list_append_heap",{list,value},Type::Unit,item->span);
+        else call("nex_list_append_i64",{list,asI64(value,item->span),constant(value.type==Type::Bool,Type::I64,item->span)},Type::Unit,item->span);
+        release(value,item->span);
+      }
+      return list;
+    }
+    if(e->kind==Expr::Field){auto base=expression(e->args[0]);return get(base,constant(e->number,Type::I64,e->span),e->type,e->span);}
+    if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return get(base,index,e->type,e->span);}
+    if(e->kind==Expr::Call){
+      std::vector<Value> args;for(auto a:e->args)args.push_back(expression(a));Value result;
+      auto c=[&](int64_t v){return constant(v,Type::I64,e->span);};
+      if(p.hasStructure(e->text)){
+        const auto &s=p.structure(e->text);result=call("nex_record_new",{c(s.fields.size())},e->type,e->span);
+        auto name=rawBytes(s.name,e->span);call("nex_record_name",{result,name,c(s.name.size())},Type::Unit,e->span);
+        for(size_t i=0;i<args.size();++i){
+          auto name=rawBytes(s.fields[i].name,e->span);call("nex_record_field_name",{result,c(i),name,c(s.fields[i].name.size())},Type::Unit,e->span);
+          if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);
+          else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(args[i].type==Type::Bool)},Type::Unit,e->span);
+        }
+      }else if(e->text=="print"){
+        result=args[0].type.heap()?call("nex_print_heap",{args[0]},Type::Unit,e->span):call(args[0].type==Type::Bool?"nex_print_bool":"nex_print_i64",{asI64(args[0],e->span)},Type::Unit,e->span);
+      }else if(e->text=="assert")result=call("nex_assert",{asI64(args[0],e->span),c(e->span.line)},Type::Unit,e->span);
+      else if(e->text=="len")result=call("nex_length",args,Type::I64,e->span);
+      else if(e->text=="str")result=args[0].type.heap()?call("nex_format_heap",args,Type::Str,e->span):call("nex_format_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool)},Type::Str,e->span);
+      else if(e->text=="ok")result=args[0].type.heap()?call("nex_ok_heap",args,e->type,e->span):call("nex_ok_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool)},e->type,e->span);
+      else if(e->text=="err")result=call("nex_err",args,e->type,e->span);
+      else if(e->text=="is_ok")result=asBool(call("nex_is_ok",args,Type::I64,e->span),e->span);
+      else if(e->text=="unwrap"){
+        result=call(e->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{args[0],c(e->span.line)},e->type.heap()?e->type:Type(Type::I64),e->span);
+        if(e->type==Type::Bool)result=asBool(result,e->span);
+      }
+      else if(e->text=="error_code"||e->text=="error_message")result=call("nex_error_text",{args[0],c(e->text=="error_message")},Type::Str,e->span);
+      else if(e->text=="encode_json")result=args[0].type.heap()?call("nex_encode_json_heap",{args[0],c(e->span.line)},Type::Str,e->span):call("nex_encode_json_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool),c(e->span.line)},Type::Str,e->span);
+      else if(e->text=="decode_json"){
+        auto schema=json(wireSchema(p,e->annotation),false);auto bytes=rawBytes(schema,e->span);result=call("nex_decode_json",{args[0],bytes,c(schema.size()),c(e->span.line)},e->type,e->span);
+      }
+      else if(e->text=="read_env")result=call("nex_read_env",args,e->type,e->span);
+      else if(e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
+        auto operands=args;operands.push_back(c(e->span.line));result=call("nex_"+e->text,operands,e->type,e->span);
+      }
+      else if(e->text=="slice")result=call("nex_string_slice",{args[0],args[1],args[2],c(e->span.line)},Type::Str,e->span);
+      else if(e->text=="contains")result=asBool(call("nex_string_contains",args,Type::I64,e->span),e->span);
+      else if(e->text=="push"||e->text=="set"){
+        bool set=e->text=="set";auto value=args.back(),index=set?args[1]:c(0);
+        if(value.type.heap())result=call("nex_list_update_heap",{args[0],index,value,c(set),c(e->span.line)},e->type,e->span);
+        else result=call("nex_list_update_i64",{args[0],index,asI64(value,e->span),c(value.type==Type::Bool),c(set),c(e->span.line)},e->type,e->span);
+      }else result=call(nativeSymbol(e->text),args,e->type,e->span);
+      for(auto a:args)release(a,e->span);return result;
+    }
+    Value a=expression(e->args[0]);
+    if(e->kind==Expr::Unary){
+      if(e->text=="-")return call("nex_neg",{a,constant(e->span.line,Type::I64,e->span)},Type::I64,e->span);
+      auto one=constant(1,Type::Bool,e->span);auto n=fresh();line(n+" = arith.xori "+a.name+", "+one.name+" : i1",e->span);return {n,Type::Bool};
+    }
+    const auto &op=e->text;
+    if(op=="&&"||op=="||"){
+      auto rhs=label(),shortcut=label(),end=label();auto slot=shortSlots.at(e.get());
+      line("cf.cond_br "+a.name+", ^"+(op=="&&"?rhs:shortcut)+", ^"+(op=="&&"?shortcut:rhs),e->span);
+      blockLabel(shortcut);store(constant(op=="||",Type::Bool,e->span),slot,e->span);line("cf.br ^"+end,e->span);
+      blockLabel(rhs);store(expression(e->args[1]),slot,e->span);line("cf.br ^"+end,e->span);
+      blockLabel(end);return load({slot,Type::Bool,true},e->span);
+    }
+    auto b=expression(e->args[1]);
+    if(a.type.heap()){
+      Value result;
+      if(op=="+")result=call("nex_heap_concat",{a,b,constant(e->span.line,Type::I64,e->span)},e->type,e->span);
+      else{
+        result=asBool(call("nex_heap_equal",{a,b},Type::I64,e->span),e->span);
+        if(op=="!="){auto one=constant(1,Type::Bool,e->span);auto n=fresh();line(n+" = arith.xori "+result.name+", "+one.name+" : i1",e->span);result={n,Type::Bool};}
+      }
+      release(a,e->span);release(b,e->span);return result;
+    }
+    static const std::map<std::string,std::string> arithmetic={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
+    if(arithmetic.contains(op))return call("nex_"+arithmetic.at(op),{a,b,constant(e->span.line,Type::I64,e->span)},Type::I64,e->span);
+    static const std::map<std::string,std::string> predicates={{"==","eq"},{"!=","ne"},{"<","slt"},{"<=","sle"},{">","sgt"},{">=","sge"}};
+    auto n=fresh();line(n+" = arith.cmpi "+predicates.at(op)+", "+a.name+", "+b.name+" : "+ty(a.type),e->span);return {n,Type::Bool};
+  }
+  bool statements(const std::vector<S> &body,bool scoped=true){
+    if(scoped)scopes.emplace_back();bool returned=false;
+    for(auto s:body){
+      switch(s->kind){
+      case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr);auto slot=slots.at(s.get());store(value,slot,s->span);scopes.back()[s->name]={slot,s->type,true};break;}
+      case Stmt::Assign:{auto value=expression(s->expr);store(value,lookup(s->name).name,s->span);break;}
+      case Stmt::Expression:release(expression(s->expr),s->span);break;
+      case Stmt::Return:{
+        Value value;if(s->expr)value=expression(s->expr);cleanupAll(s->span);
+        line(!s->expr||value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),s->span);returned=true;break;
+      }
+      case Stmt::If:{
+        auto condition=expression(s->expr);auto yes=label(),no=label(),end=label();
+        line("cf.cond_br "+condition.name+", ^"+yes+", ^"+no,s->span);
+        blockLabel(yes);bool a=statements(s->body);if(!a)line("cf.br ^"+end,s->span);
+        blockLabel(no);bool b=statements(s->alternative);if(!b)line("cf.br ^"+end,s->span);
+        if(!(a&&b))blockLabel(end);returned=a&&b;break;
+      }
+      case Stmt::While:{
+        auto condition=label(),bodyLabel=label(),end=label();line("cf.br ^"+condition,s->span);blockLabel(condition);call("nex_poll",{constant(s->span.line,Type::I64,s->span)},Type::Unit,s->span);
+        auto value=expression(s->expr);line("cf.cond_br "+value.name+", ^"+bodyLabel+", ^"+end,s->span);
+        blockLabel(bodyLabel);if(!statements(s->body))line("cf.br ^"+condition,s->span);blockLabel(end);break;
+      }
+      }
+      if(returned)break;
+    }
+    if(!returned)cleanup(scopes.back(),body.empty()?Span():body.back()->span);
+    if(scoped)scopes.pop_back();return returned;
+  }
+  void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
+    out<<"  func.func private @"<<name<<"("<<arguments<<")"<<(result.empty()?"":" -> "+result)<<"\n";
+  }
+public:
+  explicit Emitter(const Program &p):p(p){}
+  std::string run(const std::string &entry,bool testEntry,bool libraryEntry){
+    const auto &main=p.function(entry);
+    if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
+    if(main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
+    if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
+    out<<"module {\n";
+    for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
+    declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");
+    declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
+    declaration("nex_poll","i64");
+    declaration("nex_string_new","!llvm.ptr, i64, i64","!llvm.ptr");declaration("nex_list_new","","!llvm.ptr");declaration("nex_record_new","i64","!llvm.ptr");
+    declaration("nex_record_name","!llvm.ptr, !llvm.ptr, i64");declaration("nex_record_field_name","!llvm.ptr, i64, !llvm.ptr, i64");
+    declaration("nex_list_append_i64","!llvm.ptr, i64, i64");declaration("nex_list_append_heap","!llvm.ptr, !llvm.ptr");
+    declaration("nex_record_init_i64","!llvm.ptr, i64, i64, i64");declaration("nex_record_init_heap","!llvm.ptr, i64, !llvm.ptr");
+    declaration("nex_collection_get_i64","!llvm.ptr, i64, i64","i64");declaration("nex_collection_get_heap","!llvm.ptr, i64, i64","!llvm.ptr");
+    declaration("nex_list_update_i64","!llvm.ptr, i64, i64, i64, i64, i64","!llvm.ptr");declaration("nex_list_update_heap","!llvm.ptr, i64, !llvm.ptr, i64, i64","!llvm.ptr");
+    declaration("nex_length","!llvm.ptr","i64");declaration("nex_heap_equal","!llvm.ptr, !llvm.ptr","i64");declaration("nex_heap_concat","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_string_slice","!llvm.ptr, i64, i64, i64","!llvm.ptr");declaration("nex_string_contains","!llvm.ptr, !llvm.ptr","i64");
+    declaration("nex_format_i64","i64, i64","!llvm.ptr");declaration("nex_format_heap","!llvm.ptr","!llvm.ptr");declaration("nex_print_heap","!llvm.ptr");
+    declaration("nex_ok_i64","i64, i64","!llvm.ptr");declaration("nex_ok_heap","!llvm.ptr","!llvm.ptr");declaration("nex_err","!llvm.ptr, !llvm.ptr","!llvm.ptr");
+    declaration("nex_is_ok","!llvm.ptr","i64");declaration("nex_unwrap_i64","!llvm.ptr, i64","i64");declaration("nex_unwrap_heap","!llvm.ptr, i64","!llvm.ptr");declaration("nex_error_text","!llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_encode_json_i64","i64, i64, i64","!llvm.ptr");declaration("nex_encode_json_heap","!llvm.ptr, i64","!llvm.ptr");declaration("nex_decode_json","!llvm.ptr, !llvm.ptr, i64, i64","!llvm.ptr");
+    declaration("nex_read_env","!llvm.ptr","!llvm.ptr");declaration("nex_store_get","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_put","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");declaration("nex_store_remove","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_keys","!llvm.ptr, i64","!llvm.ptr");
+    auto names=reachable(p,entry);
+    for(const auto &f:p.functions)if(names.contains(f.name)){
+      scopes.clear();scopes.emplace_back();slots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
+      for(size_t i=0;i<f.params.size();++i){if(i)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
+      out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
+      call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);allocate(f.body);if(!statements(f.body,false))line("func.return",f.span);out<<"  }"<<loc(f.span)<<"\n";
+    }
+    out<<globals.str();if(libraryEntry){out<<"}\n";return out.str();}out<<"  func.func @main() -> i32 {\n";
+    auto value=call(nativeSymbol(main.name),{},main.result,main.span);call("nex_runtime_finish",{},Type::Unit,main.span);
+    if(main.result==Type::I64){auto n=fresh();line(n+" = arith.trunci "+value.name+" : i64 to i32",main.span);line("func.return "+n+" : i32",main.span);}
+    else{auto n=fresh();line(n+" = arith.constant 0 : i32",main.span);line("func.return "+n+" : i32",main.span);}
+    out<<"  }"<<loc(main.span)<<"\n}\n";return out.str();
+  }
+};
+std::string lower(const std::string &source,const std::string &sourcePath) {
+  mlir::DialectRegistry registry;
+  registry.insert<mlir::arith::ArithDialect,mlir::cf::ControlFlowDialect,mlir::func::FuncDialect,mlir::memref::MemRefDialect,mlir::LLVM::LLVMDialect>();
+  mlir::registerBuiltinDialectTranslation(registry);mlir::registerLLVMDialectTranslation(registry);
+  mlir::MLIRContext context(registry);
+  auto module=mlir::parseSourceString<mlir::ModuleOp>(source,&context);
+  if(!module)throw Error("E_MLIR","generated MLIR could not be parsed");
+  module->getOperation()->setLoc(mlir::FileLineColLoc::get(&context,sourcePath,1,1));
+  if(mlir::failed(mlir::verify(*module)))throw Error("E_MLIR","generated MLIR failed verification");
+  mlir::registerConversionPasses();
+  mlir::PassManager pm(&context);
+  if(mlir::failed(mlir::parsePassPipeline("convert-arith-to-llvm,convert-func-to-llvm,finalize-memref-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts",pm)))throw Error("E_MLIR","cannot construct conversion pipeline");
+  pm.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass({mlir::LLVM::DIEmissionKind::Full}));
+  if(mlir::failed(pm.run(*module)))throw Error("E_MLIR","MLIR to LLVM conversion failed");
+  llvm::LLVMContext llvmContext;auto llvmModule=mlir::translateModuleToLLVMIR(*module,llvmContext,"NEX");
+  if(!llvmModule)throw Error("E_LLVM","LLVM translation failed");
+  llvmModule->setSourceFileName(sourcePath);
+  llvmModule->setTargetTriple(llvm::Triple(llvm::sys::getDefaultTargetTriple()));
+  for(auto &function:*llvmModule)if(!function.isDeclaration())function.setUWTableKind(llvm::UWTableKind::Default);
+  std::string text;llvm::raw_string_ostream stream(text);llvmModule->print(stream,nullptr);return text;
+}
+}
+int execute(const std::vector<std::string> &args) {
+  if(args.empty())throw Error("E_PROCESS","empty command");
+  auto program=llvm::sys::findProgramByName(args[0]);if(!program)throw Error("E_TOOL","cannot find executable "+args[0]);
+  std::vector<llvm::StringRef> refs;for(const auto &a:args)refs.push_back(a);
+  std::string error;bool failed=false;
+  int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,{},0,0,&error,&failed);
+  if(failed||status<0)throw Error("E_PROCESS",error.empty()?"process failed":error);return status;
+}
+ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSeconds) {
+  if(args.empty())throw Error("E_PROCESS","empty command");
+  auto program=llvm::sys::findProgramByName(args[0]);if(!program)throw Error("E_TOOL","cannot find executable "+args[0]);
+  llvm::SmallString<128> temporary;
+  if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-process",temporary))throw Error("E_FILE",ec.message());
+  std::filesystem::path folder(temporary.str().str());
+  try {
+    auto stdoutPath=(folder/"stdout").string(),stderrPath=(folder/"stderr").string();
+    std::vector<llvm::StringRef> refs;for(const auto &a:args)refs.push_back(a);
+    std::optional<llvm::StringRef> redirects[]={llvm::StringRef(""),llvm::StringRef(stdoutPath),llvm::StringRef(stderrPath)};
+    std::string error;bool failed=false;
+    int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,redirects,timeoutSeconds,0,&error,&failed);
+    if(failed||status<0)throw Error("E_PROCESS",error.empty()?"child process failed or timed out":error);
+    ProcessResult result{status,readFile(stdoutPath),readFile(stderrPath)};std::filesystem::remove_all(folder);return result;
+  }catch(...){std::filesystem::remove_all(folder);throw;}
+}
+std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){return Emitter(p).run(entry,testEntry,libraryEntry);}
+BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
+  if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
+  auto host=llvm::sys::getDefaultTargetTriple();
+  bool server=options.target=="server";
+  if(!server&&!options.target.empty()&&options.target!=host)throw Error("E_TARGET","target is not configured; verified host target is "+host);
+  if(server){
+    const auto &handler=p.function(options.entry);
+    if(handler.realm!="server"||handler.test||handler.params.size()!=1||handler.params[0].type!=Type::record("std::http::Request")||handler.result!=Type::record("std::http::Response"))throw Error("E_HTTP_SIGNATURE","server entry must be server fn handle(std::http::Request) -> std::http::Response",handler.span);
+    auto layout=[&](const std::string &name,const std::vector<std::pair<std::string,Type>> &fields){
+      const auto &record=p.structure(name);bool valid=record.fields.size()==fields.size();if(valid)for(size_t i=0;i<fields.size();++i)if(record.fields[i].name!=fields[i].first||record.fields[i].type!=fields[i].second)valid=false;
+      if(!valid)throw Error("E_HTTP_SIGNATURE","incompatible HTTP library type "+name,record.span);
+    };
+    layout("std::http::Request",{{"method",Type::Str},{"path",Type::Str},{"query",Type::Str},{"body",Type::Str},{"user",Type::Str},{"request_id",Type::Str}});
+    layout("std::http::Response",{{"status",Type::I64},{"body",Type::Str},{"content_type",Type::Str}});
+    if(options.libraryEntry)throw Error("E_OPTION","HTTP server target produces an executable; --library is for a native function archive");
+  }
+  const char *override=std::getenv("NEX_CLANG");std::string compiler=override?override:NEX_CLANG;
+  auto identity=capture({compiler,"--version"});if(identity.code!=0)throw Error("E_TOOL","cannot identify native compiler");
+  auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
+  // Keep semantic identity separate from toolchain and source-projection identity.
+  bool wire=server,storage=server;auto names=reachable(p,options.entry);
+  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;}for(auto arg:e->args)inspect(arg);}};
+  std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);inspectBlock(s->body);inspectBlock(s->alternative);}};
+  for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
+  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_host.h","nex_io.h"};
+  if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
+  if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
+  if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
+  std::map<std::string,std::string> runtimeFiles;
+  for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
+  std::string notices;
+  auto license=[&](const std::string &name,const std::string &file){
+    auto text=readFile(resourceFile("runtime/third_party/"+file));
+    runtimeFiles["third_party/"+file]=text;
+    notices+=name+"\n\n"+text+"\n\n";
+  };
+  if(wire)license("nlohmann/json 3.12.0", "JSON-LICENSE.MIT");
+  if(server)license("cpp-httplib 0.61.0", "HTTPLIB-LICENSE");
+  if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(NEX_SQLITE_INCLUDE)/"sqlite3.h").string());
+  std::string runtimeIdentity;for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
+  if(storage)runtimeIdentity+=std::string(NEX_SQLITE_INCLUDE)+NEX_SQLITE_LIBRARY+hash(readFile(NEX_SQLITE_LIBRARY))+hash(readFile((std::filesystem::path(NEX_SQLITE_INCLUDE)/"sqlite3.h").string()));
+  if(server)runtimeIdentity+=std::string(NEX_OPENSSL_INCLUDE)+NEX_OPENSSL_SSL+NEX_OPENSSL_CRYPTO+hash(readFile(NEX_OPENSSL_SSL))+hash(readFile(NEX_OPENSSL_CRYPTO))+hash(readFile((std::filesystem::path(NEX_OPENSSL_INCLUDE)/"openssl/ssl.h").string()));
+  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+host+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+  auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
+  BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string()};
+  // Validate the entry on cache hits as well.
+  emitMLIR(p,options.entry,options.testEntry,options.libraryEntry||server);
+  if(std::filesystem::exists(folder/"complete")&&std::filesystem::exists(result.executable)&&readFile((folder/"complete").string())==hash(key+readFile(result.executable))+"\n"&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))){result.cached=true;return result;}
+  std::filesystem::create_directories(folder);
+  // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
+  auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
+  for(const auto &[file,source]:runtimeFiles){
+    auto target=runtimeProjection/file;
+    if(!std::filesystem::is_regular_file(target)||readFile(target.string())!=source){
+      auto temporary=target;temporary+=".tmp."+std::to_string(std::random_device{}());writeFile(temporary.string(),source);std::filesystem::rename(temporary,target);
+    }
+  }
+  // Debuggers refer to an immutable projection, not a subsequently edited working file.
+  auto snapshot=p;snapshot.path=(folder/"source.nex").string();
+  for(auto &[key,unit]:snapshot.units){unit.path=key==snapshot.entryUnit?snapshot.path:(folder/"sources"/key).string();writeFile(unit.path,unit.source);}
+  writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
+  auto mlir=emitMLIR(snapshot,options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);writeFile(result.llvm,lower(mlir,snapshot.path));
+  std::string optimization=options.profile=="debug"?"-O0":"-O2";
+  auto object=(folder/"program.o").string();
+  std::vector<std::string> compile={compiler,"-c",result.llvm,"-o",object,"-g",optimization};
+  if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
+  if(execute(compile)!=0)throw Error("E_LINK","native compiler failed; intermediate files retained at "+folder.string());
+  std::vector<std::string> link={compiler,object};
+  for(const auto &component:components){
+    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+host+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+    auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
+    std::filesystem::create_directories(cache);
+    if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
+      auto temporary=cache/("runtime-"+std::to_string(std::random_device{}())+".o");
+      std::vector<std::string> arguments={compiler,"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization};
+      if(component=="nex_store.cpp")arguments.insert(arguments.end(),{"-I",NEX_SQLITE_INCLUDE});
+      if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",NEX_OPENSSL_INCLUDE,"-pthread"});
+      if(options.profile=="profile")arguments.push_back("-fno-omit-frame-pointer");
+      if(execute(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
+      auto digest=hash(readFile(temporary.string()));std::filesystem::rename(temporary,cached);writeFile(marker.string(),digest+"\n");
+    }
+    auto destination=folder/std::filesystem::path(component).replace_extension(".o");
+    std::filesystem::copy_file(cached,destination,std::filesystem::copy_options::overwrite_existing);link.push_back(destination.string());
+  }
+  if(server){
+    auto bridge=(folder/"server-bridge.cpp").string(),bridgeObject=(folder/"server-bridge.o").string();auto name=nativeSymbol(p.function(options.entry).name);
+    writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){ return "+name+"(value); }\n");
+    if(execute({compiler,"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization})!=0)throw Error("E_LINK","HTTP bridge compilation failed");
+    link.push_back(bridgeObject);link.push_back(NEX_OPENSSL_SSL);link.push_back(NEX_OPENSSL_CRYPTO);link.push_back("-pthread");
+  }
+  if(options.libraryEntry){
+    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",result.executable};archive.insert(archive.end(),link.begin()+1,link.end());link=std::move(archive);
+  }else {if(storage)link.push_back(NEX_SQLITE_LIBRARY);link.insert(link.end(),{"-o",result.executable,"-g"});}
+  if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string());
+  if(!options.libraryEntry&&llvm::Triple(host).isOSDarwin()) {
+    auto dsym=(std::filesystem::path(NEX_LLVM_TOOLS)/"dsymutil").string();
+    if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
+  }
+  if(!result.notices.empty())writeFile(result.notices,notices);
+  llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);
+  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",host},{"kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"entry",options.entry},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"notices",result.notices}}));
+  writeFile((folder/"complete").string(),hash(key+readFile(result.executable))+"\n");return result;
+}
+}

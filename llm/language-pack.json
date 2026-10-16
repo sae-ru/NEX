@@ -1,0 +1,47 @@
+{
+  "schema": "nex.language-pack/1",
+  "language_version": "0.5",
+  "protocol_version": 2,
+  "discovery": "nex describe --json",
+  "documents": {
+    "specification": "docs/language.md",
+    "grammar": "docs/grammar.ebnf",
+    "prompt": "llm/SYSTEM_PROMPT.md",
+    "workflow": "llm/WORKFLOW.md",
+    "task_template": "llm/TASK_TEMPLATE.md",
+    "protocol": "docs/protocol.md",
+    "patch_schema": "llm/patch.schema.json",
+    "web": "docs/web.md",
+    "server": "docs/server.md",
+    "api": "docs/api.md"
+  },
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api --json",
+  "context_command": "nex context --symbol NAME",
+  "examples": {
+    "core": "examples/arithmetic.nex",
+    "data": "examples/data.nex",
+    "modules": "examples/modules/main.nex",
+    "results_and_json": "examples/results.nex",
+    "browser": "examples/web/main.nex",
+    "server": "examples/server/main.nex",
+    "fullstack_client": "examples/fullstack/client.nex",
+    "fullstack_server": "examples/fullstack/server.nex",
+    "api_service": "examples/api/service.nex",
+    "api_client_generate_first": "examples/api/client.nex"
+  },
+  "patch_command": "nex apply --patch FILE --json",
+  "validation_commands": [
+    "nex check FILE --json",
+    "nex test --revision HEAD --json",
+    "nex build --revision HEAD --json"
+  ],
+  "web_validation_commands": [
+    "nex test FILE --target web --json",
+    "nex build FILE --target web --profile release --json"
+  ],
+  "server_validation_commands": [
+    "nex test FILE --json",
+    "nex build FILE --target server --profile release --json"
+  ],
+  "api_commands": ["nex api FILE --json", "nex api FILE --directory NEW_DIRECTORY --json"]
+}

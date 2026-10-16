@@ -1,0 +1,22 @@
+:root { font-family: ui-sans-serif, system-ui, sans-serif; color: #172426; background: #f4f6f3; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.app { max-width: 880px; margin: 64px auto; padding: 40px; background: #fff; border: 1px solid #dde4dc; border-radius: 20px; }
+h1 { font-size: clamp(2rem, 7vw, 3rem); letter-spacing: -.045em; margin: 12px 0; }
+.eyebrow { color: #557767; font-size: .72rem; font-weight: 750; letter-spacing: .16em; }
+p { line-height: 1.6; }
+nav { display: flex; flex-wrap: wrap; gap: 24px; margin: 28px 0; }
+a { color: #205b47; text-underline-offset: 4px; }
+button, input { font: inherit; border: 1px solid #c8d6cc; border-radius: 8px; padding: 10px 14px; }
+button { cursor: pointer; color: #184b38; background: #eef5ef; }
+button:hover { background: #dfeee2; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #2a805b; outline-offset: 3px; }
+.add-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+.add-form label { grid-column: 1 / -1; font-size: .875rem; font-weight: 650; }
+.add-form input { min-width: 0; width: 100%; }
+.tasks { list-style: none; padding: 0; margin-top: 28px; }
+.task { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 18px 0; border-top: 1px solid #e5ebe4; }
+.task-text { flex: 1; min-width: 160px; overflow-wrap: anywhere; }
+.completed .task-text { color: #6a7a72; text-decoration: line-through; }
+[role="alert"] { padding: 24px; overflow-wrap: anywhere; color: #8b2530; }
+@media (max-width: 600px) { .app { margin: 16px; padding: 24px; } .task-text { flex-basis: 100%; } }

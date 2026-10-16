@@ -1,0 +1,28 @@
+module std::text;
+
+pub fn starts_with(value: str, prefix: str) -> bool {
+  if len(prefix) > len(value) { return false; }
+  return slice(value, 0, len(prefix)) == prefix;
+}
+
+pub fn ends_with(value: str, suffix: str) -> bool {
+  if len(suffix) > len(value) { return false; }
+  return slice(value, len(value) - len(suffix), len(suffix)) == suffix;
+}
+
+pub fn join(values: list<str>, separator: str) -> str {
+  var result: str = "";
+  var i: i64 = 0;
+  while i < len(values) {
+    if i > 0 { result = result + separator; }
+    result = result + values[i];
+    i = i + 1;
+  }
+  return result;
+}
+
+test fn text_test() -> unit {
+  assert(starts_with("Привет 🦊", "При"));
+  assert(ends_with("Привет 🦊", "🦊"));
+  assert(join(["a", "b"], ",") == "a,b");
+}

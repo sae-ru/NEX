@@ -1,0 +1,23 @@
+module std::http;
+
+pub struct Request {
+  method: str;
+  path: str;
+  query: str;
+  body: str;
+  user: str;
+  request_id: str;
+}
+pub struct Response { status: i64; body: str; content_type: str; }
+
+pub fn json_response(status: i64, encoded_body: str) -> Response {
+  return Response(status, encoded_body, "application/json; charset=utf-8");
+}
+pub fn text_response(status: i64, body: str) -> Response {
+  return Response(status, body, "text/plain; charset=utf-8");
+}
+
+test fn response_values_test() -> unit {
+  assert(text_response(200, "ready").status == 200);
+  assert(json_response(400, "{}").content_type == "application/json; charset=utf-8");
+}

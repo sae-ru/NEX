@@ -1,0 +1,45 @@
+module results;
+
+struct User { id: i64; name: str; tags: list<str>; }
+struct Node { value: i64; children: list<Node>; }
+
+fn parse_user(text: str) -> result<User> { return decode_json<User>(text); }
+
+fn main() -> unit !{io} {
+  let decoded: result<User> = parse_user("{\"id\":\"9223372036854775807\",\"name\":\"Саша 🦊\",\"tags\":[\"nex\",\"web\"]}");
+  if is_ok(decoded) { print(unwrap(decoded)); }
+  print(encode_json(unwrap(decoded)));
+  let invalid: result<User> = parse_user("{\"id\":7}");
+  print(error_code(invalid));
+}
+
+test fn result_values_test() -> unit {
+  let success: result<list<str>> = ok(["A", "🦊"]);
+  let failure: result<list<str>> = err("NOT_FOUND", "No saved item");
+  assert(is_ok(success)); assert(!is_ok(failure));
+  assert(unwrap(success) == ["A", "🦊"]);
+  assert(error_code(success) == ""); assert(error_message(success) == "");
+  assert(error_code(failure) == "NOT_FOUND"); assert(error_message(failure) == "No saved item");
+  assert(failure == err<list<str>>("NOT_FOUND", "No saved item"));
+  assert(failure != err<list<str>>("DENIED", "No saved item"));
+  let nested: result<result<i64>> = ok(err<i64>("INNER", "Nested error"));
+  assert(error_code(unwrap(nested)) == "INNER");
+  assert(unwrap(ok(true)));
+  assert(unwrap(ok(false)) == false);
+}
+
+test fn json_models_test() -> unit {
+  assert(unwrap(decode_json<i64>("\uFEFF\"7\"")) == 7);
+  assert(unwrap(decode_json<str>("\"\uFEFFtext\"")) == "\uFEFFtext");
+  assert(!is_ok(decode_json<i64>("\uFEFF\uFEFF\"7\"")));
+  let user: User = User(9007199254740993, "e\u0301🦊\u0000", ["native", "web"]);
+  let encoded: str = encode_json(user);
+  assert(contains(encoded, "\"id\":\"9007199254740993\""));
+  let decoded: result<User> = decode_json<User>(encoded);
+  assert(is_ok(decoded)); assert(unwrap(decoded) == user);
+  assert(unwrap(decode_json<list<i64>>("[\"0\",\"-9223372036854775808\"]")) == [0, -9223372036854775808]);
+  let tree: Node = Node(1, [Node(2, [])]);
+  assert(unwrap(decode_json<Node>(encode_json(tree))) == tree);
+  let failure: result<str> = err("MISSING", "not available");
+  assert(unwrap(decode_json<result<str>>(encode_json(failure))) == failure);
+}
