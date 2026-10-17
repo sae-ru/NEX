@@ -23,7 +23,10 @@ for this invocation's counters.
 
 The report's `granularity` is `function`. Each `units` entry has a qualified
 function `identity`, its source `unit`/`module`, and a singleton `functions`
-list. Lifted closure and specialized generic names remain derived metadata.
+list. Consumers must inspect `granularity` and use `identity` as the object
+identity; a source `unit` may contain many objects. Older module reports retain
+their original `granularity: module`. Lifted closure and specialized generic
+names remain derived metadata.
 
 ## Native targets and SDKs
 

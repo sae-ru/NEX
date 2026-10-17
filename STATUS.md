@@ -45,6 +45,33 @@ platform matrix is still being completed. Preserve the
 verified 0.24 SDKs recorded in `build/preserved-sdk-024.json`; this development
 work does not replace that checkpoint or complete the broader objective.
 
+The complete macOS regression passed all 27 suites and 251 Python cases plus
+the C++ probe in 1035.82 s (`build/ctest-025-function-cache-full.log`). Linux
+ARM64 passed all 27 suites in 422.57 s, with 251 declared Python cases including
+six explicit macOS-SDK skips. All eight live suites passed, including actual
+reused-function LLDB/DAP after source deletion. Its source-free, network-disabled
+SDK passed all nine phases in 53.389 s and required one compiled/two reused
+functions after a same-file edit (`build/linux-arm64-025`). The emulated x86-64
+run remains in progress; that host does not claim live debugging.
+
+The new SDK preserves the earlier semantic revision and reviewed task hash.
+SDK 0.24 still inspects/replays its own original frame/receipt; 0.25 rejects
+them with E_DEBUG_BUILD/E_TASK_COMPILER. The 0.25 numeric browser assets are
+byte-identical to those already exercised in Chromium, Firefox and WebKit;
+all 62 indexed installed resources match. Evidence:
+`build/version-025-old-sdk-compatibility.json` and
+`build/sdk-resource-browser-verification-025.json`.
+
+Local single-observation build comparisons do not yet show an end-to-end
+latency win. A 13-function workload with 150 checked additions per helper
+reemitted 13 functions in 0.24 and one in 0.25, but edit builds took 1.6311 s
+and 1.6668 s respectively; cold builds took 2.8119 s and 4.646 s. The small
+workload also showed slightly higher latency. These used development compilers
+on a host running concurrent validation. Complete source checks took about
+0.15 s versus about 1.06 s for warm builds in the larger case; build-pipeline
+overhead needs further investigation. Frontend reuse, LTO and portable release
+SDKs remain open. Reports: `build/function-cache-025-benchmark{,-large}/report.json`.
+
 ## Development milestone: finite binary64
 
 Toolchain **0.24.0 / language 0.11** introduced finite `f64`,
