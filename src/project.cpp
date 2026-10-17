@@ -1,6 +1,7 @@
 #include "nex/project.h"
 #include <sqlite3.h>
 #include <random>
+#include <algorithm>
 #include "llvm/Support/Error.h"
 
 namespace nex {
@@ -29,7 +30,8 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
     "CREATE TABLE IF NOT EXISTS head(id INTEGER PRIMARY KEY CHECK(id=1),revision TEXT NOT NULL REFERENCES revisions(hash));"
     "CREATE TABLE IF NOT EXISTS node_ids(module TEXT NOT NULL,name TEXT NOT NULL,id TEXT NOT NULL UNIQUE,PRIMARY KEY(module,name));"
     "CREATE TABLE IF NOT EXISTS nodes(revision TEXT NOT NULL REFERENCES revisions(hash),id TEXT NOT NULL REFERENCES node_ids(id),hash TEXT NOT NULL,canonical TEXT NOT NULL,PRIMARY KEY(revision,id));"
-    "CREATE TABLE IF NOT EXISTS edges(revision TEXT NOT NULL REFERENCES revisions(hash),caller TEXT NOT NULL REFERENCES node_ids(id),callee TEXT NOT NULL REFERENCES node_ids(id),PRIMARY KEY(revision,caller,callee));");
+    "CREATE TABLE IF NOT EXISTS edges(revision TEXT NOT NULL REFERENCES revisions(hash),caller TEXT NOT NULL REFERENCES node_ids(id),callee TEXT NOT NULL REFERENCES node_ids(id),PRIMARY KEY(revision,caller,callee));"
+    "CREATE TABLE IF NOT EXISTS task_runs(id TEXT PRIMARY KEY,task TEXT NOT NULL,task_hash TEXT NOT NULL,status TEXT NOT NULL,report TEXT NOT NULL,report_hash TEXT NOT NULL,created TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));");
   std::string version;{Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");if(q.row())version=q.text(0);}
   if(version=="1"){
     sql(impl->db,"BEGIN IMMEDIATE");
@@ -43,7 +45,7 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
   }else if(version!="2")throw Error("E_SCHEMA","unsupported graph database schema");
 }
 Store::~Store()=default;
-std::string Store::save(const Program &p,const std::string &expected) {
+std::string Store::save(const Program &p,const std::string &expected,bool makeHead) {
   if(p.units.empty())throw Error("E_STORE","cannot save a program without its source snapshot");
   auto db=impl->db;auto rev=revision(p);sql(db,"BEGIN IMMEDIATE");
   try{
@@ -68,7 +70,7 @@ std::string Store::save(const Program &p,const std::string &expected) {
       auto data=json(canonical(endpoint),false);Statement node(db,"INSERT OR IGNORE INTO nodes(revision,id,hash,canonical) VALUES(?,?,?,?)");node.bind(1,rev);node.bind(2,id);node.bind(3,hash(data));node.bind(4,data);node.row();
       const auto &handler=p.function(endpoint.target);Statement edge(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");edge.bind(1,rev);edge.bind(2,id);edge.bind(3,nodeId(db,handler.owner,handler.localName));edge.row();
     }
-    {Statement q(db,"INSERT INTO head(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision");q.bind(1,rev);q.row();}
+    if(makeHead){Statement q(db,"INSERT INTO head(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision");q.bind(1,rev);q.row();}
     sql(db,"COMMIT");return rev;
   }catch(...){sql(db,"ROLLBACK");throw;}
 }
@@ -102,6 +104,15 @@ llvm::json::Value Store::bundle(const std::string &rev){
   auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_STORE",llvm::toString(parsed.takeError()));return std::move(*parsed);
 }
 std::string Store::headRevision(){return head(impl->db);}
+void Store::recordTask(const std::string &id,const std::string &task,const std::string &taskHash,const std::string &status,const std::string &report,const std::string &reportHash){
+  Statement q(impl->db,"INSERT INTO task_runs(id,task,task_hash,status,report,report_hash) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,report_hash=excluded.report_hash");
+  q.bind(1,id);q.bind(2,task);q.bind(3,taskHash);q.bind(4,status);q.bind(5,report);q.bind(6,reportHash);q.row();
+}
+llvm::json::Value Store::taskHistory(const std::string &task,unsigned limit){
+  Statement q(impl->db,"SELECT id,task_hash,status,report,report_hash,created FROM task_runs WHERE task=? ORDER BY created DESC,id DESC LIMIT ?");q.bind(1,task);q.bind(2,std::to_string(std::min(limit,50u)));llvm::json::Array rows;
+  while(q.row())rows.push_back(llvm::json::Object{{"run_id",q.text(0)},{"task_hash",q.text(1)},{"status",q.text(2)},{"report",q.text(3)},{"report_hash",q.text(4)},{"created",q.text(5)}});
+  return llvm::json::Object{{"schema","nex.task-history/1"},{"task",task},{"runs",std::move(rows)}};
+}
 std::string Store::revisionLanguage(const std::string &rev){
   Statement q(impl->db,"SELECT language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);
   if(!q.row())throw Error("E_REVISION","revision not found");return q.text(0);
