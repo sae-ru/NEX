@@ -811,7 +811,19 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   if(options.libraryEntry){
     std::vector<std::string> archive={toolchain.archiver,"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
-  }else {if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);if(storage)link.push_back(toolchain.sqliteLibrary);link.insert(link.end(),{"-o",linkOutput,"-g"});}
+  }else {
+    if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
+    if(storage)link.push_back(toolchain.sqliteLibrary);
+    if(driverABI.isOSDarwin()) {
+      // Relocated SDK dylibs use @rpath install names. Select their configured
+      // directories explicitly; separate arguments keep commas/Unicode literal.
+      std::set<std::string> libraryPaths;
+      if(storage)libraryPaths.insert(std::filesystem::path(toolchain.sqliteLibrary).parent_path().string());
+      if(server)for(const auto &library:{toolchain.opensslSSL,toolchain.opensslCrypto})libraryPaths.insert(std::filesystem::path(library).parent_path().string());
+      for(const auto &path:libraryPaths)link.insert(link.end(),{"-Xlinker","-rpath","-Xlinker",path});
+    }
+    link.insert(link.end(),{"-o",linkOutput,"-g"});
+  }
   if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
   if(!linkStage.empty()){
     try{copyFile(linkOutput,result.executable,true);std::filesystem::remove_all(linkStage);}

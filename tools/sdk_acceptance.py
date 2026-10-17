@@ -6,11 +6,15 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import signal
+import ssl
 import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 
 
 def require(condition, message):
@@ -461,6 +465,78 @@ test fn examples() -> unit {
                 all(f['status'] == 'proven' for f in verified['functions']), 'installed scalar contracts were not proven')
         report['evidence']['scalar_proof'] = 'proven (installed scalar example, not a proof of matching or compiler correctness)'
 
+    def authenticated_storage():
+        directory = root / 'service'
+        directory.mkdir()
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        (directory / 'main.nex').write_text('''module installed_service;
+import "std/http.nex" as http;
+server fn handle(request:http::Request) -> http::Response !{db} {
+  if request.method == "POST" {
+    let saved:result<bool> = store_put("value",request.body);
+    return match saved {ok(_) => http::Response(200,request.user+":"+request.body,"text/plain"),err(_,_) => http::Response(500,"storage failure","text/plain")};
+  }
+  let loaded:result<str> = store_get("value");
+  return match loaded {ok(value) => http::Response(200,request.user+":"+value,"text/plain"),err(_,_) => http::Response(404,"missing","text/plain")};
+}
+''')
+        auth = directory / 'auth.json'
+        tokens = {user: cli('token', '--user', user, '--auth', auth, cwd=directory)['token']
+                  for user in ('alice', 'bob')}
+        built = cli('build', '--target', 'server', '--profile', 'release', cwd=directory)
+        certificate, key = directory / 'cert.pem', directory / 'key.pem'
+        run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-sha256', '-days', '1',
+             '-subj', '/CN=localhost', '-addext', 'subjectAltName=IP:127.0.0.1,DNS:localhost',
+             '-keyout', key, '-out', certificate], cwd=directory)
+        context = ssl.create_default_context(cafile=str(certificate))
+        for encrypted in (False, True):
+            command = [built['executable'], '--auth', str(auth), '--database', str(directory / 'data.sqlite'), '--port', '0']
+            if encrypted:
+                command += ['--cert', str(certificate), '--key', str(key)]
+            stderr = logs / ('service-https.stderr' if encrypted else 'service-http.stderr')
+            with stderr.open('w') as errors:
+                process = subprocess.Popen(command, cwd=directory, env=environment,
+                                           stdout=subprocess.PIPE, stderr=errors, text=True)
+                try:
+                    lines = queue.Queue()
+                    threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
+                    line = lines.get(timeout=20)
+                    match = re.fullmatch(r'NEX server (https?://127\.0\.0\.1:[0-9]+)\s*', line)
+                    require(match is not None, 'installed server did not start; inspect ' + str(stderr))
+                    base = match.group(1)
+                    require(base.startswith('https:') == encrypted, 'server selected wrong transport')
+                    def request(user, body=None):
+                        headers = {} if user is None else {'Authorization': 'Bearer ' + tokens[user]}
+                        payload = None if body is None else body.encode()
+                        value = urllib.request.Request(base + '/value', data=payload, headers=headers)
+                        try:
+                            response = urllib.request.urlopen(value, context=context if encrypted else None, timeout=15)
+                        except urllib.error.HTTPError as error:
+                            response = error
+                        with response:
+                            return response.status, response.read().decode()
+                    require(request(None)[0] == 401, 'unauthenticated request accepted')
+                    if not encrypted:
+                        require(request('alice', 'Unicode 🧠') == (200, 'alice:Unicode 🧠'), 'alice write failed')
+                        require(request('bob')[0] == 404, 'bob could read alice data')
+                        require(request('bob', 'separate') == (200, 'bob:separate'), 'bob write failed')
+                    require(request('alice') == (200, 'alice:Unicode 🧠'), 'alice persistence/isolation failed')
+                    require(request('bob') == (200, 'bob:separate'), 'bob persistence/isolation failed')
+                finally:
+                    if process.poll() is None:
+                        process.terminate()
+                    try:
+                        process.communicate(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        process.kill(); process.communicate(timeout=5)
+                require(process.returncode == 0, 'installed server failed; inspect ' + str(stderr))
+            require('E_INTERNAL_LEAK' not in stderr.read_text(), 'installed server leaked owned values')
+        report['evidence']['authenticated_storage'] = {'executable': built['executable'],
+            'http_https': True, 'unauthenticated_rejected': True,
+            'principal_isolation': True, 'persistent_across_restart': True,
+            'metadata': built['metadata']}
+
     def browser():
         directory = root / 'browser'
         directory.mkdir()
@@ -518,7 +594,8 @@ test fn examples() -> unit {
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('profile', measured),
-                ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof), ('browser', browser)]:
+                ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
+                ('authenticated-storage', authenticated_storage), ('browser', browser)]:
             phase(name, action)
         report['ok'] = True
     except BaseException as error:

@@ -33,6 +33,27 @@ test fn semantics() -> unit {
         self.config.write_text(json.dumps(fields))
         return fields
 
+    @unittest.skipUnless(platform.system() == 'Darwin', 'Mach-O run-path selection')
+    def test_selected_sqlite_rpath_runs_with_literal_dependency_directory(self):
+        directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
+        library=directory/'libsqlite.bundle.dylib'
+        shutil.copy2(self.doctor['native_sqlite_library'],library)
+        subprocess.run(['/usr/bin/install_name_tool','-id','@rpath/'+library.name,str(library)],check=True,capture_output=True)
+        subprocess.run(['/usr/bin/codesign','--force','--sign','-',str(library)],check=True,capture_output=True)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(library)})
+        self.source('''module selected_store;
+server fn main() -> unit !{db,io} {
+  assert(unwrap(store_put("item","persistent 🧠")));
+  print(unwrap(store_get("item")));
+}
+''')
+        built=self.cli('build','--toolchain',self.config)
+        run=subprocess.run([built['executable']],env={'PATH':'/usr/bin:/bin','NEX_DATABASE':str(self.root/'data.sqlite'),'NEX_STORAGE_OWNER':'alice'},capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,'persistent 🧠\n'),run.stderr)
+        commands=subprocess.check_output(['/usr/bin/otool','-l',built['executable']],text=True)
+        self.assertIn('path '+str(directory.resolve())+' (offset ',commands)
+        self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
+
     def test_host_manifest_runs_tests_and_archives(self):
         self.configure(compiler=self.doctor['native_compiler'])
         args = ('--toolchain', self.config)

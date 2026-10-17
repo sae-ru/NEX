@@ -13,7 +13,7 @@ evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
 seventeen installed guides. Python 3.9+, the SDK's development dependencies
-(LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required.
+(LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI.
 This is an installed-development-chain check, not a portable SDK bundle.
 
 ## Relocatable macOS development bundle (0.27, under validation)
@@ -155,3 +155,11 @@ checkpoint. `--forbid-source /src` in the inner command verifies that known
 mount path is absent. The Docker invocation supplies the evidence that the
 source checkout was not mounted; a path probe alone cannot prove that arbitrary
 other filesystem locations contain no sources.
+
+The current maintained workflow additionally builds a native HTTP/HTTPS service
+with the selected SQLite/OpenSSL dependencies, rejects unauthenticated requests,
+checks per-principal Unicode data and restarts against the same database. On
+macOS, generated storage/server executables record the selected dependency
+directories as runtime search paths for `@rpath` install names. Moving an SDK
+after building an application requires rebuilding that application; distributing
+application runtime libraries remains separate platform packaging work.

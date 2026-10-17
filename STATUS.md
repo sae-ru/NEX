@@ -29,7 +29,14 @@ The first fixture failures (a missing fingerprint header and macOS /var alias)
 were corrected; native-target, incremental and task-toolchain regressions passed.
 A macOS assembler copies tools, headers and the non-system dylib closure,
 rewrites copies, records provenance/notices and refreshes ad hoc signatures.
-Its actual bundle/relocation acceptance and the full 0.27 matrix are pending.
+The first relocated bundle assembled 2390 files (485,048,700 bytes); all seven
+loaded non-system compiler images came from the bundle, original external input
+hashes stayed unchanged, and the existing nine acceptance phases passed in
+73.211 s. A further SQLite application exposed missing Mach-O runtime paths
+(`Library not loaded`, no LC_RPATH). The builder now records configured dependency
+directories, with a comma/Unicode-path regression, and maintained SDK acceptance
+adds authenticated HTTP/HTTPS, principal isolation and persistence after restart.
+This correction and ten-phase moved-bundle/full-platform validation are pending.
 Apple SDK/tools, Python, Node and host debugger remain external prerequisites;
 Linux/Windows packaging, older macOS support and notarization remain open.
 
@@ -51,8 +58,8 @@ source-deleted replay and both locked Vite builds. Reports:
 `build/native-build-026-{targeted,live}.log` and
 `build/sdk-026-native-build/report.json`. All 27 macOS Debug-compiler suites passed
 in 1028.66 s. Linux ARM64 passed 252 declared Python cases (six macOS SDK skips),
-all eight live suites and source-free SDK acceptance. The frozen 0.26 Release
-compiler and Linux emulated x86-64 matrix are still finishing. Preserved 0.25
+all eight live suites and source-free SDK acceptance. The frozen 0.26 Release compiler passed all 27 suites in 910.45 s; its installed
+SDK passed nine phases in 58.588 s. Linux emulated x86-64 is still finishing. Preserved 0.25
 SDKs remain recorded in `build/preserved-sdk-025.json`.
 
 In five interleaved paired observations of the same 13-function workload on a

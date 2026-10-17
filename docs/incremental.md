@@ -229,3 +229,8 @@ The formatter assigns the setting through
 so mapped filenames remain data rather than debugger commands.
 
 Generic source bodies specialize into the declaring module. A body edit recompiles the provider while unchanged consumed signatures permit caller reuse. Concrete nominal layouts and type arguments, including phantom arguments, participate in transitive type dependencies. Source projections still refresh debugger locations, and source revision identity excludes redundant derived instances.
+
+For macOS storage/server executables, selected SQLite/OpenSSL library directories
+are passed as separate runtime-search-path arguments, allowing `@rpath` dylib
+install names while preserving literal commas, percent signs and Unicode.
+Native archives leave dependency resolution to the final host link.
