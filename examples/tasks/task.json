@@ -1,0 +1,169 @@
+{
+  "schema": "nex.task/1",
+  "language": "0.5",
+  "id": "bounded-increment",
+  "title": "Checked increment acceptance example",
+  "goal": "Validate bounded increment behavior, native output, a standalone binary, purity and a defined measured scenario. This fixture validates the development toolchain.",
+  "programs": [
+    {
+      "baseline_revision": "9917df984cd8e4f22fb93b28aa043e6f41c6d7787d870b3638a976884c2f8add",
+      "entry": "main.nex",
+      "id": "app"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "bounded",
+      "text": "For every integer x in 0..10000, increment returns x + 1 without a supported scalar runtime trap.",
+      "bindings": [
+        {
+          "program": "app",
+          "kind": "function",
+          "symbol": "acceptance::increment"
+        }
+      ],
+      "targets": [
+        "native",
+        "web",
+        "source"
+      ],
+      "checks": [
+        "native-examples",
+        "web-examples",
+        "proof"
+      ]
+    },
+    {
+      "id": "application",
+      "text": "Build a native executable; its defined workload prints 3 and exits 0.",
+      "bindings": [
+        {
+          "program": "app",
+          "kind": "function",
+          "symbol": "acceptance::main"
+        }
+      ],
+      "targets": [
+        "native"
+      ],
+      "checks": [
+        "native-build",
+        "observable"
+      ]
+    },
+    {
+      "id": "purity",
+      "text": "The increment closure declares no effects and uses shared functions.",
+      "bindings": [
+        {
+          "program": "app",
+          "kind": "function",
+          "symbol": "acceptance::increment"
+        }
+      ],
+      "targets": [
+        "source"
+      ],
+      "checks": [
+        "pure"
+      ]
+    },
+    {
+      "id": "measurement",
+      "text": "The defined profile calls increment once and creates no managed handles.",
+      "bindings": [
+        {
+          "program": "app",
+          "kind": "function",
+          "symbol": "acceptance::main"
+        }
+      ],
+      "targets": [
+        "native"
+      ],
+      "checks": [
+        "measured"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "native-examples",
+      "kind": "test",
+      "program": "app",
+      "target": "native",
+      "tests": [
+        {
+          "content_hash": "291ecd52a6da15e6f1248c2b0ebb654c55f3337355f5e027e652551faa2fc358",
+          "symbol": "acceptance::boundary_examples"
+        }
+      ]
+    },
+    {
+      "id": "web-examples",
+      "kind": "test",
+      "program": "app",
+      "target": "web",
+      "tests": [
+        {
+          "content_hash": "291ecd52a6da15e6f1248c2b0ebb654c55f3337355f5e027e652551faa2fc358",
+          "symbol": "acceptance::boundary_examples"
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "kind": "verify",
+      "program": "app",
+      "target": "source",
+      "contracts": "proof.json",
+      "intent_hash": "cd012b268895b4a7b5feeb2de7ea5c8addbaf05cd259cbd69b4d0671ade27523"
+    },
+    {
+      "id": "native-build",
+      "kind": "build",
+      "program": "app",
+      "target": "native",
+      "entry": "acceptance::main",
+      "profile": "release"
+    },
+    {
+      "id": "observable",
+      "kind": "run",
+      "program": "app",
+      "target": "native",
+      "entry": "acceptance::main",
+      "expect": {
+        "stdout": "3\n",
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "pure",
+      "kind": "effects",
+      "program": "app",
+      "target": "source",
+      "symbols": [
+        "acceptance::increment"
+      ],
+      "allowed_effects": [],
+      "allowed_realms": [
+        "shared"
+      ]
+    },
+    {
+      "id": "measured",
+      "kind": "profile",
+      "program": "app",
+      "target": "native",
+      "entry": "acceptance::main",
+      "scenario": "one bounded increment",
+      "budget": {
+        "max_peak_handles": "0",
+        "max_calls": {
+          "acceptance::increment": "1"
+        }
+      }
+    }
+  ]
+}

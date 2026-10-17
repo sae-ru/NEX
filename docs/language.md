@@ -240,3 +240,5 @@ Toolchain 0.10 instruments reachable native function calls and managed shallow a
 ## Verification metadata
 
 Toolchain 0.11 adds snapshot-bound scalar contracts as separate `nex.verification-contracts/1` JSON documents. `nex verify` checks the selected pure i64/bool/unit functions with Z3, including checked arithmetic, assertions and explicitly annotated inductive loops/rankings. Source grammar, language 0.5 revisions and execution semantics are unchanged. Proof results do not remove runtime checks or automatically enforce JSON pre/postconditions; see [verification.md](verification.md) for assumptions, statuses and the compiler/runtime trust boundary.
+
+Toolchain 0.12 links external `nex.task/1` acceptance criteria to source candidates, graph definitions and explicit checks. `nex test --symbol NAME` selects a single actual test. Task contracts add no source keywords or runtime pre/postconditions. See [tasks.md](tasks.md) for intent guards, static linkage, evidence and replay limits.

@@ -2,7 +2,7 @@
 
 `llm/language-pack.json` is its machine-readable index. `llm/patch.schema.json` provides a JSON Schema for generated replacement patches; the compiler performs the required semantic validation after JSON parsing.
 
-[The Russian walkthrough](WORKFLOW.md) shows what to send a chat-only or tool-capable model and exercises a complete function repair, revision-checked patch, differential tests and source export. [The task template](TASK_TEMPLATE.md) specifies behavior and acceptance criteria as text; automatic task-contract enforcement remains pending.
+[The Russian walkthrough](WORKFLOW.md) shows what to send a chat-only or tool-capable model and exercises a complete function repair, revision-checked patch, differential tests and source export. [The task template](TASK_TEMPLATE.md) specifies behavior and acceptance criteria as text; the machine-readable counterpart is `llm/task.schema.json`, enforced by `nex task` for its declared checks.
 
 The pack has four coordinated layers:
 
@@ -11,7 +11,7 @@ The pack has four coordinated layers:
 3. **Discovery:** `nex describe --json` exposes the implemented version, capabilities, builtin signatures, and unsupported features.
 4. **Feedback protocol:** `context`, `apply`, `check`, `test`, and `build` let a model edit functions across modules atomically and obtain deterministic feedback. Context identifies each symbol's logical module, file and imports; revisions archive complete source bundles.
 
-An installed compiler exposes the documents through `nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build --json`. Each response contains a version, content hash and text, so the model can obtain the matching pack without knowing repository paths.
+An installed compiler exposes the documents through `nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task --json`. Each response contains a version, content hash and text, so the model can obtain the matching pack without knowing repository paths.
 
 `AGENTS.md` provides repository entry instructions to coding agents. A chat-only model can receive the prompt, specification, function context, and task as ordinary messages; its returned patch can be applied by a human or external runner. Tool-capable models can invoke the same CLI directly. No provider SDK, hosted model, special tokens, or training run is required.
 
@@ -34,3 +34,5 @@ For native incremental compilation, retrieve `nex guide --kind build --json`. Bu
 `nex guide --kind profile --json` supplies the tenth installed guide. `nex profile FILE --scenario TEXT --json` returns bounded graph-attributed function measurements and the saved full timeline report. Use its exact revision and inspect measurement/drop limits before optimizing.
 
 The eleventh guide is `nex guide --kind verify --json`. `llm/verification.schema.json` defines snapshot-bound scalar proof contracts; use the contract/verify commands in the pack manifest. Proof metadata does not change language 0.5 execution or replace tests/task acceptance.
+
+The twelfth guide is `nex guide --kind task --json`. Reviewed `nex.task/1` documents pin requirements, qualified bindings, targets, tests and formal acceptance intent. Check/run/replay/history use the same compiler for every model. Receipts preserve exact NEX inputs; static linkage is not measured coverage, and external tools/environment are not fully frozen.

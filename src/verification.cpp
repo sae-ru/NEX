@@ -252,6 +252,16 @@ public:
 };
 }
 std::string verifierVersion(){return Z3_get_full_version();}
+std::string verificationIntentHash(const JSON &value){
+  auto object=value.getAsObject();if(!object||object->getString("schema")!="nex.verification-contracts/1"||object->getString("language")!=languageVersion)throw Error("E_CONTRACT","unsupported verification intent format/language");
+  auto functions=object->getArray("functions");if(!functions||functions->empty()||functions->size()>64)throw Error("E_CONTRACT","verification intent requires 1..64 functions");Object intents;
+  for(const auto &item:*functions){
+    auto function=item.getAsObject();if(!function)throw Error("E_CONTRACT","invalid verification intent function");auto name=required(*function,"symbol");if(intents.get(name))throw Error("E_CONTRACT","duplicate verification intent function");
+    Array pre,post;for(const auto &text:clauses(*function,"requires"))pre.push_back(text);for(const auto &text:clauses(*function,"ensures"))post.push_back(text);
+    intents[name]=Object{{"returns",required(*function,"returns")},{"requires",std::move(pre)},{"ensures",std::move(post)}};
+  }
+  return hash(json(Object{{"schema","nex.verification-intent/1"},{"language",languageVersion},{"functions",std::move(intents)}},false));
+}
 JSON contractTemplate(const Program &p,const std::string &symbol){
   const auto &f=p.function(symbol);std::map<LoopKey,S> found;loops(f.body,found);Array annotations;
   for(const auto &[key,loop]:found)annotations.push_back(Object{{"line",key.first},{"column",key.second},{"invariants",Array{"true"}},{"decreases",""}});

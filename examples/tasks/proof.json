@@ -1,0 +1,21 @@
+{
+  "expected_revision": "9917df984cd8e4f22fb93b28aa043e6f41c6d7787d870b3638a976884c2f8add",
+  "functions": [
+    {
+      "content_hash": "f7c1cb2b1bd17c19d6ec35f1366bd254ac860e428bb9b8e1e5741cd2bdad5800",
+      "ensures": [
+        "result == x + 1"
+      ],
+      "loops": [],
+      "requires": [
+        "x >= 0",
+        "x <= 10000"
+      ],
+      "returns": "result",
+      "symbol": "acceptance::increment"
+    }
+  ],
+  "language": "0.5",
+  "schema": "nex.verification-contracts/1",
+  "source_hash": "08817f5e3da0caac761752577fb5ae50a2814eedf66a8e74a5ad6c1324b519cc"
+}

@@ -1,0 +1,580 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/task-1.json",
+  "title": "NEX task and acceptance checks",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "nex.task/1"
+    },
+    "language": {
+      "const": "0.5"
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "title": {
+      "$ref": "#/$defs/text"
+    },
+    "goal": {
+      "$ref": "#/$defs/text"
+    },
+    "programs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/program"
+      },
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/requirement"
+      },
+      "minItems": 1,
+      "maxItems": 32
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "test"
+              },
+              "tests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": {
+                      "$ref": "#/$defs/short"
+                    },
+                    "content_hash": {
+                      "$ref": "#/$defs/hash"
+                    }
+                  },
+                  "required": [
+                    "symbol",
+                    "content_hash"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 64
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target",
+              "tests"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "build"
+              },
+              "entry": {
+                "$ref": "#/$defs/short"
+              },
+              "profile": {
+                "enum": [
+                  "debug",
+                  "release",
+                  "profile"
+                ]
+              },
+              "mode": {
+                "enum": [
+                  "application",
+                  "library",
+                  "module"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "run"
+              },
+              "entry": {
+                "$ref": "#/$defs/short"
+              },
+              "profile": {
+                "enum": [
+                  "debug",
+                  "release",
+                  "profile"
+                ]
+              },
+              "expect": {
+                "type": "object",
+                "properties": {
+                  "stdout": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 8192
+                  },
+                  "exit_code": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "runtime_code": {
+                    "$ref": "#/$defs/short"
+                  }
+                },
+                "required": [
+                  "stdout",
+                  "exit_code"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target",
+              "expect"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "verify"
+              },
+              "contracts": {
+                "$ref": "#/$defs/path"
+              },
+              "intent_hash": {
+                "$ref": "#/$defs/hash"
+              },
+              "solver_timeout_ms": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "resource_limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000000
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target",
+              "contracts",
+              "intent_hash"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "effects"
+              },
+              "symbols": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/short"
+                },
+                "minItems": 1,
+                "maxItems": 64,
+                "uniqueItems": true
+              },
+              "allowed_effects": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "io",
+                    "db"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 64,
+                "uniqueItems": true
+              },
+              "allowed_realms": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "shared",
+                    "client",
+                    "server"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 64,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target",
+              "symbols",
+              "allowed_effects"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "profile"
+              },
+              "entry": {
+                "$ref": "#/$defs/short"
+              },
+              "scenario": {
+                "$ref": "#/$defs/text"
+              },
+              "budget": {
+                "type": "object",
+                "properties": {
+                  "max_duration_ns": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "max_peak_handles": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "max_peak_objects": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "max_calls": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "maxProperties": 64,
+                    "propertyNames": {
+                      "$ref": "#/$defs/short"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/decimal"
+                    }
+                  }
+                },
+                "required": [],
+                "additionalProperties": false,
+                "minProperties": 1
+              },
+              "hardware": {
+                "type": "object",
+                "properties": {
+                  "cpu": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "target": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "required": [
+                  "cpu",
+                  "target"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target",
+              "entry",
+              "scenario",
+              "budget"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "budget": {
+                      "required": [
+                        "max_duration_ns"
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "hardware"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "program": {
+                "$ref": "#/$defs/id"
+              },
+              "target": {
+                "$ref": "#/$defs/short"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              "kind": {
+                "const": "api"
+              }
+            },
+            "required": [
+              "id",
+              "program",
+              "kind",
+              "target"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 64
+    }
+  },
+  "required": [
+    "schema",
+    "language",
+    "id",
+    "title",
+    "goal",
+    "programs",
+    "requirements",
+    "checks"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192,
+      "pattern": "^[^\\u0000]*(?![\\s\\S])"
+    },
+    "short": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\u0000]*(?![\\s\\S])"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}(?![\\s\\S])"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)[^\\u0000]+(?![\\s\\S])"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,18}|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]|18446744073709551615)(?![\\s\\S])"
+    },
+    "program": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "entry": {
+          "$ref": "#/$defs/path"
+        },
+        "baseline_revision": {
+          "$ref": "#/$defs/hash"
+        }
+      },
+      "required": [
+        "id",
+        "entry"
+      ],
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "program": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "function",
+            "structure",
+            "endpoint"
+          ]
+        },
+        "symbol": {
+          "$ref": "#/$defs/short"
+        }
+      },
+      "required": [
+        "program",
+        "kind",
+        "symbol"
+      ],
+      "additionalProperties": false
+    },
+    "requirement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/binding"
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/short"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "bindings",
+        "targets",
+        "checks"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

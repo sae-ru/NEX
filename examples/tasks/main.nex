@@ -1,0 +1,14 @@
+module acceptance;
+
+pub fn increment(x: i64) -> i64 { return x + 1; }
+
+fn main() -> i64 !{io} {
+  print(increment(2));
+  return 0;
+}
+
+test fn boundary_examples() -> unit {
+  assert(increment(0) == 1);
+  assert(increment(2) == 3);
+  assert(increment(10000) == 10001);
+}

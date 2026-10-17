@@ -4,6 +4,8 @@
 #include "nex/api.h"
 #include "nex/profiling.h"
 #include "nex/verification.h"
+#include "nex/tasks.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/RandomNumberGenerator.h"
 #include "llvm/Support/SHA256.h"
@@ -20,15 +22,15 @@ namespace fs=std::filesystem;
 namespace {
 using namespace nex;
 struct Options {
-  std::string command;std::map<std::string,std::string> values;std::set<std::string> flags;
+  std::string command,compiler;std::map<std::string,std::string> values;std::set<std::string> flags;
   std::vector<std::string> positional,extra;
   bool has(const std::string &name)const{return flags.contains(name);}
   std::string get(const std::string &name,const std::string &fallback="")const{auto i=values.find(name);return i==values.end()?fallback:i->second;}
 };
 Options options(int argc,char **argv) {
-  Options o;o.command=argc>1?argv[1]:"help";
+  Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -67,15 +69,35 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify [--json]\n  nex doctor\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task [--json]\n  nex doctor\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap] [--json] -- [lldb options]\n"
+      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
-      "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library\n";return 0;
+      "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
+  if(o.command=="contract"&&o.get("--kind")=="intent"){
+    auto path=o.get("--contracts");if(path.empty()||!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_OPTION","intent requires a bounded --contracts JSON file");
+    auto value=parseJSON(readFile(path));print(llvm::json::Object{{"schema","nex.verification-intent/1"},{"intent_hash",verificationIntentHash(value)}});return 0;
+  }
+  if(o.command=="task"){
+    if(o.positional.empty())throw Error("E_OPTION","task requires a source, task or receipt path");auto path=fs::absolute(o.positional[0]);auto root=projectRoot(path.parent_path());
+    TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}};
+    if(!o.get("--candidates").empty()){auto file=o.get("--candidates");if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_OPTION","candidate map requires a bounded JSON file");auto map=parseJSON(readFile(file));auto object=map.getAsObject();if(!object||object->size()>8)throw Error("E_OPTION","candidate file must map program IDs to archived revisions");for(const auto &[id,v]:*object){auto revision=v.getAsString();if(!revision)throw Error("E_OPTION","candidate revision must be a string");options.candidates[id.str()]=revision->str();}}
+    auto kind=o.get("--kind","check");
+    if(kind=="init"){
+      auto p=loadProgram(path.string(),root.string());Store store(root/".nex");store.save(p,"",false);auto result=taskTemplate(p,p.entryUnit);auto output=o.get("--output");
+      if(output.empty())print(std::move(result));else {if(fs::exists(output))throw Error("E_EXISTS","task init requires a new output file");writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"task_hash",hash(json(result,false))}});}return 0;
+    }
+    if(kind=="replay"){auto result=replayTask(path.string(),options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;}
+    if(!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_TASK","missing or oversized task JSON");auto task=parseJSON(readFile(path));
+    if(kind=="history"){auto object=task.getAsObject();if(!object)throw Error("E_TASK","task must be an object");Store store(root/".nex");print(store.taskHistory(required(*object,"id")));return 0;}
+    if(kind!="check"&&kind!="run")throw Error("E_OPTION","task kind must be init, check, run, replay or history");
+    auto result=kind=="run"?runTask(task,options):checkTask(task,options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;
+  }
   if(o.command=="token"){
     auto user=o.get("--user"),file=o.get("--auth");if(user.empty()||user.size()>256||user.find('\0')!=std::string::npos||file.empty())throw Error("E_OPTION","token requires --user USER and --auth FILE");
     try{nexrt::unicodeOffsets(user,false);}catch(const nexrt::DataError &){throw Error("E_AUTH","user identifier must be valid UTF-8");}
@@ -100,8 +122,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile or verify");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify or task");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -257,7 +279,7 @@ int run(const Options &o) {
   if(o.command=="build"&&o.get("--target")=="web"){
     auto output=o.get("--output");
     if(!output.empty()&&fs::exists(output)&&(!fs::is_directory(output)||!fs::is_empty(output)))throw Error("E_EXISTS","web build output requires a new or empty directory");
-    auto result=buildWebApp(p,(root/".nex/build").string(),o.get("--profile","debug"));
+    auto result=buildWebApp(p,o.get("--build-directory",(root/".nex/build").string()),o.get("--profile","debug"));
     if(!output.empty()){
       auto dist=result.getAsObject()->getString("dist")->str();fs::create_directories(output);
       fs::copy(dist,output,fs::copy_options::recursive|fs::copy_options::overwrite_existing);(*result.getAsObject())["dist"]=fs::absolute(output).string();
@@ -290,10 +312,11 @@ int run(const Options &o) {
     profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600)};
     buildOptions.profile="profile";
   }
-  auto directory=(root/".nex/build").string();
+  auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
   if(o.command=="test") {
     int count=0;llvm::json::Array tests;
-    for(const auto &f:p.functions)if(f.test){
+    auto selected=o.get("--symbol");if(!selected.empty()){const auto &f=p.function(selected);if(!f.test)throw Error("E_TEST","--symbol must select a test function");selected=f.name;}
+    for(const auto &f:p.functions)if(f.test&&(selected.empty()||selected==f.name)){
       bool web=o.get("--target")=="web";
       if(web&&f.realm=="server"){tests.push_back(llvm::json::Object{{"name",f.name},{"skipped",true},{"reason","server test excluded from web target"}});continue;}
       auto expected=evaluate(p,f.name);bool native=!o.has("--interpreter-only");

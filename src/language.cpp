@@ -531,6 +531,8 @@ llvm::json::Value describe() {
     {"profile_guide","docs/profiling.md"},
     {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},
     {"verification_guide","docs/verification.md"},
+    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup"}},
+    {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
     {"not_yet_supported",llvm::json::Array{"async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};

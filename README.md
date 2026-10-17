@@ -112,6 +112,16 @@ Native profile builds instrument reachable function calls and managed object/han
 
 Snapshot-bound JSON contracts state preconditions, postconditions and loop invariants/rankings for pure scalar functions. The verifier checks arithmetic/assertions and supported termination rules, preserves replayable SMT queries and distinguishes proof, counterexample, inconsistency, unknown, timeout and unsupported scope. It retains runtime checks and does not prove compiler/runtime correctness. [The verification guide](docs/verification.md) defines the supported subset and trust boundaries. Z3 5.3.1 was verified on this host; configure another development prefix with `-DNEX_Z3_ROOT=/path/to/z3`.
 
+## Task contracts
+
+```sh
+./build/nex task examples/tasks/task.json --kind check --json
+./build/nex task examples/tasks/task.json --kind run --json
+./build/nex task /absolute/run/receipt.json --kind replay --json
+```
+
+A reviewed task links requirements, qualified definitions, target platforms and explicit checks. The runner freezes source candidates and executable resources, runs pinned tests, observations, scalar proofs, effect limits, builds or measured profile budgets, and saves checkpointed receipts and artifacts. Replay verifies captured inputs and reruns checks in a new run. Static graph linkage does not prove natural-language completeness. [The task guide](docs/tasks.md) covers multi-program candidates, intent guards, process cleanup and external-tool/replay limits.
+
 ## Language and LLM interoperability
 
 - [Language specification](docs/language.md) and [EBNF grammar](docs/grammar.ebnf).
@@ -127,4 +137,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.11.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, richer data/resource proofs, source-level/task acceptance contracts, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.12.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

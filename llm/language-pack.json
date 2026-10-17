@@ -18,9 +18,11 @@
     "build": "docs/incremental.md",
     "profile": "docs/profiling.md",
     "verification": "docs/verification.md",
-    "verification_contract_schema": "llm/verification.schema.json"
+    "verification_contract_schema": "llm/verification.schema.json",
+    "tasks": "docs/tasks.md",
+    "task_schema": "llm/task.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -36,7 +38,10 @@
     "debugging": "examples/debugging/main.nex",
     "profiling": "examples/profiling/main.nex",
     "verification": "examples/verification/main.nex",
-    "verification_contract": "examples/verification/contracts.json"
+    "verification_contract": "examples/verification/contracts.json",
+    "task_source": "examples/tasks/main.nex",
+    "task_contract": "examples/tasks/task.json",
+    "task_proof": "examples/tasks/proof.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -68,5 +73,12 @@
   "verification_commands": [
     "nex contract FILE --symbol NAME -o CONTRACT.json",
     "nex verify FILE --contracts CONTRACT.json --json"
+  ],
+  "task_commands": [
+    "nex task FILE.nex --kind init -o task.json",
+    "nex task task.json --kind check --json",
+    "nex task task.json --kind run --task-hash HASH --json",
+    "nex task RECEIPT.json --kind replay --json",
+    "nex task task.json --kind history --json"
   ]
 }
