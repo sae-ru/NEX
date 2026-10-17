@@ -68,7 +68,8 @@
     "matching": "examples/matching.nex",
     "functions": "examples/functions/main.nex",
     "function_browser": "examples/functions/web.nex",
-    "numbers": "examples/numbers.nex"
+    "numbers": "examples/numbers.nex",
+    "numeric_browser": "examples/numbers-web.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

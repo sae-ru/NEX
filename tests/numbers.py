@@ -51,6 +51,14 @@ class Numbers(harness.ToolchainCase):
         self.assertEqual([bits(v) for v in observed],expected)
         output=self.backends();self.assertEqual([bits(v) for v in json.loads(output)],expected)
 
+    def test_browser_numeric_state_keeps_checked_values_and_reachable_code(self):
+        self.source((harness.REPO/'examples/numbers-web.nex').read_text())
+        self.assertEqual(self.backends(),'7.5e-1\n')
+        directory=self.root/'numeric-browser'
+        generated=self.cli('web','--directory',directory)
+        for name in generated['files']:
+            self.assertNotIn('FINITE_NUMBERS_SERVER_SENTINEL',(directory/name).read_text())
+
     def test_literal_rounding_canonical_identity_and_scalar_eval(self):
         revisions=[]
         for spelling in ['0.1','1e-1','0.1000000000000000055511151231257827021181583404541015625']:

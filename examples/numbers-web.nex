@@ -1,0 +1,71 @@
+module numbers_web;
+import "std/web.nex" as web;
+
+struct State {
+  value:f64;
+  input:str;
+  error:str;
+  history:list<f64>;
+  advance:fn(f64)->f64;
+}
+
+fn stepper(step:f64)->fn(f64)->f64 {
+  return fn(value:f64)->f64 { return value+step; };
+}
+fn twice<T:number>(value:T)->T { return value+value; }
+fn replace(state:State,value:f64)->State {
+  return State(value,state.input,"",state.history+[value],state.advance);
+}
+
+fn title()->str { return "NEX finite numbers"; }
+fn initial()->State { return State(0.25,"0.25","",[0.25],stepper(0.5)); }
+fn update(state:State,event:web::Event)->State {
+  if event.name=="input" {
+    return State(state.value,event.value,"",state.history,state.advance);
+  }
+  if event.name=="apply" {
+    let decoded:result<f64>=decode_json<f64>(state.input);
+    if is_ok(decoded) { return replace(state,unwrap(decoded)); }
+    return State(state.value,state.input,error_code(decoded),state.history,state.advance);
+  }
+  if event.name=="increment" { return replace(state,state.advance(state.value)); }
+  if event.name=="double" { return replace(state,twice(state.value)); }
+  if event.name=="reset" { return initial(); }
+  return state;
+}
+fn view(state:State)->web::View {
+  return web::element("main",[],[],[
+    web::element("h1",[],[],[web::text(title())]),
+    web::element("p",[web::attr("role","status")],[],[web::text(str(state.value))]),
+    web::element("label",[web::attr("for","number")],[],[web::text("JSON number")]),
+    web::input("number",state.input,"input"),
+    web::button("Apply","apply"),
+    web::button("Add 0.5","increment"),
+    web::button("Double","double"),
+    web::button("Reset","reset"),
+    web::element("p",[web::attr("role","alert")],[],[web::text(state.error)]),
+    web::element("pre",[web::attr("aria-label","History")],[],[web::text(encode_json(state.history))])
+  ]);
+}
+
+fn main()->unit!{io} {
+  print(update(initial(),web::Event("increment","","/")).value);
+}
+test fn transitions()->unit {
+  let before:State=initial();
+  let after:State=update(before,web::Event("increment","","/"));
+  assert(after.value==0.75);
+  assert(before.history==[0.25]);
+  assert(after.history==[0.25,0.75]);
+  let entered:State=update(after,web::Event("input","5e-324","/"));
+  let tiny:State=update(entered,web::Event("apply","","/"));
+  assert(tiny.value==5e-324);
+  assert(update(tiny,web::Event("double","","/")).value==1e-323);
+  let invalid:State=update(tiny,web::Event("input","1e309","/"));
+  let rejected:State=update(invalid,web::Event("apply","","/"));
+  assert(rejected.error=="E_JSON");
+  assert(rejected.value==tiny.value);
+  assert(rejected.history==tiny.history);
+}
+
+server fn excluded()->str { return "FINITE_NUMBERS_SERVER_SENTINEL"; }
