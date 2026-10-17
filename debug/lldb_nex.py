@@ -406,7 +406,7 @@ def _wire(value, descriptor, records, budget, depth=0):
     if "function" in descriptor:
         target = _closure_case(data, descriptor, records, budget)
         return {"function": target["function"], "identity": target["identity"], "captures": {
-            field["name"]: _wire(items.GetChildAtIndex(index), field["type"], records, budget, depth + 1)
+            field["name"]: _wire(items.GetChildAtIndex(index), field["type"], records, budget, depth + 2)
             for index, field in enumerate(target["fields"])}}
     if "list" in descriptor and kind == 1:
         return [_wire(items.GetChildAtIndex(i), descriptor["list"], records, budget, depth + 1) for i in range(size)]

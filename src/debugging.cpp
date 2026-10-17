@@ -66,7 +66,19 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
       if(bool(c.get("value"))==bool(c.get("unavailable")))throw Error("E_DEBUG_FRAME","capture requires exactly one value or unavailable reason");if(c.get("unavailable"))required(c,"unavailable");
     }
   }
-  auto expression=parseExpression(source,"<watch:"+name+">",1024);std::vector<std::pair<E,unsigned>> pending{{expression,0}};while(!pending.empty()){auto [e,depth]=pending.back();pending.pop_back();if(depth>128)throw Error("E_DEBUG_LIMIT","expression AST exceeds its depth budget");for(auto arg:e->args)pending.emplace_back(arg,depth+1);}
+  auto expression=parseExpression(source,"<watch:"+name+">",1024);
+  std::vector<std::pair<E,unsigned>> pending{{expression,0}};std::vector<std::pair<S,unsigned>> statements;
+  while(!pending.empty()||!statements.empty()){
+    if(!pending.empty()){
+      auto [e,depth]=pending.back();pending.pop_back();if(depth>128)throw Error("E_DEBUG_LIMIT","expression AST exceeds its depth budget");
+      for(auto arg:e->args)pending.emplace_back(arg,depth+1);
+      if(e->lambda)for(auto statement:e->lambda->body)statements.emplace_back(statement,depth+1);
+      for(auto arm:e->arms)for(auto statement:arm->body)statements.emplace_back(statement,depth+1);
+    }else{
+      auto [s,depth]=statements.back();statements.pop_back();if(depth>128)throw Error("E_DEBUG_LIMIT","expression AST exceeds its depth budget");
+      if(s->expr)pending.emplace_back(s->expr,depth+1);childBlocks(s,[&](const auto &body){for(auto child:body)statements.emplace_back(child,depth+1);});
+    }
+  }
   bindExpression(p,name,expression);auto type=checkExpression(p,name,expression,types);
   std::set<std::string> referenced;std::function<void(E,std::set<std::string>)> names=[&](E e,std::set<std::string> bound){if(e->kind==Expr::Name&&!bound.contains(e->text))referenced.insert(e->text);
     if(e->kind==Expr::Match){names(e->args[0],bound);for(auto arm:e->arms){auto local=bound;for(const auto &b:arm->bindings)if(b.name!="_")local.insert(b.name);if(arm->guard)names(e->args[arm->guard],local);if(arm->value)names(e->args[arm->value],local);}}

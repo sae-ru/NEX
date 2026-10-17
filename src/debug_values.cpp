@@ -63,9 +63,10 @@ JSON debugValueSchema(const Program &program,const Type &type,const std::set<std
 }
 void DebugValues::budget(unsigned depth){if(depth>64||++visits>100000||text>8*1048576)throw Error("E_DEBUG_LIMIT","debug wire value exceeds its depth/node/text budget");}
 void DebugValues::observe(const std::string &id,const Array &path,const std::string &kind,const JSON &value){
-  if(id.empty())return;auto key=id+":"+json(Array(path),false)+":"+kind;auto data=json(value,false);auto [at,inserted]=observations.emplace(key,data);
-  if(!inserted&&at->second!=data)invalid("conflicting captures for one stopped callable identity");
-  if(inserted){observationBytes+=data.size();if(observationBytes>8*1048576)throw Error("E_DEBUG_LIMIT","callable alias observations exceed byte budget");}
+  if(id.empty())return;auto key=id+":"+json(Array(path),false)+":"+kind;auto data=json(value,false);auto at=observations.find(key);
+  if(at!=observations.end()){if(at->second!=data)invalid("conflicting captures for one stopped callable identity");return;}
+  auto bytes=key.size()+data.size();if(observationBytes+bytes>8*1048576)throw Error("E_DEBUG_LIMIT","callable alias observations exceed byte budget");
+  observationBytes+=bytes;observations.emplace(std::move(key),std::move(data));
 }
 std::pair<std::string,std::string> DebugValues::callableShape(const Type &type,const JSON &wire){
   const auto &value=object(wire);if(value.size()!=2)invalid("callable shape requires function and identity");auto name=field(value,"function"),id=nex::identity(value);

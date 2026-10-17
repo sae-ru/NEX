@@ -143,9 +143,35 @@ clone closure identity, and a watch invocation must resolve a callable proxy
 before choosing its logical target. A captured pointer must never be executed
 inside the debuggee.
 
-Remaining integration includes updating native runtime-view metadata/formatter,
-frame validation/planning, DAP children and JSON schemas, context/derived edits,
-all function-type traversal sites, documentation of the implemented `wire`
+Callable debugger integration now uses `nex.runtime-view/3`,
+`nex.debug-expression/3` and a separate `nex.debug-wire/1` descriptor/codec.
+`tests/function_debug.py` has ten offline cases and an opt-in actual
+macOS ARM64 LLDB/DAP case. It covers partial reads, checked
+targets/effects/realm, canonical identities, alias conflicts, computed closures,
+generic lexical types, DAP pages and expiry, and replay after source deletion.
+The live provider verifies code addresses against exact compiled symbols and
+never invokes those pointers. The final current-source regression passed all
+24 CTest suites (224 cases) in 265.47 seconds, including the ten offline cases.
+The actual macOS ARM64 LLDB/DAP callable case passed in 9.057 seconds and skips
+an unread 32,768-item captured list. Logs are
+`build/function-debug-ctest-final.log` and
+`build/function-debug-live-tests-final.log`; independent jsonschema 4.23.0
+validation evidence is `build/function-debug-schema-evidence-final.json`.
+The whole suite must pass again against the final coordinated source version
+before release; this is still an intermediate checkpoint.
+
+The generated API client projection now retains types/imports used solely by
+callback signatures and follows nominal types inside phantom callable type
+arguments. Derived closure definitions remain inline in their owner's saved
+source instead of being emitted a second time at module scope. Three added
+API cases exercise native/TypeScript agreement; actual function payloads still
+cannot cross JSON/API boundaries. Callable alias observation accounting includes
+path keys as well as values, with a deep long-field-name fixture exercising the
+8 MiB rejection rather than allocating an oversized observation table.
+
+Remaining integration includes the final language/LLM specification, auditing
+all function-type traversal sites (including task linkage and phantom type
+arguments in bounded context), documentation of the implemented `wire`
 implications (integer/ordered imply wire), remaining core/type
 limits, proof unsupported statuses and API projections. Finish source language
 0.10/toolchain 0.23 and canonical function/program versioning with a genuine

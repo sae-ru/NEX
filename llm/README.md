@@ -61,3 +61,11 @@ Native task checks may bind an ID and reviewed fingerprint obtained from `nex to
 Toolchain 0.21 / language 0.8 adds builtin generic bounds `add`, `ordered` and `integer`, including unused-body/forwarding checks and sorted `type_bounds` in context/canonical definitions. Retrieve exact domains/implications with `describe.generic_constraints` and use `examples/constraints.nex`. Migrate 0.7 sources explicitly and retain the matching 0.20 binary/resources for old frames/receipts.
 
 Toolchain 0.22 / language 0.9 adds checked nested/literal/record/result/exact-list patterns, ordered guards and value matches, including pure lazy watches. Retrieve `nex guide --kind match`; guards do not establish coverage and discarded payloads are not demanded. Legacy simple enum operation paths are preserved by explicit 0.8 migration. Retain SDK 0.21 for original frames/receipts.
+
+Unreleased callable debugger work has a separate `debug-wire.schema.json` and
+is documented in the expression guide. Stopped function values must match a
+compiled checked target, exact signature/effects/realm and immutable capture
+layout. Preserve same-stop alias identities, supply only exact demanded reads,
+and report unavailable captures. `computed:N` identities describe helper-created
+values and are not native capture inputs. Application JSON still rejects
+callables; query the actual compiler and matching guide before using this draft.

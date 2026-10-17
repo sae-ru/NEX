@@ -121,3 +121,5 @@ add_test(NAME matching COMMAND ${Python3_EXECUTABLE}
 
 add_test(NAME function_values COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/function_values.py $<TARGET_FILE:nex>)
+add_test(NAME function_debug COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/function_debug.py $<TARGET_FILE:nex>)

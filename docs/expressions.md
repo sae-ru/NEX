@@ -228,6 +228,64 @@ Matching pure helpers accept exact enum values or demand only the selected case 
 
 Language 0.7 watches can instantiate pure generic helpers that were not emitted into the stopped binary. A generic frame resolves its original type parameter names to the concrete instance arguments. Captured nominal type names include applications such as `model::Box<i64>`. Instances are derived metadata, so creating a watch helper does not change source revision identity. The compiler still validates source/build/stop identity and rejects effectful calls; evaluation never runs code in the inferior. Type-name budgets in the frame schemas are 4096 bytes.
 
+## Callable watches (unreleased integration)
+
+The working function-value prototype supports pure calls through captured and
+watch-created closures. This is work toward language 0.10 / toolchain 0.23;
+the coordinated version change, migration and full SDK platform matrix are
+still pending. Retain SDK 0.22 for its existing frames and receipts.
+
+Types containing callables use `nex.debug-wire/1`, described structurally by
+[debug-wire.schema.json](../llm/debug-wire.schema.json). Ordinary wire-only
+types retain their existing application wire descriptor. `encode_json`,
+`decode_json` and API payloads continue to reject function types recursively.
+The debug descriptor has `root`, `records`, `enums` and `targets`. A function
+type is `{"function":"fn(bool)->i64"}`. Each target records its exact checked
+signature, native symbol, compiled flag and ordered capture types. Entries
+marked `compiled:false` may describe computed watch functions; they cannot be
+supplied as stopped native values.
+
+A full stopped callable is:
+
+```json
+{
+  "function": "example::make::$lambda_0",
+  "identity": "12345",
+  "captures": {"offset": "2"}
+}
+```
+
+Its partial shape contains exactly `function` and `identity`. Capture paths
+then descend through checked capture names, such as `["offset"]` or
+`["payload","Pick::number"]`. Closure invocation reads each capture only
+when used. Obtaining a whole callable result needs all its bounded captures;
+omitted values produce further demands or explicit unavailability. Alias
+identity is a nonzero canonical decimal u64 object token; it is scoped to the
+recorded stop, not a portable code address. The evaluator rejects inconsistent
+targets and observed capture data for the same identity, identity cycles and
+targets with different signatures, realms or effects. Data not read by the
+expression is not evidence of a complete snapshot.
+
+The LLDB provider validates the actual code pointer against the manifest's
+compiled target symbol without calling it. Evaluation executes the checked
+source in the helper process. Computed closures receive `computed:N` identities;
+these cannot be reintroduced as stopped native inputs. Function equality uses
+object identity, including inside aggregates. DAP computed children expose
+`<target>` followed by captured values, retaining paging and stop expiry.
+Watches inside a concrete generic closure also resolve the enclosing template's
+type names. Watch-created closures remain derived and do not write a revision.
+
+Current manifests use `nex.runtime-view/3` and `nex.debug-expression/3`; older
+layouts require their original compiler/resources. Capture/text/node/depth
+budgets remain bounded; callable alias observation keys and values share an
+8 MiB budget. The live fixture includes an unread 32,768-item captured list.
+The 128-depth source AST limit includes lambda bodies and their statements.
+
+```sh
+python3 tests/function_debug.py build/nex
+python3 tests/function_debug.py build/nex --live LiveFunctionDebug
+```
+
 Language 0.8 watches enforce builtin generic bounds before pure helper specialization, including helpers absent from the stopped binary. Inside a concrete generic frame, source T resolves to its captured concrete type argument; constraint failures remain E_GENERIC_BOUND. Retain the matching source language/compiler/resources for historical snapshots.
 
 Language 0.9 watches support value matches and pure helpers with nested/guarded patterns. Pattern bindings are local; expression planning reports free frame bindings only. Enum/result/list selectors read required shapes and selected fields, while discarded payloads remain unread.

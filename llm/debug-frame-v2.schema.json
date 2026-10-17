@@ -68,7 +68,7 @@
             "minLength": 1,
             "maxLength": 4096
           },
-          "value": {},
+          "value": {"description": "Exact typed value; types containing callables use nex.debug-wire/1 rather than application JSON."},
           "unavailable": {
             "type": "string",
             "maxLength": 4096,
@@ -141,7 +141,7 @@
               "shape"
             ]
           },
-          "value": {},
+          "value": {"description": "A full typed value or a checked shape. Callable shape is exactly function plus nonzero decimal identity. Subsequent capture-name paths are checked against that target's environment."},
           "unavailable": {
             "type": "string",
             "maxLength": 4096,

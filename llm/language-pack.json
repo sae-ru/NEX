@@ -24,6 +24,7 @@
     "expressions": "docs/expressions.md",
     "debug_frame_schema": "llm/debug-frame.schema.json",
     "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json",
+    "debug_wire_schema": "llm/debug-wire.schema.json",
     "operations": "docs/operations.md",
     "operations_schema": "llm/operations.schema.json",
     "native_toolchain_schema": "llm/toolchain.schema.json",

@@ -12,11 +12,24 @@ Unreleased work in progress: typed function values and snapshot closures are
 being integrated for the next language version. The checker, interpreter,
 native indirect calls, TypeScript, capture ownership and operation/cache
 metadata have a tested prototype under `tests/function_values.py` and
-`examples/functions`. Debug callable capture/validation, versioned migration,
-the final language/LLM specification and the installed cross-platform SDK gate
+`examples/functions`. Ten offline callable-watch cases and an actual macOS
+ARM64 LLDB/DAP case now exercise validated targets/identities, lazy captures,
+generic closure frames, paged children, stop expiry and source-deleted replay
+in `tests/function_debug.py`. The new debug wire schema is separate from
+application JSON. Generated API clients retain inline closures and nominal
+types used only in callback signatures or phantom type arguments, with three
+native/TypeScript agreement cases. Versioned migration, the final language/LLM specification,
+Linux live callable debugging and the installed cross-platform SDK gate
 remain open. `docs/function-values-design.md` records the design and current
 evidence; this draft is not a completed 0.23 release. Keep the verified 0.22 SDK
 for its existing receipts and frames.
+
+The current unreleased callable integration passed 24 macOS CTest suites / 224
+cases in 265.47 seconds and a separate actual LLDB/DAP callable case in 9.057
+seconds. The latter uses an unread 32,768-item captured list. Current-source
+logs are `build/function-debug-ctest-final.log` and
+`build/function-debug-live-tests-final.log`; this evidence does not establish
+the pending new-version migration or Linux/installed-SDK callable gates.
 
 ## Implemented and exercised
 

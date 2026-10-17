@@ -68,7 +68,7 @@
             "minLength": 1,
             "maxLength": 4096
           },
-          "value": {},
+          "value": {"description": "Exact typed application wire value, or debug wire value for types containing callables. Resolve callable layouts using nex.debug-wire/1; the compiler validates the selected target and recursive captures."},
           "unavailable": {
             "type": "string",
             "maxLength": 4096,
