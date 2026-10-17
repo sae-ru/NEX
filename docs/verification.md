@@ -13,7 +13,7 @@ nex verify examples/verification/main.nex --contracts /tmp/increment.json --json
 ```json
 {
   "schema": "nex.verification-contracts/1",
-  "language": "0.5",
+  "language": "0.7",
   "expected_revision": "CURRENT_SEMANTIC_REVISION",
   "source_hash": "EXACT_SOURCE_BUNDLE_HASH",
   "functions": [{

@@ -21,7 +21,8 @@ std::string typeName(Type t) {
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
-    case Type::Record:return t.name;default: return "unknown"; }
+    case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
+    case Type::Parameter:return "$"+t.name;default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(){
   static const std::set<std::string> names={"print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys"};
@@ -58,16 +59,17 @@ std::string hash(const std::string &text) {
   for (auto c : digest) { out += hex[c >> 4]; out += hex[c & 15]; }
   return out;
 }
+static bool localSymbol(const std::string &name){auto separator=name.find("::"),arguments=name.find('<');return separator==std::string::npos||(arguments!=std::string::npos&&arguments<separator);}
 const Function &Program::function(const std::string &name,Span span) const {
-  for (const auto &f : functions) if (f.name == name || (name.find("::")==std::string::npos&&f.owner==module&&f.localName==name)) return f;
+  for (const auto &f : functions) if (f.name == name || (localSymbol(name)&&f.owner==module&&f.localName==name)) return f;
   throw Error("E_NAME", "unknown function '" + name + "'",span);
 }
 const Structure &Program::structure(const std::string &name) const {
-  for(const auto &s:structures)if(s.name==name||(name.find("::")==std::string::npos&&s.owner==module&&s.localName==name))return s;
+  for(const auto &s:structures)if(s.name==name||(localSymbol(name)&&s.owner==module&&s.localName==name))return s;
   throw Error("E_TYPE","unknown structure '"+name+"'");
 }
 bool Program::hasStructure(const std::string &name)const {
-  return std::any_of(structures.begin(),structures.end(),[&](const auto &s){return s.name==name||(name.find("::")==std::string::npos&&s.owner==module&&s.localName==name);});
+  return std::any_of(structures.begin(),structures.end(),[&](const auto &s){return s.name==name||(localSymbol(name)&&s.owner==module&&s.localName==name);});
 }
 const Variant *Program::variant(const std::string &name,const Structure **owner)const {
   auto separator=name.rfind("::");if(separator==std::string::npos)return nullptr;
@@ -87,6 +89,7 @@ std::string Program::location(const Span &span)const {
   if(units.contains(span.file))return units.at(span.file).path;return span.file.empty()?path:span.file;
 }
 std::string nativeSymbol(const std::string &name){
+  if(name.find('<')!=std::string::npos)return "nex_inst_"+hash(name);
   if(name.find("::")==std::string::npos)return "nex_user_"+name;
   std::string result="nex";size_t begin=0;
   for(;;){auto end=name.find("::",begin);auto part=name.substr(begin,end==std::string::npos?end:end-begin);result+="_"+std::to_string(part.size())+"_"+part;if(end==std::string::npos)break;begin=end+2;}
@@ -128,7 +131,7 @@ public:
   }
 };
 class Parser {
-  Program p; std::vector<Token> tokens; size_t i = 0;
+  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0;std::set<std::string> parameters;
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
   bool accept(const std::string &s) { if (peek().text == s) { take(); return true; } return false; }
@@ -143,15 +146,23 @@ class Parser {
     return take();
   }
   std::string qualified(){auto result=name().text;while(accept("::"))result+="::"+name().text;return result;}
+  void typeEnd(){if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");}
+  std::vector<std::string> templateParameters(){
+    parameters.clear();std::vector<std::string> result;if(!accept("<"))return result;
+    do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);}while(accept(","));typeEnd();return result;
+  }
+  std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
   Type type() {
+    if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
+    struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
     auto t = take();
     if (t.text=="i64") return Type::I64; if (t.text=="bool") return Type::Bool; if(t.text=="unit")return Type::Unit;if(t.text=="str")return Type::Str;
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       expect("<");auto item=type();
-      if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");
+      typeEnd();
       return t.text=="list"?Type::list(std::move(item)):Type::result(std::move(item));
     }
-    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;return Type::record(text);}
+    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text)){value.kind=Type::Parameter;return value;}if(peek().text=="<")value.arguments=typeArguments();return value;}
     throw Error("E_TYPE", "unknown type '"+t.text+"'",t.span);
   }
   static int precedence(const std::string &op) {
@@ -163,7 +174,7 @@ class Parser {
     if(peek().text!="<")return false;unsigned depth=0;
     for(size_t n=0;i+n<tokens.size();++n){
       const auto &text=peek(n).text;if(text=="<")++depth;
-      else if(text==">"){if(--depth==0)return peek(n+1).text=="(";}
+      else if(text==">"){if(--depth==0)return peek(n+1).text=="("||peek(n+1).text=="::";}
       else if(text==";"||text=="{"||text=="}"||text=="=")break;
     }
     return false;
@@ -190,7 +201,11 @@ class Parser {
     } else if(token.kind==Token::Id) {
       e=std::make_shared<Expr>(); e->kind=Expr::Name; e->span=token.span; e->text=token.text;
       while(accept("::"))e->text+="::"+name().text;
-      if((e->text=="decode_json"||e->text=="err")&&genericAhead()){expect("<");e->annotation=type();expect(">");}
+      if(genericAhead()){
+        e->typeArguments=typeArguments();
+        if(e->text=="decode_json"||e->text=="err"){if(e->typeArguments.size()!=1)throw Error("E_GENERIC_ARITY","builtin requires one type argument",e->span);e->annotation=e->typeArguments[0];e->typeArguments.clear();}
+        while(accept("::"))e->text+="::"+name().text;
+      }
       if(accept("(")) {
         e->kind=Expr::Call;
         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
@@ -269,26 +284,28 @@ public:
       }
       auto start=peek().span;bool exported=accept("pub");
       if(peek().text=="enum") {
-        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters();expect("{");
+        if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){
           auto tag=name();Variant v;v.name=tag.text;v.span=tag.span;v.ordinal=s.variants.size();
           if(accept("(")){if(!accept(")")){do{auto field=name();expect(":");v.fields.push_back({field.text,type(),field.span});}while(accept(","));expect(")");}}
           expect(";");s.variants.push_back(std::move(v));
         }
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
       }
       if(peek().text=="struct") {
-        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters();expect("{");
+        if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
-      f.test=accept("test");expect("fn");f.name=name().text;expect("(");
+      f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters();expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->"); f.result=type();
       if(accept("!")) {expect("{");if(!accept("}")){do {auto n=name();if(!f.effects.insert(n.text).second)throw Error("E_EFFECT","duplicate effect",n.span);}while(accept(","));expect("}");}}
-      f.body=block();f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));
+      f.body=block();f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
     }
     return std::move(p);
   }
@@ -307,10 +324,38 @@ class Checker {
     if(scopes.back().contains(name))throw Error("E_DUPLICATE","duplicate local '"+name+"'",span);
     scopes.back()[name]=b;
   }
-  void validType(const Type &t,Span span,bool result=false) {
+  void validType(Type &t,Span span,bool result=false) {
+    t=resolveType(p,t,span);
     if(t==Type::Unit&&!result)throw Error("E_TYPE","unit is only valid as a function result",span);
-    if(t.kind==Type::Record&&!p.hasStructure(t.name))throw Error("E_TYPE","unknown type '"+t.name+"'",span);
-    if(t.kind==Type::List||t.kind==Type::Result)validType(*t.element,span);
+  }
+  void unify(Type formal,Type actual,std::map<std::string,Type> &bound,Span span){
+    if(formal.kind==Type::Parameter){auto found=bound.find(formal.name);if(found==bound.end()){if(actual==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);bound[formal.name]=actual;}else same(actual,found->second,span);return;}
+    if(formal.kind==Type::Record&&!formal.arguments.empty()){
+      if(actual.kind!=Type::Record)throw Error("E_TYPE","expected nominal generic type "+typeName(formal),span);
+      const auto &instance=p.structure(actual.name);if(instance.templateName!=formal.name||instance.typeArguments.size()!=formal.arguments.size())throw Error("E_TYPE","generic nominal types differ",span);
+      for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],instance.typeArguments[i],bound,span);return;
+    }
+    if(formal.kind!=actual.kind)throw Error("E_TYPE","expected "+typeName(formal)+", found "+typeName(actual),span);
+    if(formal.element){unify(*formal.element,*actual.element,bound,span);return;}same(actual,formal,span);
+  }
+  std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected){
+    if(formals.size()!=call->args.size())throw Error("E_ARITY","incorrect number of value arguments",call->span);
+    std::map<std::string,Type> bound;
+    if(!call->typeArguments.empty()){
+      if(parameters.size()!=call->typeArguments.size())throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
+      for(size_t i=0;i<parameters.size();++i){auto argument=call->typeArguments[i];validType(argument,call->span);bound[parameters[i]]=argument;}
+    }
+    if(expected!=Type::Unknown)unify(result,expected,bound,call->span);
+    std::function<bool(const Type&)> missing=[&](const Type &type){if(type.kind==Type::Parameter)return std::find(parameters.begin(),parameters.end(),type.name)!=parameters.end()&&!bound.contains(type.name);if(type.element&&missing(*type.element))return true;for(const auto &a:type.arguments)if(missing(a))return true;return false;};
+    std::vector<bool> done(formals.size());size_t remaining=formals.size();
+    while(remaining){bool progress=false;for(size_t i=0;i<formals.size();++i)if(!done[i]){
+      auto hint=missing(formals[i].type)?Type():resolveType(p,substituteType(formals[i].type,bound),call->span);
+      try{auto actual=expr(call->args[i],hint);unify(formals[i].type,actual,bound,call->args[i]->span);done[i]=true;--remaining;progress=true;}
+      catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+    }
+      if(!progress)throw Error("E_GENERIC_INFER","cannot infer generic arguments; provide explicit types",call->span);}
+    std::vector<Type> types;for(const auto &parameter:parameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","type parameter has no argument or expected-type constraint; provide explicit types",call->span);types.push_back(bound.at(parameter));}
+    return types;
   }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
@@ -330,16 +375,21 @@ class Checker {
       if(!found)throw Error("E_FIELD","unknown field '"+e->text+"' on "+base.name,e->span);break;
     }
     case Expr::Index: {
-      auto base=expr(e->args[0]);same(expr(e->args[1]),Type::I64,e->span);
+      auto base=expr(e->args[0]);same(expr(e->args[1],Type::I64),Type::I64,e->span);
       if(base.kind!=Type::List&&base!=Type::Str)throw Error("E_TYPE","indexing requires a list or string",e->span);
       e->type=base==Type::Str?Type(Type::Str):*base.element;break;
     }
     case Expr::Name:e->type=lookup(e->text,e->span).type;break;
     case Expr::Unary:
-      same(expr(e->args[0]),e->text=="!"?Type::Bool:Type::I64,e->span);e->type=e->args[0]->type;break;
+      same(expr(e->args[0],e->text=="!"?Type::Bool:Type::I64),e->text=="!"?Type::Bool:Type::I64,e->span);e->type=e->args[0]->type;break;
     case Expr::Binary: {
-      Type a=expr(e->args[0],expected),b=expr(e->args[1],a);same(b,a,e->span);
       const auto &op=e->text;
+      bool equality=op=="=="||op=="!=";Type hint=Type::I64;
+      if(equality)hint=Type::Unknown;else if(op=="&&"||op=="||")hint=Type::Bool;
+      else if(op=="+")hint=expected==Type::I64||expected==Type::Str||expected.kind==Type::List?expected:Type();
+      Type a,b;bool rightTyped=false;
+      try{a=expr(e->args[0],hint);}catch(const Error &error){if(!equality||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
+      if(!rightTyped)b=expr(e->args[1],a);same(b,a,e->span);
       if(op=="&&"||op=="||"){same(a,Type::Bool,e->span);e->type=Type::Bool;}
       else if(op=="=="||op=="!="){if(a==Type::Unit)throw Error("E_TYPE","cannot compare unit",e->span);e->type=Type::Bool;}
       else if(op=="+"&&(a==Type::Str||a.kind==Type::List))e->type=a;
@@ -347,9 +397,10 @@ class Checker {
       break;
     }
     case Expr::Call: {
+      if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
       if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
-        arity(e->text=="store_put"?2:1);for(auto a:e->args)same(expr(a),Type::Str,a->span);
+        arity(e->text=="store_put"?2:1);for(auto a:e->args)same(expr(a,Type::Str),Type::Str,a->span);
         if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
         std::string effect=e->text=="read_env"?"io":"db";if(!f->effects.contains(effect))throw Error("E_EFFECT",e->text+" requires declared effect "+effect,e->span);
         e->type=Type::result(e->text=="store_keys"?Type::list(Type::Str):e->text=="store_put"||e->text=="store_remove"?Type(Type::Bool):Type(Type::Str));break;
@@ -358,28 +409,39 @@ class Checker {
         arity(1);auto item=expr(e->args[0],expected.kind==Type::Result?*expected.element:Type());validType(item,e->span);e->type=Type::result(item);break;
       }
       if(e->text=="err"){
-        arity(2);for(auto a:e->args)same(expr(a),Type::Str,a->span);
+        arity(2);for(auto a:e->args)same(expr(a,Type::Str),Type::Str,a->span);
         auto item=e->annotation!=Type::Unknown?e->annotation:expected.kind==Type::Result?*expected.element:Type();
         if(item==Type::Unknown)throw Error("E_INFER","err requires result<T> context or err<T>(code, message)",e->span);
         validType(item,e->span);e->type=Type::result(item);break;
       }
       if(e->text=="is_ok"||e->text=="unwrap"||e->text=="error_code"||e->text=="error_message"){
-        arity(1);auto item=expr(e->args[0]);if(item.kind!=Type::Result)throw Error("E_TYPE",e->text+" requires result<T>",e->span);
+        arity(1);auto hint=e->text=="unwrap"&&expected!=Type::Unknown?Type::result(expected):Type();auto item=expr(e->args[0],hint);if(item.kind!=Type::Result)throw Error("E_TYPE",e->text+" requires result<T>",e->span);
         e->type=e->text=="is_ok"?Type(Type::Bool):e->text=="unwrap"?*item.element:Type(Type::Str);break;
       }
       if(e->text=="encode_json"){
-        arity(1);validType(expr(e->args[0]),e->span);e->type=Type::Str;break;
+        arity(1);auto type=expr(e->args[0]);validType(type,e->span);e->type=Type::Str;break;
       }
       if(e->text=="decode_json"){
-        arity(1);same(expr(e->args[0]),Type::Str,e->span);
+        arity(1);same(expr(e->args[0],Type::Str),Type::Str,e->span);
         if(e->annotation==Type::Unknown)throw Error("E_INFER","decode_json requires an explicit type: decode_json<T>(text)",e->span);
         validType(e->annotation,e->span);e->type=Type::result(e->annotation);break;
       }
       if(const Structure *owner=nullptr;auto variant=p.variant(e->text,&owner)){
+        if(!owner->typeParameters.empty()){
+          const auto &raw=p.structureTemplates.at(owner->name);const Variant *source=nullptr;for(const auto &v:raw.variants)if(v.name==variant->name)source=&v;
+          auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
+          auto arguments=infer(raw.typeParameters,source->fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);
+          e->text=instance.name+"::"+source->name;e->typeArguments=arguments;variant=p.variant(e->text,&owner);
+        }else if(!e->typeArguments.empty()&&owner->templateName.empty())throw Error("E_GENERIC_ARITY","enum is not generic",e->span);
         arity(variant->fields.size());for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],variant->fields[i].type),variant->fields[i].type,e->args[i]->span);
         e->number=variant->ordinal;e->type=Type::record(owner->name);break;
       }
       if(p.hasStructure(e->text)) {
+        const auto &declaration=p.structure(e->text);
+        if(!declaration.typeParameters.empty()){
+          const auto &raw=p.structureTemplates.at(declaration.name);auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
+          auto arguments=infer(raw.typeParameters,raw.fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);e->text=instance.name;e->typeArguments=arguments;
+        }else if(!e->typeArguments.empty()&&declaration.templateName.empty())throw Error("E_GENERIC_ARITY","structure is not generic",e->span);
         const auto &s=p.structure(e->text);if(s.enumeration)throw Error("E_CONSTRUCTOR","construct an enum through its named variant",e->span);arity(s.fields.size());
         for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],s.fields[i].type),s.fields[i].type,e->args[i]->span);
         e->type=Type::record(s.name);break;
@@ -392,25 +454,32 @@ class Checker {
       }
       if(e->text=="push"||e->text=="set") {
         arity(e->text=="push"?2:3);auto item=e->args.back();
-        Type itemType=expr(item,expected.kind==Type::List?*expected.element:Type());
-        auto list=expr(e->args[0],Type::list(itemType));
+        Type list,itemType;bool listTyped=false;
+        try{list=expr(e->args[0],expected.kind==Type::List?expected:Type());listTyped=true;}catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+        if(listTyped&&list.kind!=Type::List)throw Error("E_TYPE",e->text+" requires a list",e->span);
+        itemType=expr(item,listTyped?*list.element:expected.kind==Type::List?*expected.element:Type());
+        if(!listTyped)list=expr(e->args[0],Type::list(itemType));
         if(list.kind!=Type::List)throw Error("E_TYPE",e->text+" requires a list",e->span);
-        same(itemType,*list.element,e->span);if(e->text=="set")same(expr(e->args[1]),Type::I64,e->span);e->type=list;break;
+        same(itemType,*list.element,e->span);if(e->text=="set")same(expr(e->args[1],Type::I64),Type::I64,e->span);e->type=list;break;
       }
       if(e->text=="slice"||e->text=="contains") {
-        arity(e->text=="slice"?3:2);same(expr(e->args[0]),Type::Str,e->span);
-        for(size_t i=1;i<e->args.size();++i)same(expr(e->args[i]),e->text=="slice"?Type::I64:Type::Str,e->span);
+        arity(e->text=="slice"?3:2);same(expr(e->args[0],Type::Str),Type::Str,e->span);
+        for(size_t i=1;i<e->args.size();++i)same(expr(e->args[i],e->text=="slice"?Type::I64:Type::Str),e->text=="slice"?Type::I64:Type::Str,e->span);
         e->type=e->text=="slice"?Type::Str:Type::Bool;break;
       }
       if(e->text=="print"||e->text=="assert") {
         if(e->args.size()!=1)throw Error("E_ARITY",e->text+" expects one argument",e->span);
-        auto t=expr(e->args[0]);
+        auto t=expr(e->args[0],e->text=="assert"?Type(Type::Bool):Type());
         if(e->text=="assert")same(t,Type::Bool,e->span);
         else {if(t==Type::Unit)throw Error("E_TYPE","cannot print unit",e->span);
           if(!f->effects.contains("io"))throw Error("E_EFFECT","print requires declared effect io",e->span);}
         e->type=Type::Unit;break;
       }
-      const auto &callee=p.function(e->text,e->span);
+      const Function *target=&p.function(e->text,e->span);
+      if(!target->typeParameters.empty()){
+        const auto &raw=p.functionTemplates.at(target->name);auto arguments=infer(raw.typeParameters,raw.params,raw.result,e,expected);target=&instantiateFunction(p,*target,arguments,e->span);e->text=target->name;e->typeArguments=arguments;
+      }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
+      const auto &callee=*target;
       if(callee.test)throw Error("E_TEST","test functions cannot be called",e->span);
       if(callee.params.size()!=e->args.size())throw Error("E_ARITY","incorrect number of arguments to '"+e->text+"'",e->span);
       for(size_t j=0;j<e->args.size();++j)same(expr(e->args[j],callee.params[j].type),callee.params[j].type,e->args[j]->span);
@@ -436,12 +505,13 @@ class Checker {
       case Stmt::Expression:expr(s->expr);break;
       case Stmt::Return:same(s->expr?expr(s->expr,f->result):Type::Unit,f->result,s->span);returns=true;break;
       case Stmt::If: {
-        same(expr(s->expr),Type::Bool,s->span);bool a=block(s->body),b=block(s->alternative);returns=a&&b;break;
+        same(expr(s->expr,Type::Bool),Type::Bool,s->span);bool a=block(s->body),b=block(s->alternative);returns=a&&b;break;
       }
       case Stmt::Match: {
         s->type=expr(s->expr);if(s->type.kind!=Type::Record||!p.structure(s->type.name).enumeration)throw Error("E_MATCH_TYPE","match requires a nominal enum",s->span);
         const auto &type=p.structure(s->type.name);std::set<int64_t> covered;bool all=true;
         for(auto arm:s->arms){const Structure *owner=nullptr;auto variant=p.variant(arm->variant,&owner);
+          if(variant&&owner->name!=type.name&&!type.templateName.empty()&&owner->name==type.templateName){arm->variant=type.name+"::"+variant->name;variant=p.variant(arm->variant,&owner);}
           if(!variant||owner->name!=type.name)throw Error("E_MATCH_VARIANT","pattern is not a variant of "+type.name,arm->span);
           arm->ordinal=variant->ordinal;if(!covered.insert(arm->ordinal).second)throw Error("E_MATCH_DUPLICATE","variant is matched more than once",arm->span);
           if(arm->bindings.size()!=variant->fields.size())throw Error("E_ARITY","pattern binding count differs from variant payload",arm->span);
@@ -450,45 +520,56 @@ class Checker {
         }
         if(covered.size()!=type.variants.size())throw Error("E_MATCH_EXHAUSTIVE","match must cover every enum variant exactly once",s->span);returns=all;break;
       }
-      case Stmt::While:same(expr(s->expr),Type::Bool,s->span);block(s->body);break;
+      case Stmt::While:same(expr(s->expr,Type::Bool),Type::Bool,s->span);block(s->body);break;
       }
     }
     if(newScope)scopes.pop_back();return returns;
   }
+  void functionBody(Function &fn){
+    if(fn.checked)return;auto previous=f;auto previousScopes=std::move(scopes);f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
+    try{
+      for(auto &parameter:fn.params){validType(parameter.type,parameter.span);define(parameter.name,{parameter.type,false},parameter.span);}
+      validType(fn.result,fn.span,true);
+      if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
+      fn.checked=true;
+    }catch(...){f=previous;scopes=std::move(previousScopes);throw;}
+    f=previous;scopes=std::move(previousScopes);
+  }
 public:
   explicit Checker(Program &p):p(p){}
   Type watch(const std::string &function,E expression,const std::map<std::string,Type> &locals){
-    auto context=p.function(function);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();
-    for(const auto &[name,type]:locals){validType(type,expression->span);define(name,{type,false},expression->span);}
-    return expr(expression);
+    auto selected=function;
+    prepareGenerics(p);
+    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();
+    for(const auto &[name,value]:locals){auto type=value;validType(type,expression->span);define(name,{type,false},expression->span);}
+    auto result=expr(expression);for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);return result;
   }
   void run() {
+    prepareGenerics(p);
     std::set<std::string> names;
     const auto &builtins=builtinNames();
-    for(const auto &s:p.structures){
+    for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
-      auto fields=[&](const auto &members){std::set<std::string> seen;for(const auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
+      auto fields=[&](auto &members){std::set<std::string> seen;for(auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
       fields(s.fields);if(s.enumeration&&s.variants.empty())throw Error("E_ENUM","an enum requires at least one variant",s.span);
-      std::set<std::string> tags;for(const auto &variant:s.variants){if(!tags.insert(variant.name).second||!names.insert(s.name+"::"+variant.name).second)throw Error("E_DUPLICATE","duplicate enum variant",variant.span);fields(variant.fields);}
-    }
-    for(const auto &fn:p.functions) {
-      if(builtins.contains(fn.localName.empty()?fn.name:fn.localName)||!names.insert(fn.name).second)throw Error("E_DUPLICATE","duplicate or reserved function '"+fn.name+"'",fn.span);
-      validType(fn.result,fn.span,true);
-      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
-      if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
-      if(fn.test && (!fn.params.empty()||fn.result!=Type::Unit))throw Error("E_TEST","test must take no parameters and return unit",fn.span);
+      std::set<std::string> tags;for(auto &variant:s.variants){if(!tags.insert(variant.name).second||!names.insert(s.name+"::"+variant.name).second)throw Error("E_DUPLICATE","duplicate enum variant",variant.span);fields(variant.fields);}
     }
     for(auto &fn:p.functions) {
-      f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
-      for(const auto &param:fn.params){validType(param.type,param.span);define(param.name,{param.type,false},param.span);}
-      if(!block(fn.body,false) && fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
+      if(builtins.contains(fn.localName.empty()?fn.name:fn.localName)||!names.insert(fn.name).second)throw Error("E_DUPLICATE","duplicate or reserved function '"+fn.name+"'",fn.span);
+      validType(fn.result,fn.span,true);
+      for(auto &parameter:fn.params)validType(parameter.type,parameter.span);
+      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
+      if(fn.test && (!fn.params.empty()||fn.result!=Type::Unit||!fn.typeParameters.empty()))throw Error("E_TEST","test must take no generic/value parameters and return unit",fn.span);
     }
+    for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);
+    std::set<std::string> publicSeen;
     std::function<void(const Type&,Span)> publicType=[&](const Type &t,Span span){
       if(t.kind==Type::List||t.kind==Type::Result)publicType(*t.element,span);
-      if(t.kind==Type::Record&&!p.structure(t.name).exported)throw Error("E_VISIBILITY","public API exposes private type '"+t.name+"'",span);
+      if(t.kind==Type::Record){const auto &s=p.structure(t.name);if(!s.exported)throw Error("E_VISIBILITY","public API exposes private type '"+t.name+"'",span);if(publicSeen.insert(s.name).second){for(const auto &argument:s.typeArguments)publicType(argument,span);for(auto field:s.members())publicType(field->type,field->span);}}
     };
-    for(const auto &s:p.structures)if(s.exported)for(auto field:s.members())publicType(field->type,field->span);
-    for(const auto &fn:p.functions)if(fn.exported){publicType(fn.result,fn.span);for(const auto &param:fn.params)publicType(param.type,param.span);}
+    for(const auto &s:p.structures)if(s.exported&&s.templateName.empty())for(auto field:s.members())publicType(field->type,field->span);
+    for(const auto &fn:p.functions)if(fn.exported&&fn.templateName.empty()){publicType(fn.result,fn.span);for(const auto &param:fn.params)publicType(param.type,param.span);}
     std::set<std::string> operations,routes;
     auto apiWire=[&](const Type &type,Span span){
       auto schema=wireSchema(p,type);auto object=schema.getAsObject();auto records=object->getObject("records");size_t nodes=0;
@@ -507,7 +588,7 @@ public:
       if(!routes.insert(endpoint.method+" "+path).second)throw Error("E_API_ROUTE","duplicate endpoint method/path",endpoint.span);
       if(endpoint.successStatus<200||endpoint.successStatus>=300||endpoint.successStatus==204||endpoint.successStatus==205)throw Error("E_API_STATUS","endpoint success status must permit a JSON body (2xx except 204/205)",endpoint.span);
       const auto &handler=p.function(endpoint.target,endpoint.span);
-      if(handler.realm!="server"||handler.test||handler.params.empty()||handler.params.size()>2||handler.params[0].type!=Type::record("std::api::Context")||handler.result.kind!=Type::Result)throw Error("E_API_SIGNATURE","endpoint handler must be server fn(Context[, Input]) -> result<Output>",endpoint.span);
+      if(handler.realm!="server"||handler.test||!handler.typeParameters.empty()||handler.params.empty()||handler.params.size()>2||handler.params[0].type!=Type::record("std::api::Context")||handler.result.kind!=Type::Result)throw Error("E_API_SIGNATURE","endpoint handler must be a concrete server fn(Context[, Input]) -> result<Output>",endpoint.span);
       if(endpoint.method=="GET"&&handler.params.size()!=1)throw Error("E_API_SIGNATURE","GET endpoints have context only; query/body input is not implicit",endpoint.span);
       const auto &context=p.structure("std::api::Context");
       if(context.fields.size()!=2||context.fields[0].name!="user"||context.fields[0].type!=Type::Str||context.fields[1].name!="request_id"||context.fields[1].type!=Type::Str)throw Error("E_API_SIGNATURE","incompatible std::api::Context",endpoint.span);
@@ -548,35 +629,38 @@ llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
-  return llvm::json::Object{{"format","nex.function/4"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"body",blockJSON(f.body)}};
+  llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
+  return llvm::json::Object{{"format","nex.function/5"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
 }
 llvm::json::Value canonical(const Structure &s) {
-  if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}return llvm::json::Object{{"format","nex.enum/1"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"variants",std::move(variants)}};}
-
-  llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});
-  return llvm::json::Object{{"format","nex.structure/2"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"fields",std::move(fields)}};
+  llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
+  llvm::json::Object result{{"format",s.enumeration?"nex.enum/2":"nex.structure/3"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}result["variants"]=std::move(variants);}
+  else{llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});result["fields"]=std::move(fields);}return result;
 }
 llvm::json::Value canonical(const Endpoint &endpoint){
   return llvm::json::Object{{"format","nex.endpoint/1"},{"name",endpoint.name},{"method",endpoint.method},{"path",endpoint.path},{"success_status",endpoint.successStatus},{"handler",endpoint.target}};
 }
 std::string revision(const Program &p) {
   std::map<std::string,std::string> ordered;
-  for(const auto &f:p.functions)ordered[f.name]=json(canonical(f),false);
+  for(const auto &f:p.functions)if(f.templateName.empty())ordered[f.name]=json(canonical(f),false);
   llvm::json::Object functions;for(const auto &[name,text]:ordered)functions[name]=text;
-  llvm::json::Object structures;for(const auto &s:p.structures)structures[s.name]=canonical(s);
+  llvm::json::Object structures;for(const auto &s:p.structures)if(s.templateName.empty())structures[s.name]=canonical(s);
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/5"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/6"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums"}},
+    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types"}},
     {"effects",llvm::json::Array{"io","db"}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
     {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches"}},
+    {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},
     {"debug_guide","docs/debugging.md"},
@@ -592,7 +676,7 @@ llvm::json::Value describe() {
     {"verification_guide","docs/verification.md"},
     {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
-    {"not_yet_supported",llvm::json::Array{"match_expressions","nested_patterns","pattern_guards","result_patterns","user_generics","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
+    {"not_yet_supported",llvm::json::Array{"match_expressions","nested_patterns","pattern_guards","result_patterns","generic_constraints","higher_kinded_types","function_values","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 }

@@ -30,6 +30,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
       if(t.element)type(*t.element);
       if(t.kind!=Type::Record||!types.insert(t.name).second)return;
       const auto &record=p.structure(t.name);if(record.unit!=key)unitDependencies[key].insert(record.unit);
+      for(const auto &argument:record.typeArguments)type(argument);
       for(auto field:record.members())type(field->type);
     };
     std::function<void(E)> expr=[&](E e){

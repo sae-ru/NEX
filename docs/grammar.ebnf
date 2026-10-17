@@ -1,17 +1,19 @@
-(* NEX 0.6. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
+(* NEX 0.7. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
 import        = "import", string, "as", identifier, ";" ;
-structure     = [ "pub" ], "struct", identifier, "{", { parameter, ";" }, "}" ;
-enumeration   = [ "pub" ], "enum", identifier, "{", variant, { variant }, "}" ;
+structure     = [ "pub" ], "struct", identifier, [ type_parameters ], "{", { parameter, ";" }, "}" ;
+enumeration   = [ "pub" ], "enum", identifier, [ type_parameters ], "{", variant, { variant }, "}" ;
 variant       = identifier, [ "(", [ parameters ], ")" ], ";" ;
-function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, "(", [ parameters ], ")",
+function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
                 "->", type, [ effects ], block ;
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
-type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" | qualified_name ;
+type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" | qualified_name, [ type_arguments ] ;
+type_parameters = "<", identifier, { ",", identifier }, ">" ;
+type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" ;
 block         = "{", { statement }, "}" ;
@@ -33,6 +35,7 @@ product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" } ;
 primary       = integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+                [ type_arguments, [ "::", identifier ] ],
                 [ "(", [ arguments ], ")" ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
 list_literal  = "[", [ arguments ], "]" ;
@@ -61,7 +64,12 @@ digit         = "0" .. "9" ;
    result is contextual as a type constructor; names such as a local result remain
    valid. endpoint is contextual at declaration position; its route, method,
    status, handler realm/signature and public wire types are semantic checks.
-   Unit list/result payloads are rejected. Other generic calls are pending. *)
+   Generic constructors use Box<T>(...) or Maybe<T>::Some(...), with inference
+   from value arguments/expected types when omitted. A variant pattern keeps its
+   uninstantiated name (Maybe::Some), inferred from the checked scrutinee.
+   Generic parameters denote non-unit types; template bodies are checked even
+   when unused. Constraints, defaults and higher-kinded parameters are pending.
+   Generic test declarations and unspecialized executable entries are rejected. *)
 
 (* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
    the scalar expression parser and do not add source declarations or keywords. *)

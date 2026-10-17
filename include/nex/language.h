@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.6";
+inline constexpr const char *languageVersion = "0.7";
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
@@ -17,8 +17,8 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result } kind = Unknown;
-  std::string name; std::shared_ptr<Type> element;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter } kind = Unknown;
+  std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   Type() = default;
   Type(Kind kind) : kind(kind) {}
   static Type list(Type item) { Type t(List); t.element=std::make_shared<Type>(std::move(item)); return t; }
@@ -26,7 +26,7 @@ struct Type {
   static Type record(std::string name) { Type t(Record); t.name=std::move(name); return t; }
   bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result; }
   bool operator==(const Type &other) const {
-    return kind==other.kind && name==other.name && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
+    return kind==other.kind && name==other.name && arguments==other.arguments && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
 };
 std::string typeName(Type type);
@@ -34,6 +34,7 @@ struct Expr {
   enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index } kind;
   Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::vector<std::shared_ptr<Expr>> args;
+  std::vector<Type> typeArguments;
 };
 using E = std::shared_ptr<Expr>;
 struct MatchArm;
@@ -51,6 +52,7 @@ struct Variant { std::string name; std::vector<Param> fields; Span span; int64_t
 struct Structure {
   std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit;
   bool enumeration=false; std::vector<Variant> variants;
+  std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
@@ -59,6 +61,7 @@ struct Function {
   Type result = Type::Unit; std::set<std::string> effects, dependencies;
   std::vector<S> body; Span span; bool test = false;
   bool exported=false; std::string owner,localName,unit;
+  std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
 };
 struct Import { std::string path,alias,target; Span span; };
 struct Endpoint {
@@ -74,6 +77,8 @@ struct Program {
   std::vector<Endpoint> endpoints;
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
+  std::map<std::string,Function> functionTemplates;
+  std::map<std::string,Structure> structureTemplates;
   const Function &function(const std::string &name,Span span={}) const;
   const Structure &structure(const std::string &name) const;
   bool hasStructure(const std::string &name) const;
@@ -94,6 +99,12 @@ llvm::json::Value sourceBundle(const Program &program);
 llvm::json::Value dependencyLock(const Program &program);
 void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language);
 std::string nativeSymbol(const std::string &name);
+void prepareGenerics(Program &program);
+Type substituteType(Type type,const std::map<std::string,Type> &arguments);
+Type resolveType(Program &program,Type type,Span span={},unsigned depth=0);
+Function &instantiateFunction(Program &program,const Function &source,const std::vector<Type> &arguments,Span span);
+std::string genericName(const std::string &name,const std::vector<Type> &arguments);
+bool containsParameter(const Type &type);
 void check(Program &program);
 llvm::json::Value canonical(const Function &function);
 llvm::json::Value canonical(const Structure &structure);

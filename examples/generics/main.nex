@@ -1,0 +1,22 @@
+module generics;
+import "./model.nex" as model;
+
+fn main() -> unit !{io} {
+  let boxed: model::Box<str> = model::Box(model::identity("🧠"));
+  print(boxed.value);
+  print(model::choose(model::Maybe<i64>::Some(42), 0));
+  let tree: model::Tree<i64> = model::Tree::Branch([
+    model::Tree::Leaf(2), model::Tree::Branch([model::Tree::Leaf(40)])
+  ]);
+  print(model::flatten(tree));
+}
+
+test fn generic_values() -> unit {
+  assert(model::identity<i64>(42) == model::identity(42));
+  assert(model::first(model::append([], "selected")) == "selected");
+  let missing: model::Maybe<str> = model::Maybe::None();
+  assert(model::choose(missing, "fallback") == "fallback");
+  let tree: model::Tree<str> = model::Tree::Branch([model::Tree::Leaf("🧠")]);
+  assert(model::flatten(tree) == ["🧠"]);
+  assert(unwrap(decode_json<model::Tree<str>>(encode_json(tree))) == tree);
+}

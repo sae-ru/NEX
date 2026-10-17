@@ -1,12 +1,12 @@
 {
   "schema": "nex.task/1",
-  "language": "0.6",
+  "language": "0.7",
   "id": "bounded-increment",
   "title": "Checked increment acceptance example",
   "goal": "Validate bounded increment behavior, native output, a standalone binary, purity and a defined measured scenario. This fixture validates the development toolchain.",
   "programs": [
     {
-      "baseline_revision": "48f0d9bce52022aed6736a97aa1ab4edcc1bcab59a5f03a0a9a0f918960bd33a",
+      "baseline_revision": "320f43e1d8517baeaa7b791c68735539f4e3fa54474aa9b6085489c690bac5b0",
       "entry": "main.nex",
       "id": "app"
     }
@@ -94,7 +94,7 @@
       "target": "native",
       "tests": [
         {
-          "content_hash": "ca2da8ef60cdb326258be56db3535075ab5a6bbb5b58ce222bc0e154ff25dd54",
+          "content_hash": "49bb0112ceb5ed09f36fd96611445e51c888a4497c02530f70755956c75a7ca1",
           "symbol": "acceptance::boundary_examples"
         }
       ]
@@ -106,7 +106,7 @@
       "target": "web",
       "tests": [
         {
-          "content_hash": "ca2da8ef60cdb326258be56db3535075ab5a6bbb5b58ce222bc0e154ff25dd54",
+          "content_hash": "49bb0112ceb5ed09f36fd96611445e51c888a4497c02530f70755956c75a7ca1",
           "symbol": "acceptance::boundary_examples"
         }
       ]
@@ -117,7 +117,7 @@
       "program": "app",
       "target": "source",
       "contracts": "proof.json",
-      "intent_hash": "53cab4b9f96845ed63aad3b53aa6d93e409df10fe67622f6ae758d9030a67d54"
+      "intent_hash": "9f94095de2a553f4eb94811945f428cc412954ad9f21419b5b637401374cede6"
     },
     {
       "id": "native-build",

@@ -1,4 +1,4 @@
-# NEX language specification 0.6
+# NEX language specification 0.7
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -59,7 +59,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.6",
+  "language": "0.7",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -81,7 +81,36 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | Named structure | Immutable value with declared, typed fields |
 | Named enum | One declared case with its immutable typed payload |
 
-There are no implicit numeric/boolean conversions. Parameters, locals and collection elements cannot have type `unit`. There are no source-level pointers, reference identity, null values or manual memory operations. General user-defined generics, mutable collections and custom destructors remain unimplemented.
+There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, reference identity, null values or manual memory operations. User generics follow the rules below. Generic constraints, higher-kinded types, mutable collections and custom destructors remain unimplemented.
+
+### Generic types and functions
+
+```nex
+pub struct Box<T> { value: T; }
+pub enum Maybe<T> { None; Some(value: T); }
+
+pub fn identity<T>(value: T) -> T { return value; }
+pub fn first<T>(values: list<T>) -> T { return values[0]; }
+
+fn example() -> i64 {
+  let boxed: Box<str> = Box(identity("NEX"));
+  let value: Maybe<i64> = Maybe::Some(42);
+  match value {
+    Maybe::None() => { return 0; },
+    Maybe::Some(number) => { return identity<i64>(number); }
+  }
+}
+```
+
+Functions, structures and enums declare ordered, distinct type parameters with `<T, U>`. Generic nominal declarations cannot use the builtin type-constructor name `result`; ordinary existing local/function names remain valid. A parameter denotes an arbitrary non-unit value type. Its scope is the declaration, including function locals and explicit call annotations. A generic body is checked parametrically even when unused: `fn bad<T>(x:T) -> T { return 1; }` is rejected even if all current callers use i64. Operations must be valid for the declared shape. For example, `first<T>(list<T>)` can index the list, and any T supports equality, formatting and typed JSON under current value semantics; arithmetic on unconstrained T is rejected. Numeric/trait constraints, type defaults, higher-kinded parameters and function values remain pending.
+
+Use `identity<i64>(42)`, `Box<str>("text")`, `Maybe<i64>::Some(42)` or `model::Maybe<i64>::None()` for explicit arguments. `Maybe::Some<i64>(42)` is also accepted. Otherwise the checker unifies declared parameter/result types with value arguments and the expected result type. This handles nested lists/results/nominal generics, expected enum cases with no payload, and empty lists whose element type becomes known from another argument. A parameter with no evidence needs explicit arguments: `Tag<T> { id:i64; }` cannot infer T from `Tag(1)` without context. Context flows through declarations/returns, unwrap, fixed-signature intrinsic arguments, conditions, indices and operator operand constraints. Equality does not use its boolean result type as an operand type; either operand can provide inference evidence for the other. Argument typing may use several inference passes; runtime argument evaluation still occurs exactly once, left to right.
+
+Type arguments participate in nominal identity: `Box<i64>` and `Box<str>` differ even if their fields or a phantom parameter have equal runtime layouts. Public templates may be instantiated with private types internally, while exposed concrete public signatures/models must expose public type arguments and payload types. Imports and generic visibility follow ordinary module rules. Recursive types and functions are supported when their specialization expansion is finite. Match patterns use the source case name, such as `Maybe::Some(x)`; the checked scrutinee supplies its concrete type arguments.
+
+The checker creates immutable concrete specializations for native, TypeScript, JSON/API and debugger use. Generic values require no runtime type erasure or LLM. Abstract template bodies and instances are visible in graph metadata; each instance records its source template and type arguments. Edit the source template through a revision-checked patch. Specializations are derived and reject direct replacement. Saved sources contain each original declaration once. Quote specialized names in shell commands, for example `nex context --symbol 'model::identity<i64>'`. Source program identity includes checked source declarations and excludes derived instances, so a pure watch can instantiate an uncompiled helper without changing the archived revision.
+
+Current resource limits are 64 parameters/arguments per declaration/call, 4096 instances of each function/nominal kind, expansion depth 64, source type nesting 128 and specialized names up to 4096 bytes. Unbounded polymorphic expansion fails explicitly with `E_GENERIC_LIMIT`. Generic tests are unsupported; test concrete instances in ordinary tests. Executable entries must be concrete. See `examples/generics` and the compiler's `generic_features`/`generic_limits` descriptor.
 
 Decimal integer literals have no separators or suffixes. Negative values use unary `-`; the minimum i64 literal is accepted explicitly. Positive literals outside the range are rejected.
 
@@ -160,7 +189,7 @@ Recoverable errors are data and require no io effect. Arithmetic, bounds and ass
 
 The generated descriptor contains `root`, `records` and `enums`, where each enum maps to its ordered cases and typed payload fields. The decoder also accepts legacy `nex.wire/1` descriptors without enums; existing scalar/record/list/result wire payloads are unchanged. API generation and the browser adapter use the new descriptor for typed enum input/output.
 
-`decode_json<T>(text) -> result<T>` validates and reconstructs exactly T. It rejects numeric JSON values for i64, noncanonical/range-invalid decimal strings, duplicate keys (including escaped equivalents), malformed UTF-8/surrogates, unknown/missing fields and incorrect value kinds. The current limits are 1 MiB of encoded text, depth 64, 10,000 collection items and 100,000 decoded value nodes. Decoding failures return `E_JSON` error values; encoding beyond limits traps with `E_JSON`. No implicit conversions or silent repairs occur. Only `decode_json<T>` and `err<T>` have explicit call-site type arguments today; general user-defined generic functions are pending.
+`decode_json<T>(text) -> result<T>` validates and reconstructs exactly T, including concrete user generic models. It rejects numeric JSON values for i64, noncanonical/range-invalid decimal strings, duplicate keys (including escaped equivalents), malformed UTF-8/surrogates, unknown/missing fields and incorrect value kinds. The current limits are 1 MiB of encoded text, depth 64, 10,000 collection items and 100,000 decoded value nodes. Decoding failures return `E_JSON` error values; encoding beyond limits traps with `E_JSON`. No implicit conversions or silent repairs occur. Besides user generics, `decode_json<T>` and `err<T>` accept explicit call-site type arguments; other builtins keep their documented signatures.
 
 The wire decoder accepts one optional leading UTF-8 byte-order mark, counted against the byte limit, consistently in all backends. A BOM inside a string value is ordinary text and remains intact. Decimal i64 strings reject every extra character, including trailing line terminators; JSON whitespace outside a value follows normal JSON parsing rules.
 
@@ -248,13 +277,13 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 ## Graph and revision semantics
 
-Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.6 uses `nex.function/4`, `nex.enum/1` and `nex.program/5`; program identity includes nominal layouts, function bodies, resolved module dependencies and endpoint contracts. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
+Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.7 uses `nex.function/5`, `nex.structure/3`, `nex.enum/2` and `nex.program/6`. Template parameters and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
 SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.6, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (for language 0.5, toolchain 0.15). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.7, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 

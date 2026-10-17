@@ -1,5 +1,6 @@
 #include "nex/language.h"
 #include "nex/watch_values.h"
+#include <algorithm>
 #include "nex/operations.h"
 #include "nex_value.h"
 #include "nex_json.h"
@@ -141,7 +142,7 @@ public:
     return llvm::json::Object{{"ok",true},{"type",typeName(expression->type)},{"value",std::move(wire)},{"display",display},{"display_truncated",truncated},{"steps",int64_t(result.steps)},{"read_bindings",watch->readBindings()},{"read_paths",watch->readPaths()}};
   }
   Evaluation run(const std::string &entry) {
-    const auto &f=p.function(entry);if(!f.params.empty())throw Error("E_ENTRY","entry must take no arguments",f.span);
+    const auto &f=p.function(entry);if(!f.typeParameters.empty()||std::any_of(f.typeArguments.begin(),f.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be concrete",f.span);if(!f.params.empty())throw Error("E_ENTRY","entry must take no arguments",f.span);
     try {
       auto value=call(f,{});
       if(f.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}

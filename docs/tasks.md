@@ -2,7 +2,7 @@
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.6; this is a development-tool protocol.
+LLM vendor. Current source language is 0.7; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 
@@ -149,3 +149,5 @@ compiler/runtime and third-party trust boundaries before interpreting evidence.
 Source-level task annotations, dynamic coverage, dependent generated-program
 steps, task scheduling, automatic requirement discovery, broader agent editing
 operations and measured cross-model trials remain pending.
+
+Language 0.7 links a reached generic instance back to its original function/type template, including phantom type arguments, so requirements can bind source declarations while tests exercise concrete instances. This is static lineage, not dynamic coverage of every instantiation. Profile max_calls budgets use exact concrete instance names from the measured report; a source-template name without a measured row remains unobserved and cannot pass.

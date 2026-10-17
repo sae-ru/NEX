@@ -37,8 +37,8 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));for(auto arm:s->arms)for(const auto &binding:arm->bindings)if(binding.name!="_")declared[binding.name].insert(typeName(binding.type));childBlocks(s,visit);}};visit(fn.body);
   std::map<std::string,Type> types;Object values;
   for(const auto &value:*bindings){const auto &b=object(value);fields(b,{"name","type","value","unavailable"});auto local=required(b,"name"),type=required(b,"type");
-    if(local.empty()||local.size()>256||type.empty()||type.size()>512||!declared[local].contains(type)||types.contains(local))throw Error("E_DEBUG_FRAME","binding is not a unique declared name/type in the selected function: "+local);
-    auto t=parseType(type);if(typeName(t)!=type)throw Error("E_DEBUG_FRAME","frame requires canonical NEX type names");types.emplace(local,std::move(t));
+    if(local.empty()||local.size()>256||type.empty()||type.size()>4096||!declared[local].contains(type)||types.contains(local))throw Error("E_DEBUG_FRAME","binding is not a unique declared name/type in the selected function: "+local);
+    auto t=resolveType(p,parseType(type));if(typeName(t)!=type)throw Error("E_DEBUG_FRAME","frame requires canonical NEX type names");types.emplace(local,std::move(t));
     if(b.get("value")&&b.get("unavailable"))throw Error("E_DEBUG_FRAME","binding cannot be both captured and unavailable");
     if(auto wire=b.get("value"))values[local]=*wire;else required(b,"unavailable");
   }

@@ -1,6 +1,6 @@
 # Separate native compilation — toolchain 0.9
 
-Current source language is 0.6. The native compiler now produces an object for each
+Current source language is 0.7. The native compiler now produces an object for each
 source module containing functions reachable from the selected entry. It can
 reuse those objects across semantic revisions, entry points and source-based or
 archived builds. The entire loaded program still passes the normal checker
@@ -106,3 +106,5 @@ remote/distributed caches and deterministic test-result caching remain pending.
 Absolute debug source paths make this a local build cache; portable SDK/cache
 distribution and additional operating-system verification remain separate work.
 These limits do not restrict the broader NEX development objective.
+
+Generic source bodies specialize into the declaring module. A body edit recompiles the provider while unchanged consumed signatures permit caller reuse. Concrete nominal layouts and type arguments, including phantom arguments, participate in transitive type dependencies. Source projections still refresh debugger locations, and source revision identity excludes redundant derived instances.

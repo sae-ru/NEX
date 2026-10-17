@@ -1,0 +1,28 @@
+module generics::web;
+import "std/web.nex" as web;
+
+struct State<T> { value:T; count:i64; }
+fn replace<T>(state:State<T>,value:T) -> State<T> { return State(value,state.count + 1); }
+
+client fn title() -> str { return "NEX generic state"; }
+client fn initial() -> State<str> { return State("seed",0); }
+client fn update(state:State<str>,event:web::Event) -> State<str> {
+  if event.name == "replace" { return replace(state,event.value); }
+  if event.name == "increment" { return State(state.value,state.count + 1); }
+  if event.name == "reset" { return initial(); }
+  return state;
+}
+client fn view(state:State<str>) -> web::View {
+  return web::element("main",[],[],[
+    web::element("h1",[],[],[web::text(title())]),
+    web::element("p",[web::attr("role","status")],[],[web::text(state.value + ": " + str(state.count))]),
+    web::element("label",[web::attr("for","value")],[],[web::text("Value")]),
+    web::input("value",state.value,"replace"),
+    web::button("Increment","increment"),web::button("Reset","reset")
+  ]);
+}
+client test fn transitions() -> unit {
+  let state:State<str> = update(initial(),web::Event("replace","🧠","/"));
+  assert(state.value == "🧠");assert(state.count == 1);
+  assert(initial().value == "seed");
+}

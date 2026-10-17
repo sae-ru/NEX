@@ -127,14 +127,18 @@ class Loader {
       for(const auto &s:unit.structures){if(!names.insert(s.localName).second||builtins.contains(s.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+s.localName+"'",s.span);table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;for(const auto &dependency:unit.imports)if(dependency.alias==s.localName)throw Error("E_IMPORT_ALIAS","enum name conflicts with an import alias",s.span);}}
     }
     for(auto &[key,unit]:parsed){
+      std::map<std::string,std::string> parameters;
+      auto parameterScope=[&](auto &declaration){parameters.clear();for(auto &name:declaration.typeParameters){auto original=name;name=unit.module+"::"+declaration.localName+"::"+name;parameters[original]=name;}};
       std::function<void(Type&,Span)> type=[&](Type &t,Span span){
+        if(t.kind==Type::Parameter){if(!parameters.contains(t.name))throw Error("E_GENERIC_SCOPE","type parameter is outside its declaration",span);t.name=parameters.at(t.name);}
         if(t.kind==Type::Record)t.name=resolve(key,t.name,true,span);
         if(t.kind==Type::List||t.kind==Type::Result){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}
+        for(auto &argument:t.arguments)type(argument,span);
       };
-      std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto a:e->args)expr(a);}};
+      std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto a:e->args)expr(a);}};
       std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);for(auto arm:s->arms)arm->variant=resolve(key,arm->variant,false,arm->span);childBlocks(s,block);}};
-      for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
-      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;for(auto field:s.members())type(field->type,field->span);}
+      for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
+      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
     }
   }
@@ -186,11 +190,12 @@ Program loadBundle(const llvm::json::Value &bundle,const std::string &root){
 }
 void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
+  std::map<std::string,Type> parameters;if(!f.templateName.empty()){const auto &source=p.functionTemplates.at(f.templateName);for(size_t i=0;i<source.typeParameters.size();++i){const auto &name=source.typeParameters[i];parameters[name.substr(name.rfind("::")+2)]=f.typeArguments[i];}}
   for(const auto &[key,_]:p.units)symbols[key];
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
   for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}
-  std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}};
-  std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto a:e->args)visit(a);};visit(expression);
+  std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record&&t.arguments.empty()&&parameters.contains(t.name)){t=parameters.at(t.name);return;}if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}for(auto &argument:t.arguments)type(argument,span);};
+  std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto a:e->args)visit(a);};visit(expression);
 }
 llvm::json::Value sourceBundle(const Program &p){
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;

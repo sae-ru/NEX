@@ -1,0 +1,31 @@
+module generics::model;
+
+pub struct Box<T> { value: T; }
+pub enum Maybe<T> { None; Some(value: T); }
+pub enum Tree<T> { Leaf(value: T); Branch(children: list<Tree<T>>); }
+
+pub fn identity<T>(value: T) -> T { return value; }
+pub fn first<T>(values: list<T>) -> T { return values[0]; }
+pub fn append<T>(values: list<T>, value: T) -> list<T> { return push(values, value); }
+
+pub fn choose<T>(value: Maybe<T>, fallback: T) -> T {
+  match value {
+    Maybe::None() => { return fallback; },
+    Maybe::Some(selected) => { return selected; }
+  }
+}
+
+pub fn flatten<T>(tree: Tree<T>) -> list<T> {
+  match tree {
+    Tree::Leaf(value) => { return [value]; },
+    Tree::Branch(children) => {
+      var result: list<T> = [];
+      var i: i64 = 0;
+      while i < len(children) {
+        result = result + flatten(children[i]);
+        i = i + 1;
+      }
+      return result;
+    }
+  }
+}
