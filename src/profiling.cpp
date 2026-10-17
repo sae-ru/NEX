@@ -28,6 +28,13 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
     auto nodes=graph.getAsObject()->getArray("nodes");
     std::map<std::string,const llvm::json::Object*> nodeIndex;
     for(const auto &node:*nodes)nodeIndex.emplace(node.getAsObject()->getString("name")->str(),node.getAsObject());
+    auto manifest=llvm::json::parse(readFile((std::filesystem::path(built.executable).parent_path()/"debug.json").string()));
+    if(!manifest||!manifest->getAsObject())throw Error("E_PROFILE","invalid profile debug manifest");
+    std::map<std::string,std::string> sourcePaths;
+    if(auto sources=manifest->getAsObject()->getArray("sources"))for(const auto &source:*sources){
+      if(auto value=source.getAsObject())if(auto anchor=value->getString("debug_path"))
+        if(auto projection=value->getString("projection"))sourcePaths[anchor->str()]=projection->str();
+    }
     for(auto &value:*functions){
       auto function=value.getAsObject();bool matched=false;
       auto name=function?function->getString("name"):std::nullopt;
@@ -37,6 +44,9 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
         }
       }
       if(!matched)throw Error("E_PROFILE","measured function does not match the selected graph revision");
+      if(auto file=function->getString("file");file&&sourcePaths.contains(file->str())){
+        auto anchor=file->str();(*function)["debug_path"]=anchor;(*function)["file"]=sourcePaths.at(anchor);
+      }
     }
     auto sinceEpoch=std::chrono::duration_cast<std::chrono::milliseconds>(started.time_since_epoch()).count();
     (*report)["schema"]="nex.profile/1";(*report)["ok"]=process.code==0;(*report)["exit_code"]=process.code;

@@ -629,7 +629,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto buildRoot=std::filesystem::absolute(directory);auto plan=planNative(p,options.entry);
   BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible};
   auto snapshot=p;
-  llvm::json::Array debugSources,debugFunctions,heapTypes;std::set<std::string> debugTypes;
+  llvm::json::Array debugSources,debugFunctions,heapTypes,debugSourceMap;std::set<std::string> debugTypes;
+  std::map<std::string,std::string> debugAnchors;
   std::function<void(Type)> collectType=[&](Type type){
     if(!type.heap()||!debugTypes.insert(typeName(type)).second)return;
     heapTypes.push_back(typeName(type));
@@ -646,39 +647,48 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/1"},{"unit",unitKey},{"module",unit.module},{"source",unit.source}},false));
     auto original=unit.path;unit.path=(buildRoot/"source-cache"/sourceKey/(unitKey==snapshot.entryUnit?"source.nex":unitKey)).string();
     if(unitKey==snapshot.entryUnit)snapshot.path=unit.path;
-    debugSources.push_back(llvm::json::Object{{"original",original},{"projection",unit.path},{"hash",hash(unit.source)}});
+    auto anchor=(buildRoot/"source-anchors"/hash(json(llvm::json::Array{unitKey,unit.module},false))/(unitKey==snapshot.entryUnit?"source.nex":unitKey)).string();
+    debugAnchors[unitKey]=anchor;
+    debugSourceMap.push_back(llvm::json::Array{std::filesystem::path(anchor).parent_path().string(),std::filesystem::path(unit.path).parent_path().string()});
+    debugSources.push_back(llvm::json::Object{{"original",original},{"projection",unit.path},{"debug_path",anchor},{"hash",hash(unit.source)}});
   }
   if(snapshot.units.empty()){
     snapshot.path=(buildRoot/"source-cache"/hash(p.source)/"source.nex").string();
-    debugSources.push_back(llvm::json::Object{{"original",p.path},{"projection",snapshot.path},{"hash",hash(p.source)}});
+    debugAnchors[""]=(buildRoot/"source-anchors"/hash(p.module)/"source.nex").string();
+    debugSourceMap.push_back(llvm::json::Array{std::filesystem::path(debugAnchors.at("")).parent_path().string(),std::filesystem::path(snapshot.path).parent_path().string()});
+    debugSources.push_back(llvm::json::Object{{"original",p.path},{"projection",snapshot.path},{"debug_path",debugAnchors.at("")},{"hash",hash(p.source)}});
   }
+  // Objects refer to stable virtual paths. A session maps these paths to its
+  // immutable complete sources, so sibling edits need not invalidate DWARF.
+  auto codeSnapshot=snapshot;
+  for(auto &[unitKey,unit]:codeSnapshot.units)unit.path=debugAnchors.at(unitKey);
+  codeSnapshot.path=debugAnchors.at(snapshot.units.empty()?"":snapshot.entryUnit);
   auto nativeSeed=json(llvm::json::Object{{"schema","nex.native-toolchain/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},
     {"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
     {"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false);
   std::vector<std::string> unitKeys;std::vector<llvm::json::Value> unitInputs;std::vector<NativeArtifact> unitArtifacts(plan.units.size());
-  bool nativeIntact=true;
+  bool nativeIntact=true;std::set<std::string> sourceUnits,compiledSourceUnits;
   for(size_t i=0;i<plan.units.size();++i){
-    const auto &unit=plan.units[i];auto source=snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).path:snapshot.path;
-    auto sourceText=snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).source:snapshot.source;
+    const auto &unit=plan.units[i];auto source=codeSnapshot.units.contains(unit.unit)?codeSnapshot.units.at(unit.unit).path:codeSnapshot.path;sourceUnits.insert(unit.unit);
     std::string runtimeABI;
     for(const auto &file:{"runtime.cpp","nex_value.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));
     auto wrapper=!options.libraryEntry&&!server&&unit.functions.contains(p.function(options.entry).name)?p.function(options.entry).name:"";
-    unitInputs.push_back(llvm::json::Object{{"schema","nex.native-unit/1"},{"toolchain_key",hash(nativeSeed)},{"semantic_key",hash(unit.contract)},
-      {"source_hash",hash(sourceText)},{"source_projection",source},{"runtime_abi_key",hash(runtimeABI)},{"wrapper_entry",wrapper}});
+    unitInputs.push_back(llvm::json::Object{{"schema","nex.native-unit/2"},{"toolchain_key",hash(nativeSeed)},{"semantic_key",hash(unit.contract)},
+      {"source_hash",hash(unit.source)},{"debug_path",source},{"runtime_abi_key",hash(runtimeABI)},{"wrapper_entry",wrapper}});
     auto unitKey=hash(json(unitInputs.back(),false));unitKeys.push_back(unitKey);
     if(!loadArtifact(buildRoot,unitKey,unitArtifacts[i]))nativeIntact=false;
     else{
-      auto local=folder/"units"/hash(unit.unit),object=folder/("nex-unit-"+hash(unit.unit)+".o");
+      auto local=folder/"units"/hash(unit.identity),object=folder/("nex-unit-"+hash(unit.identity)+".o");
       if(!std::filesystem::is_regular_file(object)||readFile(object.string())!=unitArtifacts[i].object||
          !std::filesystem::is_regular_file(local/"program.mlir")||readFile((local/"program.mlir").string())!=unitArtifacts[i].mlir||
          !std::filesystem::is_regular_file(local/"program.ll")||readFile((local/"program.ll").string())!=unitArtifacts[i].llvm)nativeIntact=false;
     }
   }
   auto debugFile=(folder/"debug.json").string(),formatterFile=(folder/"debugger/lldb_nex.py").string(),adapterFile=(folder/"debugger/nex_dap.py").string();
-  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/3"},{"expression_protocol","nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
+  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/3"},{"expression_protocol","nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"source_map",std::move(debugSourceMap)},{"functions",std::move(debugFunctions)}})+"\n";
   auto debugIntact=[&](){
     if(!std::filesystem::is_regular_file(debugFile)||readFile(debugFile)!=debugText||!std::filesystem::is_regular_file(formatterFile)||readFile(formatterFile)!=formatter||!std::filesystem::is_regular_file(adapterFile)||readFile(adapterFile)!=dapAdapter)return false;
     for(const auto &[unitKey,unit]:snapshot.units){
@@ -700,7 +710,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto buildIntact=[&](){try{return readFile((folder/"complete").string())==completion();}catch(const std::exception &){return false;}};
   // Validate the entry on cache hits as well.
   emitMLIR(p,options.entry,options.testEntry,options.libraryEntry||server);
-  if(buildIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){result.cached=true;result.reusedModules=plan.units.size();return result;}
+  if(buildIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=plan.units.size();return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
   auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
@@ -725,7 +735,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-native-unit",temporary))throw Error("E_FILE",ec.message());
       std::filesystem::path stage(temporary.str().str());
       try{
-        auto unitSnapshot=snapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
+        auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
         artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
@@ -733,19 +743,20 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
         if(execute(compile)!=0)throw Error("E_LINK","native unit compiler failed");
         artifact.object=readFile((stage/"program.o").string());saveArtifact(buildRoot,unitKeys[i],artifact);std::filesystem::remove_all(stage);
       }catch(const Error &error){throw Error(error.code,std::string(error.what())+"; intermediate files retained at "+stage.string(),error.span);}
-      ++result.compiledModules;
-    }else ++result.reusedModules;
-    auto destination=folder/"units"/hash(unit.unit);writeFile((destination/"program.mlir").string(),artifact.mlir);writeFile((destination/"program.ll").string(),artifact.llvm);
-    auto object=folder/("nex-unit-"+hash(unit.unit)+".o");writeFile(object.string(),artifact.object);link.push_back(object.string());
+      ++result.compiledFunctions;compiledSourceUnits.insert(unit.unit);
+    }else ++result.reusedFunctions;
+    auto destination=folder/"units"/hash(unit.identity);writeFile((destination/"program.mlir").string(),artifact.mlir);writeFile((destination/"program.ll").string(),artifact.llvm);
+    auto object=folder/("nex-unit-"+hash(unit.identity)+".o");writeFile(object.string(),artifact.object);link.push_back(object.string());
     llvm::json::Array functions;for(const auto &name:unit.functions)functions.push_back(name);
-    compiledUnits.push_back(llvm::json::Object{{"unit",unit.unit},{"module",unit.module},{"input_key",unitKeys[i]},{"artifact_key",artifact.id},{"reused",artifact.reused},
+    compiledUnits.push_back(llvm::json::Object{{"identity",unit.identity},{"unit",unit.unit},{"module",unit.module},{"input_key",unitKeys[i]},{"artifact_key",artifact.id},{"reused",artifact.reused},
       {"inputs",std::move(unitInputs[i])},
       {"functions",std::move(functions)},{"object",object.string()},{"object_hash",hash(artifact.object)},{"mlir",(destination/"program.mlir").string()},{"llvm",(destination/"program.ll").string()},
       {"cache_record",(buildRoot/"native-cache"/(unitKeys[i]+".json")).string()},{"source",snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).path:snapshot.path}});
   }
+  result.compiledModules=compiledSourceUnits.size();result.reusedModules=sourceUnits.size()-compiledSourceUnits.size();
   writeFile(result.llvm,linkIR(unitArtifacts,snapshot.path));
-  writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity","module"},{"revision",revision(p)},{"build_key",key},
-    {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)}})+"\n");
+  writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity","function"},{"revision",revision(p)},{"build_key",key},
+    {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)}})+"\n");
   for(const auto &component:components){
     auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+target+toolchain.identity+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
     auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";

@@ -29,8 +29,9 @@ NativePlan planNative(const Program &p,const std::string &entry){
     for(const auto &callee:f.dependencies)callers[callee].insert(name);
   }
   NativePlan plan;
-  for(const auto &[key,names]:members){
-    NativeUnit unit;unit.unit=key;unit.module=p.function(*names.begin()).owner;unit.functions=names;
+  for(const auto &name:reachable){
+    const auto &f=p.function(name);const auto &key=f.unit;
+    NativeUnit unit;unit.identity=name;unit.unit=key;unit.module=f.owner;unit.functions={name};
     if(unit.module.empty())unit.module=p.module;
     std::set<std::string> types,externalCalls;llvm::json::Array definitions,interfaces,layouts;
     std::function<void(Type)> type=[&](Type t){
@@ -52,11 +53,11 @@ NativePlan planNative(const Program &p,const std::string &entry){
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){
       for(auto s:body){type(s->type);expr(s->expr);childBlocks(s,block);}
     };
-    for(const auto &name:names){
-      const auto &f=p.function(name);definitions.push_back(canonical(f));
-      type(f.result);for(const auto &param:f.params)type(param.type);block(f.body);
-      for(const auto &callee:f.dependencies)if(!names.contains(callee)){
-        externalCalls.insert(callee);unitDependencies[key].insert(p.function(callee).unit);
+    {
+      definitions.push_back(canonical(f));
+      type(f.result);for(const auto &param:f.params)type(param.type);for(const auto &capture:f.captures)type(capture.type);block(f.body);
+      for(const auto &callee:f.dependencies)if(callee!=name){
+        externalCalls.insert(callee);if(p.function(callee).unit!=key)unitDependencies[key].insert(p.function(callee).unit);
       }
     }
     for(const auto &name:externalCalls){
@@ -64,10 +65,18 @@ NativePlan planNative(const Program &p,const std::string &entry){
       type(callee.result);for(const auto &param:callee.params)type(param.type);
     }
     for(const auto &name:types)layouts.push_back(canonical(p.structure(name)));
-    llvm::json::Array unitBridges;for(const auto &name:names)if(bridges.contains(name))unitBridges.push_back(name);
-    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/1"},{"language",languageVersion},
-      {"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
+    llvm::json::Array unitBridges;if(bridges.contains(name))unitBridges.push_back(name);
+    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/2"},{"language",languageVersion},
+      {"function",name},{"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
       {"external_interfaces",std::move(interfaces)},{"type_layouts",std::move(layouts)},{"closure_bridges",std::move(unitBridges)}},false);
+    // Absolute byte offsets may change after an unrelated earlier edit. Machine
+    // diagnostics and DWARF consume line/column positions, not those offsets.
+    auto point=[](const Span &span){return llvm::json::Object{{"file",span.file},{"line",span.line},{"column",span.column}};};
+    llvm::json::Array parameters,captures;
+    for(const auto &param:f.params)parameters.push_back(point(param.span));
+    for(const auto &capture:f.captures)captures.push_back(point(capture.span));
+    unit.source=json(llvm::json::Object{{"schema","nex.function-source/1"},{"definition",p.definition(f)},
+      {"start",point(f.span)},{"parameters",std::move(parameters)},{"captures",std::move(captures)}},false);
     plan.units.push_back(std::move(unit));
   }
   std::set<std::string> allUnits;for(const auto &unit:plan.units)allUnits.insert(unit.unit);

@@ -198,6 +198,20 @@ def load(debugger, command, result, internal_dict):
         manifest = json.loads(path.read_text())
         if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
+        mappings = manifest.get("source_map", [])
+        if not isinstance(mappings, list) or len(mappings) > 4096:
+            raise ValueError("invalid NEX source map")
+        for pair in mappings:
+            if (not isinstance(pair, list) or len(pair) != 2 or
+                    any(not isinstance(path, str) or not path or len(path) > 4096 or '\0' in path for path in pair)):
+                raise ValueError("invalid NEX source mapping")
+        if mappings:
+            # Set the property directly: paths are data, never LLDB commands or
+            # expressions (a filename can contain quotes or backticks).
+            setting = ' '.join(json.dumps(path, ensure_ascii=False) for pair in mappings for path in pair)
+            error = debugger.SetInternalVariable('target.source-map', setting, debugger.GetInstanceName())
+            if error.Fail():
+                raise ValueError('cannot select frozen NEX sources: ' + str(error))
         names = manifest["heap_types"] + ["nexrt::Value"]
         if len(names) > 10000 or any(not isinstance(name, str) or len(name) > 4096 for name in names):
             raise ValueError("invalid NEX debug type table")

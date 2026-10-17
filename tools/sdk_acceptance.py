@@ -348,6 +348,34 @@ test fn examples() -> unit {
         report['evidence']['numeric_language'] = {'revision': number_revision,
             'native_profiles': ['debug', 'release'], 'typescript': True,
             'source_deleted_replay': True, 'standalone_without_resources': str(number_standalone)}
+        cached_project = root / 'function-cache'
+        cached_project.mkdir()
+        cached_source = cached_project / 'main.nex'
+        cached_source.write_text('module sdk_cache;\n'
+            'fn changed(value:i64)->i64{return value+1;}\n'
+            'fn sibling(value:i64)->i64{return value*2;}\n'
+            'fn main()->unit!{io}{print(changed(2));print(sibling(3));}\n')
+        (cached_project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        before = cli('build', cwd=cached_project)
+        require(before['compiled_functions'] == 3, 'initial function cache did not compile all reachable bodies')
+        require(run([before['executable']]) == '3\n6\n', 'initial function cache output differs')
+        warm = cli('build', cwd=cached_project)
+        require(warm['cached'] and warm['compiled_functions'] == 0 and warm['reused_functions'] == 3,
+                'warm function cache did not reuse all bodies')
+        cached_source.write_text(cached_source.read_text().replace('value+1;', 'value+100;'))
+        after = cli('build', cwd=cached_project)
+        require(after['compiled_functions'] == 1 and after['reused_functions'] == 2,
+                'a same-file body edit recompiled unrelated functions')
+        require(run([after['executable']]) == '102\n6\n' and
+                cli('eval', cwd=cached_project)['stdout'] == '102\n6\n', 'cached native/reference output differs')
+        cached_source.unlink()
+        require(cli('run', '--revision', before['revision'], cwd=cached_project)['stdout'] == '3\n6\n' and
+                cli('run', '--revision', after['revision'], cwd=cached_project)['stdout'] == '102\n6\n',
+                'function cache did not preserve both source-deleted revisions')
+        report['evidence']['function_cache'] = {'before_revision': before['revision'],
+            'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
+            'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
 
     def measured():
         measured = cli('profile', '--revision', state['after'], '--scenario', 'installed SDK handoff', cwd=project)

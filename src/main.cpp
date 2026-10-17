@@ -407,6 +407,9 @@ int run(const Options &o) {
 #endif
       llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
       llvm::json::Object launch{{"type",kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},{"program",result.executable},{"cwd",root.string()},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
+      auto debugManifest=llvm::json::parse(readFile(manifest));
+      if(!debugManifest||!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
+      if(auto mappings=debugManifest->getAsObject()->getArray("source_map"))launch["sourceMap"]=llvm::json::Array(*mappings);
       auto nexLaunch=launch;nexLaunch["type"]="nex";
       llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
         {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};
@@ -417,7 +420,7 @@ int run(const Options &o) {
   auto output=o.get("--output");if(!output.empty()){copyFile(result.executable,output,true);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
   auto notices=result.notices;
   if(!output.empty()&&!notices.empty()){notices=fs::absolute(output).string()+".THIRD_PARTY_NOTICES.txt";copyFile(result.notices,notices,true);}
-  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"target",result.target},{"compiler_target",result.compilerTarget},{"host_compatible",result.hostCompatible},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}});
+  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"target",result.target},{"compiler_target",result.compilerTarget},{"host_compatible",result.hostCompatible},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{ "compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions}});
   else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
 }
 }

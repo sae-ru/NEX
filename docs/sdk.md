@@ -32,6 +32,10 @@ The maintained scenario performs these actual operations:
    Require finite f64 generic/aggregate/callback agreement in both native
    profiles and TypeScript, archived replay after source deletion, and a
    separate numeric executable without runtime resources.
+   Build a separate three-function project, require a warm cache, edit one
+   function without moving siblings, and require one compiled/two reused
+   function objects with correct changed output. Delete its source and execute
+   both archived revisions again.
 5. Profile a named workload, check function content/node attribution and actual
    balanced managed allocation pools, and reject dropped measurement records.
 6. Delete the original source files and task document. Retrieve an archived

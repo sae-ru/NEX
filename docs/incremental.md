@@ -1,7 +1,8 @@
-# Native compilation and toolchains — toolchain 0.20
+# Native compilation and toolchains — toolchain 0.25
 
-Current source language is 0.11. The native compiler now produces an object for each
-source module containing functions reachable from the selected entry. It can
+Current source language is 0.11. The native compiler produces a separate object
+for each reachable concrete function, including lifted closures and generic
+specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or
 archived builds. The entire loaded program still passes the normal checker
 before cached code can be selected.
@@ -10,11 +11,19 @@ before cached code can be selected.
 nex build src/main.nex --json
 ```
 
-Native build responses add `compiled_modules`, `reused_modules` and `compilation`.
+Native build responses include `compiled_functions`, `reused_functions`,
+`compiled_modules`, `reused_modules` and `compilation`.
 The last field names a `nex.compilation/1` report. A warm whole-program cache hit
-reports zero compiled modules and all selected units reused. The saved report
+reports zero compiled functions and all selected functions reused. Module counts
+group these objects: a module is compiled when at least one selected function
+was compiled, and reused when all its selected functions were reused. A partially
+rebuilt module therefore contributes only to `compiled_modules`. The saved report
 describes the last materialization of that artifact; use the command response
 for this invocation's counters.
+
+The report's `granularity` is `function`. Each `units` entry has a qualified
+function `identity`, its source `unit`/`module`, and a singleton `functions`
+list. Lifted closure and specialized generic names remain derived metadata.
 
 ## Native targets and SDKs
 
@@ -90,17 +99,19 @@ live Intel LLDB/DAP are unverified here because Rosetta is unavailable.
 
 ## Invalidation
 
-The cache granularity is one module's reachable function set. A module's own
-source contents and checked definitions participate in its input key. Changing
-one function therefore recompiles its module. Unrelated modules can be reused;
-the current implementation does not cache individual functions independently.
-Changing comments or source coordinates also changes the module key so its
-DWARF cannot point to a different source version.
+The cache granularity is one concrete function. Its checked definition, exact
+source declaration and emitted line/column positions participate in its key.
+Changing a function's body does not invalidate unrelated functions in the same
+file. A preceding edit that changes only absolute byte offsets can preserve
+reuse; moving a function to another line/column invalidates it. Captured binding
+coordinates also participate. Comments inside a declaration are source inputs;
+comments elsewhere matter when they move emitted coordinates. The complete
+program is still parsed, specialized and checked before selecting objects.
 
-For cross-module calls, the consumer records the callee's qualified name,
+For calls within or across modules, the consumer records the callee's qualified name,
 parameter/result types, declared effects, realm, visibility and test status.
 The callee's implementation body is not a consumer input. A body-only edit
-recompiles the defining module while a contract edit invalidates consumers whose
+recompiles the defining function while a contract edit invalidates consumers whose
 emitted assumptions changed. Parameters are positional, so renaming a callee's
 parameter does not invalidate unchanged consumers.
 
@@ -113,7 +124,7 @@ the source consumer text is unchanged. Modules defining only types have dependen
 nodes but need no native object.
 
 Input manifests separately record toolchain, semantic, source and runtime ABI
-fingerprints, the frozen source path and any C application wrapper. Compiler
+fingerprints, a stable virtual DWARF path and any C application wrapper. Compiler
 build/identity, LLVM, selected target, the probed native driver triple/data layout,
 profile and relevant SDK environment belong to
 the toolchain fingerprint. Matching runtime sources/headers used at the boundary
@@ -132,10 +143,15 @@ must be reviewed and explicitly repinned with `nex lock`.
 
 Inside the project's `.nex/build`:
 
-- `source-cache/` holds content-addressed immutable source projections shared
-  by builds. Each module's DWARF refers to its exact source contents.
+- `source-cache/` holds complete content-addressed immutable source projections
+  shared by builds. `source-anchors/` names stable virtual DWARF paths; it is not
+  a mutable source copy. Each debug manifest maps those paths to that build's
+  exact complete files. `nex-load-debug` sets LLDB's source-map property through
+  its API, and DAP launch configurations provide the same `sourceMap` pairs.
+  Standalone debugger integrations must apply these mappings. Both old and new
+  sessions retain their own complete sources after working files change/disappear.
 - `native-cache/INPUT_KEY.json` is an atomically published object-cache index.
-- `native-objects/CONTENT_KEY/` holds validated module MLIR, LLVM IR and object
+- `native-objects/CONTENT_KEY/` holds validated function MLIR, LLVM IR and object
   bytes. Readers verify the whole content object before using it. Atomic index
   replacement and content-addressed objects allow independent builds to share
   units without consuming partially published data.
@@ -147,9 +163,11 @@ Inside the project's `.nex/build`:
 LLVM link of the selected units' IR for inspection/`nex emit --kind llvm`.
 Machine code is compiled from separate units, not by compiling that aggregate.
 Runtime components retain their own object cache and link only when required.
-Native archive and HTTP server output use the same NEX module pipeline.
+Native archive and HTTP server output use the same NEX function pipeline.
+Profile reports map recorded virtual paths back to the selected frozen sources;
+their function content/node attribution still must match the selected graph.
 
-Object/IR/index corruption forces the affected unit to rebuild. A damaged local
+Object/IR/index corruption forces the affected function to rebuild. A damaged local
 copy or aggregate can be restored from valid shared objects without recompiling
 them. Whole-build cache checks cover executable, aggregate IR, compilation/build
 metadata, source bundle, selected unit copies, captured NEX sources and debugger
@@ -159,7 +177,7 @@ intermediate directory in the diagnostic.
 Debugging uses the normal `nex debug` session. Its manifest maps original files
 to their frozen projections. Keep the build workspace's `source-cache/` along
 with the selected artifact and runtime source projections when preserving an
-old debugging session. An archived revision can reconstruct missing sources
+old debugging session, and apply that session's `source_map`. An archived revision can reconstruct missing sources
 from its stored source bundle; original live files are not rewritten.
 
 ## Validation and current limits
@@ -168,15 +186,27 @@ from its stored source bundle; original live files are not rewritten.
 calls and inspect which functions are compiled. It checks body edits, ABI/effect
 changes, parameter renames, nested record/JSON layouts, pinned library updates,
 archived-source reuse, profiles/compiler/runtime inputs, damaged caches and
-concurrent builds with shared units. Native observations are compared with the
+concurrent builds with shared units. Same-file tests count actual compiler calls,
+cover body/contract/coordinate edits and retained generic/closure objects. With
+`--live`, `LiveFunctionCache` tests both actual LLDB and DAP over reused objects
+from two revisions after deleting their working source. Native observations are compared with the
 interpreter and clean builds; existing TypeScript and runtime suites remain in
 the regression set. Reuse counters alone are not treated as proof.
 
-Optimization is currently per unit (`-O0` debug, `-O2` release/profile). Cross-unit
-LTO/inlining, function-level object reuse, incremental frontend checking,
+Optimization is currently per function (`-O0` debug, `-O2` release/profile). A cold
+build invokes the native driver for each function. Cross-function
+LTO/inlining, incremental frontend checking,
 remote/distributed caches and deterministic test-result caching remain pending.
 Absolute debug source paths make this a local build cache; portable SDK/cache
 distribution and additional operating-system verification remain separate work.
 These limits do not restrict the broader NEX development objective.
+
+The source remapping uses LLDB's documented
+[source-map setting](https://lldb.llvm.org/use/settings.html#target-source-map)
+and the DAP launch
+[sourceMap property](https://lldb.llvm.org/use/lldbdap.html#common-configurations).
+The formatter assigns the setting through
+[SBDebugger.SetInternalVariable](https://lldb.llvm.org/python_api/lldb.SBDebugger.html#lldb.SBDebugger.SetInternalVariable),
+so mapped filenames remain data rather than debugger commands.
 
 Generic source bodies specialize into the declaring module. A body edit recompiles the provider while unchanged consumed signatures permit caller reuse. Concrete nominal layouts and type arguments, including phantom arguments, participate in transitive type dependencies. Source projections still refresh debugger locations, and source revision identity excludes redundant derived instances.

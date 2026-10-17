@@ -18,9 +18,36 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
+## In progress: function object reuse
+
+The working toolchain is **0.25.0**, retaining source language **0.11** and its
+canonical formats. Native planning gives each concrete function, lifted closure
+and generic specialization its own verified object. Call interfaces and
+transitive type layouts invalidate consumers, including within one source file.
+Owned source text, emitted line/column positions and captured-binding coordinates
+participate in keys; unrelated absolute byte-offset changes do not.
+
+Stable virtual DWARF paths map to each build's complete immutable sources.
+LLDB uses the direct setting API, DAP receives matching sourceMap pairs, and
+profile reports resolve virtual paths back to selected source projections.
+Build responses add compiled/reused function counts while preserving module
+counts as grouped source units. The complete frontend is still checked.
+
+Initial same-file native/compiler-spy cases and actual LLDB/DAP reuse across
+two source-deleted revisions passed. The archived library check also passed
+after basing anchors on logical unit/module identity rather than a live physical
+library path. The installed macOS SDK passed all nine maintained phases in
+61.625 s, including one-function invalidation, both archived outputs, actual
+archived DAP, numeric semantics and both locked Vite builds
+(`build/sdk-025-function-cache/report.json`). LLDB's value report was checked to
+resolve a real frozen file through its source map. The full new regression and
+platform matrix is still being completed. Preserve the
+verified 0.24 SDKs recorded in `build/preserved-sdk-024.json`; this development
+work does not replace that checkpoint or complete the broader objective.
+
 ## Development milestone: finite binary64
 
-The development compiler is now **0.24.0 / language 0.11**, with finite `f64`,
+Toolchain **0.24.0 / language 0.11** introduced finite `f64`,
 decimal/exponent literals and `number` bounds. Native debug/release, interpreter
 and TypeScript examples agree, including generic functions, results, aggregates,
 snapshot closures and explicit conversions. Genuine SDK-0.23 SQL migrations

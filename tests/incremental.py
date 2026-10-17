@@ -4,7 +4,11 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import unittest
+
+LIVE = "--live" in sys.argv
+if LIVE: sys.argv.remove("--live")
 
 import support as harness
 
@@ -51,7 +55,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         result = self.cli('build', *arguments, env={**self.env, **options.pop('env', {})}, **options)
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
         native = [call for call in calls if '-c' in call['arguments'] and any(a.endswith('.ll') for a in call['arguments'])]
-        self.assertEqual(len(native), result['compiled_modules'], calls)
+        self.assertEqual(len(native), result['compiled_functions'], calls)
         self.last_compiled = [name for call in native for name in call['definitions'] if name.startswith('nex_')]
         return result, json.loads(Path(result['compilation']).read_text())
 
@@ -85,6 +89,69 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         fresh, _ = self.build(cwd=clean)
         self.assertEqual((fresh['compiled_modules'], fresh['reused_modules']), (3, 0))
         self.assert_behavior(fresh, '7\n15\n')
+
+    def test_same_file_body_edits_reuse_function_objects_and_keep_exact_sources(self):
+        self.source('module single;\nfn first(x:f64)->f64{return x+1e0;}\nfn stable(x:f64)->f64{return x*2e0;}\nfn main()->unit!{io}{print(first(2e0));print(stable(3e0));}\n')
+        first, before = self.build()
+        self.assertEqual(before['granularity'], 'function')
+        self.assertEqual((first['compiled_modules'],first['compiled_functions']), (1,3))
+        self.assert_behavior(first, '3e0\n6e0\n')
+        old_manifest=json.loads(Path(first['debug_manifest']).read_text())
+        old_source=Path(old_manifest['sources'][0]['projection'])
+        original=old_source.read_text()
+        warm,_=self.build()
+        self.assertTrue(warm['cached'])
+        self.assertEqual((warm['compiled_functions'],warm['reused_functions']), (0,3))
+        # The extra byte changes later absolute offsets, but no emitted line/column.
+        self.source(self.file.read_text().replace('x+1e0','x+10e0'))
+        changed,after=self.build()
+        self.assertEqual((changed['compiled_functions'],changed['reused_functions']), (1,2))
+        self.assertEqual((changed['compiled_modules'],changed['reused_modules']), (1,0))
+        self.assertEqual(self.last_compiled,['nex_6_single_5_first'])
+        self.assert_behavior(changed,'1.2e1\n6e0\n')
+        keys=lambda report:{u['identity']:u['input_key'] for u in report['units']}
+        a,b=keys(before),keys(after)
+        self.assertEqual(a['single::stable'],b['single::stable'])
+        self.assertEqual(a['single::main'],b['single::main'])
+        new_manifest=json.loads(Path(changed['debug_manifest']).read_text())
+        self.assertEqual(old_manifest['source_map'][0][0],new_manifest['source_map'][0][0])
+        self.assertNotEqual(old_manifest['source_map'][0][1],new_manifest['source_map'][0][1])
+        self.assertEqual(old_source.read_text(),original)
+        self.assertEqual(Path(new_manifest['sources'][0]['projection']).read_text(),self.file.read_text())
+        # Actual source coordinates are inputs even when canonical code is equal.
+        self.source(self.file.read_text().replace('\nfn stable','\n\nfn stable'))
+        moved,_=self.build()
+        self.assertEqual((moved['compiled_functions'],moved['reused_functions']), (2,1))
+        self.assert_behavior(moved,'1.2e1\n6e0\n')
+        self.assertEqual(self.cli('run','--revision',first['revision'])['stdout'],'3e0\n6e0\n')
+        self.file.unlink()
+        archived,_=self.build('--revision',first['revision'])
+        self.assertEqual((archived['compiled_functions'],archived['reused_functions']), (0,3))
+        self.assertEqual(subprocess.check_output([archived['executable']],text=True),'3e0\n6e0\n')
+
+    def test_same_file_callee_contract_and_invalid_unused_body_cannot_hide_in_cache(self):
+        self.source('module contracts;\nfn first()->i64{return 1;}\nfn stable()->i64{return 7;}\nfn main()->unit!{io}{print(first());print(stable());}\n')
+        self.build()
+        self.source(self.file.read_text().replace('first()->i64{return 1;}','first()->bool{return true;}'))
+        changed,_=self.build()
+        self.assertEqual((changed['compiled_functions'],changed['reused_functions']), (2,1))
+        self.assert_behavior(changed,'true\n7\n')
+        head=self.cli('history')['head']
+        self.source(self.file.read_text()+'fn invalid()->f64{return "wrong";}')
+        self.assertEqual(self.cli('build',ok=False)['code'],'E_TYPE')
+        self.assertEqual(self.cli('history')['head'],head)
+
+    def test_sibling_edit_reuses_generic_instances_and_snapshot_closure_objects(self):
+        self.source('module callbacks;\nfn first()->i64{return 1;}\nfn identity<T>(value:T)->T{return value;}\nfn make(offset:i64)->(fn(i64)->i64){return fn(value:i64)->i64{return value+offset;};}\nfn main()->unit!{io}{print(first());print(identity(42));print(identity("ok"));print(make(2)(3));}\n')
+        initial,before=self.build()
+        self.source(self.file.read_text().replace('return 1;','return 100;'))
+        updated,after=self.build()
+        self.assertEqual(updated['compiled_functions'],1)
+        self.assertEqual(updated['reused_functions'],initial['compiled_functions']-1)
+        self.assertEqual(self.last_compiled,['nex_9_callbacks_5_first'])
+        self.assert_behavior(updated,'100\n42\nok\n5\n')
+        for unit in after['units']:
+            if unit['identity']!='callbacks::first': self.assertTrue(unit['reused'],unit['identity'])
 
     def test_interface_effect_changes_invalidate_unchanged_consumers(self):
         self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 { return n + 1; }')
@@ -247,6 +314,62 @@ pub fn value(n: i64) -> str {
         for revision in revisions:
             warm, _ = self.build('--revision', revision)
             self.assertEqual((warm['compiled_modules'], warm['reused_modules']), (0, 2))
+
+
+if LIVE:
+    class LiveFunctionCache(harness.ToolchainCase):
+        def test_reused_dwarf_maps_both_revisions_after_original_source_deletion(self):
+            self.source('''module frozen_cache;
+fn first()->f64{return 1e0;}
+fn observe(value:f64)->f64{
+  let local:f64=value+0.25;
+  return local; // CACHE_STOP
+}
+fn main()->unit!{io}{print(first());print(observe(1.25));}
+''')
+            first=self.cli('build')
+            self.source(self.file.read_text().replace('return 1e0','return 100e0'))
+            second=self.cli('build')
+            self.assertEqual((second['compiled_functions'],second['reused_functions']),(1,2))
+            self.file.unlink()
+            from debugging import DAP
+            for built in (first,second):
+                with self.subTest(revision=built['revision']):
+                    session=self.cli('debug','--revision',built['revision'],'--kind','nex-dap')
+                    manifest=json.loads(Path(session['manifest']).read_text())
+                    projected=manifest['sources'][0]['projection']
+                    line=next(i+1 for i,s in enumerate(Path(projected).read_text().splitlines()) if 'CACHE_STOP' in s)
+                    self.assertEqual(session['launch']['sourceMap'],manifest['source_map'])
+                    # Standalone LLDB obtains the mapping from nex-load-debug;
+                    # DAP separately receives its native sourceMap property.
+                    result=self.cli('debug','--revision',built['revision'],'--',
+                        '--no-lldbinit','--batch','-o','settings set target.disable-aslr false',
+                        '-o','breakpoint set --file '+json.dumps(projected)+' --line '+str(line),
+                        '-o','run','-o','nex-eval local','-o','continue',machine=False,timeout=60)
+                    observations=[json.loads(s) for s in result.stdout.splitlines() if s.startswith('{')]
+                    self.assertEqual(observations[0]['value'],1.5,result.stdout+result.stderr)
+                    self.assertEqual(observations[0]['revision'],built['revision'])
+                    client=DAP(session['adapter_command'],self.root)
+                    try:
+                        client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True})
+                        launch=client.send('launch',dict(session['launch'],disableASLR=False))
+                        client.event('initialized')
+                        placed=client.request('setBreakpoints',{'source':{'path':projected},'breakpoints':[{'line':line}]})
+                        self.assertTrue(placed['breakpoints'][0]['verified'])
+                        client.request('configurationDone');client.response(launch)
+                        stopped=client.event('stopped')
+                        frame=client.request('stackTrace',{'threadId':stopped['threadId']})['stackFrames'][0]
+                        self.assertEqual(Path(frame['source']['path']),Path(projected))
+                        value=client.request('evaluate',{'expression':'local','frameId':frame['id'],'context':'watch'})
+                        self.assertEqual(value['nex']['value'],1.5)
+                        raw=client.request('evaluate',{'expression':'`nex-frame local','frameId':frame['id'],'context':'repl'})
+                        captured=self.root/('frame-'+built['revision']+'.json')
+                        captured.write_text(json.dumps(json.loads(raw['result'])))
+                        client.request('continue',{'threadId':stopped['threadId']})
+                        self.assertEqual(client.event('exited')['exitCode'],0)
+                        self.assertEqual(self.cli('inspect',captured,'--manifest',session['manifest'],'--expression','local')['value'],1.5)
+                    finally:
+                        client.close()
 
 
 if __name__ == '__main__':
