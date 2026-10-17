@@ -12,7 +12,7 @@ The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
-sixteen installed guides. Python 3.9+, the SDK's development dependencies
+seventeen installed guides. Python 3.9+, the SDK's development dependencies
 (LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required.
 This is an installed-development-chain check, not a portable SDK bundle.
 
@@ -29,6 +29,9 @@ The maintained scenario performs these actual operations:
    Run the original task against the repaired archive with its unchanged task
    hash. Compare reference/native/TypeScript behavior and debug/release output.
    Copy and run a standalone native executable with NEX resources unavailable.
+   Require finite f64 generic/aggregate/callback agreement in both native
+   profiles and TypeScript, archived replay after source deletion, and a
+   separate numeric executable without runtime resources.
 5. Profile a named workload, check function content/node attribution and actual
    balanced managed allocation pools, and reject dropped measurement records.
 6. Delete the original source files and task document. Retrieve an archived
@@ -36,9 +39,11 @@ The maintained scenario performs these actual operations:
    original wrong behavior, materialize the repaired sources and execute them.
 7. Prove the installed scalar verification example with the actual solver.
    This does not prove matching, the compiler or the whole application.
-8. Test and generate the installed generic browser example with captured
-   callback state, checking that an
-   unreachable server sentinel is absent from generated TypeScript.
+8. Test and generate both the installed generic browser example with captured
+   callback state and the finite-number application. Its immutable f64 state,
+   generic arithmetic, callback and strict JSON edits pass native/TypeScript
+   transition tests. Check that unreachable server sentinels are absent from
+   generated TypeScript.
 
 The source workflow also exercises generic snapshot closures and wire-bounded
 roundtrips across reference/native/TypeScript output. Discovery checks the
@@ -52,8 +57,8 @@ resumes to clean exit and evaluates that exact snapshot offline. Without
 `--live`, the report records `live_debugger: false`; creating a manifest does
 not establish debugger execution. The host must permit child debugging.
 
-`--browser` additionally performs the real locked TypeScript/Vite release build
-and checks emitted assets/maps for the server sentinel. Without this flag only
+`--browser` additionally performs both real locked TypeScript/Vite release builds
+and checks emitted assets/maps for their server sentinels. Without this flag only
 TypeScript semantic tests and project generation run; browser production
 compilation is recorded as false. Actual browser interaction remains covered by
 the separate Playwright suites. In an isolated container, the npm lock's

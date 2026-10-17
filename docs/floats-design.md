@@ -1,12 +1,13 @@
-# Finite binary64 numbers — implementation in progress
+# Finite binary64 numbers
 
-This is the design and acceptance plan for the next language milestone, not a
-claim that the current released SDK supports these features. The preserved 0.23
-SDK and genuine language 0.10 SQL fixture are the migration baseline.
+This is the implemented design and acceptance scope for the development
+0.24 / language 0.11 milestone. Its verified host matrix is recorded below;
+broader platforms and portable SDK delivery remain open. The preserved 0.23 SDK
+and genuine language 0.10 SQL fixture are the migration baseline.
 
 ## Source and values
 
-Add `f64`, a finite IEEE binary64 value. Decimal literals with a fraction or an
+`f64` is a finite IEEE binary64 value. Decimal literals with a fraction or an
 exponent denote f64 (`1.5`, `1e0`, `5e-324`); plain integer literals remain i64.
 There is no implicit conversion between those types. A fraction needs digits
 on both sides of its dot; an exponent needs digits after its optional sign.
@@ -63,8 +64,8 @@ floating operations instead of treating their bit payload as an integer.
 
 ## Compatibility and acceptance
 
-The source language and canonical function/program formats will advance before
-the feature is published. Migration must use the actual preserved 0.23 store,
+The source language is 0.11, with function/9 and program/10 canonical formats.
+Migration must use the actual preserved 0.23 store,
 retain old archived sources/history and persistent function/operation identities,
 and require explicit new task/proof snapshot pins without changing their intent.
 
@@ -94,4 +95,20 @@ genuine 0.10 migration are covered by tests/numbers.py, api_contracts.py and the
 verification rejection cases. Native float operator calls preserve the host
 environment; scalar aggregate transport uses bitcasts with scalar tag 2 (runtime
 Value::Floating is tag 3). Canonical formats advance to function/9 and program/10.
-The full new regression/platform/SDK matrix remains required before acceptance.
+All 27 regression suites passed on macOS ARM64, Linux ARM64 and emulated Linux
+x86-64. The compiler/runtime/adapter/library inputs match the frozen Linux
+source tree; the later browser example was additionally tested on each SDK.
+
+The finite-number browser example is now part of the language pack and SDK
+acceptance. Its native/TypeScript transitions and two independent production
+interaction scenarios per Chromium/Firefox/WebKit engine passed; the tests
+include JSON rounding, smallest subnormal, maximum finite value, zero
+normalization and unchanged state after invalid input. The installed macOS
+SDK builds identical browser assets and passes all nine maintained phases.
+Linux ARM64 passed seven live debugger suites. Both Linux architectures passed
+the updated source-free, network-disabled nine-phase SDK workflow, including
+native/TypeScript numeric browser transitions and locked Vite builds. Linux
+x86-64 is emulated and does not claim live debugging. STATUS.md records exact
+counts, reports and remaining full-system scope. The conservative descriptor
+marker for full platform/SDK validation remains until that broader coverage
+and redistributable delivery are implemented and verified.

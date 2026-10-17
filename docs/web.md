@@ -58,6 +58,14 @@ client fn view(state: State) -> web::View {
 
 The larger `examples/web/main.nex` exercises local text input, forms, immutable updates/deletion and routing. It remains a memory-only example. `examples/fullstack/client.nex` and `server.nex` use a shared `model.nex` for persistent authenticated tasks.
 
+`examples/numbers-web.nex` uses finite `f64` state, generic arithmetic and a
+captured callback. JSON input decodes through `decode_json<f64>`; rejected input
+retains the previous value/history. Build it with the same web commands, then
+run `python3 tests/numbers_browser.py GENERATED_PROJECT --browsers-path CACHE`
+for its opt-in production Chromium/Firefox/WebKit interaction checks. The
+installed SDK acceptance workflow requires this project's native/TypeScript
+transitions and, with `--browser`, its locked production build.
+
 ## Request commands and responses
 
 Import `std/net.nex` and optionally define this fifth pure client/shared entry:

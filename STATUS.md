@@ -18,7 +18,7 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
-## In progress: finite binary64
+## Development milestone: finite binary64
 
 The development compiler is now **0.24.0 / language 0.11**, with finite `f64`,
 decimal/exponent literals and `number` bounds. Native debug/release, interpreter
@@ -32,10 +32,55 @@ Actual macOS LLDB/DAP checks read f64 roots, subnormals, closure captures and
 pages and replay after source deletion; offline full/partial watches agree.
 Generated API client models preserve f64 with numeric JSON schemas. A native
 C++ host exercises real double parameters/results, invalid input rejection,
-request trap cleanup and preservation of caller floating flags. The full new
-regression/platform/installed-SDK acceptance is still in progress; current
-capabilities explicitly retain `numeric_integration_pending`. Design and full
+request trap cleanup and preservation of caller floating flags. The development
+matrix below has passed. Broader platform coverage and redistributable SDK
+delivery remain pending; the descriptor conservatively retains
+`numeric_integration_pending` for full platform/SDK validation. Design and
 acceptance scope: `docs/floats-design.md`.
+
+The current source integration has passed all 27 Linux ARM64 CTest suites
+(247 declared Python cases, including six explicit macOS-SDK skips, plus the
+C++ runtime probe; 389.40 s). All seven opt-in live debugger suites passed,
+including the new floating roots, negative aggregate values, subnormals,
+captures and DAP pages. Its source-free SDK passed all nine phases with
+external networking disabled (`build/linux-arm64-024`). The final macOS ARM64
+run passed all 27 suites and 248 Python cases plus the C++ runtime probe in
+959.92 s. Emulated Linux x86-64 passed the same 27-suite frozen-input regression
+in 1428.14 s, with 247 declared Python cases including six macOS-SDK skips.
+The later numeric-browser case passed separately on both Linux SDKs in native
+debug/release and TypeScript; all 177 compiler/runtime/adapter/library inputs
+remain identical to the frozen tree. Reports:
+`build/ctest-024-browser-final.log`, `build/linux-{arm64,amd64}-024` and
+`build/linux-numeric-web-supplement-{arm64,amd64}/report.json`.
+
+The production `examples/numbers-web.nex` application passed six Playwright
+cases across Chromium, Firefox and WebKit in 3.204 s. It exercises immutable
+f64 state/history, generic arithmetic, a captured callback, JSON rounding,
+subnormal/maximum values, positive-zero normalization and recoverable rejected
+edits. The maintained SDK workflow now requires this example as well as the
+earlier callable browser app. The updated macOS SDK passed all nine phases in
+64.914 s, including both locked Vite builds and actual archived DAP watches;
+all 62 indexed resources are installed. Its numeric browser assets are
+byte-identical to the assets used for the browser interactions. Evidence:
+`build/numeric-web-024`, `build/sdk-024-browser-final/report.json` and
+`build/sdk-024-numeric-browser-artifact-agreement.json`.
+
+The updated source-free Linux SDK workflows, including both browser examples,
+passed all nine phases in 49.104 s on ARM64 and 169.091 s on emulated x86-64
+(`build/linux-sdk-024-browser-{arm64,amd64}/workflow/report.json`). ARM64
+includes actual archived DAP; x86-64 records live debugging false. Their earlier
+complete frozen-source workflows are retained separately. These SDKs still
+require the documented host development dependencies; they are not portable
+redistributable toolchain bundles.
+
+Independent jsonschema 4.23 checks passed current task/proof documents,
+operation output, actual archived partial frames and callable wire descriptors,
+including f64 captures and full frames with subnormal values. The preserved
+0.23 SDK still inspects its old frame and replays its old receipt; 0.24 rejects
+them with `E_DEBUG_BUILD` and `E_TASK_COMPILER`, retaining the original bytes.
+See `build/version-011-schema-evidence.json` and
+`build/version-011-old-sdk-compatibility.json`. These results do not complete
+the full language/development-chain/platform objective.
 
 The following foundation evidence predates enabling the 0.11 source type.
 

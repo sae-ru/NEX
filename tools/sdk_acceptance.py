@@ -456,6 +456,34 @@ test fn examples() -> unit {
                 if path.is_file():
                     require(b'SDK_SERVER_ONLY_SENTINEL' not in path.read_bytes(), 'server code entered browser assets')
             report['evidence']['browser_dist'] = str(dist)
+        numeric = root / 'numeric-browser'
+        numeric.mkdir()
+        shutil.copyfile(resources / 'examples/numbers-web.nex', numeric / 'main.nex')
+        (numeric / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        cli('test', cwd=numeric)
+        numeric_tests = cli('test', '--target', 'web', cwd=numeric)
+        require('numbers_web::transitions' in {t['name'] for t in numeric_tests['tests']},
+                'numeric browser tests selected another project')
+        numeric_generated = root / 'generated-numeric-web'
+        numeric_project = cli('web', '--directory', numeric_generated, cwd=numeric)
+        require(not any('FINITE_NUMBERS_SERVER_SENTINEL' in path.read_text()
+                        for path in numeric_generated.rglob('*.ts')),
+                'numeric server code entered generated client')
+        numeric_evidence = {'revision': numeric_project['revision'], 'native_tests': True,
+                            'typescript_tests': True, 'generated': str(numeric_generated),
+                            'browser_build': args.browser}
+        if args.browser:
+            numeric_built = cli('build', '--target', 'web', '--profile', 'release', cwd=numeric, timeout=300)
+            numeric_dist = Path(numeric_built['dist'])
+            require((numeric_dist / 'index.html').is_file() and any(numeric_dist.rglob('*.js')),
+                    'missing numeric production browser assets')
+            for path in numeric_dist.rglob('*'):
+                if path.is_file():
+                    require(b'FINITE_NUMBERS_SERVER_SENTINEL' not in path.read_bytes(),
+                            'numeric server code entered browser assets')
+            numeric_evidence['dist'] = str(numeric_dist)
+        report['evidence']['numeric_browser'] = numeric_evidence
         report['evidence']['browser_build'] = args.browser
 
     try:
