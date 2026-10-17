@@ -22,23 +22,51 @@ full-toolchain work stay in scope as listed later in this file.
 
 Development toolchain **0.27.0** retains language **0.11**. Relative installed-SDK
 tool/dependency selection and explicit archive/debug-tool overrides are implemented.
-The compiler reports effective paths and rejects broken/escaping SDK descriptors.
-Three host-SDK cases passed with real compile/run/archive subprocesses after a
-Unicode/percent-path relocation; invalid descriptors never invoked a fallback.
-The first fixture failures (a missing fingerprint header and macOS /var alias)
-were corrected; native-target, incremental and task-toolchain regressions passed.
-A macOS assembler copies tools, headers and the non-system dylib closure,
-rewrites copies, records provenance/notices and refreshes ad hoc signatures.
-The first relocated bundle assembled 2390 files (485,048,700 bytes); all seven
-loaded non-system compiler images came from the bundle, original external input
-hashes stayed unchanged, and the existing nine acceptance phases passed in
-73.211 s. A further SQLite application exposed missing Mach-O runtime paths
-(`Library not loaded`, no LC_RPATH). The builder now records configured dependency
-directories, with a comma/Unicode-path regression, and maintained SDK acceptance
-adds authenticated HTTP/HTTPS, principal isolation and persistence after restart.
-This correction and ten-phase moved-bundle/full-platform validation are pending.
-Apple SDK/tools, Python, Node and host debugger remain external prerequisites;
-Linux/Windows packaging, older macOS support and notarization remain open.
+The compiler reports effective paths, fingerprints selected archive/debug tools,
+and rejects invalid/escaping SDK descriptors. Native storage/server executables
+record configured macOS library directories as runtime search paths. The dedicated
+SQLite regression passed in 3.984 s with a comma/Unicode/percent dependency path;
+all three moved-SDK/tool-selection cases passed with real native subprocesses.
+
+The macOS assembler copies Clang/llvm-ar/dsymutil, builtin/runtime/libc++ resources,
+available libLTO, SQLite/OpenSSL headers/libraries and the transitive non-system
+Mach-O closure. It requires declared component roots and full local license texts,
+records original/packaged hashes, rewrites copies and refreshes ad hoc signatures.
+Original source installations remain unchanged. Select the external Apple SDK
+with `SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"` or an explicit `sysroot`.
+
+The relocated Release bundle passed **all ten maintained phases in 72.493 s**,
+including real archived LLDB/DAP, source-deleted replay, both locked Vite builds,
+native HTTP/HTTPS authentication, per-principal Unicode storage and persistence
+after restart (`build/sdk-027-release-bundle-v3-acceptance/report.json`). The
+server probe uses the host's documented `/api/` dispatch prefix. A separate
+kernel-sandbox test denied Homebrew, MacPorts, original dependency/SDK and source
+resource paths: native numeric tests, an archive, SQLite execution and a newly
+compiled HTTPS server passed. A negative control confirmed forbidden reads fail.
+It explicitly selected Apple SDK 27.0; Python/Apple tools remain available.
+`build/sdk-027-native-isolation-v4/report.json` records that scope. The protected
+sandbox launcher strips DYLD tracing, so its empty loader log is not runtime
+image evidence. The first bundle's compiler image audit separately loaded all
+seven non-system images from its own prefix.
+
+A development archive was created, extracted into another directory and checked
+against every one of its **2391 inventoried files**; the restored compiler built,
+ran and tested a new native project. Artifact:
+`build/releases/nex-sdk-0.27.0-macos-arm64-development.tar.gz` (116,131,561 bytes),
+SHA256 `779c2edd2ea1b26b2c100e6c749404d038fec6a6f336999f80cb3ed6af9d16df`.
+The companion manifest records compiler tree
+`333666ed7c1ad70f9e44f6e6685ea5f292379c46` and the three tested SDK-resource overlays.
+Archive verification is `build/sdk-027-archive-verification.json`.
+
+The complete 0.27 Debug/Release and Linux matrix is still running. A first mixed
+source-test/old-binary run was explicitly invalidated; it is not accepted evidence.
+Current compiler/runtime/test inputs match the frozen `333666ed` source snapshot;
+SDK validation later corrected only its `/api/` fixture and packaging resources.
+Linux's installed SDK validation must receive that recorded resource correction.
+This is a macOS ARM64 development bundle, requiring macOS **27.0**, Apple SDK/tools,
+Python, Node/npm for web builds and host LLDB for debugging. Broader machine/OS
+coverage, Linux/Windows packaging, mobile SDKs and notarization remain pending.
+The complete language/development-chain objective remains open.
 
 ## Development milestone: native build overhead
 

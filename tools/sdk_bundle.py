@@ -177,6 +177,11 @@ class Bundle:
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
         self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
         self.external_tree(llvm / 'include/c++/v1', self.output / 'libexec/nex/llvm/include/c++/v1')
+        # Darwin Clang passes this path to Apple's linker, including ordinary
+        # non-LTO links. Retain it when supplied by the selected LLVM package.
+        lto = llvm / 'lib/libLTO.dylib'
+        if lto.is_file():
+            self.external(lto, self.output / 'libexec/nex/llvm/lib/libLTO.dylib')
         includes = self.output / 'lib/nex/deps/include'
         for name in ['sqlite3.h', 'sqlite3ext.h']:
             self.external(Path(doctor['native_sqlite_include']) / name, includes / name)

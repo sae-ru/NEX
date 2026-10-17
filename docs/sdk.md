@@ -22,10 +22,15 @@ This is an installed-development-chain check, not a portable SDK bundle.
 cmake --install build --prefix /absolute/installed-sdk
 python3 tools/sdk_bundle.py --sdk /absolute/installed-sdk \
   --output /absolute/new-nex-bundle --notices /absolute/notices.json
+export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
 mv /absolute/new-nex-bundle '/absolute/moved NEX SDK'
 python3 '/absolute/moved NEX SDK/share/nex/tools/sdk_acceptance.py' \
   '/absolute/moved NEX SDK' --output /absolute/new-bundle-evidence --browser --live
 ```
+
+Select the host Apple SDK with `SDKROOT` as above, or use an explicit native
+`--toolchain` configuration with `sysroot`. The bundle does not carry Apple SDK
+headers or depend on Homebrew's machine-specific Clang config files.
 
 The packager currently runs on macOS. It copies the installed compiler, matching
 resources, Clang/llvm-ar/dsymutil, Clang builtin/runtime resources, libc++ headers,
@@ -96,7 +101,9 @@ The maintained scenario performs these actual operations:
    original wrong behavior, materialize the repaired sources and execute them.
 7. Prove the installed scalar verification example with the actual solver.
    This does not prove matching, the compiler or the whole application.
-8. Test and generate both the installed generic browser example with captured
+8. Build a native HTTP/HTTPS service, reject unauthenticated requests and check
+   per-principal Unicode storage and persistence after a server restart.
+9. Test and generate both the installed generic browser example with captured
    callback state and the finite-number application. Its immutable f64 state,
    generic arithmetic, callback and strict JSON edits pass native/TypeScript
    transition tests. Check that unreachable server sentinels are absent from

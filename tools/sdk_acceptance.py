@@ -509,14 +509,15 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                     def request(user, body=None):
                         headers = {} if user is None else {'Authorization': 'Bearer ' + tokens[user]}
                         payload = None if body is None else body.encode()
-                        value = urllib.request.Request(base + '/value', data=payload, headers=headers)
+                        value = urllib.request.Request(base + '/api/value', data=payload, headers=headers)
                         try:
                             response = urllib.request.urlopen(value, context=context if encrypted else None, timeout=15)
                         except urllib.error.HTTPError as error:
                             response = error
                         with response:
                             return response.status, response.read().decode()
-                    require(request(None)[0] == 401, 'unauthenticated request accepted')
+                    unauthenticated = request(None)
+                    require(unauthenticated[0] == 401, 'expected unauthenticated rejection (401), received ' + str(unauthenticated[0]))
                     if not encrypted:
                         require(request('alice', 'Unicode 🧠') == (200, 'alice:Unicode 🧠'), 'alice write failed')
                         require(request('bob')[0] == 404, 'bob could read alice data')
