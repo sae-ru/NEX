@@ -90,6 +90,14 @@ def display(value, descriptor, records, budget=None):
                 items.append('…'); break
             items.append(clipped(json.dumps(field['name'], ensure_ascii=False) + ': ') + display(value[field['name']], field['type'], records, budget))
         return '{' + ', '.join(items) + '}'
+    if 'enum' in descriptor:
+        case = next(case for case in records['$enums'][descriptor['enum']] if case['name'] == value['case'])
+        items = []
+        for field in case['fields']:
+            if budget[0] <= 0:
+                items.append('…'); break
+            items.append(clipped(field['name'] + ': ') + display(value['fields'][field['name']], field['type'], records, budget))
+        return clipped(value['case']) + '(' + ', '.join(items) + ')'
     if 'ok' in value:
         return '{"ok": ' + display(value['ok'], descriptor['result'], records, budget) + '}'
     return '{"error": ' + clipped(json.dumps(value['error'], ensure_ascii=False)) + '}'
@@ -100,6 +108,8 @@ def type_name(descriptor):
         return descriptor
     if 'record' in descriptor:
         return descriptor['record']
+    if 'enum' in descriptor:
+        return descriptor['enum']
     kind = 'list' if 'list' in descriptor else 'result'
     return kind + '<' + type_name(descriptor[kind]) + '>'
 
@@ -161,6 +171,8 @@ class Bridge:
             result['variablesReference'] = self.allocate({'value': value, 'descriptor': descriptor, 'records': records})
             if 'list' in descriptor:
                 result['indexedVariables'] = len(value)
+            elif 'enum' in descriptor:
+                result['namedVariables'] = 1 + len(value['fields'])
             else:
                 result['namedVariables'] = len(records[descriptor['record']]) if 'record' in descriptor else 1 if 'ok' in value else 2
         return result
@@ -182,6 +194,10 @@ class Bridge:
             fields = records[descriptor['record']]
             total = len(fields)
             get = lambda i: (fields[i]['name'], value[fields[i]['name']], fields[i]['type'])
+        elif 'enum' in descriptor:
+            fields = next(case['fields'] for case in records['$enums'][descriptor['enum']] if case['name'] == value['case'])
+            total = 1 + len(fields)
+            get = lambda i: ('<case>', value['case'], 'str') if i == 0 else (fields[i-1]['name'], value['fields'][fields[i-1]['name']], fields[i-1]['type'])
         elif 'ok' in value:
             total = 1
             get = lambda i: ('ok', value['ok'], descriptor['result'])
@@ -273,7 +289,9 @@ class Bridge:
                             variable = {'value': 'unit', 'type': 'unit', 'variablesReference': 0}
                         else:
                             schema = data['wire_schema']
-                            variable = self.variable('', data['value'], schema['root'], schema['records'])
+                            records = dict(schema['records'])
+                            records['$enums'] = schema.get('enums', {})
+                            variable = self.variable('', data['value'], schema['root'], records)
                         variable['result'] = data['display']; variable.pop('name', None); variable.pop('value', None)
                         variable['nex'] = data
                         return self.response(request, variable)

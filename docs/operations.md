@@ -1,6 +1,6 @@
 # Operation graph and source attribution — toolchain 0.15
 
-Language 0.5, `nex.function/3`, `nex.program/4` and semantic revision hashes stay unchanged. The checked AST now also supplies parameter, block, statement and expression nodes, structural child edges, lexical binding references and call references. This analysis does not add source syntax or execute model output.
+The checked AST supplies parameter, block, statement and expression nodes, structural child edges, lexical binding references and call references. This analysis does not add source syntax or execute model output.
 
 ## Query the selected revision
 
@@ -55,3 +55,5 @@ Semantic revisions ignore formatting. Locations are byte-based source points, no
 Native debug manifests retain the existing 8 MiB loader limit; larger closures still need selective metadata packaging.
 
 A function analysis is limited to 100,000 nodes and 512 structural separators in a path. These are compiler resource limits. Identity reuse is not a correctness proof; validate all behavioral changes with the compiler and native/interpreter/TypeScript tests.
+
+Language 0.6 uses function/4 and program/5 hashes and adds statement.match, pattern.case, pattern.binding and pattern.discard nodes. Arm paths use resolved case names; matching anchors by case name rather than numeric discriminator so reordering enum declarations cannot silently retarget an existing case identity. Case definitions retain their current discriminator. Pattern uses link to their arm-local binding; discards introduce no binding. Source sites change with the checked function hash.

@@ -270,7 +270,7 @@ int run(const Options &o) {
       const auto &handler=p.function(endpoint.target);auto descriptor=describeAPI(p);llvm::json::Value contract=nullptr;
       for(const auto &item:*descriptor.getAsObject()->getArray("endpoints"))if(item.getAsObject()->getString("name")==endpoint.name)contract=item;
       llvm::json::Array structures;std::set<std::string> seen;
-      std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(const auto &field:s.fields)include(field.type);}};
+      std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(auto field:s.members())include(field->type);}};
       for(const auto &param:handler.params)include(param.type);include(handler.result);
       llvm::json::Array imports;for(const auto &dependency:p.units.at(endpoint.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"file",dependency.target},{"module",p.units.at(dependency.target).module}});
       print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",languageVersion},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
@@ -280,9 +280,9 @@ int run(const Options &o) {
     for(const auto &fn:p.functions)if(fn.dependencies.contains(f.name))callers.push_back(fn.name);
     for(const auto &endpoint:p.endpoints)if(endpoint.target==f.name)callers.push_back(endpoint.name);
     std::set<std::string> needed;
-    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)visitType(*t.element);if(t.kind==Type::Record&&needed.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)visitType(field.type);};
+    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)visitType(*t.element);if(t.kind==Type::Record&&needed.insert(t.name).second)for(auto field:p.structure(t.name).members())visitType(field->type);};
     std::function<void(E)> visitExpr=[&](E e){if(e){visitType(e->type);for(auto a:e->args)visitExpr(a);}};
-    std::function<void(const std::vector<S>&)> visitBlock=[&](const auto &body){for(auto s:body){visitType(s->type);visitExpr(s->expr);visitBlock(s->body);visitBlock(s->alternative);}};
+    std::function<void(const std::vector<S>&)> visitBlock=[&](const auto &body){for(auto s:body){visitType(s->type);visitExpr(s->expr);childBlocks(s,visitBlock);}};
     auto visitFunction=[&](const Function &fn){visitType(fn.result);for(const auto &param:fn.params)visitType(param.type);visitBlock(fn.body);};
     visitFunction(f);for(const auto &dependency:f.dependencies)visitFunction(p.function(dependency));
     llvm::json::Array structures;for(const auto &s:p.structures)if(needed.contains(s.name))structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"module",s.owner},{"file",s.unit},{"definition",canonical(s)}});

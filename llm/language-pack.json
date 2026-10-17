@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.5",
+  "language_version": "0.6",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -48,7 +48,8 @@
     "task_contract": "examples/tasks/task.json",
     "task_proof": "examples/tasks/proof.json",
     "large_debug_values": "examples/debugging/large.nex",
-    "operations": "examples/operations/main.nex"
+    "operations": "examples/operations/main.nex",
+    "enums": "examples/enums/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

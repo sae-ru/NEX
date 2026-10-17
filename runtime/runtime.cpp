@@ -83,6 +83,8 @@ void nex_release(Handle *p){delete p;}
 Handle *nex_string_new(const char *text,int64_t size,int64_t line){return guarded(line,[&]{return owned(nexrt::string(std::string(text,size)));});}
 Handle *nex_list_new(){return guarded(0,[]{return owned(std::make_shared<nexrt::Data>(nexrt::Data::List));});}
 Handle *nex_record_new(int64_t count){return guarded(0,[&]{auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->values.resize(count);d->names.resize(count);return owned(d);});}
+Handle *nex_enum_new(int64_t count,int64_t ordinal){return guarded(0,[&]{auto d=std::make_shared<nexrt::Data>(nexrt::Data::Enum);d->ordinal=ordinal;d->values.resize(count);d->names.resize(count);return owned(d);});}
+int64_t nex_enum_tag(Handle *value,int64_t count,int64_t line){return guarded(line,[&]{if(value->data->kind!=nexrt::Data::Enum||value->data->ordinal<0||value->data->ordinal>=count)throw nexrt::DataError("E_ENUM","invalid enum discriminant");return value->data->ordinal;});}
 void nex_record_name(Handle *p,const char *name,int64_t size){guarded(0,[&]{p->data->text.assign(name,size);});}
 void nex_record_field_name(Handle *p,int64_t index,const char *name,int64_t size){guarded(0,[&]{p->data->names.at(index).assign(name,size);});}
 void nex_list_append_i64(Handle *p,int64_t value,int64_t boolean){guarded(0,[&]{p->data->values.emplace_back(value,boolean);});}

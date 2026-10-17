@@ -40,6 +40,7 @@ WatchValues::V WatchValues::local(const std::string &name){
 const Object &WatchValues::shape(const Ref &r){
   auto o=read(r,"shape").getAsObject();if(!o||o->size()!=1)throw Error("E_DEBUG_VALUE","invalid stopped-frame shape");
   if(r.type.kind==Type::List){auto s=o->getString("length");int64_t length=0;if(!s||s->empty()||(s->size()>1&&s->front()=='0')||s->front()<'0'||s->front()>'9')throw Error("E_DEBUG_VALUE","invalid stopped-list length");auto parsed=std::from_chars(s->begin(),s->end(),length);if(parsed.ec!=std::errc()||parsed.ptr!=s->end()||length<0)throw Error("E_DEBUG_VALUE","invalid stopped-list length");}
+  else if(r.type.kind==Type::Record&&program.structure(r.type.name).enumeration){auto name=o->getString("case");bool found=false;if(name)for(const auto &variant:program.structure(r.type.name).variants)if(variant.name==*name)found=true;if(!found)throw Error("E_DEBUG_VALUE","invalid stopped-enum variant");}
   else if(r.type.kind==Type::Record){if(o->getString("record")!=r.type.name)throw Error("E_DEBUG_VALUE","stopped-record shape differs from its nominal type");}
   else if(r.type.kind==Type::Result){if(!o->getBoolean("ok"))throw Error("E_DEBUG_VALUE","invalid stopped-result shape");}
   else throw Error("E_DEBUG_VALUE","type does not support a stopped-frame shape");return *o;
@@ -68,6 +69,8 @@ WatchValues::V WatchValues::unwrap(const V &base){
   if(!isSuccess(base)){auto code=concrete(error(base,true));auto message=concrete(error(base,false));throw nexrt::DataError("E_RESULT",code.object->text+": "+message.object->text);}
   return child(*r,"ok",*r->type.element);
 }
+int64_t WatchValues::enumTag(const V &base){auto r=reference(base);if(!r)return base.object->ordinal;auto name=shape(*r).getString("case");for(const auto &variant:program.structure(r->type.name).variants)if(variant.name==*name)return variant.ordinal;throw Error("E_DEBUG_VALUE","invalid enum tag");}
+WatchValues::V WatchValues::enumField(const V &base,int64_t tag,size_t index){auto r=reference(base);if(!r)return nexrt::get(base.object,index);if(enumTag(base)!=tag)throw Error("E_DEBUG_VALUE","enum payload path has another variant");const auto &variant=program.structure(r->type.name).variants.at(tag);const auto &field=variant.fields.at(index);return child(*r,variant.name+"::"+field.name,field.type);}
 void WatchValues::bounded(const V &value,unsigned depth){
   if(++visits>100000||depth>64)throw Error("E_DEBUG_LIMIT","expression exceeded its value visit/depth budget");
   if(value.object&&!reference(value)){bytes+=value.object->text.size();if(bytes>8*1024*1024)throw Error("E_DEBUG_LIMIT","expression exceeded its cumulative text budget");for(const auto &child:value.object->values)bounded(child,depth+1);}

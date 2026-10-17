@@ -21,7 +21,7 @@ Browser authoring uses ordinary NEX functions and `std/web.nex`, with a checked 
 
 Source changes and graph changes are separate workflows. Follow the materialization rules in `docs/protocol.md`. Use `describe` to detect version differences instead of guessing that another installation implements the roadmap.
 
-Language 0.5 retains graph/context protocol 2 and qualified symbol identities such as `example::model::create`. A replacement's source still starts with its local declaration, such as `pub fn create` or `endpoint create_row(...) = create;`. Keep the returned visibility and import aliases. The compiler checks the complete candidate, including callers in other modules. `nex export --directory PATH` creates a portable editable project with vendored dependency sources; it requires a new or empty directory. Older stored language revisions require explicit migration.
+Language 0.6 retains graph/context protocol 2 and qualified symbol identities such as `example::model::create`. A replacement's source still starts with its local declaration, such as `pub fn create` or `endpoint create_row(...) = create;`. Keep the returned visibility and import aliases. The compiler checks the complete candidate, including callers in other modules. `nex export --directory PATH` creates a portable editable project with vendored dependency sources; it requires a new or empty directory. Older stored language revisions require explicit migration.
 
 Recoverable result<T>, typed JSON and server capabilities are described by the matching language/server guides. Native HTTP builds and principal-partitioned SQLite storage are available. The optional pure commands entry with std/net.nex now connects browser events to bounded same-origin HTTP requests; typed response envelopes feed the ordinary update function. examples/fullstack shares checked models with the native server and exercises durable authenticated CRUD. Language 0.5 endpoint declarations now generate the native dispatcher, extracted model SDK, pure typed command/response helpers and OpenAPI. Models use the matching api guide and nex api to inspect/generate these contracts; general source async/await remains unsupported.
 
@@ -33,7 +33,7 @@ For native incremental compilation, retrieve `nex guide --kind build --json`. Bu
 
 `nex guide --kind profile --json` supplies the tenth installed guide. `nex profile FILE --scenario TEXT --json` returns bounded graph-attributed function measurements and the saved full timeline report. Use its exact revision and inspect measurement/drop limits before optimizing.
 
-The eleventh guide is `nex guide --kind verify --json`. `llm/verification.schema.json` defines snapshot-bound scalar proof contracts; use the contract/verify commands in the pack manifest. Proof metadata does not change language 0.5 execution or replace tests/task acceptance.
+The eleventh guide is `nex guide --kind verify --json`. `llm/verification.schema.json` defines snapshot-bound scalar proof contracts; use the contract/verify commands in the pack manifest. Proof metadata does not change language 0.6 execution or replace tests/task acceptance.
 
 The twelfth guide is `nex guide --kind task --json`. Reviewed `nex.task/1` documents pin requirements, qualified bindings, targets, tests and formal acceptance intent. Check/run/replay/history use the same compiler for every model. Receipts preserve exact NEX inputs; static linkage is not measured coverage, and external tools/environment are not fully frozen.
 
@@ -41,4 +41,6 @@ The thirteenth guide is `nex guide --kind expression --json`; `llm/debug-frame.s
 
 Toolchain 0.14 adds `debug-frame-v2.schema.json` for partial stopped-frame captures. `nex inspect --kind demand` discovers actual reads through the checked interpreter; agents must preserve stop/build identity and report unavailable data. The original full-frame schema remains supported. `examples/debugging/large.nex` exercises large lists and unread sibling payloads.
 
-Toolchain 0.15 adds the operation guide/schema and a paged operation-query interface. Local identities persist separately from deterministic compiled-site keys; preserve the graph database for identity lineage. The source language remains 0.5.
+Toolchain 0.15 adds the operation guide/schema and a paged operation-query interface. Local identities persist separately from deterministic compiled-site keys; preserve the graph database for identity lineage. The source language is 0.6.
+
+Toolchain 0.16 / language 0.6 adds nominal enums, exhaustive match statements and strict tagged wire schemas. Give a model the updated spec, grammar, prompt and compiler descriptor together. `examples/enums/main.nex` covers data-carrying variants, recursive trees and JSON. Old language snapshots require explicit migration and reviewed task/proof regeneration; retain the matching old SDK for saved receipts/frames.

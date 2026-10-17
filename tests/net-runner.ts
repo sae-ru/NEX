@@ -71,6 +71,18 @@ runner = new RequestRunner(deliver, 'https://app.test/', async () => { assert.fa
 assert.throws(() => runner.run([command('bad-schema', { kind: 'typed_request', body: JSON.stringify({body:'',schema:'{"schema":"nex.wire/1","root":{"record":"missing"},"records":{}}'}) })]), error => error.code === 'E_REQUEST');
 runner.close();
 
+const enumSchema = { schema: 'nex.wire/2', root: { result: { enum: 'model::Event' } }, records: {}, enums: {
+  'model::Event': [{name:'Reset',fields:[]},{name:'Set',fields:[{name:'value',type:'i64'}]}],
+}};
+const enumTyped = { kind: 'typed_request', body: JSON.stringify({body:'',schema:JSON.stringify(enumSchema)}) };
+assert.equal((await outcome(async () => new Response('{"ok":{"case":"Set","fields":{"value":"42"}}}'), enumTyped)).body.ok,
+             '{"ok":{"case":"Set","fields":{"value":"42"}}}');
+for (const body of ['{"ok":{"case":"Other","fields":{}}}', '{"ok":{"case":"Set","fields":{"value":42}}}',
+                    '{"ok":{"case":"Reset","fields":{"extra":true}}}', '{"ok":{"case":"Reset","fields":{},"extra":true}}']) {
+  const response=await outcome(async () => new Response(body),enumTyped);
+  assert.equal(response.body.error?.code,'E_JSON'); assert.equal(response.body.ok,undefined);
+}
+
 const hanging: typeof fetch = async (_url, options) => new Promise((_resolve, reject) => {
   options!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
 });

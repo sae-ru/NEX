@@ -1,6 +1,6 @@
 # NEX expressions in stopped frames — toolchain 0.14
 
-NEX expressions use the language 0.5 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.6 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -221,3 +221,7 @@ python3 tests/expressions.py build/nex
 python3 tests/dap_transport.py build/nex
 python3 tests/expressions.py build/nex --live LiveExpressions
 ```
+
+## Language 0.6 enum values
+
+Matching pure helpers accept exact enum values or demand only the selected case shape and fields. A shape is `{"case":"Chosen"}`; a checked payload path component is `Chosen::field`. Ignored or unused pattern bindings do not request payloads. Whole enum captures use the strict case/fields wire wrapper. LLDB validates the stopped ordinal, nominal case name and field layout without inferior calls. DAP computed children expose `<case>` plus selected payload names and preserve paging/stop identity. New manifests use `nex.runtime-view/2` and `nex.debug-expression/2` because the native object layout has an enum ordinal. Old language 0.5 frames require the matching 0.15 SDK and runtime views; migration cannot reinterpret an old stopped process.

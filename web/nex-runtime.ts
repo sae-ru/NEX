@@ -1,8 +1,10 @@
 // NEX value semantics shared by generated TypeScript and browser applications.
 export const TYPE: unique symbol = Symbol('NEX.type');
+export const CASE: unique symbol = Symbol('NEX.case');
 export type Value = bigint | boolean | string | ReadonlyArray<Value> | RecordValue;
 export interface RecordValue {
   readonly [TYPE]: string;
+  readonly [CASE]?: string;
   readonly [key: string]: Value;
 }
 type ErrorValue = RecordValue & { readonly [TYPE]: 'nex.error'; readonly code: string; readonly message: string };
@@ -65,6 +67,13 @@ export function record<T extends RecordValue>(name: string, fields: ReadonlyArra
   // The NEX checker established the nominal type and field layout before emission.
   return Object.freeze(result) as unknown as T;
 }
+export function enumeration<T extends RecordValue>(name: string, tag: string, fields: ReadonlyArray<readonly [string, Value]>): T {
+  const result = Object.create(null) as Record<string | symbol, Value>;
+  Object.defineProperty(result, TYPE, { value: name }); Object.defineProperty(result, CASE, { value: tag });
+  for (const [key, value] of fields) Object.defineProperty(result, key, { value, enumerable: true });
+  return Object.freeze(result) as unknown as T;
+}
+export function invalidEnum(site?: Site): never { return fail('E_ENUM', 'invalid enum discriminant', site); }
 export function concat<T extends Value>(a: ReadonlyArray<T>, b: ReadonlyArray<T>): ReadonlyArray<T> { return list([...a, ...b]); }
 export function push<T extends Value>(items: ReadonlyArray<T>, value: T): ReadonlyArray<T> { return list([...items, value]); }
 function bounds(index: bigint, size: number, site?: Site): number {
@@ -88,7 +97,7 @@ export function equal(a: Value, b: Value): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
   if (isList(a)) return isList(b) && a.length === b.length && a.every((item, i) => equal(item, b[i]));
-  if (isList(b) || a[TYPE] !== b[TYPE]) return false;
+  if (isList(b) || a[TYPE] !== b[TYPE] || a[CASE] !== b[CASE]) return false;
   const names = Object.keys(a), other = Object.keys(b);
   return names.length === other.length && names.every((name, i) => name === other[i] && equal(a[name], b[name]));
 }
@@ -99,13 +108,14 @@ export function representation(value: Value): string {
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
   if (isList(value)) return '[' + value.map(representation).join(',') + ']';
-  return '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';
+  const fields = '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';
+  return value[CASE] === undefined ? fields : '{"case":' + quoted(value[CASE]) + ',"fields":' + fields + '}';
 }
 export function str(value: Value): string { return typeof value === 'string' ? value : representation(value); }
 export function print(value: Value): void { console.log(str(value)); }
 
-type Descriptor = 'i64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string };
-export type Schema = { schema: 'nex.wire/1'; root: Descriptor; records: Record<string, ReadonlyArray<{ name: string; type: Descriptor }>> };
+type Descriptor = 'i64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
+export type Schema = { schema: 'nex.wire/1' | 'nex.wire/2'; root: Descriptor; records: Record<string, ReadonlyArray<{ name: string; type: Descriptor }>>; enums?: Record<string, ReadonlyArray<{ name: string; fields: ReadonlyArray<{name: string; type: Descriptor}> }>> };
 const JSON_BYTES = 1024 * 1024, JSON_DEPTH = 64, JSON_ITEMS = 10000, JSON_NODES = 100000;
 function invalidJSON(message: string): never { throw new NexError('E_JSON', message); }
 function bytes(text: string): number { return new TextEncoder().encode(text).length; }
@@ -122,6 +132,12 @@ export function encodeJSON(value: Value, site?: Site): string {
         const error = value.error as ErrorValue;
         return '{"error":{"code":' + quoted(error.code) + ',"message":' + quoted(error.message) + '}}';
       }
+    }
+    if (!isList(value) && value[CASE] !== undefined) {
+      if (depth + 1 > JSON_DEPTH) invalidJSON('JSON enum wrapper exceeds depth limit');
+      const names = Object.keys(value); if (names.length > JSON_ITEMS) invalidJSON('JSON enum exceeds item limit');
+      const fields = '{' + names.map(name => quoted(name) + ':' + encode(value[name], depth + 2)).join(',') + '}';
+      return '{"case":' + quoted(value[CASE]) + ',"fields":' + fields + '}';
     }
     const names = Object.keys(value);
     if (names.length > JSON_ITEMS) invalidJSON('JSON collection exceeds item limit');
@@ -192,6 +208,13 @@ export function decodeJSON<T extends Value>(text: string, schema: Schema): Resul
       if (!object(error) || Object.keys(error).length !== 2 || !has(error, 'code') || !has(error, 'message') || typeof error.code !== 'string' || typeof error.message !== 'string') invalidJSON('invalid JSON error');
       return err(string(error.code), string(error.message));
     }
+    if ('enum' in type) {
+      if (schema.schema !== 'nex.wire/2' || !object(value) || Object.keys(value).length !== 2 || !has(value, 'case') || !has(value, 'fields') || typeof value.case !== 'string' || !object(value.fields)) invalidJSON('expected tagged JSON enum');
+      const variant = schema.enums?.[type.enum]?.find(variant => variant.name === value.case);
+      if (!variant) invalidJSON('unknown JSON enum variant'); const payload = value.fields;
+      if (Object.keys(payload).length !== variant.fields.length || Object.keys(payload).length > JSON_ITEMS) invalidJSON('JSON enum has missing or unknown fields');
+      return enumeration(type.enum, value.case, variant.fields.map(field => { if (!has(payload, field.name)) invalidJSON('JSON enum has missing or unknown fields'); return [field.name, decode(payload[field.name], field.type, depth + 2)] as const; }));
+    }
     const fields = schema.records[type.record];
     if (!object(value) || Object.keys(value).length !== fields.length) invalidJSON('JSON record has missing or unknown fields');
     return record(type.record, fields.map(field => {
@@ -200,7 +223,7 @@ export function decodeJSON<T extends Value>(text: string, schema: Schema): Resul
     }));
   }
   try {
-    if (schema.schema !== 'nex.wire/1') invalidJSON('unsupported wire schema');
+    if (schema.schema !== 'nex.wire/1' && schema.schema !== 'nex.wire/2') invalidJSON('unsupported wire schema');
     return ok(decode(parseJSON(text), schema.root, 0) as T);
   } catch (error) {
     return err('E_JSON', error instanceof NexError && error.code === 'E_JSON' ? error.message : 'invalid JSON text or wire schema');

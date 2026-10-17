@@ -22,7 +22,10 @@ class Expressions(harness.ToolchainCase):
 pub fn at(items: list<i64>, index: i64) -> i64 { return items[index]; }
 pub fn name(person: Person) -> str { return person.name; }
 pub fn first_two(items: list<i64>) -> i64 { var index: i64 = 0; var total: i64 = 0; while index < 2 { total = total + items[index]; index = index + 1; } return total; }
+pub enum Selection { Empty; Chosen(id:i64, ignored:i64, samples:list<str>); }
+pub fn selected(value:Selection) -> i64 { match value { Selection::Empty() => {return 0;} Selection::Chosen(id,ignored,samples) => {return id + len(samples);} } }
 ''')
+        self.file.write_text(self.file.read_text().replace('  let empty:', '  let selection: model::Selection = model::Selection::Chosen(40,999,["selected"]);\n  let empty:'))
         with self.file.open('a') as output:
             output.write('''\nfn spin() -> i64 { var n: i64 = 0; while true { n = n + 1; } return n; }
 server fn server_value() -> i64 { return 3; }
@@ -38,8 +41,9 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
                 'total':('i64','42'),'items':('list<i64>',['40','41']),
                 'reply':('result<str>',{'ok':label}),
                 'failure':('result<i64>',{'error':{'code':'EXAMPLE','message':'recoverable error'}}),
-                'empty':('list<str>',[])}
-        self.frame={'schema':'nex.debug-frame/1','language':'0.5','revision':identity['revision'],
+                'empty':('list<str>',[]),
+                'selection':('debugging::model::Selection',{'case':'Chosen','fields':{'id':'40','ignored':'999','samples':['selected']}})}
+        self.frame={'schema':'nex.debug-frame/1','language':'0.6','revision':identity['revision'],
                     'build_key':identity['build_key'],'function':'debugging::app::inspect',
                     'stop':{'process_id':'100','thread_id':'101','frame_id':0,'stop_id':'1'},
                     'bindings':[{'name':n,'type':t,'value':v} for n,(t,v) in values.items()], 'truncated':False}
@@ -206,6 +210,22 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
             {'binding':'failure','path':['message'],'kind':'value','value':'message'}]
         self.assertEqual(self.inspect('unwrap(failure)',frame,ok=False)['code'],'E_RESULT')
 
+    def test_enum_match_helpers_demand_only_selected_payloads(self):
+        self.assertEqual(self.inspect('model::selected(selection)')['value'],'41')
+        def supply(request):
+            if request['path'] == []: return {'case':'Chosen'}
+            if request['path'] == ['Chosen::id']: return '40'
+            if request['path'] == ['Chosen::samples']: return {'length':'2'}
+            self.fail('unused enum field requested: '+str(request))
+        result,requests,frame=self.demand('model::selected(selection)',supply)
+        self.assertEqual(result['value'],'42')
+        self.assertEqual([r['path'] for r in requests],[[],['Chosen::id'],['Chosen::samples']])
+        self.assertEqual(self.inspect('selection',frame,ok=False)['code'],'E_DEBUG_UNAVAILABLE')
+        result,requests,_=self.demand('model::selected(selection)',lambda r:{'case':'Empty'})
+        self.assertEqual(result['value'],'0');self.assertEqual(len(requests),1)
+        bad=self.partial();bad['captures']=[{'binding':'selection','path':[],'kind':'shape','value':{'case':'Unknown'}}]
+        self.assertEqual(self.inspect('model::selected(selection)',bad,ok=False)['code'],'E_DEBUG_VALUE')
+
     def test_partial_pure_loops_constructors_aliases_and_short_circuit(self):
         result,requests,_=self.demand('model::first_two(items)',lambda r:{'length':'999999'} if r['kind']=='shape' else str(20+r['path'][0]))
         self.assertEqual(result['value'],'41');self.assertEqual([r['path'] for r in requests],[[],[0],[1]])
@@ -276,6 +296,64 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
 
 if LIVE:
     class LiveExpressions(harness.ToolchainCase):
+        def test_live_enum_patterns_partial_reads_and_dap_children(self):
+            self.source('''module live_enum;
+enum Selection { Empty; Chosen(id:i64, unused:i64, samples:list<str>); }
+fn selected(value:Selection) -> i64 { match value { Selection::Empty() => {return 0;} Selection::Chosen(n,unused,samples) => {return n + len(samples);} } }
+fn observe(selection:Selection) -> unit !{io} {
+ match selection {
+  Selection::Empty() => {},
+  Selection::Chosen(n,_,samples) => {
+   print(n); // break: enum
+   print(len(samples));
+  }
+ }
+}
+fn main() -> unit !{io} { var samples:list<str> = ["leaf"]; var i:i64 = 0; while i < 15 {samples = samples + samples; i = i + 1;} observe(Selection::Chosen(40,999,samples)); }
+''')
+            session=self.cli('debug','--kind','nex-dap');manifest=json.loads(Path(session['manifest']).read_text())
+            projected=manifest['sources'][0]['projection'];line=next(i+1 for i,s in enumerate(self.file.read_text().splitlines()) if '// break: enum' in s)
+            report=self.root/'enum-watch.json';script=self.root/'enum_watch.py'
+            script.write_text('''import json,lldb
+def __lldb_init_module(debugger,_):
+ debugger.SetAsync(False);debugger.HandleCommand('settings set target.disable-aslr false')
+ target=debugger.GetSelectedTarget();target.BreakpointCreateByLocation(SOURCE,LINE);process=target.LaunchSimple(None,None,None)
+ try:
+  assert process.GetState()==lldb.eStateStopped
+  frame=process.GetSelectedThread().GetSelectedFrame();stop=process.GetStopID();handle=frame.FindVariable('selection').GetValueAsUnsigned()
+  def command(text):
+   result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,result)
+   assert result.Succeeded(),(text,result.GetOutput(),result.GetError())
+   return json.loads(result.GetOutput())
+  result={'value':command('nex-eval selected(selection)'), 'pattern':command('nex-eval n'), 'snapshot':command('nex-frame selected(selection)')}
+  assert process.GetStopID()==stop and frame.FindVariable('selection').GetValueAsUnsigned()==handle
+  with open(REPORT,'w') as output:json.dump(result,output)
+  process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+ finally:
+  if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+            output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
+            self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
+            self.assertEqual(result['value']['value'],'32808');self.assertEqual(result['pattern']['value'],'40')
+            self.assertEqual([c['path'] for c in result['snapshot']['captures']],[[],['Chosen::id'],['Chosen::samples']])
+            framefile=self.root/'snapshot.json';framefile.write_text(json.dumps(result['snapshot']))
+            self.assertEqual(self.cli('inspect',framefile,'--manifest',session['manifest'],'--expression','selected(selection)')['value'],'32808')
+            from debugging import DAP
+            client=DAP(session['adapter_command'],self.root)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True,'supportsVariablePaging':True})
+                pending=client.send('launch',dict(session['launch'],disableASLR=False));client.event('initialized')
+                client.request('setBreakpoints',{'source':{'path':projected},'breakpoints':[{'line':line}]})
+                client.request('configurationDone');client.response(pending);stop=client.event('stopped')
+                frame=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames'][0]['id']
+                def evaluate(expression):return client.request('evaluate',{'expression':expression,'frameId':frame,'context':'watch'})
+                self.assertEqual(evaluate('selected(selection)')['nex']['value'],'32808')
+                value=evaluate('Selection::Chosen(n,0,[])');self.assertEqual(value['namedVariables'],4)
+                children=client.request('variables',{'variablesReference':value['variablesReference'],'start':0,'count':2})['variables']
+                self.assertEqual([(v['name'],v['value']) for v in children],[('<case>','"Chosen"'),('id','40')])
+                client.request('continue',{'threadId':stop['threadId']});self.assertEqual(client.event('exited')['exitCode'],0)
+            finally:client.close()
+
         def large(self):
             shutil.copyfile(harness.REPO/'examples/debugging/large.nex',self.file)
             session=self.cli('debug','--kind','nex-dap');manifest=json.loads(Path(session['manifest']).read_text())

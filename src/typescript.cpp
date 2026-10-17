@@ -35,14 +35,14 @@ class Generator {
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
   void needed(const Type &t){
     if(t.kind==Type::List||t.kind==Type::Result)needed(*t.element);
-    if(t.kind==Type::Record&&structures.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)needed(field.type);
+    if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }
   void visit(const Function &f){
     if(f.realm=="server")throw Error("E_REALM","server function cannot be emitted to the browser: "+f.name,f.span);
     if(!functions.insert(f.name).second)return;
     needed(f.result);for(const auto &param:f.params)needed(param.type);
     std::function<void(E)> expression=[&](E e){if(e){needed(e->type);for(auto a:e->args)expression(a);}};
-    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);block(s->body);block(s->alternative);}};
+    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);childBlocks(s,block);}};
     block(f.body);for(const auto &name:f.dependencies)visit(p.function(name));
   }
   std::string local(const std::string &name){
@@ -72,6 +72,10 @@ class Generator {
     case Expr::Call:{
       if(e->text=="err")return "nex.err<"+type(*e->type.element)+">("+expr(e->args[0])+", "+expr(e->args[1])+")";
       if(e->text=="decode_json")return "nex.decodeJSON<"+type(e->annotation)+">("+expr(e->args[0])+", "+json(wireSchema(p,e->annotation),false)+")";
+      if(const Structure *owner=nullptr;auto variant=p.variant(e->text,&owner)){
+        std::string text="nex.enumeration<"+type(e->type)+">("+quote(owner->name)+", "+quote(variant->name)+", [";
+        for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+="["+quote(variant->fields[i].name)+", "+expr(e->args[i])+"]";}return text+"])";
+      }
       if(p.hasStructure(e->text)){
         const auto &s=p.structure(e->text);std::string text="nex.record<"+type(e->type)+">("+quote(s.name)+", [";
         for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+="["+quote(s.fields[i].name)+", "+expr(e->args[i])+"]";}return text+"])";
@@ -97,6 +101,14 @@ class Generator {
       case Stmt::If:
         statement("if ("+expr(s->expr)+") {");++depth;block(s->body);--depth;
         if(!s->alternative.empty()){statement("} else {");++depth;block(s->alternative);--depth;}statement("}");break;
+      case Stmt::Match:{
+        auto subject="match_"+std::to_string(++unique);statement("{");++depth;statement("const "+subject+" = "+expr(s->expr)+";");statement("switch ("+subject+"[nex.CASE]) {");++depth;
+        for(auto arm:s->arms){auto variant=p.variant(arm->variant);statement("case "+quote(variant->name)+": {");++depth;scopes.emplace_back();
+          for(size_t i=0;i<arm->bindings.size();++i){const auto &binding=arm->bindings[i];if(binding.name!="_")statement("const "+declare(binding.name)+": "+type(binding.type)+" = "+subject+"["+quote(variant->fields[i].name)+"];");}
+          block(arm->body,false);statement("break;");scopes.pop_back();--depth;statement("}");
+        }
+        statement("default: nex.invalidEnum("+site(s->expr)+");");--depth;statement("}");--depth;statement("}");break;
+      }
       case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;block(s->body);--depth;statement("}");break;
       }
       mappings.push_back(llvm::json::Object{{"site",sites.at(s.get())},{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
@@ -113,7 +125,9 @@ public:
     }
     write("// Generated from checked NEX "+std::string(languageVersion)+"; edit NEX sources.\nimport * as nex from './nex-runtime.ts';\n\n");
     for(const auto &name:structures){
-      const auto &s=p.structure(name);write("export type "+type(Type::record(name))+" = nex.RecordValue & {\n  readonly [nex.TYPE]: "+quote(name)+";\n");
+      const auto &s=p.structure(name);
+      if(s.enumeration){write("export type "+type(Type::record(name))+" =\n");for(size_t i=0;i<s.variants.size();++i){const auto &variant=s.variants[i];write("  "+std::string(i?"| ":"  ")+"(nex.RecordValue & { readonly [nex.TYPE]: "+quote(name)+"; readonly [nex.CASE]: "+quote(variant.name)+"; ");for(const auto &field:variant.fields)write("readonly "+quote(field.name)+": "+type(field.type)+"; ");write("})\n");}write(";\n\n");continue;}
+      write("export type "+type(Type::record(name))+" = nex.RecordValue & {\n  readonly [nex.TYPE]: "+quote(name)+";\n");
       for(const auto &field:s.fields)write("  readonly "+quote(field.name)+": "+type(field.type)+";\n");write("};\n\n");
     }
     llvm::json::Array included;

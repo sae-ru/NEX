@@ -1,9 +1,11 @@
-(* NEX 0.5. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
-program       = "module", qualified_name, ";", { import | function | structure | endpoint } ;
+(* NEX 0.6. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
+program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
 import        = "import", string, "as", identifier, ";" ;
 structure     = [ "pub" ], "struct", identifier, "{", { parameter, ";" }, "}" ;
+enumeration   = [ "pub" ], "enum", identifier, "{", variant, { variant }, "}" ;
+variant       = identifier, [ "(", [ parameters ], ")" ], ";" ;
 function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, "(", [ parameters ], ")",
                 "->", type, [ effects ], block ;
 realm         = "shared" | "client" | "server" ;
@@ -13,12 +15,14 @@ type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", ty
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" ;
 block         = "{", { statement }, "}" ;
-statement     = declaration | assignment | return | if | while | expression, ";" ;
+statement     = declaration | assignment | return | if | while | match | expression, ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
 assignment    = identifier, "=", expression, ";" ;
 return        = "return", [ expression ], ";" ;
 if            = "if", expression, block, [ "else", ( block | if ) ] ;
 while         = "while", expression, block ;
+match         = "match", expression, "{", match_arm, { match_arm }, "}" ;
+match_arm     = qualified_name, "(", [ identifier, { ",", identifier } ], ")", "=>", block, [ "," ] ;
 expression    = logical_or ;
 logical_or    = logical_and, { "||", logical_and } ;
 logical_and   = equality, { "&&", equality } ;
@@ -47,8 +51,13 @@ digit         = "0" .. "9" ;
 (* Keywords cannot be identifiers. Unit parameters, locals and elements are rejected
    by typing. Escaped surrogate pairs must form a Unicode scalar. Integer range,
    effects, realm restrictions, constructor arity and returns are semantic checks.
-   Imported names in source use alias::name; arbitrary deep names are module names,
-   not implicit lookup paths. Imports require a literal relative/library .nex path.
+   Imported names in source use alias::name or alias::Enum::Case for variants;
+   arbitrary deep names are not implicit lookup paths. Imports require a literal
+   relative/library .nex path. Enum constructors and patterns require parentheses,
+   including empty payloads. Match arms cover every case exactly once; pattern
+   names are immutable, and _ discards without introducing a binding. enum is
+   contextual at declaration position; match is contextual before a scrutinee and
+   arm block. Existing function/local/type names enum and match remain valid.
    result is contextual as a type constructor; names such as a local result remain
    valid. endpoint is contextual at declaration position; its route, method,
    status, handler realm/signature and public wire types are semantic checks.

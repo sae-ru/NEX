@@ -33,7 +33,7 @@ using LoopKey=std::pair<unsigned,unsigned>;
 struct Loop {std::vector<std::string> invariants;std::string decreases;};
 struct Contract {std::string result;std::vector<std::string> pre,post;std::map<LoopKey,Loop> loops;};
 using Contracts=std::map<std::string,Contract>;
-void loops(const std::vector<S> &body,std::map<LoopKey,S> &found){for(auto s:body){if(s->kind==Stmt::While)found.emplace(LoopKey{s->span.line,s->span.column},s);loops(s->body,found);loops(s->alternative,found);}}
+void loops(const std::vector<S> &body,std::map<LoopKey,S> &found){for(auto s:body){if(s->kind==Stmt::While)found.emplace(LoopKey{s->span.line,s->span.column},s);childBlocks(s,[&](const auto &body){loops(body,found);});}}
 Contracts contracts(const Program &p,const JSON &value){
   auto object=value.getAsObject();if(!object)throw Error("E_CONTRACT","contract must be an object");
   fields(*object,{"schema","language","expected_revision","source_hash","functions"});
@@ -123,7 +123,7 @@ class Engine {
     if(e->kind==Expr::Call&&!spec){
       std::vector<Sym> args;for(auto a:e->args)args.push_back(expression(a,state));
       if(e->text=="assert"){typed(args.at(0),Type::Bool,e->span);add(state,args[0].value,"assertion",e->span,"E_ASSERT",true);return {context.bool_val(true),Type::Unit};}
-      if(builtinNames().contains(e->text)||p.hasStructure(e->text))throw Stop{"unsupported","only pure scalar function calls and assert are verified",e->span};
+      if(builtinNames().contains(e->text)||p.hasStructure(e->text)||p.variant(e->text))throw Stop{"unsupported","only pure scalar function calls and assert are verified",e->span};
       return function(p.function(e->text),args,state,false);
     }
     throw Stop{"unsupported",spec?"contract predicates support scalar literals, variables and operators only":"heap values and this expression kind are outside the verified subset",e->span};
@@ -176,6 +176,7 @@ class Engine {
           auto yes=block(s->body,{{state,std::nullopt,false}},true),no=block(s->alternative,{{other,std::nullopt,false}},true);
           next.insert(next.end(),std::make_move_iterator(yes.begin()),std::make_move_iterator(yes.end()));next.insert(next.end(),std::make_move_iterator(no.begin()),std::make_move_iterator(no.end()));break;
         }
+        case Stmt::Match:throw Stop{"unsupported","enum matching is outside scalar verification",s->span};
         case Stmt::While:{auto outcomes=loop(s,state);next.insert(next.end(),std::make_move_iterator(outcomes.begin()),std::make_move_iterator(outcomes.end()));break;}
         }
       }

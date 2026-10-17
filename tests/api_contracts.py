@@ -141,7 +141,7 @@ test fn codecs() -> unit {
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
             (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.5','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.6','libraries':{'std':'standard'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
@@ -163,7 +163,7 @@ pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
             (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.5','libraries':{'std':'standard','helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.6','libraries':{'std':'standard','helpers':'helpers'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'
@@ -177,6 +177,59 @@ fn helper() -> str { return "public data"; }
         self.assertIn('fn public_helper',library);self.assertIn('fn helper',library)
         self.assertIn('helpers',manifest['libraries'])
         self.assertIn('fn format',(client/manifest['libraries']['helpers']/'tools.nex').read_text())
+
+    def test_enum_api_models_sdk_openapi_and_live_cleanup(self):
+        self.source('''module enum_service; import "std/api.nex" as api;
+pub enum Event { Reset; Set(value:i64); }
+enum Hidden { Secret; }
+server fn echo(context:api::Context,input:Event) -> result<Event> {
+ match input { Event::Reset() => { return ok(Event::Reset()); } Event::Set(value) => { if value < 0 { assert(false); } return ok(Event::Set(value)); } }
+}
+endpoint echo_event("POST","/api/event") = echo;
+fn server_only() -> str { return "ENUM_SERVER_ONLY_SENTINEL"; }
+''')
+        generated=self.cli('api',self.file,'--directory',self.root/'generated')
+        client=self.root/'generated/client'
+        model=client/'models/enum_service.nex'
+        self.assertIn('pub enum Event',model.read_text());self.assertNotIn('Hidden',model.read_text())
+        for path in client.rglob('*.nex'): self.assertNotIn('ENUM_SERVER_ONLY_SENTINEL',path.read_text())
+        document=json.loads(Path(generated['openapi']).read_text())
+        schema=next(value for value in document['components']['schemas'].values() if 'oneOf' in value and value['oneOf'][0].get('properties',{}).get('case'))
+        self.assertEqual([v['properties']['case']['const'] for v in schema['oneOf']],['Reset','Set'])
+        consumer=self.root/'consumer.nex';consumer.write_text('''module consumer;
+import "./generated/client/api.nex" as sdk; import "./generated/client/models/enum_service.nex" as m;
+import "std/net.nex" as net; import "std/web.nex" as web;
+fn main() -> unit {}
+test fn helpers() -> unit {
+ let e:m::Event = m::Event::Set(42);
+ let request:net::Command = sdk::request_echo_event("1","token",e,"received",1000);
+ let payload:net::TypedPayload = unwrap(decode_json<net::TypedPayload>(request.body));
+ assert(unwrap(decode_json<m::Event>(payload.body)) == e);
+ let response:net::Response = net::Response("1",200,ok(encode_json(ok(e))));
+ assert(unwrap(sdk::response_echo_event(web::Event("received",encode_json(response),"/"))) == e);
+}''')
+        self.cli('test',consumer);self.cli('test',consumer,'--target','web')
+        built=self.cli('build',generated['server_entry'],'--target','server','--profile','release',timeout=180)
+        auth=self.root/'auth.json';token=self.cli('token','--user','alice','--auth',auth)['token']
+        process=subprocess.Popen([built['executable'],'--auth',str(auth),'--database',str(self.root/'data.sqlite'),'--port','0'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        try:
+            lines=queue.Queue();threading.Thread(target=lambda:lines.put(process.stdout.readline()),daemon=True).start()
+            address=re.match(r'NEX server (http://127\.0\.0\.1:\d+)',lines.get(timeout=15)).group(1)
+            def request(body):
+                raw=body if isinstance(body,bytes) else json.dumps(body).encode()
+                req=urllib.request.Request(address+'/api/event',data=raw,headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
+                try: response=urllib.request.urlopen(req,timeout=15)
+                except urllib.error.HTTPError as error: response=error
+                with response:return response.status,json.loads(response.read())
+            event={'case':'Set','fields':{'value':'42'}}
+            self.assertEqual(request(event),(200,{'ok':event}))
+            for body in [{'case':'Unknown','fields':{}},{'case':'Set','fields':{'value':42}},b'{"case":"Reset","case":"Set","fields":{}}']:
+                self.assertEqual(request(body)[0],400)
+            for _ in range(3):self.assertEqual(request({'case':'Set','fields':{'value':'-1'}})[0],500)
+            self.assertEqual(request(event),(200,{'ok':event}))
+        finally:
+            process.send_signal(signal.SIGTERM);output,errors=process.communicate(timeout=15)
+            self.assertEqual(process.returncode,0,output+errors);self.assertNotIn('E_INTERNAL_LEAK',errors)
 
     def test_generated_server_auth_strict_inputs_transactions_and_context(self):
         self.example()

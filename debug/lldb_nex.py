@@ -79,9 +79,9 @@ def _preview(value, depth=0, budget=None):
         return _string(_member(data, "text"))
     items = _vector(data)
     size = items.GetNumChildren()
-    if kind in (1, 2):
+    if kind in (1, 2, 5):
         fields = []
-        names = _vector(data, "names") if kind == 2 else None
+        names = _vector(data, "names") if kind in (2, 5) else None
         for index in range(min(size, MAX_ITEMS)):
             if budget[0] <= 0:
                 fields.append("…")
@@ -95,7 +95,8 @@ def _preview(value, depth=0, budget=None):
             fields.append(text)
         if size > MAX_ITEMS:
             fields.append("… (%d items)" % size)
-        return ("[" if kind == 1 else "{") + ", ".join(fields) + ("]" if kind == 1 else "}")
+        prefix = _string(_member(data, "text")) + " " if kind == 5 else ""
+        return prefix + ("[" if kind == 1 else "{") + ", ".join(fields) + ("]" if kind == 1 else "}")
     if kind == 3 and size == 1:
         return "ok(" + _preview(items.GetChildAtIndex(0), depth + 1, budget) + ")"
     if kind == 4 and size == 1:
@@ -125,10 +126,10 @@ class Children:
             if data is None:
                 return False
             self.kind = _member(data, "kind").GetValueAsUnsigned()
-            if self.kind in (1, 2, 3, 4):
+            if self.kind in (1, 2, 3, 4, 5):
                 self.data = data
                 self.items = _vector(data)
-                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind == 4)
+                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5))
         except Exception:
             self.count = 0
         return False  # Recompute after every stop; do not retain stale values.
@@ -143,12 +144,12 @@ class Children:
         if not 0 <= index < self.count:
             return None
         try:
-            if self.kind == 4:
+            if self.kind in (4, 5):
                 if index == 0:
-                    return _member(self.data, "text").Clone("code")
+                    return _member(self.data, "text").Clone("code" if self.kind == 4 else "<case>")
                 index -= 1
             name = "[%d]" % index
-            if self.kind == 2:
+            if self.kind in (2, 5):
                 name = json.loads(_string(_vector(self.data, "names").GetChildAtIndex(index)))
             elif self.kind in (3, 4):
                 name = "ok" if self.kind == 3 else "message"
@@ -175,7 +176,7 @@ def load(debugger, command, result, internal_dict):
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
         manifest = json.loads(path.read_text())
-        if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/1":
+        if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/2":
             raise ValueError("unsupported NEX debug manifest/runtime")
         names = manifest["heap_types"] + ["nexrt::Value"]
         if len(names) > 10000 or any(not isinstance(name, str) or len(name) > 4096 for name in names):
@@ -288,6 +289,23 @@ class _ExactVector:
             self.address + index * self.stride, self.element)
 
 
+def _enum_case(data, descriptor, records, budget):
+    cases = records["$enums"][descriptor["enum"]]
+    ordinal = _integer(_member(data, "ordinal"), signed=True)
+    if _integer(_member(data, "kind")) != 5 or not 0 <= ordinal < len(cases):
+        raise ValueError("runtime enum discriminator differs from checked NEX type")
+    case = cases[ordinal]
+    if _raw_string(_member(data, "text"), budget) != descriptor["enum"] + "::" + case["name"]:
+        raise ValueError("runtime enum name differs from checked NEX type")
+    items, names = _ExactVector(data), _ExactVector(data, "names")
+    if items.GetNumChildren() != len(case["fields"]) or names.GetNumChildren() != len(case["fields"]):
+        raise ValueError("runtime enum layout differs from checked NEX type")
+    for index, field in enumerate(case["fields"]):
+        if _raw_string(names.GetChildAtIndex(index), budget) != field["name"]:
+            raise ValueError("runtime enum field differs from checked NEX type")
+    return case
+
+
 def _wire(value, descriptor, records, budget, depth=0):
     if depth > 60 or budget["nodes"] <= 0:
         raise ValueError("exact capture exceeds its node/depth budget")
@@ -323,6 +341,11 @@ def _wire(value, descriptor, records, budget, depth=0):
         raise ValueError("exact capture exceeds its collection item budget")
     if "list" in descriptor and kind == 1:
         return [_wire(items.GetChildAtIndex(i), descriptor["list"], records, budget, depth + 1) for i in range(size)]
+    if "enum" in descriptor:
+        case = _enum_case(data, descriptor, records, budget)
+        return {"case": case["name"], "fields": {
+            field["name"]: _wire(items.GetChildAtIndex(i), field["type"], records, budget, depth + 2)
+            for i, field in enumerate(case["fields"])}}
     if "record" in descriptor and kind == 2:
         name = descriptor["record"]
         if _raw_string(_member(data, "text"), budget) != name:
@@ -358,6 +381,9 @@ def _header(value, descriptor, records, budget):
     size = items.GetNumChildren()
     if "list" in descriptor and kind == 1:
         return data, items, size
+    if "enum" in descriptor:
+        _enum_case(data, descriptor, records, budget)
+        return data, items, size
     if "record" in descriptor and kind == 2:
         fields = records[descriptor["record"]]
         names = _ExactVector(data, "names")
@@ -374,7 +400,8 @@ def _header(value, descriptor, records, budget):
 
 
 def _read_path(value, schema, request, budget):
-    descriptor, records = schema["root"], schema["records"]
+    descriptor, records = schema["root"], dict(schema["records"])
+    records["$enums"] = schema.get("enums", {})
     for segment in request["path"]:
         if budget["nodes"] <= 0:
             raise ValueError("partial capture exceeds its node budget")
@@ -390,6 +417,13 @@ def _read_path(value, schema, request, budget):
             if index is None:
                 raise ValueError("partial path is outside checked record fields")
             value, descriptor = items.GetChildAtIndex(index), fields[index]["type"]
+        elif "enum" in descriptor:
+            case = _enum_case(data, descriptor, records, budget)
+            index = next((i for i, field in enumerate(case["fields"])
+                          if case["name"] + "::" + field["name"] == segment), None)
+            if index is None:
+                raise ValueError("partial enum path disagrees with stopped case")
+            value, descriptor = items.GetChildAtIndex(index), case["fields"][index]["type"]
         else:
             success = _integer(_member(data, "kind")) == 3
             if segment == "ok" and success:
@@ -414,6 +448,8 @@ def _read_path(value, schema, request, budget):
         return {"length": str(size)}
     if "record" in descriptor:
         return {"record": descriptor["record"]}
+    if "enum" in descriptor:
+        return {"case": _enum_case(data, descriptor, records, budget)["name"]}
     return {"ok": _integer(_member(data, "kind")) == 3}
 
 

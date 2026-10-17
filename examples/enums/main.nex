@@ -1,0 +1,49 @@
+module enums;
+
+pub enum Event {
+  Reset;
+  Set(value: i64);
+  Label(text: str, tags: list<str>);
+}
+
+pub enum Tree {
+  Leaf(value: i64);
+  Branch(children: list<Tree>);
+}
+
+pub fn total(tree: Tree) -> i64 {
+  match tree {
+    Tree::Leaf(value) => { return value; },
+    Tree::Branch(children) => {
+      var sum: i64 = 0;
+      var i: i64 = 0;
+      while i < len(children) {
+        sum = sum + total(children[i]);
+        i = i + 1;
+      }
+      return sum;
+    }
+  }
+}
+
+pub fn update(before: i64, event: Event) -> i64 {
+  match event {
+    Event::Reset() => { return 0; },
+    Event::Set(value) => { return value; },
+    Event::Label(text, _) => { return before + len(text); }
+  }
+}
+
+fn main() -> unit !{io} {
+  print(update(1, Event::Set(42)));
+  print(total(Tree::Branch([Tree::Leaf(2), Tree::Leaf(3)])));
+  print(encode_json(Event::Label("🧠", ["NEX"])));
+}
+
+test fn values_and_wire() -> unit {
+  let event: Event = Event::Label("🧠", ["NEX"]);
+  assert(update(41, event) == 42);
+  assert(unwrap(decode_json<Event>(encode_json(event))) == event);
+  assert(Event::Reset() != event);
+  assert(total(Tree::Branch([Tree::Leaf(2), Tree::Branch([Tree::Leaf(40)])])) == 42);
+}

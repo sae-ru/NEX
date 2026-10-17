@@ -1,10 +1,10 @@
-# NEX language specification 0.5
+# NEX language specification 0.6
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
 ## Source and program structure
 
-Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`/`endpoint` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
+Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum` and `match` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
 
 ```nex
 module arithmetic;
@@ -59,7 +59,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.5",
+  "language": "0.6",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -79,6 +79,7 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | `list<T>` | Immutable homogeneous sequence of non-unit values |
 | `result<T>` | Immutable success containing T, or an error with code/message |
 | Named structure | Immutable value with declared, typed fields |
+| Named enum | One declared case with its immutable typed payload |
 
 There are no implicit numeric/boolean conversions. Parameters, locals and collection elements cannot have type `unit`. There are no source-level pointers, reference identity, null values or manual memory operations. General user-defined generics, mutable collections and custom destructors remain unimplemented.
 
@@ -113,6 +114,30 @@ Lists use `[a, b]`; nested lists are supported. An empty list needs an element t
 
 Heap-backed values have automatic reference-counted ownership. Parameters borrow values during a call; returned values remain valid independently of the caller's temporaries. Assignment releases the previous owned value; block exit and return release local values. Immutable aggregates can share their children, and source programs cannot form mutable reference cycles. Native application/test wrappers verify that normal execution released all managed values. This is the implemented ownership model; a future mutable/resource/concurrent model needs additional rules.
 
+### Enums and exhaustive matching
+
+```nex
+pub enum Event {
+  Reset;
+  Set(value: i64);
+  Label(text: str, tags: list<str>);
+}
+
+fn update(before: i64, event: Event) -> i64 {
+  match event {
+    Event::Reset() => { return 0; },
+    Event::Set(value) => { return value; },
+    Event::Label(text, _) => { return before + len(text); }
+  }
+}
+```
+
+An enum is a nominal module-qualified type with at least one uniquely named case. A case declares ordered, distinct, non-unit payload fields. Construct it with `Event::Set(42)` or imported `model::Event::Set(42)`. Parentheses are required even for `Event::Reset()`. Cases inherit the enum's public/private visibility; public payloads must expose public nominal types. Enum names cannot collide with import aliases. Payloads may recursively contain enums or structures, including through lists; construction uses already initialized values. Equality requires the same nominal type, case and recursively equal payloads. Values and nested aggregates are immutable.
+
+`match` is a statement. It evaluates its scrutinee once and executes the single arm for its case. Every case must appear exactly once, in any order, and each pattern must bind exactly the declared payload arity. Pattern bindings are immutable and local to their arm; `_` discards a payload without declaring a variable. An arm can shadow outer names. Effects and realm checks also apply inside arms. A match returns on all paths only if every arm returns on all paths. Scrutinee/constructor arguments follow normal left-to-right evaluation and managed values are released on branch exits, loop iterations, returns and contained host failures.
+
+Only nominal enums are matched today. Match expressions, guards, nested patterns, wildcard arms, scalar/list patterns and matching builtin `result<T>` are pending. There is no general field selection on an enum; use a pattern to access its selected payload. `enum` is contextual at declaration position and `match` before a scrutinee/arm block. Existing function/local/type names such as `fn match(...)` remain valid. See `examples/enums/main.nex` for recursive values and wire roundtrips.
+
 ### Recoverable results
 
 ```nex
@@ -127,11 +152,13 @@ fn example() -> i64 {
 
 `ok(value)` creates a success. `err(code, message)` needs an expected `result<T>` type from context; `err<T>(code, message)` states it explicitly. Payloads cannot have type unit. `is_ok(result)` returns bool. `unwrap(result)` returns T and traps with `E_RESULT` on an error. `error_code` and `error_message` return the error's strings, or empty strings on success. Results may contain other results, lists and structures; they follow immutable ownership and structural equality with statically matching payload types. Display formatting is `{"ok":VALUE}` or `{"error":{"code":"CODE","message":"MESSAGE"}}`. The word `result` is contextual in a type followed by `<`; existing local names such as `var result: str` remain valid.
 
-Recoverable errors are data and require no io effect. Arithmetic, bounds and assertion failures retain their trapping behavior. A result is not an exception handler; general exceptions, user-defined variants and pattern matching remain unimplemented.
+Recoverable errors are data and require no io effect. Arithmetic, bounds and assertion failures retain their trapping behavior. A result is not an exception handler; general exceptions and result patterns remain unimplemented. Nominal enum patterns are described above.
 
 ### Typed JSON boundary
 
-`encode_json(value) -> str` serializes a non-unit value using `nex.wire/1` rules. Every i64 is a canonical decimal **JSON string**, preserving all 64 bits across browsers. Booleans/text remain JSON booleans/strings, lists become arrays, and structures become objects with declared field names. Nominal type names are restored from the checked destination type rather than transmitted as user-controlled tags. Results use the tagged display shape above, with their payloads encoded recursively. Ordinary print/str formatting still prints integer numbers without wire quoting.
+`encode_json(value) -> str` serializes a non-unit value using `nex.wire/2` rules. Every i64 is a canonical decimal **JSON string**, preserving all 64 bits across browsers. Booleans/text remain JSON booleans/strings, lists become arrays, and structures become objects with declared field names. Nominal type names are restored from the checked destination type rather than transmitted as user-controlled tags. Results use the tagged display shape above. An enum uses exactly `{"case":"Set","fields":{"value":"42"}}`; even an empty case has `"fields":{}`. Nested payloads are encoded recursively. The case name must belong to the checked nominal type. Unknown cases, missing/extra/duplicate fields and extra wrapper keys fail decoding. The enum wrapper adds two JSON depth levels. Ordinary print/str formatting uses the same tagged shape with integer numbers instead of wire strings.
+
+The generated descriptor contains `root`, `records` and `enums`, where each enum maps to its ordered cases and typed payload fields. The decoder also accepts legacy `nex.wire/1` descriptors without enums; existing scalar/record/list/result wire payloads are unchanged. API generation and the browser adapter use the new descriptor for typed enum input/output.
 
 `decode_json<T>(text) -> result<T>` validates and reconstructs exactly T. It rejects numeric JSON values for i64, noncanonical/range-invalid decimal strings, duplicate keys (including escaped equivalents), malformed UTF-8/surrogates, unknown/missing fields and incorrect value kinds. The current limits are 1 MiB of encoded text, depth 64, 10,000 collection items and 100,000 decoded value nodes. Decoding failures return `E_JSON` error values; encoding beyond limits traps with `E_JSON`. No implicit conversions or silent repairs occur. Only `decode_json<T>` and `err<T>` have explicit call-site type arguments today; general user-defined generic functions are pending.
 
@@ -179,7 +206,7 @@ while i < 10 {
 return 10;
 ```
 
-Conditions must be `bool`. `else if` is supported. `return expression;` ends the function; `return;` returns unit. A unit function may fall through. Every path in a value-returning function must return. A loop alone is not considered proof of a return. Statements after an unconditional return are rejected. There is no `break`, `continue`, exception handling, or pattern matching yet.
+Conditions must be `bool`. `else if` is supported. `return expression;` ends the function; `return;` returns unit. A unit function may fall through. Every path in a value-returning function must return. A loop alone is not considered proof of a return. Statements after an unconditional return are rejected. There is no `break`, `continue` or exception handling yet. Exhaustive enum match statements follow the rules above.
 
 ## Effects and execution realms
 
@@ -221,13 +248,13 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 ## Graph and revision semantics
 
-Each checked function and structure has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Program identity includes structure layouts, function bodies, resolved module dependencies and endpoint contracts (nex.program/4). Canonical content includes qualified logical names, public visibility, parameter names/types, realm, effects, test status, and statements; comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
+Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.6 uses `nex.function/4`, `nex.enum/1` and `nex.program/5`; program identity includes nominal layouts, function bodies, resolved module dependencies and endpoint contracts. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
 SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 is upgraded transactionally to schema 2, preserving old sources and marking their language as 0.1. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.5, creates a current revision and preserves history; `nex migrate GRAPH.json` explicitly adopts checked sources from an older exported graph. Newly reserved builtin function names can require source edits during migration. Migration is not proof that the graph's claimed old hash was valid. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.6, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (for language 0.5, toolchain 0.15). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 

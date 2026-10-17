@@ -34,6 +34,8 @@ public:
   int64_t length(const V &base);
   bool isSuccess(const V &base);
   V unwrap(const V &base);
+  int64_t enumTag(const V &base);
+  V enumField(const V &base,int64_t tag,size_t index);
   V error(const V &base,bool code);
   V concrete(const V &value,unsigned depth=0);
   void bounded(const V &value,unsigned depth=0);

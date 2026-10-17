@@ -100,7 +100,7 @@ public:
 class Emitter {
   const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false;
   std::vector<std::map<std::string,Value>> scopes;
-  std::map<const Stmt*,std::string> slots;std::map<const Expr*,std::string> shortSlots;
+  std::map<const Stmt*,std::string> slots,matchSlots;std::map<const Param*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots;
   std::map<const void*,std::string> sites;std::string activeSite;
   struct SiteScope {std::string &value,old;SiteScope(std::string &value,std::string next):value(value),old(value){value=std::move(next);}~SiteScope(){value=std::move(old);}};
   std::string fresh(){return "%v"+std::to_string(serial++);}
@@ -173,7 +173,8 @@ class Emitter {
         auto n=allocateSlot(s->type,s->span);slots[s.get()]=n;
         if(s->type.heap())writeSlot(null(s->type,s->span),n,s->span);
       }
-      allocateExpr(s->expr);allocate(s->body);allocate(s->alternative);
+      if(s->kind==Stmt::Match){auto slot=allocateSlot(s->type,s->span);matchSlots[s.get()]=slot;writeSlot(null(s->type,s->span),slot,s->span);for(auto arm:s->arms)for(const auto &binding:arm->bindings)if(binding.name!="_"){auto local=allocateSlot(binding.type,binding.span);patternSlots[&binding]=local;if(binding.type.heap())writeSlot(null(binding.type,binding.span),local,binding.span);}}
+      allocateExpr(s->expr);childBlocks(s,[&](const auto &body){allocate(body);});
     }
   }
   Value get(Value base,Value index,Type result,Span span){
@@ -200,7 +201,12 @@ class Emitter {
     if(e->kind==Expr::Call){
       std::vector<Value> args;for(auto a:e->args)args.push_back(expression(a));Value result;
       auto c=[&](int64_t v){return constant(v,Type::I64,e->span);};
-      if(p.hasStructure(e->text)){
+      if(auto variant=p.variant(e->text)){
+        result=call("nex_enum_new",{c(variant->fields.size()),c(variant->ordinal)},e->type,e->span);
+        auto name=rawBytes(e->text,e->span);call("nex_record_name",{result,name,c(e->text.size())},Type::Unit,e->span);
+        for(size_t i=0;i<args.size();++i){const auto &field=variant->fields[i];auto name=rawBytes(field.name,e->span);call("nex_record_field_name",{result,c(i),name,c(field.name.size())},Type::Unit,e->span);
+          if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(args[i].type==Type::Bool)},Type::Unit,e->span);}
+      }else if(p.hasStructure(e->text)){
         const auto &s=p.structure(e->text);result=call("nex_record_new",{c(s.fields.size())},e->type,e->span);
         auto name=rawBytes(s.name,e->span);call("nex_record_name",{result,name,c(s.name.size())},Type::Unit,e->span);
         for(size_t i=0;i<args.size();++i){
@@ -289,6 +295,20 @@ class Emitter {
         blockLabel(no);bool b=statements(s->alternative);if(!b)line("cf.br ^"+end,s->span);
         if(!(a&&b))blockLabel(end);returned=a&&b;break;
       }
+      case Stmt::Match:{
+        auto value=expression(s->expr),slot=Value{matchSlots.at(s.get()),s->type,true};store(value,slot.name,s->span);
+        scopes.emplace_back();scopes.back()["$match"]=slot;
+        auto tag=call("nex_enum_tag",{load(slot,s->span,false),constant(p.structure(s->type.name).variants.size(),Type::I64,s->span),constant(s->span.line,Type::I64,s->span)},Type::I64,s->span);
+        auto end=label();bool all=true;auto parentScope=debug.scope;
+        for(size_t i=0;i<s->arms.size();++i){auto arm=s->arms[i];std::string next;
+          if(i+1<s->arms.size()){auto yes=label();next=label();auto expected=constant(arm->ordinal,Type::I64,arm->span);auto test=fresh();line(test+" = arith.cmpi eq, "+tag.name+", "+expected.name+" : i64",arm->span);line("cf.cond_br "+test+", ^"+yes+", ^"+next,arm->span);blockLabel(yes);}
+          scopes.emplace_back();debug.scope=debug.block(arm->span);SiteScope site(activeSite,sites.at(arm.get()));
+          for(size_t j=0;j<arm->bindings.size();++j){const auto &binding=arm->bindings[j];if(binding.name=="_")continue;auto local=patternSlots.at(&binding);
+            auto payload=get(load(slot,binding.span),constant(j,Type::I64,binding.span),binding.type,binding.span);store(payload,local,binding.span);describeStorage(binding.name,binding.type,binding.span,local);scopes.back()[binding.name]={local,binding.type,true};}
+          bool returnedArm=statements(arm->body,false);all=all&&returnedArm;if(!returnedArm)line("cf.br ^"+end,arm->span);scopes.pop_back();debug.scope=parentScope;if(!next.empty())blockLabel(next);
+        }
+        if(!all){blockLabel(end);cleanup(scopes.back(),s->span);}scopes.pop_back();returned=all;break;
+      }
       case Stmt::While:{
         auto condition=label(),bodyLabel=label(),end=label();line("cf.br ^"+condition,s->span);blockLabel(condition);call("nex_poll",{constant(s->span.line,Type::I64,s->span)},Type::Unit,s->span);
         auto value=expression(s->expr);line("cf.cond_br "+value.name+", ^"+bodyLabel+", ^"+end,s->span);
@@ -316,7 +336,7 @@ public:
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}
-    declaration("nex_string_new","!llvm.ptr, i64, i64","!llvm.ptr");declaration("nex_list_new","","!llvm.ptr");declaration("nex_record_new","i64","!llvm.ptr");
+    declaration("nex_string_new","!llvm.ptr, i64, i64","!llvm.ptr");declaration("nex_list_new","","!llvm.ptr");declaration("nex_record_new","i64","!llvm.ptr");declaration("nex_enum_new","i64, i64","!llvm.ptr");declaration("nex_enum_tag","!llvm.ptr, i64, i64","i64");
     declaration("nex_record_name","!llvm.ptr, !llvm.ptr, i64");declaration("nex_record_field_name","!llvm.ptr, i64, !llvm.ptr, i64");
     declaration("nex_list_append_i64","!llvm.ptr, i64, i64");declaration("nex_list_append_heap","!llvm.ptr, !llvm.ptr");
     declaration("nex_record_init_i64","!llvm.ptr, i64, i64, i64");declaration("nex_record_init_heap","!llvm.ptr, i64, !llvm.ptr");
@@ -341,7 +361,7 @@ public:
     }
     for(const auto &f:p.functions)if(names.contains(f.name)){
       debug.scope=debug.function(f);
-      scopes.clear();scopes.emplace_back();slots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
+      scopes.clear();scopes.emplace_back();slots.clear();matchSlots.clear();patternSlots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
       for(size_t i=0;i<f.params.size();++i){if(i)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
       prologue=true;
@@ -495,7 +515,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // Keep semantic identity separate from toolchain and source-projection identity.
   bool wire=server,storage=server;auto names=reachable(p,options.entry);
   std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;}for(auto arg:e->args)inspect(arg);}};
-  std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);inspectBlock(s->body);inspectBlock(s->alternative);}};
+  std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   bool profiling=options.profile=="profile";
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_host.h","nex_io.h","nex_profile.h"};
@@ -539,9 +559,9 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(!type.heap()||!debugTypes.insert(typeName(type)).second)return;
     heapTypes.push_back(typeName(type));
     if(type.element)collectType(*type.element);
-    if(type.kind==Type::Record)for(const auto &field:p.structure(type.name).fields)collectType(field.type);
+    if(type.kind==Type::Record)for(auto field:p.structure(type.name).members())collectType(field->type);
   };
-  std::function<void(const std::vector<S>&)> collectLocals=[&](const auto &body){for(auto s:body){collectType(s->type);collectLocals(s->body);collectLocals(s->alternative);}};
+  std::function<void(const std::vector<S>&)> collectLocals=[&](const auto &body){for(auto s:body){collectType(s->type);childBlocks(s,collectLocals);}};
   for(const auto &f:p.functions)if(names.contains(f.name)){
     collectType(f.result);for(const auto &param:f.params)collectType(param.type);collectLocals(f.body);
     debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)},{"operation_sites",operationSites(p,f)}});
@@ -582,7 +602,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
   }
   auto debugFile=(folder/"debug.json").string(),formatterFile=(folder/"debugger/lldb_nex.py").string(),adapterFile=(folder/"debugger/nex_dap.py").string();
-  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/1"},{"expression_protocol","nex.debug-expression/1"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
+  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/2"},{"expression_protocol","nex.debug-expression/2"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
   auto debugIntact=[&](){
     if(!std::filesystem::is_regular_file(debugFile)||readFile(debugFile)!=debugText||!std::filesystem::is_regular_file(formatterFile)||readFile(formatterFile)!=formatter||!std::filesystem::is_regular_file(adapterFile)||readFile(adapterFile)!=dapAdapter)return false;
     for(const auto &[unitKey,unit]:snapshot.units){

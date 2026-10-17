@@ -33,7 +33,8 @@ struct Schemas {
     if(t==Type::I64)return Object{{"type","string"},{"pattern","^(?:0|"+boundedDigits("9223372036854775807")+"|-"+boundedDigits("9223372036854775808")+")(?![\\s\\S])"},{"maxLength",20},{"x-nex-type","i64"},{"description","Canonical decimal string in the signed 64-bit range; JSON numbers are rejected."}};
     if(t.kind==Type::List)return Object{{"type","array"},{"items",type(*t.element)},{"maxItems",10000}};
     if(t.kind==Type::Result)return Object{{"oneOf",Array{object(Object{{"ok",type(*t.element)}},Array{"ok"}),failure()}}};
-    if(t.kind==Type::Record){auto key=nativeSymbol(t.name);if(seen.insert(t.name).second){Object properties;Array required;for(const auto &field:p.structure(t.name).fields){properties[field.name]=type(field.type);required.push_back(field.name);}records[key]=object(std::move(properties),std::move(required));}return Object{{"$ref","#/components/schemas/"+key}};}
+    if(t.kind==Type::Record){auto key=nativeSymbol(t.name);if(seen.insert(t.name).second){const auto &nominal=p.structure(t.name);auto fields=[&](const auto &members){Object properties;Array required;for(const auto &field:members){properties[field.name]=type(field.type);required.push_back(field.name);}return object(std::move(properties),std::move(required));};
+      if(nominal.enumeration){Array variants;for(const auto &variant:nominal.variants)variants.push_back(object(Object{{"case",Object{{"type","string"},{"const",variant.name}}},{"fields",fields(variant.fields)}},Array{"case","fields"}));records[key]=Object{{"oneOf",std::move(variants)}};}else records[key]=fields(nominal.fields);}return Object{{"$ref","#/components/schemas/"+key}};}
     throw Error("E_API_TYPE","unsupported API type");
   }
 };
@@ -50,7 +51,7 @@ Value openAPI(const Program &p){
     auto method=endpoint->method;std::transform(method.begin(),method.end(),method.begin(),[](unsigned char c){return std::tolower(c);});
     if(!paths.get(endpoint->path))paths[endpoint->path]=Object{};(*paths.getObject(endpoint->path))[method]=std::move(operation);
   }
-  return Object{{"openapi","3.1.1"},{"info",Object{{"title",p.module},{"version",revision(p)}}},{"paths",std::move(paths)},{"components",Object{{"schemas",std::move(schemas.records)},{"securitySchemes",Object{{"bearerAuth",Object{{"type","http"},{"scheme","bearer"}}}}}}},{"x-nex-wire","nex.wire/1"},{"x-nex-language",languageVersion}};
+  return Object{{"openapi","3.1.1"},{"info",Object{{"title",p.module},{"version",revision(p)}}},{"paths",std::move(paths)},{"components",Object{{"schemas",std::move(schemas.records)},{"securitySchemes",Object{{"bearerAuth",Object{{"type","http"},{"scheme","bearer"}}}}}}},{"x-nex-wire","nex.wire/2"},{"x-nex-language",languageVersion}};
 }
 struct SourceTypes {
   const Program &p;std::string unit,owner;std::map<std::string,std::string> aliases;
@@ -76,9 +77,9 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
   }
   auto p=loadBundle(bundle(sources,entry),directory);
   std::set<std::string> functions,structures;
-  std::function<void(const Type&)> type=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)type(*t.element);if(t.kind==Type::Record&&structures.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)type(field.type);};
+  std::function<void(const Type&)> type=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)type(*t.element);if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())type(field->type);};
   std::function<void(E)> expression=[&](E e){if(e){type(e->type);for(auto a:e->args)expression(a);}};
-  std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type);expression(s->expr);block(s->body);block(s->alternative);}};
+  std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type);expression(s->expr);childBlocks(s,block);}};
   std::function<void(const Function&)> function=[&](const Function &f){if(!functions.insert(f.name).second)return;if(f.realm=="server"||f.test)throw Error("E_REALM","server/test code cannot enter the client SDK",f.span);type(f.result);for(const auto &param:f.params)type(param.type);block(f.body);for(const auto &callee:f.dependencies)function(p.function(callee));};
   // Retain the generated SDK and the public client/shared surface of captured
   // dependency libraries, plus the private helpers/types those exports use.
@@ -89,9 +90,9 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
     reference(f.result,f.unit);for(const auto &param:f.params)reference(param.type,f.unit);
     for(const auto &callee:f.dependencies)references[f.unit].insert(p.function(callee).unit);
     std::function<void(E)> expr=[&](E e){if(e){reference(e->type,f.unit);for(auto a:e->args)expr(a);}};
-    std::function<void(const std::vector<S>&)> body=[&](const auto &statements){for(auto s:statements){reference(s->type,f.unit);expr(s->expr);body(s->body);body(s->alternative);}};body(f.body);
+    std::function<void(const std::vector<S>&)> body=[&](const auto &statements){for(auto s:statements){reference(s->type,f.unit);expr(s->expr);childBlocks(s,body);}};body(f.body);
   }
-  for(const auto &s:p.structures)if(structures.contains(s.name))for(const auto &field:s.fields)reference(field.type,s.unit);
+  for(const auto &s:p.structures)if(structures.contains(s.name))for(auto field:s.members())reference(field->type,s.unit);
   std::map<std::string,std::string> projected;std::set<std::string> reachable;
   std::function<void(const std::string&)> unit=[&](const std::string &key){if(!reachable.insert(key).second)return;const auto &source=p.units.at(key);std::string text="module "+source.module+";\n";
     for(const auto &dep:source.imports)if(references[key].contains(dep.target)){text+="import "+quote(dep.path)+" as "+dep.alias+";\n";unit(dep.target);}
@@ -157,12 +158,13 @@ Value generateAPI(const Program &p,const std::string &directory){
   dispatch+="  return http::json_response(404, encode_json(err<bool>(\"E_API_ROUTE\", \"Unknown endpoint\")));\n}\n";server[entry]=dispatch;
   // Extract model declarations only. Server implementations never enter the SDK.
   std::set<std::string> models;
-  std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&models.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)include(field.type);};
+  std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&models.insert(t.name).second)for(auto field:p.structure(t.name).members())include(field->type);};
   for(auto e:endpoints){const auto &handler=p.function(e->target);include(handler.result);if(handler.params.size()==2)include(handler.params[1].type);}
   std::map<std::string,std::vector<const Structure*>> groups;
   for(const auto &name:models){const auto &s=p.structure(name);if(s.unit.starts_with("@"))standard(client,s.unit);else groups[s.owner].push_back(&s);}
   for(const auto &[owner,structures]:groups){auto path=modelPath(owner);SourceTypes types{p,path,owner,{},true,{}};std::string body;
-    for(auto s:structures){body+="pub struct "+s->localName+" { ";for(const auto &field:s->fields)body+=field.name+": "+types.type(field.type)+"; ";body+="}\n";}
+    for(auto s:structures){if(s->enumeration){body+="pub enum "+s->localName+" { ";for(const auto &variant:s->variants){body+=variant.name;if(!variant.fields.empty()){body+="(";for(size_t i=0;i<variant.fields.size();++i){if(i)body+=", ";body+=variant.fields[i].name+": "+types.type(variant.fields[i].type);}body+=")";}body+="; ";}body+="}\n";}
+      else{body+="pub struct "+s->localName+" { ";for(const auto &field:s->fields)body+=field.name+": "+types.type(field.type)+"; ";body+="}\n";}}
     client[path]="module "+owner+";\n"+types.imports()+body;
   }
   SourceTypes clientTypes{p,"api.nex",prefix+"::client_sdk",{},true,{}};std::string helpers;

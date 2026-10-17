@@ -57,7 +57,7 @@ test fn examples() -> unit { assert(step(3, true) == 4); assert(twice(3, false) 
         contract['functions'] += callee['functions']
         result = self.verify(contract)
         self.assertEqual(result['schema'], 'nex.verification-session/1')
-        self.assertEqual(result['language'], '0.5')
+        self.assertEqual(result['language'], '0.6')
         self.assertTrue(result['solver_version'].startswith('5.') or result['solver_version'].startswith('4.'))
         graph = {n['name']: n for n in self.cli('graph')['nodes']}
         saved = json.loads(Path(result['output']).read_text())
