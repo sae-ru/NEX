@@ -18,9 +18,39 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
-## In progress: function object reuse
+## In progress: native build overhead
 
-The working toolchain is **0.25.0**, retaining source language **0.11** and its
+The working toolchain is **0.26.0**, retaining language **0.11**. A stack sample
+of a warm 0.25 build found complete MLIR generation used only to validate its
+entry, plus repeated operation-tree construction. Entry checks are now shared
+between the builder/emitter and run before code selection without emitting IR.
+One checked operation tree per reachable function provides both debug-site
+metadata and the immutable AST-site index used by the native emitters.
+
+The first three cases passed, including already-cached libraries/tests rejected
+as invalid application entries, same-file body edits and generic/closure reuse.
+Full checking, source/ABI keys, artifact integrity and MLIR/LLVM verification
+remain required. Actual reused-function LLDB/DAP passed in 7.872 s. The installed
+macOS SDK passed all nine phases in 66.831 s, including archived watches,
+source-deleted replay and both locked Vite builds. Reports:
+`build/native-build-026-{targeted,live}.log` and
+`build/sdk-026-native-build/report.json`. The full new matrix remains pending.
+The preserved 0.25 SDKs are recorded in `build/preserved-sdk-025.json`; its x86-64
+verification continues on the immutable `source-025-901154f5` tree independently.
+
+In five interleaved paired observations of the same 13-function workload on a
+loaded development host, median warm builds improved from 1.4051 s (0.25) to
+1.1736 s (0.26), and single-function edit builds from 2.2056 s to 1.6424 s.
+Both versions compiled one/reused twelve functions after each edit and produced
+the same checked outputs. The single cold observations were 5.6991 s and
+3.7203 s. This is evidence for that workload/configuration, not a general speed
+guarantee. All observations and compiler hashes are retained in
+`build/native-build-026-comparison/report.json`; before/after stack samples are
+`build/function-cache-025-sample` and `build/native-build-026-sample`.
+
+## Development milestone: function object reuse
+
+Toolchain **0.25.0** retains source language **0.11** and its
 canonical formats. Native planning gives each concrete function, lifted closure
 and generic specialization its own verified object. Call interfaces and
 transitive type layouts invalidate consumers, including within one source file.

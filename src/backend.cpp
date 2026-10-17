@@ -43,6 +43,15 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
   std::set<std::string> names;std::function<void(const Function&)> visit=[&](const Function &f){if(names.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));return names;
 }
+const Function &nativeEntry(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
+  const auto &main=p.function(entry);
+  if(!main.typeParameters.empty()||std::any_of(main.typeArguments.begin(),main.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be a concrete generic specialization or a non-generic function",main.span);
+  if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
+  if(main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
+  if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
+  return main;
+}
+using OperationIndex=std::map<const void*,std::string>;
 std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::F64?"f64":t==Type::Bool?"i1":"()";}
 int64_t scalarTag(Type t){return t==Type::F64?2:t==Type::Bool?1:0;}
 std::string callableType(const Type &type){std::string result="(!llvm.ptr";for(const auto &argument:type.arguments)result+=", "+ty(argument);return result+") -> "+ty(*type.element);}
@@ -107,7 +116,7 @@ class Emitter {
   const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
-  std::map<const void*,std::string> sites;std::string activeSite;
+  OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
   struct SiteScope {std::string &value,old;SiteScope(std::string &value,std::string next):value(value),old(value){value=std::move(next);}~SiteScope(){value=std::move(old);}};
   std::string fresh(){return "%v"+std::to_string(serial++);}
   std::string label(){return "b"+std::to_string(serial++);}
@@ -380,13 +389,9 @@ class Emitter {
     out<<"  func.func private @"<<name<<"("<<arguments<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false):p(p),debug(p,optimized),profiling(profiling){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr):p(p),debug(p,optimized),profiling(profiling),sites(sharedSites?*sharedSites:ownedSites){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr){
-    const auto &main=p.function(entry);
-    if(!main.typeParameters.empty()||std::any_of(main.typeArguments.begin(),main.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be a concrete generic specialization or a non-generic function",main.span);
-    if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
-    if(main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
-    if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
+    const auto &main=nativeEntry(p,entry,testEntry,libraryEntry);
     out<<"module {\n";
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_f64_"+std::string(name),"f64, f64, i64","f64");
@@ -562,6 +567,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     layout("std::http::Response",{{"status",Type::I64},{"body",Type::Str},{"content_type",Type::Str}});
     if(options.libraryEntry)throw Error("E_OPTION","HTTP server target produces an executable; --library is for a native function archive");
   }
+  // Entry validation is independent of emission, including warm cache hits.
+  nativeEntry(p,options.entry,options.testEntry,options.libraryEntry||server);
   auto compiler=toolchain.compiler;
   auto command=[&](std::initializer_list<std::string> arguments){auto result=toolchain.driver;result.insert(result.end(),arguments);return result;};
   auto identity=capture({compiler,"--version"});if(identity.code!=0)throw Error("E_TOOL","cannot identify native compiler");
@@ -630,6 +637,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible};
   auto snapshot=p;
   llvm::json::Array debugSources,debugFunctions,heapTypes,debugSourceMap;std::set<std::string> debugTypes;
+  OperationIndex operationIndex;
   std::map<std::string,std::string> debugAnchors;
   std::function<void(Type)> collectType=[&](Type type){
     if(!type.heap()||!debugTypes.insert(typeName(type)).second)return;
@@ -641,7 +649,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::function<void(const std::vector<S>&)> collectLocals=[&](const auto &body){for(auto s:body){collectType(s->type);childBlocks(s,collectLocals);}};
   for(const auto &f:p.functions)if(names.contains(f.name)){
     collectType(f.result);for(const auto &param:f.params)collectType(param.type);for(const auto &capture:f.captures)collectType(capture.type);collectLocals(f.body);
-    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)},{"callable_symbol",f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"operation_sites",operationSites(p,f)}});
+    auto operations=operationTree(p,f);for(const auto &operation:operations)if(operation.ast)operationIndex[operation.ast]=operation.site;
+    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)},{"callable_symbol",f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"operation_sites",operationSites(f,operations)}});
   }
   for(auto &[unitKey,unit]:snapshot.units){
     auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/1"},{"unit",unitKey},{"module",unit.module},{"source",unit.source}},false));
@@ -708,8 +717,6 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     return hash(contents)+"\n";
   };
   auto buildIntact=[&](){try{return readFile((folder/"complete").string())==completion();}catch(const std::exception &){return false;}};
-  // Validate the entry on cache hits as well.
-  emitMLIR(p,options.entry,options.testEntry,options.libraryEntry||server);
   if(buildIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=plan.units.size();return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
@@ -725,7 +732,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(snapshot.units.empty()){captureFile(snapshot.path,snapshot.source);writeFile((folder/"source.nex").string(),snapshot.source);}
   writeFile(debugFile,debugText);writeFile(formatterFile,formatter);writeFile(adapterFile,dapAdapter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
-  auto mlir=Emitter(snapshot,options.profile!="debug",profiling).run(options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);
+  auto mlir=Emitter(snapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -736,7 +743,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(temporary.str().str());
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions);
+        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");

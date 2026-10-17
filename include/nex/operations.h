@@ -10,6 +10,7 @@ struct Operation {
 };
 std::vector<Operation> operationTree(const Program &program,const Function &function);
 llvm::json::Array operationSites(const Program &program,const Function &function);
+llvm::json::Array operationSites(const Function &function,const std::vector<Operation> &operations);
 // Conservative sibling matching; an empty result entry requests a fresh identity.
 std::map<std::string,std::string> matchOperations(const std::vector<Operation> &current,
   const std::vector<Operation> &previous,const std::map<std::string,std::string> &ids);

@@ -141,6 +141,33 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.assertEqual(self.cli('build',ok=False)['code'],'E_TYPE')
         self.assertEqual(self.cli('history')['head'],head)
 
+    def test_cached_libraries_and_tests_cannot_bypass_application_entry_rules(self):
+        self.source('''module entrances;
+fn with_arg(value:i64)->i64{return value+1;}
+fn text()->str{return "NEX";}
+client fn ui()->unit{}
+fn generic<T>(value:T)->T{return value;}
+fn main()->unit!{io}{print(with_arg(1));}
+test fn scenario()->unit{assert(with_arg(1)==2);}
+''')
+        self.build()
+        self.assertTrue(self.build()[0]['cached'])
+        for name in ['with_arg','text']:
+            self.cli('build','--entry',name,'--library',env=self.env)
+            self.assertTrue(self.cli('build','--entry',name,'--library',env=self.env)['cached'])
+        self.cli('test','--symbol','scenario',env=self.env)
+        for name,code in [('with_arg','E_ENTRY'),('text','E_ENTRY'),('ui','E_REALM'),
+                          ('generic','E_GENERIC_ENTRY'),('scenario','E_ENTRY')]:
+            with self.subTest(entry=name):
+                self.log.write_text('')
+                rejected=self.cli('build','--entry',name,env=self.env,ok=False)
+                self.assertEqual(rejected['code'],code)
+                calls=[json.loads(line) for line in self.log.read_text().splitlines()]
+                self.assertFalse(any('-c' in call['arguments'] for call in calls),calls)
+        valid,_=self.build()
+        self.assertTrue(valid['cached'])
+        self.assert_behavior(valid,'2\n')
+
     def test_sibling_edit_reuses_generic_instances_and_snapshot_closure_objects(self):
         self.source('module callbacks;\nfn first()->i64{return 1;}\nfn identity<T>(value:T)->T{return value;}\nfn make(offset:i64)->(fn(i64)->i64){return fn(value:i64)->i64{return value+offset;};}\nfn main()->unit!{io}{print(first());print(identity(42));print(identity("ok"));print(make(2)(3));}\n')
         initial,before=self.build()

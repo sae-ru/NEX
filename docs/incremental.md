@@ -1,4 +1,4 @@
-# Native compilation and toolchains — toolchain 0.25
+# Native compilation and toolchains — toolchain 0.26
 
 Current source language is 0.11. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
@@ -6,6 +6,14 @@ specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or
 archived builds. The entire loaded program still passes the normal checker
 before cached code can be selected.
+
+Toolchain 0.26 validates native entry signatures, realms, test markers and
+generic concreteness independently of IR emission. Warm cache hits therefore
+do not regenerate the complete MLIR program just to check the entry. Missing
+objects still pass normal MLIR/LLVM verification. One operation tree per
+reachable concrete function supplies both debugger sites and the immutable
+site index shared by aggregate/unit emitters; snapshots preserve the checked
+AST identities. This is build-work reuse, not incremental frontend checking.
 
 ```sh
 nex build src/main.nex --json
