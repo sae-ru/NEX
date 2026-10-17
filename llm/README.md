@@ -1,5 +1,12 @@
 # Model-independent NEX language pack
 
+The installed pack also contains [the SDK handoff guide](../docs/sdk.md) and
+`tools/sdk_acceptance.py`. Its maintained scenario exercises discovery, a failed
+reviewed task, graph repair/import, backend agreement, profiling and archived
+replay/export. `--live` requires actual LLDB/DAP watches; `--browser` requires a
+real locked Vite build. Reports retain the original task hash and exact command
+evidence. This validates a deterministic workflow, not cross-model coding quality.
+
 `llm/language-pack.json` is its machine-readable index. `llm/patch.schema.json` provides a JSON Schema for generated replacement patches; the compiler performs the required semantic validation after JSON parsing.
 
 [The Russian walkthrough](WORKFLOW.md) shows what to send a chat-only or tool-capable model and exercises a complete function repair, revision-checked patch, differential tests and source export. [The task template](TASK_TEMPLATE.md) specifies behavior and acceptance criteria as text; the machine-readable counterpart is `llm/task.schema.json`, enforced by `nex task` for its declared checks.

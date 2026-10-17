@@ -38,6 +38,7 @@ def main():
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
+        report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()
         report['packages']=subprocess.check_output(['dpkg-query','-W','-f=${Package}\t${Version}\n'],text=True).splitlines()
         report['ok']=True
     finally:

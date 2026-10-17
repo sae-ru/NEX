@@ -62,6 +62,7 @@ install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
 enable_testing()
 add_test(NAME integration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration.py $<TARGET_FILE:nex>)

@@ -33,9 +33,11 @@
     "linux_check": "tools/linux/check.py",
     "linux_verify": "tools/linux/verify.py",
     "linux_sdk_smoke": "tools/linux/sdk_smoke.py",
-    "matching": "docs/matching.md"
+    "matching": "docs/matching.md",
+    "sdk_handoff": "docs/sdk.md",
+    "sdk_acceptance": "tools/sdk_acceptance.py"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",

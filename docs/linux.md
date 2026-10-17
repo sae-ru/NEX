@@ -30,6 +30,16 @@ the selected image runs through emulation. AMD64 execution under Docker's
 emulation is distinct from validation on physical x86-64 hardware. Kernel,
 runtime and dependency versions are retained with the evidence.
 
+After those checks, a second container mounts only the installed SDK read-only
+and a fresh evidence directory. It runs the maintained [SDK acceptance workflow](sdk.md)
+with `/src` absent, external networking disabled and the real Vite build enabled.
+The top-level report remains false while this phase runs. Its task failure/repair,
+graph import, profile, archive/replay/export and optional live-debugger evidence
+is retained under `sdk-acceptance/RUN/workflow/`, with `source-free-sdk.json`
+and `source-free-sdk.log` copies in the rolling and versioned reports. Build-tree
+and installed compiler hashes are recorded separately: CMake may change ELF
+RPATHs during installation. The isolated run must match the installed hash.
+
 Use `--output PATH` for a different writable build directory, `--jobs N` for
 1–8 build/test workers, and `--skip-image-build` only when the matching local
 image already exists. The default of two workers accommodates an 8 GiB Docker
