@@ -15,8 +15,8 @@ std::atomic<int64_t> liveHandles{0};
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
-  explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){if(owner)owner->track(this);++liveHandles;}
-  ~Handle(){if(owner)owner->untrack(this);--liveHandles;}
+  explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){if(owner)owner->track(this);profileAllocate(this,sizeof(Handle),0);++liveHandles;}
+  ~Handle(){profileFree(this);if(owner)owner->untrack(this);--liveHandles;}
 };
 struct RequestScope::Impl {
   std::unordered_set<Handle*> handles;
@@ -29,7 +29,7 @@ RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_un
   if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
   impl->budget=budget;impl->deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs);currentRequest=this;
 }
-RequestScope::~RequestScope(){while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;}
+RequestScope::~RequestScope(){profileUnwind();while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;}
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
 void RequestScope::cancel(){impl->cancelled=true;}
@@ -43,6 +43,7 @@ void RequestScope::poll(int64_t line,bool forceCancellation){
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){
+  profileUnwind();
   if(currentRequest)throw Trap(code,message,line);
   std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));std::exit(70);
 }

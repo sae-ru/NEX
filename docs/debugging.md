@@ -1,4 +1,4 @@
-# Native debugging — NEX toolchain 0.9
+# Native debugging — NEX toolchain 0.10
 
 Source language remains 0.5. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
@@ -115,5 +115,7 @@ value previews/children and clean completion. It requires host debugger launch
 permission; the normal suite does not silently claim those live checks.
 
 Function/frontend incremental reuse, source expression evaluation, direct browser NEX source
-maps, crash/core workflows, Tracy instrumentation and other target platforms
+maps, crash/core workflows and other target platforms
 remain parts of the open development plan.
+
+Native function/managed shallow allocation profiling and optional Tracy CPU capture are documented in [profiling.md](profiling.md).

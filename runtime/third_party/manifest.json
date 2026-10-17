@@ -16,6 +16,14 @@
       "file": "httplib.h",
       "sha256": "bc77114769db3b3c97e4a6d753dab797c3cadaaa48beead3806298b09702df18",
       "license": "HTTPLIB-LICENSE"
+    },
+    {
+      "name": "Tracy client",
+      "version": "0.14.1",
+      "source": "https://github.com/wolfpld/tracy/tree/v0.14.1/public",
+      "file": "tracy/manifest.json",
+      "sha256": "398067c12fb1c65ab7bf10ff7e3f4fb22000f2aadc0c7f0ba8ac4652ba73499a",
+      "license": "TRACY-NOTICES.txt"
     }
   ]
 }

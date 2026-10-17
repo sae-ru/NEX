@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.9.0 LANGUAGES C CXX)
+project(NEX VERSION 0.10.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -33,7 +33,7 @@ target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3)
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
-add_executable(nex src/main.cpp src/backend.cpp src/incremental.cpp src/project.cpp src/typescript.cpp src/web.cpp src/api.cpp)
+add_executable(nex src/main.cpp src/backend.cpp src/incremental.cpp src/profiling.cpp src/project.cpp src/typescript.cpp src/web.cpp src/api.cpp)
 target_include_directories(nex PRIVATE runtime)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_link_libraries(nex PRIVATE nex_frontend MLIR SQLite::SQLite3)
@@ -69,6 +69,8 @@ add_test(NAME debugging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/debugging.py $<TARGET_FILE:nex>)
 add_test(NAME incremental COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/incremental.py $<TARGET_FILE:nex>)
+add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
 find_program(NEX_NODE_EXECUTABLE node)
 if(NEX_NODE_EXECUTABLE)
   add_test(NAME web COMMAND ${Python3_EXECUTABLE}

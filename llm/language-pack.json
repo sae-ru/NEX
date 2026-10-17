@@ -15,9 +15,10 @@
     "server": "docs/server.md",
     "api": "docs/api.md",
     "debug": "docs/debugging.md",
-    "build": "docs/incremental.md"
+    "build": "docs/incremental.md",
+    "profile": "docs/profiling.md"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -30,7 +31,8 @@
     "fullstack_server": "examples/fullstack/server.nex",
     "api_service": "examples/api/service.nex",
     "api_client_generate_first": "examples/api/client.nex",
-    "debugging": "examples/debugging/main.nex"
+    "debugging": "examples/debugging/main.nex",
+    "profiling": "examples/profiling/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -46,6 +48,17 @@
     "nex test FILE --json",
     "nex build FILE --target server --profile release --json"
   ],
-  "api_commands": ["nex api FILE --json", "nex api FILE --directory NEW_DIRECTORY --json"],
-  "debug_commands": ["nex debug FILE --kind dap --json", "nex debug FILE -- --no-lldbinit", "nex-values [inside LLDB at a stopped frame]"]
+  "api_commands": [
+    "nex api FILE --json",
+    "nex api FILE --directory NEW_DIRECTORY --json"
+  ],
+  "debug_commands": [
+    "nex debug FILE --kind dap --json",
+    "nex debug FILE -- --no-lldbinit",
+    "nex-values [inside LLDB at a stopped frame]"
+  ],
+  "profile_commands": [
+    "nex profile FILE --scenario TEXT --json",
+    "nex build FILE --profile profile --json"
+  ]
 }

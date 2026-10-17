@@ -114,7 +114,7 @@ Native emission now includes the selected entry's reachable closure. Runtime com
 
 Native build JSON reports `kind` (`executable`, `static_library`, `http_server`), `metadata` (the `build.json` path) and `notices` (empty if no vendored runtime component requires it). Metadata includes `runtime_components` and `runtime_source_projection`. Builds embedding JSON/HTTP code emit matching MIT license texts beside the artifact and validate that file on cache hits. `-o PATH` copies these notices to `PATH.THIRD_PARTY_NOTICES.txt`; keep them with the distributed program/archive. External toolchain/runtime-library packaging remains separate work.
 
-`nex emit FILE --kind mlir` emits high-level MLIR. `--kind llvm` builds and exposes lowered LLVM IR. `nex build FILE -o PATH` copies the executable to the chosen path. Profiles are `debug` (-O0 with symbols), `profile` (-O2 with symbols/frame pointers), and `release` (-O2 with symbols). Instrumented profiling is pending; the profile build option does not claim a completed profiler.
+`nex emit FILE --kind mlir` emits high-level MLIR. `--kind llvm` builds and exposes lowered LLVM IR. `nex build FILE -o PATH` copies the executable to the chosen path. Profiles are `debug` (-O0 with symbols), `profile` (-O2 with symbols/frame pointers and native function/managed shallow allocation instrumentation), and `release` (-O2 with symbols). See the profiling protocol below for local reports and the matching guide for optional Tracy capture.
 
 ```sh
 nex context --symbol app::sum
@@ -132,3 +132,9 @@ Language 0.5 adds endpoint declarations to the checked source bundle and program
 ## Native compilation report
 
 Native `build --json` adds `compilation`, `compiled_modules` and `reused_modules`. Counters describe this invocation; whole-build hits compile zero units. `compilation` names `nex.compilation/1`, recording the last materialization with module/function names, input/content keys, split toolchain/semantic/source/runtime-ABI fingerprints, source/object/MLIR/LLVM paths, object hashes and per-unit reuse. It includes direct/reverse function dependencies and module call/layout providers/consumers. Type-only modules can appear as providers without emitting an object. `build.json` links this report and records the actual driver `compiler_target` and `data_layout`. The driver ABI is probed and must match the configured 64-bit host. See [incremental.md](incremental.md) for validation and cache boundaries.
+
+## Native profiling protocol
+
+`nex profile FILE [--revision HASH] [--entry NAME] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] --json` selects the instrumented host-native build. Events range from 0 to 1,000,000; timeout is 1 to 3,600 seconds. Non-profile modes and web/server targets are rejected by this run command. Long-running servers and trusted archives instead use `nex build --profile profile` with the environment described in `docs/profiling.md`.
+
+The result is `nex.profile-session/1`, with process exit status/output, `revision`, `build_key`, workload/host metadata, memory pools and at most 100 functions ordered by `self_ns`; `total_functions` reports the complete count. `output` names a complete `nex.profile/1` JSON file containing all aggregates and Chrome-compatible `traceEvents`. Timings are elapsed wall nanoseconds including instrumentation; allocation bytes are shallow managed structure sizes. Dropped-record fields expose collector bounds. Function `node_id` is attributed only after name/content-hash matching against the selected revision. Failing applications return their nonzero exit status with a usable profile when normal runtime trap flushing succeeds. The matching guide is `nex guide --kind profile --json`.

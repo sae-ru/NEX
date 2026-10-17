@@ -1,0 +1,2 @@
+# Keep the pinned upstream client byte-identical, including its whitespace.
+runtime/third_party/tracy/public/** -whitespace

@@ -8,6 +8,7 @@
 #include <limits>
 #include <charconv>
 #include <atomic>
+#include "nex_profile.h"
 
 namespace nexrt {
 struct DataError : std::runtime_error {
@@ -30,9 +31,9 @@ struct Data {
   std::string text;
   std::vector<Value> values;
   std::vector<std::string> names;
-  explicit Data(Kind kind):kind(kind){++liveObjects;}
-  Data(const Data &other):kind(other.kind),text(other.text),values(other.values),names(other.names){++liveObjects;}
-  ~Data(){--liveObjects;}
+  explicit Data(Kind kind):kind(kind){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data(const Data &other):kind(other.kind),text(other.text),values(other.values),names(other.names){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  ~Data(){profileFree(this);--liveObjects;}
 };
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
   std::vector<size_t> offsets;

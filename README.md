@@ -93,7 +93,15 @@ Native builds compile reachable functions into separate source-module objects. B
 ./build/nex debug examples/debugging/main.nex --kind dap --json
 ```
 
-Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies an editor launch configuration for an installed `lldb-dap`. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work. Tracy instrumentation remains pending.
+Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies an editor launch configuration for an installed `lldb-dap`. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work.
+
+## Profiling
+
+```sh
+./build/nex profile examples/profiling/main.nex --scenario "sum and labels" --json
+```
+
+Native profile builds instrument reachable function calls and managed object/handle allocations. The saved report includes measured wall/self times, call counts, bounded trace events, shallow memory sizes, revision/build identity, graph node IDs and workload/host metadata. The CLI returns at most 100 functions. The bundled Tracy 0.14.1 client can send CPU zones and named memory pools to a matching upstream collector when explicitly enabled. [The profiling guide](docs/profiling.md) covers capture commands, request failure cleanup, measurement limits and remaining GPU/browser work.
 
 ## Language and LLM interoperability
 
@@ -110,4 +118,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.9.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, Tracy, contracts/Z3, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain; building large application products is outside its scope.
+The compiler/toolchain is **0.10.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, contracts/Z3, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain; building large application products is outside its scope.

@@ -8,6 +8,7 @@
 | nlohmann/json 3.12.0 | Strict typed wire JSON in the compiler/interpreter and selected native runtime components | MIT; vendored `runtime/third_party/json.hpp` and `JSON-LICENSE.MIT` |
 | cpp-httplib 0.61.0 | Native HTTP/HTTPS host with bounded worker/queue settings | MIT; vendored `runtime/third_party/httplib.h` and `HTTPLIB-LICENSE` |
 | OpenSSL 3.6.3 | TLS and bearer digest comparison in native HTTP servers | Installed OpenSSL 3 library; [Apache-2.0](https://github.com/openssl/openssl/blob/master/LICENSE.txt) |
+| Tracy 0.14.1 client | Optional instrumentation in native profile output | BSD-3-Clause with embedded LZ4/concurrentqueue/SPSCQueue/rpmalloc notices; pinned source inventory in `runtime/third_party/tracy/manifest.json` |
 | Apple LLDB | Optional local debugger used for integration checks | Installed tool; [LLVM licensing and LLDB documentation](https://lldb.llvm.org/) |
 | Python 3.9.6 | Integration-test runner | Installed interpreter; no Python runtime in generated programs |
 | React / React DOM 19.3.1; Scheduler 0.28.0 | Runtime of generated browser applications | MIT; copies of package license text are included in `web/THIRD_PARTY_NOTICES.txt` and generated `dist` |
@@ -21,4 +22,6 @@ Native builds select runtime components from reachable code. Pure executables do
 
 `web/package-lock.json` records the complete browser dependency tree, exact package versions, registry integrity hashes and license metadata, including platform-specific optional build tools. `npm ci --ignore-scripts` installs those packages into generated development projects; the C++ compiler does not link them. Browser assets bundle the required React runtime and include `THIRD_PARTY_NOTICES.txt`. Development package licenses remain in their installed package directories. Node.js 22.22.3/npm 10.9.8 were used for verification; redistributing those tools is not part of current SDK installation.
 
-Emscripten, Tracy, Z3, SDL3 and wgpu remain planned integrations and are not presently included dependencies. Their exact versions, dependency trees and distribution notices will be recorded when integrated.
+Emscripten, Z3, SDL3 and wgpu remain planned integrations and are not presently included dependencies. Their exact versions, dependency trees and distribution notices will be recorded when integrated.
+
+Native profile builds additionally embed the unmodified Tracy 0.14.1 client and preserve its complete source/header tree and SHA256 inventory. `TRACY-NOTICES.txt` includes its BSD license and embedded dependency notices, and is appended to distributed profile output notices. Tracy is dormant until `NEX_TRACY=1`; local JSON profiling does not start it. Capture/viewer/export tools are separate upstream programs. The development compiler does not link the client.

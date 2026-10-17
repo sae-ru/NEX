@@ -2,6 +2,7 @@
 #include "nex/project.h"
 #include "nex/web.h"
 #include "nex/api.h"
+#include "nex/profiling.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/RandomNumberGenerator.h"
 #include "llvm/Support/SHA256.h"
@@ -26,7 +27,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -65,8 +66,8 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api [--json]\n  nex doctor\n"
-      "  nex check|eval|build|run|test|emit [file] [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile [--json]\n  nex doctor\n"
+      "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap] [--json] -- [lldb options]\n"
@@ -98,8 +99,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug or build");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build or profile");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -114,11 +115,11 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api"};
+  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api","profile"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
-  const std::set<std::string> sourceCommands={"check","eval","build","run","test","emit","debug","lock","web","api"};
+  const std::set<std::string> sourceCommands={"check","eval","build","run","test","emit","debug","lock","web","api","profile"};
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="migrate"){
@@ -261,6 +262,18 @@ int run(const Options &o) {
   if(o.get("--target")=="server"&&o.command=="test")throw Error("E_OPTION","use native test for server functions; --target server builds the HTTP entry");
   if(o.get("--target")=="server"&&o.command=="run"&&o.has("--json"))throw Error("E_OPTION","server is long-running; use build --json or run without --json");
   BuildOptions buildOptions{o.get("--profile","debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library")};
+  ProfileOptions profiling;
+  if(o.command=="profile"){
+    if(buildOptions.libraryEntry||!o.extra.empty()||!o.get("--kind").empty()||(!buildOptions.target.empty()&&buildOptions.target!=llvm::sys::getDefaultTargetTriple()))throw Error("E_OPTION","profile runs a host-native application; use a profile build with Tracy for a server/library");
+    if(o.get("--profile","profile")!="profile")throw Error("E_OPTION","profile requires the instrumented profile build mode");
+    auto count=[&](const std::string &key,unsigned fallback,unsigned minimum,unsigned maximum){
+      auto text=o.get(key);if(text.empty())return fallback;uint64_t number=0;
+      for(char c:text){if(c<'0'||c>'9'||number>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION",key+" is outside its supported integer range");number=number*10+unsigned(c-'0');}
+      if(number<minimum||number>maximum)throw Error("E_OPTION",key+" is outside its supported integer range");return unsigned(number);
+    };
+    profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600)};
+    buildOptions.profile="profile";
+  }
   auto directory=(root/".nex/build").string();
   if(o.command=="test") {
     int count=0;llvm::json::Array tests;
@@ -288,6 +301,10 @@ int run(const Options &o) {
   }
   if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm or typescript");
   auto result=build(p,directory,buildOptions);
+  if(o.command=="profile"){
+    auto report=profileNative(p,result,store.graph(p),profiling);auto object=report.getAsObject();auto code=int(*object->getInteger("exit_code"));
+    if(o.has("--json"))print(std::move(report));else std::cout<<"Profile: "<<object->getString("output")->str()<<" (exit "<<code<<")\n";return code;
+  }
   if(o.command=="emit") {auto text=readFile(result.llvm);auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
   if(o.command=="run") {
     if(!o.has("--json")){std::vector<std::string> arguments{result.executable};arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
