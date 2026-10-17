@@ -1,0 +1,10 @@
+module operations;
+
+fn adjust(value: i64) -> i64 {
+  let offset: i64 = 2;
+  return value + offset;
+}
+
+fn main() -> unit !{io} { print(adjust(40)); }
+
+test fn adjust_test() -> unit { assert(adjust(40) == 42); }

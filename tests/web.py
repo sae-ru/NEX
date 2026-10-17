@@ -94,7 +94,8 @@ test fn values_test() -> unit !{io} { main(); }
                 self.assertEqual(actual["code"], code)
                 self.assertEqual(actual["code"], expected["code"])
                 self.assertEqual(actual["stdout"], expected["stdout"])
-                self.assertEqual(actual["site"], [expected["file"], expected["line"], expected["column"]])
+                self.assertEqual(actual["site"], [expected["file"], expected["line"], expected["column"], expected["operation_site"]])
+                self.assertRegex(expected["operation_id"], r"^[a-f0-9]{32}$")
         self.source('module traps; fn main() -> unit { assert(false); }')
         self.assertEqual(self.run_web()["code"], "E_ASSERT")
 

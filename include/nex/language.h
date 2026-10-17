@@ -12,7 +12,7 @@ namespace nex {
 inline constexpr const char *languageVersion = "0.5";
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
-  std::string code, output; Span span;
+  std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
   Error(std::string code, std::string message, Span span = {})
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };

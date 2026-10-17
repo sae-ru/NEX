@@ -61,3 +61,5 @@ digit         = "0" .. "9" ;
    Their purity, capture and helper resource limits do not alter source programs. *)
 (* Toolchain 0.14 partial frame captures are external debugger metadata.
    Demand-driven aggregate reads add no source syntax or runtime ABI changes. *)
+
+(* Toolchain 0.15 operation identities are derived metadata, without source syntax. *)

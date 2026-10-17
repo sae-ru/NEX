@@ -1,4 +1,5 @@
 #include "nex/project.h"
+#include "nex/operation_store.h"
 #include <sqlite3.h>
 #include <random>
 #include <algorithm>
@@ -38,11 +39,23 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
     try{
       {Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");q.row();version=q.text(0);}
       if(version=="1")sql(impl->db,"ALTER TABLE revisions ADD COLUMN language TEXT NOT NULL DEFAULT '0.1'; UPDATE metadata SET value='2' WHERE key='schema'");
-      else if(version!="2")throw Error("E_SCHEMA","unsupported graph database schema");
+      else if(version!="2"&&version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
       sql(impl->db,"COMMIT");
     }
     catch(...){sql(impl->db,"ROLLBACK");throw;}
-  }else if(version!="2")throw Error("E_SCHEMA","unsupported graph database schema");
+  }else if(version!="2"&&version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
+  sql(impl->db,"BEGIN IMMEDIATE");
+  try{
+    {Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");q.row();version=q.text(0);}
+    if(version=="2")sql(impl->db,
+      "CREATE TABLE operation_ids(id TEXT PRIMARY KEY,function TEXT NOT NULL REFERENCES node_ids(id),kind TEXT NOT NULL);"
+      "CREATE TABLE operation_versions(revision TEXT NOT NULL REFERENCES revisions(hash),function TEXT NOT NULL REFERENCES node_ids(id),path TEXT NOT NULL,parent TEXT NOT NULL,role TEXT NOT NULL,ordinal INTEGER NOT NULL,id TEXT NOT NULL REFERENCES operation_ids(id),kind TEXT NOT NULL,anchor TEXT NOT NULL,hash TEXT NOT NULL,site TEXT NOT NULL,PRIMARY KEY(revision,function,path),UNIQUE(revision,id),UNIQUE(revision,site));"
+      "CREATE TABLE operation_functions(revision TEXT NOT NULL REFERENCES revisions(hash),function TEXT NOT NULL REFERENCES node_ids(id),content_hash TEXT NOT NULL,basis TEXT NOT NULL,PRIMARY KEY(revision,function));"
+      "UPDATE metadata SET value='3' WHERE key='schema'");
+    else if(version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
+    sql(impl->db,"COMMIT");
+  }catch(...){sql(impl->db,"ROLLBACK");throw;}
+
 }
 Store::~Store()=default;
 std::string Store::save(const Program &p,const std::string &expected,bool makeHead) {
@@ -60,6 +73,7 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
       auto data=json(canonical(f),false);
       Statement q(db,"INSERT OR IGNORE INTO nodes(revision,id,hash,canonical) VALUES(?,?,?,?)");q.bind(1,rev);q.bind(2,id);q.bind(3,hash(data));q.bind(4,data);q.row();
     }
+    for(const auto &f:p.functions)saveOperationGraph(db,p,f,nodeId(db,f.owner,f.localName),rev,head(db));
     for(const auto &f:p.functions)for(const auto &dependency:f.dependencies){
       const auto &callee=p.function(dependency);
       Statement q(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");q.bind(1,rev);q.bind(2,nodeId(db,f.owner,f.localName));q.bind(3,nodeId(db,callee.owner,callee.localName));q.row();
@@ -74,7 +88,12 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
     sql(db,"COMMIT");return rev;
   }catch(...){sql(db,"ROLLBACK");throw;}
 }
+llvm::json::Value Store::operations(const Program &p,const std::string &symbol,const std::string &selector,unsigned offset,unsigned limit,bool context){
+  bool ready=false;{Statement q(impl->db,"SELECT count(*) FROM operation_functions WHERE revision=?");q.bind(1,revision(p));q.row();ready=q.text(0)==std::to_string(p.functions.size());}
+  if(!ready)save(p,"",false);return storedOperations(impl->db,p,symbol,selector,offset,limit,context);
+}
 llvm::json::Value Store::graph(const Program &p) {
+  auto operationGraph=operations(p,"","",0,0);
   llvm::json::Array nodes;
   for(const auto &f:p.functions){
     llvm::json::Array deps;for(const auto &d:f.dependencies){const auto &callee=p.function(d);deps.push_back(llvm::json::Object{{"name",d},{"id",nodeId(impl->db,callee.owner,callee.localName)}});}
@@ -86,7 +105,7 @@ llvm::json::Value Store::graph(const Program &p) {
   llvm::json::Array endpoints;for(const auto &endpoint:p.endpoints){auto data=canonical(endpoint);const auto &handler=p.function(endpoint.target);endpoints.push_back(llvm::json::Object{{"id",nodeId(impl->db,endpoint.owner,"@endpoint/"+endpoint.localName)},{"name",endpoint.name},{"file",endpoint.unit},{"module",endpoint.owner},{"line",int64_t(endpoint.span.line)},{"source",p.definition(endpoint)},{"definition",data},{"hash",hash(json(data,false))},{"handler_id",nodeId(impl->db,handler.owner,handler.localName)}});}
   llvm::json::Array modules;
   for(const auto &[key,unit]:p.units){llvm::json::Array imports;for(const auto &dep:unit.imports)imports.push_back(llvm::json::Object{{"alias",dep.alias},{"path",dep.path},{"target",dep.target},{"module",p.units.at(dep.target).module}});modules.push_back(llvm::json::Object{{"file",key},{"name",unit.module},{"imports",std::move(imports)}});}
-  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
+  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"operation_graph",std::move(operationGraph)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
 }
 llvm::json::Value Store::history() {
   llvm::json::Array rows;Statement q(impl->db,"SELECT hash,module,created,language FROM revisions ORDER BY created DESC,hash");

@@ -417,7 +417,7 @@ def _read_path(value, schema, request, budget):
     return {"ok": _integer(_member(data, "kind")) == 3}
 
 
-def _stopped(debugger):
+def _stopped(debugger, compiler=True):
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
     if process.GetState() != lldb.eStateStopped:
@@ -428,7 +428,7 @@ def _stopped(debugger):
         raise ValueError("no selected frame")
     program = str(Path(str(target.GetExecutable())).resolve())
     context = _contexts.get(program)
-    if not context or not context.get("_compiler"):
+    if not context or (compiler and not context.get("_compiler")):
         raise ValueError("load matching debug views with an explicit trusted --compiler path")
     native = frame.GetSymbol().GetName()
     function = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
@@ -454,6 +454,29 @@ def _stopped(debugger):
                 "function": function, "stop": stop, "bindings": bindings,
                 "truncated": visible.GetSize() > 256, "captures": []}
     return context, process, snapshot, values
+
+def operation(debugger, command, result, internal_dict):
+    try:
+        if command.strip():
+            raise ValueError("usage: nex-operation")
+        context, process, snapshot, _ = _stopped(debugger, compiler=False)
+        frame = process.GetSelectedThread().GetSelectedFrame()
+        line = frame.GetLineEntry()
+        column = line.GetColumn() if hasattr(line, "GetColumn") else 0
+        function = next(f for f in context["functions"] if f["name"] == snapshot["function"])
+        candidates = [o for o in function.get("operation_sites", [])
+                      if o["line"] == line.GetLine() and o["kind"].startswith(("expression.", "statement."))]
+        exact = [o for o in candidates if column and o["column"] == column]
+        if exact:
+            candidates = exact
+        _fresh(process, snapshot)
+        result.PutCString(json.dumps({"schema": "nex.debug-operation/1", "language": context["language"],
+            "revision": context["revision"], "source_hash": context["source_hash"], "build_key": context["build_key"],
+            "function": snapshot["function"], "stop": snapshot["stop"], "line": line.GetLine(),
+            "column": column, "selection": "source_column" if exact else "source_line",
+            "candidates": candidates[:1000], "truncated": len(candidates) > 1000}, ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
 
 
 def _fresh(process, snapshot):
@@ -609,6 +632,7 @@ def values(debugger, command, result, internal_dict):
 
 
 def __lldb_init_module(debugger, internal_dict):
+    debugger.HandleCommand("command script add -f " + __name__ + ".operation nex-operation")
     debugger.HandleCommand("command script add -f " + __name__ + ".load nex-load-debug")
     debugger.HandleCommand("command script add -f " + __name__ + ".values nex-values")
     debugger.HandleCommand("command script add -f " + __name__ + ".evaluate nex-eval")

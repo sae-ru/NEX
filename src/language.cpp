@@ -533,6 +533,8 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},
     {"debug_guide","docs/debugging.md"},
+    {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index"}},
+    {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},
     {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index"}},

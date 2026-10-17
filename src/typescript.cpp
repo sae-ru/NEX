@@ -1,4 +1,5 @@
 #include "nex/web.h"
+#include "nex/operations.h"
 #include <algorithm>
 #include <functional>
 #include <filesystem>
@@ -28,9 +29,10 @@ class Generator {
   unsigned unique=0,depth=0,line=1;
   std::ostringstream out;
   llvm::json::Array mappings;
+  std::map<const void*,std::string> sites;
   void write(const std::string &text){out<<text;line+=std::count(text.begin(),text.end(),'\n');}
   void statement(const std::string &text){write(std::string(depth*2,' ')+text+"\n");}
-  std::string site(const Span &s){return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+"]";}
+  std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
   void needed(const Type &t){
     if(t.kind==Type::List||t.kind==Type::Result)needed(*t.element);
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(const auto &field:p.structure(t.name).fields)needed(field.type);
@@ -56,15 +58,15 @@ class Generator {
     case Expr::Name:return local(e->text);
     case Expr::List:{std::string text="nex.list<"+type(*e->type.element)+">([";for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}return text+"])";}
     case Expr::Field:return "("+expr(e->args[0])+")["+quote(e->text)+"]";
-    case Expr::Index:return "nex."+std::string(e->args[0]->type==Type::Str?"character":"index")+"("+expr(e->args[0])+", "+expr(e->args[1])+", "+site(e->span)+")";
-    case Expr::Unary:return e->text=="!"?"(!"+expr(e->args[0])+")":"nex.neg("+expr(e->args[0])+", "+site(e->span)+")";
+    case Expr::Index:return "nex."+std::string(e->args[0]->type==Type::Str?"character":"index")+"("+expr(e->args[0])+", "+expr(e->args[1])+", "+site(e)+")";
+    case Expr::Unary:return e->text=="!"?"(!"+expr(e->args[0])+")":"nex.neg("+expr(e->args[0])+", "+site(e)+")";
     case Expr::Binary:{
       auto a=expr(e->args[0]),b=expr(e->args[1]);const auto &op=e->text;
       if(op=="=="||op=="!=")return (op=="!="?"!":"")+std::string("nex.equal(")+a+", "+b+")";
       if(op=="+"&&e->type==Type::Str)return "("+a+" + "+b+")";
       if(op=="+"&&e->type.kind==Type::List)return "nex.concat("+a+", "+b+")";
       const std::map<std::string,std::string> arithmetic={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","rem"}};
-      if(arithmetic.contains(op))return "nex."+arithmetic.at(op)+"("+a+", "+b+", "+site(e->span)+")";
+      if(arithmetic.contains(op))return "nex."+arithmetic.at(op)+"("+a+", "+b+", "+site(e)+")";
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
@@ -77,7 +79,7 @@ class Generator {
       const std::map<std::string,std::string> builtins={{"print","print"},{"assert","assert"},{"len","length"},{"str","str"},{"push","push"},{"set","set"},{"slice","slice"},{"contains","contains"},{"ok","ok"},{"is_ok","isOk"},{"unwrap","unwrap"},{"error_code","errorCode"},{"error_message","errorMessage"},{"encode_json","encodeJSON"}};
       std::string text=(builtins.contains(e->text)?"nex."+builtins.at(e->text):symbol(e->text))+"(";
       for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}
-      if(e->text=="assert"||e->text=="set"||e->text=="slice"||e->text=="unwrap"||e->text=="encode_json")text+=", "+site(e->span);
+      if(e->text=="assert"||e->text=="set"||e->text=="slice"||e->text=="unwrap"||e->text=="encode_json")text+=", "+site(e);
       return text+")";
     }
     }
@@ -97,12 +99,12 @@ class Generator {
         if(!s->alternative.empty()){statement("} else {");++depth;block(s->alternative);--depth;}statement("}");break;
       case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;block(s->body);--depth;statement("}");break;
       }
-      mappings.push_back(llvm::json::Object{{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
+      mappings.push_back(llvm::json::Object{{"site",sites.at(s.get())},{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
     }
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p):p(p){}
+  explicit Generator(const Program &p):p(p){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   WebModule run(const std::map<std::string,std::string> &entries){
     if(entries.empty())throw Error("E_ENTRY","TypeScript requires at least one entry");
     for(const auto &[alias,name]:entries){
@@ -120,10 +122,10 @@ public:
       auto start=line;std::string signature="export function "+symbol(f.name)+"(";
       for(size_t i=0;i<f.params.size();++i){if(i)signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
       write(signature+"): "+type(f.result)+" {\n");depth=1;block(f.body,false);depth=0;write("}\n\n");
-      included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))}});
+      included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
-    return {out.str(),llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",languageVersion},{"revision",revision(p)},{"functions",std::move(included)},{"statements",std::move(mappings)}}};
+    return {out.str(),llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",languageVersion},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)}}};
   }
 };
 }

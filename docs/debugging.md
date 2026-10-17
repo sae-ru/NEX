@@ -1,4 +1,4 @@
-# Native debugging — NEX toolchain 0.14
+# Native debugging — NEX toolchain 0.15
 
 Source language remains 0.5. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
@@ -90,6 +90,8 @@ children, stepping and resume/exit handling. In an LLDB DAP REPL, the command
 `nex debug FILE --json` returns the same session descriptor without launching a
 debugger. Without `--json` and with the default `--kind lldb`, it starts LLDB;
 arguments after `--` go to LLDB.
+
+For source-operation candidates at a stop, use `nex-operation` and resolve its deterministic site through `nex context --site KEY --revision HASH`. Co-located candidates are explicit; see [operations.md](operations.md) for local persistent identities, exact source hashes and optimized-PC limits.
 
 ## Integrity and validation
 

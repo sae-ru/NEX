@@ -23,9 +23,11 @@
     "task_schema": "llm/task.schema.json",
     "expressions": "docs/expressions.md",
     "debug_frame_schema": "llm/debug-frame.schema.json",
-    "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json"
+    "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json",
+    "operations": "docs/operations.md",
+    "operations_schema": "llm/operations.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -45,7 +47,8 @@
     "task_source": "examples/tasks/main.nex",
     "task_contract": "examples/tasks/task.json",
     "task_proof": "examples/tasks/proof.json",
-    "large_debug_values": "examples/debugging/large.nex"
+    "large_debug_values": "examples/debugging/large.nex",
+    "operations": "examples/operations/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -92,5 +95,11 @@
     "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --json",
     "nex-eval NEX_EXPRESSION (at an LLDB stop)",
     "nex-frame NEX_EXPRESSION (at an LLDB stop)"
+  ],
+  "operation_commands": [
+    "nex operations --symbol NAME --offset 0 --limit 100 --json",
+    "nex context --operation ID --revision REVISION --json",
+    "nex context --site SITE --revision REVISION --json",
+    "nex-operation (at an LLDB stop)"
   ]
 }

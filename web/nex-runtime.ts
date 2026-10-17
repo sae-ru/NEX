@@ -20,7 +20,7 @@ export function unwrap<T extends Value>(value: Result<T>, site?: Site): T {
 }
 export function errorCode<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.code : ''; }
 export function errorMessage<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.message : ''; }
-export type Site = readonly [file: string, line: number, column: number];
+export type Site = readonly [file: string, line: number, column: number, operationSite?: string];
 export class NexError extends Error {
   readonly code: string;
   readonly site?: Site;

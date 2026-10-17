@@ -32,7 +32,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -71,9 +71,9 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression [--json]\n  nex doctor\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation [--json]\n  nex doctor\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex graph|history [--json]\n  nex context --symbol NAME\n"
+      "  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
@@ -133,8 +133,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task or expression");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression or operation");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -149,7 +149,7 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify"};
+  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
@@ -228,7 +228,7 @@ int run(const Options &o) {
     auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
-  bool saved=o.command=="graph"||o.command=="context";auto p=load(o,root,store,saved);
+  bool saved=o.command=="graph"||o.command=="context"||o.command=="operations";auto p=load(o,root,store,saved);
   if(o.command=="contract"){
     if(o.get("--symbol").empty())throw Error("E_OPTION","contract requires --symbol NAME");
     auto value=contractTemplate(p,o.get("--symbol"));auto output=o.get("--output");
@@ -256,6 +256,14 @@ int run(const Options &o) {
     writeFile(output,json(lock)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"lock",std::move(lock)}});return 0;
   }
   if(o.command=="graph"){auto text=json(store.graph(p))+"\n";auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
+  if(o.command=="operations"||(o.command=="context"&&(!o.get("--operation").empty()||!o.get("--site").empty()))){
+    auto selector=o.get("--operation",o.get("--site")),symbol=o.get("--symbol");
+    if(!o.get("--operation").empty()&&!o.get("--site").empty())throw Error("E_OPTION","select one operation ID or site");
+    if(selector.empty()&&symbol.empty())throw Error("E_OPTION","operations requires --symbol NAME, --operation ID or --site KEY");
+    auto number=[&](const std::string &option,unsigned fallback,unsigned maximum){auto text=o.get(option);if(text.empty())return fallback;uint64_t n=0;for(char c:text){if(c<'0'||c>'9'||n>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid range for "+option);n=n*10+unsigned(c-'0');}if(n>maximum)throw Error("E_OPTION","invalid range for "+option);return unsigned(n);};
+    auto offset=number("--offset",0,10000000),limit=number("--limit",100,1000);if(!limit)throw Error("E_OPTION","operation page limit must be 1..1000");
+    print(store.operations(p,symbol,selector,offset,limit,o.command=="context"));return 0;
+  }
   if(o.command=="context") {
     auto name=o.get("--symbol");if(name.empty())throw Error("E_OPTION","context requires --symbol NAME");
     for(const auto &endpoint:p.endpoints)if(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name)){
@@ -300,7 +308,10 @@ int run(const Options &o) {
   if(o.command=="eval") {
     uint64_t limit=1000000;
     if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
-    auto result=evaluate(p,o.get("--entry","main"),limit);
+    Evaluation result;
+    try{result=evaluate(p,o.get("--entry","main"),limit);}catch(Error &error){
+      if(!error.operationSite.empty()){auto mapped=store.operations(p,"",error.operationSite,0,1);error.operationId=(*mapped.getAsObject()->getArray("nodes"))[0].getAsObject()->getString("id")->str();}throw;
+    }
     if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"value",result.value},{"stdout",result.output},{"steps",int64_t(result.steps)}});else std::cout<<result.output;return 0;
   }
   if(o.command=="emit"&&o.get("--kind")=="typescript"){
@@ -390,7 +401,7 @@ int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
   try{return run(options(argc,argv));}
   catch(const nex::Error &e){
-    if(machine)print(llvm::json::Object{{"schema","nex.diagnostic/1"},{"ok",false},{"code",e.code},{"message",e.what()},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"file",e.span.file},{"stdout",e.output}});
+    if(machine){llvm::json::Object diagnostic{{"schema","nex.diagnostic/1"},{"ok",false},{"code",e.code},{"message",e.what()},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"file",e.span.file},{"stdout",e.output}};if(!e.operationSite.empty()){diagnostic["operation_site"]=e.operationSite;diagnostic["revision"]=e.operationRevision;diagnostic["source_hash"]=e.operationSource;}if(!e.operationId.empty())diagnostic["operation_id"]=e.operationId;print(std::move(diagnostic));}
     else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.what()<<'\n';}return 1;
   }catch(const std::exception &e){if(machine)print(llvm::json::Object{{"ok",false},{"code","E_INTERNAL"},{"message",e.what()}});else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
 }

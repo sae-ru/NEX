@@ -1,5 +1,6 @@
 #include "nex/language.h"
 #include "nex/watch_values.h"
+#include "nex/operations.h"
 #include "nex_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
@@ -16,6 +17,7 @@ class Interpreter {
   std::vector<std::vector<Scope>> frames;
   const std::map<std::string,Type> *watchTypes=nullptr;
   std::unique_ptr<WatchValues> watch;
+  std::map<const void*,std::string> sites;
   V full(const V &value){return watch?watch->concrete(value):value;}
   void step(Span s){if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
   V &local(const std::string &name,Span span={}) {
@@ -26,8 +28,9 @@ class Interpreter {
     throw Error("E_INTERNAL","checked local is missing");
   }
   V expression(E e) {
-    step(e->span);
-    try{auto value=expr(e);if(watch)watch->bounded(value);return value;}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),e->span);}
+    try{step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
+    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
+    catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
   V expr(E e) {
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
@@ -97,7 +100,7 @@ class Interpreter {
   void block(const std::vector<S> &body,bool scoped=true) {
     if(scoped)frames.back().emplace_back();
     for(auto s:body) {
-      step(s->span);
+      try{step(s->span);
       switch(s->kind) {
       case Stmt::Let:case Stmt::Var:{auto v=expression(s->expr);frames.back().back()[s->name]=std::move(v);break;}
       case Stmt::Assign:{auto v=expression(s->expr);local(s->name)=std::move(v);break;}
@@ -106,6 +109,7 @@ class Interpreter {
       case Stmt::If:block(expression(s->expr).scalar?s->body:s->alternative);break;
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
       }
+      }catch(Error &error){if(error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }
     if(scoped)frames.back().pop_back();
   }
@@ -116,7 +120,7 @@ class Interpreter {
     frames.pop_back();return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){}
+  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   llvm::json::Value inspect(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,const llvm::json::Array *captures,bool demand){
     watchTypes=&types;watch=std::make_unique<WatchValues>(p,types,values,captures);frames.emplace_back(1);V value;
     try{value=full(this->expression(expression));}catch(const WatchDemand &needed){

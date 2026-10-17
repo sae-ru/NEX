@@ -1,5 +1,6 @@
 #include "nex/backend.h"
 #include "nex/incremental.h"
+#include "nex/operations.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -89,8 +90,9 @@ public:
   std::string variable(const std::string &name,Type t,Span span,unsigned argument=0){
     return attribute("#llvm.di_local_variable<scope = "+scope+", name = "+json(name,false)+", file = "+file(p.location(span))+", line = "+std::to_string(span.line)+", arg = "+std::to_string(argument)+", type = "+type(t)+">");
   }
-  std::string location(Span span)const {
+  std::string location(Span span,const std::string &site="")const {
     auto point=json(p.location(span),false)+":"+std::to_string(span.line)+":"+std::to_string(span.column);
+    if(!site.empty())point=json("nex.site."+site,false)+"("+point+")";
     return scope.empty()?" loc("+point+")":" loc(fused<"+scope+">["+point+"])";
   }
   std::string str()const{return attributes.str();}
@@ -99,9 +101,11 @@ class Emitter {
   const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Expr*,std::string> shortSlots;
+  std::map<const void*,std::string> sites;std::string activeSite;
+  struct SiteScope {std::string &value,old;SiteScope(std::string &value,std::string next):value(value),old(value){value=std::move(next);}~SiteScope(){value=std::move(old);}};
   std::string fresh(){return "%v"+std::to_string(serial++);}
   std::string label(){return "b"+std::to_string(serial++);}
-  std::string loc(Span s)const{if(prologue){s.line=0;s.column=0;}return debug.location(s);}
+  std::string loc(Span s)const{if(prologue){s.line=0;s.column=0;}return debug.location(s,prologue?"":activeSite);}
   void line(const std::string &s,Span span){out<<"    "<<s<<loc(span)<<"\n";}
   void blockLabel(const std::string &s){out<<"  ^"<<s<<":\n";}
   Value constant(int64_t value,Type type,Span span){
@@ -177,6 +181,7 @@ class Emitter {
     release(base,span);return result==Type::Bool?asBool(value,span):value;
   }
   Value expression(E e){
+    SiteScope site(activeSite,sites.at(e.get()));
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return constant(e->number,e->type,e->span);
     if(e->kind==Expr::String)return text(e->text,e->span);
     if(e->kind==Expr::Name)return load(lookup(e->text),e->span);
@@ -265,6 +270,7 @@ class Emitter {
     auto previousDebugScope=debug.scope;
     if(scoped){scopes.emplace_back();if(!body.empty())debug.scope=debug.block(body.front()->span);}bool returned=false;
     for(auto s:body){
+      SiteScope site(activeSite,sites.at(s.get()));
       switch(s->kind){
       case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr);auto slot=slots.at(s.get());store(value,slot,s->span);
         // Initializers see the outer binding; the new scope begins afterwards.
@@ -298,7 +304,7 @@ class Emitter {
     out<<"  func.func private @"<<name<<"("<<arguments<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false):p(p),debug(p,optimized),profiling(profiling){}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false):p(p),debug(p,optimized),profiling(profiling){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr){
     const auto &main=p.function(entry);
     if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
@@ -538,7 +544,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::function<void(const std::vector<S>&)> collectLocals=[&](const auto &body){for(auto s:body){collectType(s->type);collectLocals(s->body);collectLocals(s->alternative);}};
   for(const auto &f:p.functions)if(names.contains(f.name)){
     collectType(f.result);for(const auto &param:f.params)collectType(param.type);collectLocals(f.body);
-    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)}});
+    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)},{"operation_sites",operationSites(p,f)}});
   }
   for(auto &[unitKey,unit]:snapshot.units){
     auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/1"},{"unit",unitKey},{"module",unit.module},{"source",unit.source}},false));

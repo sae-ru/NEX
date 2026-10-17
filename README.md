@@ -82,6 +82,16 @@ Language 0.5 adds explicit endpoints referencing checked server handlers. The co
 
 Generate into a new/empty directory before using this client example. Build the reported `server_entry` with `--target server`; serve the browser `dist` with its `--static` option. [The API guide](docs/api.md) documents contracts, statuses, generation, schema limits and SDK use. Older language revisions require explicit `nex migrate`; their archived sources/history are retained.
 
+## Operation graph
+
+```sh
+./build/nex check examples/operations/main.nex --json
+./build/nex operations --symbol operations::adjust --json
+./build/nex context --operation ID --json
+```
+
+Parameters, blocks, statements and expressions have local persistent identities separate from content hashes. Paged queries expose typed definitions, lexical references, parents and operands. Deterministic sites connect interpreter/TypeScript errors, MLIR source locations and stopped-frame LLDB candidates to those identities. [The operation guide](docs/operations.md) defines matching, source hashes, storage migration and attribution limits.
+
 ## Incremental native builds
 
 Native builds compile reachable functions into separate source-module objects. Body edits reuse unaffected modules; call contracts and transitive record layouts invalidate affected consumers. `nex build FILE --json` reports `compiled_modules`, `reused_modules` and the `compilation` report path. The [build guide](docs/incremental.md) covers keys, dependency indexes, validated shared objects, source projections and remaining frontend/LTO/test-cache work. Programs are checked before cached code is selected.
@@ -137,4 +147,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.14.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.15.0**, source language **0.5**. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. General source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
