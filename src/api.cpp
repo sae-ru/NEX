@@ -30,6 +30,7 @@ struct Schemas {
   Value type(const Type &t){
     if(t==Type::Str)return Object{{"type","string"}};
     if(t==Type::Bool)return Object{{"type","boolean"}};
+    if(t==Type::F64)return Object{{"type","number"},{"format","double"},{"x-nex-type","f64"},{"description","Finite binary64 JSON number, rounded to nearest with ties to even; zero is normalized."}};
     if(t==Type::I64)return Object{{"type","string"},{"pattern","^(?:0|"+boundedDigits("9223372036854775807")+"|-"+boundedDigits("9223372036854775808")+")(?![\\s\\S])"},{"maxLength",20},{"x-nex-type","i64"},{"description","Canonical decimal string in the signed 64-bit range; JSON numbers are rejected."}};
     if(t.kind==Type::List)return Object{{"type","array"},{"items",type(*t.element)},{"maxItems",10000}};
     if(t.kind==Type::Result)return Object{{"oneOf",Array{object(Object{{"ok",type(*t.element)}},Array{"ok"}),failure()}}};

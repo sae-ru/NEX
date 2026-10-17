@@ -72,6 +72,16 @@ def display(value, descriptor, records, budget=None):
         return '…'
     if descriptor == 'i64':
         return clipped(value)
+    if descriptor == 'f64':
+        if value == 0:
+            return clipped('0e0')
+        mantissa, _, exponent = repr(abs(float(value))).lower().partition('e')
+        whole, _, fraction = mantissa.partition('.')
+        digits = whole + fraction
+        first = len(digits) - len(digits.lstrip('0'))
+        digits = digits[first:].rstrip('0')
+        power = int(exponent or '0') + len(whole) - first - 1
+        return clipped(('-' if value < 0 else '') + digits[0] + ('.' + digits[1:] if len(digits) > 1 else '') + 'e' + str(power))
     if descriptor == 'bool':
         return clipped('true' if value else 'false')
     if descriptor == 'str':

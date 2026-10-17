@@ -2,7 +2,8 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain **0.23 / language 0.10**, with typed
+The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
+`e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and
 validated lazy callable watches. Canonical formats are function/8 and program/9.
 It passed the macOS ARM64 and Linux ARM64/x86-64 matrix recorded below. Linux
@@ -17,6 +18,54 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
+## In progress: finite binary64
+
+The development compiler is now **0.24.0 / language 0.11**, with finite `f64`,
+decimal/exponent literals and `number` bounds. Native debug/release, interpreter
+and TypeScript examples agree, including generic functions, results, aggregates,
+snapshot closures and explicit conversions. Genuine SDK-0.23 SQL migrations
+preserve source/history/IDs; an intrinsic-name conflict leaves HEAD unchanged
+until an explicit archived-source repair. Task/proof pins were refreshed with
+unchanged source hashes and acceptance intent.
+
+Actual macOS LLDB/DAP checks read f64 roots, subnormals, closure captures and
+pages and replay after source deletion; offline full/partial watches agree.
+Generated API client models preserve f64 with numeric JSON schemas. A native
+C++ host exercises real double parameters/results, invalid input rejection,
+request trap cleanup and preservation of caller floating flags. The full new
+regression/platform/installed-SDK acceptance is still in progress; current
+capabilities explicitly retain `numeric_integration_pending`. Design and full
+acceptance scope: `docs/floats-design.md`.
+
+The following foundation evidence predates enabling the 0.11 source type.
+
+The runtime foundation now has finite checked arithmetic, rounding/environment
+isolation, normalized zero, explicit integer conversions, distinct aggregate
+scalar storage and strict numeric JSON. C++ and JavaScript agree on **4,546
+deterministic vectors**, including Python bit-result oracles, gradual underflow,
+rounding ties, integer bounds and rejected non-finite inputs. Native checks also
+exercise caller rounding/status flags, flush-to-zero modes, threads, trap source
+lines and owned cleanup. Optimized checks passed on macOS ARM64 with UBSan
+(`build/float-runtime-O3-ubsan.json`), Linux ARM64 and emulated Linux x86-64
+(`build/float-runtime-linux-{arm64,amd64}/report.json`). The pinned Linux images
+lack compiler-rt sanitizer archives; those two runs used ordinary O3 builds.
+
+The full macOS regression exercised 26 CTest suites: 25 passed, and profiling
+passed on rerun after its old empty-notice expectation was updated to preserve
+Tracy exclusion while accepting Dragonbox's license. Runtime/compiler bytes did
+not change between those runs. Logs: `build/float-runtime-full-ctest.log` and
+`build/float-runtime-profiling-rerun.log`. A separate installed SDK passed all nine
+acceptance phases, including actual LLDB/DAP, source-deleted archive replay,
+scalar proof and a locked TypeScript/Vite build in 76.573 s
+(`build/sdk-float-runtime-acceptance/report.json`). These are foundation checks,
+not evidence that the new source type or its whole platform matrix is complete.
+
+Dragonbox 1.1.3 is pinned unmodified, with license/hash inventory and native
+distribution notices, so formatting preserves the macOS 13.0 build target.
+The accepted 0.23 SDKs are preserved and a genuine language 0.10 SQL/source/graph
+fixture was captured using that SDK for the upcoming migration. No old source,
+task/proof acceptance intent or archived fixture was rewritten.
+
 ## Implemented and exercised
 
 - Toolchain 0.23 / language 0.10 adds exact typed function signatures, named/generic references, higher-order calls, immutable transitive snapshot captures, identity equality, owned cleanup, real native indirect calls and TypeScript snapshot closures. Generic wire constraints exclude actual function payloads from JSON/API while allowing serializable phantom contracts. Native/TypeScript/reference agreement, graph/cache invalidation, callable LLDB/DAP, portable SQL migration and source-free SDK checks passed as recorded below. Custom traits, effect/realm subtyping, mutable captured cells, general async and resource FFI remain pending.
@@ -29,7 +78,7 @@ full-toolchain work stay in scope as listed later in this file.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64 and Linux ARM64/x86-64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.
-- NEX 0.10 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
+- NEX 0.11 lexer/parser, explicit i64/f64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
 - Multi-file modules, logical qualified identities, import aliases, private/public functions and structures, public API visibility checks and cross-module type/effect/realm checks.
 - Local library roots, ordinary NEX `std/math` and `std/text` libraries, dependency source-content locks and explicit lock updates. Cyclic imports and remote retrieval are not supported.
 - Validated UTF-8 strings with strict escapes, Unicode scalar indexing/slicing, immutable nested lists and nominal structures with typed fields/constructors.

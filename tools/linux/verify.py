@@ -34,7 +34,7 @@ def main():
         run('sdk',['python3','/src/tools/linux/sdk_smoke.py','/build/sdk'])
         report['sdk']=json.loads((root/'sdk-smoke.json').read_text())
         if args.live:
-            for suite in ('debugging','expressions','generics','constraints','matching','function_debug'):
+            for suite in ('debugging','expressions','generics','constraints','matching','function_debug','numbers'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()

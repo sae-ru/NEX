@@ -43,7 +43,8 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
   std::set<std::string> names;std::function<void(const Function&)> visit=[&](const Function &f){if(names.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));return names;
 }
-std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::Bool?"i1":"()";}
+std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::F64?"f64":t==Type::Bool?"i1":"()";}
+int64_t scalarTag(Type t){return t==Type::F64?2:t==Type::Bool?1:0;}
 std::string callableType(const Type &type){std::string result="(!llvm.ptr";for(const auto &argument:type.arguments)result+=", "+ty(argument);return result+") -> "+ty(*type.element);}
 std::string closureSymbol(const Function &function){return nativeSymbol(function.name)+(function.closure?"":"__closure_bridge");}
 struct Value {std::string name;Type type;bool address=false;};
@@ -70,8 +71,8 @@ public:
     auto name=typeName(t);if(types.contains(name))return types.at(name);
     std::string value;
     if(t==Type::Unit)value="#llvm.di_null_type";
-    else if(t==Type::I64||t==Type::Bool){
-      auto base=attribute("#llvm.di_basic_type<tag = DW_TAG_base_type, name = "+json(t==Type::Bool?"bool":"long long",false)+", sizeInBits = "+(t==Type::Bool?"8":"64")+", encoding = "+(t==Type::Bool?"DW_ATE_boolean":"DW_ATE_signed")+">");
+    else if(t==Type::I64||t==Type::Bool||t==Type::F64){
+      auto base=attribute("#llvm.di_basic_type<tag = DW_TAG_base_type, name = "+json(t==Type::Bool?"bool":t==Type::F64?"double":"long long",false)+", sizeInBits = "+(t==Type::Bool?"8":"64")+", encoding = "+(t==Type::Bool?"DW_ATE_boolean":t==Type::F64?"DW_ATE_float":"DW_ATE_signed")+">");
       value="#llvm.di_derived_type<tag = DW_TAG_typedef, name = "+json(name,false)+", baseType = "+base+">";
     }
     else {
@@ -123,8 +124,9 @@ class Emitter {
     auto n=result==Type::Unit?"":fresh();
     line((n.empty()?"":n+" = ")+"func.call @"+name+"("+operands+") : ("+types+") -> "+ty(result),span);return {n,result};
   }
-  Value asI64(Value v,Span span){if(v.type==Type::I64)return v;auto n=fresh();line(n+" = arith.extui "+v.name+" : i1 to i64",span);return {n,Type::I64};}
+  Value asI64(Value v,Span span){if(v.type==Type::I64)return v;auto n=fresh();line(n+(v.type==Type::F64?" = arith.bitcast ":" = arith.extui ")+v.name+" : "+ty(v.type)+" to i64",span);return {n,Type::I64};}
   Value asBool(Value v,Span span){auto n=fresh();line(n+" = arith.trunci "+v.name+" : i64 to i1",span);return {n,Type::Bool};}
+  Value fromScalar(Value v,Type type,Span span){if(type==Type::Bool)return asBool(v,span);if(type!=Type::F64)return v;auto n=fresh();line(n+" = arith.bitcast "+v.name+" : i64 to f64",span);return {n,type};}
   void release(Value v,Span span){if(v.type.heap())call("nex_release",{v},Type::Unit,span);}
   Value lookup(const std::string &name){
     for(auto i=scopes.rbegin();i!=scopes.rend();++i)if(i->contains(name))return i->at(name);
@@ -189,7 +191,7 @@ class Emitter {
   }
   Value get(Value base,Value index,Type result,Span span){
     auto value=call(result.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{base,index,constant(span.line,Type::I64,span)},result.heap()?result:Type(Type::I64),span);
-    release(base,span);return result==Type::Bool?asBool(value,span):value;
+    release(base,span);return fromScalar(value,result,span);
   }
   void patternBranch(Value condition,const std::string &failure,Span span){auto yes=label();line("cf.cond_br "+condition.name+", ^"+yes+", ^"+failure,span);blockLabel(yes);}
   Value equalScalar(Value a,Value b,Span span){auto value=fresh();line(value+" = arith.cmpi eq, "+a.name+", "+b.name+" : "+ty(a.type),span);return {value,Type::Bool};}
@@ -203,7 +205,7 @@ class Emitter {
     else if(p->type.kind==Type::Result)patternBranch(equalScalar(call("nex_is_ok",{value},Type::I64,span),constant(p->ordinal,Type::I64,span),span),failure,span);
     else if(this->p.structure(p->type.name).enumeration){auto tag=call("nex_enum_tag",{value,constant(this->p.structure(p->type.name).variants.size(),Type::I64,span),constant(span.line,Type::I64,span)},Type::I64,span);patternBranch(equalScalar(tag,constant(p->ordinal,Type::I64,span),span),failure,span);}
     for(size_t i=0;i<p->args.size();++i){auto child=p->args[i];if(child->kind==Pattern::Wildcard)continue;Value field;
-      if(p->type.kind==Type::Result){if(p->ordinal){field=call(child->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{value,constant(span.line,Type::I64,span)},child->type.heap()?child->type:Type(Type::I64),span);if(child->type==Type::Bool)field=asBool(field,span);}else field=call("nex_error_text",{value,constant(i==1,Type::I64,span)},Type::Str,span);}
+      if(p->type.kind==Type::Result){if(p->ordinal){field=call(child->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{value,constant(span.line,Type::I64,span)},child->type.heap()?child->type:Type(Type::I64),span);field=fromScalar(field,child->type,span);}else field=call("nex_error_text",{value,constant(i==1,Type::I64,span)},Type::Str,span);}
       else field=get(load(slot,span),constant(i,Type::I64,span),child->type,span);
       pattern(child,field,failure);
     }
@@ -234,7 +236,7 @@ class Emitter {
       auto count=[&](int64_t value){return constant(value,Type::I64,e->span);};auto closure=call("nex_closure_new",{{pointer,Type::Str},count(e->args.size())},e->type,e->span);
       auto name=rawBytes(e->text,e->span);call("nex_record_name",{closure,name,count(e->text.size())},Type::Unit,e->span);
       for(size_t i=0;i<e->args.size();++i){auto value=expression(e->args[i]);auto name=rawBytes(target.captures[i].name,e->span);call("nex_record_field_name",{closure,count(i),name,count(target.captures[i].name.size())},Type::Unit,e->span);
-        if(value.type.heap())call("nex_record_init_heap",{closure,count(i),value},Type::Unit,e->span);else call("nex_record_init_i64",{closure,count(i),asI64(value,e->span),count(value.type==Type::Bool)},Type::Unit,e->span);release(value,e->span);
+        if(value.type.heap())call("nex_record_init_heap",{closure,count(i),value},Type::Unit,e->span);else call("nex_record_init_i64",{closure,count(i),asI64(value,e->span),count(scalarTag(value.type))},Type::Unit,e->span);release(value,e->span);
       }return closure;
     }
     if(e->kind==Expr::Invoke){
@@ -244,6 +246,7 @@ class Emitter {
     }
     if(e->kind==Expr::Match)return matching(e).first;
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return constant(e->number,e->type,e->span);
+    if(e->kind==Expr::Floating)return fromScalar(constant(e->number,Type::I64,e->span),Type::F64,e->span);
     if(e->kind==Expr::String)return text(e->text,e->span);
     if(e->kind==Expr::Name)return load(lookup(e->text),e->span);
     if(e->kind==Expr::List){
@@ -251,7 +254,7 @@ class Emitter {
       for(auto item:e->args){
         auto value=expression(item);
         if(value.type.heap())call("nex_list_append_heap",{list,value},Type::Unit,item->span);
-        else call("nex_list_append_i64",{list,asI64(value,item->span),constant(value.type==Type::Bool,Type::I64,item->span)},Type::Unit,item->span);
+        else call("nex_list_append_i64",{list,asI64(value,item->span),constant(scalarTag(value.type),Type::I64,item->span)},Type::Unit,item->span);
         release(value,item->span);
       }
       return list;
@@ -265,29 +268,30 @@ class Emitter {
         result=call("nex_enum_new",{c(variant->fields.size()),c(variant->ordinal)},e->type,e->span);
         auto name=rawBytes(e->text,e->span);call("nex_record_name",{result,name,c(e->text.size())},Type::Unit,e->span);
         for(size_t i=0;i<args.size();++i){const auto &field=variant->fields[i];auto name=rawBytes(field.name,e->span);call("nex_record_field_name",{result,c(i),name,c(field.name.size())},Type::Unit,e->span);
-          if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(args[i].type==Type::Bool)},Type::Unit,e->span);}
+          if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(scalarTag(args[i].type))},Type::Unit,e->span);}
       }else if(p.hasStructure(e->text)){
         const auto &s=p.structure(e->text);result=call("nex_record_new",{c(s.fields.size())},e->type,e->span);
         auto name=rawBytes(s.name,e->span);call("nex_record_name",{result,name,c(s.name.size())},Type::Unit,e->span);
         for(size_t i=0;i<args.size();++i){
           auto name=rawBytes(s.fields[i].name,e->span);call("nex_record_field_name",{result,c(i),name,c(s.fields[i].name.size())},Type::Unit,e->span);
           if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);
-          else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(args[i].type==Type::Bool)},Type::Unit,e->span);
+          else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(scalarTag(args[i].type))},Type::Unit,e->span);
         }
       }else if(e->text=="print"){
-        result=args[0].type.heap()?call("nex_print_heap",{args[0]},Type::Unit,e->span):call(args[0].type==Type::Bool?"nex_print_bool":"nex_print_i64",{asI64(args[0],e->span)},Type::Unit,e->span);
+        result=args[0].type.heap()?call("nex_print_heap",{args[0]},Type::Unit,e->span):args[0].type==Type::F64?call("nex_print_f64",{args[0]},Type::Unit,e->span):call(args[0].type==Type::Bool?"nex_print_bool":"nex_print_i64",{asI64(args[0],e->span)},Type::Unit,e->span);
       }else if(e->text=="assert")result=call("nex_assert",{asI64(args[0],e->span),c(e->span.line)},Type::Unit,e->span);
       else if(e->text=="len")result=call("nex_length",args,Type::I64,e->span);
-      else if(e->text=="str")result=args[0].type.heap()?call("nex_format_heap",args,Type::Str,e->span):call("nex_format_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool)},Type::Str,e->span);
-      else if(e->text=="ok")result=args[0].type.heap()?call("nex_ok_heap",args,e->type,e->span):call("nex_ok_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool)},e->type,e->span);
+      else if(e->text=="str")result=args[0].type.heap()?call("nex_format_heap",args,Type::Str,e->span):call("nex_format_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},Type::Str,e->span);
+      else if(e->text=="ok")result=args[0].type.heap()?call("nex_ok_heap",args,e->type,e->span):call("nex_ok_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},e->type,e->span);
+      else if(e->text=="as_f64"||e->text=="as_i64")result=call("nex_"+e->text,{args[0],c(e->span.line)},e->type,e->span);
       else if(e->text=="err")result=call("nex_err",args,e->type,e->span);
       else if(e->text=="is_ok")result=asBool(call("nex_is_ok",args,Type::I64,e->span),e->span);
       else if(e->text=="unwrap"){
         result=call(e->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{args[0],c(e->span.line)},e->type.heap()?e->type:Type(Type::I64),e->span);
-        if(e->type==Type::Bool)result=asBool(result,e->span);
+        result=fromScalar(result,e->type,e->span);
       }
       else if(e->text=="error_code"||e->text=="error_message")result=call("nex_error_text",{args[0],c(e->text=="error_message")},Type::Str,e->span);
-      else if(e->text=="encode_json")result=args[0].type.heap()?call("nex_encode_json_heap",{args[0],c(e->span.line)},Type::Str,e->span):call("nex_encode_json_i64",{asI64(args[0],e->span),c(args[0].type==Type::Bool),c(e->span.line)},Type::Str,e->span);
+      else if(e->text=="encode_json")result=args[0].type.heap()?call("nex_encode_json_heap",{args[0],c(e->span.line)},Type::Str,e->span):call("nex_encode_json_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type)),c(e->span.line)},Type::Str,e->span);
       else if(e->text=="decode_json"){
         auto schema=json(wireSchema(p,e->annotation),false);auto bytes=rawBytes(schema,e->span);result=call("nex_decode_json",{args[0],bytes,c(schema.size()),c(e->span.line)},e->type,e->span);
       }
@@ -300,13 +304,13 @@ class Emitter {
       else if(e->text=="push"||e->text=="set"){
         bool set=e->text=="set";auto value=args.back(),index=set?args[1]:c(0);
         if(value.type.heap())result=call("nex_list_update_heap",{args[0],index,value,c(set),c(e->span.line)},e->type,e->span);
-        else result=call("nex_list_update_i64",{args[0],index,asI64(value,e->span),c(value.type==Type::Bool),c(set),c(e->span.line)},e->type,e->span);
+        else result=call("nex_list_update_i64",{args[0],index,asI64(value,e->span),c(scalarTag(value.type)),c(set),c(e->span.line)},e->type,e->span);
       }else result=call(nativeSymbol(e->text),args,e->type,e->span);
       for(auto a:args)release(a,e->span);return result;
     }
     Value a=expression(e->args[0]);
     if(e->kind==Expr::Unary){
-      if(e->text=="-")return call("nex_neg",{a,constant(e->span.line,Type::I64,e->span)},Type::I64,e->span);
+      if(e->text=="-")return call(a.type==Type::F64?"nex_f64_neg":"nex_neg",{a,constant(e->span.line,Type::I64,e->span)},a.type,e->span);
       auto one=constant(1,Type::Bool,e->span);auto n=fresh();line(n+" = arith.xori "+a.name+", "+one.name+" : i1",e->span);return {n,Type::Bool};
     }
     const auto &op=e->text;
@@ -328,6 +332,11 @@ class Emitter {
       release(a,e->span);release(b,e->span);return result;
     }
     static const std::map<std::string,std::string> arithmetic={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
+    if(a.type==Type::F64){
+      if(arithmetic.contains(op))return call("nex_f64_"+arithmetic.at(op),{a,b,constant(e->span.line,Type::I64,e->span)},Type::F64,e->span);
+      const std::map<std::string,int64_t> comparisons={{"==",0},{"!=",1},{"<",2},{"<=",3},{">",4},{">=",5}};
+      return asBool(call("nex_f64_compare",{a,b,constant(comparisons.at(op),Type::I64,e->span),constant(e->span.line,Type::I64,e->span)},Type::I64,e->span),e->span);
+    }
     if(arithmetic.contains(op))return call("nex_"+arithmetic.at(op),{a,b,constant(e->span.line,Type::I64,e->span)},Type::I64,e->span);
     static const std::map<std::string,std::string> predicates={{"==","eq"},{"!=","ne"},{"<","slt"},{"<=","sle"},{">","sgt"},{">=","sge"}};
     auto n=fresh();line(n+" = arith.cmpi "+predicates.at(op)+", "+a.name+", "+b.name+" : "+ty(a.type),e->span);return {n,Type::Bool};
@@ -380,6 +389,9 @@ public:
     if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
     out<<"module {\n";
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
+    for(auto name:{"add","sub","mul","div","mod"})declaration("nex_f64_"+std::string(name),"f64, f64, i64","f64");
+    declaration("nex_f64_neg","f64, i64","f64");declaration("nex_f64_validate","f64, i64","f64");declaration("nex_f64_compare","f64, f64, i64, i64","i64");
+    declaration("nex_as_f64","i64, i64","f64");declaration("nex_as_i64","f64, i64","!llvm.ptr");declaration("nex_print_f64","f64");
     declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
@@ -419,10 +431,11 @@ public:
       prologue=true;
       for(size_t i=0;i<f.params.size();++i){
         const auto &param=f.params[i];auto slot=allocateSlot(param.type,param.span);
+        if(param.type==Type::F64)scopes.back()[param.name]=call("nex_f64_validate",{scopes.back().at(param.name),constant(param.span.line,Type::I64,param.span)},Type::F64,param.span);
         // Debug storage borrows the parameter and never participates in cleanup.
         writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1+(f.closure?1:0));
       }
-      for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);if(capture.type==Type::Bool)value=asBool(value,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
+      for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);value=fromScalar(value,capture.type,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
       allocate(f.body);prologue=false;
       if(profiling){auto name=rawBytes(f.name,f.span),file=rawBytes(p.location(f.span),f.span),content=rawBytes(hash(json(canonical(f),false)),f.span);call("nex_profile_enter",{name,file,constant(f.span.line,Type::I64,f.span),content},Type::Unit,f.span);}
       call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);
@@ -579,7 +592,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   bool profiling=options.profile=="profile";
-  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_host.h","nex_io.h","nex_profile.h"};
+  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_error.h","nex_float.h","nex_host.h","nex_io.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
@@ -592,6 +605,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     runtimeFiles["third_party/"+file]=text;
     notices+=name+"\n\n"+text+"\n\n";
   };
+  license("Dragonbox 1.1.3", "dragonbox/LICENSE-Boost");
   if(wire)license("nlohmann/json 3.12.0", "JSON-LICENSE.MIT");
   if(server)license("cpp-httplib 0.61.0", "HTTPLIB-LICENSE");
   if(profiling){
@@ -647,7 +661,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     const auto &unit=plan.units[i];auto source=snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).path:snapshot.path;
     auto sourceText=snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).source:snapshot.source;
     std::string runtimeABI;
-    for(const auto &file:{"runtime.cpp","nex_value.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
+    for(const auto &file:{"runtime.cpp","nex_value.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));

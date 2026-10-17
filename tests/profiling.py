@@ -175,13 +175,16 @@ int main(){
         self.assertTrue(Path(str(target) + '.THIRD_PARTY_NOTICES.txt').is_file())
         self.assertEqual(subprocess.check_output([str(target)], text=True), self.cli('eval')['stdout'])
         normal = self.cli('build', '--profile', 'release')
-        self.assertEqual(normal['notices'], '')
+        normal_notice=Path(normal['notices']).read_text()
+        expected='Dragonbox 1.1.3\n\n'+(harness.REPO/'runtime/third_party/dragonbox/LICENSE-Boost').read_text()+'\n\n'
+        self.assertEqual(normal_notice,expected)
+        self.assertNotIn('Tracy',normal_notice)
         self.assertNotIn('nex_profile_enter', Path(normal['llvm']).read_text())
         self.assertIn('nex_profile_enter', Path(built['llvm']).read_text())
 
     def test_machine_response_is_bounded_and_saved_report_is_complete(self):
-        declarations = ['fn f' + str(i) + '() -> i64 { return ' + str(i) + '; }' for i in range(120)]
-        calls = ['print(f' + str(i) + '());' for i in range(120)]
+        declarations = ['fn measured_' + str(i) + '() -> i64 { return ' + str(i) + '; }' for i in range(120)]
+        calls = ['print(measured_' + str(i) + '());' for i in range(120)]
         self.source('module many;\n' + '\n'.join(declarations) + '\nfn main() -> unit !{io} {\n' + '\n'.join(calls) + '\n}')
         report = self.cli('profile', '--events', '0', timeout=180)
         saved = json.loads(Path(report['output']).read_text())

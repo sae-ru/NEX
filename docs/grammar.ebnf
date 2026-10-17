@@ -1,4 +1,4 @@
-(* NEX 0.10. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
+(* NEX 0.11. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
@@ -11,13 +11,13 @@ function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, [ type_param
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
-type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" |
+type          = "i64" | "f64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" |
                 qualified_name, [ type_arguments ] | function_type | "(", type, ")" ;
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
 type_parameters = "<", type_parameter, { ",", type_parameter }, ">" ;
 type_parameter = identifier, [ ":", constraint, { "+", constraint } ] ;
-constraint    = "add" | "ordered" | "integer" | "wire" ;
+constraint    = "add" | "ordered" | "integer" | "number" | "wire" ;
 type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" ;
@@ -44,7 +44,7 @@ addition      = product, { ( "+" | "-" ), product } ;
 product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" | "(", [ arguments ], ")" } ;
-primary       = match_expression | lambda | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
                 [ type_arguments, [ "::", identifier ] ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
 lambda        = [ realm ], "fn", "(", [ parameters ], ")", "->", type, [ effects ], block ;
@@ -59,6 +59,8 @@ arguments     = expression, { ",", expression } ;
 identifier    = ( letter | "_" ), { letter | digit | "_" } ;
 qualified_name = identifier, { "::", identifier } ;
 integer       = digit, { digit } ;
+floating      = integer, ( ".", integer, [ exponent ] | exponent ) ;
+exponent      = ( "e" | "E" ), [ "+" | "-" ], integer ;
 letter        = "A" .. "Z" | "a" .. "z" ;
 digit         = "0" .. "9" ;
 (* Keywords cannot be identifiers. Unit parameters, locals and elements are rejected
@@ -79,8 +81,12 @@ digit         = "0" .. "9" ;
    from value arguments/expected types when omitted. A variant pattern keeps its
    uninstantiated name (Maybe::Some), inferred from the checked scrutinee.
    Generic parameters denote non-unit types; template bodies are checked even
-   when unused. Bounds add/ordered/integer/wire are contextual builtin capabilities;
-   integer implies add, ordered and wire; ordered implies wire. Function types
+   when unused. Bounds add/ordered/integer/number/wire are contextual builtin capabilities;
+   integer implies number, add, ordered and wire; number implies add, ordered
+   and wire; ordered implies wire. f64 literals round to nearest/ties-to-even,
+   are bounded to 4096 bytes and finite binary64; zeros normalize to positive zero.
+   Plain integer literals never implicitly become f64. Floating literal patterns
+   are not supported; use a binding and guard. Function types
    and lambdas have explicit parameter/result types, realm and effects. A returned
    function type can be parenthesized to disambiguate its effects from the outer
    function. Free lexical values are immutable snapshots captured on creation.

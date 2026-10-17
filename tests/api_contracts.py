@@ -15,6 +15,27 @@ import support as harness
 
 
 class API(harness.ToolchainCase):
+    def test_floating_models_schema_and_generated_client_agree(self):
+        self.source('''module numeric_api;import "std/api.nex" as api;
+pub struct Sample{value:f64;}
+server fn handle(context:api::Context,input:Sample)->result<Sample>{return ok(Sample(input.value*2e0));}
+server fn sentinel()->str{return "FLOATING_SERVER_ONLY_SENTINEL";}
+endpoint double_value("POST","/api/double")=handle;
+''')
+        generated=self.cli('api',self.file,'--directory',self.root/'generated')
+        document=json.loads(Path(generated['openapi']).read_text())
+        model=next(value for value in document['components']['schemas'].values() if value.get('properties',{}).get('value',{}).get('x-nex-type')=='f64')
+        self.assertEqual(model['properties']['value']['type'],'number')
+        self.assertEqual(model['properties']['value']['format'],'double')
+        client=self.root/'generated/client'
+        for source in client.rglob('*.nex'):self.assertNotIn('FLOATING_SERVER_ONLY_SENTINEL',source.read_text())
+        app=client/'numeric.nex';app.write_text('''module numeric_sdk;import "./models/numeric_api.nex" as model;
+fn main()->unit!{io}{print(encode_json(model::Sample(1.25)));}
+test fn wire()->unit{assert(unwrap(decode_json<model::Sample>("{\\"value\\":1.25}")).value==1.25);}
+''')
+        self.assertEqual(self.cli('run',app,cwd=client)['stdout'],'{"value":1.25e0}\n')
+        self.cli('test',app,cwd=client);self.cli('test',app,'--target','web',cwd=client)
+
     def example(self):
         for name in ('service.nex', 'model.nex'):
             shutil.copyfile(harness.REPO / 'examples/api' / name, self.root / name)
@@ -219,7 +240,7 @@ test fn codecs() -> unit {
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
             (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.11','libraries':{'std':'standard'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
@@ -241,7 +262,7 @@ pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
             (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard','helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.11','libraries':{'std':'standard','helpers':'helpers'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'

@@ -319,6 +319,35 @@ test fn examples() -> unit {
         finally:
             environment['NEX_RESOURCE_DIR'] = unavailable
         report['evidence']['standalone'] = str(standalone)
+        numeric = root / 'numbers'
+        numeric.mkdir()
+        shutil.copyfile(resources / 'examples/numbers.nex', numeric / 'main.nex')
+        (numeric / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        number_revision = cli('check', cwd=numeric)['revision']
+        number_output = cli('eval', cwd=numeric)['stdout']
+        require(number_output.startswith('2.5e0\n') and '"E_RANGE"' in number_output,
+                'numeric SDK example selected another behavior')
+        for profile in ('debug', 'release'):
+            cli('test', '--profile', profile, cwd=numeric)
+            require(cli('run', '--profile', profile, cwd=numeric)['stdout'] == number_output,
+                    'numeric native/reference output differs')
+        cli('test', '--target', 'web', cwd=numeric)
+        number_build = cli('build', '--profile', 'release', cwd=numeric)
+        number_standalone = root / 'numeric-standalone'
+        shutil.copyfile(number_build['executable'], number_standalone)
+        number_standalone.chmod(0o755)
+        (numeric / 'main.nex').unlink()
+        require(cli('run', '--revision', number_revision, cwd=numeric)['stdout'] == number_output,
+                'numeric archived revision did not survive source deletion')
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+            require(run([number_standalone]) == number_output, 'independent numeric executable differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = unavailable
+        report['evidence']['numeric_language'] = {'revision': number_revision,
+            'native_profiles': ['debug', 'release'], 'typescript': True,
+            'source_deleted_replay': True, 'standalone_without_resources': str(number_standalone)}
 
     def measured():
         measured = cli('profile', '--revision', state['after'], '--scenario', 'installed SDK handoff', cwd=project)

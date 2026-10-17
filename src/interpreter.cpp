@@ -63,6 +63,7 @@ class Interpreter {
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
     if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
+    if(e->kind==Expr::Floating)return V::floating(nexrt::floatValue(e->number));
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
     if(e->kind==Expr::Name)return local(e->text,e->span);
     if(e->kind==Expr::List){auto d=std::make_shared<nexrt::Data>(nexrt::Data::List);for(auto a:e->args)d->values.push_back(expression(a));return V(d);}
@@ -76,6 +77,8 @@ class Interpreter {
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
       }
       if(e->text=="ok")return nexrt::success(args[0]);
+      if(e->text=="as_f64")return V::floating(nexrt::integerToFloat(full(args[0]).scalar));
+      if(e->text=="as_i64"){int64_t value=0;return nexrt::floatToInteger(full(args[0]).floating(),value)?nexrt::success(V(value)):nexrt::failure("E_RANGE","f64 value is outside i64 range");}
       if(e->text=="err"){auto code=full(args[0]);auto message=full(args[1]);return nexrt::failure(code.object->text,message.object->text);}
       if(e->text=="is_ok")return V(watch?watch->isSuccess(args[0]):nexrt::isSuccess(args[0]),true);
       if(e->text=="unwrap")return watch?watch->unwrap(args[0]):nexrt::unwrap(args[0]);
@@ -105,12 +108,18 @@ class Interpreter {
     auto overflow=[&](){throw Error("E_OVERFLOW","i64 arithmetic overflow",e->span);};
     if(e->kind==Expr::Unary) {
       if(e->text=="!")return V(!a,true);
+      if(e->type==Type::F64)return V::floating(nexrt::negateFloat(full(left).floating()));
       if(__builtin_sub_overflow(int64_t(0),a,&out))overflow();return V(out);
     }
     if(e->text=="&&")return V(a&&expression(e->args[1]).scalar,true);
     if(e->text=="||")return V(a||expression(e->args[1]).scalar,true);
     V right=expression(e->args[1]);int64_t b=right.scalar;const auto &op=e->text;
     if(op=="=="||op=="!="){auto same=watch?watch->equal(left,right):nexrt::equal(left,right);return V(op=="=="?same:!same,true);}
+    if(e->args[0]->type==Type::F64){
+      double a=full(left).floating(),b=full(right).floating();
+      if(op=="<"||op=="<="||op==">"||op==">=")return V(nexrt::compareFloat(a,b,op=="<"?2:op=="<="?3:op==">"?4:5),true);
+      return V::floating(nexrt::floatArithmetic(a,b,op.front()));
+    }
     if(op=="+"&&left.object){
       left=full(left);right=full(right);
       if(left.object->kind==nexrt::Data::String)return V(nexrt::string(left.object->text+right.object->text));

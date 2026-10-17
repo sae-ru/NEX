@@ -13,6 +13,7 @@ std::string symbol(const std::string &name){return nativeSymbol(name);}
 std::string type(const Type &t){
   switch(t.kind){
   case Type::I64:return "bigint";
+  case Type::F64:return "number";
   case Type::Bool:return "boolean";
   case Type::Str:return "string";
   case Type::Unit:return "void";
@@ -90,23 +91,26 @@ class Generator {
     case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}return text+")";}
     case Expr::Match:return matchExpression(e);
     case Expr::Integer:return "("+std::to_string(e->number)+"n)";
+    case Expr::Floating:return "("+floatLiteral(e->number)+")";
     case Expr::Boolean:return e->number?"true":"false";
     case Expr::String:return quote(e->text);
     case Expr::Name:return local(e->text);
     case Expr::List:{std::string text="nex.list<"+type(*e->type.element)+">([";for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}return text+"])";}
     case Expr::Field:return "("+expr(e->args[0])+")["+quote(e->text)+"]";
     case Expr::Index:return "nex."+std::string(e->args[0]->type==Type::Str?"character":"index")+"("+expr(e->args[0])+", "+expr(e->args[1])+", "+site(e)+")";
-    case Expr::Unary:return e->text=="!"?"(!"+expr(e->args[0])+")":"nex.neg("+expr(e->args[0])+", "+site(e)+")";
+    case Expr::Unary:return e->text=="!"?"(!"+expr(e->args[0])+")":"nex."+std::string(e->type==Type::F64?"floatNeg":"neg")+"("+expr(e->args[0])+", "+site(e)+")";
     case Expr::Binary:{
       auto a=expr(e->args[0]),b=expr(e->args[1]);const auto &op=e->text;
       if(op=="=="||op=="!=")return (op=="!="?"!":"")+std::string("nex.equal(")+a+", "+b+")";
       if(op=="+"&&e->type==Type::Str)return "("+a+" + "+b+")";
       if(op=="+"&&e->type.kind==Type::List)return "nex.concat("+a+", "+b+")";
       const std::map<std::string,std::string> arithmetic={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","rem"}};
+      if(e->type==Type::F64){const std::map<std::string,std::string> floats={{"+","floatAdd"},{"-","floatSub"},{"*","floatMul"},{"/","floatDiv"},{"%","floatRem"}};return "nex."+floats.at(op)+"("+a+", "+b+", "+site(e)+")";}
       if(arithmetic.contains(op))return "nex."+arithmetic.at(op)+"("+a+", "+b+", "+site(e)+")";
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
+      if(e->text=="as_f64"||e->text=="as_i64")return "nex."+std::string(e->text=="as_f64"?"asFloat":"asInteger")+"("+expr(e->args[0])+")";
       if(e->text=="err")return "nex.err<"+type(*e->type.element)+">("+expr(e->args[0])+", "+expr(e->args[1])+")";
       if(e->text=="decode_json")return "nex.decodeJSON<"+type(e->annotation)+">("+expr(e->args[0])+", "+json(wireSchema(p,e->annotation),false)+")";
       if(const Structure *owner=nullptr;auto variant=p.variant(e->text,&owner)){

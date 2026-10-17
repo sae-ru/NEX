@@ -1,5 +1,6 @@
 #include "nex/language.h"
 #include "llvm/Support/BLAKE3.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -16,8 +17,10 @@
 #include "llvm/Support/Error.h"
 
 namespace nex {
+std::string floatLiteral(int64_t bits){return nexrt::formatFloat(nexrt::floatValue(bits));}
 std::string typeName(Type t) {
   switch (t.kind) { case Type::I64: return "i64"; case Type::Bool: return "bool";
+    case Type::F64:return "f64";
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
@@ -26,7 +29,7 @@ std::string typeName(Type t) {
     case Type::Parameter:return "$"+t.name;default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(){
-  static const std::set<std::string> names={"print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys"};
+  static const std::set<std::string> names={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys"};
   return names;
 }
 std::string readFile(const std::string &path) {
@@ -110,7 +113,7 @@ std::string nativeSymbol(const std::string &name){
   return result;
 }
 namespace {
-struct Token { std::string text; Span span; enum Kind { Id, Num, Symbol, End, String } kind; };
+struct Token { std::string text; Span span; enum Kind { Id, Num, Symbol, End, String, Float } kind; };
 class Lexer {
   const std::string &source; std::string file;size_t i = 0; unsigned line = 1, column = 1;
   char peek(size_t n = 0) const { return i+n < source.size() ? source[i+n] : '\0'; }
@@ -135,6 +138,15 @@ public:
       while (std::isalnum(static_cast<unsigned char>(peek())) || peek() == '_') advance();
     } else if (std::isdigit(static_cast<unsigned char>(c))) {
       kind = Token::Num; while (std::isdigit(static_cast<unsigned char>(peek()))) advance();
+      if(peek()=='.'&&std::isdigit(static_cast<unsigned char>(peek(1)))){
+        kind=Token::Float;advance();while(std::isdigit(static_cast<unsigned char>(peek())))advance();
+      }
+      if(peek()=='e'||peek()=='E'){
+        kind=Token::Float;advance();if(peek()=='+'||peek()=='-')advance();
+        if(!std::isdigit(static_cast<unsigned char>(peek())))throw Error("E_FLOAT_LITERAL","floating exponent requires decimal digits",s);
+        while(std::isdigit(static_cast<unsigned char>(peek())))advance();
+      }
+      if(kind==Token::Float&&i-s.begin>4096)throw Error("E_FLOAT_LITERAL","floating literal exceeds 4096 bytes",s);
     } else {
       std::string pair = source.substr(i, 2);
       if (pair == "=>" || pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
@@ -154,7 +166,7 @@ class Parser {
     return take();
   }
   Token name() {
-    static const std::set<std::string> reserved = {"module","fn","test","let","var","return","if","else","while","true","false","client","server","shared","i64","bool","unit","str","list","struct","pub","import","as"};
+    static const std::set<std::string> reserved = {"module","fn","test","let","var","return","if","else","while","true","false","client","server","shared","i64","f64","bool","unit","str","list","struct","pub","import","as"};
     if (peek().kind != Token::Id || reserved.contains(peek().text))
       throw Error("E_PARSE", "expected identifier", peek().span);
     return take();
@@ -164,7 +176,7 @@ class Parser {
   std::vector<std::string> templateParameters(TypeBounds &bounds){
     parameters.clear();bounds.clear();std::vector<std::string> result;if(!accept("<"))return result;
     do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
-      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer"&&bound.text!="wire")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
+      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer"&&bound.text!="number"&&bound.text!="wire")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
     }while(accept(","));typeEnd();return result;
   }
   std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
@@ -178,6 +190,7 @@ class Parser {
       auto realm=t.text=="fn"?"shared":t.text;if(t.text!="fn")expect("fn");std::vector<Type> args;expect("(");if(!accept(")")){do{if(args.size()>=1024)throw Error("E_FUNCTION_LIMIT","function type exceeds 1024 parameters",peek().span);args.push_back(type());}while(accept(","));expect(")");}expect("->");auto result=type();return Type::function(std::move(args),std::move(result),realm,effects());
     }
     if (t.text=="i64") return Type::I64; if (t.text=="bool") return Type::Bool; if(t.text=="unit")return Type::Unit;if(t.text=="str")return Type::Str;
+    if(t.text=="f64")return Type::F64;
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       expect("<");auto item=type();
       typeEnd();
@@ -246,6 +259,14 @@ class Parser {
         take(); e=std::make_shared<Expr>(); e->kind=Expr::Integer; e->number=std::numeric_limits<int64_t>::min(); e->span=token.span;
       } else { e=std::make_shared<Expr>(); e->kind=Expr::Unary; e->text=token.text; e->span=token.span; e->args={expression(7)}; }
     } else if(token.text=="(") { e=expression(); expect(")"); }
+    else if(token.kind==Token::Float){
+      llvm::APFloat value(llvm::APFloat::IEEEdouble());
+      auto converted=value.convertFromString(token.text,llvm::APFloat::rmNearestTiesToEven);
+      if(!converted){llvm::consumeError(converted.takeError());throw Error("E_FLOAT_LITERAL","invalid f64 literal",token.span);}
+      if(!value.isFinite())throw Error("E_RANGE","floating literal is outside finite f64",token.span);
+      e=std::make_shared<Expr>();e->kind=Expr::Floating;e->span=token.span;
+      e->number=value.isZero()?0:std::bit_cast<int64_t>(value.bitcastToAPInt().getZExtValue());
+    }
     else if(token.kind==Token::Num) {
       e=std::make_shared<Expr>(); e->kind=Expr::Integer; e->span=token.span;
       auto result=std::from_chars(token.text.data(), token.text.data()+token.text.size(), e->number);
@@ -468,6 +489,7 @@ class Checker {
     }
     case Expr::Match:matching(e,expected,false);break;
     case Expr::Integer:e->type=expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
+    case Expr::Floating:e->type=Type::F64;break;
     case Expr::Boolean:e->type=Type::Bool;break;
     case Expr::String:e->type=Type::Str;break;
     case Expr::List: {
@@ -489,24 +511,24 @@ class Checker {
     }
     case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
     case Expr::Unary: {
-      auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64));
-      if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"integer"))throw Error("E_TYPE","unary - requires integer constraint or i64",e->span);
+      auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):satisfiesConstraint(p,expected,"number")?expected:Type());
+      if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"number"))throw Error("E_TYPE","unary - requires number constraint, i64 or f64",e->span);
       e->type=operand;break;
     }
     case Expr::Binary: {
       const auto &op=e->text;
-      bool equality=op=="=="||op=="!=";Type hint=Type::I64;
+      bool equality=op=="=="||op=="!=";Type hint;
       if(equality)hint=Type::Unknown;else if(op=="&&"||op=="||")hint=Type::Bool;
       else if(op=="+")hint=satisfiesConstraint(p,expected,"add")?expected:Type();
-      else if(expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")&&op!="<"&&op!="<="&&op!=">"&&op!=">=")hint=expected;
+      else if(satisfiesConstraint(p,expected,"number")&&op!="<"&&op!="<="&&op!=">"&&op!=">=")hint=expected;
       Type a,b;bool rightTyped=false;
-      try{a=expr(e->args[0],hint);}catch(const Error &error){if(!equality||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
+      try{a=expr(e->args[0],hint);}catch(const Error &error){if(op=="&&"||op=="||"||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
       if(!rightTyped)b=expr(e->args[1],a);
       if(a==Type::I64&&b.kind==Type::Parameter&&satisfiesConstraint(p,b,"integer"))a=expr(e->args[0],b);
       same(b,a,e->span);
       if(op=="&&"||op=="||"){same(a,Type::Bool,e->span);e->type=Type::Bool;}
       else if(op=="=="||op=="!="){if(a==Type::Unit)throw Error("E_TYPE","cannot compare unit",e->span);e->type=Type::Bool;}
-      else {bool ordering=op=="<"||op=="<="||op==">"||op==">=";auto bound=ordering?"ordered":op=="+"?"add":"integer";
+      else {bool ordering=op=="<"||op=="<="||op==">"||op==">=";auto bound=ordering?"ordered":op=="+"?"add":"number";
         if(!satisfiesConstraint(p,a,bound))throw Error("E_TYPE","operator '"+op+"' requires '"+bound+"' for "+typeName(a),e->span);e->type=ordering?Type(Type::Bool):a;}
       break;
     }
@@ -518,6 +540,10 @@ class Checker {
       }
       if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+      if(e->text=="as_f64"||e->text=="as_i64"){
+        arity(1);auto input=e->text=="as_f64"?Type(Type::I64):Type(Type::F64);
+        same(expr(e->args[0],input),input,e->span);e->type=e->text=="as_f64"?Type(Type::F64):Type::result(Type::I64);break;
+      }
       if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
         arity(e->text=="store_put"?2:1);for(auto a:e->args)same(expr(a,Type::Str),Type::Str,a->span);
         if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
@@ -740,7 +766,7 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format","nex.function/8"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  llvm::json::Object result{{"format","nex.function/9"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
   if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
 }
 llvm::json::Value canonical(const Structure &s) {
@@ -760,21 +786,24 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/9"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/10"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
+    {"types",llvm::json::Array{"i64","f64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
     {"effects",llvm::json::Array{"io","db"}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
-    {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
+    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
+    {"numeric_features",llvm::json::Array{"finite_binary64","decimal_exponent_literals","checked_f64","explicit_numeric_conversions","numeric_wire_numbers","generic_number_bound"}},
+    {"numeric_limits",llvm::json::Object{{"literal_bytes",4096}}},
+    {"numeric_integration_pending",llvm::json::Array{"full_platform_and_installed_sdk_validation"}},
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
     {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
-    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
+    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},
     {"function_value_guide","docs/functions.md"},

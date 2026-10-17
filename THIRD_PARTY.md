@@ -6,6 +6,7 @@
 | BLAKE3 through LLVM Support | Content hashing via `llvm/Support/BLAKE3.h` | Uses the implementation already distributed with LLVM; [upstream licensing](https://github.com/BLAKE3-team/BLAKE3#licenses) |
 | SQLite 3.53.1 (macOS); 3.45.1 Ubuntu package (Linux) | Linked project/revision database and optional native per-principal KV storage | [SQLite public-domain dedication](https://sqlite.org/copyright.html) |
 | nlohmann/json 3.12.0 | Strict typed wire JSON in the compiler/interpreter and selected native runtime components | MIT; vendored `runtime/third_party/json.hpp` and `JSON-LICENSE.MIT` |
+| Dragonbox 1.1.3 | Portable shortest binary64 decimal conversion for the numeric runtime under development | Boost Software License 1.0 selected from the upstream dual license; unmodified header, both licenses and hash inventory in `runtime/third_party/dragonbox` |
 | cpp-httplib 0.61.0 | Native HTTP/HTTPS host with bounded worker/queue settings | MIT; vendored `runtime/third_party/httplib.h` and `HTTPLIB-LICENSE` |
 | OpenSSL 3.6.3 (macOS); 3.0.13 Ubuntu package (Linux) | TLS and bearer digest comparison in native HTTP servers | Installed OpenSSL 3 library; [Apache-2.0](https://github.com/openssl/openssl/blob/master/LICENSE.txt) |
 | Tracy 0.14.1 client | Optional instrumentation in native profile output | BSD-3-Clause with embedded LZ4/concurrentqueue/SPSCQueue/rpmalloc notices; pinned source inventory in `runtime/third_party/tracy/manifest.json` |
@@ -17,7 +18,7 @@
 | Vite 8.3.4 | Browser dev/preview server and bundler | MIT; npm development dependency |
 | Playwright 1.64.1 | Browser acceptance tests | Apache-2.0; npm development dependency and separately installed browser engines |
 
-LLVM/MLIR, SQLite and OpenSSL are found from installed development packages. The two single-header libraries above are copied unmodified into `runtime/third_party`; `manifest.json` records exact versions, source URLs, SHA256 header hashes and license filenames. Tests verify the pinned header bytes. Compiler installation copies NEX's executable and resource files, including these headers/licenses, but does not bundle the external shared libraries or platform SDK. Their configured locations remain prerequisites.
+LLVM/MLIR, SQLite and OpenSSL are found from installed development packages. The JSON/HTTP single-header libraries above are copied unmodified into `runtime/third_party`; `manifest.json` records exact versions, source URLs, SHA256 header hashes and license filenames. Tests verify the pinned header bytes. Compiler installation copies NEX's executable and resource files, including these headers/licenses, but does not bundle the external shared libraries or platform SDK. Their configured locations remain prerequisites.
 
 Native builds select runtime components from reachable code. Pure executables do not link SQLite/OpenSSL or embed the JSON/HTTP headers. Storage output needs SQLite; HTTP/HTTPS output also needs OpenSSL. Builds embedding nlohmann/json and/or cpp-httplib emit their full matching license texts in `THIRD_PARTY_NOTICES.txt`; an explicit `-o PATH` copies the file to `PATH.THIRD_PARTY_NOTICES.txt`. Retain that companion file when distributing the output. Native build metadata records the runtime input projection and selected components. Packaging external libraries, toolchain dependencies and their complete notices into a portable SDK remains separate work.
 
@@ -32,3 +33,7 @@ The verified Z3 ARM64 macOS 5.3.1 release was obtained from https://github.com/Z
 ## Linux development environment (0.20)
 
 `tools/linux/Dockerfile` uses the official Ubuntu 24.04 image (pinned manifest digest), official LLVM/MLIR/LLD 22.1.8 Ubuntu packages (pinned package version/key), official Node.js 22.22.3 and Z3 5.3.1 archives (architecture-specific SHA-256 checks). Package copyright notices remain under `/usr/share/doc`; Node/Z3 archive notices are retained with their installed files. These are external development dependencies, not vendored application sources. Existing browser lock/integrity and runtime notices are unchanged. Recipe/URLs are documented in `docs/linux.md`; Ubuntu security-package updates are not an immutable mirror.
+
+## Binary64 runtime foundation (in progress)
+
+Dragonbox 1.1.3 is pinned to commit `3053a74ac81099591a12a55341a203d9688fbb92`. Its single `dragonbox.h` header is copied byte-for-byte from that revision, with no transitive third-party dependency. `runtime/third_party/dragonbox/manifest.json` records upstream paths, byte sizes and SHA-256 hashes for the header and both original licenses. NEX selects the Boost Software License 1.0 option. Native runtime source projections preserve the header, inventory and licenses; native output notices include the selected license. The JavaScript implementation uses the engine’s built-in conversion, and this dependency is absent from browser assets. This foundation does not yet enable `f64` source programs in language 0.10.

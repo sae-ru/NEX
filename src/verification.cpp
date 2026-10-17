@@ -95,6 +95,7 @@ class Engine {
   Sym expression(E e,State &state,bool spec=false){
     poll();if(!e)return {context.bool_val(true),Type::Unit};
     if(e->kind==Expr::Match)throw Stop{"unsupported","match expressions are outside scalar verification",e->span};
+    if(e->kind==Expr::Floating||e->type==Type::F64)throw Stop{"unsupported","f64 is outside integer/boolean verification",e->span};
     if(e->kind==Expr::Invoke||e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)throw Stop{"unsupported","function values are outside scalar verification",e->span};
     if(e->kind==Expr::Integer)return {integer(e->number),Type::I64};
     if(e->kind==Expr::Boolean)return {context.bool_val(e->number),Type::Bool};

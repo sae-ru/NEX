@@ -5,7 +5,7 @@
 namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
-const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda"};
+const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating"};
 const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
@@ -31,6 +31,7 @@ class Tree {
   void expression(E e,const std::string &parent,const std::string &role,unsigned ordinal){
     if(!e)return;auto path=parent+"/"+role+"/"+std::to_string(ordinal),kind=std::string("expression.")+exprKinds[e->kind];
     Object definition{{"kind",kind},{"type",typeName(e->type)},{"text",e->text},{"number",std::to_string(e->number)}};
+    if(e->kind==Expr::Floating)definition["literal"]=floatLiteral(e->number);
     auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get());
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
     if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;

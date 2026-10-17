@@ -10,6 +10,8 @@ import shlex
 import subprocess
 import base64
 import time
+import math
+import struct
 
 import lldb
 
@@ -80,8 +82,12 @@ def _preview(value, depth=0, budget=None):
         return "…"
     budget[0] -= 1
     raw = value.GetNonSyntheticValue()
+    if raw.GetTypeName() in ("f64", "double"):
+        return _format_float(_floating(raw))
     if raw.GetTypeName() == "nexrt::Value":
         tag = _member(raw, "tag").GetValueAsUnsigned()
+        if tag == 3:
+            return _format_float(_floating(raw, nested=True))
         if tag < 2:
             scalar = _member(raw, "scalar").GetValueAsSigned()
             return ("true" if scalar else "false") if tag == 1 else str(scalar)
@@ -202,6 +208,7 @@ def load(debugger, command, result, internal_dict):
             specifier = lldb.SBTypeNameSpecifier(name, False)
             category.AddTypeSummary(specifier, lldb.SBTypeSummary.CreateWithFunctionName(__name__ + ".summary"))
             category.AddTypeSynthetic(specifier, lldb.SBTypeSynthetic.CreateWithClassName(__name__ + ".Children"))
+        category.AddTypeSummary(lldb.SBTypeNameSpecifier("f64", False), lldb.SBTypeSummary.CreateWithFunctionName(__name__ + ".summary"))
         category.SetEnabled(True)
         # The executable comes only from an explicit debugger command argument,
         # never from paths supplied by a debug manifest or captured frame.
@@ -221,6 +228,40 @@ def _integer(value, signed=False):
     if error.Fail():
         raise ValueError("value has no readable scalar: " + str(error))
     return number
+
+
+def _format_float(value):
+    if not math.isfinite(value):
+        raise ValueError("non-finite stopped f64")
+    if value == 0:
+        return "0e0"
+    mantissa, _, exponent = repr(abs(float(value))).lower().partition('e')
+    whole, _, fraction = mantissa.partition('.')
+    digits = whole + fraction
+    first = len(digits) - len(digits.lstrip('0'))
+    digits = digits[first:].rstrip('0')
+    power = int(exponent or '0') + len(whole) - first - 1
+    return ('-' if value < 0 else '') + digits[0] + ('.' + digits[1:] if len(digits) > 1 else '') + 'e' + str(power)
+
+
+def _floating(value, nested=False):
+    if nested:
+        if _integer(_member(value, "tag")) != 3:
+            raise ValueError("runtime f64 tag differs from checked NEX type")
+        number = struct.unpack('>d', struct.pack('>Q', _integer(_member(value, "scalar"))))[0]
+    else:
+        if not value.IsValid() or value.GetError().Fail():
+            raise ValueError("f64 has no readable location")
+        data = value.GetData()
+        if not data.IsValid() or data.GetByteSize() != 8:
+            raise ValueError("stopped f64 has an incompatible size")
+        error = lldb.SBError()
+        number = data.GetDouble(error, 0)
+        if error.Fail():
+            raise ValueError("f64 has no readable scalar")
+    if not math.isfinite(number):
+        raise ValueError("non-finite stopped f64")
+    return 0.0 if number == 0 else number
 
 
 def _find_member(value, name, depth=0, budget=None):
@@ -376,6 +417,8 @@ def _wire(value, descriptor, records, budget, depth=0):
     budget["nodes"] -= 1
     raw = value.GetNonSyntheticValue()
     nested = raw.GetTypeName() == "nexrt::Value"
+    if descriptor == "f64":
+        return _floating(raw, nested)
     if descriptor in ("i64", "bool"):
         if nested:
             if _integer(_member(raw, "tag")) != (1 if descriptor == "bool" else 0):

@@ -1,4 +1,4 @@
-# NEX language specification 0.10
+# NEX language specification 0.11
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -59,7 +59,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.10",
+  "language": "0.11",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -73,6 +73,7 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | Type | Values |
 |---|---|
 | `i64` | Signed integers from -9223372036854775808 through 9223372036854775807 |
+| `f64` | Finite binary64 numbers with normalized positive zero |
 | `bool` | `true`, `false` |
 | `unit` | No result; only as a function result or expression result |
 | `str` | Immutable valid UTF-8 text |
@@ -127,13 +128,14 @@ struct Pair<T: add> { left:T; right:T; }
 
 A declaration can attach one or more builtin capabilities to each parameter:
 `<T: add + ordered, U: integer, V>`. `add` permits `+` on two values of the same
-T and accepts i64, str or any list type. `ordered` permits `<`, `<=`, `>`, `>=`
-on equal T and currently accepts i64. `integer` permits checked integer arithmetic,
+T and accepts i64, f64, str or any list type. `ordered` permits `<`, `<=`, `>`, `>=`
+on equal T and accepts i64 or f64. `integer` permits checked integer arithmetic,
 unary minus and contextual i64 literals; it currently accepts i64 and implies
-`add`, `ordered` and `wire`. Bounds express the operations available in the body:
-`T: ordered` alone does not authorize arithmetic even though its current concrete
-implementation is i64. Equality and formatting remain available for every non-unit type without a
-bound. Typed JSON requires `wire`; integer and ordered imply wire in their
+`number`, `add`, `ordered` and `wire`. `number` permits equal-type arithmetic
+and negation for i64 or f64, and implies `add`, `ordered`, `wire`. It does not
+permit contextual integer literals: a T:number may be f64, so use operands of T. Bounds express the operations available in the body:
+`T: ordered` alone does not authorize arithmetic even though its concrete implementations are numeric types. Equality and formatting remain available for every non-unit type without a
+bound. Typed JSON requires `wire`; integer, number and ordered imply wire in their
 current domains. See the function-value and wire rules below.
 
 All declared bounds must hold, including phantom parameters and unused templates.
@@ -157,6 +159,43 @@ associated types, defaults, higher-kinded types remain pending.
 See `examples/constraints.nex`.
 
 Decimal integer literals have no separators or suffixes. Negative values use unary `-`; the minimum i64 literal is accepted explicitly. Positive literals outside the range are rejected.
+
+### Finite binary64 numbers (0.11)
+
+`f64` literals have a decimal fraction or exponent: `1.25`, `1e0`, `5e-324`.
+Digits are required on both sides of a fraction dot and after the optional
+exponent sign. Plain integer literals stay i64. There is no implicit conversion.
+Literal text has a 4096-byte limit; rounding is nearest/ties-to-even, overflowing
+literals give `E_RANGE`, and gradual underflow (including zero) is allowed.
+All zeros normalize to positive zero; infinities and NaNs are not language values.
+
+Equal f64 operands support `+`, `-`, `*`, `/`, `%`, negation, ordering and equality.
+Each operation rounds independently to binary64, nearest/ties-to-even; contraction
+and reassociation are prohibited. Division/remainder by zero traps with
+`E_DIV_ZERO`; non-finite arithmetic results trap with `E_FLOAT`. Remainder uses
+truncating division and the dividend's sign, followed by zero normalization.
+Native arithmetic/comparisons preserve the caller's floating environment.
+
+`as_f64(i64) -> f64` explicitly rounds, possibly losing integer precision.
+`as_i64(f64) -> result<i64>` truncates toward zero; values outside
+[-9223372036854775808, 9223372036854775808) return `E_RANGE`. These operations
+are pure. f64 can occur in lists, nominal values, results, generic arguments,
+function parameters/results and snapshot captures. Native application `main`
+still returns i64 or unit; `eval --entry` may observe a floating function result.
+
+Print/str and wire JSON use shortest round-trippable scientific notation with
+lowercase `e`, no positive exponent sign/leading zeros: `1e0`, `1.25e0`,
+`5e-324`, `0e0`. Wire f64 is a JSON number; i64 remains a canonical JSON string.
+Floating patterns are not supported: select numbers with a binding and guard,
+plus an unguarded catch-all for coverage. Integer/boolean Z3 verification
+explicitly reports floating expressions as unsupported.
+
+Language 0.10 requires explicit migration. Keep SDK 0.23 for its original
+receipts/frames. New reserved `f64` and builtin `as_f64`/`as_i64` names may require
+an explicit archived-source repair before migration; a rejected migration leaves
+HEAD/history unchanged. Regenerate reviewed task/proof pins without changing
+their acceptance intent. Live debugger and platform/SDK acceptance for this new
+milestone remain under validation in `STATUS.md`.
 
 ### Strings and Unicode
 
@@ -183,7 +222,7 @@ A structure's qualified module/name is its nominal type and its positional const
 
 Lists use `[a, b]`; nested lists are supported. An empty list needs an element type from a variable declaration, return signature, parameter, constructor field, or another contextual type. `push([], value)` can infer its element type from the value. An unconstrained `[]` is rejected with `E_INFER`. Indexing is checked; lists concatenate using `+`.
 
-`push(list, value)` returns a list with an appended item. `set(list, index, value)` returns a list with one replaced item and checks the index. Earlier values and aliases remain unchanged. `==`/`!=` compare list contents recursively; structure equality requires the same nominal type and compares its fields recursively. Ordering comparisons are currently integer-only.
+`push(list, value)` returns a list with an appended item. `set(list, index, value)` returns a list with one replaced item and checks the index. Earlier values and aliases remain unchanged. `==`/`!=` compare list contents recursively; structure equality requires the same nominal type and compares its fields recursively. Ordering comparisons accept i64 or f64, with equal operand types.
 
 Heap-backed values have automatic reference-counted ownership. Parameters borrow values during a call; returned values remain valid independently of the caller's temporaries. Assignment releases the previous owned value; block exit and return release local values. Immutable aggregates can share their children, and source programs cannot form mutable reference cycles. Native application/test wrappers verify that normal execution released all managed values. This is the implemented ownership model; a future mutable/resource/concurrent model needs additional rules.
 
@@ -231,7 +270,7 @@ Recoverable errors are data and require no io effect. Arithmetic, bounds and ass
 
 ### Typed JSON boundary
 
-`encode_json(value) -> str` serializes a non-unit value using `nex.wire/2` rules. Every i64 is a canonical decimal **JSON string**, preserving all 64 bits across browsers. Booleans/text remain JSON booleans/strings, lists become arrays, and structures become objects with declared field names. Nominal type names are restored from the checked destination type rather than transmitted as user-controlled tags. Results use the tagged display shape above. An enum uses exactly `{"case":"Set","fields":{"value":"42"}}`; even an empty case has `"fields":{}`. Nested payloads are encoded recursively. The case name must belong to the checked nominal type. Unknown cases, missing/extra/duplicate fields and extra wrapper keys fail decoding. The enum wrapper adds two JSON depth levels. Ordinary print/str formatting uses the same tagged shape with integer numbers instead of wire strings.
+`encode_json(value) -> str` serializes a non-unit value using `nex.wire/2` rules. Every i64 is a canonical decimal **JSON string**, preserving all 64 bits across browsers. An f64 uses a finite JSON number; a numeric token is rounded to binary64 with ties to even, and strings are rejected for f64. Booleans/text remain JSON booleans/strings, lists become arrays, and structures become objects with declared field names. Nominal type names are restored from the checked destination type rather than transmitted as user-controlled tags. Results use the tagged display shape above. An enum uses exactly `{"case":"Set","fields":{"value":"42"}}`; even an empty case has `"fields":{}`. Nested payloads are encoded recursively. The case name must belong to the checked nominal type. Unknown cases, missing/extra/duplicate fields and extra wrapper keys fail decoding. The enum wrapper adds two JSON depth levels. Ordinary print/str formatting uses the same tagged shape with integer numbers instead of wire strings.
 
 The generated descriptor contains `root`, `records` and `enums`, where each enum maps to its ordered cases and typed payload fields. The decoder also accepts legacy `nex.wire/1` descriptors without enums; existing scalar/record/list/result wire payloads are unchanged. API generation and the browser adapter use the new descriptor for typed enum input/output.
 
@@ -263,7 +302,7 @@ Precedence from lowest to highest (binary operators associate to the left):
 8. Field selection and indexing
 9. Literals, local names, function/constructor calls, parenthesized expressions
 
-Operands, list items and call/constructor arguments evaluate left to right. `&&` and `||` evaluate their right operand only when required. Logical operators require `bool`; integer arithmetic and ordering require `i64`. `+` also accepts two strings or lists of the same type. Equality accepts two operands of the same non-unit type.
+Operands, list items and call/constructor arguments evaluate left to right. `&&` and `||` evaluate their right operand only when required. Logical operators require `bool`; arithmetic and ordering require equal numeric types (`i64` or `f64`). `+` also accepts two strings or lists of the same type. Equality accepts two operands of the same non-unit type.
 
 Integer overflow traps with `E_OVERFLOW` in every build profile. Division truncates toward zero. Remainder has the sign of the dividend. Division/remainder by zero traps with `E_DIV_ZERO`. `MIN_I64 / -1` traps; `MIN_I64 % -1` equals zero. Negating `MIN_I64` traps. Optimizations must preserve these rules.
 
@@ -317,6 +356,7 @@ Endpoints participate in program identity, graph nodes/edges, context, archived 
 
 - `print(value)` accepts any non-unit value and requires `io`. Strings are written as their raw text, including embedded zero bytes. Other values use a JSON-style representation, including recursive lists/structures. It adds a newline and returns `unit`.
 - `assert(condition)` requires `bool`, returns `unit`, and traps with `E_ASSERT` when false.
+- `as_f64(i64) -> f64` explicitly rounds an integer; `as_i64(f64) -> result<i64>` truncates with a recoverable range error.
 - `len(str | list<T>) -> i64` returns a Unicode scalar count or list item count.
 - `str(value) -> str` explicitly formats any non-unit value using the same representation as print, without a newline. A string's content is unchanged.
 - `push(list<T>, T) -> list<T>` and `set(list<T>, i64, T) -> list<T>` return updated immutable lists.
@@ -339,13 +379,13 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 ## Graph and revision semantics
 
-Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.10 uses `nex.function/8`, `nex.structure/4`, `nex.enum/3` and `nex.program/9`. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
+Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.11 uses `nex.function/9`, `nex.structure/4`, `nex.enum/3` and `nex.program/10`. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
 SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.10, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.11, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 

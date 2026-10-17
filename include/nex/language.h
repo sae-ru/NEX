@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.10";
+inline constexpr const char *languageVersion = "0.11";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
@@ -18,7 +18,7 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64 } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   std::string realm="shared";std::set<std::string> effects;
   Type() = default;
@@ -35,6 +35,7 @@ struct Type {
   }
 };
 std::string typeName(Type type);
+std::string floatLiteral(int64_t bits);
 struct Pattern;
 using P = std::shared_ptr<Pattern>;
 struct Pattern {
@@ -46,7 +47,7 @@ template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto c
 struct MatchArm;
 struct Function;
 struct Expr {
-  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda } kind;
+  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda, Floating } kind;
   Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;

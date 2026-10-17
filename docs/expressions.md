@@ -1,6 +1,6 @@
 # NEX expressions in stopped frames — toolchain 0.14
 
-NEX expressions use the language 0.10 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.11 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function

@@ -2,7 +2,7 @@
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.10; this is a development-tool protocol.
+LLM vendor. Current source language is 0.11; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 

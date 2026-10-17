@@ -48,7 +48,7 @@ JSON debugValueSchema(const Program &program,const Type &type,const std::set<std
       auto fields=[&](const auto &values){Array result;for(const auto &field:values)result.push_back(Object{{"name",field.name},{"type",describe(field.type)}});return result;};
       if(nominal.enumeration){Array cases;for(const auto &variant:nominal.variants)cases.push_back(Object{{"name",variant.name},{"fields",fields(variant.fields)}});enums[value.name]=std::move(cases);}else records[value.name]=fields(nominal.fields);
     }return Object{{nominal.enumeration?"enum":"record",value.name}};}
-    if(value==Type::I64||value==Type::Bool||value==Type::Str)return typeName(value);
+    if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str)return typeName(value);
     invalid("unsupported debug value type: "+typeName(value));
   };
   auto root=describe(type);
@@ -76,6 +76,7 @@ std::string DebugValues::identity(const V &value)const{auto found=identities.fin
 DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned depth,const std::string &id,const Array &prefix){
   budget(depth);
   if(type==Type::I64){auto value=integer(wire);observe(id,prefix,"value",wire);return V(value);}
+  if(type==Type::F64){nexrt::FloatEnvironment environment;auto value=wire.getAsNumber();if(!value||!std::isfinite(*value))invalid("expected finite debug f64 number");auto result=V::floating(*value);observe(id,prefix,"value",JSON(result.floating()));return result;}
   if(type==Type::Bool){auto value=wire.getAsBoolean();if(!value)invalid("expected debug boolean");observe(id,prefix,"value",wire);return V(*value,true);}
   if(type==Type::Str){auto value=string(wire);text+=value.size();budget(depth);observe(id,prefix,"value",wire);return V(nexrt::string(std::move(value)));}
   if(type.kind==Type::Function){
@@ -102,7 +103,7 @@ DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned de
 }
 DebugValues::JSON DebugValues::encode(const Type &type,const V &original,unsigned depth,const std::function<V(const V&)> &materialize,const std::function<V(const V&,size_t)> &capture){
   budget(depth);auto value=materialize?materialize(original):original;
-  if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
+  if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::F64){if(value.tag!=V::Floating)invalid("computed f64 lost its scalar tag");return value.floating();}if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
   if(type.kind==Type::Function){
     const auto &fn=checkedDebugCallable(program,value.object->text,type);if(value.object->values.size()!=fn.captures.size()||value.object->names.size()!=fn.captures.size())invalid("computed callable capture layout differs");
     auto identity=this->identity(value);if(identity.empty()){identity="computed:"+std::to_string(++computed);identify(value,identity);}Object captures;

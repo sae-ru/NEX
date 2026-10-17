@@ -57,7 +57,7 @@ test fn examples() -> unit { assert(step(3, true) == 4); assert(twice(3, false) 
         contract['functions'] += callee['functions']
         result = self.verify(contract)
         self.assertEqual(result['schema'], 'nex.verification-session/1')
-        self.assertEqual(result['language'], '0.10')
+        self.assertEqual(result['language'], '0.11')
         self.assertTrue(result['solver_version'].startswith('5.') or result['solver_version'].startswith('4.'))
         graph = {n['name']: n for n in self.cli('graph')['nodes']}
         saved = json.loads(Path(result['output']).read_text())
@@ -175,6 +175,8 @@ pub fn safe(x: i64) -> i64 { return x; }
 
     def test_unsupported_is_never_proven_and_resources_are_explicit(self):
         programs = [
+            ('module unverified; pub fn f(x:f64)->f64{return x+x;}', 'f'),
+            ('module unverified; pub fn f()->bool{return 1e0<2e0;}', 'f'),
             ('module unverified; pub fn f(x: str) -> str { return x; }', 'f'),
             ('module unverified; pub fn f(n: i64) -> i64 { if n == 0 { return 0; } return f(n - 1); }', 'f'),
             ('module unverified; pub fn f() -> unit !{io} { print(1); }', 'f'),
