@@ -368,3 +368,7 @@
 - [SDL3](https://github.com/libsdl-org/SDL), [wgpu](https://github.com/gfx-rs/wgpu), [wgpu-native](https://github.com/gfx-rs/wgpu-native).
 - [React](https://react.dev/learn), [TypeScript](https://www.typescriptlang.org/docs/handbook/typescript-from-scratch.html), [Vite](https://vite.dev/guide/), [Playwright](https://playwright.dev/docs/intro).
 - [Emscripten](https://emscripten.org/docs/introducing_emscripten/about_emscripten.html), [цели WebAssembly и интеграция с Web API](https://webassembly.org/docs/high-level-goals/).
+
+### Нативные платформы: текущий шаг
+
+Инструментарий 0.18 добавляет выбор ABI и JSON-конфигурацию компилятора, SDK и зависимостей. На macOS настроена сборка arm64/x86_64 с раздельными кешами. Intel-артефакты проверяются на ARM64; запуск и LLDB/DAP на Intel ещё нужно проверить. Далее нужны фиксация целевых инструментов в задачах, упаковка библиотек/подпись, Linux/Windows, мобильные SDK и переносимый дистрибутив. Поддержка генератора LLVM сама по себе не завершает поддержку платформы.

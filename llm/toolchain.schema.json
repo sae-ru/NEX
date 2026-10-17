@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NEX native toolchain",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "target"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.toolchain/1"
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compiler": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sysroot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sqlite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "include",
+        "library"
+      ],
+      "properties": {
+        "include": {
+          "type": "string",
+          "minLength": 1
+        },
+        "library": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "openssl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "include",
+        "ssl",
+        "crypto"
+      ],
+      "properties": {
+        "include": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ssl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "crypto": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

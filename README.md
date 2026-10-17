@@ -48,6 +48,15 @@ Imports use `import "./model.nex" as model;` and exported definitions use `pub f
 
 Generated native output runs without the compiler, LLVM or a model. Pure programs do not link SQLite; storage programs link SQLite, and HTTP/TLS programs additionally link OpenSSL. The development compiler links against LLVM/MLIR, SQLite and Z3. Generated programs do not depend on Z3. `cmake --install build --prefix /chosen/sdk` installs the compiler and language/runtime resources. The compiler first looks for resources in its installed `share/nex`, then in the source checkout. `NEX_RESOURCE_DIR` explicitly overrides the resource location; `NEX_CLANG` overrides the native compiler driver. Redistributable toolchain bundles for other machines are pending.
 
+## Native target selection
+
+```sh
+./build/nex build examples/generics/main.nex --target x86_64-apple-macosx13.0 --profile release --json
+./build/nex build examples/server/main.nex --target server --toolchain /path/to/toolchain.json --json
+```
+
+On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records the target, compiler, optional SDK and target SQLite/OpenSSL paths. Build metadata and caches distinguish architectures. Local run/test/debug/profile commands require the host architecture; no emulator is configured. Intel artifacts have been cross-built on ARM64, but Intel execution and debugger sessions remain unverified. See [the native build guide](docs/incremental.md) and [toolchain schema](llm/toolchain.schema.json).
+
 ## Web applications
 
 With Node.js 22.18+ and npm installed:
@@ -151,4 +160,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.17.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts use their matching SDK. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.18.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts use their matching SDK. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS arm64/x86_64 cross-compilation is configured; Intel execution/debugging remains unverified on this ARM64 host. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

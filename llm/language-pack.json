@@ -25,7 +25,8 @@
     "debug_frame_schema": "llm/debug-frame.schema.json",
     "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json",
     "operations": "docs/operations.md",
-    "operations_schema": "llm/operations.schema.json"
+    "operations_schema": "llm/operations.schema.json",
+    "native_toolchain_schema": "llm/toolchain.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation --json",
   "context_command": "nex context --symbol NAME",

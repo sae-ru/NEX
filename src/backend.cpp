@@ -1,4 +1,5 @@
 #include "nex/backend.h"
+#include "nex/native_toolchain.h"
 #include "nex/incremental.h"
 #include "nex/operations.h"
 #include "llvm/IR/LLVMContext.h"
@@ -34,6 +35,7 @@
 #include <sstream>
 #include <functional>
 #include <random>
+#include <tuple>
 
 namespace nex {
 namespace {
@@ -483,8 +485,8 @@ std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bo
 BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
   if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
   auto host=llvm::sys::getDefaultTargetTriple();
+  auto toolchain=configureNative(options);auto target=toolchain.target;
   bool server=options.target=="server";
-  if(!server&&!options.target.empty()&&options.target!=host)throw Error("E_TARGET","target is not configured; verified host target is "+host);
   if(server){
     const auto &handler=p.function(options.entry);
     if(handler.realm!="server"||handler.test||handler.params.size()!=1||handler.params[0].type!=Type::record("std::http::Request")||handler.result!=Type::record("std::http::Response"))throw Error("E_HTTP_SIGNATURE","server entry must be server fn handle(std::http::Request) -> std::http::Response",handler.span);
@@ -496,28 +498,35 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     layout("std::http::Response",{{"status",Type::I64},{"body",Type::Str},{"content_type",Type::Str}});
     if(options.libraryEntry)throw Error("E_OPTION","HTTP server target produces an executable; --library is for a native function archive");
   }
-  const char *override=std::getenv("NEX_CLANG");std::string compiler=override?override:NEX_CLANG;
+  auto compiler=toolchain.compiler;
+  auto command=[&](std::initializer_list<std::string> arguments){auto result=toolchain.driver;result.insert(result.end(),arguments);return result;};
   auto identity=capture({compiler,"--version"});if(identity.code!=0)throw Error("E_TOOL","cannot identify native compiler");
   // Probe the driver's actual IR ABI, including SDK/deployment normalization.
   // In particular Darwin host triples and macOS driver triples need not spell
   // the same OS version. Never silently cache code for a different host ABI.
-  auto probe=capture({compiler,"-S","-emit-llvm","-x","c++","-","-o","-"});
+  auto probe=capture(command({"-S","-emit-llvm","-x","c++","-","-o","-"}));
   if(probe.code!=0)throw Error("E_TOOL","cannot identify native compiler target: "+probe.errors);
   llvm::LLVMContext probeContext;llvm::SMDiagnostic probeDiagnostic;
   auto probeBuffer=llvm::MemoryBuffer::getMemBufferCopy(probe.output,"native compiler target probe");
   auto probeModule=llvm::parseIR(probeBuffer->getMemBufferRef(),probeDiagnostic,probeContext);
   if(!probeModule)throw Error("E_TOOL","native compiler did not produce readable LLVM target information");
   auto compilerTarget=probeModule->getTargetTriple().str(),dataLayout=probeModule->getDataLayoutStr();
-  llvm::Triple driverABI(compilerTarget),hostABI(host);
-  if(!driverABI.isArch64Bit()||driverABI.getArch()!=hostABI.getArch()||driverABI.getEnvironment()!=hostABI.getEnvironment()||
-     !(driverABI.getOS()==hostABI.getOS()||(driverABI.isMacOSX()&&hostABI.isMacOSX())))
-    throw Error("E_TARGET","native compiler target "+compilerTarget+" does not match configured 64-bit host "+host);
+  llvm::Triple driverABI(compilerTarget),requestedABI(target);
+  llvm::VersionTuple requestedVersion,driverVersion;
+  auto version=[](const llvm::VersionTuple &v){return std::tuple(v.getMajor(),v.getMinor().value_or(0),v.getSubminor().value_or(0));};
+  bool deploymentSelected=(!options.target.empty()&&options.target!="server"&&options.target!="native")||!options.toolchain.empty();
+  bool wrongDeployment=deploymentSelected&&requestedABI.getOS()==llvm::Triple::MacOSX&&requestedABI.getOSMajorVersion()!=0&&requestedABI.getMacOSXVersion(requestedVersion)&&driverABI.getMacOSXVersion(driverVersion)&&version(requestedVersion)!=version(driverVersion);
+  if(!driverABI.isArch64Bit()||driverABI.getArch()!=requestedABI.getArch()||driverABI.getEnvironment()!=requestedABI.getEnvironment()||
+     !(driverABI.getOS()==requestedABI.getOS()||(driverABI.isMacOSX()&&requestedABI.isMacOSX()))||wrongDeployment||dataLayout.empty()||probeModule->getDataLayout().getPointerSizeInBits()!=64||driverABI.getSubArch()!=requestedABI.getSubArch())
+    throw Error("E_TARGET","native compiler target "+compilerTarget+" does not match configured target "+target+" or has no data layout");
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
   bool wire=server,storage=server;auto names=reachable(p,options.entry);
   std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;}for(auto arg:e->args)inspect(arg);}};
   std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
+  if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
+  if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   bool profiling=options.profile=="profile";
   std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_host.h","nex_io.h","nex_profile.h"};
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
@@ -545,15 +554,15 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       runtimeFiles["third_party/tracy/"+name.str()]=readFile(resourceFile("runtime/third_party/tracy/"+name.str()));
     }
   }
-  if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(NEX_SQLITE_INCLUDE)/"sqlite3.h").string());
+  if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string());
   std::string runtimeIdentity;for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
-  if(storage)runtimeIdentity+=std::string(NEX_SQLITE_INCLUDE)+NEX_SQLITE_LIBRARY+hash(readFile(NEX_SQLITE_LIBRARY))+hash(readFile((std::filesystem::path(NEX_SQLITE_INCLUDE)/"sqlite3.h").string()));
-  if(server)runtimeIdentity+=std::string(NEX_OPENSSL_INCLUDE)+NEX_OPENSSL_SSL+NEX_OPENSSL_CRYPTO+hash(readFile(NEX_OPENSSL_SSL))+hash(readFile(NEX_OPENSSL_CRYPTO))+hash(readFile((std::filesystem::path(NEX_OPENSSL_INCLUDE)/"openssl/ssl.h").string()));
+  if(storage)runtimeIdentity+=std::string(toolchain.sqliteInclude)+toolchain.sqliteLibrary+hash(readFile(toolchain.sqliteLibrary))+hash(readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string()));
+  if(server)runtimeIdentity+=std::string(toolchain.opensslInclude)+toolchain.opensslSSL+toolchain.opensslCrypto+hash(readFile(toolchain.opensslSSL))+hash(readFile(toolchain.opensslCrypto))+hash(readFile((std::filesystem::path(toolchain.opensslInclude)/"openssl/ssl.h").string()));
   auto formatter=readFile(resourceFile("debug/lldb_nex.py"));auto dapAdapter=readFile(resourceFile("debug/nex_dap.py"));
-  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+host+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
   auto buildRoot=std::filesystem::absolute(directory);auto plan=planNative(p,options.entry);
-  BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string()};
+  BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible};
   auto snapshot=p;
   llvm::json::Array debugSources,debugFunctions,heapTypes;std::set<std::string> debugTypes;
   std::function<void(Type)> collectType=[&](Type type){
@@ -578,7 +587,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     debugSources.push_back(llvm::json::Object{{"original",p.path},{"projection",snapshot.path},{"hash",hash(p.source)}});
   }
   auto nativeSeed=json(llvm::json::Object{{"schema","nex.native-toolchain/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},
-    {"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",host},
+    {"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
     {"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false);
   std::vector<std::string> unitKeys;std::vector<llvm::json::Value> unitInputs;std::vector<NativeArtifact> unitArtifacts(plan.units.size());
   bool nativeIntact=true;
@@ -603,7 +612,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
   }
   auto debugFile=(folder/"debug.json").string(),formatterFile=(folder/"debugger/lldb_nex.py").string(),adapterFile=(folder/"debugger/nex_dap.py").string();
-  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/2"},{"expression_protocol","nex.debug-expression/2"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
+  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"runtime_view","nex.runtime-view/2"},{"expression_protocol","nex.debug-expression/2"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"functions",std::move(debugFunctions)}})+"\n";
   auto debugIntact=[&](){
     if(!std::filesystem::is_regular_file(debugFile)||readFile(debugFile)!=debugText||!std::filesystem::is_regular_file(formatterFile)||readFile(formatterFile)!=formatter||!std::filesystem::is_regular_file(adapterFile)||readFile(adapterFile)!=dapAdapter)return false;
     for(const auto &[unitKey,unit]:snapshot.units){
@@ -611,7 +620,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(!std::filesystem::is_regular_file(unit.path)||readFile(unit.path)!=unit.source||!std::filesystem::is_regular_file(mirror)||readFile(mirror.string())!=unit.source)return false;
     }
     if(snapshot.units.empty()&&(!std::filesystem::is_regular_file(snapshot.path)||readFile(snapshot.path)!=snapshot.source))return false;
-    if(!options.libraryEntry&&llvm::Triple(host).isOSDarwin()){
+    if(!options.libraryEntry&&driverABI.isOSDarwin()){
       auto symbols=result.executable+".dSYM/Contents/Resources/DWARF/app";auto marker=folder/"debug-symbols.complete";
       if(!std::filesystem::is_regular_file(symbols)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(symbols))+"\n")return false;
     }
@@ -642,7 +651,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
   auto mlir=Emitter(snapshot,options.profile!="debug",profiling).run(options.entry,options.testEntry,options.libraryEntry||server);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
-  std::vector<std::string> link={compiler};llvm::json::Array compiledUnits;
+  auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
     const auto &unit=plan.units[i];auto &artifact=unitArtifacts[i];
     if(!artifact.reused){
@@ -653,7 +662,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
         auto unitSnapshot=snapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
         artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
-        std::vector<std::string> compile={compiler,"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization};
+        auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
         if(execute(compile)!=0)throw Error("E_LINK","native unit compiler failed");
         artifact.object=readFile((stage/"program.o").string());saveArtifact(buildRoot,unitKeys[i],artifact);std::filesystem::remove_all(stage);
@@ -672,14 +681,13 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity","module"},{"revision",revision(p)},{"build_key",key},
     {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)}})+"\n");
   for(const auto &component:components){
-    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+host+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+target+toolchain.identity+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
     auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
     std::filesystem::create_directories(cache);
     if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
       auto temporary=cache/("runtime-"+std::to_string(std::random_device{}())+".o");
-      std::vector<std::string> arguments={compiler,"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization};
-      if(component=="nex_store.cpp")arguments.insert(arguments.end(),{"-I",NEX_SQLITE_INCLUDE});
-      if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",NEX_OPENSSL_INCLUDE,"-pthread"});
+      auto arguments=command({"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization});
+      if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread"});
       if(options.profile=="profile")arguments.push_back("-fno-omit-frame-pointer");
       if(profiling){
         arguments.insert(arguments.end(),{"-DNEX_PROFILE_ENABLED","-DTRACY_ENABLE","-DTRACY_ON_DEMAND","-DTRACY_DELAYED_INIT","-DTRACY_MANUAL_LIFETIME","-DTRACY_ONLY_LOCALHOST","-DTRACY_NO_BROADCAST","-DTRACY_NO_CODE_TRANSFER","-DTRACY_NO_CALLSTACK","-DTRACY_NO_SYSTEM_TRACING","-DTRACY_NO_SAMPLING","-DTRACY_NO_CRASH_HANDLER","-DTRACY_NO_FRAME_IMAGE","-pthread"});
@@ -694,10 +702,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(server){
     auto bridge=(folder/"server-bridge.cpp").string(),bridgeObject=(folder/"server-bridge.o").string();auto name=nativeSymbol(p.function(options.entry).name);
     writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){ return "+name+"(value); }\n");
-    std::vector<std::string> bridgeCompile={compiler,"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization};
+    auto bridgeCompile=command({"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization});
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
     if(execute(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
-    link.push_back(bridgeObject);link.push_back(NEX_OPENSSL_SSL);link.push_back(NEX_OPENSSL_CRYPTO);link.push_back("-pthread");
+    link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
   }
   if(profiling){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX
@@ -705,21 +713,21 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name}},false);
     auto source=(folder/"profile-identity.cpp").string(),object=(folder/"profile-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_profile_build_info(){return "+json(identity,false)+";}\n");
-    if(execute({compiler,"-std=c++20","-c",source,"-o",object,optimization})!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
+    if(execute(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
   }
-  if(profiling&&!options.libraryEntry){link.push_back("-pthread");if(llvm::Triple(host).isOSLinux())link.push_back("-ldl");}
+  if(profiling&&!options.libraryEntry){link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
   if(options.libraryEntry){
-    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",result.executable};archive.insert(archive.end(),link.begin()+1,link.end());link=std::move(archive);
-  }else {if(storage)link.push_back(NEX_SQLITE_LIBRARY);link.insert(link.end(),{"-o",result.executable,"-g"});}
+    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",result.executable};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
+  }else {if(storage)link.push_back(toolchain.sqliteLibrary);link.insert(link.end(),{"-o",result.executable,"-g"});}
   if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string());
-  if(!options.libraryEntry&&llvm::Triple(host).isOSDarwin()) {
+  if(!options.libraryEntry&&driverABI.isOSDarwin()) {
     auto dsym=(std::filesystem::path(NEX_LLVM_TOOLS)/"dsymutil").string();
     if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
     writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }
   if(!result.notices.empty())writeFile(result.notices,notices);
   llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);
-  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",host},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"entry",options.entry},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}}));
+  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"entry",options.entry},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}}));
   writeFile((folder/"complete").string(),completion());return result;
 }
 }

@@ -1,4 +1,4 @@
-# Separate native compilation — toolchain 0.9
+# Native compilation and toolchains — toolchain 0.18
 
 Current source language is 0.7. The native compiler now produces an object for each
 source module containing functions reachable from the selected entry. It can
@@ -15,6 +15,70 @@ The last field names a `nex.compilation/1` report. A warm whole-program cache hi
 reports zero compiled modules and all selected units reused. The saved report
 describes the last materialization of that artifact; use the command response
 for this invocation's counters.
+
+## Native targets and SDKs
+
+`--target native` selects the host ABI. `--target TRIPLE` selects a concrete
+64-bit native ABI. On a macOS host, macOS arm64 and x86_64 builds are configured:
+
+```sh
+nex build src/main.nex --target x86_64-apple-macosx13.0 --profile release --json
+```
+
+The driver is probed with the same target/SDK arguments used for every NEX IR
+object, C++ runtime object, bridge and final link. The probed LLVM data layout,
+architecture, OS/environment and explicit `macosx` deployment version must match.
+Darwin kernel triples are normalized by Clang and do not specify a macOS release.
+Unsupported OS/architecture combinations fail with E_TARGET. This configures
+macOS cross-compilation; Linux/Windows/iOS/Android cross-targets remain pending.
+
+`--toolchain FILE` supplies a `nex.toolchain/1` JSON configuration; its schema is
+`llm/toolchain.schema.json`. It also works with `--target server` to select HTTP
+output and its native ABI independently:
+
+```json
+{
+  "schema": "nex.toolchain/1",
+  "target": "x86_64-apple-macosx13.0",
+  "compiler": "/path/to/llvm/bin/clang++",
+  "sysroot": "/path/to/MacOSX.sdk",
+  "sqlite": {"include": "dependencies/include", "library": "dependencies/lib/libsqlite3.dylib"},
+  "openssl": {"include": "dependencies/include", "ssl": "dependencies/lib/libssl.dylib", "crypto": "dependencies/lib/libcrypto.dylib"}
+}
+```
+
+Only `schema` and `target` are required. Omit unused dependencies. Each supplied
+dependency object must include all its fields. Files are limited to 64 KiB;
+unknown keys and nonexistent paths are rejected. Relative paths resolve against
+the configuration directory. A supplied compiler path precedes `NEX_CLANG`;
+otherwise the existing compiler selection applies. Without `sysroot`, Clang uses
+its configured SDK/environment. A simultaneous triple in `--target` must match
+the normalized manifest triple.
+
+For another architecture, SQLite and OpenSSL must come from this explicit
+configuration when required. E_TARGET_LIBRARY prevents host dependency fallback.
+The macOS SDK SQLite headers and `.tbd` stub can be selected for storage builds;
+OpenSSL needs a separately supplied target installation. The linker checks linked
+dependency compatibility. Packaging dependent dylibs, checking their deployment
+requirements, signing and application distribution remain separate work.
+
+Build JSON and `build.json` report `target`, `compiler_target` and
+`host_compatible`. The last means the selected architecture/OS ABI matches this
+host; it does not certify deployment on every OS release. Native and runtime
+caches include effective toolchain arguments, target, data layout, explicit SDK
+settings identity and dependency inputs. `debug.json` records the target too.
+Cache hits retain the same target metadata.
+
+`build` and `emit --kind llvm` can produce foreign artifacts, including archives
+and instrumented profile builds. `run`, `test`, `debug` and `profile` execute
+locally and reject foreign architectures with E_TARGET_RUN. No emulator is
+configured. An interpreter result cannot certify foreign native execution;
+run the output/tests on a matching machine. Task-contract native execution still
+selects the host; foreign toolchain capture/replay remains pending.
+
+macOS x86_64 artifacts, LLVM/object/archive/dSYM architecture, cache isolation and
+archived builds are checked on the ARM64 development host. Intel execution and
+live Intel LLDB/DAP are unverified here because Rosetta is unavailable.
 
 ## Invalidation
 
@@ -42,7 +106,7 @@ nodes but need no native object.
 
 Input manifests separately record toolchain, semantic, source and runtime ABI
 fingerprints, the frozen source path and any C application wrapper. Compiler
-build/identity, LLVM, host target, the probed native driver triple/data layout,
+build/identity, LLVM, selected target, the probed native driver triple/data layout,
 profile and relevant SDK environment belong to
 the toolchain fingerprint. Matching runtime sources/headers used at the boundary
 also participate; optional wire/storage components are included for units using

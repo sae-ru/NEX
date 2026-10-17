@@ -4,6 +4,7 @@ namespace nex {
 struct BuildOptions {
   std::string profile = "debug", target, entry = "main";
   bool testEntry = false, libraryEntry = false;
+  std::string toolchain;
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;
@@ -11,6 +12,8 @@ struct BuildResult {
   std::string notices;
   std::string compilation;
   unsigned compiledModules = 0, reusedModules = 0;
+  std::string target, compilerTarget;
+  bool hostCompatible = true;
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);

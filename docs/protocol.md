@@ -44,7 +44,9 @@ Toolchain 0.6.0 additionally recognizes an optional pure `commands(State, State,
 
 `nex token --user USER --auth FILE --json` appends an authentication entry and reports a newly generated bearer token. Only its SHA256 hash is stored, and the update is atomic. It does not deploy/configure a running server.
 
-`nex build FILE --library --entry NAME` emits a host-native static archive and no C main wrapper. The archive contains the selected closure and required runtime components. Its matching trusted host ABI is documented in `docs/server.md`; source-level FFI declarations remain unsupported.
+`nex build FILE --library --entry NAME` emits a native static archive and no C main wrapper. The archive contains the selected closure and required runtime components. Its matching trusted runtime ABI is documented in `docs/server.md`; source-level FFI declarations remain unsupported.
+
+Native `build` and `emit --kind llvm` accept `--target TRIPLE` or `--toolchain FILE` (`nex.toolchain/1`, schema `llm/toolchain.schema.json`). A manifest also works with `--target server`. Configured targets are the 64-bit host ABI and macOS arm64/x86_64 cross-builds on macOS. Build responses add `target`, `compiler_target`, `host_compatible`; the same ABI/SDK flags apply to generated and runtime objects and linking. Foreign `run/test/debug/profile` fail with E_TARGET_RUN, absent target dependencies with E_TARGET_LIBRARY, invalid configurations with E_TOOLCHAIN. See `nex guide --kind build` for SDK/dependency selection, metadata, cache isolation and execution-verification limits.
 
 ## Bounded context
 

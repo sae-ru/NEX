@@ -1,4 +1,5 @@
 #include "nex/backend.h"
+#include "nex/native_toolchain.h"
 #include "nex/project.h"
 #include "nex/web.h"
 #include "nex/api.h"
@@ -32,7 +33,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -69,6 +70,11 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  if(o.values.contains("--toolchain")){
+    const std::set<std::string> nativeCommands={"build","run","test","debug","profile","emit"};
+    if(o.get("--toolchain").empty()||!nativeCommands.contains(o.command)||o.get("--target")=="web"||o.has("--interpreter-only")||(o.command=="emit"&&o.get("--kind")!="llvm"))
+      throw Error("E_OPTION","--toolchain FILE selects a native build/run/test/debug/profile or emit --kind llvm");
+  }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation [--json]\n  nex doctor\n"
@@ -78,7 +84,7 @@ int run(const Options &o) {
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN]\n  nex contract --kind intent --contracts FILE\n"
-      "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
+      "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server --toolchain FILE\n"
       "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
@@ -323,10 +329,11 @@ int run(const Options &o) {
   }
   if(o.get("--target")=="server"&&o.command=="test")throw Error("E_OPTION","use native test for server functions; --target server builds the HTTP entry");
   if(o.get("--target")=="server"&&o.command=="run"&&o.has("--json"))throw Error("E_OPTION","server is long-running; use build --json or run without --json");
-  BuildOptions buildOptions{o.get("--profile","debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library")};
+  BuildOptions buildOptions{o.get("--profile","debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library"),o.get("--toolchain")};
+  if((o.command=="run"||o.command=="test"||o.command=="debug"||o.command=="profile")&&o.get("--target")!="web"&&!o.has("--interpreter-only"))requireNativeHost(buildOptions);
   ProfileOptions profiling;
   if(o.command=="profile"){
-    if(buildOptions.libraryEntry||!o.extra.empty()||!o.get("--kind").empty()||(!buildOptions.target.empty()&&buildOptions.target!=llvm::sys::getDefaultTargetTriple()))throw Error("E_OPTION","profile runs a host-native application; use a profile build with Tracy for a server/library");
+    if(buildOptions.libraryEntry||!o.extra.empty()||!o.get("--kind").empty()||buildOptions.target=="web"||buildOptions.target=="server")throw Error("E_OPTION","profile runs a host-native application; use a profile build with Tracy for a server/library");
     if(o.get("--profile","profile")!="profile")throw Error("E_OPTION","profile requires the instrumented profile build mode");
     auto count=[&](const std::string &key,unsigned fallback,unsigned minimum,unsigned maximum){
       auto text=o.get(key);if(text.empty())return fallback;uint64_t number=0;
@@ -352,7 +359,7 @@ int run(const Options &o) {
           writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
           writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
           const char *node=std::getenv("NEX_NODE");actual=capture({node?node:"node","--experimental-strip-types","--no-warnings",(folder/"test.ts").string()});
-        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);actual=capture({result.executable});}
+        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture({result.executable});}
         if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
       ++count;tests.push_back(llvm::json::Object{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}});
     }
@@ -364,6 +371,7 @@ int run(const Options &o) {
   }
   if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm or typescript");
   auto result=build(p,directory,buildOptions);
+  if(o.command=="run"||o.command=="debug"||o.command=="profile")requireNativeHost(result);
   if(o.command=="profile"){
     auto report=profileNative(p,result,store.graph(p),profiling);auto object=report.getAsObject();auto code=int(*object->getInteger("exit_code"));
     if(o.has("--json"))print(std::move(report));else std::cout<<"Profile: "<<object->getString("output")->str()<<" (exit "<<code<<")\n";return code;
@@ -395,7 +403,7 @@ int run(const Options &o) {
   auto output=o.get("--output");if(!output.empty()){fs::copy_file(result.executable,output,fs::copy_options::overwrite_existing);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
   auto notices=result.notices;
   if(!output.empty()&&!notices.empty()){notices=fs::absolute(output).string()+".THIRD_PARTY_NOTICES.txt";fs::copy_file(result.notices,notices,fs::copy_options::overwrite_existing);}
-  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}});
+  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"target",result.target},{"compiler_target",result.compilerTarget},{"host_compatible",result.hostCompatible},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}});
   else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
 }
 }
