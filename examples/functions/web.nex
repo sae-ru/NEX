@@ -1,0 +1,34 @@
+module functions::web;
+import "std/web.nex" as web;
+
+struct State<T: add> { value:T; count:i64; advance:fn(i64)->i64; }
+fn counter(step:i64)->(fn(i64)->i64){return fn(value:i64)->i64{return value+step;};}
+fn next<T: integer>(value:T) -> T { return value + 1; }
+fn replace<T: add>(state:State<T>,value:T) -> State<T> { return State(value,state.advance(state.count),state.advance); }
+
+client fn title() -> str { return "NEX generic state"; }
+client fn initial() -> State<str> { return State("seed",0,counter(1)); }
+client fn update(state:State<str>,event:web::Event) -> State<str> {
+  return match event {
+    web::Event("replace", value, _) => replace(state,value),
+    web::Event("increment", _, _) => State(state.value,state.advance(state.count),state.advance),
+    web::Event("reset", _, _) => initial(),
+    _ => state,
+  };
+}
+client fn view(state:State<str>) -> web::View {
+  return web::element("main",[],[],[
+    web::element("h1",[],[],[web::text(title())]),
+    web::element("p",[web::attr("role","status")],[],[web::text(state.value + ": " + str(state.count))]),
+    web::element("label",[web::attr("for","value")],[],[web::text("Value")]),
+    web::input("value",state.value,"replace"),
+    web::button("Increment","increment"),web::button("Reset","reset")
+  ]);
+}
+client test fn transitions() -> unit {
+  let state:State<str> = update(initial(),web::Event("replace","🧠","/"));
+  assert(state.value == "🧠");assert(state.count == 1);
+  assert(initial().value == "seed");
+}
+
+server fn excluded()->str{return "FUNCTION_VALUES_SERVER_SENTINEL";}

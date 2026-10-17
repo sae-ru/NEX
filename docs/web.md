@@ -165,3 +165,11 @@ Toolchain 0.15 adds deterministic operation sites to the TypeScript map and as a
 Language 0.6 permits enums as application state and data. `examples/enums/web.nex` uses typed cases and exhaustive match statements for update/view. The TypeScript emitter narrows a private symbol discriminator; wire case/fields wrappers are validated at typed request boundaries. Existing web Event/View/Command library layouts remain the adapter contract.
 
 Language 0.9 emits concrete generic specializations rather than JavaScript generic dispatch. `examples/generics/web.nex` uses bounded State<T: add>, a parametric transition helper an integer-constrained counter helper and a record-pattern update match; the standard application signatures and browser dependency lock remain unchanged. Build it with --target web, then run `python3 tests/generics_browser.py BUILD_DIRECTORY --browsers-path PATH` for the opt-in three-engine interaction check.
+
+Language 0.10 also permits immutable function values in application state.
+`examples/functions/web.nex` stores a captured counter callback and invokes it
+from pure updates; native/reference/TypeScript semantics and the actual
+Chromium/Firefox/WebKit transitions are exercised. The existing DOM event
+contract still uses web::Event/action strings. Callback values do not become
+JSON payloads or direct client/server calls. See the function guide for exact
+signatures, snapshot captures, identity, effects/realms and wire bounds.

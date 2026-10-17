@@ -11,6 +11,7 @@ E cloneExpression(E source,const std::map<std::string,Type> &arguments){
   value->annotation=substituteType(source->annotation,arguments);value->args.clear();
   for(auto child:source->args)value->args.push_back(cloneExpression(child,arguments));
   for(auto &type:value->typeArguments)type=substituteType(type,arguments);
+  if(source->lambda){value->lambda=std::make_shared<Function>(*source->lambda);auto &fn=*value->lambda;fn.checked=false;fn.captures.clear();fn.closure=false;fn.closureOwner.clear();fn.name.clear();fn.result=substituteType(fn.result,arguments);for(auto &param:fn.params)param.type=substituteType(param.type,arguments);fn.body=cloneBlock(source->lambda->body,arguments);if(value->kind==Expr::Lambda){value->text.clear();value->args.clear();}}
   value->arms.clear();for(auto original:source->arms){auto arm=std::make_shared<MatchArm>(*original);arm->pattern=clonePattern(original->pattern);arm->bindings.clear();arm->body=cloneBlock(original->body,arguments);value->arms.push_back(std::move(arm));}return value;
 }
 std::vector<S> cloneBlock(const std::vector<S> &source,const std::map<std::string,Type> &arguments){
@@ -28,6 +29,15 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
 }
 }
 bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint){
+  if(constraint=="wire"){
+    std::set<std::string> seen;std::function<bool(const Type&)> visit=[&](const Type &value){
+      if(value==Type::I64||value==Type::Bool||value==Type::Str)return true;
+      if(value.kind==Type::Parameter){auto found=program.parameterBounds.find(value.name);return found!=program.parameterBounds.end()&&(found->second.contains("wire")||found->second.contains("integer")||found->second.contains("ordered"));}
+      if(value.kind==Type::List||value.kind==Type::Result)return visit(*value.element);
+      if(value.kind==Type::Record){if(!seen.insert(value.name).second)return true;const auto &record=program.structure(value.name);for(auto field:record.members())if(!visit(field->type))return false;return true;}
+      return false;
+    };return visit(type);
+  }
   if(type.kind==Type::Parameter){auto found=program.parameterBounds.find(type.name);return found!=program.parameterBounds.end()&&(found->second.contains(constraint)||((constraint=="add"||constraint=="ordered")&&found->second.contains("integer")));}
   if(constraint=="add")return type==Type::I64||type==Type::Str||type.kind==Type::List;
   if(constraint=="ordered"||constraint=="integer")return type==Type::I64;
@@ -54,14 +64,21 @@ void prepareGenerics(Program &p){
   // Bound instance counts keep references stable while checking recursive calls.
   size_t functionInstances=0,structureInstances=0;for(const auto &f:p.functions)functionInstances+=!f.templateName.empty();for(const auto &s:p.structures)structureInstances+=!s.templateName.empty();
   if(functionInstances>maxInstances||structureInstances>maxInstances)throw Error("E_GENERIC_LIMIT","generic instance limit exceeded");
-  p.functions.reserve(p.functions.size()+maxInstances-functionInstances);p.structures.reserve(p.structures.size()+maxInstances-structureInstances);
+  p.functions.reserve(p.functions.size()+2*maxInstances-functionInstances);p.structures.reserve(p.structures.size()+maxInstances-structureInstances);
   for(const auto &f:p.functions)if(!f.typeParameters.empty()&&!p.functionTemplates.contains(f.name)){auto source=f;source.body=cloneBlock(f.body,{});p.functionTemplates.emplace(f.name,std::move(source));}
   for(const auto &s:p.structures)if(!s.typeParameters.empty()&&!p.structureTemplates.contains(s.name))p.structureTemplates.emplace(s.name,s);
 }
 Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(depth>64)throw Error("E_GENERIC_LIMIT","generic type expansion exceeds depth limit",span);
-  if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
+  if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
   for(auto &argument:type.arguments)argument=resolveType(p,argument,span,depth+1);
+  if(type.kind==Type::Function){
+    if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);
+    for(const auto &argument:type.arguments)if(argument==Type::Unit||argument==Type::Unknown)throw Error("E_TYPE","function parameters require non-unit types",span);
+    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db")throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
+    if(type.effects.contains("db")&&type.realm!="server")throw Error("E_REALM","db callable effect requires server realm",span);
+    return type;
+  }
   if(type.kind!=Type::Record)return type;
   auto found=p.structureTemplates.find(type.name);
   if(found==p.structureTemplates.end()){

@@ -2,13 +2,24 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain 0.22 / language 0.9 with checked nested
-patterns, guards and value matches. The Linux workflow introduced in 0.20 covers containerized ARM64
-and x86-64. The x86-64 run uses Docker emulation; it does not certify
-physical Intel/AMD hardware. Live LLDB/DAP is verified on macOS ARM64 and Linux
-ARM64. The matrix and installed-SDK checks are recorded below.
+The current checkpoint is toolchain **0.23 / language 0.10**, with typed
+function values, immutable snapshot closures, the generic wire bound and
+validated lazy callable watches. Canonical formats are function/8 and program/9.
+It passed the macOS ARM64 and Linux ARM64/x86-64 matrix recorded below. Linux
+x86-64 execution is emulated; its live debugging remains unverified. Keep SDK
+0.22 for its original receipts and frames. This checkpoint does not complete
+the broader requested language/development-chain/platform objective.
+
+The checker, interpreter, typed native indirect calls, TypeScript closures,
+owned cleanup, graph/cache metadata, strict debug values and callback-safe API
+projection are implemented. The model-independent function guide, grammar and
+prompt describe the same source semantics. `docs/function-values-design.md`
+retains design and prototype evidence. Unsupported platforms and remaining
+full-toolchain work stay in scope as listed later in this file.
 
 ## Implemented and exercised
+
+- Toolchain 0.23 / language 0.10 adds exact typed function signatures, named/generic references, higher-order calls, immutable transitive snapshot captures, identity equality, owned cleanup, real native indirect calls and TypeScript snapshot closures. Generic wire constraints exclude actual function payloads from JSON/API while allowing serializable phantom contracts. Native/TypeScript/reference agreement, graph/cache invalidation, callable LLDB/DAP, portable SQL migration and source-free SDK checks passed as recorded below. Custom traits, effect/realm subtyping, mutable captured cells, general async and resource FFI remain pending.
 
 - Toolchain 0.22 / language 0.9 adds typed recursive patterns, result/record/exact-list/literal matching, immutable arm bindings, ordered guards, value matches and bounded matrix coverage/usefulness analysis. Native, interpreter and TypeScript preserve selection/order/cleanup; pure watches demand selected paths. The checkpoint matrix and installed SDK workflow passed as recorded below; OR/rest/range patterns and custom extractors remain pending.
 
@@ -18,7 +29,7 @@ ARM64. The matrix and installed-SDK checks are recorded below.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64 and Linux ARM64/x86-64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.
-- NEX 0.9 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
+- NEX 0.10 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
 - Multi-file modules, logical qualified identities, import aliases, private/public functions and structures, public API visibility checks and cross-module type/effect/realm checks.
 - Local library roots, ordinary NEX `std/math` and `std/text` libraries, dependency source-content locks and explicit lock updates. Cyclic imports and remote retrieval are not supported.
 - Validated UTF-8 strings with strict escapes, Unicode scalar indexing/slicing, immutable nested lists and nominal structures with typed fields/constructors.
@@ -84,6 +95,12 @@ ARM64. The matrix and installed-SDK checks are recorded below.
 - Function/5, structure/3, enum/2 and program/6 distinguish checked source definitions from derived specializations; source revisions exclude instances. Context links non-editable instances to editable templates; atomic template repairs recheck all callers. Source export emits original declarations once. Native generic body edits reuse unchanged callers while concrete layouts/type arguments participate in dependencies. Public generic API extraction preserves phantom arguments/imports and emits checked wire/2/OpenAPI models. Generic watches resolve frame type arguments and instantiate uncompiled pure helpers without changing revision/stop state. Runtime-view/2 is unchanged; exact matching compiler/resources are still required. Task requirements link actual instances back to their source templates, while profile budgets retain concrete measured names. SDK 0.16 is preserved for old language 0.6 archives, frames and receipts.
 
 ## Verification evidence
+
+- **0.23.0 / language 0.10** passed **230 cases in all 24 CTest suites** on macOS ARM64 in 311.20 seconds. Linux ARM64 and emulated Linux x86-64 each ran 230 declared cases: 224 executed and six explicit macOS-SDK skips. Their full CTest runs passed in 383.11 and 1310.15 seconds. Source/build/install verification and logs are retained under `build/linux-ARCH/checkpoints/0.23.0`; macOS evidence is `build/ctest-023-portable-final.log`.
+- The installed SDK passed all nine maintained handoff phases on macOS ARM64, Linux ARM64 and Linux x86-64, in 38.247, 29.533 and 101.223 seconds respectively. Linux's second container has no `/src` mount and external network disabled. All 60 indexed resources and seventeen guides are present. The scenario exercises reviewed task failure, fixed-intent graph repair/import, generic snapshot closures and wire roundtrips, native/reference/TypeScript agreement, standalone output, profile attribution/cleanup, archived replay/export, scalar Z3 proof and an actual locked Vite build. Mac/Linux ARM64 additionally verify actual archived callable DAP and offline replay after source deletion. Linux x86-64 records live debugging false. Reports: `build/sdk-handoff-023-verified/report.json` and each Linux `source-free-sdk.json`.
+- Installed macOS LLDB/DAP passed the large-capture callable case in 9.241 seconds. Linux ARM64 passed all six live suites, including eleven callable cases in 34.383 seconds. Both validate native function symbols, lazy reads through an unread 32,768-item capture, alias identities, generic closure scopes, source-deleted snapshots, DAP pages and stop expiry. The current closure-state web build passed Chromium, Firefox and WebKit interaction (three cases, 2.2 seconds). Browser dependencies/notices are unchanged. Evidence: `build/sdk-callable-dap-023.log`, Linux `live-function_debug.log`, and `build/function-web-023-browsers.log`.
+- Genuine SDK 0.22 archives verify successful 0.9 migration and atomic rejection/explicit wire-bound repair, preserving original source/history and function/operation IDs. The SQL-only fixture path executes on macOS too; its legacy sidecar lacks a database field, so the reader defaults to graph.db without changing archived bytes. The first failed ARM64 and intentionally interrupted x86-64 reports are retained under `evidence-023-*`, superseded by the complete passing runs. SDK 0.22 still inspects its frame and replays its receipt; SDK 0.23 rejects those with E_DEBUG_BUILD/E_TASK_COMPILER. Task/proof pin updates assert unchanged source hashes, clauses, loops and acceptance intent; current schemas pass independent jsonschema 4.23 validation. See `build/version-010-old-sdk-compatibility.json`, `build/version-010-acceptance-pin-migration.json` and `build/version-010-schema-evidence.json`.
+
 
 - **0.22.0 / language 0.9** passed **201 cases in all 22 CTest suites** on macOS ARM64, most recently in 256.01 seconds after the SDK handoff addition. Linux ARM64 and Linux x86-64 each passed 195 executed cases plus six macOS-SDK skips, in 358.20 and 733.94 seconds respectively; x86-64 executes under Docker emulation. Linux ARM64 also passed the five opt-in live debugger suites, including all 14 matching cases. The installed macOS SDK passed all 14 matching cases; an additional actual NEX DAP matching check passed separately. Evidence: `build/ctest-022-handoff.log`, `build/sdk-matching-022.log`, `build/sdk-matching-dap-022.log` and the Linux `checkpoints/0.22.0` reports/logs.
 - The maintained installed-SDK scenario `tools/sdk_acceptance.py` passed its nine phases on macOS ARM64 and both Linux architectures. Linux runs in a second container with only the read-only SDK and fresh evidence mounted, `/src` absent and external networking disabled. All three perform an actual locked TypeScript/Vite build. macOS/Linux ARM64 additionally launch actual NEX DAP/LLDB after original source deletion, evaluate a nested match, capture its partial frame, exit normally and evaluate the saved frame offline. Linux x86-64 explicitly records live debugging false. The workflow requires failure of the wrong reviewed task, then unchanged-task-hash acceptance after graph repair, independent graph import, native/reference/TypeScript agreement, profile content/node attribution and balanced managed pools, archived task replay/export and the installed scalar proof. Expected failure is recorded as `not_satisfied`, never acceptance. All 56 indexed resources and sixteen guides are installed. See `build/sdk-handoff-022-verified/report.json` and Linux `source-free-sdk.json`; negative checks retain old evidence and reject an available forbidden source path (`build/sdk-acceptance-negative-022/verification.json`).

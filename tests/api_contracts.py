@@ -24,6 +24,84 @@ class API(harness.ToolchainCase):
     def simple(self):
         return 'module routes; import "std/api.nex" as api; pub struct Row { id: i64; } server fn handle(context: api::Context, input: Row) -> result<Row> { return ok(input); } endpoint create("POST", "/api/rows", 201) = handle;'
 
+    def callback_library(self, extra, helpers=False):
+        standard = self.root/'standard'; standard.mkdir()
+        libraries = {'std': 'standard'}
+        if helpers:
+            directory = self.root/'helpers'; directory.mkdir()
+            (directory/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}')
+            libraries['helpers'] = 'helpers'
+        for name in ('api.nex', 'http.nex', 'web.nex', 'net.nex'):
+            text = (harness.REPO/'lib'/name).read_text()
+            if name == 'net.nex':
+                text += extra
+            (standard/name).write_text(text)
+        (self.root/'nex.json').write_text(json.dumps({
+            'entry': 'main.nex', 'language': self.cli('describe')['version'], 'libraries': libraries}))
+        self.source(self.simple()+'\nimport "std/net.nex" as custom_net;\n')
+        self.cli('api', self.file, '--directory', self.root/'generated')
+        return self.root/'generated/client'
+
+    def test_callback_library_projection_preserves_inline_closure_once(self):
+        client = self.callback_library('''
+pub fn capture(value:i64)->(fn(i64)->i64){return fn(extra:i64)->i64{return value+extra;};}
+pub server fn unused_server()->str{return "CALLBACK_SERVER_SENTINEL";}
+fn unused_private()->str{return "CALLBACK_PRIVATE_SENTINEL";}
+''')
+        for source in client.rglob('*.nex'):
+            text = source.read_text()
+            self.assertNotIn('CALLBACK_SERVER_SENTINEL', text)
+            self.assertNotIn('CALLBACK_PRIVATE_SENTINEL', text)
+            self.assertNotIn('$lambda_', text)
+        manifest = json.loads((client/'nex.json').read_text())
+        net = (client/manifest['libraries']['std']/'net.nex').read_text()
+        self.assertEqual(net.count('fn capture('), 1)
+        app = client/'callbacks.nex'
+        app.write_text('module sdk_callbacks;import "std/net.nex" as net;'
+            'fn main()->unit!{io}{print(net::capture(40)(2));}'
+            'test fn cases()->unit{assert(net::capture(40)(2)==42);}')
+        self.assertEqual(self.cli('eval', app, cwd=client)['stdout'], '42\n')
+        self.assertEqual(self.cli('run', app, cwd=client)['stdout'], '42\n')
+        self.cli('test', app, cwd=client)
+        self.cli('test', app, '--target', 'web', cwd=client)
+
+    def test_callback_only_nominal_types_keep_their_imports_and_definitions(self):
+        client = self.callback_library('''
+import "helpers/types.nex" as types;
+pub fn consume(callback:fn(types::Token)->i64)->i64{return 42;}
+''', helpers=True)
+        manifest = json.loads((client/'nex.json').read_text())
+        self.assertIn('helpers', manifest['libraries'])
+        self.assertIn('pub struct Token', (client/manifest['libraries']['helpers']/'types.nex').read_text())
+        app = client/'callback_types.nex'
+        app.write_text('module sdk_callback_types;import "std/net.nex" as net;'
+            'import "helpers/types.nex" as types;'
+            'fn take(value:types::Token)->i64{return value.id;}'
+            'test fn cases()->unit{assert(net::consume(take)==42);}')
+        self.cli('test', app, cwd=client)
+        self.cli('test', app, '--target', 'web', cwd=client)
+
+    def test_phantom_callable_type_arguments_preserve_extracted_model_imports(self):
+        (self.root/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}')
+        callback = 'fn(types::Token)->(fn()->types::Token)'
+        self.source('module routes;import "std/api.nex" as api;import "./types.nex" as types;'
+            'pub struct Tag<T>{id:i64;}'
+            'server fn handle(context:api::Context,input:Tag<'+callback+'>)->result<Tag<'+callback+'>>{return ok(input);}'
+            'endpoint create("POST","/api/tags",201)=handle;')
+        self.cli('check')
+        self.assertIn('callback_types::Token', {s['name'] for s in self.cli('context','--symbol','create')['structures']})
+        self.cli('api', self.file, '--directory', self.root/'generated')
+        client = self.root/'generated/client'
+        self.assertTrue((client/'models/callback_types.nex').is_file())
+        self.cli('check', client/'api.nex', cwd=client)
+        app = client/'phantom.nex'
+        app.write_text('module sdk_phantom;import "./models/routes.nex" as model;'
+            'import "./models/callback_types.nex" as types;'
+            'test fn cases()->unit{let tag:model::Tag<'+callback+'> = model::Tag(42);'
+            'assert(encode_json(tag)=="{\\"id\\":\\"42\\"}");}')
+        self.cli('test', app, cwd=client)
+        self.cli('test', app, '--target', 'web', cwd=client)
+
     def test_endpoint_rejections_are_checked_before_graph_commit(self):
         valid = self.simple()
         head = self.cli('check', self.source(valid))['revision']
@@ -141,7 +219,7 @@ test fn codecs() -> unit {
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
             (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.9','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
@@ -163,7 +241,7 @@ pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
             (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.9','libraries':{'std':'standard','helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard','helpers':'helpers'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'

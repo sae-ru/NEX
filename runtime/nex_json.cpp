@@ -29,6 +29,7 @@ std::string encode(const Value &value,size_t depth,size_t &nodes){
   if(value.tag==Value::Integer)return nexrt::quoted(std::to_string(value.scalar));
   if(value.tag==Value::Boolean)return value.scalar?"true":"false";
   const auto &d=*value.object;
+  if(d.kind==Data::Closure)reject("function values cannot cross the JSON boundary");
   if(d.kind==Data::String)return nexrt::quoted(d.text);
   if(d.kind==Data::Success)return "{\"ok\":"+encode(d.values[0],depth+1,nodes)+"}";
   if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+nexrt::quoted(d.text)+",\"message\":"+nexrt::quoted(d.values[0].object->text)+"}}";

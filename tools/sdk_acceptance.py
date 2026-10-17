@@ -182,6 +182,8 @@ def main():
 pub enum Maybe<T> { None; Some(value:T); }
 pub struct Box<T> { value:T; }
 pub fn normalized<T:integer>(value:T) -> T { return value+0; }
+pub fn capture<T>(value:T) -> (fn()->T) { return fn()->T { return value; }; }
+pub fn roundtrip<T:wire>(value:T) -> T { return unwrap(decode_json<T>(encode_json(value))); }
 '''
     choose = '''pub fn choose(value:result<model::Maybe<i64>>) -> i64 {
  return match value { ok(model::Maybe::Some(n)) if n>0 => model::normalized(n), _ => -1 };
@@ -189,18 +191,21 @@ pub fn normalized<T:integer>(value:T) -> T { return value+0; }
     source = '''module handoff;
 import "./model.nex" as model;
 CHOOSE
-fn observe(value:result<model::Maybe<i64>>) -> i64 {
- let answer:i64 = choose(value);
+fn observe(value:result<model::Maybe<i64>>,callback:fn()->i64) -> i64 {
+ let answer:i64 = choose(value)+callback()-2;
  return answer; // sdk-breakpoint
 }
 fn main() -> unit !{io} {
- print(observe(ok(model::Maybe::Some(42))));
+ print(observe(ok(model::Maybe::Some(42)),model::capture(2)));
  print(model::Box("A\\u0000🌍").value);
 }
 test fn examples() -> unit {
  assert(choose(ok(model::Maybe::Some(42))) == 42);
  assert(choose(ok(model::Maybe<i64>::None())) == -1);
  assert(choose(err<model::Maybe<i64>>("E","unread")) == -1);
+ assert(model::capture(40)()==40);
+ assert(model::capture("A\\u0000🌍")()=="A\\u0000🌍");
+ assert(model::roundtrip(["A\\u0000🌍"])==["A\\u0000🌍"]);
 }
 '''.replace('CHOOSE', choose.replace('model::normalized(n)', 'model::normalized(n)+1'))
 
@@ -213,6 +218,8 @@ test fn examples() -> unit {
         require(Path(doctor['runtime']).resolve() == (resources / 'runtime/runtime.cpp').resolve(),
                 'compiler selected resources outside this SDK')
         require('typed_nested_patterns' in descriptor['match_features'], 'SDK lacks checked nested patterns')
+        require('snapshot_closures' in descriptor['function_value_features'], 'SDK lacks snapshot closures')
+        require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
         pack = json.loads((resources / 'llm/language-pack.json').read_text())
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
         inventory = {}
@@ -222,7 +229,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'linux', 'match'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'linux', 'match', 'function'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -355,9 +362,17 @@ test fn examples() -> unit {
                 client.response(pending)
                 stopped = client.event('stopped')
                 frame = client.request('stackTrace', {'threadId': stopped['threadId']})['stackFrames'][0]['id']
-                expression = 'match value {ok(model::Maybe::Some(n)) if n>0=>n,_=>-1}'
+                expression = '(match value {ok(model::Maybe::Some(n)) if n>0=>n,_=>-1})+callback()-2'
                 value = client.request('evaluate', {'expression': expression, 'frameId': frame, 'context': 'watch'})
                 require(value['nex']['value'] == '42' and value['nex']['revision'] == state['after'], 'stopped watch differs')
+                callback = client.request('evaluate', {'expression': 'callback', 'frameId': frame, 'context': 'watch'})
+                require(callback['type'] == 'fn()->i64' and
+                        callback['nex']['wire_schema']['schema'] == 'nex.debug-wire/1' and
+                        callback['nex']['value']['captures'] == {'value': '2'}, 'stopped callback differs')
+                children = client.request('variables', {'variablesReference': callback['variablesReference'],
+                    'start': 1, 'count': 1})['variables']
+                require(len(children) == 1 and children[0]['name'] == 'value' and children[0]['value'] == '2',
+                        'stopped callback children differ')
                 raw = client.request('evaluate', {'expression': '`nex-frame ' + expression, 'frameId': frame, 'context': 'repl'})
                 snapshot = root / 'frame.json'
                 snapshot.write_text(json.dumps(json.loads(raw['result']), indent=2) + '\n')
@@ -366,6 +381,7 @@ test fn examples() -> unit {
                 offline = cli('inspect', snapshot, '--manifest', session['manifest'], '--expression', expression, cwd=project)
                 require(offline['value'] == '42', 'offline captured watch differs')
                 report['evidence']['frame'] = str(snapshot)
+                report['evidence']['checked_callable_watch'] = True
             finally:
                 client.close()
         report['evidence']['debug_manifest'] = session['manifest']
@@ -391,13 +407,13 @@ test fn examples() -> unit {
     def browser():
         directory = root / 'browser'
         directory.mkdir()
-        client = (resources / 'examples/generics/web.nex').read_text()
-        client += '\nserver fn excluded() -> str {return "SDK_SERVER_ONLY_SENTINEL";}\n'
+        client = (resources / 'examples/functions/web.nex').read_text()
+        client += '\nserver fn sdk_unreachable_sentinel() -> str {return "SDK_SERVER_ONLY_SENTINEL";}\n'
         (directory / 'main.nex').write_text(client)
         (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
             'language': report['doctor']['language'], 'entry': 'main.nex'}))
         tested = cli('test', '--target', 'web', cwd=directory)
-        require('generics::web::transitions' in {t['name'] for t in tested['tests']},
+        require('functions::web::transitions' in {t['name'] for t in tested['tests']},
                 'browser tests selected another project')
         generated = root / 'generated-web'
         cli('web', '--directory', generated, cwd=directory)

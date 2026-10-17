@@ -36,8 +36,14 @@ The maintained scenario performs these actual operations:
    original wrong behavior, materialize the repaired sources and execute them.
 7. Prove the installed scalar verification example with the actual solver.
    This does not prove matching, the compiler or the whole application.
-8. Test and generate the installed generic browser example, checking that an
+8. Test and generate the installed generic browser example with captured
+   callback state, checking that an
    unreachable server sentinel is absent from generated TypeScript.
+
+The source workflow also exercises generic snapshot closures and wire-bounded
+roundtrips across reference/native/TypeScript output. Discovery checks the
+matching function guide and callback capabilities. These checks are included in
+the ordinary source-free scenario rather than requiring the repository.
 
 `--live` additionally launches the actual NEX DAP/LLDB stack against archived
 source after its original files were deleted. It verifies a source breakpoint,

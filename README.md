@@ -8,7 +8,7 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
+Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
 
 ## Build
 
@@ -104,7 +104,21 @@ Generate into a new/empty directory before using this client example. Build the 
 
 ## Generic libraries
 
-`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances; custom traits, higher-kinded types and function values remain pending.
+`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances; custom traits and higher-kinded types remain pending.
+
+## Function values
+
+`fn(i64)->i64` values support named/generic references, returned lambdas, immutable
+snapshot captures and checked higher-order calls in native and TypeScript output.
+Use `<T:wire>` for generic serialization; actual callables are excluded from
+application JSON/API payloads. [The function guide](docs/functions.md) describes
+identity, effects/realms, ownership, debugging and explicit 0.9 migration.
+
+```sh
+./build/nex guide --kind function --json
+./build/nex test examples/functions/main.nex
+./build/nex test examples/functions/main.nex --target web
+```
 
 ## Operation graph
 
@@ -173,4 +187,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.22.0**, source language **0.9**. Language 0.5/0.6/0.7/0.8 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.23.0**, source language **0.10**. The current macOS ARM64 and Linux ARM64/x86-64 checkpoint is verified; Linux x86-64 uses emulation. Consult `STATUS.md` for exact coverage and remaining work. Language 0.5/0.6/0.7/0.8/0.9 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

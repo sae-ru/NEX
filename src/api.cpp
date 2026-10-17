@@ -58,6 +58,11 @@ struct SourceTypes {
   bool extracted=true;std::set<std::string> existing;
   std::string type(const Type &t){
     if(t.kind==Type::List||t.kind==Type::Result)return std::string(t.kind==Type::List?"list<":"result<")+type(*t.element)+">";
+    if(t.kind==Type::Function){
+      std::string text=(t.realm=="shared"?"":t.realm+" ")+std::string("fn(");for(size_t i=0;i<t.arguments.size();++i){if(i)text+=", ";text+=type(t.arguments[i]);}
+      auto result=type(*t.element);text+=")->"+(t.element->kind==Type::Function?"("+result+")":result);
+      if(!t.effects.empty()){text+=" !{";bool first=true;for(const auto &effect:t.effects){if(!first)text+=", ";first=false;text+=effect;}text+="}";}return text;
+    }
     if(t.kind==Type::Parameter)return t.name.substr(t.name.rfind("::")+2);
     if(t.kind!=Type::Record)return typeName(t);
     if(!t.arguments.empty()){auto result=type(Type::record(t.name))+"<";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+=type(t.arguments[i]);}return result+">";}
@@ -80,7 +85,7 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
   }
   auto p=loadBundle(bundle(sources,entry),directory);
   std::set<std::string> functions,structures;
-  std::function<void(const Type&)> type=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)type(*t.element);if(t.kind==Type::Record&&structures.insert(t.name).second){const auto &s=p.structure(t.name);if(!s.templateName.empty())type(Type::record(s.templateName));for(const auto &argument:s.typeArguments)type(argument);for(auto field:s.members())type(field->type);}};
+  std::function<void(const Type&)> type=[&](const Type &t){if(t.element)type(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)type(argument);if(t.kind==Type::Record&&structures.insert(t.name).second){const auto &s=p.structure(t.name);if(!s.templateName.empty())type(Type::record(s.templateName));for(const auto &argument:s.typeArguments)type(argument);for(auto field:s.members())type(field->type);}};
   std::function<void(E)> expression=[&](E e){if(e){type(e->type);for(auto a:e->args)expression(a);}};
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type);expression(s->expr);childBlocks(s,block);}};
   std::function<void(const Function&)> function=[&](const Function &f){if(!functions.insert(f.name).second)return;if(f.realm=="server"||f.test)throw Error("E_REALM","server/test code cannot enter the client SDK",f.span);if(!f.templateName.empty())function(p.function(f.templateName));type(f.result);for(const auto &param:f.params)type(param.type);block(f.body);for(const auto &callee:f.dependencies)function(p.function(callee));};
@@ -88,7 +93,7 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
   // dependency libraries, plus the private helpers/types those exports use.
   for(const auto &f:p.functions)if(f.exported&&(f.unit==entry||f.unit.starts_with("@")))function(f);
   std::map<std::string,std::set<std::string>> references;
-  std::function<void(const Type&,const std::string&)> reference=[&](const Type &t,const std::string &unit){if(t.kind==Type::List||t.kind==Type::Result)reference(*t.element,unit);if(t.kind==Type::Record){const auto &s=p.structure(t.name);references[unit].insert(s.unit);for(const auto &argument:s.typeArguments)reference(argument,unit);}};
+  std::function<void(const Type&,const std::string&)> reference=[&](const Type &t,const std::string &unit){if(t.element)reference(*t.element,unit);if(t.kind==Type::Function)for(const auto &argument:t.arguments)reference(argument,unit);if(t.kind==Type::Record){const auto &s=p.structure(t.name);references[unit].insert(s.unit);for(const auto &argument:s.typeArguments)reference(argument,unit);}};
   for(const auto &f:p.functions)if(functions.contains(f.name)){
     reference(f.result,f.unit);for(const auto &param:f.params)reference(param.type,f.unit);
     for(const auto &callee:f.dependencies)references[f.unit].insert(p.function(callee).unit);
@@ -100,7 +105,7 @@ Value clientProjection(std::map<std::string,std::string> sources,const std::stri
   std::function<void(const std::string&)> unit=[&](const std::string &key){if(!reachable.insert(key).second)return;const auto &source=p.units.at(key);std::string text="module "+source.module+";\n";
     for(const auto &dep:source.imports)if(references[key].contains(dep.target)){text+="import "+quote(dep.path)+" as "+dep.alias+";\n";unit(dep.target);}
     for(const auto &s:p.structures)if(s.unit==key&&s.templateName.empty()&&structures.contains(s.name))text+=p.definition(s)+"\n";
-    for(const auto &f:p.functions)if(f.unit==key&&f.templateName.empty()&&functions.contains(f.name))text+=p.definition(f)+"\n";
+    for(const auto &f:p.functions)if(f.unit==key&&f.templateName.empty()&&!f.closure&&functions.contains(f.name))text+=p.definition(f)+"\n";
     projected[key]=std::move(text);
   };unit(entry);
   auto result=bundle(projected,entry);loadBundle(result,directory);return result;
@@ -161,7 +166,7 @@ Value generateAPI(const Program &p,const std::string &directory){
   dispatch+="  return http::json_response(404, encode_json(err<bool>(\"E_API_ROUTE\", \"Unknown endpoint\")));\n}\n";server[entry]=dispatch;
   // Extract model declarations only. Server implementations never enter the SDK.
   std::set<std::string> models,visited;
-  std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&visited.insert(t.name).second){const auto &s=p.structure(t.name);if(s.templateName.empty())models.insert(s.name);else include(Type::record(s.templateName));for(const auto &argument:s.typeArguments)include(argument);for(auto field:s.members())include(field->type);}};
+  std::function<void(const Type&)> include=[&](const Type &t){if(t.element)include(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)include(argument);if(t.kind==Type::Record&&visited.insert(t.name).second){const auto &s=p.structure(t.name);if(s.templateName.empty())models.insert(s.name);else include(Type::record(s.templateName));for(const auto &argument:s.typeArguments)include(argument);for(auto field:s.members())include(field->type);}};
   for(auto e:endpoints){const auto &handler=p.function(e->target);include(handler.result);if(handler.params.size()==2)include(handler.params[1].type);}
   std::map<std::string,std::vector<const Structure*>> groups;
   for(const auto &name:models){const auto &s=p.structure(name);if(s.unit.starts_with("@"))standard(client,s.unit);else groups[s.owner].push_back(&s);}

@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.9",
+  "language_version": "0.10",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -24,6 +24,7 @@
     "expressions": "docs/expressions.md",
     "debug_frame_schema": "llm/debug-frame.schema.json",
     "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json",
+    "debug_wire_schema": "llm/debug-wire.schema.json",
     "operations": "docs/operations.md",
     "operations_schema": "llm/operations.schema.json",
     "native_toolchain_schema": "llm/toolchain.schema.json",
@@ -34,10 +35,11 @@
     "linux_verify": "tools/linux/verify.py",
     "linux_sdk_smoke": "tools/linux/sdk_smoke.py",
     "matching": "docs/matching.md",
+    "functions": "docs/functions.md",
     "sdk_handoff": "docs/sdk.md",
     "sdk_acceptance": "tools/sdk_acceptance.py"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -63,7 +65,9 @@
     "generics": "examples/generics/main.nex",
     "generic_browser": "examples/generics/web.nex",
     "constraints": "examples/constraints.nex",
-    "matching": "examples/matching.nex"
+    "matching": "examples/matching.nex",
+    "functions": "examples/functions/main.nex",
+    "function_browser": "examples/functions/web.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

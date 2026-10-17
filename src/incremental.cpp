@@ -8,14 +8,21 @@ llvm::json::Array array(const std::set<std::string> &values){
 }
 llvm::json::Value interface(const Function &f){
   llvm::json::Array parameters;for(const auto &p:f.params)parameters.push_back(typeName(p.type));
+  llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(typeName(capture.type));
   return llvm::json::Object{{"name",f.name},{"parameters",std::move(parameters)},{"result",typeName(f.result)},
-    {"effects",array(f.effects)},{"realm",f.realm},{"exported",f.exported},{"test",f.test}};
+    {"effects",array(f.effects)},{"realm",f.realm},{"exported",f.exported},{"test",f.test},{"closure",f.closure},{"captures",std::move(captures)}};
 }
+}
+std::set<std::string> nativeFunctionBridges(const Program &p,const std::set<std::string> &reachable){
+  std::set<std::string> result;std::function<void(E)> expression=[&](E e){if(e){if(e->kind==Expr::FunctionRef)result.insert(e->text);for(auto child:e->args)expression(child);}};
+  std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
+  for(const auto &name:reachable)block(p.function(name).body);return result;
 }
 NativePlan planNative(const Program &p,const std::string &entry){
   std::set<std::string> reachable;
   std::function<void(const Function&)> visit=[&](const Function &f){if(reachable.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));
+  auto bridges=nativeFunctionBridges(p,reachable);
   std::map<std::string,std::set<std::string>> members,callers,unitDependencies,unitConsumers;
   for(const auto &name:reachable){
     const auto &f=p.function(name);members[f.unit].insert(name);
@@ -28,6 +35,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
     std::set<std::string> types,externalCalls;llvm::json::Array definitions,interfaces,layouts;
     std::function<void(Type)> type=[&](Type t){
       if(t.element)type(*t.element);
+      if(t.kind==Type::Function)for(const auto &argument:t.arguments)type(argument);
       if(t.kind!=Type::Record||!types.insert(t.name).second)return;
       const auto &record=p.structure(t.name);if(record.unit!=key)unitDependencies[key].insert(record.unit);
       for(const auto &argument:record.typeArguments)type(argument);
@@ -56,9 +64,10 @@ NativePlan planNative(const Program &p,const std::string &entry){
       type(callee.result);for(const auto &param:callee.params)type(param.type);
     }
     for(const auto &name:types)layouts.push_back(canonical(p.structure(name)));
+    llvm::json::Array unitBridges;for(const auto &name:names)if(bridges.contains(name))unitBridges.push_back(name);
     unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/1"},{"language",languageVersion},
       {"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
-      {"external_interfaces",std::move(interfaces)},{"type_layouts",std::move(layouts)}},false);
+      {"external_interfaces",std::move(interfaces)},{"type_layouts",std::move(layouts)},{"closure_bridges",std::move(unitBridges)}},false);
     plan.units.push_back(std::move(unit));
   }
   std::set<std::string> allUnits;for(const auto &unit:plan.units)allUnits.insert(unit.unit);

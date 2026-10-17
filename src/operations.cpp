@@ -5,7 +5,7 @@
 namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
-const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match"};
+const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda"};
 const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
@@ -34,6 +34,7 @@ class Tree {
     auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get());
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
     if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
+    if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::Match){expression(e->args[0],path,"argument",0);arms(e,path);}
     else for(unsigned i=0;i<e->args.size();++i)expression(e->args[i],path,"argument",i);
   }
@@ -58,6 +59,7 @@ public:
   Tree(const Program &p,const Function &f):p(p),f(f){}
   std::vector<Operation> run(){
     scopes.emplace_back();
+    for(unsigned i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto path="capture/"+std::to_string(i);add(path,"","capture",i,"capture",capture.name,capture.span,Object{{"kind","capture"},{"name",capture.name},{"type",typeName(capture.type)}});scopes.back()[capture.name]=path;}
     for(unsigned i=0;i<f.params.size();++i){const auto &param=f.params[i];auto path="parameter/"+std::to_string(i);add(path,"","parameter",i,"parameter",param.name,param.span,Object{{"kind","parameter"},{"name",param.name},{"type",typeName(param.type)}});scopes.back()[param.name]=path;}
     block(f.body,"","body",f.span,false);
     std::map<std::string,Array> children;auto functionHash=hash(json(canonical(f),false));
@@ -80,14 +82,14 @@ std::map<std::string,std::string> matchOperations(const std::vector<Operation> &
     std::map<const Operation*,const Operation*> pairs;std::set<const Operation*> used;
     auto pair=[&](const Operation *x,const Operation *y){if(x->kind==y->kind&&!pairs.contains(x)&&used.insert(y).second)pairs[x]=y;};
     std::map<std::pair<std::string,unsigned>,const Operation*> positions;for(auto y:b[oldParent])positions[{y->role,y->ordinal}]=y;
-    for(auto x:a[parent])if(x->role!="parameter"&&x->role!="case"&&(x->role!="statement"||identical)){auto y=positions.find({x->role,x->ordinal});if(y!=positions.end())pair(x,y->second);}
+    for(auto x:a[parent])if(x->role!="parameter"&&(x->role!="case"||identical)&&(x->role!="statement"||identical)){auto y=positions.find({x->role,x->ordinal});if(y!=positions.end())pair(x,y->second);}
     auto unique=[&](const std::string &role,bool content){
       std::map<std::string,std::vector<const Operation*>> left,right;
       for(auto x:a[parent])if(x->role==role&&!pairs.contains(x))left[x->kind+":"+(content?x->content:x->anchor)].push_back(x);
       for(auto y:b[oldParent])if(y->role==role&&!used.contains(y))right[y->kind+":"+(content?y->content:y->anchor)].push_back(y);
       for(const auto &[key,group]:left)if(group.size()==1&&right[key].size()==1)pair(group[0],right[key][0]);
     };
-    unique("parameter",false);unique("case",false);
+    unique("parameter",false);unique("case",true);unique("case",false);
     if(!identical){unique("statement",true);unique("statement",false);}
     for(const auto &[x,y]:pairs){auto id=ids.find(y->path);if(id==ids.end())continue;result[x->path]=id->second;match(x->path,y->path,x->content==y->content);}
   };

@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.9";
+inline constexpr const char *languageVersion = "0.10";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
@@ -18,16 +18,20 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
+  std::string realm="shared";std::set<std::string> effects;
   Type() = default;
   Type(Kind kind) : kind(kind) {}
   static Type list(Type item) { Type t(List); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type result(Type item) { Type t(Result); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type record(std::string name) { Type t(Record); t.name=std::move(name); return t; }
-  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result; }
+  static Type function(std::vector<Type> parameters,Type result,std::string realm="shared",std::set<std::string> effects={}) {
+    Type t(Function);t.arguments=std::move(parameters);t.element=std::make_shared<Type>(std::move(result));t.realm=std::move(realm);t.effects=std::move(effects);return t;
+  }
+  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function; }
   bool operator==(const Type &other) const {
-    return kind==other.kind && name==other.name && arguments==other.arguments && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
+    return kind==other.kind && name==other.name && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
 };
 std::string typeName(Type type);
@@ -40,9 +44,11 @@ struct Pattern {
 };
 template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto child:pattern->args)visitPattern(child,visit);}
 struct MatchArm;
+struct Function;
 struct Expr {
-  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match } kind;
+  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda } kind;
   Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
+  std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;
   std::vector<Type> typeArguments;
   std::vector<std::shared_ptr<MatchArm>> arms;bool statementMatch=false;
@@ -76,6 +82,7 @@ struct Function {
   bool exported=false; std::string owner,localName,unit;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
   TypeBounds typeBounds;
+  bool closure=false;std::string closureOwner;std::vector<Param> captures;
 };
 struct Import { std::string path,alias,target; Span span; };
 struct Endpoint {
@@ -141,7 +148,7 @@ Evaluation evaluate(const Program &program, const std::string &entry = "main",
 // Typed wire values are decoded lazily, preserving short-circuit behavior when
 // a referenced stopped-frame value is unavailable. No target process is called.
 llvm::json::Value evaluateExpression(const Program &program,E expression,const std::map<std::string,Type> &types,
-  const llvm::json::Object &values,uint64_t stepLimit=100000,const llvm::json::Array *captures=nullptr,bool demand=false);
+  const llvm::json::Object &values,uint64_t stepLimit=100000,const llvm::json::Array *captures=nullptr,bool demand=false,const std::set<std::string> *compiledCallables=nullptr);
 std::string readFile(const std::string &path);
 void writeFile(const std::string &path, const std::string &text);
 void copyFile(const std::string &source, const std::string &destination, bool overwrite = false);
