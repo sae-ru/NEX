@@ -16,9 +16,9 @@ function object(value: unknown): value is Record<string, unknown> { return value
 function wireSchema(text: string): Schema {
   if (encoder.encode(text).length > 262144) invalid('Endpoint schema exceeds 256 KiB');
   const value = parseJSON(text);
-  if (!object(value) || value.schema !== 'nex.wire/1' || Object.keys(value).sort().join(',') !== 'records,root,schema' || !object(value.records)) invalid('Invalid endpoint wire schema');
-  const records = value.records;
-  if (Object.keys(records).length > 1024) invalid('Endpoint schema has too many records');
+  if (!object(value) || !object(value.records) || !((value.schema === 'nex.wire/1' && Object.keys(value).sort().join(',') === 'records,root,schema') || (value.schema === 'nex.wire/2' && Object.keys(value).sort().join(',') === 'enums,records,root,schema' && object(value.enums)))) invalid('Invalid endpoint wire schema');
+  const records = value.records, enums = value.schema === 'nex.wire/2' ? value.enums as Record<string, unknown> : {};
+  if (Object.keys(records).length + Object.keys(enums).length > 1024) invalid('Endpoint schema has too many nominal types');
   let nodes = 0;
   function descriptor(type: unknown, depth: number): void {
     if (++nodes > 10000 || depth > 64) invalid('Endpoint schema exceeds structural limits');
@@ -26,14 +26,24 @@ function wireSchema(text: string): Schema {
     if (!object(type) || Object.keys(type).length !== 1) invalid('Invalid endpoint type');
     if ('list' in type) descriptor(type.list, depth + 1);
     else if ('result' in type) descriptor(type.result, depth + 1);
+    else if ('enum' in type) { if (typeof type.enum !== 'string' || !Object.prototype.hasOwnProperty.call(enums, type.enum)) invalid('Unknown endpoint enum'); }
     else if (typeof type.record !== 'string' || !Object.prototype.hasOwnProperty.call(records, type.record)) invalid('Unknown endpoint record');
   }
-  for (const fields of Object.values(records)) {
+  function fieldsCheck(fields: unknown): void {
     if (!Array.isArray(fields) || fields.length > 1024) invalid('Invalid endpoint fields');
     const names = new Set<string>();
     for (const field of fields) {
       if (!object(field) || Object.keys(field).sort().join(',') !== 'name,type' || typeof field.name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*(?![\s\S])/.test(field.name) || names.has(field.name)) invalid('Invalid endpoint field');
       names.add(field.name); descriptor(field.type, 0);
+    }
+  }
+  for (const fields of Object.values(records)) fieldsCheck(fields);
+  for (const variants of Object.values(enums)) {
+    if (!Array.isArray(variants) || variants.length < 1 || variants.length > 1024) invalid('Invalid endpoint variants');
+    const names = new Set<string>();
+    for (const variant of variants) {
+      if (!object(variant) || Object.keys(variant).sort().join(',') !== 'fields,name' || typeof variant.name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*(?![\s\S])/.test(variant.name) || names.has(variant.name)) invalid('Invalid endpoint variant');
+      names.add(variant.name); fieldsCheck(variant.fields);
     }
   }
   descriptor(value.root, 0); return value as Schema;

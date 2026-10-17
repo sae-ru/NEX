@@ -6,6 +6,7 @@
 #include "nex_io.h"
 #include "llvm/Support/Error.h"
 #include <limits>
+#include <functional>
 
 namespace nex {
 namespace {
@@ -13,7 +14,7 @@ using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
   const Program &p; uint64_t limit; Evaluation result;
-  using Scope=std::map<std::string,V>;
+  struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
   const std::map<std::string,Type> *watchTypes=nullptr;
   std::unique_ptr<WatchValues> watch;
@@ -21,9 +22,9 @@ class Interpreter {
   V full(const V &value){return watch?watch->concrete(value):value;}
   void step(Span s){if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
   V &local(const std::string &name,Span span={}) {
-    for(auto i=frames.back().rbegin();i!=frames.back().rend();++i)if(i->contains(name))return i->at(name);
+    for(auto i=frames.back().rbegin();i!=frames.back().rend();++i){if(auto lazy=i->lazy.find(name);lazy!=i->lazy.end()){auto value=lazy->second();i->values[name]=std::move(value);i->lazy.erase(lazy);}if(i->values.contains(name))return i->values.at(name);}
     if(watchTypes&&frames.size()==1&&watchTypes->contains(name)){
-      try{return frames.back().back().emplace(name,watch->local(name)).first->second;}catch(Error &error){error.span=span;throw;}
+      try{return frames.back().back().values.emplace(name,watch->local(name)).first->second;}catch(Error &error){error.span=span;throw;}
     }
     throw Error("E_INTERNAL","checked local is missing");
   }
@@ -41,6 +42,7 @@ class Interpreter {
     if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return watch?watch->index(base,index.scalar):nexrt::get(base.object,index.scalar);}
     if(e->kind==Expr::Call) {
       std::vector<V> args;for(auto a:e->args)args.push_back(expression(a));
+      if(auto variant=p.variant(e->text)){auto d=std::make_shared<nexrt::Data>(nexrt::Data::Enum);d->text=e->text;d->ordinal=variant->ordinal;d->values=std::move(args);for(const auto &field:variant->fields)d->names.push_back(field.name);return V(d);}
       if(p.hasStructure(e->text)){
         auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
@@ -102,12 +104,17 @@ class Interpreter {
     for(auto s:body) {
       try{step(s->span);
       switch(s->kind) {
-      case Stmt::Let:case Stmt::Var:{auto v=expression(s->expr);frames.back().back()[s->name]=std::move(v);break;}
+      case Stmt::Let:case Stmt::Var:{auto v=expression(s->expr);frames.back().back().values[s->name]=std::move(v);break;}
       case Stmt::Assign:{auto v=expression(s->expr);local(s->name)=std::move(v);break;}
       case Stmt::Expression:expression(s->expr);break;
       case Stmt::Return:throw Returned{s->expr?expression(s->expr):V()};
       case Stmt::If:block(expression(s->expr).scalar?s->body:s->alternative);break;
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
+      case Stmt::Match:{
+        auto value=expression(s->expr);auto tag=watch?watch->enumTag(value):value.object->ordinal;bool found=false;
+        for(auto arm:s->arms)if(arm->ordinal==tag){found=true;frames.back().emplace_back();for(size_t i=0;i<arm->bindings.size();++i)if(arm->bindings[i].name!="_"){auto name=arm->bindings[i].name;if(watch)frames.back().back().lazy[name]=[&,value,tag,i]{return watch->enumField(value,tag,i);};else frames.back().back().values[name]=nexrt::get(value.object,i);}block(arm->body,false);frames.back().pop_back();break;}
+        if(!found)throw Error("E_ENUM","invalid checked enum discriminant",s->span);break;
+      }
       }
       }catch(Error &error){if(error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }
@@ -115,7 +122,7 @@ class Interpreter {
   }
   V call(const Function &f,const std::vector<V> &args) {
     if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
-    frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back()[f.params[i].name]=args[i];
+    frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}
     frames.pop_back();return value;
   }

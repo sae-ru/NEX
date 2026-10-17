@@ -69,6 +69,11 @@ const Structure &Program::structure(const std::string &name) const {
 bool Program::hasStructure(const std::string &name)const {
   return std::any_of(structures.begin(),structures.end(),[&](const auto &s){return s.name==name||(name.find("::")==std::string::npos&&s.owner==module&&s.localName==name);});
 }
+const Variant *Program::variant(const std::string &name,const Structure **owner)const {
+  auto separator=name.rfind("::");if(separator==std::string::npos)return nullptr;
+  auto nominal=name.substr(0,separator),tag=name.substr(separator+2);
+  for(const auto &type:structures)if(type.enumeration&&(type.name==nominal||(type.owner==module&&type.localName==nominal)))for(const auto &value:type.variants)if(value.name==tag){if(owner)*owner=&type;return &value;}return nullptr;
+}
 std::string Program::definition(const Function &f)const {
   const auto &text=units.contains(f.unit)?units.at(f.unit).source:source;return text.substr(f.span.begin,f.span.end-f.span.begin);
 }
@@ -115,7 +120,7 @@ public:
       kind = Token::Num; while (std::isdigit(static_cast<unsigned char>(peek()))) advance();
     } else {
       std::string pair = source.substr(i, 2);
-      if (pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
+      if (pair == "=>" || pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
       else if (std::string("(){}[]:;.,+-*/%<>=!").find(c) != std::string::npos) advance();
       else throw Error("E_LEX", "unexpected character", s);
     }
@@ -211,6 +216,10 @@ class Parser {
     }
     return body;
   }
+  bool matchAhead()const {
+    if(peek().text!="match")return false;int depth=0;
+    for(size_t n=1;i+n<tokens.size();++n){const auto &text=peek(n).text;if(!depth&&(text==";"||text=="="||text=="}"))return false;if(!depth&&text=="{")return true;if(text=="("||text=="[")++depth;if(text==")"||text=="]")--depth;if(depth<0)return false;}return false;
+  }
   S statement() {
     auto s=std::make_shared<Stmt>(); s->span=peek().span;
     if(peek().text=="let" || peek().text=="var") {
@@ -221,6 +230,13 @@ class Parser {
     } else if(accept("if")) {
       s->kind=Stmt::If; s->expr=expression(); s->body=block();
       if(accept("else")) { if(peek().text=="if")s->alternative={statement()}; else s->alternative=block(); }
+    } else if(matchAhead()) {
+      take();s->kind=Stmt::Match;s->expr=expression();expect("{");
+      while(!accept("}")){
+        auto arm=std::make_shared<MatchArm>();arm->span=peek().span;arm->variant=qualified();expect("(");
+        if(!accept(")")){do{auto binding=name();arm->bindings.push_back({binding.text,Type::Unknown,binding.span});}while(accept(","));expect(")");}
+        expect("=>");arm->body=block();accept(",");s->arms.push_back(std::move(arm));
+      }
     } else if(accept("while")) {
       s->kind=Stmt::While; s->expr=expression(); s->body=block();
     } else if(peek().kind==Token::Id && peek(1).text=="=") {
@@ -252,6 +268,15 @@ public:
         expect("as");dependency.alias=name().text;dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
+      if(peek().text=="enum") {
+        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;expect("{");
+        while(!accept("}")){
+          auto tag=name();Variant v;v.name=tag.text;v.span=tag.span;v.ordinal=s.variants.size();
+          if(accept("(")){if(!accept(")")){do{auto field=name();expect(":");v.fields.push_back({field.text,type(),field.span});}while(accept(","));expect(")");}}
+          expect(";");s.variants.push_back(std::move(v));
+        }
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));continue;
+      }
       if(peek().text=="struct") {
         Structure s;take();s.span=start;s.exported=exported;s.name=name().text;expect("{");
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
@@ -350,8 +375,12 @@ class Checker {
         if(e->annotation==Type::Unknown)throw Error("E_INFER","decode_json requires an explicit type: decode_json<T>(text)",e->span);
         validType(e->annotation,e->span);e->type=Type::result(e->annotation);break;
       }
+      if(const Structure *owner=nullptr;auto variant=p.variant(e->text,&owner)){
+        arity(variant->fields.size());for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],variant->fields[i].type),variant->fields[i].type,e->args[i]->span);
+        e->number=variant->ordinal;e->type=Type::record(owner->name);break;
+      }
       if(p.hasStructure(e->text)) {
-        const auto &s=p.structure(e->text);arity(s.fields.size());
+        const auto &s=p.structure(e->text);if(s.enumeration)throw Error("E_CONSTRUCTOR","construct an enum through its named variant",e->span);arity(s.fields.size());
         for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],s.fields[i].type),s.fields[i].type,e->args[i]->span);
         e->type=Type::record(s.name);break;
       }
@@ -409,6 +438,18 @@ class Checker {
       case Stmt::If: {
         same(expr(s->expr),Type::Bool,s->span);bool a=block(s->body),b=block(s->alternative);returns=a&&b;break;
       }
+      case Stmt::Match: {
+        s->type=expr(s->expr);if(s->type.kind!=Type::Record||!p.structure(s->type.name).enumeration)throw Error("E_MATCH_TYPE","match requires a nominal enum",s->span);
+        const auto &type=p.structure(s->type.name);std::set<int64_t> covered;bool all=true;
+        for(auto arm:s->arms){const Structure *owner=nullptr;auto variant=p.variant(arm->variant,&owner);
+          if(!variant||owner->name!=type.name)throw Error("E_MATCH_VARIANT","pattern is not a variant of "+type.name,arm->span);
+          arm->ordinal=variant->ordinal;if(!covered.insert(arm->ordinal).second)throw Error("E_MATCH_DUPLICATE","variant is matched more than once",arm->span);
+          if(arm->bindings.size()!=variant->fields.size())throw Error("E_ARITY","pattern binding count differs from variant payload",arm->span);
+          scopes.emplace_back();for(size_t i=0;i<arm->bindings.size();++i){auto &binding=arm->bindings[i];binding.type=variant->fields[i].type;if(binding.name!="_")define(binding.name,{binding.type,false},binding.span);}
+          all=block(arm->body,false)&&all;scopes.pop_back();
+        }
+        if(covered.size()!=type.variants.size())throw Error("E_MATCH_EXHAUSTIVE","match must cover every enum variant exactly once",s->span);returns=all;break;
+      }
       case Stmt::While:same(expr(s->expr),Type::Bool,s->span);block(s->body);break;
       }
     }
@@ -426,7 +467,9 @@ public:
     const auto &builtins=builtinNames();
     for(const auto &s:p.structures){
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
-      std::set<std::string> fields;for(const auto &field:s.fields){if(!fields.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}
+      auto fields=[&](const auto &members){std::set<std::string> seen;for(const auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
+      fields(s.fields);if(s.enumeration&&s.variants.empty())throw Error("E_ENUM","an enum requires at least one variant",s.span);
+      std::set<std::string> tags;for(const auto &variant:s.variants){if(!tags.insert(variant.name).second||!names.insert(s.name+"::"+variant.name).second)throw Error("E_DUPLICATE","duplicate enum variant",variant.span);fields(variant.fields);}
     }
     for(const auto &fn:p.functions) {
       if(builtins.contains(fn.localName.empty()?fn.name:fn.localName)||!names.insert(fn.name).second)throw Error("E_DUPLICATE","duplicate or reserved function '"+fn.name+"'",fn.span);
@@ -444,14 +487,15 @@ public:
       if(t.kind==Type::List||t.kind==Type::Result)publicType(*t.element,span);
       if(t.kind==Type::Record&&!p.structure(t.name).exported)throw Error("E_VISIBILITY","public API exposes private type '"+t.name+"'",span);
     };
-    for(const auto &s:p.structures)if(s.exported)for(const auto &field:s.fields)publicType(field.type,field.span);
+    for(const auto &s:p.structures)if(s.exported)for(auto field:s.members())publicType(field->type,field->span);
     for(const auto &fn:p.functions)if(fn.exported){publicType(fn.result,fn.span);for(const auto &param:fn.params)publicType(param.type,param.span);}
     std::set<std::string> operations,routes;
     auto apiWire=[&](const Type &type,Span span){
       auto schema=wireSchema(p,type);auto object=schema.getAsObject();auto records=object->getObject("records");size_t nodes=0;
-      if(json(schema,false).size()>262144||records->size()>1024)throw Error("E_API_LIMIT","endpoint wire schema exceeds size/record limits",span);
+      auto enums=object->getObject("enums");if(json(schema,false).size()>262144||records->size()+enums->size()>1024)throw Error("E_API_LIMIT","endpoint wire schema exceeds size/record limits",span);
       std::function<void(const llvm::json::Value&,unsigned)> descriptor=[&](const auto &value,unsigned depth){if(++nodes>10000||depth>64)throw Error("E_API_LIMIT","endpoint wire schema exceeds descriptor limits",span);if(auto object=value.getAsObject()){if(auto item=object->get("list"))descriptor(*item,depth+1);if(auto item=object->get("result"))descriptor(*item,depth+1);}};
       for(const auto &[name,fields]:*records){auto array=fields.getAsArray();if(array->size()>1024)throw Error("E_API_LIMIT","endpoint record exceeds field limit",span);for(const auto &field:*array)descriptor(*field.getAsObject()->get("type"),0);}
+      for(const auto &[name,cases]:*enums){auto variants=cases.getAsArray();if(variants->size()>1024)throw Error("E_API_LIMIT","endpoint enum exceeds variant limit",span);for(const auto &variant:*variants){auto fields=variant.getAsObject()->getArray("fields");if(fields->size()>1024)throw Error("E_API_LIMIT","endpoint enum payload exceeds field limit",span);for(const auto &field:*fields)descriptor(*field.getAsObject()->get("type"),0);}}
       descriptor(*object->get("root"),0);
     };
     for(const auto &endpoint:p.endpoints){
@@ -480,7 +524,8 @@ llvm::json::Value exprJSON(E e) {
 }
 llvm::json::Array blockJSON(const std::vector<S> &body) {
   llvm::json::Array out;
-  for(auto s:body)out.push_back(llvm::json::Object{{"kind",int64_t(s->kind)},{"name",s->name},{"type",typeName(s->type)},{"expression",exprJSON(s->expr)},{"body",blockJSON(s->body)},{"else",blockJSON(s->alternative)}});
+  for(auto s:body){llvm::json::Object item{{"kind",int64_t(s->kind)},{"name",s->name},{"type",typeName(s->type)},{"expression",exprJSON(s->expr)},{"body",blockJSON(s->body)},{"else",blockJSON(s->alternative)}};
+    if(s->kind==Stmt::Match){llvm::json::Array arms;for(auto arm:s->arms){llvm::json::Array bindings;for(const auto &binding:arm->bindings)bindings.push_back(llvm::json::Object{{"name",binding.name},{"type",typeName(binding.type)}});arms.push_back(llvm::json::Object{{"variant",arm->variant},{"ordinal",arm->ordinal},{"bindings",std::move(bindings)},{"body",blockJSON(arm->body)}});}item["arms"]=std::move(arms);}out.push_back(std::move(item));}
   return out;
 }
 }
@@ -503,9 +548,11 @@ llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
-  return llvm::json::Object{{"format","nex.function/3"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"body",blockJSON(f.body)}};
+  return llvm::json::Object{{"format","nex.function/4"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"body",blockJSON(f.body)}};
 }
 llvm::json::Value canonical(const Structure &s) {
+  if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}return llvm::json::Object{{"format","nex.enum/1"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"variants",std::move(variants)}};}
+
   llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});
   return llvm::json::Object{{"format","nex.structure/2"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"fields",std::move(fields)}};
 }
@@ -520,7 +567,7 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/4"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/5"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{

@@ -48,17 +48,19 @@ bool inside(const fs::path &path,const fs::path &base){
   auto relative=path.lexically_relative(base);if(relative.empty())return path==base;
   for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();
 }
-struct Symbols{std::map<std::string,bool> functions,structures;};
+struct Symbols{std::map<std::string,bool> functions,structures,variants;std::set<std::string> enumerations;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
   if(!type&&builtinNames().contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
-  if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
-    if(local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","use an import alias followed by one exported name",span);
+  if(external&&symbols.at(key).enumerations.contains(name.substr(0,separator))){external=false;}
+  else if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
+    if(type&&local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","type names use an import alias followed by one exported name",span);
     for(const auto &dependency:units.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}
     if(!found)throw Error("E_IMPORT_ALIAS","unknown import alias '"+alias+"'",span);
   }
   const auto &table=symbols.at(target);bool exported=false,found=false;
   if(table.structures.contains(local)){found=true;exported=table.structures.at(local);}
+  if(!type&&table.variants.contains(local)){found=true;exported=table.variants.at(local);}
   if(!type&&table.functions.contains(local)){found=true;exported=table.functions.at(local);}
   if(!found)throw Error(type?"E_TYPE":"E_NAME","unknown "+std::string(type?"type '":"function '")+name+"'",span);
   if(external&&!exported)throw Error("E_VISIBILITY","'"+name+"' is private to module "+units.at(target).module,span);
@@ -105,9 +107,9 @@ class Loader {
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
     std::function<void(E)> expr=[&](E e){if(e){e->span.file=key;for(auto a:e->args)expr(a);}};
-    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){s->span.file=key;expr(s->expr);block(s->body);block(s->alternative);}};
+    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){s->span.file=key;for(auto arm:s->arms){arm->span.file=key;for(auto &binding:arm->bindings)binding.span.file=key;}expr(s->expr);childBlocks(s,block);}};
     for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
-    for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;}
+    for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
     for(auto &endpoint:unit.endpoints){endpoint.span.file=key;endpoint.owner=unit.module;endpoint.localName=endpoint.name;endpoint.unit=key;}
     std::set<std::string> aliases;
     for(auto &dependency:unit.imports){dependency.span.file=key;if(!aliases.insert(dependency.alias).second)throw Error("E_IMPORT_ALIAS","duplicate import alias '"+dependency.alias+"'",dependency.span);dependency.target=importTarget(key,dependency.path,dependency.span);}
@@ -122,7 +124,7 @@ class Loader {
     for(const auto &[key,unit]:parsed){
       auto &table=symbols[key];std::set<std::string> names;
       for(const auto &f:unit.functions){if(!names.insert(f.localName).second||builtins.contains(f.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+f.localName+"'",f.span);table.functions[f.localName]=f.exported;}
-      for(const auto &s:unit.structures){if(!names.insert(s.localName).second||builtins.contains(s.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+s.localName+"'",s.span);table.structures[s.localName]=s.exported;}
+      for(const auto &s:unit.structures){if(!names.insert(s.localName).second||builtins.contains(s.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+s.localName+"'",s.span);table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;for(const auto &dependency:unit.imports)if(dependency.alias==s.localName)throw Error("E_IMPORT_ALIAS","enum name conflicts with an import alias",s.span);}}
     }
     for(auto &[key,unit]:parsed){
       std::function<void(Type&,Span)> type=[&](Type &t,Span span){
@@ -130,9 +132,9 @@ class Loader {
         if(t.kind==Type::List||t.kind==Type::Result){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}
       };
       std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto a:e->args)expr(a);}};
-      std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);block(s->body);block(s->alternative);}};
+      std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);for(auto arm:s->arms)arm->variant=resolve(key,arm->variant,false,arm->span);childBlocks(s,block);}};
       for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
-      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;for(auto &field:s.fields)type(field.type,field.span);}
+      for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;for(auto field:s.members())type(field->type,field->span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
     }
   }
@@ -186,7 +188,7 @@ void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
   for(const auto &[key,_]:p.units)symbols[key];
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
-  for(const auto &s:p.structures)symbols[s.unit].structures[s.localName]=s.exported;
+  for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}
   std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}};
   std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto a:e->args)visit(a);};visit(expression);
 }

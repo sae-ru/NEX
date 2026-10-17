@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.5";
+inline constexpr const char *languageVersion = "0.6";
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
@@ -36,14 +36,24 @@ struct Expr {
   std::vector<std::shared_ptr<Expr>> args;
 };
 using E = std::shared_ptr<Expr>;
+struct MatchArm;
 struct Stmt {
-  enum Kind { Let, Var, Assign, Expression, Return, If, While } kind;
+  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match } kind;
   Span span; std::string name; Type type = Type::Unknown; E expr;
   std::vector<std::shared_ptr<Stmt>> body, alternative;
+  std::vector<std::shared_ptr<MatchArm>> arms;
 };
 using S = std::shared_ptr<Stmt>;
 struct Param { std::string name; Type type; Span span; };
-struct Structure { std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit; };
+struct MatchArm { std::string variant; std::vector<Param> bindings; std::vector<S> body; Span span; int64_t ordinal=0; };
+template<class F> void childBlocks(const S &statement,F visit){visit(statement->body);visit(statement->alternative);for(const auto &arm:statement->arms)visit(arm->body);}
+struct Variant { std::string name; std::vector<Param> fields; Span span; int64_t ordinal=0; };
+struct Structure {
+  std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit;
+  bool enumeration=false; std::vector<Variant> variants;
+  std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
+  std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
+};
 struct Function {
   std::string name, realm = "shared"; std::vector<Param> params;
   Type result = Type::Unit; std::set<std::string> effects, dependencies;
@@ -67,6 +77,7 @@ struct Program {
   const Function &function(const std::string &name,Span span={}) const;
   const Structure &structure(const std::string &name) const;
   bool hasStructure(const std::string &name) const;
+  const Variant *variant(const std::string &name,const Structure **owner=nullptr) const;
   std::string definition(const Function &function) const;
   std::string definition(const Structure &structure) const;
   std::string definition(const Endpoint &endpoint) const;

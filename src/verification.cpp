@@ -33,7 +33,7 @@ using LoopKey=std::pair<unsigned,unsigned>;
 struct Loop {std::vector<std::string> invariants;std::string decreases;};
 struct Contract {std::string result;std::vector<std::string> pre,post;std::map<LoopKey,Loop> loops;};
 using Contracts=std::map<std::string,Contract>;
-void loops(const std::vector<S> &body,std::map<LoopKey,S> &found){for(auto s:body){if(s->kind==Stmt::While)found.emplace(LoopKey{s->span.line,s->span.column},s);loops(s->body,found);loops(s->alternative,found);}}
+void loops(const std::vector<S> &body,std::map<LoopKey,S> &found){for(auto s:body){if(s->kind==Stmt::While)found.emplace(LoopKey{s->span.line,s->span.column},s);childBlocks(s,[&](const auto &body){loops(body,found);});}}
 Contracts contracts(const Program &p,const JSON &value){
   auto object=value.getAsObject();if(!object)throw Error("E_CONTRACT","contract must be an object");
   fields(*object,{"schema","language","expected_revision","source_hash","functions"});
@@ -176,6 +176,7 @@ class Engine {
           auto yes=block(s->body,{{state,std::nullopt,false}},true),no=block(s->alternative,{{other,std::nullopt,false}},true);
           next.insert(next.end(),std::make_move_iterator(yes.begin()),std::make_move_iterator(yes.end()));next.insert(next.end(),std::make_move_iterator(no.begin()),std::make_move_iterator(no.end()));break;
         }
+        case Stmt::Match:throw Stop{"unsupported","enum matching is outside scalar verification",s->span};
         case Stmt::While:{auto outcomes=loop(s,state);next.insert(next.end(),std::make_move_iterator(outcomes.begin()),std::make_move_iterator(outcomes.end()));break;}
         }
       }

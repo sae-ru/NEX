@@ -30,7 +30,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
       if(t.element)type(*t.element);
       if(t.kind!=Type::Record||!types.insert(t.name).second)return;
       const auto &record=p.structure(t.name);if(record.unit!=key)unitDependencies[key].insert(record.unit);
-      for(const auto &field:record.fields)type(field.type);
+      for(auto field:record.members())type(field->type);
     };
     std::function<void(E)> expr=[&](E e){
       if(!e)return;type(e->type);type(e->annotation);
@@ -41,7 +41,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
       for(auto child:e->args)expr(child);
     };
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){
-      for(auto s:body){type(s->type);expr(s->expr);block(s->body);block(s->alternative);}
+      for(auto s:body){type(s->type);expr(s->expr);childBlocks(s,block);}
     };
     for(const auto &name:names){
       const auto &f=p.function(name);definitions.push_back(canonical(f));

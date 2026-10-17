@@ -21,7 +21,7 @@ JSON parseDebugFrame(const std::string &text){
 JSON inspectExpression(const std::string &path,const JSON &frame,const std::string &source,bool plan,uint64_t steps,bool demand){
   if(source.empty()||source.size()>8192||!steps||steps>1000000)throw Error("E_DEBUG_LIMIT","expression requires 1..8192 source bytes and 1..1000000 steps");
   auto manifest=read(path,8*1048576);const auto &m=object(manifest);
-  if(m.getString("schema")!="nex.debug/1"||m.getString("runtime_view")!="nex.runtime-view/1"||m.getString("expression_protocol")!="nex.debug-expression/1"||m.getString("language")!=languageVersion||m.getString("compiler_build")!=NEX_BUILD_ID)throw Error("E_DEBUG_BUILD","expression evaluation requires a matching compiler/debug manifest");
+  if(m.getString("schema")!="nex.debug/1"||m.getString("runtime_view")!="nex.runtime-view/2"||m.getString("expression_protocol")!="nex.debug-expression/2"||m.getString("language")!=languageVersion||m.getString("compiler_build")!=NEX_BUILD_ID)throw Error("E_DEBUG_BUILD","expression evaluation requires a matching compiler/debug manifest");
   auto bundle=read(std::filesystem::path(path).parent_path()/"source-bundle.json",16*1048576);
   if(hash(json(bundle,false))!=required(m,"source_hash"))throw Error("E_DEBUG_SNAPSHOT","debug source bundle hash differs");
   auto p=loadBundle(bundle,std::filesystem::absolute(path).parent_path().string());if(revision(p)!=required(m,"revision"))throw Error("E_DEBUG_SNAPSHOT","debug revision differs from its checked source bundle");
@@ -34,7 +34,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   auto frameId=stop->getInteger("frame_id");if(!frameId||*frameId<0||uint64_t(*frameId)>UINT32_MAX)throw Error("E_DEBUG_FRAME","invalid frame index");
   auto bindings=f.getArray("bindings");auto truncated=f.getBoolean("truncated");if(!bindings||bindings->size()>256||!truncated)throw Error("E_DEBUG_FRAME","frame requires at most 256 bindings and a truncation flag");
   std::map<std::string,std::set<std::string>> declared;for(const auto &param:fn.params)declared[param.name].insert(typeName(param.type));
-  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));visit(s->body);visit(s->alternative);}};visit(fn.body);
+  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));for(auto arm:s->arms)for(const auto &binding:arm->bindings)if(binding.name!="_")declared[binding.name].insert(typeName(binding.type));childBlocks(s,visit);}};visit(fn.body);
   std::map<std::string,Type> types;Object values;
   for(const auto &value:*bindings){const auto &b=object(value);fields(b,{"name","type","value","unavailable"});auto local=required(b,"name"),type=required(b,"type");
     if(local.empty()||local.size()>256||type.empty()||type.size()>512||!declared[local].contains(type)||types.contains(local))throw Error("E_DEBUG_FRAME","binding is not a unique declared name/type in the selected function: "+local);
@@ -49,7 +49,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
       if(!types.contains(binding)||values.get(binding)||!path||path->size()>56||(kind!="value"&&kind!="shape")||!seen.insert(binding+":"+json(Array(*path),false)+":"+kind).second)throw Error("E_DEBUG_FRAME","invalid, duplicate or conflicting partial capture");
       Type type=types.at(binding);for(const auto &part:*path){
         if(type.kind==Type::List){auto i=part.getAsInteger();if(!i||*i<0)throw Error("E_DEBUG_FRAME","list paths require nonnegative integer indices");type=*type.element;}
-        else if(type.kind==Type::Record){auto field=part.getAsString();bool found=false;if(field)for(const auto &member:p.structure(type.name).fields)if(member.name==*field){type=member.type;found=true;break;}if(!found)throw Error("E_DEBUG_FRAME","path field is not in its checked record");}
+        else if(type.kind==Type::Record){auto field=part.getAsString();bool found=false;const auto &nominal=p.structure(type.name);if(field){if(nominal.enumeration){auto segment=field->str();auto separator=segment.find("::");if(separator!=std::string::npos)for(const auto &variant:nominal.variants)if(variant.name==segment.substr(0,separator))for(const auto &member:variant.fields)if(member.name==segment.substr(separator+2)){type=member.type;found=true;break;}}else for(const auto &member:nominal.fields)if(member.name==*field){type=member.type;found=true;break;}}if(!found)throw Error("E_DEBUG_FRAME","path field is not in its checked nominal type");}
         else if(type.kind==Type::Result){auto field=part.getAsString();if(field=="ok")type=*type.element;else if(field=="code"||field=="message")type=Type::Str;else throw Error("E_DEBUG_FRAME","invalid result path");}
         else throw Error("E_DEBUG_FRAME","partial path descends through a scalar/string");
       }
