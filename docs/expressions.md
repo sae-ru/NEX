@@ -1,6 +1,6 @@
 # NEX expressions in stopped frames — toolchain 0.14
 
-NEX expressions use the language 0.9 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.10 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -228,12 +228,12 @@ Matching pure helpers accept exact enum values or demand only the selected case 
 
 Language 0.7 watches can instantiate pure generic helpers that were not emitted into the stopped binary. A generic frame resolves its original type parameter names to the concrete instance arguments. Captured nominal type names include applications such as `model::Box<i64>`. Instances are derived metadata, so creating a watch helper does not change source revision identity. The compiler still validates source/build/stop identity and rejects effectful calls; evaluation never runs code in the inferior. Type-name budgets in the frame schemas are 4096 bytes.
 
-## Callable watches (unreleased integration)
+## Callable watches (language 0.10)
 
-The working function-value prototype supports pure calls through captured and
-watch-created closures. This is work toward language 0.10 / toolchain 0.23;
-the coordinated version change, migration and full SDK platform matrix are
-still pending. Retain SDK 0.22 for its existing frames and receipts.
+Language 0.10 / toolchain 0.23 supports pure calls through captured and
+watch-created closures. Source migration is explicit; consult STATUS.md for
+the current platform/installed-SDK verification. Retain SDK 0.22 for its
+existing frames and receipts.
 
 Types containing callables use `nex.debug-wire/1`, described structurally by
 [debug-wire.schema.json](../llm/debug-wire.schema.json). Ordinary wire-only

@@ -78,7 +78,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
@@ -151,8 +151,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, linux or match");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, linux, match or function");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -290,7 +290,7 @@ int run(const Options &o) {
       const auto &handler=p.function(endpoint.target);auto descriptor=describeAPI(p);llvm::json::Value contract=nullptr;
       for(const auto &item:*descriptor.getAsObject()->getArray("endpoints"))if(item.getAsObject()->getString("name")==endpoint.name)contract=item;
       llvm::json::Array structures;std::set<std::string> seen;
-      std::function<void(const Type&)> include=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)include(*t.element);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(auto field:s.members())include(field->type);}};
+      std::function<void(const Type&)> include=[&](const Type &t){if(t.element)include(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)include(argument);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(const auto &argument:s.typeArguments)include(argument);for(auto field:s.members())include(field->type);}};
       for(const auto &param:handler.params)include(param.type);include(handler.result);
       llvm::json::Array imports;for(const auto &dependency:p.units.at(endpoint.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"file",dependency.target},{"module",p.units.at(dependency.target).module}});
       print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",languageVersion},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
@@ -300,7 +300,7 @@ int run(const Options &o) {
     for(const auto &fn:p.functions)if(fn.dependencies.contains(f.name))callers.push_back(fn.name);
     for(const auto &endpoint:p.endpoints)if(endpoint.target==f.name)callers.push_back(endpoint.name);
     std::set<std::string> needed;
-    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.element)visitType(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)visitType(argument);if(t.kind==Type::Record&&needed.insert(t.name).second)for(auto field:p.structure(t.name).members())visitType(field->type);};
+    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.element)visitType(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)visitType(argument);if(t.kind==Type::Record&&needed.insert(t.name).second){const auto &s=p.structure(t.name);for(const auto &argument:s.typeArguments)visitType(argument);for(auto field:s.members())visitType(field->type);}};
     std::function<void(E)> visitExpr=[&](E e){if(e){visitType(e->type);for(auto a:e->args)visitExpr(a);}};
     std::function<void(const std::vector<S>&)> visitBlock=[&](const auto &body){for(auto s:body){visitType(s->type);visitExpr(s->expr);childBlocks(s,visitBlock);}};
     auto visitFunction=[&](const Function &fn){visitType(fn.result);for(const auto &param:fn.params)visitType(param.type);for(const auto &capture:fn.captures)visitType(capture.type);visitBlock(fn.body);};

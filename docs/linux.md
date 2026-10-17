@@ -1,4 +1,4 @@
-# Linux compiler and development chain — toolchain 0.22
+# Linux compiler and development chain — toolchain 0.23
 
 The Linux environment builds NEX itself and native NEX programs with C++20,
 LLVM/MLIR/LLD 22.1.8, SQLite, OpenSSL 3, Z3 5.3.1 and Node.js 22.22.3.

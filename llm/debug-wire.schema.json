@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.local/schemas/debug-wire-1.json",
   "title": "NEX debug value type descriptor, including checked callable targets",
-  "description": "Unreleased callable integration. Application JSON continues to use nex.wire/2 and rejects callables. The compiler checks nominal layouts, callable signatures, compiled entries, identities and resource budgets beyond this structural schema.",
+  "description": "Language 0.10 callable debug values. Application JSON continues to use nex.wire/2 and rejects callables. The compiler checks nominal layouts, callable signatures, compiled entries, identities and resource budgets beyond this structural schema.",
   "type": "object",
   "required": ["schema", "root", "records", "enums", "targets"],
   "additionalProperties": false,

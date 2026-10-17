@@ -1,6 +1,6 @@
 # Native compilation and toolchains — toolchain 0.20
 
-Current source language is 0.9. The native compiler now produces an object for each
+Current source language is 0.10. The native compiler now produces an object for each
 source module containing functions reachable from the selected entry. It can
 reuse those objects across semantic revisions, entry points and source-based or
 archived builds. The entire loaded program still passes the normal checker

@@ -2,34 +2,24 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain 0.22 / language 0.9 with checked nested
-patterns, guards and value matches. The Linux workflow introduced in 0.20 covers containerized ARM64
-and x86-64. The x86-64 run uses Docker emulation; it does not certify
-physical Intel/AMD hardware. Live LLDB/DAP is verified on macOS ARM64 and Linux
-ARM64. The matrix and installed-SDK checks are recorded below.
+The development version is toolchain **0.23 / language 0.10**, adding typed
+function values, immutable snapshot closures, the generic wire bound and
+validated lazy callable watches. The canonical formats are function/8 and
+program/9. Versioned migration and final platform/SDK validation are in progress;
+this is not yet a completed 0.23 release. The last complete platform/installed
+SDK checkpoint remains **0.22 / language 0.9**, recorded below. Keep those SDKs
+for their original receipts and debug frames.
 
-Unreleased work in progress: typed function values and snapshot closures are
-being integrated for the next language version. The checker, interpreter,
-native indirect calls, TypeScript, capture ownership and operation/cache
-metadata have a tested prototype under `tests/function_values.py` and
-`examples/functions`. Ten offline callable-watch cases and an actual macOS
-ARM64 LLDB/DAP case now exercise validated targets/identities, lazy captures,
-generic closure frames, paged children, stop expiry and source-deleted replay
-in `tests/function_debug.py`. The new debug wire schema is separate from
-application JSON. Generated API clients retain inline closures and nominal
-types used only in callback signatures or phantom type arguments, with three
-native/TypeScript agreement cases. Versioned migration, the final language/LLM specification,
-Linux live callable debugging and the installed cross-platform SDK gate
-remain open. `docs/function-values-design.md` records the design and current
-evidence; this draft is not a completed 0.23 release. Keep the verified 0.22 SDK
-for its existing receipts and frames.
-
-The current unreleased callable integration passed 24 macOS CTest suites / 224
-cases in 265.47 seconds and a separate actual LLDB/DAP callable case in 9.057
-seconds. The latter uses an unread 32,768-item captured list. Current-source
-logs are `build/function-debug-ctest-final.log` and
-`build/function-debug-live-tests-final.log`; this evidence does not establish
-the pending new-version migration or Linux/installed-SDK callable gates.
+Before the version transition, the callable integration passed 24 macOS CTest
+suites / 224 cases in 265.47 seconds and an actual macOS ARM64 LLDB/DAP callable
+case in 9.057 seconds, including an unread 32,768-item captured list. The new
+0.10 version must pass its own complete regression/migration/platform gates.
+The checker, interpreter, typed native indirect calls, TypeScript closures,
+owned cleanup, graph/cache metadata, strict debug values and callback-safe API
+projection are implemented. The model-independent function guide, grammar and
+prompt describe the same source semantics. `docs/function-values-design.md`
+retains implementation and prototype evidence. Unsupported platforms and
+remaining full-toolchain work stay in scope as listed later in this file.
 
 ## Implemented and exercised
 

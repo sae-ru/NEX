@@ -82,14 +82,14 @@ std::map<std::string,std::string> matchOperations(const std::vector<Operation> &
     std::map<const Operation*,const Operation*> pairs;std::set<const Operation*> used;
     auto pair=[&](const Operation *x,const Operation *y){if(x->kind==y->kind&&!pairs.contains(x)&&used.insert(y).second)pairs[x]=y;};
     std::map<std::pair<std::string,unsigned>,const Operation*> positions;for(auto y:b[oldParent])positions[{y->role,y->ordinal}]=y;
-    for(auto x:a[parent])if(x->role!="parameter"&&x->role!="case"&&(x->role!="statement"||identical)){auto y=positions.find({x->role,x->ordinal});if(y!=positions.end())pair(x,y->second);}
+    for(auto x:a[parent])if(x->role!="parameter"&&(x->role!="case"||identical)&&(x->role!="statement"||identical)){auto y=positions.find({x->role,x->ordinal});if(y!=positions.end())pair(x,y->second);}
     auto unique=[&](const std::string &role,bool content){
       std::map<std::string,std::vector<const Operation*>> left,right;
       for(auto x:a[parent])if(x->role==role&&!pairs.contains(x))left[x->kind+":"+(content?x->content:x->anchor)].push_back(x);
       for(auto y:b[oldParent])if(y->role==role&&!used.contains(y))right[y->kind+":"+(content?y->content:y->anchor)].push_back(y);
       for(const auto &[key,group]:left)if(group.size()==1&&right[key].size()==1)pair(group[0],right[key][0]);
     };
-    unique("parameter",false);unique("case",false);
+    unique("parameter",false);unique("case",true);unique("case",false);
     if(!identical){unique("statement",true);unique("statement",false);}
     for(const auto &[x,y]:pairs){auto id=ids.find(y->path);if(id==ids.end())continue;result[x->path]=id->second;match(x->path,y->path,x->content==y->content);}
   };

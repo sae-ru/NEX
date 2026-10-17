@@ -1,11 +1,93 @@
 """Observable callable/capture semantics; debugger and migration integration is in progress."""
+import hashlib
+import copy
 import json
 from pathlib import Path
+import subprocess
+import sys
 import unittest
 import support as harness
 
 
 class FunctionValues(harness.ToolchainCase):
+    def test_discovery_and_language_pack_advertise_checked_function_values(self):
+        descriptor=self.cli('describe')
+        self.assertEqual(descriptor['version'],'0.10')
+        self.assertIn('snapshot_closures',descriptor['function_value_features'])
+        self.assertEqual(descriptor['function_value_limits']['captures'],1024)
+        self.assertEqual(descriptor['function_value_limits']['signature_bytes'],4096)
+        self.assertEqual(set(descriptor['generic_constraints']['implications']['integer']),{'add','ordered','wire'})
+        self.assertEqual(descriptor['generic_constraints']['implications']['ordered'],['wire'])
+        self.assertIn('nominal payloads',descriptor['generic_constraints']['wire'])
+        for supported in ['function_values','generic_constraints','match_expressions','nested_patterns','pattern_guards','result_patterns']:
+            self.assertNotIn(supported,descriptor['not_yet_supported'])
+        guide=self.cli('guide','--kind','function')
+        self.assertEqual(guide['language'],'0.10')
+        self.assertEqual(guide['text'],(harness.REPO/'docs/functions.md').read_text())
+        self.assertEqual(len(guide['hash']),64)
+        pack=json.loads((harness.REPO/'llm/language-pack.json').read_text())
+        self.assertEqual(pack['documents']['functions'],descriptor['function_value_guide'])
+
+    def test_actual_022_migration_preserves_history_sources_and_operation_ids(self):
+        fixture=json.loads((harness.REPO/'tests/fixtures/language-0.9.json').read_text())
+        self.source(fixture['source'])
+        old_binary=harness.REPO/'build/sdk-0.22.0/bin/nex'
+        if sys.platform=='darwin' and old_binary.is_file():
+            self.assertEqual(hashlib.sha256(old_binary.read_bytes()).hexdigest(),fixture['compiler_sha256'])
+            def old_cli(*args):
+                return json.loads(subprocess.check_output([str(old_binary),*map(str,args),'--json'],cwd=self.root))
+            old=old_cli('check')['revision'];graph=old_cli('graph')
+            nodes=old_cli('operations','--symbol','choose')['nodes']
+        else:
+            saved=self.historical_store('0.9');old=saved['revision'];graph=saved['graph'];nodes=saved['operations']
+        self.assertEqual(old,fixture['revision'])
+        self.file.unlink()
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.9','entry':'main.nex'}))
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.10');self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.10'})
+        migrated=self.cli('graph')
+        self.assertEqual(migrated['bundle'],graph['bundle'])
+        self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in migrated['nodes']})
+        self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in self.cli('operations','--symbol','choose')['nodes']})
+        self.assertTrue(all(n['definition']['format']=='nex.function/8' for n in migrated['nodes']))
+        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
+        old_export=self.root/'old';self.cli('export','--revision',old,'--directory',old_export)
+        self.assertEqual(json.loads((old_export/'nex.json').read_text())['language'],'0.9')
+        self.assertEqual((old_export/'main.nex').read_text(),fixture['source'])
+        exported=self.root/'current';self.cli('export','--revision','HEAD','--directory',exported)
+        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.10')
+        self.assertEqual(self.cli('check',cwd=exported)['revision'],current['revision'])
+
+    def test_unchanged_nested_match_operation_ids_survive_other_function_edits(self):
+        source='''module stable_arms;enum Maybe{None;Some(value:i64);}
+fn choose(value:result<Maybe>)->i64{return match value{ok(Maybe::Some(n)) if n>0=>n,ok(Maybe::None())=>0,_=>-1};}
+fn main()->unit!{io}{print(choose(ok(Maybe::Some(42))));}
+'''
+        self.source(source);self.cli('check')
+        before=self.cli('operations','--symbol','choose')['nodes']
+        self.source(source.replace('print(choose(ok(Maybe::Some(42))))','print(choose(ok(Maybe::Some(41))))'))
+        self.cli('check');after=self.cli('operations','--symbol','choose')['nodes']
+        self.assertEqual({n['path']:n['id'] for n in before},{n['path']:n['id'] for n in after})
+
+    def test_rejected_legacy_serializer_migration_is_atomic_and_explicitly_repairable(self):
+        fixture=json.loads((harness.REPO/'tests/fixtures/language-0.9-wire.json').read_text())
+        self.source(fixture['source']);old=self.historical_store('0.9-wire')
+        self.assertEqual(self.cli('migrate',ok=False)['code'],'E_GENERIC_BOUND')
+        history=self.cli('history')
+        self.assertEqual(history['head'],old['revision'])
+        self.assertEqual(len(history['revisions']),1)
+        fixed=fixture['source'].replace('serialize<T>','serialize<T:wire>')
+        graph=copy.deepcopy(fixture['graph']);graph['source']=fixed;graph['bundle']['files']['main.nex']=fixed
+        repair=self.root/'repair.json';repair.write_text(json.dumps(graph))
+        current=self.cli('migrate',repair)
+        self.assertEqual(current['language'],'0.10')
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.10'})
+        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'"42"\n')
+        original=self.root/'original';self.cli('export','--revision',old['revision'],'--directory',original)
+        self.assertEqual((original/'main.nex').read_text(),fixture['source'])
+        self.assertEqual(self.cli('graph')['bundle']['files']['main.nex'],fixed)
+
     def backends(self, expected=None):
         observed = self.cli('eval')['stdout']
         if expected is not None:
@@ -151,6 +233,27 @@ test fn cases()->unit{let value:Chain<str>=Chain::Next("A\\u0000🌍",[Chain<str
         self.backends('')
         self.source('module rejected_wire;struct Hidden{callback:fn()->i64;}fn main()->unit{encode_json(Hidden(fn()->i64{return 42;}));}')
         self.assertEqual(self.cli('check',ok=False)['code'],'E_GENERIC_BOUND')
+
+    def test_phantom_callback_types_in_function_context_and_task_linkage(self):
+        self.source('''module callback_contract;
+pub struct Token{id:i64;}
+struct Tag<T>{id:i64;}
+fn marker()->Tag<fn(Token)->i64>{return Tag(42);}
+fn main()->unit{}
+test fn cases()->unit{assert(marker().id==42);}
+''')
+        self.cli('check')
+        with self.subTest(kind='function context'):
+            context=self.cli('context','--symbol','marker')
+            self.assertIn('callback_contract::Token',{s['name'] for s in context['structures']})
+        task=self.cli('task',self.file,'--kind','init')
+        check=next(c for c in task['checks'] if c['kind']=='test')
+        task['requirements'].append({'id':'callback-type','text':'Retain the nominal callback argument contract',
+            'bindings':[{'program':'app','kind':'structure','symbol':'callback_contract::Token'}],
+            'targets':[check['target']],'checks':[check['id']]})
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
+        with self.subTest(kind='task linkage'):
+            self.assertTrue(self.cli('task',taskfile,'--kind','check')['ok'])
 
 
 if __name__=='__main__':unittest.main()

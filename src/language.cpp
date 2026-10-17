@@ -740,7 +740,7 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format","nex.function/7"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  llvm::json::Object result{{"format","nex.function/8"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
   if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
 }
 llvm::json::Value canonical(const Structure &s) {
@@ -760,12 +760,12 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/8"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/9"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types"}},
+    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
     {"effects",llvm::json::Array{"io","db"}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
@@ -774,7 +774,10 @@ llvm::json::Value describe() {
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
     {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
-    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered"}}}}}},
+    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
+    {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
+    {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},
+    {"function_value_guide","docs/functions.md"},
     {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},
@@ -783,6 +786,7 @@ llvm::json::Value describe() {
     {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},
+    {"debug_wire_schema","llm/debug-wire.schema.json"},{"debug_value_protocol","nex.debug-wire/1"},{"debug_runtime_view","nex.runtime-view/3"},{"debug_expression_protocol","nex.debug-expression/3"},
     {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy"}},
     {"native_toolchain_schema","llm/toolchain.schema.json"},{"native_target_policy","64-bit host ABI; macOS arm64/x86_64 cross-builds on macOS; run/test/debug/profile require host architecture; target libraries must be supplied for cross-storage/server builds"},
     {"build_guide","docs/incremental.md"},{"linux_guide","docs/linux.md"},{"toolchain_fingerprint","nex.toolchain-snapshot/2"},
@@ -792,7 +796,7 @@ llvm::json::Value describe() {
     {"verification_guide","docs/verification.md"},
     {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
-    {"not_yet_supported",llvm::json::Array{"match_expressions","nested_patterns","pattern_guards","result_patterns","generic_constraints","higher_kinded_types","function_values","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
+    {"not_yet_supported",llvm::json::Array{"custom_traits","higher_kinded_types","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 }

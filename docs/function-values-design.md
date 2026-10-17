@@ -1,8 +1,9 @@
-# Function values and closures — implementation in progress
+# Function values and closures — implementation notes
 
-This document records the next language milestone. It is not an implemented
-capability list. The released checkpoint remains 0.22 / language 0.9; query the
-compiler descriptor and `STATUS.md` before authoring applications.
+The development compiler is 0.23 / language 0.10. The normative source guide is
+`docs/functions.md`; this file retains design and prototype evidence. The last
+completed platform/installed-SDK checkpoint remains 0.22 / language 0.9 while
+the new-version gates run. Query the descriptor and `STATUS.md` for actual scope.
 
 ## Semantics
 
@@ -169,12 +170,16 @@ cannot cross JSON/API boundaries. Callable alias observation accounting includes
 path keys as well as values, with a deep long-field-name fixture exercising the
 8 MiB rejection rather than allocating an oversized observation table.
 
-Remaining integration includes the final language/LLM specification, auditing
-all function-type traversal sites (including task linkage and phantom type
-arguments in bounded context), documentation of the implemented `wire`
-implications (integer/ordered imply wire), remaining core/type
-limits, proof unsupported statuses and API projections. Finish source language
-0.10/toolchain 0.23 and canonical function/program versioning with a genuine
-0.9 migration test, then synchronize the specification, grammar, descriptor,
-prompt/pack, task/proof examples and installed/source-free SDK workflows. Retain
-the original full-platform scope and explicitly pending capabilities.
+The coordinated 0.10 transition now uses function/8 and program/9, advertises
+the implemented wire implications/limits and provides a normative function guide,
+specification, grammar and model-independent prompt. A genuine SDK 0.22 migration
+test preserves sources/history and function/operation IDs, including nested
+guarded match arms. The identity matcher now pairs case positions under an
+identical parent and unique unchanged case content under an edited parent;
+it previously lost IDs for general patterns with duplicate empty anchors.
+Task linkage and bounded function/endpoint contexts now follow callback argument
+types and phantom nominal arguments. Task/proof metadata has been repinned while
+asserting unchanged source hashes, clauses, loop annotations and acceptance
+intent. Remaining gates are current-version full regressions, live debugger,
+browser and Linux/installed/source-free SDK validation. The original broader
+language/toolchain/platform objective remains open.

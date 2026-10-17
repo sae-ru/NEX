@@ -88,6 +88,8 @@ pub fn consume(callback:fn(types::Token)->i64)->i64{return 42;}
             'pub struct Tag<T>{id:i64;}'
             'server fn handle(context:api::Context,input:Tag<'+callback+'>)->result<Tag<'+callback+'>>{return ok(input);}'
             'endpoint create("POST","/api/tags",201)=handle;')
+        self.cli('check')
+        self.assertIn('callback_types::Token', {s['name'] for s in self.cli('context','--symbol','create')['structures']})
         self.cli('api', self.file, '--directory', self.root/'generated')
         client = self.root/'generated/client'
         self.assertTrue((client/'models/callback_types.nex').is_file())
@@ -217,7 +219,7 @@ test fn codecs() -> unit {
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
             (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.9','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
@@ -239,7 +241,7 @@ pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
             (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.9','libraries':{'std':'standard','helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard','helpers':'helpers'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'

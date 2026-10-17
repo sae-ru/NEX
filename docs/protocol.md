@@ -186,3 +186,16 @@ Toolchain 0.19 adds `nex toolchain FILE --json` (`nex.toolchain-report/1`) for r
 Canonical function/6, structure/4 and enum/3 definitions add sorted `type_bounds`; program/7 revisions include them. Function context exposes the same map keyed by scoped type-parameter name. `describe.generic_constraints` reports builtin domains/implications. Bounds are checked on unused declarations and abstract forwarding before specialization. Protocol 2 is retained. Explicit 0.7→0.8 migration preserves historical sources and local identities; old frames/receipts require their original 0.20 compiler/resources.
 
 Language 0.9 uses canonical function/7 and program/8 definitions for typed patterns and ordered guard/value arguments. Structure/4 and enum/3 remain unchanged. Pattern bindings and guard/value operands appear in the operation tree; simple legacy enum arm paths retain their identity through explicit 0.8 migration. `match_features`, `match_limits` and the match guide expose supported syntax and bounds.
+
+## Function values (language 0.10)
+
+Canonical function/8 and program/9 represent callable types, references, invokes
+and inline lambda signatures/bodies. Lifted bodies record closure_owner/captures
+and are derived, excluded from source revision identity and not directly
+editable. Patch their source owner/template. The descriptor exposes function
+capabilities/limits and the separate debug-wire schema. Query `nex guide --kind
+function`; protocol 2 and nominal structure/4, enum/3 are retained. Task linkage
+and bounded contexts include callback parameter/result types and nominal
+phantom arguments. Genuine 0.9 archives require explicit migration with original
+history/source/IDs retained. Task/proof snapshot pins must be reviewed/regenerated
+without weakening acceptance intent; old frames/receipts need SDK 0.22.
