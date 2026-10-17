@@ -194,9 +194,37 @@ class Parser {
     }
     return false;
   }
-  E expression(int minimum=1) {
-    E e; auto token=take();
-    if(token.kind==Token::String) {
+  P pattern(unsigned depth,unsigned &nodes){
+    if(depth>64||++nodes>10000)throw Error("E_MATCH_LIMIT","pattern exceeds its node/depth budget",peek().span);
+    auto token=take();auto value=std::make_shared<Pattern>();value->span=token.span;
+    if(token.text=="["||token.kind==Token::Id){
+      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";return value;}
+      bool list=token.text=="[";if(!list){--i;token=name();value->text=token.text;while(accept("::"))value->text+="::"+name().text;}
+      if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
+      else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
+    }else if(token.kind==Token::String){value->kind=Pattern::String;try{value->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}}
+    else if(token.kind==Token::Num||token.text=="-"){
+      auto text=token.text;if(token.text=="-"){auto number=take();if(number.kind!=Token::Num)throw Error("E_PARSE","negative pattern requires an integer literal",number.span);text+=number.text;}
+      value->kind=Pattern::Integer;auto result=std::from_chars(text.data(),text.data()+text.size(),value->number);if(result.ec!=std::errc())throw Error("E_RANGE","integer pattern is outside i64",token.span);
+    }else throw Error("E_PARSE","expected a pattern",token.span);return value;
+  }
+  E matchValue(Span span){
+    auto value=std::make_shared<Expr>();value->kind=Expr::Match;value->span=span;value->args.push_back(expression(1,true));expect("{");unsigned nodes=0;bool first=true;
+    while(!accept("}")){
+      if(value->arms.size()>=4096)throw Error("E_MATCH_LIMIT","match exceeds 4096 arms",peek().span);
+      auto arm=std::make_shared<MatchArm>();arm->span=peek().span;arm->pattern=pattern(0,nodes);
+      if(accept("if")){arm->guard=value->args.size();value->args.push_back(expression());}
+      expect("=>");bool blocks=peek().text=="{";
+      if(first){value->statementMatch=blocks;first=false;}else if(blocks!=value->statementMatch)throw Error("E_PARSE","match cannot mix block and expression arms",peek().span);
+      if(blocks)arm->body=block();else{arm->value=value->args.size();value->args.push_back(expression());}
+      value->arms.push_back(std::move(arm));if(blocks)accept(",");else if(peek().text!="}")expect(",");
+    }
+    value->span.end=tokens.at(i-1).span.end;return value;
+  }
+  E expression(int minimum=1,bool subject=false) {
+    bool matching=matchAhead()&&peek(1).text!="::"&&!(subject&&peek(1).kind==Token::Symbol&&peek(1).text!="!");E e; auto token=take();
+    if(matching)e=matchValue(token.span);
+    else if(token.kind==Token::String) {
       e=std::make_shared<Expr>();e->kind=Expr::String;e->span=token.span;
       try{e->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
     } else if(token.text=="[") {
@@ -247,8 +275,8 @@ class Parser {
     return body;
   }
   bool matchAhead()const {
-    if(peek().text!="match")return false;int depth=0;
-    for(size_t n=1;i+n<tokens.size();++n){const auto &text=peek(n).text;if(!depth&&(text==";"||text=="="||text=="}"))return false;if(!depth&&text=="{")return true;if(text=="("||text=="[")++depth;if(text==")"||text=="]")--depth;if(depth<0)return false;}return false;
+    if(peek().text!="match")return false;int depth=0,braces=0;
+    for(size_t n=1;i+n<tokens.size();++n){const auto &text=peek(n).text;if(!depth&&!braces&&(text==";"||text=="="||text=="}"))return false;if(!depth&&text=="{")++braces;else if(!depth&&text=="}"&&braces){if(!--braces)return false;}if(braces==1&&text=="=>")return true;if(text=="("||text=="[")++depth;if(text==")"||text=="]")--depth;if(depth<0)return false;}return false;
   }
   S statement() {
     auto s=std::make_shared<Stmt>(); s->span=peek().span;
@@ -260,18 +288,11 @@ class Parser {
     } else if(accept("if")) {
       s->kind=Stmt::If; s->expr=expression(); s->body=block();
       if(accept("else")) { if(peek().text=="if")s->alternative={statement()}; else s->alternative=block(); }
-    } else if(matchAhead()) {
-      take();s->kind=Stmt::Match;s->expr=expression();expect("{");
-      while(!accept("}")){
-        auto arm=std::make_shared<MatchArm>();arm->span=peek().span;arm->variant=qualified();expect("(");
-        if(!accept(")")){do{auto binding=name();arm->bindings.push_back({binding.text,Type::Unknown,binding.span});}while(accept(","));expect(")");}
-        expect("=>");arm->body=block();accept(",");s->arms.push_back(std::move(arm));
-      }
     } else if(accept("while")) {
       s->kind=Stmt::While; s->expr=expression(); s->body=block();
     } else if(peek().kind==Token::Id && peek(1).text=="=") {
       s->kind=Stmt::Assign; s->name=take().text; take(); s->expr=expression();expect(";");
-    } else {s->kind=Stmt::Expression;s->expr=expression();expect(";");}
+    } else {s->kind=Stmt::Expression;s->expr=expression();if(s->expr->kind==Expr::Match&&s->expr->statementMatch){s->kind=Stmt::Match;s->arms=s->expr->arms;}else expect(";");}
     return s;
   }
 public:
@@ -372,8 +393,23 @@ class Checker {
     std::vector<Type> types;for(const auto &parameter:parameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","type parameter has no argument or expected-type constraint; provide explicit types",call->span);types.push_back(bound.at(parameter));}
     return types;
   }
+  bool matching(E e,Type expected,bool statements){
+    if(e->statementMatch!=statements)throw Error("E_MATCH_TYPE","block arms are statements; expression arms produce a value",e->span);
+    auto subject=expr(e->args[0]);if(subject==Type::Unit)throw Error("E_MATCH_TYPE","cannot match unit",e->span);
+    bool all=true;Type result=expected;
+    auto scope=[&](const std::shared_ptr<MatchArm> &arm){scopes.emplace_back();for(const auto &binding:arm->bindings)if(binding.name!="_")define(binding.name,{binding.type,false},binding.span);};
+    for(auto arm:e->arms){arm->bindings.clear();checkPattern(p,arm->pattern,subject,arm->bindings);arm->variant=arm->pattern->text;arm->ordinal=arm->pattern->ordinal;scope(arm);
+      if(arm->guard)same(expr(e->args[arm->guard],Type::Bool),Type::Bool,arm->span);
+      if(statements)all=block(arm->body,false)&&all;
+      else {try{auto actual=expr(e->args[arm->value],result);if(result==Type::Unknown)result=actual;else same(actual,result,arm->span);}catch(const Error &error){if(result!=Type::Unknown||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;}}
+      scopes.pop_back();
+    }
+    if(!statements){if(result==Type::Unknown)throw Error("E_INFER","match result requires an expected or inferable arm type",e->span);for(auto arm:e->arms){scope(arm);same(expr(e->args[arm->value],result),result,arm->span);scopes.pop_back();}}
+    checkMatchCoverage(p,e);e->type=statements?Type(Type::Unit):result;return all;
+  }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
+    case Expr::Match:matching(e,expected,false);break;
     case Expr::Integer:e->type=expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
     case Expr::Boolean:e->type=Type::Bool;break;
     case Expr::String:e->type=Type::Str;break;
@@ -528,19 +564,7 @@ class Checker {
       case Stmt::If: {
         same(expr(s->expr,Type::Bool),Type::Bool,s->span);bool a=block(s->body),b=block(s->alternative);returns=a&&b;break;
       }
-      case Stmt::Match: {
-        s->type=expr(s->expr);if(s->type.kind!=Type::Record||!p.structure(s->type.name).enumeration)throw Error("E_MATCH_TYPE","match requires a nominal enum",s->span);
-        const auto &type=p.structure(s->type.name);std::set<int64_t> covered;bool all=true;
-        for(auto arm:s->arms){const Structure *owner=nullptr;auto variant=p.variant(arm->variant,&owner);
-          if(variant&&owner->name!=type.name&&!type.templateName.empty()&&owner->name==type.templateName){arm->variant=type.name+"::"+variant->name;variant=p.variant(arm->variant,&owner);}
-          if(!variant||owner->name!=type.name)throw Error("E_MATCH_VARIANT","pattern is not a variant of "+type.name,arm->span);
-          arm->ordinal=variant->ordinal;if(!covered.insert(arm->ordinal).second)throw Error("E_MATCH_DUPLICATE","variant is matched more than once",arm->span);
-          if(arm->bindings.size()!=variant->fields.size())throw Error("E_ARITY","pattern binding count differs from variant payload",arm->span);
-          scopes.emplace_back();for(size_t i=0;i<arm->bindings.size();++i){auto &binding=arm->bindings[i];binding.type=variant->fields[i].type;if(binding.name!="_")define(binding.name,{binding.type,false},binding.span);}
-          all=block(arm->body,false)&&all;scopes.pop_back();
-        }
-        if(covered.size()!=type.variants.size())throw Error("E_MATCH_EXHAUSTIVE","match must cover every enum variant exactly once",s->span);returns=all;break;
-      }
+      case Stmt::Match:returns=matching(s->expr,{},true);s->type=s->expr->args[0]->type;break;
       case Stmt::While:same(expr(s->expr,Type::Bool),Type::Bool,s->span);block(s->body);break;
       }
     }
@@ -619,15 +643,17 @@ public:
     }
   }
 };
+llvm::json::Array blockJSON(const std::vector<S> &body);
 llvm::json::Value exprJSON(E e) {
   if(!e)return nullptr;
   llvm::json::Array args;for(auto a:e->args)args.push_back(exprJSON(a));
-  return llvm::json::Object{{"kind",int64_t(e->kind)},{"operator",e->text},{"value",e->number},{"type",typeName(e->type)},{"args",std::move(args)}};
+  llvm::json::Object result{{"kind",int64_t(e->kind)},{"operator",e->text},{"value",e->number},{"type",typeName(e->type)},{"args",std::move(args)}};
+  if(e->kind==Expr::Match){llvm::json::Array arms;for(auto arm:e->arms)arms.push_back(llvm::json::Object{{"pattern",canonicalPattern(arm->pattern)},{"guard",int64_t(arm->guard)},{"value",int64_t(arm->value)},{"body",blockJSON(arm->body)}});result["arms"]=std::move(arms);result["statement"]=e->statementMatch;}return result;
 }
 llvm::json::Array blockJSON(const std::vector<S> &body) {
   llvm::json::Array out;
   for(auto s:body){llvm::json::Object item{{"kind",int64_t(s->kind)},{"name",s->name},{"type",typeName(s->type)},{"expression",exprJSON(s->expr)},{"body",blockJSON(s->body)},{"else",blockJSON(s->alternative)}};
-    if(s->kind==Stmt::Match){llvm::json::Array arms;for(auto arm:s->arms){llvm::json::Array bindings;for(const auto &binding:arm->bindings)bindings.push_back(llvm::json::Object{{"name",binding.name},{"type",typeName(binding.type)}});arms.push_back(llvm::json::Object{{"variant",arm->variant},{"ordinal",arm->ordinal},{"bindings",std::move(bindings)},{"body",blockJSON(arm->body)}});}item["arms"]=std::move(arms);}out.push_back(std::move(item));}
+    out.push_back(std::move(item));}
   return out;
 }
 }
@@ -651,7 +677,7 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  return llvm::json::Object{{"format","nex.function/6"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  return llvm::json::Object{{"format","nex.function/7"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
@@ -670,7 +696,7 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/7"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/8"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
@@ -680,6 +706,9 @@ llvm::json::Value describe() {
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
     {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
+    {"match_guide","docs/matching.md"},
+    {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
+    {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
     {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
     {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered"}}}}}},
     {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},

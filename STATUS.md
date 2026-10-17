@@ -2,13 +2,15 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain 0.21 / language 0.8 with builtin generic
-constraints. The Linux workflow introduced in 0.20 covers containerized ARM64
+The current checkpoint is toolchain 0.22 / language 0.9 with checked nested
+patterns, guards and value matches. The Linux workflow introduced in 0.20 covers containerized ARM64
 and x86-64. The x86-64 run uses Docker emulation; it does not certify
 physical Intel/AMD hardware. Live LLDB/DAP is verified on macOS ARM64 and Linux
 ARM64. The matrix and installed-SDK checks are recorded below.
 
 ## Implemented and exercised
+
+- Toolchain 0.22 / language 0.9 adds typed recursive patterns, result/record/exact-list/literal matching, immutable arm bindings, ordered guards, value matches and bounded matrix coverage/usefulness analysis. Native, interpreter and TypeScript preserve selection/order/cleanup; pure watches demand selected paths. Full checkpoint validation is in progress; OR/rest/range patterns and custom extractors remain pending.
 
 - Toolchain 0.21 / language 0.8 adds builtin generic constraints (`add`, `ordered`, `integer`), parametric capability checking and implication-aware abstract forwarding. Bounds are preserved in graph/context/API projections; unsupported custom traits/associated types/function values remain pending. The current evidence is listed below.
 
@@ -16,7 +18,7 @@ ARM64. The matrix and installed-SDK checks are recorded below.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64 and Linux ARM64/x86-64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.
-- NEX 0.8 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
+- NEX 0.9 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
 - Multi-file modules, logical qualified identities, import aliases, private/public functions and structures, public API visibility checks and cross-module type/effect/realm checks.
 - Local library roots, ordinary NEX `std/math` and `std/text` libraries, dependency source-content locks and explicit lock updates. Cyclic imports and remote retrieval are not supported.
 - Validated UTF-8 strings with strict escapes, Unicode scalar indexing/slicing, immutable nested lists and nominal structures with typed fields/constructors.
@@ -82,6 +84,8 @@ ARM64. The matrix and installed-SDK checks are recorded below.
 - Function/5, structure/3, enum/2 and program/6 distinguish checked source definitions from derived specializations; source revisions exclude instances. Context links non-editable instances to editable templates; atomic template repairs recheck all callers. Source export emits original declarations once. Native generic body edits reuse unchanged callers while concrete layouts/type arguments participate in dependencies. Public generic API extraction preserves phantom arguments/imports and emits checked wire/2/OpenAPI models. Generic watches resolve frame type arguments and instantiate uncompiled pure helpers without changing revision/stop state. Runtime-view/2 is unchanged; exact matching compiler/resources are still required. Task requirements link actual instances back to their source templates, while profile budgets retain concrete measured names. SDK 0.16 is preserved for old language 0.6 archives, frames and receipts.
 
 ## Verification evidence
+
+- The **0.22.0 / language 0.9 backup checkpoint** passed all 22 CTest suites on macOS ARM64 in 310.23 seconds. Linux ARM64 also passed all 22 suites (195 executed cases and six macOS-SDK skips), installed-SDK checks and the five opt-in live debugger suites, including matching. The installed macOS SDK passed all 14 matching cases; an additional actual NEX DAP matching check passed separately. Evidence: `build/ctest-022-final.log`, `build/sdk-matching-022.log`, `build/sdk-matching-dap-022.log` and `build/linux-arm64/verification.json`. The final Linux x86-64 run is still in progress at this backup checkpoint; unfinished validation remains pending.
 
 - Toolchain **0.21.0 / language 0.8** passed **188 cases in 21 CTest suites** on macOS ARM64 in 338.48 seconds, and 182 executed cases plus six macOS-SDK skips on each Linux target: ARM64 in 395.66 seconds and x86-64 under Docker emulation in 760.43 seconds. Eleven new normal cases cover builtin bounds, rejected unused/forwarding programs, contextual literals, arithmetic traps, immutable values/order/cleanup, canonical bound order, optimistic graph patches/archives, genuine 0.7 migration, bounded API model extraction, pure watch/scalar proof and pinned task repair/replay. Evidence: `build/ctest-021.log` and the Linux `checkpoints/0.21.0` reports/logs.
 - Installed SDK constraint checks passed **12 cases** on macOS ARM64 and Linux ARM64, including real LLDB generic parameter scopes, an uncompiled string helper, rejected bad bounds and unchanged stop state. Linux additionally passed all seven debug, 23 expression and fifteen generic live-suite cases. The pack contains **52 indexed resources** and fifteen guides. A bounded generic browser-state/counter example passed TypeScript/Vite compilation and all three Chromium/Firefox/WebKit interaction cases, with the existing dependency lock unchanged. Evidence: `build/sdk-constraints-021.log`, Linux ARM64 `live-*.log`, `build/constraints-web-build-021.json` and the generated Playwright results.

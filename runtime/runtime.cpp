@@ -78,6 +78,7 @@ int64_t nex_neg(int64_t a,int64_t line){return nex_sub(0,a,line);}
 void nex_print_i64(int64_t a){std::printf("%lld\n",static_cast<long long>(a));}
 void nex_print_bool(int64_t a){std::puts(a?"true":"false");}
 void nex_assert(int64_t a,int64_t line){if(!a)fail("E_ASSERT","assertion failed",line);}
+void nex_match_fail(int64_t line){fail("E_MATCH","no checked match arm accepted the value",line);}
 Handle *nex_retain(Handle *p){return guarded(0,[&]{return p?owned(p->data):nullptr;});}
 void nex_release(Handle *p){delete p;}
 Handle *nex_string_new(const char *text,int64_t size,int64_t line){return guarded(line,[&]{return owned(nexrt::string(std::string(text,size)));});}

@@ -102,7 +102,7 @@ public:
 class Emitter {
   const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false;
   std::vector<std::map<std::string,Value>> scopes;
-  std::map<const Stmt*,std::string> slots,matchSlots;std::map<const Param*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots;
+  std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   std::map<const void*,std::string> sites;std::string activeSite;
   struct SiteScope {std::string &value,old;SiteScope(std::string &value,std::string next):value(value),old(value){value=std::move(next);}~SiteScope(){value=std::move(old);}};
   std::string fresh(){return "%v"+std::to_string(serial++);}
@@ -167,6 +167,11 @@ class Emitter {
     if(e->kind==Expr::Binary&&(e->text=="&&"||e->text=="||")){
       shortSlots[e.get()]=allocateSlot(Type::Bool,e->span);
     }
+    if(e->kind==Expr::Match){
+      auto subject=e->args[0]->type;auto slot=allocateSlot(subject,e->span);matchSlots[e.get()]=slot;if(subject.heap())writeSlot(null(subject,e->span),slot,e->span);
+      if(e->type!=Type::Unit){auto result=allocateSlot(e->type,e->span);matchResults[e.get()]=result;if(e->type.heap())writeSlot(null(e->type,e->span),result,e->span);}
+      for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind!=Pattern::Wildcard){auto slot=allocateSlot(pattern->type,pattern->span);patternSlots[pattern.get()]=slot;if(pattern->type.heap())writeSlot(null(pattern->type,pattern->span),slot,pattern->span);}});
+    }
     for(auto a:e->args)allocateExpr(a);
   }
   void allocate(const std::vector<S> &body){
@@ -175,7 +180,7 @@ class Emitter {
         auto n=allocateSlot(s->type,s->span);slots[s.get()]=n;
         if(s->type.heap())writeSlot(null(s->type,s->span),n,s->span);
       }
-      if(s->kind==Stmt::Match){auto slot=allocateSlot(s->type,s->span);matchSlots[s.get()]=slot;writeSlot(null(s->type,s->span),slot,s->span);for(auto arm:s->arms)for(const auto &binding:arm->bindings)if(binding.name!="_"){auto local=allocateSlot(binding.type,binding.span);patternSlots[&binding]=local;if(binding.type.heap())writeSlot(null(binding.type,binding.span),local,binding.span);}}
+
       allocateExpr(s->expr);childBlocks(s,[&](const auto &body){allocate(body);});
     }
   }
@@ -183,8 +188,44 @@ class Emitter {
     auto value=call(result.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{base,index,constant(span.line,Type::I64,span)},result.heap()?result:Type(Type::I64),span);
     release(base,span);return result==Type::Bool?asBool(value,span):value;
   }
+  void patternBranch(Value condition,const std::string &failure,Span span){auto yes=label();line("cf.cond_br "+condition.name+", ^"+yes+", ^"+failure,span);blockLabel(yes);}
+  Value equalScalar(Value a,Value b,Span span){auto value=fresh();line(value+" = arith.cmpi eq, "+a.name+", "+b.name+" : "+ty(a.type),span);return {value,Type::Bool};}
+  void pattern(P p,Value input,const std::string &failure){
+    auto span=p->span;if(p->kind==Pattern::Wildcard){release(input,span);return;}
+    auto slot=Value{patternSlots.at(p.get()),p->type,true};store(input,slot.name,span);if(p->kind==Pattern::Binding)return;
+    auto value=load(slot,span,false);
+    if(p->kind==Pattern::Integer||p->kind==Pattern::Boolean){patternBranch(equalScalar(value,constant(p->number,p->type,span),span),failure,span);return;}
+    if(p->kind==Pattern::String){auto literal=text(p->text,span);auto same=asBool(call("nex_heap_equal",{value,literal},Type::I64,span),span);release(literal,span);patternBranch(same,failure,span);return;}
+    if(p->kind==Pattern::List)patternBranch(equalScalar(call("nex_length",{value},Type::I64,span),constant(p->args.size(),Type::I64,span),span),failure,span);
+    else if(p->type.kind==Type::Result)patternBranch(equalScalar(call("nex_is_ok",{value},Type::I64,span),constant(p->ordinal,Type::I64,span),span),failure,span);
+    else if(this->p.structure(p->type.name).enumeration){auto tag=call("nex_enum_tag",{value,constant(this->p.structure(p->type.name).variants.size(),Type::I64,span),constant(span.line,Type::I64,span)},Type::I64,span);patternBranch(equalScalar(tag,constant(p->ordinal,Type::I64,span),span),failure,span);}
+    for(size_t i=0;i<p->args.size();++i){auto child=p->args[i];if(child->kind==Pattern::Wildcard)continue;Value field;
+      if(p->type.kind==Type::Result){if(p->ordinal){field=call(child->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{value,constant(span.line,Type::I64,span)},child->type.heap()?child->type:Type(Type::I64),span);if(child->type==Type::Bool)field=asBool(field,span);}else field=call("nex_error_text",{value,constant(i==1,Type::I64,span)},Type::Str,span);}
+      else field=get(load(slot,span),constant(i,Type::I64,span),child->type,span);
+      pattern(child,field,failure);
+    }
+  }
+  std::pair<Value,bool> matching(E e){
+    auto subject=Value{matchSlots.at(e.get()),e->args[0]->type,true};store(expression(e->args[0]),subject.name,e->span);
+    scopes.emplace_back();scopes.back()["$match"]=subject;
+    Value output;if(e->type!=Type::Unit){output={matchResults.at(e.get()),e->type,true};scopes.back()["$result"]=output;}
+    auto end=label();bool all=true;auto parentScope=debug.scope;
+    for(size_t i=0;i<e->arms.size();++i){auto arm=e->arms[i];auto failure=label(),next=label();scopes.emplace_back();debug.scope=debug.block(arm->span);SiteScope site(activeSite,sites.at(arm.get()));
+      visitPattern(arm->pattern,[&](P p){if(p->kind!=Pattern::Wildcard){auto slot=patternSlots.at(p.get());scopes.back()[p->kind==Pattern::Binding?p->text:"$pattern"+slot]={slot,p->type,true};}});
+      pattern(arm->pattern,load(subject,arm->span),failure);
+      visitPattern(arm->pattern,[&](P p){if(p->kind==Pattern::Binding)describeStorage(p->text,p->type,p->span,patternSlots.at(p.get()));});
+      if(arm->guard)patternBranch(expression(e->args[arm->guard]),failure,arm->span);
+      bool returns=false;if(e->statementMatch)returns=statements(arm->body,false);else {auto value=expression(e->args[arm->value]);if(e->type!=Type::Unit)store(value,output.name,arm->span);cleanup(scopes.back(),arm->span);}
+      all=all&&returns;if(!returns)line("cf.br ^"+end,arm->span);
+      bool canFail=bool(arm->guard);visitPattern(arm->pattern,[&](P p){if(p->kind==Pattern::Integer||p->kind==Pattern::Boolean||p->kind==Pattern::String||p->kind==Pattern::List||(p->kind==Pattern::Constructor&&(p->type.kind==Type::Result||this->p.structure(p->type.name).enumeration)))canFail=true;});
+      if(canFail){blockLabel(failure);cleanup(scopes.back(),arm->span);if(i+1<e->arms.size()){line("cf.br ^"+next,arm->span);blockLabel(next);}else{call("nex_match_fail",{constant(arm->span.line,Type::I64,arm->span)},Type::Unit,arm->span);line("llvm.unreachable",arm->span);}}
+      scopes.pop_back();debug.scope=parentScope;
+    }
+    Value result{"",Type::Unit};if(!all){blockLabel(end);if(e->type!=Type::Unit)result=load(output,e->span);cleanup(scopes.back(),e->span);}scopes.pop_back();return {result,all};
+  }
   Value expression(E e){
     SiteScope site(activeSite,sites.at(e.get()));
+    if(e->kind==Expr::Match)return matching(e).first;
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return constant(e->number,e->type,e->span);
     if(e->kind==Expr::String)return text(e->text,e->span);
     if(e->kind==Expr::Name)return load(lookup(e->text),e->span);
@@ -297,20 +338,7 @@ class Emitter {
         blockLabel(no);bool b=statements(s->alternative);if(!b)line("cf.br ^"+end,s->span);
         if(!(a&&b))blockLabel(end);returned=a&&b;break;
       }
-      case Stmt::Match:{
-        auto value=expression(s->expr),slot=Value{matchSlots.at(s.get()),s->type,true};store(value,slot.name,s->span);
-        scopes.emplace_back();scopes.back()["$match"]=slot;
-        auto tag=call("nex_enum_tag",{load(slot,s->span,false),constant(p.structure(s->type.name).variants.size(),Type::I64,s->span),constant(s->span.line,Type::I64,s->span)},Type::I64,s->span);
-        auto end=label();bool all=true;auto parentScope=debug.scope;
-        for(size_t i=0;i<s->arms.size();++i){auto arm=s->arms[i];std::string next;
-          if(i+1<s->arms.size()){auto yes=label();next=label();auto expected=constant(arm->ordinal,Type::I64,arm->span);auto test=fresh();line(test+" = arith.cmpi eq, "+tag.name+", "+expected.name+" : i64",arm->span);line("cf.cond_br "+test+", ^"+yes+", ^"+next,arm->span);blockLabel(yes);}
-          scopes.emplace_back();debug.scope=debug.block(arm->span);SiteScope site(activeSite,sites.at(arm.get()));
-          for(size_t j=0;j<arm->bindings.size();++j){const auto &binding=arm->bindings[j];if(binding.name=="_")continue;auto local=patternSlots.at(&binding);
-            auto payload=get(load(slot,binding.span),constant(j,Type::I64,binding.span),binding.type,binding.span);store(payload,local,binding.span);describeStorage(binding.name,binding.type,binding.span,local);scopes.back()[binding.name]={local,binding.type,true};}
-          bool returnedArm=statements(arm->body,false);all=all&&returnedArm;if(!returnedArm)line("cf.br ^"+end,arm->span);scopes.pop_back();debug.scope=parentScope;if(!next.empty())blockLabel(next);
-        }
-        if(!all){blockLabel(end);cleanup(scopes.back(),s->span);}scopes.pop_back();returned=all;break;
-      }
+      case Stmt::Match:returned=matching(s->expr).second;break;
       case Stmt::While:{
         auto condition=label(),bodyLabel=label(),end=label();line("cf.br ^"+condition,s->span);blockLabel(condition);call("nex_poll",{constant(s->span.line,Type::I64,s->span)},Type::Unit,s->span);
         auto value=expression(s->expr);line("cf.cond_br "+value.name+", ^"+bodyLabel+", ^"+end,s->span);
@@ -335,7 +363,7 @@ public:
     if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
     out<<"module {\n";
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
-    declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");
+    declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}

@@ -106,7 +106,7 @@ class Loader {
     try{unit=parse(texts.at(key),path.string());}catch(Error &e){e.span.file=key;throw;}
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
-    std::function<void(E)> expr=[&](E e){if(e){e->span.file=key;for(auto a:e->args)expr(a);}};
+    std::function<void(E)> expr=[&](E e){if(e){e->span.file=key;for(auto arm:e->arms){arm->span.file=key;visitPattern(arm->pattern,[&](P pattern){pattern->span.file=key;});}for(auto a:e->args)expr(a);}};
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){s->span.file=key;for(auto arm:s->arms){arm->span.file=key;for(auto &binding:arm->bindings)binding.span.file=key;}expr(s->expr);childBlocks(s,block);}};
     for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
     for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
@@ -135,8 +135,8 @@ class Loader {
         if(t.kind==Type::List||t.kind==Type::Result){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}
         for(auto &argument:t.arguments)type(argument,span);
       };
-      std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto a:e->args)expr(a);}};
-      std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);for(auto arm:s->arms)arm->variant=resolve(key,arm->variant,false,arm->span);childBlocks(s,block);}};
+      std::function<void(E)> expr=[&](E e){if(e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolve(key,e->text,false,e->span);for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolve(key,pattern->text,false,pattern->span);});for(auto a:e->args)expr(a);}};
+      std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);childBlocks(s,block);}};
       for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
       for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
@@ -195,7 +195,7 @@ void bindExpression(const Program &p,const std::string &function,E expression){
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
   for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}
   std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record&&t.arguments.empty()&&parameters.contains(t.name)){t=parameters.at(t.name);return;}if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}for(auto &argument:t.arguments)type(argument,span);};
-  std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto a:e->args)visit(a);};visit(expression);
+  std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolveSymbol(p.units,symbols,f.unit,pattern->text,false,pattern->span);});for(auto a:e->args)visit(a);};visit(expression);
 }
 llvm::json::Value sourceBundle(const Program &p){
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;

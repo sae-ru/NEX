@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.8";
+inline constexpr const char *languageVersion = "0.9";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
@@ -31,14 +31,23 @@ struct Type {
   }
 };
 std::string typeName(Type type);
+struct Pattern;
+using P = std::shared_ptr<Pattern>;
+struct Pattern {
+  enum Kind { Binding, Wildcard, Constructor, Integer, Boolean, String, List } kind=Wildcard;
+  Span span;std::string text;int64_t number=0,ordinal=0;Type type;
+  size_t binding=0;std::vector<P> args;
+};
+template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto child:pattern->args)visitPattern(child,visit);}
+struct MatchArm;
 struct Expr {
-  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index } kind;
+  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match } kind;
   Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::vector<std::shared_ptr<Expr>> args;
   std::vector<Type> typeArguments;
+  std::vector<std::shared_ptr<MatchArm>> arms;bool statementMatch=false;
 };
 using E = std::shared_ptr<Expr>;
-struct MatchArm;
 struct Stmt {
   enum Kind { Let, Var, Assign, Expression, Return, If, While, Match } kind;
   Span span; std::string name; Type type = Type::Unknown; E expr;
@@ -47,7 +56,9 @@ struct Stmt {
 };
 using S = std::shared_ptr<Stmt>;
 struct Param { std::string name; Type type; Span span; };
-struct MatchArm { std::string variant; std::vector<Param> bindings; std::vector<S> body; Span span; int64_t ordinal=0; };
+struct MatchArm { std::string variant; std::vector<Param> bindings; std::vector<S> body; Span span; int64_t ordinal=0;
+  P pattern;unsigned guard=0,value=0;
+};
 template<class F> void childBlocks(const S &statement,F visit){visit(statement->body);visit(statement->alternative);for(const auto &arm:statement->arms)visit(arm->body);}
 struct Variant { std::string name; std::vector<Param> fields; Span span; int64_t ordinal=0; };
 struct Structure {
@@ -105,6 +116,9 @@ void exportProject(const llvm::json::Value &bundle,const std::string &directory,
 std::string nativeSymbol(const std::string &name);
 void prepareGenerics(Program &program);
 bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint);
+void checkPattern(Program &program,P pattern,Type type,std::vector<Param> &bindings);
+void checkMatchCoverage(const Program &program,E expression);
+llvm::json::Value canonicalPattern(P pattern);
 llvm::json::Value canonicalBounds(const std::vector<std::string> &parameters,const TypeBounds &bounds);
 Type substituteType(Type type,const std::map<std::string,Type> &arguments);
 Type resolveType(Program &program,Type type,Span span={},unsigned depth=0);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.21.0 LANGUAGES C CXX)
+project(NEX VERSION 0.22.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -34,7 +34,7 @@ foreach(NEX_INPUT IN LISTS NEX_COMPILER_FILES)
 endforeach()
 string(SHA256 NEX_BUILD_ID "${NEX_BUILD_INPUTS}")
 
-add_library(nex_frontend src/language.cpp src/generics.cpp src/interpreter.cpp src/watch_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp runtime/nex_json.cpp runtime/nex_store.cpp)
+add_library(nex_frontend src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp runtime/nex_json.cpp runtime/nex_store.cpp)
 target_include_directories(nex_frontend PUBLIC include)
 target_include_directories(nex_frontend PRIVATE runtime)
 target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
@@ -115,3 +115,5 @@ add_test(NAME generics COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/generics.py $<TARGET_FILE:nex>)
 add_test(NAME constraints COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/constraints.py $<TARGET_FILE:nex>)
+add_test(NAME matching COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/matching.py $<TARGET_FILE:nex>)

@@ -51,8 +51,36 @@ class Generator {
     throw Error("E_INTERNAL","TypeScript local not found: "+name);
   }
   std::string declare(const std::string &name){auto result="v"+std::to_string(++unique)+"_"+name;scopes.back()[name]=result;return result;}
+  std::string patternChild(P p,size_t index,const std::string &subject,const std::string &location){
+    if(p->kind==Pattern::List)return "nex.index("+subject+", "+std::to_string(index)+"n, "+location+")";
+    if(p->type.kind==Type::Result)return p->ordinal?"nex.unwrap("+subject+", "+location+")":std::string(index?"nex.errorMessage(":"nex.errorCode(")+subject+")";
+    const auto &record=this->p.structure(p->type.name);const auto &fields=record.enumeration?record.variants.at(p->ordinal).fields:record.fields;
+    return "(("+subject+")["+quote(fields.at(index).name)+"] as "+type(p->args[index]->type)+")";
+  }
+  std::string patternCondition(P p,const std::string &subject,const std::string &location){
+    if(p->kind==Pattern::Binding||p->kind==Pattern::Wildcard)return "true";
+    if(p->kind==Pattern::Integer)return "("+subject+" === ("+std::to_string(p->number)+"n))";
+    if(p->kind==Pattern::Boolean)return "("+subject+" === "+(p->number?"true":"false")+")";
+    if(p->kind==Pattern::String)return "nex.equal("+subject+", "+quote(p->text)+")";
+    std::string test="true";
+    if(p->kind==Pattern::List)test="(nex.length("+subject+") === "+std::to_string(p->args.size())+"n)";
+    else if(p->type.kind==Type::Result)test=std::string(p->ordinal?"":"!")+"nex.isOk("+subject+")";
+    else if(this->p.structure(p->type.name).enumeration)test="(("+subject+")[nex.CASE] === "+quote(this->p.structure(p->type.name).variants.at(p->ordinal).name)+")";
+    for(size_t i=0;i<p->args.size();++i)if(p->args[i]->kind!=Pattern::Binding&&p->args[i]->kind!=Pattern::Wildcard)test+=" && "+patternCondition(p->args[i],patternChild(p,i,subject,location),location);
+    return "("+test+")";
+  }
+  std::string patternBindings(P p,const std::string &subject,const std::string &location){
+    if(p->kind==Pattern::Binding)return "const "+declare(p->text)+": "+type(p->type)+" = "+subject+"; ";
+    std::string code;for(size_t i=0;i<p->args.size();++i)code+=patternBindings(p->args[i],patternChild(p,i,subject,location),location);return code;
+  }
+  std::string matchExpression(E e){
+    auto subject="match_"+std::to_string(++unique),location=site(e);std::string code="((): "+type(e->type)+" => { const "+subject+" = "+expr(e->args[0])+"; ";
+    for(auto arm:e->arms){scopes.emplace_back();code+="if ("+patternCondition(arm->pattern,subject,location)+") { "+patternBindings(arm->pattern,subject,location);if(arm->guard)code+="if ("+expr(e->args[arm->guard])+") { ";code+="return "+expr(e->args[arm->value])+"; ";if(arm->guard)code+="} ";code+="} ";scopes.pop_back();}
+    return code+"return nex.invalidEnum("+location+"); })()";
+  }
   std::string expr(E e){
     switch(e->kind){
+    case Expr::Match:return matchExpression(e);
     case Expr::Integer:return "("+std::to_string(e->number)+"n)";
     case Expr::Boolean:return e->number?"true":"false";
     case Expr::String:return quote(e->text);
@@ -103,12 +131,10 @@ class Generator {
         statement("if ("+expr(s->expr)+") {");++depth;block(s->body);--depth;
         if(!s->alternative.empty()){statement("} else {");++depth;block(s->alternative);--depth;}statement("}");break;
       case Stmt::Match:{
-        auto subject="match_"+std::to_string(++unique);statement("{");++depth;statement("const "+subject+" = "+expr(s->expr)+";");statement("switch ("+subject+"[nex.CASE]) {");++depth;
-        for(auto arm:s->arms){auto variant=p.variant(arm->variant);statement("case "+quote(variant->name)+": {");++depth;scopes.emplace_back();
-          for(size_t i=0;i<arm->bindings.size();++i){const auto &binding=arm->bindings[i];if(binding.name!="_")statement("const "+declare(binding.name)+": "+type(binding.type)+" = "+subject+"["+quote(variant->fields[i].name)+"];");}
-          block(arm->body,false);statement("break;");scopes.pop_back();--depth;statement("}");
-        }
-        statement("default: nex.invalidEnum("+site(s->expr)+");");--depth;statement("}");--depth;statement("}");break;
+        auto e=s->expr;auto subject="match_"+std::to_string(++unique),end="match_end_"+std::to_string(++unique),location=site(e->args[0]);statement(end+": {");++depth;statement("const "+subject+" = "+expr(e->args[0])+";");
+        for(auto arm:e->arms){statement("if ("+patternCondition(arm->pattern,subject,location)+") {");++depth;scopes.emplace_back();statement(patternBindings(arm->pattern,subject,location));if(arm->guard){statement("if ("+expr(e->args[arm->guard])+") {");++depth;}
+          block(arm->body,false);statement("break "+end+";");if(arm->guard){--depth;statement("}");}scopes.pop_back();--depth;statement("}");}
+        statement("nex.invalidEnum("+location+");");--depth;statement("}");break;
       }
       case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;block(s->body);--depth;statement("}");break;
       }

@@ -8,10 +8,12 @@ fn replace<T: add>(state:State<T>,value:T) -> State<T> { return State(value,next
 client fn title() -> str { return "NEX generic state"; }
 client fn initial() -> State<str> { return State("seed",0); }
 client fn update(state:State<str>,event:web::Event) -> State<str> {
-  if event.name == "replace" { return replace(state,event.value); }
-  if event.name == "increment" { return State(state.value,next(state.count)); }
-  if event.name == "reset" { return initial(); }
-  return state;
+  return match event {
+    web::Event("replace", value, _) => replace(state,value),
+    web::Event("increment", _, _) => State(state.value,next(state.count)),
+    web::Event("reset", _, _) => initial(),
+    _ => state,
+  };
 }
 client fn view(state:State<str>) -> web::View {
   return web::element("main",[],[],[

@@ -4,17 +4,20 @@
 namespace nex {
 namespace {
 constexpr size_t maxInstances=4096;
+std::vector<S> cloneBlock(const std::vector<S> &,const std::map<std::string,Type> &);
+P clonePattern(P source){auto value=std::make_shared<Pattern>(*source);value->type=Type::Unknown;value->args.clear();for(auto child:source->args)value->args.push_back(clonePattern(child));return value;}
 E cloneExpression(E source,const std::map<std::string,Type> &arguments){
   if(!source)return nullptr;auto value=std::make_shared<Expr>(*source);value->type=Type::Unknown;
   value->annotation=substituteType(source->annotation,arguments);value->args.clear();
   for(auto child:source->args)value->args.push_back(cloneExpression(child,arguments));
-  for(auto &type:value->typeArguments)type=substituteType(type,arguments);return value;
+  for(auto &type:value->typeArguments)type=substituteType(type,arguments);
+  value->arms.clear();for(auto original:source->arms){auto arm=std::make_shared<MatchArm>(*original);arm->pattern=clonePattern(original->pattern);arm->bindings.clear();arm->body=cloneBlock(original->body,arguments);value->arms.push_back(std::move(arm));}return value;
 }
 std::vector<S> cloneBlock(const std::vector<S> &source,const std::map<std::string,Type> &arguments){
   std::vector<S> result;for(auto original:source){auto statement=std::make_shared<Stmt>(*original);
     statement->type=substituteType(original->type,arguments);statement->expr=cloneExpression(original->expr,arguments);
     statement->body=cloneBlock(original->body,arguments);statement->alternative=cloneBlock(original->alternative,arguments);statement->arms.clear();
-    for(auto old:original->arms){auto arm=std::make_shared<MatchArm>(*old);arm->body=cloneBlock(old->body,arguments);for(auto &binding:arm->bindings)binding.type=Type::Unknown;statement->arms.push_back(std::move(arm));}
+    if(statement->kind==Stmt::Match)statement->arms=statement->expr->arms;
     result.push_back(std::move(statement));}return result;
 }
 std::map<std::string,Type> bindTypeArguments(const Program &program,const std::vector<std::string> &parameters,const TypeBounds &bounds,const std::vector<Type> &arguments,Span span){

@@ -1,0 +1,48 @@
+module matching;
+
+enum Maybe<T> { None; Some(value:T); }
+struct Pair { enabled:bool; value:result<Maybe<i64>>; }
+
+fn number(value:result<Maybe<i64>>) -> i64 {
+  return match value {
+    ok(Maybe::Some(n)) if n > 0 => n,
+    ok(Maybe::Some(_)) => 0,
+    ok(Maybe::None()) => 0,
+    err(_, _) => -1,
+  };
+}
+
+fn label(value:result<list<i64>>) -> str {
+  return match value {
+    ok([1, n]) if n > 0 => "one:" + str(n),
+    ok(values) => "count:" + str(len(values)),
+    err("EMPTY", _) => "empty",
+    err(code, message) => code + ":" + message,
+  };
+}
+
+fn main() -> unit !{io} {
+  print(number(ok(Maybe::Some(42))));
+  print(label(ok([1, 42])));
+  print(match Pair(true, ok(Maybe::Some(7))) {
+    Pair(true, ok(Maybe::Some(n))) => str(n),
+    _ => "none",
+  });
+}
+
+test fn nested_and_guarded_patterns() -> unit {
+  assert(number(ok(Maybe::Some(42))) == 42);
+  assert(number(ok(Maybe::Some(-1))) == 0);
+  assert(number(err<Maybe<i64>>("E", "error")) == -1);
+  assert(label(ok([1, 42])) == "one:42");
+  assert(label(ok([1, -1])) == "count:2");
+  assert(label(err<list<i64>>("EMPTY", "ignored")) == "empty");
+  assert(label(err<list<i64>>("E", "error")) == "E:error");
+  let values:list<i64> = match true { true => [], false => [1] };
+  assert(values == []);
+  match ok(Maybe::Some(42)) {
+    ok(Maybe::Some(n)) => { assert(n == 42); },
+    ok(Maybe::None()) => { assert(false); },
+    err(_, _) => { assert(false); }
+  }
+}

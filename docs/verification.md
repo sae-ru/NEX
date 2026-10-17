@@ -13,7 +13,7 @@ nex verify examples/verification/main.nex --contracts /tmp/increment.json --json
 ```json
 {
   "schema": "nex.verification-contracts/1",
-  "language": "0.8",
+  "language": "0.9",
   "expected_revision": "CURRENT_SEMANTIC_REVISION",
   "source_hash": "EXACT_SOURCE_BUNDLE_HASH",
   "functions": [{
@@ -62,3 +62,5 @@ The proof trusts Z3 and this verifier's translation/VC rules. It does not prove 
 ## Solver dependency
 
 The compiler needs Z3 development headers/library; generated native/browser applications do not link or execute Z3. Set `-DNEX_Z3_ROOT=/path/to/z3` for a prefix containing `include/z3++.h` and `lib/libz3` or the official distribution's `bin/libz3`. `nex doctor --json` reports the loaded solver version. This host was configured with the official Z3 5.3.1 ARM64 macOS release; its archive SHA256 is `0de02438052952153aab5d1361be4d61b6d226337440356c054d403c959da86b`. Z3 is an external MIT-licensed dependency; its headers/library and configured shared-library location remain prerequisites of this local SDK, as do LLVM/MLIR and other development dependencies. Portable solver/toolchain packaging remains open.
+
+Language 0.9 match expressions/statements are reported unsupported by the scalar verifier. This status does not weaken runtime checks or count as a proof; test their behavior across backends.

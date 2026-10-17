@@ -94,6 +94,7 @@ class Engine {
   }
   Sym expression(E e,State &state,bool spec=false){
     poll();if(!e)return {context.bool_val(true),Type::Unit};
+    if(e->kind==Expr::Match)throw Stop{"unsupported","match expressions are outside scalar verification",e->span};
     if(e->kind==Expr::Integer)return {integer(e->number),Type::I64};
     if(e->kind==Expr::Boolean)return {context.bool_val(e->number),Type::Bool};
     if(e->kind==Expr::Name)return state.lookup(e->text,e->span);

@@ -34,7 +34,8 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   auto frameId=stop->getInteger("frame_id");if(!frameId||*frameId<0||uint64_t(*frameId)>UINT32_MAX)throw Error("E_DEBUG_FRAME","invalid frame index");
   auto bindings=f.getArray("bindings");auto truncated=f.getBoolean("truncated");if(!bindings||bindings->size()>256||!truncated)throw Error("E_DEBUG_FRAME","frame requires at most 256 bindings and a truncation flag");
   std::map<std::string,std::set<std::string>> declared;for(const auto &param:fn.params)declared[param.name].insert(typeName(param.type));
-  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));for(auto arm:s->arms)for(const auto &binding:arm->bindings)if(binding.name!="_")declared[binding.name].insert(typeName(binding.type));childBlocks(s,visit);}};visit(fn.body);
+  std::function<void(E)> locals=[&](E e){if(e){for(auto arm:e->arms)for(const auto &binding:arm->bindings)if(binding.name!="_")declared[binding.name].insert(typeName(binding.type));for(auto child:e->args)locals(child);}};
+  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));locals(s->expr);childBlocks(s,visit);}};visit(fn.body);
   std::map<std::string,Type> types;Object values;
   for(const auto &value:*bindings){const auto &b=object(value);fields(b,{"name","type","value","unavailable"});auto local=required(b,"name"),type=required(b,"type");
     if(local.empty()||local.size()>256||type.empty()||type.size()>4096||!declared[local].contains(type)||types.contains(local))throw Error("E_DEBUG_FRAME","binding is not a unique declared name/type in the selected function: "+local);
@@ -59,7 +60,10 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   }
   auto expression=parseExpression(source,"<watch:"+name+">",1024);std::vector<std::pair<E,unsigned>> pending{{expression,0}};while(!pending.empty()){auto [e,depth]=pending.back();pending.pop_back();if(depth>128)throw Error("E_DEBUG_LIMIT","expression AST exceeds its depth budget");for(auto arg:e->args)pending.emplace_back(arg,depth+1);}
   bindExpression(p,name,expression);auto type=checkExpression(p,name,expression,types);
-  std::set<std::string> referenced;std::function<void(E)> names=[&](E e){if(e->kind==Expr::Name)referenced.insert(e->text);for(auto arg:e->args)names(arg);};names(expression);
+  std::set<std::string> referenced;std::function<void(E,std::set<std::string>)> names=[&](E e,std::set<std::string> bound){if(e->kind==Expr::Name&&!bound.contains(e->text))referenced.insert(e->text);
+    if(e->kind==Expr::Match){names(e->args[0],bound);for(auto arm:e->arms){auto local=bound;for(const auto &b:arm->bindings)if(b.name!="_")local.insert(b.name);if(arm->guard)names(e->args[arm->guard],local);if(arm->value)names(e->args[arm->value],local);}}
+    else for(auto arg:e->args)names(arg,bound);
+  };names(expression,{});
   Object output;
   if(plan){Array requested;for(const auto &local:referenced)requested.push_back(Object{{"name",local},{"type",typeName(types.at(local))},{"wire_schema",wireSchema(p,types.at(local))}});output=Object{{"schema","nex.expression-plan/1"},{"ok",true},{"type",typeName(type)},{"variables",std::move(requested)}};}
   else {auto result=evaluateExpression(p,expression,types,values,steps,captures,demand);output=std::move(*result.getAsObject());output["schema"]=output.get("request")?"nex.expression-demand/1":"nex.expression/1";if(type!=Type::Unit)output["wire_schema"]=wireSchema(p,type);}

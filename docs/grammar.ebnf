@@ -1,4 +1,4 @@
-(* NEX 0.8. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
+(* NEX 0.9. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
@@ -26,7 +26,12 @@ return        = "return", [ expression ], ";" ;
 if            = "if", expression, block, [ "else", ( block | if ) ] ;
 while         = "while", expression, block ;
 match         = "match", expression, "{", match_arm, { match_arm }, "}" ;
-match_arm     = qualified_name, "(", [ identifier, { ",", identifier } ], ")", "=>", block, [ "," ] ;
+match_arm     = pattern, [ "if", expression ], "=>", block, [ "," ] ;
+match_expression = "match", expression, "{", expression_arm, { ",", expression_arm }, [ "," ], "}" ;
+expression_arm = pattern, [ "if", expression ], "=>", expression ;
+pattern       = "_" | identifier | [ "-" ], integer | "true" | "false" | string |
+                "[", [ pattern, { ",", pattern } ], "]" |
+                qualified_name, "(", [ pattern, { ",", pattern } ], ")" ;
 expression    = logical_or ;
 logical_or    = logical_and, { "||", logical_and } ;
 logical_and   = equality, { "&&", equality } ;
@@ -36,7 +41,7 @@ addition      = product, { ( "+" | "-" ), product } ;
 product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" } ;
-primary       = integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+primary       = match_expression | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
                 [ type_arguments, [ "::", identifier ] ],
                 [ "(", [ arguments ], ")" ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
@@ -59,10 +64,11 @@ digit         = "0" .. "9" ;
    Imported names in source use alias::name or alias::Enum::Case for variants;
    arbitrary deep names are not implicit lookup paths. Imports require a literal
    relative/library .nex path. Enum constructors and patterns require parentheses,
-   including empty payloads. Match arms cover every case exactly once; pattern
+   including empty payloads. Typed coverage and unreachable-arm checks apply; pattern
    names are immutable, and _ discards without introducing a binding. enum is
-   contextual at declaration position; match is contextual before a scrutinee and
-   arm block. Existing function/local/type names enum and match remain valid.
+   contextual at declaration position; match is contextual before its arm block.
+   In a scrutinee, a symbolic postfix/binary use of the name match keeps its
+   ordinary meaning; parenthesize an ambiguous nested match expression. Existing function/local/type names enum and match remain valid.
    result is contextual as a type constructor; names such as a local result remain
    valid. endpoint is contextual at declaration position; its route, method,
    status, handler realm/signature and public wire types are semantic checks.

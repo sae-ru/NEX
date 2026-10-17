@@ -34,7 +34,32 @@ class Interpreter {
     catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
     catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
+  bool pattern(P p,const std::function<V()> &read){
+    step(p->span);
+    if(p->kind==Pattern::Wildcard)return true;
+    if(p->kind==Pattern::Binding){frames.back().back().lazy[p->text]=read;return true;}
+    auto value=read();
+    if(p->kind==Pattern::Integer||p->kind==Pattern::Boolean)return full(value).scalar==p->number;
+    if(p->kind==Pattern::String)return full(value).object->text==p->text;
+    if(p->kind==Pattern::List){if((watch?watch->length(value):nexrt::length(value.object))!=int64_t(p->args.size()))return false;}
+    else if(p->type.kind==Type::Result){if((watch?watch->isSuccess(value):nexrt::isSuccess(value))!=bool(p->ordinal))return false;}
+    else if(this->p.structure(p->type.name).enumeration){if((watch?watch->enumTag(value):value.object->ordinal)!=p->ordinal)return false;}
+    for(size_t i=0;i<p->args.size();++i){auto child=[this,p,read,i]{auto value=read();
+      if(p->kind==Pattern::List)return watch?watch->index(value,i):nexrt::get(value.object,i);
+      if(p->type.kind==Type::Result){if(p->ordinal)return watch?watch->unwrap(value):nexrt::unwrap(value);return watch?watch->error(value,i==0):V(nexrt::string(i==0?value.object->text:value.object->values[0].object->text));}
+      if(this->p.structure(p->type.name).enumeration)return watch?watch->enumField(value,p->ordinal,i):nexrt::get(value.object,i);
+      return watch?watch->field(value,i):nexrt::get(value.object,i);
+    };if(!pattern(p->args[i],child))return false;}return true;
+  }
+  V matching(E e){
+    auto value=expression(e->args[0]);for(auto arm:e->arms){frames.back().emplace_back();
+      if(pattern(arm->pattern,[value]{return value;})&&(!arm->guard||expression(e->args[arm->guard]).scalar)){
+        V result;if(e->statementMatch)block(arm->body,false);else result=expression(e->args[arm->value]);frames.back().pop_back();return result;
+      }frames.back().pop_back();
+    }throw Error("E_MATCH","no checked match arm accepted the value",e->span);
+  }
   V expr(E e) {
+    if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
     if(e->kind==Expr::Name)return local(e->text,e->span);
@@ -111,11 +136,7 @@ class Interpreter {
       case Stmt::Return:throw Returned{s->expr?expression(s->expr):V()};
       case Stmt::If:block(expression(s->expr).scalar?s->body:s->alternative);break;
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
-      case Stmt::Match:{
-        auto value=expression(s->expr);auto tag=watch?watch->enumTag(value):value.object->ordinal;bool found=false;
-        for(auto arm:s->arms)if(arm->ordinal==tag){found=true;frames.back().emplace_back();for(size_t i=0;i<arm->bindings.size();++i)if(arm->bindings[i].name!="_"){auto name=arm->bindings[i].name;if(watch)frames.back().back().lazy[name]=[&,value,tag,i]{return watch->enumField(value,tag,i);};else frames.back().back().values[name]=nexrt::get(value.object,i);}block(arm->body,false);frames.back().pop_back();break;}
-        if(!found)throw Error("E_ENUM","invalid checked enum discriminant",s->span);break;
-      }
+      case Stmt::Match:matching(s->expr);break;
       }
       }catch(Error &error){if(error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }

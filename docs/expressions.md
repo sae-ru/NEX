@@ -1,6 +1,6 @@
 # NEX expressions in stopped frames — toolchain 0.14
 
-NEX expressions use the language 0.8 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.9 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -229,3 +229,5 @@ Matching pure helpers accept exact enum values or demand only the selected case 
 Language 0.7 watches can instantiate pure generic helpers that were not emitted into the stopped binary. A generic frame resolves its original type parameter names to the concrete instance arguments. Captured nominal type names include applications such as `model::Box<i64>`. Instances are derived metadata, so creating a watch helper does not change source revision identity. The compiler still validates source/build/stop identity and rejects effectful calls; evaluation never runs code in the inferior. Type-name budgets in the frame schemas are 4096 bytes.
 
 Language 0.8 watches enforce builtin generic bounds before pure helper specialization, including helpers absent from the stopped binary. Inside a concrete generic frame, source T resolves to its captured concrete type argument; constraint failures remain E_GENERIC_BOUND. Retain the matching source language/compiler/resources for historical snapshots.
+
+Language 0.9 watches support value matches and pure helpers with nested/guarded patterns. Pattern bindings are local; expression planning reports free frame bindings only. Enum/result/list selectors read required shapes and selected fields, while discarded payloads remain unread.

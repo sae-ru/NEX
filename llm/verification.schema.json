@@ -7,7 +7,7 @@
   "required": ["schema", "language", "expected_revision", "source_hash", "functions"],
   "properties": {
     "schema": {"const": "nex.verification-contracts/1"},
-    "language": {"const": "0.8"},
+    "language": {"const": "0.9"},
     "expected_revision": {"$ref": "#/$defs/hash"},
     "source_hash": {"$ref": "#/$defs/hash"},
     "functions": {
