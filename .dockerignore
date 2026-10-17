@@ -1,0 +1,7 @@
+**
+!tools/
+!tools/linux/
+!tools/linux/Dockerfile
+!web/
+!web/package.json
+!web/package-lock.json

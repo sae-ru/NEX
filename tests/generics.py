@@ -122,10 +122,12 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
 
     def test_actual_016_source_migration_preserves_history(self):
         old_binary=harness.REPO/'build/sdk-0.16.0/bin/nex'
-        if not old_binary.exists():self.skipTest('actual SDK 0.16 not available')
         self.source('module legacy; enum E {A(value:i64); B;} fn value(e:E) -> i64 {match e {E::A(n) => {return n;} E::B() => {return 0;}}} fn main() -> unit {assert(value(E::A(42)) == 42);}')
-        def old_cli(*args):return json.loads(subprocess.check_output([str(old_binary),*args,'--json'],cwd=self.root))
-        old=old_cli('check')['revision'];old_graph=old_cli('graph');old_nodes=old_cli('operations','--symbol','value')['nodes']
+        if sys.platform=='darwin' and old_binary.exists():
+            def old_cli(*args):return json.loads(subprocess.check_output([str(old_binary),*args,'--json'],cwd=self.root))
+            old=old_cli('check')['revision'];old_graph=old_cli('graph');old_nodes=old_cli('operations','--symbol','value')['nodes']
+        else:
+            fixture=self.historical_store('0.6');old=fixture['revision'];old_graph=fixture['graph'];old_nodes=fixture['operations']
         self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
         current=self.cli('migrate');self.assertEqual(current['language'],'0.7');self.assertNotEqual(current['revision'],old)
         self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.7'})

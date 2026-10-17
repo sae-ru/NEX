@@ -697,7 +697,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
     auto destination=folder/std::filesystem::path(component).replace_extension(".o");
     std::filesystem::create_directories(destination.parent_path());
-    std::filesystem::copy_file(cached,destination,std::filesystem::copy_options::overwrite_existing);link.push_back(destination.string());
+    copyFile(cached.string(),destination.string(),true);link.push_back(destination.string());
   }
   if(server){
     auto bridge=(folder/"server-bridge.cpp").string(),bridgeObject=(folder/"server-bridge.o").string();auto name=nativeSymbol(p.function(options.entry).name);
@@ -716,10 +716,23 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(execute(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
   }
   if(profiling&&!options.libraryEntry){link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
+  // LLVM ELF/archive writers use '%' as a temporary-file template marker.
+  // Stage their output in an independent directory so literal project paths
+  // (including percent signs) are never interpreted as that template.
+  std::filesystem::path linkStage;auto linkOutput=result.executable;
+  if(driverABI.isOSLinux()||options.libraryEntry){
+    llvm::SmallString<128> temporary;
+    if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-link",temporary))throw Error("E_FILE",ec.message());
+    linkStage=temporary.str().str();linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
+  }
   if(options.libraryEntry){
-    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",result.executable};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
-  }else {if(storage)link.push_back(toolchain.sqliteLibrary);link.insert(link.end(),{"-o",result.executable,"-g"});}
-  if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string());
+    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
+  }else {if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);if(storage)link.push_back(toolchain.sqliteLibrary);link.insert(link.end(),{"-o",linkOutput,"-g"});}
+  if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
+  if(!linkStage.empty()){
+    try{copyFile(linkOutput,result.executable,true);std::filesystem::remove_all(linkStage);}
+    catch(const Error &e){throw Error(e.code,std::string(e.what())+"; link output retained at "+linkStage.string(),e.span);}
+  }
   if(!options.libraryEntry&&driverABI.isOSDarwin()) {
     auto dsym=(std::filesystem::path(NEX_LLVM_TOOLS)/"dsymutil").string();
     if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
@@ -727,7 +740,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   if(!result.notices.empty())writeFile(result.notices,notices);
   llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);
-  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"entry",options.entry},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}}));
+  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"entry",options.entry},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules}}));
   writeFile((folder/"complete").string(),completion());return result;
 }
 }

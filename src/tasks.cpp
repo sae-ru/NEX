@@ -211,7 +211,7 @@ struct Runner {
   void copyArtifact(const fs::path &source,const fs::path &destination){
     if(fs::is_symlink(source))throw Error("E_TASK_INTEGRITY","refusing a symlink artifact");
     if(fs::is_directory(source)){fs::create_directories(destination);for(const auto &e:fs::directory_iterator(source))copyArtifact(e.path(),destination/e.path().filename());}
-    else if(fs::is_regular_file(source)){fs::create_directories(destination.parent_path());fs::copy_file(source,destination,fs::copy_options::overwrite_existing);}
+    else if(fs::is_regular_file(source)){fs::create_directories(destination.parent_path());copyFile(source.string(),destination.string(),true);}
     else throw Error("E_TASK_ARTIFACT","missing output artifact: "+source.string());
   }
   JSON check(const Object &c){
@@ -287,7 +287,7 @@ JSON runTask(const JSON &task,const TaskOptions &options){auto p=prepare(task,op
 JSON replayTask(const std::string &receipt,const TaskOptions &options){
   auto path=fs::absolute(receipt);auto old=path.parent_path();auto saved=readJSON(path,32*1048576);const auto &r=object(saved);if(text(r,"schema")!="nex.task-receipt/1")invalid("expected a task receipt");auto manifest=verifyInputs(old,options,digest(r,"input_hash"));auto task=readJSON(old/"inputs/task.json");if(hash(json(task,false))!=text(object(manifest),"task_hash")||text(r,"task_hash")!=text(object(manifest),"task_hash"))throw Error("E_TASK_INTEGRITY","task identity differs from inputs");
   if(!options.revision.empty()||!options.candidates.empty())invalid("replay uses captured candidates");auto p=prepare(task,options,old);auto directory=runDirectory(options);
-  for(const auto &[name,_]:object(*object(manifest).get("files"))){auto destination=directory/name.str();fs::create_directories(destination.parent_path());fs::copy_file(inside(old,name.str()),destination);}
+  for(const auto &[name,_]:object(*object(manifest).get("files"))){auto destination=directory/name.str();fs::create_directories(destination.parent_path());copyFile(inside(old,name.str()).string(),destination.string());}
   atomic(directory/"inputs/manifest.json",manifest);Runner runner{p,options,directory,{}};return runner.run(path.string());
 }
 JSON taskTemplate(const Program &p,const std::string &entry){

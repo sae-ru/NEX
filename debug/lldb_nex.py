@@ -51,10 +51,22 @@ def _data(value):
 
 
 def _string(value):
-    text = value.GetSummary()
-    if text is None:
-        raise ValueError("unavailable string")
-    return text[:MAX_TEXT]
+    # Standard C++ summaries can stop at embedded NUL (notably libstdc++).
+    # Read a bounded byte prefix from the real string header instead.
+    size, address = _string_layout(value)
+    length = min(size, MAX_TEXT)
+    data = _string_bytes(value, address, length)
+    try:
+        text = data.decode("utf-8", "strict")
+    except UnicodeDecodeError as error:
+        if size <= length or error.end != length or error.reason != "unexpected end of data":
+            raise
+        text = data[:error.start].decode("utf-8", "strict")
+    if size > length:
+        text += "…"
+    # Preserve C-style NUL display without changing a literal backslash-u0000.
+    return '"' + "\\0".join(json.dumps(part, ensure_ascii=False)[1:-1]
+                            for part in text.split("\0")) + '"'
 
 
 def _vector(data, name="values"):
@@ -226,9 +238,7 @@ def _find_member(value, name, depth=0, budget=None):
     return None
 
 
-def _raw_string(value, budget):
-    # Read length and buffer through this build's DWARF, including embedded NUL.
-    # Escaped/truncated C++ summaries are deliberately not used as wire data.
+def _string_layout(value):
     short = _find_member(value, "__s")
     if short is not None:
         long = _integer(_member(short, "__is_long_"))
@@ -244,18 +254,28 @@ def _raw_string(value, budget):
         if length is None or pointer is None:
             raise ValueError("unsupported C++ string layout for exact capture")
         size, address = _integer(length), _integer(pointer)
-    if size > budget["bytes"]:
-        raise ValueError("exact capture exceeds its text byte budget")
-    budget["bytes"] -= size
+    return size, address
+
+
+def _string_bytes(value, address, size):
     if not size:
-        return ""
+        return b""
     if not address or address == lldb.LLDB_INVALID_ADDRESS:
         raise ValueError("unavailable string buffer")
     error = lldb.SBError()
     data = value.GetProcess().ReadMemory(address, size, error)
     if error.Fail() or len(data) != size:
         raise ValueError("cannot read exact stopped string bytes")
-    return data.decode("utf-8", "strict")
+    return data
+
+
+def _raw_string(value, budget):
+    # Exact capture shares the header reader, but never truncates wire data.
+    size, address = _string_layout(value)
+    if size > budget["bytes"]:
+        raise ValueError("exact capture exceeds its text byte budget")
+    budget["bytes"] -= size
+    return _string_bytes(value, address, size).decode("utf-8", "strict")
 
 class _ExactVector:
     def __init__(self, data, name="values"):

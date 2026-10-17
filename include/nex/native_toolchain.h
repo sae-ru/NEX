@@ -3,7 +3,7 @@
 
 namespace nex {
 struct NativeToolchain {
-  std::string compiler, target, sysroot;
+  std::string compiler, target, sysroot, linker;
   std::string sqliteInclude, sqliteLibrary, opensslInclude, opensslSSL, opensslCrypto;
   bool hostCompatible = true;
   std::vector<std::string> driver;

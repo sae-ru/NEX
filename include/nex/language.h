@@ -124,5 +124,6 @@ llvm::json::Value evaluateExpression(const Program &program,E expression,const s
   const llvm::json::Object &values,uint64_t stepLimit=100000,const llvm::json::Array *captures=nullptr,bool demand=false);
 std::string readFile(const std::string &path);
 void writeFile(const std::string &path, const std::string &text);
+void copyFile(const std::string &source, const std::string &destination, bool overwrite = false);
 std::string resourceFile(const std::string &relative);
 }

@@ -27,9 +27,14 @@
     "operations": "docs/operations.md",
     "operations_schema": "llm/operations.schema.json",
     "native_toolchain_schema": "llm/toolchain.schema.json",
-    "toolchain_catalog_schema": "llm/toolchains.schema.json"
+    "toolchain_catalog_schema": "llm/toolchains.schema.json",
+    "linux": "docs/linux.md",
+    "linux_recipe": "tools/linux/Dockerfile",
+    "linux_check": "tools/linux/check.py",
+    "linux_verify": "tools/linux/verify.py",
+    "linux_sdk_smoke": "tools/linux/sdk_smoke.py"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",

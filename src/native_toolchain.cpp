@@ -31,7 +31,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
     manifest=readFile(file.string());auto parsed=llvm::json::parse(manifest);
     if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_TOOLCHAIN","invalid toolchain JSON");}
     auto object=parsed->getAsObject();if(!object)throw Error("E_TOOLCHAIN","toolchain must be an object");
-    keys(*object,{"schema","target","compiler","sysroot","sqlite","openssl"});
+    keys(*object,{"schema","target","compiler","linker","sysroot","sqlite","openssl"});
     if(text(*object,"schema",true)!="nex.toolchain/1")throw Error("E_TOOLCHAIN","expected nex.toolchain/1");
     auto target=llvm::Triple::normalize(text(*object,"target",true));
     if(triple&&result.target!=target)throw Error("E_TOOLCHAIN","--target conflicts with toolchain target");
@@ -39,12 +39,13 @@ NativeToolchain configureNative(const BuildOptions &options) {
     auto path=[&](const llvm::json::Object &from,const std::string &key,bool directory){
       auto value=text(from,key);if(value.empty())return value;
       auto path=std::filesystem::path(value);if(path.is_relative())path=file.parent_path()/path;
-      // Preserve clang++'s final symlink name: argv[0] selects C++ driver mode.
-      path=key=="compiler"?std::filesystem::weakly_canonical(path.parent_path())/path.filename():std::filesystem::weakly_canonical(path);
+      // Driver dispatch depends on argv[0]: clang++ selects C++, ld.lld selects ELF.
+      path=(key=="compiler"||key=="linker")?std::filesystem::weakly_canonical(path.parent_path())/path.filename():std::filesystem::weakly_canonical(path);
       if(directory?!std::filesystem::is_directory(path):!std::filesystem::is_regular_file(path))throw Error("E_TOOLCHAIN","missing toolchain path: "+path.string());
       return path.string();
     };
     if(object->get("compiler"))result.compiler=path(*object,"compiler",false);
+    result.linker=path(*object,"linker",false);
     result.sysroot=path(*object,"sysroot",true);
     auto dependency=[&](const std::string &name,const std::set<std::string> &fields){
       const auto *v=object->get(name);const auto *dep=v?v->getAsObject():nullptr;
@@ -62,6 +63,11 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(!abi.isArch64Bit()||!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))
     throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI and macOS arm64/x86_64 on a macOS host");
   result.hostCompatible=sameArch;
+  if(result.linker.empty()&&abi.isOSLinux())result.linker=(std::filesystem::path(NEX_LLVM_TOOLS)/"ld.lld").string();
+  if(!result.linker.empty()){
+    auto linker=llvm::sys::findProgramByName(result.linker);if(!linker)throw Error("E_TOOLCHAIN","cannot find native linker: "+result.linker+"; Linux requires matching LLVM LLD or an explicit linker path");
+    auto path=std::filesystem::absolute(*linker);result.linker=(std::filesystem::weakly_canonical(path.parent_path())/path.filename()).string();
+  }
   if(result.hostCompatible){
     if(result.sqliteInclude.empty()){result.sqliteInclude=NEX_SQLITE_INCLUDE;result.sqliteLibrary=NEX_SQLITE_LIBRARY;}
     if(result.opensslInclude.empty()){result.opensslInclude=NEX_OPENSSL_INCLUDE;result.opensslSSL=NEX_OPENSSL_SSL;result.opensslCrypto=NEX_OPENSSL_CRYPTO;}
@@ -75,6 +81,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(!result.sysroot.empty())for(const auto &name:{"SDKSettings.json","SDKSettings.plist"}){auto file=std::filesystem::path(result.sysroot)/name;if(std::filesystem::is_regular_file(file))sdkIdentity+=hash(readFile(file.string()));}
   llvm::json::Array arguments;for(const auto &argument:result.driver)arguments.push_back(argument);
   result.identity=json(llvm::json::Object{{"schema","nex.toolchain-input/1"},{"target",result.target},{"driver",std::move(arguments)},{"sdk_identity",sdkIdentity},
+    {"linker",result.linker},{"linker_hash",result.linker.empty()?"":hash(readFile(result.linker))},
     {"sqlite_include",result.sqliteInclude},{"sqlite_library",result.sqliteLibrary},{"openssl_include",result.opensslInclude},{"openssl_ssl",result.opensslSSL},{"openssl_crypto",result.opensslCrypto}},false);
   return result;
 }
@@ -85,6 +92,7 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
   if(!driver)throw Error("E_TOOLCHAIN","cannot locate toolchain compiler: "+configured.compiler);
   auto driverPath=fs::absolute(*driver);auto compiler=(fs::weakly_canonical(driverPath.parent_path())/driverPath.filename()).string();
   llvm::json::Object manifest{{"schema","nex.toolchain/1"},{"target",configured.target},{"compiler",compiler}};
+  if(!configured.linker.empty())manifest["linker"]=configured.linker;
   if(!configured.sysroot.empty())manifest["sysroot"]=configured.sysroot;
   if(!configured.sqliteInclude.empty())manifest["sqlite"]=llvm::json::Object{{"include",configured.sqliteInclude},{"library",configured.sqliteLibrary}};
   if(!configured.opensslInclude.empty())manifest["openssl"]=llvm::json::Object{{"include",configured.opensslInclude},{"ssl",configured.opensslSSL},{"crypto",configured.opensslCrypto}};
@@ -97,6 +105,7 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
     auto contents=readFile(name);files[name]=llvm::json::Object{{"hash",hash(contents)},{"bytes",int64_t(contents.size())}};
   };
   file(compiler);
+  if(!configured.linker.empty())file(configured.linker);
   if(!configured.sqliteInclude.empty()){file(fs::path(configured.sqliteInclude)/"sqlite3.h");file(configured.sqliteLibrary);}
   if(!configured.opensslInclude.empty()){
     file(configured.opensslSSL);file(configured.opensslCrypto);
@@ -114,8 +123,8 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
   if(!configured.sysroot.empty())for(const auto &name:{"SDKSettings.json","SDKSettings.plist"}){
     auto path=fs::path(configured.sysroot)/name;if(fs::is_regular_file(path))file(path);
   }
-  llvm::json::Value inputs=llvm::json::Object{{"schema","nex.toolchain-snapshot/1"},{"configuration",llvm::json::Object(manifest)},{"files",std::move(files)},
-    {"scope","compiler binary, configured SQLite headers/library, OpenSSL headers/libraries and explicit SDK settings; SDK contents, compiler support files, linker/system libraries and environment are external"}};
+  llvm::json::Value inputs=llvm::json::Object{{"schema","nex.toolchain-snapshot/2"},{"configuration",llvm::json::Object(manifest)},{"files",std::move(files)},
+    {"scope","compiler and selected linker binaries, configured SQLite headers/library, OpenSSL headers/libraries and explicit SDK settings; SDK contents, compiler support files, default system linker/libraries and environment are external"}};
   if(json(inputs).size()+1>4*1048576)throw Error("E_TOOLCHAIN","toolchain fingerprint metadata exceeds 4 MiB");
   NativeToolchainSnapshot result;result.hash=hash(json(inputs,false));result.target=configured.target;result.hostCompatible=configured.hostCompatible;result.manifest=std::move(manifest);result.inputs=std::move(inputs);return result;
 }

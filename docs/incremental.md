@@ -1,4 +1,4 @@
-# Native compilation and toolchains — toolchain 0.19
+# Native compilation and toolchains — toolchain 0.20
 
 Current source language is 0.7. The native compiler now produces an object for each
 source module containing functions reachable from the selected entry. It can
@@ -46,6 +46,8 @@ output and its native ABI independently:
   "openssl": {"include": "dependencies/include", "ssl": "dependencies/lib/libssl.dylib", "crypto": "dependencies/lib/libcrypto.dylib"}
 }
 ```
+
+An optional `linker` selects a native linker executable. Linux defaults to the matching LLVM `ld.lld`; the final symlink name is preserved for driver dispatch. Selected linker bytes participate in fingerprints (`nex.toolchain-snapshot/2`) and build/cache identity. The Linux guide covers the verified ELF DWARF path.
 
 Only `schema` and `target` are required. Omit unused dependencies. Each supplied
 dependency object must include all its fields. Files are limited to 64 KiB;

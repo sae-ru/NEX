@@ -2,8 +2,15 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+The 0.20 checkpoint preserves the Linux work in progress. The full regression
+suites have passed on macOS ARM64 and containerized Linux ARM64/x86-64; the
+x86-64 run uses emulation. Installed Linux SDK smoke checks have passed. Live
+Linux debugger validation found a NUL-truncated string preview; its fix and a
+new UTF-8/NUL regression are included, with live revalidation still pending.
+
 ## Implemented and exercised
 
+- Toolchain 0.20 adds the Linux container build/verification workflow, LLVM LLD selection for ELF DWARF, selected-linker fingerprints (policy 2) and filesystem-independent artifact streaming. Current Linux evidence is recorded below; other OS/mobile targets and full SDK distribution remain pending.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.

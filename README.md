@@ -28,6 +28,15 @@ cmake -S . -B build \
   -DMLIR_DIR=/path/to/llvm/lib/cmake/mlir
 ```
 
+## Linux development environment
+
+```sh
+python3 tools/linux/check.py --arch arm64
+python3 tools/linux/check.py --arch amd64
+```
+
+The pinned Ubuntu/LLVM image builds the compiler, runs the full regression suite and verifies an installed SDK with external network disabled. Linux application linking uses LLVM LLD with verified ELF debug information. The report records native versus emulated execution and platform-specific skips. See [the Linux guide](docs/linux.md), also available as `nex guide --kind linux`.
+
 ## Use
 
 ```sh
@@ -162,4 +171,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.19.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts use their matching SDK. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS arm64/x86_64 cross-compilation is configured; Intel execution/debugging remains unverified on this ARM64 host. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.20.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts use their matching SDK. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS arm64/x86_64 cross-compilation is configured; Intel execution/debugging remains unverified on this ARM64 host. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

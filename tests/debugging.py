@@ -245,6 +245,36 @@ def __lldb_init_module(debugger, context):
             self.assertIn('err("EXAMPLE",', values(inner, "failure")[0])
             self.assertIn("ok(", values(inner, "reply")[0])
 
+        def test_string_previews_preserve_nul_literal_escapes_and_utf8_boundaries(self):
+            small="A\0🌍"
+            escaped="literal\\u0000\0🌍"
+            cut="a"*4093+"🌍suffix"
+            self.source('module string_preview; fn stop(small:str,escaped:str,cut:str) -> unit !{io} { print(small);print(escaped);print(cut); } fn main() -> unit !{io} { stop('+','.join(json.dumps(x,ensure_ascii=False) for x in (small,escaped,cut))+'); }')
+            self.cli('check');symbol=self.cli('context','--symbol','stop')['native_symbol']
+            self.cli('debug')
+            report=self.root/'string-values.json';script=self.root/'string-capture.py'
+            script.write_text('''import json, lldb
+def __lldb_init_module(debugger, context):
+    debugger.SetAsync(False)
+    debugger.HandleCommand("settings set target.disable-aslr false")
+    target=debugger.GetSelectedTarget();target.BreakpointCreateByName(SYMBOL)
+    process=target.LaunchSimple(None,None,None)
+    try:
+        assert process.GetState()==lldb.eStateStopped
+        result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand("nex-values",result)
+        assert result.Succeeded(),result.GetError()
+        with open(REPORT,"w") as out:out.write(result.GetOutput())
+        process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+    finally:
+        if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('SYMBOL',repr(symbol)).replace('REPORT',repr(str(report))))
+            output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
+            self.assertTrue(report.is_file(),output.stdout+output.stderr)
+            values={v['name']:v['value'] for v in json.loads(report.read_text())['variables']}
+            self.assertEqual(values['small'],'"A\\0🌍"')
+            self.assertEqual(values['escaped'],'"literal\\\\u0000\\0🌍"')
+            self.assertEqual(values['cut'],'"'+'a'*4093+'…"')
+
         def test_dap_breakpoint_stack_variables_children_and_resume(self):
             adapter = shutil.which("lldb-dap")
             if not adapter and sys.platform == "darwin":

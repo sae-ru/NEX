@@ -53,6 +53,7 @@ test fn semantics() -> unit {
         for value in ([], {}, {'schema':'bad','target':self.doctor['host']},
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'flags':['-O0']},
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'sysroot':'missing'},
+                      {'schema':'nex.toolchain/1','target':self.doctor['host'],'linker':'missing'},
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'sqlite':{}},
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'openssl':False}):
             with self.subTest(value=value):
@@ -63,6 +64,61 @@ test fn semantics() -> unit {
             self.assertEqual(self.cli(*command, '--toolchain', self.config, ok=False)['code'], 'E_OPTION')
         for target in ('wasm32-unknown-unknown','aarch64-apple-ios17.0','i386-apple-macosx13.0','aarch64-linux-gnu' if platform.system()=='Darwin' else 'x86_64-apple-macosx13.0'):
             self.assertEqual(self.cli('build', '--target', target, ok=False)['code'], 'E_TARGET')
+
+    def test_explicit_linker_runs_is_fingerprinted_and_is_not_an_archiver(self):
+        self.configure()
+        baseline=self.cli('toolchain',self.config)
+        real=baseline['manifest'].get('linker') or '/usr/bin/ld'
+        if not Path(real).is_file():self.skipTest('no configured host linker')
+        log=self.root/'linker calls.jsonl';driver=self.root/'linker spy'
+        driver.write_text('''#!/usr/bin/env python3
+import json, os, sys
+with open(LOG,'a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
+os.execv(REAL,[REAL,*sys.argv[1:]])
+'''.replace('LOG',repr(str(log))).replace('REAL',repr(real)))
+        driver.chmod(0o755)
+        self.configure(linker=str(driver))
+        inspected=self.cli('toolchain',self.config)
+        self.assertFalse(log.exists())
+        self.assertEqual(inspected['inputs']['schema'],'nex.toolchain-snapshot/2')
+        self.assertIn(str(driver.resolve()),inspected['inputs']['files'])
+        built=self.cli('build','--toolchain',self.config)
+        metadata=json.loads(Path(built['metadata']).read_text())
+        self.assertEqual(metadata['linker'],inspected['manifest']['linker'])
+        arguments=json.loads(log.read_text().splitlines()[0])
+        self.assertEqual(Path(arguments[arguments.index('-o')+1]).name,Path(built['executable']).name)
+        run=subprocess.run([built['executable']],capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,self.cli('eval')['stdout']),run.stderr)
+        self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
+        self.assertEqual(len(log.read_text().splitlines()),1)
+        driver.write_text(driver.read_text()+'\n# reviewed linker revision\n')
+        self.assertNotEqual(self.cli('toolchain',self.config)['hash'],inspected['hash'])
+        changed=self.cli('build','--toolchain',self.config)
+        self.assertNotEqual(changed['build_key'],built['build_key'])
+        log.unlink()
+        archive=self.cli('build','--toolchain',self.config,'--library')
+        self.assertEqual(archive['kind'],'static_library')
+        self.assertFalse(log.exists())
+
+    def test_archive_in_literal_unicode_percent_path_links_into_a_native_host(self):
+        project=self.root/'архив % 🧠';project.mkdir()
+        source=project/'main.nex';source.write_text('module embedded; pub fn answer() -> i64 { return 40 + 2; }')
+        built=self.cli('build',source,'--library','--entry','answer',cwd=project)
+        context=self.cli('context','--symbol','answer',cwd=project)
+        host=project/'host.cpp';host.write_text('#include <iostream>\nextern "C" long long '+context['native_symbol']+'();\nint main(){std::cout << '+context['native_symbol']+'() << "\\n";}\n')
+        executable=project/'host-app'
+        command=[self.doctor['native_compiler'],'-std=c++20',str(host),built['executable'],'-pthread','-o',str(executable)]
+        metadata=json.loads(Path(built['metadata']).read_text())
+        # Match NEX's selected linker, retaining its percent-path staging rule.
+        # A relative host output avoids LLVM's temporary-file template expansion.
+        if metadata.get('linker'):
+            command += ['--ld-path='+metadata['linker']]
+            command[command.index('-o')+1]=executable.name
+        result=subprocess.run(command,cwd=project,capture_output=True,text=True,timeout=30)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        result=subprocess.run([str(executable)],capture_output=True,text=True,timeout=15)
+        self.assertEqual((result.returncode,result.stdout),(0,'42\n'),result.stderr)
+        self.assertTrue(self.cli('build',source,'--library','--entry','answer',cwd=project)['cached'])
 
     def mac_target(self):
         if platform.system() != 'Darwin':

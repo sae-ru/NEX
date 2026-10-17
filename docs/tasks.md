@@ -166,7 +166,7 @@ after child commands: a successful child cannot satisfy a check if either
 inspection finds different pinned inputs. Changes restored between reads are
 not detected. Independent checks still continue.
 
-The fingerprint includes the compiler executable bytes, configured SQLite
+The current fingerprint (`nex.toolchain-snapshot/2`, toolchain 0.20) includes compiler/selected-linker executable bytes, configured SQLite
 header/library, OpenSSL header tree/libraries, normalized configuration paths and
 explicit SDK settings files. Defaults and explicit equivalent paths normalize
 identically, preserving the final `clang++` driver name. Inspection is bounded
@@ -175,7 +175,7 @@ cycles are bounded. Paths are part of this identity; it is not a portable packag
 identity or signed attestation. File hashes/metadata are saved, not full external
 toolchain copies.
 
-SDK contents beyond settings, compiler support files, linker/system libraries
+SDK contents beyond settings, compiler support files, default system linker/libraries
 and the environment remain external. This fingerprint detects changes within
 its stated scope; it does not promise hermetic or bit-for-bit builds. Intel
 artifact acceptance is exercised by cross-building on ARM64. Intel native
@@ -231,3 +231,5 @@ steps, task scheduling, automatic requirement discovery, broader agent editing
 operations and measured cross-model trials remain pending.
 
 Language 0.7 links a reached generic instance back to its original function/type template, including phantom type arguments, so requirements can bind source declarations while tests exercise concrete instances. This is static lineage, not dynamic coverage of every instantiation. Profile max_calls budgets use exact concrete instance names from the measured report; a source-template name without a measured row remains unobserved and cannot pass.
+
+Policy 2 adds selected linker identity. Toolchain 0.19 SDKs retain policy 1 for their saved receipts; inspect/review replacement fingerprints rather than silently changing task intent. Source language remains 0.7.

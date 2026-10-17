@@ -1,5 +1,6 @@
 """Observable language, native/interpreter, graph and LLM protocol checks."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import random
@@ -43,3 +44,17 @@ class ToolchainCase(unittest.TestCase):
     def source(self, body):
         self.file.write_text(body)
         return self.file
+
+    def historical_store(self, language):
+        """Restore a real archived SDK database without executing foreign binaries."""
+        fixture=REPO/'tests/fixtures'/('language-'+language)
+        metadata=json.loads(Path(str(fixture)+'.json').read_text())
+        sql=Path(str(fixture)+'.sql').read_bytes()
+        self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
+        self.assertEqual(self.file.read_text(),metadata['source'])
+        self.assertEqual(hashlib.sha256(metadata['source'].encode()).hexdigest(),metadata['source_sha256'])
+        directory=self.root/'.nex';directory.mkdir(exist_ok=True)
+        with sqlite3.connect(directory/metadata['database']) as connection:
+            connection.executescript(sql.decode())
+            connection.execute('PRAGMA user_version='+str(metadata.get('user_version',0)))
+        return metadata

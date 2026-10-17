@@ -39,6 +39,19 @@ void writeFile(const std::string &path, const std::string &text) {
   std::ofstream out(path, std::ios::binary);
   if (!out || !(out << text)) throw Error("E_FILE", "cannot write " + path);
 }
+void copyFile(const std::string &source,const std::string &destination,bool overwrite) {
+  namespace fs=std::filesystem;
+  if(!fs::is_regular_file(source))throw Error("E_FILE","copy source is not a regular file: "+source);
+  if(fs::exists(destination)&&fs::equivalent(source,destination))throw Error("E_FILE","copy source and destination are the same file");
+  auto permissions=fs::status(source).permissions();auto bytes=readFile(source);int descriptor=-1;
+  auto error=llvm::sys::fs::openFileForWrite(destination,descriptor,overwrite?llvm::sys::fs::CD_CreateAlways:llvm::sys::fs::CD_CreateNew);
+  if(error)throw Error("E_FILE","cannot create "+destination+": "+error.message());
+  // Stream bytes rather than relying on copy_file_range/sendfile support in a
+  // mounted filesystem. In particular Docker's shared mounts can reject those.
+  llvm::raw_fd_ostream output(descriptor,true);output.write(bytes.data(),bytes.size());output.close();
+  if(output.has_error()){auto failure=output.error();output.clear_error();throw Error("E_FILE","cannot copy to "+destination+": "+failure.message());}
+  fs::permissions(destination,permissions);
+}
 std::string resourceFile(const std::string &relative) {
   std::vector<std::filesystem::path> roots;
   if(auto explicitRoot=std::getenv("NEX_RESOURCE_DIR"))roots.emplace_back(explicitRoot);
@@ -668,9 +681,9 @@ llvm::json::Value describe() {
     {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},
-    {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation"}},
+    {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy"}},
     {"native_toolchain_schema","llm/toolchain.schema.json"},{"native_target_policy","64-bit host ABI; macOS arm64/x86_64 cross-builds on macOS; run/test/debug/profile require host architecture; target libraries must be supplied for cross-storage/server builds"},
-    {"build_guide","docs/incremental.md"},
+    {"build_guide","docs/incremental.md"},{"linux_guide","docs/linux.md"},{"toolchain_fingerprint","nex.toolchain-snapshot/2"},
     {"profile_features",llvm::json::Array{"native_function_instrumentation","graph_attributed_wall_time","bounded_trace_events","managed_shallow_allocations","tracy_cpu_zones","tracy_named_memory_pools"}},
     {"profile_guide","docs/profiling.md"},
     {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},

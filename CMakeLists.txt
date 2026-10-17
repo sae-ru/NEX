@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.19.0 LANGUAGES C CXX)
+project(NEX VERSION 0.20.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -15,7 +15,7 @@ if(NOT OPENSSL_ROOT_DIR AND EXISTS "/opt/homebrew/opt/openssl@3")
 endif()
 find_package(OpenSSL 3 REQUIRED)
 set(NEX_Z3_ROOT "" CACHE PATH "Z3 development installation prefix")
-if(NOT NEX_Z3_ROOT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
+if(APPLE AND NOT NEX_Z3_ROOT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
   set(NEX_Z3_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
 endif()
 find_path(NEX_Z3_INCLUDE z3++.h HINTS "${NEX_Z3_ROOT}/include" REQUIRED)
@@ -61,6 +61,7 @@ install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
+install(DIRECTORY tools/linux DESTINATION share/nex/tools)
 enable_testing()
 add_test(NAME integration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration.py $<TARGET_FILE:nex>)

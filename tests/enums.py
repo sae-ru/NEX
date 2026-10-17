@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import subprocess
+import sys
 import unittest
 import support as harness
 
@@ -120,10 +121,11 @@ test fn allowed() -> unit { let value:Link = nested(21); assert(unwrap(decode_js
     def test_actual_language_05_migration_retains_source_and_ids(self):
         self.source('module old; fn enum(x:i64) -> i64 { return x; } fn match(x:i64) -> i64 { return enum(x); } fn main() -> unit { let match:i64 = match(42); assert(match == 42); }')
         old_compiler=harness.REPO/'build/sdk-0.15.0/bin/nex'
-        if not old_compiler.exists():
-            self.skipTest('actual 0.15 SDK not available; historical fixtures are covered by modules suite')
-        result=subprocess.run([str(old_compiler),'check','--json'],cwd=self.root,capture_output=True,text=True,check=True)
-        old=json.loads(result.stdout)['revision'];old_graph=json.loads(subprocess.check_output([str(old_compiler),'graph','--json'],cwd=self.root))
+        if sys.platform=='darwin' and old_compiler.exists():
+            result=subprocess.run([str(old_compiler),'check','--json'],cwd=self.root,capture_output=True,text=True,check=True)
+            old=json.loads(result.stdout)['revision'];old_graph=json.loads(subprocess.check_output([str(old_compiler),'graph','--json'],cwd=self.root))
+        else:
+            fixture=self.historical_store('0.5');old=fixture['revision'];old_graph=fixture['graph']
         self.file.unlink()
         self.assertEqual(self.cli('eval','--revision',old,ok=False)['code'],'E_LANGUAGE_VERSION')
         current=self.cli('migrate')
