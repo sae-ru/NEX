@@ -9,6 +9,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import base64
+import time
 
 import lldb
 
@@ -255,6 +256,37 @@ def _raw_string(value, budget):
         raise ValueError("cannot read exact stopped string bytes")
     return data.decode("utf-8", "strict")
 
+class _ExactVector:
+    def __init__(self, data, name="values"):
+        self.value = _member(data, name)
+        begin = _find_member(self.value, "__begin_")
+        end = _find_member(self.value, "__end_")
+        if begin is None or end is None:
+            begin = _find_member(self.value, "_M_start")
+            end = _find_member(self.value, "_M_finish")
+        if begin is None or end is None or not begin.GetType().IsPointerType():
+            raise ValueError("unsupported C++ vector layout for exact capture")
+        self.element = begin.GetType().GetPointeeType()
+        self.stride = self.element.GetByteSize()
+        self.address, finish = _integer(begin), _integer(end)
+        if (not self.element.IsValid() or not self.stride or
+                self.address == lldb.LLDB_INVALID_ADDRESS or finish == lldb.LLDB_INVALID_ADDRESS or
+                finish < self.address or (not self.address and finish) or
+                (finish - self.address) % self.stride):
+            raise ValueError("invalid/unreadable stopped vector header")
+        self.size = (finish - self.address) // self.stride
+        if self.size > 9223372036854775807:
+            raise ValueError("stopped list length exceeds i64")
+
+    def GetNumChildren(self):
+        return self.size
+
+    def GetChildAtIndex(self, index):
+        if not 0 <= index < self.size:
+            raise ValueError("stopped vector index is outside bounds")
+        return self.value.CreateValueFromAddress("[%d]" % index,
+            self.address + index * self.stride, self.element)
+
 
 def _wire(value, descriptor, records, budget, depth=0):
     if depth > 60 or budget["nodes"] <= 0:
@@ -285,7 +317,7 @@ def _wire(value, descriptor, records, budget, depth=0):
         return _raw_string(_member(data, "text"), budget)
     if not isinstance(descriptor, dict):
         raise ValueError("invalid wire type descriptor")
-    items = _vector(data)
+    items = _ExactVector(data)
     size = items.GetNumChildren()
     if size > 10000:
         raise ValueError("exact capture exceeds its collection item budget")
@@ -296,7 +328,7 @@ def _wire(value, descriptor, records, budget, depth=0):
         if _raw_string(_member(data, "text"), budget) != name:
             raise ValueError("runtime nominal type differs from checked NEX type")
         fields = records[name]
-        names = _vector(data, "names")
+        names = _ExactVector(data, "names")
         if size != len(fields) or names.GetNumChildren() != size:
             raise ValueError("runtime record layout differs from checked NEX type")
         result = {}
@@ -312,6 +344,77 @@ def _wire(value, descriptor, records, budget, depth=0):
             return {"error": {"code": _raw_string(_member(data, "text"), budget),
                               "message": _wire(items.GetChildAtIndex(0), "str", records, budget, depth + 1)}}
     raise ValueError("runtime aggregate differs from checked NEX type")
+
+
+def _header(value, descriptor, records, budget):
+    raw = value.GetNonSyntheticValue()
+    if not raw.IsValid() or raw.GetError().Fail():
+        raise ValueError("runtime object has no readable location")
+    if raw.GetTypeName() == "nexrt::Value" and _integer(_member(raw, "tag")) != 2:
+        raise ValueError("runtime object tag differs from checked NEX type")
+    data = _data(value)
+    kind = _integer(_member(data, "kind"))
+    items = _ExactVector(data)
+    size = items.GetNumChildren()
+    if "list" in descriptor and kind == 1:
+        return data, items, size
+    if "record" in descriptor and kind == 2:
+        fields = records[descriptor["record"]]
+        names = _ExactVector(data, "names")
+        if (size != len(fields) or names.GetNumChildren() != size or
+                _raw_string(_member(data, "text"), budget) != descriptor["record"]):
+            raise ValueError("runtime nominal layout differs from checked NEX type")
+        for index, field in enumerate(fields):
+            if _raw_string(names.GetChildAtIndex(index), budget) != field["name"]:
+                raise ValueError("runtime field order differs from checked NEX type")
+        return data, items, size
+    if "result" in descriptor and kind in (3, 4) and size == 1:
+        return data, items, size
+    raise ValueError("runtime aggregate differs from checked NEX type")
+
+
+def _read_path(value, schema, request, budget):
+    descriptor, records = schema["root"], schema["records"]
+    for segment in request["path"]:
+        if budget["nodes"] <= 0:
+            raise ValueError("partial capture exceeds its node budget")
+        budget["nodes"] -= 1
+        data, items, size = _header(value, descriptor, records, budget)
+        if "list" in descriptor:
+            if not isinstance(segment, int) or isinstance(segment, bool) or not 0 <= segment < size:
+                raise ValueError("partial path is outside stopped list bounds")
+            value, descriptor = items.GetChildAtIndex(segment), descriptor["list"]
+        elif "record" in descriptor:
+            fields = records[descriptor["record"]]
+            index = next((i for i, field in enumerate(fields) if field["name"] == segment), None)
+            if index is None:
+                raise ValueError("partial path is outside checked record fields")
+            value, descriptor = items.GetChildAtIndex(index), fields[index]["type"]
+        else:
+            success = _integer(_member(data, "kind")) == 3
+            if segment == "ok" and success:
+                value, descriptor = items.GetChildAtIndex(0), descriptor["result"]
+            elif segment in ("code", "message") and not success:
+                if segment == "code":
+                    if request["kind"] != "value" or request["path"][-1] != segment:
+                        raise ValueError("invalid result code path")
+                    return _raw_string(_member(data, "text"), budget)
+                value, descriptor = items.GetChildAtIndex(0), "str"
+            else:
+                raise ValueError("partial result path disagrees with stopped result kind")
+    if descriptor != request["wire_schema"]["root"]:
+        raise ValueError("partial request type differs from checked root path")
+    if request["kind"] == "value":
+        return _wire(value, descriptor, records, budget)
+    if budget["nodes"] <= 0:
+        raise ValueError("partial capture exceeds its node budget")
+    budget["nodes"] -= 1
+    data, items, size = _header(value, descriptor, records, budget)
+    if "list" in descriptor:
+        return {"length": str(size)}
+    if "record" in descriptor:
+        return {"record": descriptor["record"]}
+    return {"ok": _integer(_member(data, "kind")) == 3}
 
 
 def _stopped(debugger):
@@ -346,10 +449,10 @@ def _stopped(debugger):
             continue
         values[name] = value
         bindings.append({"name": name, "type": value.GetTypeName(), "unavailable": "not captured"})
-    snapshot = {"schema": "nex.debug-frame/1", "language": context.get("language"),
+    snapshot = {"schema": "nex.debug-frame/2", "language": context.get("language"),
                 "revision": context.get("revision"), "build_key": context.get("build_key"),
                 "function": function, "stop": stop, "bindings": bindings,
-                "truncated": visible.GetSize() > 256}
+                "truncated": visible.GetSize() > 256, "captures": []}
     return context, process, snapshot, values
 
 
@@ -360,13 +463,13 @@ def _fresh(process, snapshot):
         raise ValueError("process stop changed during expression capture/evaluation")
 
 
-def _compiler(context, snapshot, expression, kind):
+def _compiler(context, snapshot, expression, kind, timeout=5):
     encoded = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
     if len(encoded) > 1024 * 1024:
         raise ValueError("stopped-frame JSON exceeds 1 MiB")
     args = [context["_compiler"], "inspect", "--manifest", context["_manifest"],
             "--expression", expression, "--kind", kind, "--json"]
-    process = subprocess.run(args, input=encoded, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+    process = subprocess.run(args, input=encoded, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
     response = json.loads(process.stdout.decode("utf-8"))
     if process.returncode or not response.get("ok"):
         raise ValueError(json.dumps(response, ensure_ascii=False))
@@ -375,23 +478,45 @@ def _compiler(context, snapshot, expression, kind):
     return response
 
 
-def _capture(context, process, snapshot, values, expression):
+def _capture(context, process, snapshot, values, expression, for_frame=False):
+    deadline = time.monotonic() + 10
     plan = _compiler(context, snapshot, expression, "plan")
+    schemas = {v["name"]: v["wire_schema"] for v in plan["variables"]}
     budget = {"nodes": 10000, "bytes": 1024 * 1024}
     bindings = {b["name"]: b for b in snapshot["bindings"]}
-    for variable in plan["variables"]:
-        name = variable["name"]
-        binding = bindings[name]
+    for read_count in range(129):
+        _fresh(process, snapshot)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("expression capture exceeded its ten-second deadline")
         try:
-            schema = variable["wire_schema"]
-            binding["value"] = _wire(values[name], schema["root"], schema["records"], budget)
-            binding.pop("unavailable", None)
-            if len(json.dumps(snapshot, ensure_ascii=False).encode("utf-8")) > 1024 * 1024:
+            response = _compiler(context, snapshot, expression, "demand", min(5, remaining))
+        except ValueError:
+            if for_frame:
+                return None
+            raise
+        if response.get("schema") == "nex.expression/1":
+            return response
+        if read_count >= 128:
+            raise ValueError("expression capture exceeded 128 partial reads")
+        request = response["request"]
+        name = request["binding"]
+        capture = {k: request[k] for k in ("binding", "path", "kind")}
+        try:
+            capture["value"] = _read_path(values[name], schemas[name], request, budget)
+            if len(json.dumps([snapshot, capture], ensure_ascii=False).encode("utf-8")) > 1024 * 1024 - 1024:
                 raise ValueError("captured frame exceeds its JSON byte budget")
         except Exception as error:
-            binding.pop("value", None)
-            binding["unavailable"] = str(error)[:512]
-    _fresh(process, snapshot)
+            capture.pop("value", None)
+            capture["unavailable"] = str(error)[:512]
+        _fresh(process, snapshot)
+        if not capture["path"] and capture["kind"] == "value" and "value" in capture:
+            bindings[name]["value"] = capture["value"]
+            bindings[name].pop("unavailable", None)
+            snapshot["captures"] = [c for c in snapshot["captures"] if c["binding"] != name]
+        else:
+            snapshot["captures"].append(capture)
+    raise ValueError("expression capture exceeded its request budget")
 
 
 def frame(debugger, command, result, internal_dict):
@@ -399,7 +524,8 @@ def frame(debugger, command, result, internal_dict):
         if not command.strip():
             raise ValueError("usage: nex-frame NEX_EXPRESSION")
         context, process, snapshot, values = _stopped(debugger)
-        _capture(context, process, snapshot, values, command.strip())
+        _capture(context, process, snapshot, values, command.strip(), for_frame=True)
+        _fresh(process, snapshot)
         result.PutCString(json.dumps(snapshot, ensure_ascii=False))
     except Exception as error:
         result.SetError(str(error))
@@ -410,8 +536,7 @@ def evaluate(debugger, command, result, internal_dict):
         if not command.strip():
             raise ValueError("usage: nex-eval NEX_EXPRESSION")
         context, process, snapshot, values = _stopped(debugger)
-        _capture(context, process, snapshot, values, command.strip())
-        response = _compiler(context, snapshot, command.strip(), "value")
+        response = _capture(context, process, snapshot, values, command.strip())
         _fresh(process, snapshot)
         result.PutCString(json.dumps(response, ensure_ascii=False))
     except Exception as error:

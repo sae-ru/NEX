@@ -22,7 +22,8 @@
     "tasks": "docs/tasks.md",
     "task_schema": "llm/task.schema.json",
     "expressions": "docs/expressions.md",
-    "debug_frame_schema": "llm/debug-frame.schema.json"
+    "debug_frame_schema": "llm/debug-frame.schema.json",
+    "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression --json",
   "context_command": "nex context --symbol NAME",
@@ -43,7 +44,8 @@
     "verification_contract": "examples/verification/contracts.json",
     "task_source": "examples/tasks/main.nex",
     "task_contract": "examples/tasks/task.json",
-    "task_proof": "examples/tasks/proof.json"
+    "task_proof": "examples/tasks/proof.json",
+    "large_debug_values": "examples/debugging/large.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -86,6 +88,7 @@
   ],
   "expression_commands": [
     "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --kind plan --json",
+    "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --kind demand --json",
     "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --json",
     "nex-eval NEX_EXPRESSION (at an LLDB stop)",
     "nex-frame NEX_EXPRESSION (at an LLDB stop)"

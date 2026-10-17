@@ -18,7 +18,11 @@ class Expressions(harness.ToolchainCase):
         for name in ['main.nex','model.nex']:
             shutil.copyfile(harness.REPO/'examples/debugging'/name,self.root/name)
         with (self.root/'model.nex').open('a') as model:
-            model.write('\nfn hidden() -> i64 { return 9; }\n')
+            model.write('''\nfn hidden() -> i64 { return 9; }
+pub fn at(items: list<i64>, index: i64) -> i64 { return items[index]; }
+pub fn name(person: Person) -> str { return person.name; }
+pub fn first_two(items: list<i64>) -> i64 { var index: i64 = 0; var total: i64 = 0; while index < 2 { total = total + items[index]; index = index + 1; } return total; }
+''')
         with self.file.open('a') as output:
             output.write('''\nfn spin() -> i64 { var n: i64 = 0; while true { n = n + 1; } return n; }
 server fn server_value() -> i64 { return 3; }
@@ -43,7 +47,9 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
 
     def inspect(self, expression, frame=None, **kwargs):
         self.framefile.write_text(json.dumps(frame or self.frame))
-        return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression',expression,**kwargs)
+        kind=kwargs.pop('extra_kind',None)
+        extra=['--kind',kind] if kind else []
+        return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression',expression,*extra,**kwargs)
 
     def test_scalars_collections_nominal_types_results_and_generic_json(self):
         for expr,expected in [('model::increment(total) + items[1]','84'),
@@ -144,6 +150,99 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         self.framefile.write_bytes(raw.encode('utf-8')[:-1]+b',"extra":"\xff"}')
         self.assertEqual(self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression','person.id',ok=False)['code'],'E_DEBUG_FRAME')
 
+    def partial(self):
+        frame=copy.deepcopy(self.frame);frame['schema']='nex.debug-frame/2';frame['captures']=[]
+        for binding in frame['bindings']:
+            binding.pop('value',None);binding['unavailable']='not captured'
+        return frame
+
+    def demand(self, expression, supply, frame=None):
+        frame=frame or self.partial();requests=[]
+        for _ in range(30):
+            response=self.inspect(expression,frame,extra_kind='demand')
+            if response['schema']=='nex.expression/1':return response,requests,frame
+            self.assertEqual(response['schema'],'nex.expression-demand/1')
+            request=response['request'];requests.append(request)
+            capture={k:request[k] for k in ('binding','path','kind')}
+            capture['value']=supply(request)
+            frame['captures'].append(capture)
+        self.fail('demand did not converge')
+
+    def test_partial_large_lengths_and_dynamic_indices_inside_pure_calls(self):
+        result,requests,frame=self.demand('model::at(items, len(items) - 1)',
+            lambda r:{'length':'1000000000'} if r['kind']=='shape' else '73')
+        self.assertEqual(result['value'],'73')
+        self.assertEqual([(r['binding'],r['path'],r['kind']) for r in requests],
+                         [('items',[],'shape'),('items',[999999999],'value')])
+        self.assertEqual(self.inspect('len(items)',frame)['value'],'1000000000')
+        self.assertEqual(self.inspect('items',frame,ok=False)['code'],'E_DEBUG_UNAVAILABLE')
+        self.assertEqual(self.inspect('items[1000000000]',frame,ok=False)['code'],'E_BOUNDS')
+        self.assertEqual(self.inspect('items[-1]',frame,ok=False)['code'],'E_BOUNDS')
+
+    def test_partial_record_fields_and_nested_list_paths(self):
+        def supply(r):
+            if r['path']==[]:return {'record':'debugging::model::Person'}
+            if r['path']==['tags']:return {'length':'500000'}
+            if r['path']==['tags',1]:return 'chosen'
+            if r['path']==['name']:return 'exact\x00\U0001f30d'
+            self.fail(str(r))
+        result,requests,_=self.demand('person.tags[1]',supply)
+        self.assertEqual(result['value'],'chosen')
+        self.assertEqual([r['path'] for r in requests],[[],['tags'],['tags',1]])
+        result,requests,_=self.demand('model::name(person)',supply)
+        self.assertEqual(result['value'],'exact\x00\U0001f30d')
+        self.assertEqual([r['path'] for r in requests],[[],['name']])
+
+    def test_partial_results_do_not_require_unused_payloads(self):
+        result,requests,_=self.demand('is_ok(reply)',lambda r:{'ok':True})
+        self.assertTrue(result['value']);self.assertEqual(len(requests),1)
+        result,requests,_=self.demand('unwrap(reply)',lambda r:{'ok':True} if r['kind']=='shape' else 'hello\x00')
+        self.assertEqual(result['value'],'hello\x00');self.assertEqual(requests[-1]['path'],['ok'])
+        result,requests,_=self.demand('error_code(failure)',lambda r:{'ok':False} if r['kind']=='shape' else 'BIG')
+        self.assertEqual(result['value'],'BIG');self.assertEqual(requests[-1]['path'],['code'])
+        self.assertFalse(any(r['path']==['message'] for r in requests))
+        frame=self.partial();frame['captures']=[{'binding':'failure','path':[],'kind':'shape','value':{'ok':False}},
+            {'binding':'failure','path':['code'],'kind':'value','value':'E'},
+            {'binding':'failure','path':['message'],'kind':'value','value':'message'}]
+        self.assertEqual(self.inspect('unwrap(failure)',frame,ok=False)['code'],'E_RESULT')
+
+    def test_partial_pure_loops_constructors_aliases_and_short_circuit(self):
+        result,requests,_=self.demand('model::first_two(items)',lambda r:{'length':'999999'} if r['kind']=='shape' else str(20+r['path'][0]))
+        self.assertEqual(result['value'],'41');self.assertEqual([r['path'] for r in requests],[[],[0],[1]])
+        result,requests,_=self.demand('len([person, person])',lambda r:self.fail(str(r)))
+        self.assertEqual(result['value'],'2');self.assertEqual(requests,[])
+        result,requests,_=self.demand('false && person.id == 7',lambda r:self.fail(str(r)))
+        self.assertFalse(result['value']);self.assertEqual(requests,[])
+        result,requests,_=self.demand('unwrap(ok(person)).id',lambda r:{'record':'debugging::model::Person'} if r['kind']=='shape' else '7')
+        self.assertEqual(result['value'],'7');self.assertEqual([r['path'] for r in requests],[[],['id']])
+
+    def test_partial_frame_rejects_bad_paths_conflicts_duplicates_and_shapes(self):
+        frame=self.partial();capture={'binding':'items','path':[],'kind':'shape','value':{'length':'2'}}
+        for change in [{'binding':'absent'},{'path':[-1]},{'path':['no']},{'path':[0,0]},{'kind':'other'}]:
+            bad=copy.deepcopy(frame);bad['captures']=[dict(capture,**change)]
+            self.assertEqual(self.inspect('len(items)',bad,ok=False)['code'],'E_DEBUG_FRAME')
+        bad=copy.deepcopy(frame);bad['captures']=[capture,capture]
+        self.assertEqual(self.inspect('len(items)',bad,ok=False)['code'],'E_DEBUG_FRAME')
+        bad=copy.deepcopy(frame);bad['bindings'][0]={'name':'n','type':'i64','value':'40'}
+        bad['captures']=[{'binding':'n','path':[],'kind':'value','value':'41'}]
+        self.assertEqual(self.inspect('n',bad,ok=False)['code'],'E_DEBUG_FRAME')
+        for value in [{'length':2},{'length':'02'},{'length':'-1'},{'length':'9223372036854775808'},{'length':'2','other':0}]:
+            bad=copy.deepcopy(frame);bad['captures']=[dict(capture,value=value)]
+            self.assertEqual(self.inspect('len(items)',bad,ok=False)['code'],'E_DEBUG_VALUE')
+        bad=copy.deepcopy(frame);bad['captures']=[{'binding':'person','path':[],'kind':'shape','value':{'record':'wrong'}}]
+        self.assertEqual(self.inspect('person.id',bad,ok=False)['code'],'E_DEBUG_VALUE')
+
+    def test_partial_unavailable_reads_and_exact_materialization(self):
+        frame=self.partial();frame['captures']=[{'binding':'items','path':[],'kind':'shape','value':{'length':'3'}},
+            {'binding':'items','path':[0],'kind':'value','unavailable':'unreadable selected child'}]
+        self.assertEqual(self.inspect('items[0]',frame,ok=False)['code'],'E_DEBUG_UNAVAILABLE')
+        self.assertEqual(self.inspect('false && items[0] == 0',frame)['value'],False)
+        frame['captures'][1]={'binding':'items','path':[0],'kind':'value','value':3}
+        self.assertEqual(self.inspect('items[0]',frame,ok=False)['code'],'E_DEBUG_VALUE')
+        result,requests,_=self.demand('encode_json(push(items, 9))',lambda r:['1','2'])
+        self.assertEqual(result['value'],'["1","2","9"]');self.assertEqual(len(requests),1)
+        self.assertEqual(requests[0]['kind'],'value');self.assertEqual(requests[0]['path'],[])
+
     def test_reference_native_and_typescript_agree_with_watch_values(self):
         expr='model::increment(total) + items[1]'
         expected=self.inspect(expr)['value']
@@ -160,9 +259,100 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         actual=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(folder/'watch.ts')],capture_output=True,text=True,timeout=30)
         self.assertEqual(actual.returncode,0,actual.stderr);self.assertEqual(actual.stdout,interpreted)
 
+    def test_large_fixture_projection_agrees_in_native_typescript_and_interpreter(self):
+        source=(harness.REPO/'examples/debugging/large.nex').read_text()
+        source=source.replace('print(report.id); // break: large',
+            'print(report.id); print(len(samples)); print(last(report.samples)); print(error_code(failure)); print(len(unwrap(reply).samples));')
+        self.file.write_text(source)
+        interpreted=self.cli('eval')['stdout']
+        self.assertEqual(interpreted,'7\n32768\nleaf\x00\U0001f30d\nBULK\n32768\n')
+        self.assertEqual(self.cli('run')['stdout'],interpreted)
+        folder=self.root/'large-ts';self.cli('emit','--kind','typescript','--directory',folder)
+        (folder/'package.json').write_text('{"type":"module"}')
+        (folder/'watch.ts').write_text("import {entry} from './program.ts';entry();")
+        actual=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(folder/'watch.ts')],capture_output=True,text=True,timeout=30)
+        self.assertEqual(actual.returncode,0,actual.stderr);self.assertEqual(actual.stdout,interpreted)
+
 
 if LIVE:
     class LiveExpressions(harness.ToolchainCase):
+        def large(self):
+            shutil.copyfile(harness.REPO/'examples/debugging/large.nex',self.file)
+            session=self.cli('debug','--kind','nex-dap');manifest=json.loads(Path(session['manifest']).read_text())
+            source=manifest['sources'][0]['projection']
+            line=next(i+1 for i,s in enumerate(self.file.read_text().splitlines()) if '// break: large' in s)
+            return session,source,line
+
+        def test_large_live_paths_skip_siblings_and_preserve_offline_snapshot(self):
+            session,source,line=self.large();report=self.root/'large-watch.json';script=self.root/'large_watch.py'
+            script.write_text('''import json,lldb
+
+def __lldb_init_module(debugger, _):
+    debugger.SetAsync(False);debugger.HandleCommand('settings set target.disable-aslr false')
+    target=debugger.GetSelectedTarget();target.BreakpointCreateByLocation(SOURCE,LINE)
+    process=target.LaunchSimple(None,None,None)
+    def command(text,success=True):
+        r=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,r)
+        assert r.Succeeded()==success,(text,r.GetOutput(),r.GetError())
+        return json.loads(r.GetOutput() if success else r.GetError().removeprefix('error: '))
+    try:
+        assert process.GetState()==lldb.eStateStopped
+        stop=process.GetStopID();frame=process.GetSelectedThread().GetSelectedFrame()
+        handle=frame.FindVariable('samples').GetValueAsUnsigned()
+        import lldb_nex
+        data=lldb_nex._data(frame.FindVariable('samples'))
+        unreadable=data.CreateValueFromAddress('unreadable',1,data.GetType())
+        try:lldb_nex._ExactVector(unreadable)
+        except ValueError:pass
+        else:raise AssertionError('unreadable vector became an empty list')
+        result={expression:command('nex-eval '+expression) for expression in
+            ['len(samples)','report.id','last(report.samples)','is_ok(reply)','len(unwrap(reply).samples)','error_code(failure)']}
+        result['snapshot']=command('nex-frame last(report.samples)')
+        result['whole_list']=command('nex-eval samples',False)
+        result['whole_message']=command('nex-eval error_message(failure)',False)
+        assert process.GetState()==lldb.eStateStopped and process.GetStopID()==stop
+        assert frame.FindVariable('samples').GetValueAsUnsigned()==handle
+        with open(REPORT,'w') as output:json.dump(result,output)
+        process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+    finally:
+        if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+            output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
+            self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
+            self.assertEqual([result[e]['value'] for e in ['len(samples)','report.id','last(report.samples)','is_ok(reply)','len(unwrap(reply).samples)','error_code(failure)']],
+                             ['32768','7','leaf\x00\U0001f30d',True,'32768','BULK'])
+            self.assertEqual(result['whole_list']['code'],'E_DEBUG_UNAVAILABLE')
+            self.assertEqual(result['whole_message']['code'],'E_DEBUG_UNAVAILABLE')
+            snapshot=result['snapshot'];self.assertEqual(snapshot['schema'],'nex.debug-frame/2')
+            self.assertEqual([(c['binding'],c['path'],c['kind']) for c in snapshot['captures']],
+                [('report',[],'shape'),('report',['samples'],'shape'),('report',['samples',32767],'value')])
+            self.assertLess(len(json.dumps(snapshot)),8192)
+            self.file.unlink();framefile=self.root/'partial.json';framefile.write_text(json.dumps(snapshot))
+            offline=self.cli('inspect',framefile,'--manifest',session['manifest'],'--expression','last(report.samples)')
+            self.assertEqual(offline['value'],'leaf\x00\U0001f30d')
+            self.assertEqual(offline['stop'],result['last(report.samples)']['stop'])
+
+        def test_large_actual_dap_watches_and_small_computed_pages(self):
+            from debugging import DAP
+            session,source,line=self.large();client=DAP(session['adapter_command'],self.root)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True,'supportsVariablePaging':True})
+                pending=client.send('launch',dict(session['launch'],disableASLR=False));client.event('initialized')
+                client.request('setBreakpoints',{'source':{'path':source},'breakpoints':[{'line':line}]})
+                client.request('configurationDone');client.response(pending);stop=client.event('stopped')
+                stack=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames']
+                def evaluate(expression):return client.request('evaluate',{'expression':expression,'frameId':stack[0]['id'],'context':'watch'})
+                last=evaluate('last(report.samples)');self.assertEqual(last['nex']['value'],'leaf\x00\U0001f30d')
+                self.assertEqual(len(last['nex']['read_paths']),3)
+                sizes=evaluate('[len(samples), len(unwrap(reply).samples)]')
+                self.assertEqual(sizes['nex']['value'],['32768','32768'])
+                page=client.request('variables',{'variablesReference':sizes['variablesReference'],'start':1,'count':1})['variables']
+                self.assertEqual([(v['name'],v['value'],v['type']) for v in page],[('[1]','32768','i64')])
+                self.assertEqual(evaluate('error_code(failure)')['nex']['value'],'BULK')
+                self.assertEqual(evaluate('report.id')['nex']['stop'],last['nex']['stop'])
+                client.request('continue',{'threadId':stop['threadId']});self.assertEqual(client.event('exited')['exitCode'],0)
+            finally:client.close()
+
         def test_actual_frame_exact_values_shadowing_pure_calls_and_stops(self):
             for name in ['main.nex','model.nex']:shutil.copyfile(harness.REPO/'examples/debugging'/name,self.root/name)
             session=self.cli('debug')

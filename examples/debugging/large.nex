@@ -1,0 +1,22 @@
+module debugging::large;
+
+struct Report { id: i64; samples: list<str>; }
+
+fn last(samples: list<str>) -> str {
+  return samples[len(samples) - 1];
+}
+
+fn main() -> i64 !{io} {
+  var samples: list<str> = ["leaf\u0000🌍"];
+  var rounds: i64 = 0;
+  while rounds < 15 { samples = samples + samples; rounds = rounds + 1; }
+  var message: str = "x";
+  rounds = 0;
+  while rounds < 21 { message = message + message; rounds = rounds + 1; }
+  let report: Report = Report(7, samples);
+  let reply: result<Report> = ok(report);
+  let failure: result<i64> = err<i64>("BULK", message);
+  print(report.id); // break: large
+  assert(len(samples) == 32768 && is_ok(reply) && !is_ok(failure));
+  return 0;
+}

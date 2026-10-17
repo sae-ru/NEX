@@ -235,7 +235,7 @@ Toolchain 0.8 preserves NEX parameter/local names, scalar aliases and lexical sc
 
 ## Stopped-frame expressions
 
-Toolchain 0.13 evaluates pure NEX expressions over exact typed stopped-frame snapshots in a separate reference-interpreter process. It reuses source expression syntax, import visibility, nominal types, effect/realm checks and execution rules; it does not run code or modify values in the inferior. New `inspect`/LLDB/DAP tools and their bounded snapshot protocols do not change language 0.5 or graph revisions. See [expressions.md](expressions.md) for wire values, selected frames, limits and editor adapter configuration.
+Toolchains 0.13 and 0.14 evaluate pure NEX expressions over exact typed stopped-frame snapshots in a separate reference-interpreter process. It reuses source expression syntax, import visibility, nominal types, effect/realm checks and execution rules; it does not run code or modify values in the inferior. Demand-driven list/record/result reads preserve pure helper calls, dynamic indexing and short-circuit behavior. The `inspect`/LLDB/DAP tools and their bounded snapshot protocols do not change language 0.5 or graph revisions. See [expressions.md](expressions.md) for wire values, selected frames, limits and editor adapter configuration.
 
 ## Native profiling
 

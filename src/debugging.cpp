@@ -18,15 +18,15 @@ JSON parseDebugFrame(const std::string &text){
   llvm::StringRef input(text);if(input.starts_with("\xef\xbb\xbf"))input=input.drop_front(3);
   auto value=llvm::json::parse(input);if(!value)throw Error("E_DEBUG_FRAME",llvm::toString(value.takeError()));return std::move(*value);
 }
-JSON inspectExpression(const std::string &path,const JSON &frame,const std::string &source,bool plan,uint64_t steps){
+JSON inspectExpression(const std::string &path,const JSON &frame,const std::string &source,bool plan,uint64_t steps,bool demand){
   if(source.empty()||source.size()>8192||!steps||steps>1000000)throw Error("E_DEBUG_LIMIT","expression requires 1..8192 source bytes and 1..1000000 steps");
   auto manifest=read(path,8*1048576);const auto &m=object(manifest);
   if(m.getString("schema")!="nex.debug/1"||m.getString("runtime_view")!="nex.runtime-view/1"||m.getString("expression_protocol")!="nex.debug-expression/1"||m.getString("language")!=languageVersion||m.getString("compiler_build")!=NEX_BUILD_ID)throw Error("E_DEBUG_BUILD","expression evaluation requires a matching compiler/debug manifest");
   auto bundle=read(std::filesystem::path(path).parent_path()/"source-bundle.json",16*1048576);
   if(hash(json(bundle,false))!=required(m,"source_hash"))throw Error("E_DEBUG_SNAPSHOT","debug source bundle hash differs");
   auto p=loadBundle(bundle,std::filesystem::absolute(path).parent_path().string());if(revision(p)!=required(m,"revision"))throw Error("E_DEBUG_SNAPSHOT","debug revision differs from its checked source bundle");
-  const auto &f=object(frame);fields(f,{"schema","language","revision","build_key","function","stop","bindings","truncated"});
-  if(required(f,"schema")!="nex.debug-frame/1"||required(f,"language")!=languageVersion||required(f,"revision")!=revision(p)||required(f,"build_key")!=required(m,"build_key"))throw Error("E_DEBUG_FRAME","frame and debug build identity differ");
+  const auto &f=object(frame);bool partial=f.getString("schema")=="nex.debug-frame/2";fields(f,partial?std::set<std::string>{"schema","language","revision","build_key","function","stop","bindings","truncated","captures"}:std::set<std::string>{"schema","language","revision","build_key","function","stop","bindings","truncated"});
+  if((!partial&&required(f,"schema")!="nex.debug-frame/1")||required(f,"language")!=languageVersion||required(f,"revision")!=revision(p)||required(f,"build_key")!=required(m,"build_key"))throw Error("E_DEBUG_FRAME","frame and debug build identity differ");
   auto name=required(f,"function");bool found=false;auto functions=m.getArray("functions");if(functions)for(const auto &value:*functions)if(object(value).getString("name")==name)found=true;
   if(!found)throw Error("E_DEBUG_FRAME","frame is not a compiled NEX function in this manifest");const auto &fn=p.function(name);
   auto stop=f.getObject("stop");if(!stop)throw Error("E_DEBUG_FRAME","frame requires stop identity");fields(*stop,{"process_id","thread_id","frame_id","stop_id"});
@@ -42,14 +42,29 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
     if(b.get("value")&&b.get("unavailable"))throw Error("E_DEBUG_FRAME","binding cannot be both captured and unavailable");
     if(auto wire=b.get("value"))values[local]=*wire;else required(b,"unavailable");
   }
+  const Array *captures=nullptr;
+  if(partial){
+    captures=f.getArray("captures");if(!captures||captures->size()>256)throw Error("E_DEBUG_FRAME","partial frame requires at most 256 captures");std::set<std::string> seen;
+    for(const auto &capture:*captures){const auto &c=object(capture);fields(c,{"binding","path","kind","value","unavailable"});auto binding=required(c,"binding"),kind=required(c,"kind");auto path=c.getArray("path");
+      if(!types.contains(binding)||values.get(binding)||!path||path->size()>56||(kind!="value"&&kind!="shape")||!seen.insert(binding+":"+json(Array(*path),false)+":"+kind).second)throw Error("E_DEBUG_FRAME","invalid, duplicate or conflicting partial capture");
+      Type type=types.at(binding);for(const auto &part:*path){
+        if(type.kind==Type::List){auto i=part.getAsInteger();if(!i||*i<0)throw Error("E_DEBUG_FRAME","list paths require nonnegative integer indices");type=*type.element;}
+        else if(type.kind==Type::Record){auto field=part.getAsString();bool found=false;if(field)for(const auto &member:p.structure(type.name).fields)if(member.name==*field){type=member.type;found=true;break;}if(!found)throw Error("E_DEBUG_FRAME","path field is not in its checked record");}
+        else if(type.kind==Type::Result){auto field=part.getAsString();if(field=="ok")type=*type.element;else if(field=="code"||field=="message")type=Type::Str;else throw Error("E_DEBUG_FRAME","invalid result path");}
+        else throw Error("E_DEBUG_FRAME","partial path descends through a scalar/string");
+      }
+      if(kind=="shape"&&type.kind!=Type::List&&type.kind!=Type::Record&&type.kind!=Type::Result)throw Error("E_DEBUG_FRAME","shape capture requires list, record or result type");
+      if(bool(c.get("value"))==bool(c.get("unavailable")))throw Error("E_DEBUG_FRAME","capture requires exactly one value or unavailable reason");if(c.get("unavailable"))required(c,"unavailable");
+    }
+  }
   auto expression=parseExpression(source,"<watch:"+name+">",1024);std::vector<std::pair<E,unsigned>> pending{{expression,0}};while(!pending.empty()){auto [e,depth]=pending.back();pending.pop_back();if(depth>128)throw Error("E_DEBUG_LIMIT","expression AST exceeds its depth budget");for(auto arg:e->args)pending.emplace_back(arg,depth+1);}
   bindExpression(p,name,expression);auto type=checkExpression(p,name,expression,types);
   std::set<std::string> referenced;std::function<void(E)> names=[&](E e){if(e->kind==Expr::Name)referenced.insert(e->text);for(auto arg:e->args)names(arg);};names(expression);
   Object output;
   if(plan){Array requested;for(const auto &local:referenced)requested.push_back(Object{{"name",local},{"type",typeName(types.at(local))},{"wire_schema",wireSchema(p,types.at(local))}});output=Object{{"schema","nex.expression-plan/1"},{"ok",true},{"type",typeName(type)},{"variables",std::move(requested)}};}
-  else {auto result=evaluateExpression(p,expression,types,values,steps);output=std::move(*result.getAsObject());output["schema"]="nex.expression/1";if(type!=Type::Unit)output["wire_schema"]=wireSchema(p,type);}
+  else {auto result=evaluateExpression(p,expression,types,values,steps,captures,demand);output=std::move(*result.getAsObject());output["schema"]=output.get("request")?"nex.expression-demand/1":"nex.expression/1";if(type!=Type::Unit)output["wire_schema"]=wireSchema(p,type);}
   output["language"]=languageVersion;output["revision"]=revision(p);output["build_key"]=required(m,"build_key");output["function"]=name;output["expression"]=source;output["stop"]=Object(*stop);output["frame_truncated"]=*truncated;
-  output["limits"]=Object{{"steps",int64_t(steps)},{"value_visits",100000},{"value_depth",64},{"cumulative_text_bytes",8*1048576},{"wire_result_bytes",1048576}};
+  output["limits"]=Object{{"steps",int64_t(steps)},{"value_visits",100000},{"value_depth",64},{"cumulative_text_bytes",8*1048576},{"wire_result_bytes",1048576},{"frame_captures",256},{"capture_path_depth",56},{"lazy_references",10000}};
   JSON result=std::move(output);if(json(result,false).size()>4*1048576)throw Error("E_DEBUG_LIMIT","expression response exceeds 4 MiB");return result;
 }
 }

@@ -1,4 +1,4 @@
-# NEX expressions in stopped frames — toolchain 0.13
+# NEX expressions in stopped frames — toolchain 0.14
 
 NEX expressions use the language 0.5 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
@@ -31,14 +31,15 @@ binding. At the outer breakpoint it is 40. A helper's parameters and locals
 use that helper's module/import scope. Initializers cannot see a later binding.
 
 `nex-eval` returns `nex.expression/1`: type, exact typed wire `value`, display,
-read binding names, language/revision/build/function/stop identity and limits.
+read binding names and structured read paths, language/revision/build/function/stop identity and limits.
 Integers in wire values are canonical decimal strings; booleans remain booleans.
 Display is bounded to about 4096 bytes and reports `display_truncated`; the wire
 value is complete or the operation fails. Display text is not an input value.
 
-`nex-frame EXPRESSION` captures the variables referenced by the expression and
-returns `nex.debug-frame/1`. Other visible names retain type metadata and an
-explicit unavailable reason. This can be saved for offline inspection. It is
+`nex-frame EXPRESSION` captures the data demanded while interpreting the expression and
+returns `nex.debug-frame/2`. Other visible names retain type metadata and an
+explicit unavailable reason. Partial bindings have exact shape/value entries in
+the frame's `captures` array. This can be saved for offline inspection. It is
 different from `nex-values`, which remains a bounded human-readable preview.
 
 Supported expressions include checked arithmetic, short-circuit conditions,
@@ -107,18 +108,27 @@ nex inspect frame.json --manifest /path/to/build/debug.json \
 ```
 
 Without a frame filename, `inspect` reads bounded JSON from stdin. The plan
-checks types/effects/visibility and returns only the referenced variables and
-matching wire schemas; it does not evaluate user code. The LLDB command first
-uses this plan, reads those values, then evaluates the expression. Values are
-decoded lazily in the helper: an unavailable binding on a nonexecuted
-short-circuit branch is not required.
+checks types/effects/visibility and returns referenced variables and matching
+wire schemas; it does not evaluate user code. The LLDB command then invokes
+the checked interpreter in demand mode. A missing read returns
+`nex.expression-demand/1` with a request containing `binding`, `path`, `kind`,
+canonical `type` and `wire_schema`. The provider captures that read, checks the
+stop identity and replays the pure expression. Success is `nex.expression/1`.
+The source and stop stay fixed across this exchange.
+
+`nex inspect ... --kind demand --json` exposes the same exchange to model tools.
+With ordinary value mode, a missing capture is `E_DEBUG_UNAVAILABLE`; it never
+silently becomes an empty collection. The original `nex.debug-frame/1` full-value
+format is still accepted. Version 2 requires an additional `captures` array;
+source language and runtime ABI are unchanged.
 
 The manifest pins the compiler build, semantic revision and exact complete
 source bundle. Inspection checks these before loading archived sources; original
 source/library files can have changed or been deleted. It does not open or move
 project graph HEAD. The frame's declared name/types and build identity must
-match the selected function. `llm/debug-frame.schema.json` describes the format;
-the compiler also performs semantic validation.
+match the selected function. `llm/debug-frame.schema.json` and
+`llm/debug-frame-v2.schema.json` describe the two formats; the compiler also
+validates path types, uniqueness, full-binding/capture conflicts and read values.
 
 A saved frame is supplied data. Its IDs/hashes do not authenticate that a value
 came from a live process. Live commands obtain fresh values and verify that the
@@ -126,22 +136,69 @@ stop did not change while capturing/evaluating; offline inspection reports the
 supplied stop identity. A frame from an old compiler build needs its matching
 compiler; source language 0.5 and graph identity do not change in this milestone.
 
+## Large aggregate reads
+
+```sh
+nex debug examples/debugging/large.nex
+```
+
+Stop at the line marked `break: large`, then try:
+
+```text
+nex-eval len(samples)
+nex-eval report.id
+nex-eval last(report.samples)
+nex-eval len(unwrap(reply).samples)
+nex-eval error_code(failure)
+nex-frame last(report.samples)
+```
+
+The list contains 32,768 strings and the failure message is 2 MiB. These
+expressions read only needed headers and payloads. The last-element helper uses
+the checked length and dynamic index; it does not need a special static pattern
+in the expression planner. Aliases, pure helper parameters/returns, constructors,
+branches, loops and short-circuiting preserve references until data is needed.
+
+Capture paths are arrays: record field names, nonnegative list indices, and
+result selectors `ok`, `code` or `message`. A shape read returns exactly one of
+`{"length":"32768"}`, `{"record":"debugging::large::Report"}` or `{"ok":true}`.
+Lengths are canonical nonnegative decimal i64 strings. Shape checks validate
+native kind, nominal name, field order and result layout without reading
+sibling payloads. A value read returns the complete typed wire value at its
+checked path, or an explicit unavailable reason. No captured value is a shortened
+substitute for a whole root. Complete captures, when present, can satisfy later
+selection inside that value.
+
+A saved partial frame can evaluate another expression only if its needed reads
+were captured. For example, the last-element snapshot retains the list length
+and selected string but has no first element. Offline inspection reports the
+missing path; it cannot fetch more data after the process has exited. Offline
+shapes and payloads remain supplied data, not authenticated evidence.
+
+Whole-value operations such as list concatenation, push/set, JSON encoding and
+aggregate equality currently require complete bounded operands. Strings also
+require complete UTF-8 bytes; chunked scalar indexing/length is pending. Direct
+expansion of a large uncaptured root through DAP is pending; use a selected
+expression to compute a bounded value, then expand its children.
+
 ## Exact capture and limits
 
-Scalar reads check LLDB errors. Heap reads validate runtime tags, nominal record
+Scalar reads check LLDB errors. Exact vector reads use checked begin/end pointers and DWARF element sizes instead of interpreting a synthetic provider failure as an empty list. Heap reads validate runtime tags, nominal record
 names, field order and result shape against the checked wire schema. Standard
 strings are read with their actual length through DWARF fields and process
 memory, including embedded NUL and long UTF-8 content. Truncated escaped
 summaries are never parsed as values. The implementation uses the
 [LLDB frame API](https://lldb.llvm.org/python_api/lldb.SBFrame.html) and
-[read-only value access](https://lldb.llvm.org/python_api/lldb.SBValue.html).
+[read-only value access](https://lldb.llvm.org/python_api/lldb.SBValue.html) and
+[DWARF type sizes](https://lldb.llvm.org/python_api/lldb.SBType.html).
 
 Capture is bounded to 256 visible entries, 10,000 recursive visits, 10,000 items
 per collection, value depth 60 (reserving space for the frame envelope) and 1 MiB of text/frame JSON. The shared strict JSON validator rejects duplicate/escaped-equivalent keys, malformed UTF-8 and packets deeper than 64 before conversion; one leading UTF-8 BOM is accepted. An incomplete binding is
-unavailable, never a shortened list or fabricated zero. Only referenced roots
-are read, but reading one currently captures that whole root. A field/length of
-a very large root can therefore be unavailable; demand-driven partial object
-reads remain pending. Unknown C++ layouts and optimized-out locations also
+unavailable, never a shortened list or fabricated zero. List/record/result
+projections request only needed paths. Each LLDB expression is additionally
+bounded to 128 read exchanges and ten seconds overall (five seconds per compiler
+invocation). Captured frames accept at most 256 unique reads, paths of at most 56
+segments and 10,000 interpreter-only lazy references. Unknown C++ layouts and optimized-out locations also
 produce explicit failure/unavailability. libc++ on the exercised macOS ARM64
 host is verified; other host/layout combinations need their own live checks.
 
@@ -155,7 +212,7 @@ The DAP bridge bounds packets to 8 MiB, outstanding requests to 256 and live
 references to 100,000 per stop. These are operational limits, not successful
 partial evaluations or proofs about arbitrary source execution.
 
-Operation IDs, source-level crash/core analysis, demand-driven large-value reads,
+Operation IDs, source-level crash/core analysis, string chunk reads, large-root paging,
 browser NEX source-map watches, additional platforms and an installed editor
 extension remain open development work.
 

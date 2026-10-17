@@ -99,7 +99,7 @@ Evaluation evaluate(const Program &program, const std::string &entry = "main",
 // Typed wire values are decoded lazily, preserving short-circuit behavior when
 // a referenced stopped-frame value is unavailable. No target process is called.
 llvm::json::Value evaluateExpression(const Program &program,E expression,const std::map<std::string,Type> &types,
-  const llvm::json::Object &values,uint64_t stepLimit=100000);
+  const llvm::json::Object &values,uint64_t stepLimit=100000,const llvm::json::Array *captures=nullptr,bool demand=false);
 std::string readFile(const std::string &path);
 void writeFile(const std::string &path, const std::string &text);
 std::string resourceFile(const std::string &relative);

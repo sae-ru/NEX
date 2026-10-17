@@ -76,7 +76,7 @@ int run(const Options &o) {
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
-      "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|value] [--steps COUNT] [--json]\n"
+      "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
       "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
@@ -84,11 +84,11 @@ int run(const Options &o) {
   if(o.command=="describe"){print(describe());return 0;}
   if(o.command=="inspect"){
     auto path=o.get("--manifest"),expression=o.get("--expression");if(path.empty()||expression.empty())throw Error("E_OPTION","inspect requires --manifest FILE and --expression TEXT");
-    auto kind=o.get("--kind","value");if(kind!="plan"&&kind!="value")throw Error("E_OPTION","inspect kind must be plan or value");std::string frame;
+    auto kind=o.get("--kind","value");if(kind!="plan"&&kind!="value"&&kind!="demand")throw Error("E_OPTION","inspect kind must be plan, demand or value");std::string frame;
     if(!o.positional.empty()){auto file=o.positional[0];if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_DEBUG_LIMIT","frame file exceeds 1 MiB or is missing");frame=readFile(file);}
     else {char buffer[4096];while(std::cin.read(buffer,sizeof(buffer))||std::cin.gcount()){if(frame.size()+std::cin.gcount()>1048576)throw Error("E_DEBUG_LIMIT","stdin frame exceeds 1 MiB");frame.append(buffer,std::cin.gcount());}}
     uint64_t steps=100000;auto raw=o.get("--steps");if(!raw.empty()){steps=0;for(char c:raw){if(c<'0'||c>'9'||steps>(1000000-unsigned(c-'0'))/10)throw Error("E_OPTION","expression step limit must be 1..1000000");steps=steps*10+unsigned(c-'0');}if(!steps||steps>1000000)throw Error("E_OPTION","expression step limit must be 1..1000000");}
-    std::cout<<json(inspectExpression(path,parseDebugFrame(frame),expression,kind=="plan",steps),false)<<'\n';return 0;
+    std::cout<<json(inspectExpression(path,parseDebugFrame(frame),expression,kind=="plan",steps,kind=="demand"),false)<<'\n';return 0;
   }
   if(o.command=="contract"&&o.get("--kind")=="intent"){
     auto path=o.get("--contracts");if(path.empty()||!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_OPTION","intent requires a bounded --contracts JSON file");
