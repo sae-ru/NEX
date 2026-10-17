@@ -73,7 +73,10 @@ struct Program {
   std::string location(const Span &span) const;
 };
 Program parse(std::string source, std::string path);
-E parseExpression(std::string source,std::string path);
+E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
+Type parseType(std::string source);
+void bindExpression(const Program &program,const std::string &function,E expression);
+Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
 llvm::json::Value sourceBundle(const Program &program);
@@ -93,6 +96,10 @@ llvm::json::Value wireSchema(const Program &program,const Type &type);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",
                     uint64_t stepLimit = 1000000);
+// Typed wire values are decoded lazily, preserving short-circuit behavior when
+// a referenced stopped-frame value is unavailable. No target process is called.
+llvm::json::Value evaluateExpression(const Program &program,E expression,const std::map<std::string,Type> &types,
+  const llvm::json::Object &values,uint64_t stepLimit=100000);
 std::string readFile(const std::string &path);
 void writeFile(const std::string &path, const std::string &text);
 std::string resourceFile(const std::string &relative);

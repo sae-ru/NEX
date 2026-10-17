@@ -20,9 +20,11 @@
     "verification": "docs/verification.md",
     "verification_contract_schema": "llm/verification.schema.json",
     "tasks": "docs/tasks.md",
-    "task_schema": "llm/task.schema.json"
+    "task_schema": "llm/task.schema.json",
+    "expressions": "docs/expressions.md",
+    "debug_frame_schema": "llm/debug-frame.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -64,7 +66,8 @@
   "debug_commands": [
     "nex debug FILE --kind dap --json",
     "nex debug FILE -- --no-lldbinit",
-    "nex-values [inside LLDB at a stopped frame]"
+    "nex-values [inside LLDB at a stopped frame]",
+    "nex debug FILE --kind nex-dap --json"
   ],
   "profile_commands": [
     "nex profile FILE --scenario TEXT --json",
@@ -80,5 +83,11 @@
     "nex task task.json --kind run --task-hash HASH --json",
     "nex task RECEIPT.json --kind replay --json",
     "nex task task.json --kind history --json"
+  ],
+  "expression_commands": [
+    "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --kind plan --json",
+    "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --json",
+    "nex-eval NEX_EXPRESSION (at an LLDB stop)",
+    "nex-frame NEX_EXPRESSION (at an LLDB stop)"
   ]
 }

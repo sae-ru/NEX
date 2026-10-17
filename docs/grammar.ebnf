@@ -57,3 +57,5 @@ digit         = "0" .. "9" ;
 (* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
    the scalar expression parser and do not add source declarations or keywords. *)
 (* Toolchain 0.12 task contracts are external JSON; no new source syntax. *)
+(* Toolchain 0.13 stopped-frame expressions reuse this expression/type grammar.
+   Their purity, capture and helper resource limits do not alter source programs. *)

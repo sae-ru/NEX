@@ -13,19 +13,31 @@ class Interpreter {
   const Program &p; uint64_t limit; Evaluation result;
   using Scope=std::map<std::string,V>;
   std::vector<std::vector<Scope>> frames;
+  const std::map<std::string,Type> *watchTypes=nullptr;const llvm::json::Object *watchValues=nullptr;
+  std::set<std::string> watchRead;uint64_t visits=0,bytes=0;
+  void bounded(const V &value,unsigned depth=0){
+    if(++visits>100000||depth>64)throw Error("E_DEBUG_LIMIT","expression exceeded its value visit/depth budget");
+    if(value.object){bytes+=value.object->text.size();if(bytes>8*1024*1024)throw Error("E_DEBUG_LIMIT","expression exceeded its cumulative text budget");for(const auto &child:value.object->values)bounded(child,depth+1);}
+  }
   void step(Span s){if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
-  V &local(const std::string &name) {
+  V &local(const std::string &name,Span span={}) {
     for(auto i=frames.back().rbegin();i!=frames.back().rend();++i)if(i->contains(name))return i->at(name);
+    if(watchTypes&&frames.size()==1&&watchTypes->contains(name)){
+      auto input=watchValues->get(name);if(!input)throw Error("E_DEBUG_UNAVAILABLE","stopped-frame value is unavailable: "+name,span);
+      auto decoded=nexrt::decodeJSON(json(*input,false),json(wireSchema(p,watchTypes->at(name)),false));
+      if(!nexrt::isSuccess(decoded))throw Error("E_DEBUG_VALUE","invalid typed wire value for stopped-frame binding: "+name,span);
+      watchRead.insert(name);return frames.back().back().emplace(name,nexrt::unwrap(decoded)).first->second;
+    }
     throw Error("E_INTERNAL","checked local is missing");
   }
   V expression(E e) {
     step(e->span);
-    try{return expr(e);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),e->span);}
+    try{auto value=expr(e);if(watchTypes)bounded(value);return value;}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),e->span);}
   }
   V expr(E e) {
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
-    if(e->kind==Expr::Name)return local(e->text);
+    if(e->kind==Expr::Name)return local(e->text,e->span);
     if(e->kind==Expr::List){auto d=std::make_shared<nexrt::Data>(nexrt::Data::List);for(auto a:e->args)d->values.push_back(expression(a));return V(d);}
     if(e->kind==Expr::Field)return nexrt::get(expression(e->args[0]).object,e->number);
     if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return nexrt::get(base.object,index.scalar);}
@@ -109,6 +121,14 @@ class Interpreter {
   }
 public:
   Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){}
+  llvm::json::Value watch(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values){
+    watchTypes=&types;watchValues=&values;frames.emplace_back(1);auto value=this->expression(expression);llvm::json::Value wire=nullptr;
+    std::string display="unit";bool truncated=false;
+    if(expression->type!=Type::Unit){auto encoded=llvm::json::parse(nexrt::encodeJSON(value));if(!encoded)throw Error("E_INTERNAL",llvm::toString(encoded.takeError()));wire=std::move(*encoded);display=nexrt::representation(value);}
+    if(display.size()>4096){size_t end=4096;while(end&&(static_cast<unsigned char>(display[end])&0xc0)==0x80)--end;display.resize(end);display+="…";truncated=true;}
+    llvm::json::Array read;for(const auto &name:watchRead)read.push_back(name);
+    return llvm::json::Object{{"ok",true},{"type",typeName(expression->type)},{"value",std::move(wire)},{"display",display},{"display_truncated",truncated},{"steps",int64_t(result.steps)},{"read_bindings",std::move(read)}};
+  }
   Evaluation run(const std::string &entry) {
     const auto &f=p.function(entry);if(!f.params.empty())throw Error("E_ENTRY","entry must take no arguments",f.span);
     try {
@@ -120,4 +140,7 @@ public:
 };
 }
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){return Interpreter(p,stepLimit).run(entry);}
+llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit){
+  try{return Interpreter(p,limit).watch(expression,types,values);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
+}
 }

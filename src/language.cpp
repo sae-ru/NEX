@@ -229,11 +229,12 @@ class Parser {
     return s;
   }
 public:
-  Parser(std::string source,std::string path) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0) {
     p.source=std::move(source);p.path=std::move(path);Lexer lex(p.source,p.path);
-    do {tokens.push_back(lex.next());}while(tokens.back().kind!=Token::End);
+    do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
   }
   E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
+  Type typeOnly(){auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}
   Program run() {
     expect("module");p.module=qualified();expect(";");
     while(peek().kind!=Token::End) {
@@ -415,6 +416,11 @@ class Checker {
   }
 public:
   explicit Checker(Program &p):p(p){}
+  Type watch(const std::string &function,E expression,const std::map<std::string,Type> &locals){
+    auto context=p.function(function);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();
+    for(const auto &[name,type]:locals){validType(type,expression->span);define(name,{type,false},expression->span);}
+    return expr(expression);
+  }
   void run() {
     std::set<std::string> names;
     const auto &builtins=builtinNames();
@@ -487,9 +493,11 @@ Program parse(std::string source,std::string path){
   return Parser(std::move(source),std::move(path)).run();
 }
 void check(Program &p){Checker(p).run();}
-E parseExpression(std::string source,std::string path){
+Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
+Type parseType(std::string source){return Parser(std::move(source),"<debug-type>").typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){
   try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
-  return Parser(std::move(source),std::move(path)).expressionOnly();
+  return Parser(std::move(source),std::move(path),maxTokens).expressionOnly();
 }
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
@@ -523,8 +531,9 @@ llvm::json::Value describe() {
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
     {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
-    {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch"}},
+    {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values"}},
     {"debug_guide","docs/debugging.md"},
+    {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index"}},
     {"build_guide","docs/incremental.md"},
     {"profile_features",llvm::json::Array{"native_function_instrumentation","graph_attributed_wall_time","bounded_trace_events","managed_shallow_allocations","tracy_cpu_zones","tracy_named_memory_pools"}},

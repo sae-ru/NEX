@@ -52,7 +52,7 @@ class Debugging(harness.ToolchainCase):
         self.assertTrue(self.cli("build")["cached"])
         manifest_file = Path(built["debug_manifest"])
         manifest = json.loads(manifest_file.read_text())
-        paths = [manifest_file, Path(manifest["formatter"]), Path(manifest["sources"][0]["projection"])]
+        paths = [manifest_file, Path(manifest["formatter"]), Path(manifest["dap_adapter"]), Path(manifest["sources"][0]["projection"])]
         if sys.platform == "darwin":
             paths.append(Path(built["executable"] + ".dSYM/Contents/Resources/DWARF/app"))
         for file in paths:
@@ -91,7 +91,7 @@ class Debugging(harness.ToolchainCase):
 class DAP:
     def __init__(self, executable, directory):
         self.log = (directory / "dap-stderr.txt").open("wb")
-        self.process = subprocess.Popen([executable], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log)
+        self.process = subprocess.Popen(executable if isinstance(executable, list) else [executable], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log)
         self.messages = queue.Queue()
         self.pending = []
         self.sequence = 0

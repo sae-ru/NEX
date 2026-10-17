@@ -7,6 +7,8 @@ by the generated manifest; previews deliberately bound recursion and item count.
 import json
 from pathlib import Path
 import shlex
+import subprocess
+import base64
 
 import lldb
 
@@ -166,8 +168,8 @@ class Children:
 def load(debugger, command, result, internal_dict):
     try:
         arguments = shlex.split(command)
-        if len(arguments) != 1:
-            raise ValueError("usage: nex-load-debug MANIFEST.json")
+        if len(arguments) not in (1, 3) or (len(arguments) == 3 and arguments[1] != "--compiler"):
+            raise ValueError("usage: nex-load-debug MANIFEST.json [--compiler /trusted/nex]")
         path = Path(arguments[0])
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
@@ -185,10 +187,270 @@ def load(debugger, command, result, internal_dict):
             category.AddTypeSummary(specifier, lldb.SBTypeSummary.CreateWithFunctionName(__name__ + ".summary"))
             category.AddTypeSynthetic(specifier, lldb.SBTypeSynthetic.CreateWithClassName(__name__ + ".Children"))
         category.SetEnabled(True)
+        # The executable comes only from an explicit debugger command argument,
+        # never from paths supplied by a debug manifest or captured frame.
+        manifest["_compiler"] = str(Path(arguments[2]).resolve(strict=True)) if len(arguments) == 3 else None
+        manifest["_manifest"] = str(path.resolve())
         _contexts[str(Path(manifest["program"]).resolve())] = manifest
         result.PutCString("NEX debug views loaded for " + manifest["revision"])
     except Exception as error:
         result.SetError(str(error))
+
+
+def _integer(value, signed=False):
+    if not value.IsValid() or value.GetError().Fail():
+        raise ValueError("value has no readable location")
+    error = lldb.SBError()
+    number = value.GetValueAsSigned(error) if signed else value.GetValueAsUnsigned(error)
+    if error.Fail():
+        raise ValueError("value has no readable scalar: " + str(error))
+    return number
+
+
+def _find_member(value, name, depth=0, budget=None):
+    if budget is None:
+        budget = [128]
+    raw = value.GetNonSyntheticValue()
+    if depth > 8 or budget[0] <= 0 or raw.GetType().IsPointerType() or raw.GetType().IsArrayType():
+        return None
+    budget[0] -= 1
+    found = raw.GetChildMemberWithName(name)
+    if found.IsValid():
+        return found
+    for index in range(min(raw.GetNumChildren(), 32)):
+        found = _find_member(raw.GetChildAtIndex(index), name, depth + 1, budget)
+        if found is not None:
+            return found
+    return None
+
+
+def _raw_string(value, budget):
+    # Read length and buffer through this build's DWARF, including embedded NUL.
+    # Escaped/truncated C++ summaries are deliberately not used as wire data.
+    short = _find_member(value, "__s")
+    if short is not None:
+        long = _integer(_member(short, "__is_long_"))
+        rep = _find_member(value, "__l") if long else short
+        if rep is None or long not in (0, 1):
+            raise ValueError("unavailable libc++ string representation")
+        size = _integer(_member(rep, "__size_"))
+        data = _member(rep, "__data_")
+        address = _integer(data) if long else data.GetLoadAddress()
+    else:
+        length = _find_member(value, "_M_string_length")
+        pointer = _find_member(value, "_M_p")
+        if length is None or pointer is None:
+            raise ValueError("unsupported C++ string layout for exact capture")
+        size, address = _integer(length), _integer(pointer)
+    if size > budget["bytes"]:
+        raise ValueError("exact capture exceeds its text byte budget")
+    budget["bytes"] -= size
+    if not size:
+        return ""
+    if not address or address == lldb.LLDB_INVALID_ADDRESS:
+        raise ValueError("unavailable string buffer")
+    error = lldb.SBError()
+    data = value.GetProcess().ReadMemory(address, size, error)
+    if error.Fail() or len(data) != size:
+        raise ValueError("cannot read exact stopped string bytes")
+    return data.decode("utf-8", "strict")
+
+
+def _wire(value, descriptor, records, budget, depth=0):
+    if depth > 60 or budget["nodes"] <= 0:
+        raise ValueError("exact capture exceeds its node/depth budget")
+    budget["nodes"] -= 1
+    raw = value.GetNonSyntheticValue()
+    nested = raw.GetTypeName() == "nexrt::Value"
+    if descriptor in ("i64", "bool"):
+        if nested:
+            if _integer(_member(raw, "tag")) != (1 if descriptor == "bool" else 0):
+                raise ValueError("runtime scalar tag differs from checked NEX type")
+            raw = _member(raw, "scalar")
+        number = _integer(raw, signed=descriptor == "i64" or nested)
+        if descriptor == "bool":
+            if number not in (0, 1):
+                raise ValueError("runtime boolean is not canonical")
+            return bool(number)
+        return str(number)
+    if nested and _integer(_member(raw, "tag")) != 2:
+        raise ValueError("runtime object tag differs from checked NEX type")
+    data = _data(value)
+    if data is None:
+        raise ValueError("unavailable runtime object")
+    kind = _integer(_member(data, "kind"))
+    if descriptor == "str":
+        if kind != 0:
+            raise ValueError("runtime string kind differs from checked NEX type")
+        return _raw_string(_member(data, "text"), budget)
+    if not isinstance(descriptor, dict):
+        raise ValueError("invalid wire type descriptor")
+    items = _vector(data)
+    size = items.GetNumChildren()
+    if size > 10000:
+        raise ValueError("exact capture exceeds its collection item budget")
+    if "list" in descriptor and kind == 1:
+        return [_wire(items.GetChildAtIndex(i), descriptor["list"], records, budget, depth + 1) for i in range(size)]
+    if "record" in descriptor and kind == 2:
+        name = descriptor["record"]
+        if _raw_string(_member(data, "text"), budget) != name:
+            raise ValueError("runtime nominal type differs from checked NEX type")
+        fields = records[name]
+        names = _vector(data, "names")
+        if size != len(fields) or names.GetNumChildren() != size:
+            raise ValueError("runtime record layout differs from checked NEX type")
+        result = {}
+        for index, field in enumerate(fields):
+            if _raw_string(names.GetChildAtIndex(index), budget) != field["name"]:
+                raise ValueError("runtime record field differs from checked NEX layout")
+            result[field["name"]] = _wire(items.GetChildAtIndex(index), field["type"], records, budget, depth + 1)
+        return result
+    if "result" in descriptor and size == 1:
+        if kind == 3:
+            return {"ok": _wire(items.GetChildAtIndex(0), descriptor["result"], records, budget, depth + 1)}
+        if kind == 4:
+            return {"error": {"code": _raw_string(_member(data, "text"), budget),
+                              "message": _wire(items.GetChildAtIndex(0), "str", records, budget, depth + 1)}}
+    raise ValueError("runtime aggregate differs from checked NEX type")
+
+
+def _stopped(debugger):
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    if process.GetState() != lldb.eStateStopped:
+        raise ValueError("NEX expressions require a stopped process")
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+    if not frame.IsValid():
+        raise ValueError("no selected frame")
+    program = str(Path(str(target.GetExecutable())).resolve())
+    context = _contexts.get(program)
+    if not context or not context.get("_compiler"):
+        raise ValueError("load matching debug views with an explicit trusted --compiler path")
+    native = frame.GetSymbol().GetName()
+    function = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
+    if function is None:
+        raise ValueError("selected frame is not a mapped NEX function")
+    stop = {"process_id": str(process.GetProcessID()), "thread_id": str(thread.GetThreadID()),
+            "frame_id": frame.GetFrameID(), "stop_id": str(process.GetStopID())}
+    visible = frame.GetVariables(True, True, False, True, lldb.eDynamicDontRunTarget)
+    names = list(dict.fromkeys(visible.GetValueAtIndex(i).GetName() for i in range(min(visible.GetSize(), 256))))
+    bindings, values = [], {}
+    for name in names:
+        if not name:
+            continue
+        # LLDB resolves the innermost lexical binding, rather than whichever
+        # duplicate name happens to appear first in the flattened variable list.
+        value = frame.FindVariable(name, lldb.eDynamicDontRunTarget)
+        if not value.IsValid() or not value.IsInScope():
+            continue
+        values[name] = value
+        bindings.append({"name": name, "type": value.GetTypeName(), "unavailable": "not captured"})
+    snapshot = {"schema": "nex.debug-frame/1", "language": context.get("language"),
+                "revision": context.get("revision"), "build_key": context.get("build_key"),
+                "function": function, "stop": stop, "bindings": bindings,
+                "truncated": visible.GetSize() > 256}
+    return context, process, snapshot, values
+
+
+def _fresh(process, snapshot):
+    if (process.GetState() != lldb.eStateStopped or str(process.GetStopID()) != snapshot["stop"]["stop_id"]
+            or str(process.GetSelectedThread().GetThreadID()) != snapshot["stop"]["thread_id"]
+            or process.GetSelectedThread().GetSelectedFrame().GetFrameID() != snapshot["stop"]["frame_id"]):
+        raise ValueError("process stop changed during expression capture/evaluation")
+
+
+def _compiler(context, snapshot, expression, kind):
+    encoded = json.dumps(snapshot, ensure_ascii=False).encode("utf-8")
+    if len(encoded) > 1024 * 1024:
+        raise ValueError("stopped-frame JSON exceeds 1 MiB")
+    args = [context["_compiler"], "inspect", "--manifest", context["_manifest"],
+            "--expression", expression, "--kind", kind, "--json"]
+    process = subprocess.run(args, input=encoded, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+    response = json.loads(process.stdout.decode("utf-8"))
+    if process.returncode or not response.get("ok"):
+        raise ValueError(json.dumps(response, ensure_ascii=False))
+    if response.get("stop") != snapshot["stop"]:
+        raise ValueError("compiler response has a different stop identity")
+    return response
+
+
+def _capture(context, process, snapshot, values, expression):
+    plan = _compiler(context, snapshot, expression, "plan")
+    budget = {"nodes": 10000, "bytes": 1024 * 1024}
+    bindings = {b["name"]: b for b in snapshot["bindings"]}
+    for variable in plan["variables"]:
+        name = variable["name"]
+        binding = bindings[name]
+        try:
+            schema = variable["wire_schema"]
+            binding["value"] = _wire(values[name], schema["root"], schema["records"], budget)
+            binding.pop("unavailable", None)
+            if len(json.dumps(snapshot, ensure_ascii=False).encode("utf-8")) > 1024 * 1024:
+                raise ValueError("captured frame exceeds its JSON byte budget")
+        except Exception as error:
+            binding.pop("value", None)
+            binding["unavailable"] = str(error)[:512]
+    _fresh(process, snapshot)
+
+
+def frame(debugger, command, result, internal_dict):
+    try:
+        if not command.strip():
+            raise ValueError("usage: nex-frame NEX_EXPRESSION")
+        context, process, snapshot, values = _stopped(debugger)
+        _capture(context, process, snapshot, values, command.strip())
+        result.PutCString(json.dumps(snapshot, ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
+
+
+def evaluate(debugger, command, result, internal_dict):
+    try:
+        if not command.strip():
+            raise ValueError("usage: nex-eval NEX_EXPRESSION")
+        context, process, snapshot, values = _stopped(debugger)
+        _capture(context, process, snapshot, values, command.strip())
+        response = _compiler(context, snapshot, command.strip(), "value")
+        _fresh(process, snapshot)
+        result.PutCString(json.dumps(response, ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
+
+
+def evaluate_encoded(debugger, command, result, internal_dict):
+    process = None
+    original = None
+    try:
+        if len(command) > 65536:
+            raise ValueError("encoded expression exceeds limit")
+        payload = json.loads(base64.b64decode(command.strip(), validate=True).decode("utf-8"))
+        if not isinstance(payload, dict) or set(payload) - {"expression", "thread_id", "frame_index"}:
+            raise ValueError("invalid encoded expression request")
+        expression = payload.get("expression")
+        if not isinstance(expression, str) or not 1 <= len(expression.encode("utf-8")) <= 8192:
+            raise ValueError("expression exceeds its source limit")
+        process = debugger.GetSelectedTarget().GetProcess()
+        if process.GetState() != lldb.eStateStopped:
+            raise ValueError("NEX expressions require a stopped process")
+        if "thread_id" in payload or "frame_index" in payload:
+            thread_id, index = payload.get("thread_id"), payload.get("frame_index")
+            if not isinstance(thread_id, str) or not thread_id.isascii() or not thread_id.isdecimal() or not isinstance(index, int) or not 0 <= index < 4096:
+                raise ValueError("invalid requested thread/frame")
+            previous = process.GetSelectedThread()
+            original = (previous, previous.GetSelectedFrame().GetFrameID(), process.GetStopID())
+            thread = process.GetThreadByID(int(thread_id))
+            if not thread.IsValid() or not thread.GetFrameAtIndex(index).IsValid():
+                raise ValueError("requested frame is no longer available")
+            process.SetSelectedThread(thread)
+            thread.SetSelectedFrame(index)
+        evaluate(debugger, expression, result, internal_dict)
+    except Exception as error:
+        result.SetError(str(error))
+    finally:
+        if original is not None and process.GetState() == lldb.eStateStopped and process.GetStopID() == original[2]:
+            process.SetSelectedThread(original[0])
+            original[0].SetSelectedFrame(original[1])
 
 
 def values(debugger, command, result, internal_dict):
@@ -224,3 +486,6 @@ def values(debugger, command, result, internal_dict):
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f " + __name__ + ".load nex-load-debug")
     debugger.HandleCommand("command script add -f " + __name__ + ".values nex-values")
+    debugger.HandleCommand("command script add -f " + __name__ + ".evaluate nex-eval")
+    debugger.HandleCommand("command script add -f " + __name__ + ".frame nex-frame")
+    debugger.HandleCommand("command script add -f " + __name__ + ".evaluate_encoded nex-eval-encoded")

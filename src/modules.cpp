@@ -49,6 +49,21 @@ bool inside(const fs::path &path,const fs::path &base){
   for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();
 }
 struct Symbols{std::map<std::string,bool> functions,structures;};
+template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
+  if(!type&&builtinNames().contains(name))return name;
+  auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
+  if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
+    if(local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","use an import alias followed by one exported name",span);
+    for(const auto &dependency:units.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}
+    if(!found)throw Error("E_IMPORT_ALIAS","unknown import alias '"+alias+"'",span);
+  }
+  const auto &table=symbols.at(target);bool exported=false,found=false;
+  if(table.structures.contains(local)){found=true;exported=table.structures.at(local);}
+  if(!type&&table.functions.contains(local)){found=true;exported=table.functions.at(local);}
+  if(!found)throw Error(type?"E_TYPE":"E_NAME","unknown "+std::string(type?"type '":"function '")+name+"'",span);
+  if(external&&!exported)throw Error("E_VISIBILITY","'"+name+"' is private to module "+units.at(target).module,span);
+  return units.at(target).module+"::"+local;
+}
 class Loader {
   fs::path root;bool frozen;std::string entry;
   std::map<std::string,std::string> texts;
@@ -101,21 +116,7 @@ class Loader {
     stack.pop_back();states[key]=2;
   }
   std::string resolve(const std::string &key,const std::string &name,bool type,Span span){
-    if(!type&&builtins.contains(name))return name;
-    auto target=key,local=name;auto separator=name.find("::");
-    bool external=separator!=std::string::npos;
-    if(external){
-      auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
-      if(local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","use an import alias followed by one exported name",span);
-      for(const auto &dependency:parsed.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}
-      if(!found)throw Error("E_IMPORT_ALIAS","unknown import alias '"+alias+"'",span);
-    }
-    const auto &table=symbols.at(target);bool exported=false,found=false;
-    if(table.structures.contains(local)){found=true;exported=table.structures.at(local);}
-    if(!type&&table.functions.contains(local)){found=true;exported=table.functions.at(local);}
-    if(!found)throw Error(type?"E_TYPE":"E_NAME","unknown "+std::string(type?"type '":"function '")+name+"'",span);
-    if(external&&!exported)throw Error("E_VISIBILITY","'"+name+"' is private to module "+parsed.at(target).module,span);
-    return parsed.at(target).module+"::"+local;
+    return resolveSymbol(parsed,symbols,key,name,type,span);
   }
   void bind(){
     for(const auto &[key,unit]:parsed){
@@ -180,6 +181,14 @@ Program loadBundle(const llvm::json::Value &bundle,const std::string &root){
   std::map<std::string,std::string> sources;
   for(const auto &[key,value]:*files){safeKey(key.str());auto text=value.getAsString();if(!text)throw Error("E_BUNDLE","source file must contain text");sources[key.str()]=text->str();}
   return Loader(root,required(*obj,"entry"),true,std::move(sources)).run();
+}
+void bindExpression(const Program &p,const std::string &function,E expression){
+  const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
+  for(const auto &[key,_]:p.units)symbols[key];
+  for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
+  for(const auto &s:p.structures)symbols[s.unit].structures[s.localName]=s.exported;
+  std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}};
+  std::function<void(E)> visit=[&](E e){type(e->annotation,e->span);if(e->kind==Expr::Call)e->text=resolveSymbol(p.units,symbols,f.unit,e->text,false,e->span);for(auto a:e->args)visit(a);};visit(expression);
 }
 llvm::json::Value sourceBundle(const Program &p){
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;

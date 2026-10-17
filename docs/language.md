@@ -233,6 +233,10 @@ Revision identity includes the language version. Graph database schema 1 is upgr
 
 Toolchain 0.8 preserves NEX parameter/local names, scalar aliases and lexical scopes in DWARF. Heap-backed types remain aliases for actual runtime handle pointers; matching LLDB previews inspect immutable strings, lists, records and results without calling the application. Debug parameter storage borrows the same value and does not create an owned handle. These are tooling changes with no source-language migration or changes to checked execution semantics. See [debugging.md](debugging.md) for LLDB/DAP and the remaining expression/platform limits.
 
+## Stopped-frame expressions
+
+Toolchain 0.13 evaluates pure NEX expressions over exact typed stopped-frame snapshots in a separate reference-interpreter process. It reuses source expression syntax, import visibility, nominal types, effect/realm checks and execution rules; it does not run code or modify values in the inferior. New `inspect`/LLDB/DAP tools and their bounded snapshot protocols do not change language 0.5 or graph revisions. See [expressions.md](expressions.md) for wire values, selected frames, limits and editor adapter configuration.
+
 ## Native profiling
 
 Toolchain 0.10 instruments reachable native function calls and managed shallow allocation pools in profile builds, without changing language 0.5 effects or observable execution rules. Reports attribute measured function content to the selected graph revision and node IDs; optional Tracy CPU zones use the same names and frozen source locations. Debug/release output and the reference interpreter/TypeScript semantics are unchanged. See [profiling.md](profiling.md) for wall-time definitions, overhead, bounds and remaining browser/GPU coverage.

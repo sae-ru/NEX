@@ -8,7 +8,7 @@ namespace {
 using JSON=nlohmann::ordered_json;
 constexpr size_t maxBytes=1024*1024,maxDepth=64,maxItems=10000,maxNodes=100000;
 void reject(const std::string &message){throw DataError("E_JSON",message);}
-JSON parse(const std::string &text){
+JSON parse(const std::string &text,bool details=false){
   if(text.size()>maxBytes)reject("JSON input exceeds byte limit");
   try{
   std::vector<std::set<std::string>> names;size_t events=0;
@@ -20,7 +20,7 @@ JSON parse(const std::string &text){
     return true;
   };
   return JSON::parse(text,callback);
-  }catch(const DataError &){reject("invalid JSON text or wire schema");}
+  }catch(const DataError &){if(details)throw;reject("invalid JSON text or wire schema");}
   catch(const JSON::exception &){reject("invalid JSON text or wire schema");}
   return nullptr;
 }
@@ -69,6 +69,7 @@ Value decode(const JSON &value,const JSON &type,const JSON &records,size_t depth
   reject("unsupported wire type");return {};
 }
 }
+void validateJSONText(const std::string &text){(void)parse(text,true);}
 std::string encodeJSON(const Value &value){size_t nodes=0;auto text=encode(value,0,nodes);if(text.size()>maxBytes)reject("JSON value exceeds byte limit");return text;}
 Value decodeJSON(const std::string &text,const std::string &schema){
   try{

@@ -5,7 +5,9 @@
 #include "nex/profiling.h"
 #include "nex/verification.h"
 #include "nex/tasks.h"
+#include "nex/debugging.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Program.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/RandomNumberGenerator.h"
 #include "llvm/Support/SHA256.h"
@@ -30,7 +32,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -69,16 +71,25 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task [--json]\n  nex doctor\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression [--json]\n  nex doctor\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
-      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap] [--json] -- [lldb options]\n"
+      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
+      "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target TRIPLE|web|server\n"
       "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
+  if(o.command=="inspect"){
+    auto path=o.get("--manifest"),expression=o.get("--expression");if(path.empty()||expression.empty())throw Error("E_OPTION","inspect requires --manifest FILE and --expression TEXT");
+    auto kind=o.get("--kind","value");if(kind!="plan"&&kind!="value")throw Error("E_OPTION","inspect kind must be plan or value");std::string frame;
+    if(!o.positional.empty()){auto file=o.positional[0];if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_DEBUG_LIMIT","frame file exceeds 1 MiB or is missing");frame=readFile(file);}
+    else {char buffer[4096];while(std::cin.read(buffer,sizeof(buffer))||std::cin.gcount()){if(frame.size()+std::cin.gcount()>1048576)throw Error("E_DEBUG_LIMIT","stdin frame exceeds 1 MiB");frame.append(buffer,std::cin.gcount());}}
+    uint64_t steps=100000;auto raw=o.get("--steps");if(!raw.empty()){steps=0;for(char c:raw){if(c<'0'||c>'9'||steps>(1000000-unsigned(c-'0'))/10)throw Error("E_OPTION","expression step limit must be 1..1000000");steps=steps*10+unsigned(c-'0');}if(!steps||steps>1000000)throw Error("E_OPTION","expression step limit must be 1..1000000");}
+    std::cout<<json(inspectExpression(path,parseDebugFrame(frame),expression,kind=="plan",steps),false)<<'\n';return 0;
+  }
   if(o.command=="contract"&&o.get("--kind")=="intent"){
     auto path=o.get("--contracts");if(path.empty()||!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_OPTION","intent requires a bounded --contracts JSON file");
     auto value=parseJSON(readFile(path));print(llvm::json::Object{{"schema","nex.verification-intent/1"},{"intent_hash",verificationIntentHash(value)}});return 0;
@@ -122,8 +133,8 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify or task");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task or expression");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -350,12 +361,21 @@ int run(const Options &o) {
     auto child=capture({result.executable});print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
   }
   if(o.command=="debug") {
-    auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap")throw Error("E_OPTION","debug kind must be lldb or dap");
+    auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
     auto folder=fs::path(result.executable).parent_path();auto manifest=(folder/"debug.json").string();
-    std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)};
-    if(o.has("--json")||kind=="dap"){
+    std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)+" --compiler "+json(o.compiler,false)};
+    if(o.has("--json")||kind=="dap"||kind=="nex-dap"){
       llvm::json::Array commands;for(const auto &command:init)commands.push_back(command);
-      print(llvm::json::Object{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter","lldb-dap"},{"launch",llvm::json::Object{{"type","lldb-dap"},{"request","launch"},{"name","NEX"},{"program",result.executable},{"cwd",root.string()},{"stopOnEntry",false},{"initCommands",std::move(commands)}}}});return 0;
+      auto backend=std::getenv("NEX_LLDB_DAP");std::string dap=backend?backend:"lldb-dap";auto found=llvm::sys::findProgramByName(dap);bool available=bool(found);if(found)dap=*found;
+#ifdef __APPLE__
+      if(!available&&!backend){auto result=capture({"xcrun","--find","lldb-dap"});if(result.code==0){dap=llvm::StringRef(result.output).trim().str();available=!dap.empty();}}
+#endif
+      llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
+      llvm::json::Object launch{{"type",kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},{"program",result.executable},{"cwd",root.string()},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
+      auto nexLaunch=launch;nexLaunch["type"]="nex";
+      llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
+        {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};
+      if(kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);print(std::move(session));return 0;
     }
     std::vector<std::string> args={"lldb",result.executable};for(const auto &command:init){args.push_back("-o");args.push_back(command);}args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
   }

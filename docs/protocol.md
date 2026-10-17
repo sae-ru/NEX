@@ -6,7 +6,7 @@ Commands are local and model-independent. The compiler handles parsing, checking
 
 `nex describe --json` returns `nex.language/1`. Its `version` and `features` describe implemented behavior. `not_yet_supported` makes the boundary explicit. Specification and prompt paths are repository-relative.
 
-`nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task --json` returns the matching installed document as `nex.guide/1`, with language version and BLAKE3 content hash. This also works outside the compiler's source checkout.
+`nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression --json` returns the matching installed document as `nex.guide/1`, with language version and BLAKE3 content hash. This also works outside the compiler's source checkout.
 
 Language 0.4 supports multi-file programs and structured values in `eval --json`: strings, lists, records and tagged result objects are returned as JSON values. Ordinary native application entries return i64/unit; HTTP and native library entries use their explicit contracts. `nex.graph/2` and `nex.context/2` identify definitions by qualified logical module/name. Other response schemas retain their individual versions. Typed wire JSON is separate from eval/display JSON: i64 wire values are decimal strings.
 
@@ -154,3 +154,11 @@ The CLI returns `nex.verification-session/1`; `output` identifies the complete `
 `nex contract --kind intent --contracts FILE` returns `nex.verification-intent/1` and `intent_hash`. Task verification fixes these pre/postconditions while rebasing only source/revision/function hashes in a separate derived contract. Loop annotations remain checked proof strategy. `nex test --symbol NAME` selects one test and rejects ordinary functions. `--build-directory PATH` selects a build workspace (default remains project `.nex/build`), allowing task workspaces to reuse validated module objects.
 
 See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Source language/graph protocol remain 0.5/2.
+
+## Stopped-frame expressions
+
+`nex debug FILE --kind nex-dap --json` retains `nex.debug-session/1` and adds an explicit `adapter_command` for the frozen stdio bridge. Legacy direct sessions retain adapter lldb-dap and gain `nex_adapter` with the bridge command/launch data. Clients must register that command for launch type nex; this is not an automatically installed editor extension. `NEX_LLDB_DAP`/`NEX_PYTHON` select trusted development executables.
+
+`nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|value] --json` checks matching compiler/build/source/frame identity, source-module visibility, types, effects and realms. Without a filename it reads a frame from stdin. Plan returns `nex.expression-plan/1` with referenced names/types/wire schemas; value returns `nex.expression/1` with exact typed wire value, bounded display, read names, stop metadata and limits. Errors use the normal diagnostic schema and nonzero status. Graph HEAD is not opened or modified.
+
+`nex-frame EXPR` exports `nex.debug-frame/1`; `nex-eval EXPR` evaluates against freshly captured values. Only referenced roots are captured and each is complete or unavailable. Wire i64 values are decimal strings; previews never become evaluator input. NEX DAP evaluate responses add `body.nex` with the full structured result, while normal DAP fields supply type, display, immutable children and paging. References expire on execution/new stops; source is encoded as a single internal command argument. The compiler's pure interpreter and its resource limits run outside the inferior. See docs/expressions.md and llm/debug-frame.schema.json for exact semantics, caps and provenance/host limits.

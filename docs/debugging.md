@@ -1,4 +1,4 @@
-# Native debugging — NEX toolchain 0.10
+# Native debugging — NEX toolchain 0.13
 
 Source language remains 0.5. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
@@ -86,8 +86,7 @@ through `initCommands`.
 
 The adapter supplies normal DAP breakpoints, stack frames, scopes, variables,
 children, stepping and resume/exit handling. In an LLDB DAP REPL, the command
-`` `nex-values `` explicitly requests the read-only NEX frame report. The full
-NEX expression language is not implemented in debugger watch evaluation.
+`` `nex-values `` explicitly requests the read-only NEX frame report. For pure NEX watches and expandable computed values, use the added `nex_adapter` descriptor or `--kind nex-dap`. The bridge uses exact snapshots and a separate NEX interpreter. See [expressions.md](expressions.md) for setup, supported expressions and limits. The direct backend retains its own expression language.
 `nex debug FILE --json` returns the same session descriptor without launching a
 debugger. Without `--json` and with the default `--kind lldb`, it starts LLDB;
 arguments after `--` go to LLDB.
@@ -95,7 +94,7 @@ arguments after `--` go to LLDB.
 ## Integrity and validation
 
 The native build key includes the formatter content. Cache hits verify the
-captured formatter, exact debug manifest, all projected source contents and,
+captured formatter/stdio adapter, exact debug manifest, all projected source contents and,
 on macOS, the packaged DWARF image as well as the executable and notices.
 Corruption causes a rebuild. Installed SDKs include the matching debug guide
 and formatter. Keep the build workspace (including `source-cache/`, runtime projections and
@@ -114,7 +113,7 @@ source projections. The opt-in live run additionally launches LLDB and an actual
 value previews/children and clean completion. It requires host debugger launch
 permission; the normal suite does not silently claim those live checks.
 
-Function/frontend incremental reuse, source expression evaluation, direct browser NEX source
+Function/frontend incremental reuse, demand-driven large-value reads, direct browser NEX source
 maps, crash/core workflows and other target platforms
 remain parts of the open development plan.
 
