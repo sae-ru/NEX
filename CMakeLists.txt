@@ -34,7 +34,7 @@ foreach(NEX_INPUT IN LISTS NEX_COMPILER_FILES)
 endforeach()
 string(SHA256 NEX_BUILD_ID "${NEX_BUILD_INPUTS}")
 
-add_library(nex_frontend src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp runtime/nex_json.cpp runtime/nex_store.cpp)
+add_library(nex_frontend src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/debug_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp runtime/nex_json.cpp runtime/nex_store.cpp)
 target_include_directories(nex_frontend PUBLIC include)
 target_include_directories(nex_frontend PRIVATE runtime)
 target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})

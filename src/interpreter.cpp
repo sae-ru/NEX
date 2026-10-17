@@ -60,7 +60,7 @@ class Interpreter {
   }
   V expr(E e) {
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
-    if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));return call(p.function(target.object->text),args,&target);}
+    if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
     if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
@@ -110,7 +110,7 @@ class Interpreter {
     if(e->text=="&&")return V(a&&expression(e->args[1]).scalar,true);
     if(e->text=="||")return V(a||expression(e->args[1]).scalar,true);
     V right=expression(e->args[1]);int64_t b=right.scalar;const auto &op=e->text;
-    if(op=="=="||op=="!="){auto x=full(left),y=full(right);auto same=nexrt::equal(x,y);return V(op=="=="?same:!same,true);}
+    if(op=="=="||op=="!="){auto same=watch?watch->equal(left,right):nexrt::equal(left,right);return V(op=="=="?same:!same,true);}
     if(op=="+"&&left.object){
       left=full(left);right=full(right);
       if(left.object->kind==nexrt::Data::String)return V(nexrt::string(left.object->text+right.object->text));
@@ -147,21 +147,19 @@ class Interpreter {
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
     if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
     frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
-    if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i)frames.back().back().values[f.captures[i].name]=environment->object->values[i];}
+    if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}
     frames.pop_back();return value;
   }
 public:
   Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
-  llvm::json::Value inspect(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,const llvm::json::Array *captures,bool demand){
-    watchTypes=&types;watch=std::make_unique<WatchValues>(p,types,values,captures);frames.emplace_back(1);V value;
-    try{value=full(this->expression(expression));}catch(const WatchDemand &needed){
+  llvm::json::Value inspect(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
+    watchTypes=&types;watch=std::make_unique<WatchValues>(p,types,values,captures,compiledCallables);frames.emplace_back(1);V value;
+    llvm::json::Value wire=nullptr;std::string display="unit";bool truncated=false;
+    try{value=full(this->expression(expression));if(expression->type!=Type::Unit){wire=watch->wire(expression->type,value);if(json(wire,false).size()>1048576)throw Error("E_DEBUG_LIMIT","expression wire result exceeds 1 MiB");display=nexrt::representation(value);}}catch(const WatchDemand &needed){
       if(!demand)throw Error("E_DEBUG_UNAVAILABLE","stopped-frame read was not captured: "+json(needed.request,false));
       return llvm::json::Object{{"ok",true},{"type",typeName(expression->type)},{"request",needed.request},{"steps",int64_t(result.steps)}};
     }
-    llvm::json::Value wire=nullptr;
-    std::string display="unit";bool truncated=false;
-    if(expression->type!=Type::Unit){auto encoded=llvm::json::parse(nexrt::encodeJSON(value));if(!encoded)throw Error("E_INTERNAL",llvm::toString(encoded.takeError()));wire=std::move(*encoded);display=nexrt::representation(value);}
     if(display.size()>4096){size_t end=4096;while(end&&(static_cast<unsigned char>(display[end])&0xc0)==0x80)--end;display.resize(end);display+="…";truncated=true;}
     return llvm::json::Object{{"ok",true},{"type",typeName(expression->type)},{"value",std::move(wire)},{"display",display},{"display_truncated",truncated},{"steps",int64_t(result.steps)},{"read_bindings",watch->readBindings()},{"read_paths",watch->readPaths()}};
   }
@@ -176,7 +174,7 @@ public:
 };
 }
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){return Interpreter(p,stepLimit).run(entry);}
-llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand){
-  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
+llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
+  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
 }
 }

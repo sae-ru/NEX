@@ -73,6 +73,7 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
   for(auto &argument:type.arguments)argument=resolveType(p,argument,span,depth+1);
   if(type.kind==Type::Function){
+    if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);
     for(const auto &argument:type.arguments)if(argument==Type::Unit||argument==Type::Unknown)throw Error("E_TYPE","function parameters require non-unit types",span);
     for(const auto &effect:type.effects)if(effect!="io"&&effect!="db")throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
     if(type.effects.contains("db")&&type.realm!="server")throw Error("E_REALM","db callable effect requires server realm",span);

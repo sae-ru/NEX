@@ -27,7 +27,7 @@ class Debugging(harness.ToolchainCase):
         self.cli("test")
         self.cli("test", "--target", "web")
         manifest = json.loads(Path(built["debug_manifest"]).read_text())
-        self.assertEqual(manifest["runtime_view"], "nex.runtime-view/2")
+        self.assertEqual(manifest["runtime_view"], "nex.runtime-view/3")
         self.assertIn("debugging::model::Person", manifest["heap_types"])
         self.assertIn("list<str>", manifest["heap_types"])
         for source in manifest["sources"]:

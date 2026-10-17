@@ -76,6 +76,8 @@ def display(value, descriptor, records, budget=None):
         return clipped('true' if value else 'false')
     if descriptor == 'str':
         return clipped(json.dumps(value, ensure_ascii=False))
+    if 'function' in descriptor:
+        return clipped('<function ' + value['function'] + '>')
     if 'list' in descriptor:
         items = []
         for child in value:
@@ -110,6 +112,8 @@ def type_name(descriptor):
         return descriptor['record']
     if 'enum' in descriptor:
         return descriptor['enum']
+    if 'function' in descriptor:
+        return descriptor['function']
     kind = 'list' if 'list' in descriptor else 'result'
     return kind + '<' + type_name(descriptor[kind]) + '>'
 
@@ -173,6 +177,8 @@ class Bridge:
                 result['indexedVariables'] = len(value)
             elif 'enum' in descriptor:
                 result['namedVariables'] = 1 + len(value['fields'])
+            elif 'function' in descriptor:
+                result['namedVariables'] = 1 + len(value['captures'])
             else:
                 result['namedVariables'] = len(records[descriptor['record']]) if 'record' in descriptor else 1 if 'ok' in value else 2
         return result
@@ -198,6 +204,10 @@ class Bridge:
             fields = next(case['fields'] for case in records['$enums'][descriptor['enum']] if case['name'] == value['case'])
             total = 1 + len(fields)
             get = lambda i: ('<case>', value['case'], 'str') if i == 0 else (fields[i-1]['name'], value['fields'][fields[i-1]['name']], fields[i-1]['type'])
+        elif 'function' in descriptor:
+            fields = records['$targets'][value['function']]['captures']
+            total = 1 + len(fields)
+            get = lambda i: ('<target>', value['function'], 'str') if i == 0 else (fields[i-1]['name'], value['captures'][fields[i-1]['name']], fields[i-1]['type'])
         elif 'ok' in value:
             total = 1
             get = lambda i: ('ok', value['ok'], descriptor['result'])
@@ -291,6 +301,7 @@ class Bridge:
                             schema = data['wire_schema']
                             records = dict(schema['records'])
                             records['$enums'] = schema.get('enums', {})
+                            records['$targets'] = schema.get('targets', {})
                             variable = self.variable('', data['value'], schema['root'], records)
                         variable['result'] = data['display']; variable.pop('name', None); variable.pop('value', None)
                         variable['nex'] = data

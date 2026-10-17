@@ -89,6 +89,8 @@ def _preview(value, depth=0, budget=None):
     kind = _member(data, "kind").GetValueAsUnsigned()
     if kind == 0:
         return _string(_member(data, "text"))
+    if kind == 6:
+        return "<function " + _string(_member(data, "text")) + ">"
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -138,10 +140,10 @@ class Children:
             if data is None:
                 return False
             self.kind = _member(data, "kind").GetValueAsUnsigned()
-            if self.kind in (1, 2, 3, 4, 5):
+            if self.kind in (1, 2, 3, 4, 5, 6):
                 self.data = data
                 self.items = _vector(data)
-                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5))
+                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5, 6))
         except Exception:
             self.count = 0
         return False  # Recompute after every stop; do not retain stale values.
@@ -156,12 +158,12 @@ class Children:
         if not 0 <= index < self.count:
             return None
         try:
-            if self.kind in (4, 5):
+            if self.kind in (4, 5, 6):
                 if index == 0:
-                    return _member(self.data, "text").Clone("code" if self.kind == 4 else "<case>")
+                    return _member(self.data, "text").Clone("code" if self.kind == 4 else "<case>" if self.kind == 5 else "<target>")
                 index -= 1
             name = "[%d]" % index
-            if self.kind in (2, 5):
+            if self.kind in (2, 5, 6):
                 name = json.loads(_string(_vector(self.data, "names").GetChildAtIndex(index)))
             elif self.kind in (3, 4):
                 name = "ok" if self.kind == 3 else "message"
@@ -188,7 +190,7 @@ def load(debugger, command, result, internal_dict):
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
         manifest = json.loads(path.read_text())
-        if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/2":
+        if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
         names = manifest["heap_types"] + ["nexrt::Value"]
         if len(names) > 10000 or any(not isinstance(name, str) or len(name) > 4096 for name in names):
@@ -326,6 +328,48 @@ def _enum_case(data, descriptor, records, budget):
     return case
 
 
+def _closure_case(data, descriptor, records, budget):
+    if _integer(_member(data, "kind")) != 6:
+        raise ValueError("runtime callable kind differs from checked NEX type")
+    identity = data.GetLoadAddress()
+    if identity in (0, lldb.LLDB_INVALID_ADDRESS):
+        raise ValueError("stopped callable has no object identity")
+    key = (identity, descriptor["function"])
+    cache = budget.setdefault("closures", {})
+    if key in cache:
+        return cache[key]
+    name = _raw_string(_member(data, "text"), budget)
+    target = records.get("$targets", {}).get(name)
+    if not target or target["type"] != descriptor["function"] or not target.get("compiled"):
+        raise ValueError("runtime callable target/signature is not compiled in this debug build")
+    items, names = _ExactVector(data), _ExactVector(data, "names")
+    fields = target["captures"]
+    if items.GetNumChildren() != len(fields) or names.GetNumChildren() != len(fields):
+        raise ValueError("runtime callable environment differs from checked capture layout")
+    for index, field in enumerate(fields):
+        if _raw_string(names.GetChildAtIndex(index), budget) != field["name"]:
+            raise ValueError("runtime callable capture order differs from checked source")
+    pointer = _integer(_member(data, "code"))
+    process_target = data.GetTarget()
+    expected = set()
+    for matches in (process_target.FindFunctions(target["symbol"], lldb.eFunctionNameTypeFull),
+                    process_target.FindSymbols(target["symbol"])):
+        if matches.GetSize() > 128:
+            raise ValueError("ambiguous native callable symbol")
+        for index in range(matches.GetSize()):
+            context = matches.GetContextAtIndex(index)
+            for entry in (context.GetFunction(), context.GetSymbol()):
+                if entry.IsValid():
+                    address = entry.GetStartAddress().GetLoadAddress(process_target)
+                    if address != lldb.LLDB_INVALID_ADDRESS:
+                        expected.add(address)
+    if not pointer or pointer not in expected:
+        raise ValueError("native callable pointer differs from its checked target symbol")
+    result = {"function": name, "identity": str(identity), "fields": fields}
+    cache[key] = result
+    return result
+
+
 def _wire(value, descriptor, records, budget, depth=0):
     if depth > 60 or budget["nodes"] <= 0:
         raise ValueError("exact capture exceeds its node/depth budget")
@@ -359,6 +403,11 @@ def _wire(value, descriptor, records, budget, depth=0):
     size = items.GetNumChildren()
     if size > 10000:
         raise ValueError("exact capture exceeds its collection item budget")
+    if "function" in descriptor:
+        target = _closure_case(data, descriptor, records, budget)
+        return {"function": target["function"], "identity": target["identity"], "captures": {
+            field["name"]: _wire(items.GetChildAtIndex(index), field["type"], records, budget, depth + 1)
+            for index, field in enumerate(target["fields"])}}
     if "list" in descriptor and kind == 1:
         return [_wire(items.GetChildAtIndex(i), descriptor["list"], records, budget, depth + 1) for i in range(size)]
     if "enum" in descriptor:
@@ -399,6 +448,9 @@ def _header(value, descriptor, records, budget):
     kind = _integer(_member(data, "kind"))
     items = _ExactVector(data)
     size = items.GetNumChildren()
+    if "function" in descriptor:
+        _closure_case(data, descriptor, records, budget)
+        return data, items, size
     if "list" in descriptor and kind == 1:
         return data, items, size
     if "enum" in descriptor:
@@ -422,6 +474,7 @@ def _header(value, descriptor, records, budget):
 def _read_path(value, schema, request, budget):
     descriptor, records = schema["root"], dict(schema["records"])
     records["$enums"] = schema.get("enums", {})
+    records["$targets"] = schema.get("targets", {})
     for segment in request["path"]:
         if budget["nodes"] <= 0:
             raise ValueError("partial capture exceeds its node budget")
@@ -444,6 +497,12 @@ def _read_path(value, schema, request, budget):
             if index is None:
                 raise ValueError("partial enum path disagrees with stopped case")
             value, descriptor = items.GetChildAtIndex(index), case["fields"][index]["type"]
+        elif "function" in descriptor:
+            fields = _closure_case(data, descriptor, records, budget)["fields"]
+            index = next((i for i, field in enumerate(fields) if field["name"] == segment), None)
+            if index is None:
+                raise ValueError("partial path is outside checked callable captures")
+            value, descriptor = items.GetChildAtIndex(index), fields[index]["type"]
         else:
             success = _integer(_member(data, "kind")) == 3
             if segment == "ok" and success:
@@ -470,6 +529,9 @@ def _read_path(value, schema, request, budget):
         return {"record": descriptor["record"]}
     if "enum" in descriptor:
         return {"case": _enum_case(data, descriptor, records, budget)["name"]}
+    if "function" in descriptor:
+        target = _closure_case(data, descriptor, records, budget)
+        return {key: target[key] for key in ("function", "identity")}
     return {"ok": _integer(_member(data, "kind")) == 3}
 
 

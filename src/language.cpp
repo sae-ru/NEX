@@ -436,7 +436,7 @@ class Checker {
       target=&instantiateFunction(p,*target,arguments,e->span);e->typeArguments=arguments;
     }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
     if(target->test)throw Error("E_TEST","test functions cannot be function values",e->span);
-    auto type=signature(*target);callableRealm(type,e->span);f->dependencies.insert(target->name);e->text=target->name;e->kind=Expr::FunctionRef;return e->type=type;
+    auto type=signature(*target);validType(type,e->span);callableRealm(type,e->span);f->dependencies.insert(target->name);e->text=target->name;e->kind=Expr::FunctionRef;return e->type=type;
   }
   Type lambda(E e){
     if(e->lambda->checked){f->dependencies.insert(e->text);return e->type;}
@@ -444,6 +444,7 @@ class Checker {
     auto &fn=*e->lambda;auto outer=f;auto signatureType=signature(fn);validType(signatureType,e->span);callableRealm(signatureType,e->span);
     fn.result=*signatureType.element;for(size_t i=0;i<fn.params.size();++i)fn.params[i].type=signatureType.arguments[i];
     fn.owner=outer->owner;fn.unit=outer->unit;fn.localName=outer->localName+"::$lambda_"+std::to_string(e->number);fn.name=outer->name+"::"+(watching?"$watch_lambda_":"$lambda_")+std::to_string(e->number);fn.closureOwner=outer->name;fn.closure=true;
+    if(fn.name.size()>4096)throw Error("E_FUNCTION_LIMIT","closure target name exceeds 4096 bytes",e->span);
     auto boundary=scopes.size();CaptureScope capture{boundary,{}};scopes.emplace_back();captures.push_back(&capture);f=&fn;fn.dependencies.clear();
     try{
       for(const auto &param:fn.params)define(param.name,{param.type,false},param.span);

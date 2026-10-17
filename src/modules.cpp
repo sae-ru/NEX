@@ -200,7 +200,8 @@ Program loadBundle(const llvm::json::Value &bundle,const std::string &root){
 }
 void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
-  std::map<std::string,Type> parameters;if(!f.templateName.empty()){const auto &source=p.functionTemplates.at(f.templateName);for(size_t i=0;i<source.typeParameters.size();++i){const auto &name=source.typeParameters[i];parameters[name.substr(name.rfind("::")+2)]=f.typeArguments[i];}}
+  const Function *generic=&f;for(unsigned depth=0;generic->closure&&depth<64;++depth)generic=&p.function(generic->closureOwner);
+  std::map<std::string,Type> parameters;if(!generic->templateName.empty()){const auto &source=p.functionTemplates.at(generic->templateName);for(size_t i=0;i<source.typeParameters.size();++i){const auto &name=source.typeParameters[i];parameters[name.substr(name.rfind("::")+2)]=generic->typeArguments[i];}}
   for(const auto &[key,_]:p.units)symbols[key];
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
   for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}
