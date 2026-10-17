@@ -1,2 +1,3 @@
 # Keep the pinned upstream client byte-identical, including its whitespace.
 runtime/third_party/tracy/public/** -whitespace
+docs/licenses/Z3-LICENSE.txt -whitespace

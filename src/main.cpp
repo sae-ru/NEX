@@ -3,6 +3,7 @@
 #include "nex/web.h"
 #include "nex/api.h"
 #include "nex/profiling.h"
+#include "nex/verification.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/RandomNumberGenerator.h"
 #include "llvm/Support/SHA256.h"
@@ -27,7 +28,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario"};
+  const std::set<std::string> valueNames={"--profile","--target","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -66,8 +67,8 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile [--json]\n  nex doctor\n"
-      "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify [--json]\n  nex doctor\n"
+      "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap] [--json] -- [lldb options]\n"
@@ -99,13 +100,13 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build or profile");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"}};
+    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile or verify");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
   if(o.command=="doctor") {
-    auto runtime=resourceFile("runtime/runtime.cpp");print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"native_compiler",NEX_CLANG},{"native_sqlite_include",NEX_SQLITE_INCLUDE},{"native_sqlite_library",NEX_SQLITE_LIBRARY},{"runtime",runtime},{"runtime_available",fs::exists(runtime)}});return 0;
+    auto runtime=resourceFile("runtime/runtime.cpp");print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"native_compiler",NEX_CLANG},{"native_sqlite_include",NEX_SQLITE_INCLUDE},{"native_sqlite_library",NEX_SQLITE_LIBRARY},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
   }
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
@@ -115,11 +116,11 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api","profile"};
+  const std::set<std::string> commands={"check","eval","build","run","test","emit","graph","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
-  const std::set<std::string> sourceCommands={"check","eval","build","run","test","emit","debug","lock","web","api","profile"};
+  const std::set<std::string> sourceCommands={"check","eval","build","run","test","emit","debug","lock","web","api","profile","contract","verify"};
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="migrate"){
@@ -195,6 +196,21 @@ int run(const Options &o) {
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
   bool saved=o.command=="graph"||o.command=="context";auto p=load(o,root,store,saved);
+  if(o.command=="contract"){
+    if(o.get("--symbol").empty())throw Error("E_OPTION","contract requires --symbol NAME");
+    auto value=contractTemplate(p,o.get("--symbol"));auto output=o.get("--output");
+    if(output.empty())print(std::move(value));else {writeFile(output,json(value)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"revision",revision(p)}});}return 0;
+  }
+  if(o.command=="verify"){
+    auto file=o.get("--contracts");if(file.empty())throw Error("E_OPTION","verify requires --contracts FILE");
+    if(!fs::is_regular_file(file))throw Error("E_FILE","contract file does not exist: "+file);
+    if(fs::file_size(file)>1048576)throw Error("E_CONTRACT","contract file exceeds 1 MiB");
+    if(!o.get("--target").empty()||!o.get("--profile").empty())throw Error("E_OPTION","verification checks source semantics, without a target/profile selection");
+    auto number=[&](const std::string &key,unsigned fallback,unsigned minimum,unsigned maximum){auto text=o.get(key);if(text.empty())return fallback;uint64_t value=0;for(char c:text){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid range for "+key);value=value*10+unsigned(c-'0');}if(value<minimum||value>maximum)throw Error("E_OPTION","invalid range for "+key);return unsigned(value);};
+    VerificationOptions options{o.get("--symbol"),o.get("--directory",(root/".nex/verify").string()),number("--solver-timeout",2000,1,60000),number("--resource-limit",1000000,1,100000000),number("--timeout",30,1,300)};
+    auto result=verifyContracts(p,parseJSON(readFile(file)),store.graph(p),options);auto ok=*result.getAsObject()->getBoolean("ok");
+    if(o.has("--json"))print(std::move(result));else std::cout<<(ok?"Proven: ":"Not proven: ")<<result.getAsObject()->getString("output")->str()<<'\n';return ok?0:1;
+  }
   if(o.command=="lock"){
     auto output=o.get("--output",(root/"nex.lock.json").string());auto lock=dependencyLock(p);
     if(fs::is_regular_file(output)){

@@ -1,0 +1,44 @@
+{
+  "expected_revision": "63bda61e3d8b2cae89ea85e51e0a0f525be1f74f191a6cf60299c925598c2620",
+  "functions": [
+    {
+      "content_hash": "bfe1037d5adf009e8820c5833f82003214da7e149b900f3d99146b7540f6093d",
+      "ensures": [
+        "result == x + 1"
+      ],
+      "loops": [],
+      "requires": [
+        "x < 9223372036854775807"
+      ],
+      "returns": "result",
+      "symbol": "verified::increment"
+    },
+    {
+      "content_hash": "bde1b4a327753f6415c88dce03c098fb522ef1e162a30fedabc1f1ddbb9868ab",
+      "ensures": [
+        "result == n * 2"
+      ],
+      "loops": [
+        {
+          "column": 3,
+          "decreases": "n - i",
+          "invariants": [
+            "i >= 0",
+            "i <= n",
+            "total == i * 2"
+          ],
+          "line": 8
+        }
+      ],
+      "requires": [
+        "n >= 0",
+        "n <= 1000000"
+      ],
+      "returns": "result",
+      "symbol": "verified::double"
+    }
+  ],
+  "language": "0.5",
+  "schema": "nex.verification-contracts/1",
+  "source_hash": "a272b7dda1a686bf76367c72143e173002d1376f76bc66ab2d103a26486eb78a"
+}

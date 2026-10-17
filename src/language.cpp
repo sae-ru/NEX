@@ -233,6 +233,7 @@ public:
     p.source=std::move(source);p.path=std::move(path);Lexer lex(p.source,p.path);
     do {tokens.push_back(lex.next());}while(tokens.back().kind!=Token::End);
   }
+  E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
   Program run() {
     expect("module");p.module=qualified();expect(";");
     while(peek().kind!=Token::End) {
@@ -486,6 +487,10 @@ Program parse(std::string source,std::string path){
   return Parser(std::move(source),std::move(path)).run();
 }
 void check(Program &p){Checker(p).run();}
+E parseExpression(std::string source,std::string path){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path)).expressionOnly();
+}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
@@ -524,6 +529,8 @@ llvm::json::Value describe() {
     {"build_guide","docs/incremental.md"},
     {"profile_features",llvm::json::Array{"native_function_instrumentation","graph_attributed_wall_time","bounded_trace_events","managed_shallow_allocations","tracy_cpu_zones","tracy_named_memory_pools"}},
     {"profile_guide","docs/profiling.md"},
+    {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},
+    {"verification_guide","docs/verification.md"},
     {"not_yet_supported",llvm::json::Array{"async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};

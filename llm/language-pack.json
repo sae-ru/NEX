@@ -16,9 +16,11 @@
     "api": "docs/api.md",
     "debug": "docs/debugging.md",
     "build": "docs/incremental.md",
-    "profile": "docs/profiling.md"
+    "profile": "docs/profiling.md",
+    "verification": "docs/verification.md",
+    "verification_contract_schema": "llm/verification.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -32,7 +34,9 @@
     "api_service": "examples/api/service.nex",
     "api_client_generate_first": "examples/api/client.nex",
     "debugging": "examples/debugging/main.nex",
-    "profiling": "examples/profiling/main.nex"
+    "profiling": "examples/profiling/main.nex",
+    "verification": "examples/verification/main.nex",
+    "verification_contract": "examples/verification/contracts.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -60,5 +64,9 @@
   "profile_commands": [
     "nex profile FILE --scenario TEXT --json",
     "nex build FILE --profile profile --json"
+  ],
+  "verification_commands": [
+    "nex contract FILE --symbol NAME -o CONTRACT.json",
+    "nex verify FILE --contracts CONTRACT.json --json"
   ]
 }

@@ -32,3 +32,5 @@ The native debugging guide is available as `nex guide --kind debug --json`. The 
 For native incremental compilation, retrieve `nex guide --kind build --json`. Build responses keep per-invocation compiled/reused module counts and a report path; the report contains source/ABI/type fingerprints and dependency indexes. Use normal bounded `context --symbol` queries to investigate a specific function rather than copying a whole build graph into model context. Cached objects never replace source checking or observable test validation.
 
 `nex guide --kind profile --json` supplies the tenth installed guide. `nex profile FILE --scenario TEXT --json` returns bounded graph-attributed function measurements and the saved full timeline report. Use its exact revision and inspect measurement/drop limits before optimizing.
+
+The eleventh guide is `nex guide --kind verify --json`. `llm/verification.schema.json` defines snapshot-bound scalar proof contracts; use the contract/verify commands in the pack manifest. Proof metadata does not change language 0.5 execution or replace tests/task acceptance.

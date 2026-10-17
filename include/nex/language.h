@@ -73,6 +73,7 @@ struct Program {
   std::string location(const Span &span) const;
 };
 Program parse(std::string source, std::string path);
+E parseExpression(std::string source,std::string path);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
 llvm::json::Value sourceBundle(const Program &program);

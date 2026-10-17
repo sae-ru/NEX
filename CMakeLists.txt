@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.10.0 LANGUAGES C CXX)
+project(NEX VERSION 0.11.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -14,6 +14,14 @@ if(NOT OPENSSL_ROOT_DIR AND EXISTS "/opt/homebrew/opt/openssl@3")
   set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
 endif()
 find_package(OpenSSL 3 REQUIRED)
+set(NEX_Z3_ROOT "" CACHE PATH "Z3 development installation prefix")
+if(NOT NEX_Z3_ROOT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
+  set(NEX_Z3_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
+endif()
+find_path(NEX_Z3_INCLUDE z3++.h HINTS "${NEX_Z3_ROOT}/include" REQUIRED)
+find_library(NEX_Z3_LIBRARY NAMES z3 libz3 HINTS "${NEX_Z3_ROOT}/lib" "${NEX_Z3_ROOT}/bin" REQUIRED)
+find_program(NEX_Z3_EXECUTABLE z3 HINTS "${NEX_Z3_ROOT}/bin")
+get_filename_component(NEX_Z3_LIBRARY_DIR "${NEX_Z3_LIBRARY}" DIRECTORY)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 message(STATUS "NEX uses LLVM ${LLVM_PACKAGE_VERSION} and MLIR at ${MLIR_DIR}")
 
@@ -33,10 +41,11 @@ target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3)
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
-add_executable(nex src/main.cpp src/backend.cpp src/incremental.cpp src/profiling.cpp src/project.cpp src/typescript.cpp src/web.cpp src/api.cpp)
+add_executable(nex src/main.cpp src/backend.cpp src/incremental.cpp src/profiling.cpp src/verification.cpp src/project.cpp src/typescript.cpp src/web.cpp src/api.cpp)
 target_include_directories(nex PRIVATE runtime)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
-target_link_libraries(nex PRIVATE nex_frontend MLIR SQLite::SQLite3)
+target_include_directories(nex SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
+target_link_libraries(nex PRIVATE nex_frontend MLIR SQLite::SQLite3 ${NEX_Z3_LIBRARY})
 target_compile_options(nex PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(nex PRIVATE
   NEX_VERSION="${PROJECT_VERSION}"
@@ -46,7 +55,7 @@ target_compile_definitions(nex PRIVATE
   NEX_CLANG="${LLVM_TOOLS_BINARY_DIR}/clang++")
 target_compile_definitions(nex PRIVATE NEX_SQLITE_INCLUDE="${SQLite3_INCLUDE_DIRS}" NEX_SQLITE_LIBRARY="${SQLite3_LIBRARIES}")
 target_compile_definitions(nex PRIVATE NEX_OPENSSL_INCLUDE="${OPENSSL_INCLUDE_DIR}" NEX_OPENSSL_SSL="${OPENSSL_SSL_LIBRARY}" NEX_OPENSSL_CRYPTO="${OPENSSL_CRYPTO_LIBRARY}")
-set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS}")
+set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}")
 install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
@@ -71,6 +80,11 @@ add_test(NAME incremental COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/incremental.py $<TARGET_FILE:nex>)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
+add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/verification.py $<TARGET_FILE:nex>)
+if(NEX_Z3_EXECUTABLE)
+  set_tests_properties(verification PROPERTIES ENVIRONMENT "NEX_Z3_EXECUTABLE=${NEX_Z3_EXECUTABLE}")
+endif()
 find_program(NEX_NODE_EXECUTABLE node)
 if(NEX_NODE_EXECUTABLE)
   add_test(NAME web COMMAND ${Python3_EXECUTABLE}

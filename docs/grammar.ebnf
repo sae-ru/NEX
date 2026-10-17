@@ -53,3 +53,6 @@ digit         = "0" .. "9" ;
    valid. endpoint is contextual at declaration position; its route, method,
    status, handler realm/signature and public wire types are semantic checks.
    Unit list/result payloads are rejected. Other generic calls are pending. *)
+
+(* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
+   the scalar expression parser and do not add source declarations or keywords. *)
