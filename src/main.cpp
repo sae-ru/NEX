@@ -235,6 +235,7 @@ int run(const Options &o) {
       }else{
         const auto &f=p.function(name);
         if(!f.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+f.templateName+"'; specializations are derived",f.span);
+        if(f.closure)throw Error("E_PATCH_CLOSURE","replace the source owner '"+f.closureOwner+"'; closures are derived",f.span);
         if(fragment.functions.size()!=1||fragment.functions[0].name!=f.localName||!fragment.structures.empty()||!fragment.imports.empty()||!fragment.endpoints.empty())throw Error("E_PATCH","replacement must define exactly the named local function");
         edits[f.unit].push_back({f.span.begin,f.span.end,source});
       }
@@ -299,15 +300,16 @@ int run(const Options &o) {
     for(const auto &fn:p.functions)if(fn.dependencies.contains(f.name))callers.push_back(fn.name);
     for(const auto &endpoint:p.endpoints)if(endpoint.target==f.name)callers.push_back(endpoint.name);
     std::set<std::string> needed;
-    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.kind==Type::List||t.kind==Type::Result)visitType(*t.element);if(t.kind==Type::Record&&needed.insert(t.name).second)for(auto field:p.structure(t.name).members())visitType(field->type);};
+    std::function<void(const Type&)> visitType=[&](const Type &t){if(t.element)visitType(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)visitType(argument);if(t.kind==Type::Record&&needed.insert(t.name).second)for(auto field:p.structure(t.name).members())visitType(field->type);};
     std::function<void(E)> visitExpr=[&](E e){if(e){visitType(e->type);for(auto a:e->args)visitExpr(a);}};
     std::function<void(const std::vector<S>&)> visitBlock=[&](const auto &body){for(auto s:body){visitType(s->type);visitExpr(s->expr);childBlocks(s,visitBlock);}};
-    auto visitFunction=[&](const Function &fn){visitType(fn.result);for(const auto &param:fn.params)visitType(param.type);visitBlock(fn.body);};
+    auto visitFunction=[&](const Function &fn){visitType(fn.result);for(const auto &param:fn.params)visitType(param.type);for(const auto &capture:fn.captures)visitType(capture.type);visitBlock(fn.body);};
     visitFunction(f);for(const auto &dependency:f.dependencies)visitFunction(p.function(dependency));
     llvm::json::Array structures;for(const auto &s:p.structures)if(needed.contains(s.name))structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"module",s.owner},{"file",s.unit},{"definition",canonical(s)}});
     llvm::json::Array imports;for(const auto &dependency:p.units.at(f.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"module",p.units.at(dependency.target).module},{"file",dependency.target}});
     llvm::json::Array parameters,arguments;for(const auto &parameter:f.typeParameters)parameters.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
+    llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
+    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
   if(o.command=="check"){if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"revision",revision(p)},{"functions",int64_t(p.functions.size())}});else std::cout<<"Checked "<<p.functions.size()<<" functions; revision "<<revision(p)<<'\n';return 0;}
   if(o.command=="api"){auto directory=o.get("--directory");print(directory.empty()?describeAPI(p):generateAPI(p,directory));return 0;}

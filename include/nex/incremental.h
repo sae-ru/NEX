@@ -14,4 +14,5 @@ struct NativePlan {
 // Plan from an already checked graph. Body identities are local to a unit;
 // external calls depend on contracts, and type dependencies include layouts.
 NativePlan planNative(const Program &program, const std::string &entry);
+std::set<std::string> nativeFunctionBridges(const Program &program,const std::set<std::string> &reachable);
 }

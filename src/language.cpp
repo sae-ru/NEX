@@ -21,6 +21,7 @@ std::string typeName(Type t) {
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
+    case Type::Function:{std::string result=t.realm=="shared"?"fn(":t.realm+" fn(";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=",";result+=typeName(t.arguments[i]);}result+=")->"+(t.element->kind==Type::Function?"("+typeName(*t.element)+")":typeName(*t.element));if(!t.effects.empty()){result+="!{";for(const auto &effect:t.effects){if(result.back()!='{')result+=",";result+=effect;}result+="}";}return result;}
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     case Type::Parameter:return "$"+t.name;default: return "unknown"; }
 }
@@ -102,7 +103,7 @@ std::string Program::location(const Span &span)const {
   if(units.contains(span.file))return units.at(span.file).path;return span.file.empty()?path:span.file;
 }
 std::string nativeSymbol(const std::string &name){
-  if(name.find('<')!=std::string::npos)return "nex_inst_"+hash(name);
+  if(name.find('<')!=std::string::npos||name.find('$')!=std::string::npos)return "nex_inst_"+hash(name);
   if(name.find("::")==std::string::npos)return "nex_user_"+name;
   std::string result="nex";size_t begin=0;
   for(;;){auto end=name.find("::",begin);auto part=name.substr(begin,end==std::string::npos?end:end-begin);result+="_"+std::to_string(part.size())+"_"+part;if(end==std::string::npos)break;begin=end+2;}
@@ -144,7 +145,7 @@ public:
   }
 };
 class Parser {
-  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0;std::set<std::string> parameters;
+  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0;std::set<std::string> parameters;
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
   bool accept(const std::string &s) { if (peek().text == s) { take(); return true; } return false; }
@@ -163,14 +164,19 @@ class Parser {
   std::vector<std::string> templateParameters(TypeBounds &bounds){
     parameters.clear();bounds.clear();std::vector<std::string> result;if(!accept("<"))return result;
     do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
-      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
+      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer"&&bound.text!="wire")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
     }while(accept(","));typeEnd();return result;
   }
   std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
+  std::set<std::string> effects(){std::set<std::string> result;if(accept("!")){expect("{");if(!accept("}")){do{auto effect=name();if(!result.insert(effect.text).second)throw Error("E_EFFECT","duplicate effect",effect.span);}while(accept(","));expect("}");}}return result;}
   Type type() {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
     auto t = take();
+    if(t.text=="("){auto result=type();expect(")");return result;}
+    if(t.text=="fn"||t.text=="shared"||t.text=="client"||t.text=="server"){
+      auto realm=t.text=="fn"?"shared":t.text;if(t.text!="fn")expect("fn");std::vector<Type> args;expect("(");if(!accept(")")){do{if(args.size()>=1024)throw Error("E_FUNCTION_LIMIT","function type exceeds 1024 parameters",peek().span);args.push_back(type());}while(accept(","));expect(")");}expect("->");auto result=type();return Type::function(std::move(args),std::move(result),realm,effects());
+    }
     if (t.text=="i64") return Type::I64; if (t.text=="bool") return Type::Bool; if(t.text=="unit")return Type::Unit;if(t.text=="str")return Type::Str;
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       expect("<");auto item=type();
@@ -188,8 +194,8 @@ class Parser {
   bool genericAhead()const{
     if(peek().text!="<")return false;unsigned depth=0;
     for(size_t n=0;i+n<tokens.size();++n){
-      const auto &text=peek(n).text;if(text=="<")++depth;
-      else if(text==">"){if(--depth==0)return peek(n+1).text=="("||peek(n+1).text=="::";}
+      const auto &text=peek(n).text;if(text=="!"&&peek(n+1).text=="{"){n+=2;while(i+n<tokens.size()&&peek(n).text!="}"){if(peek(n).text==";"||peek(n).text=="{")return false;++n;}if(i+n==tokens.size())return false;continue;}if(text=="<")++depth;
+      else if(text==">"){if(--depth==0){auto after=peek(n+1).text;return after=="("||after=="::"||after==","||after==";"||after==")"||after=="]"||after=="}";}}
       else if(text==";"||text=="{"||text=="}"||text=="=")break;
     }
     return false;
@@ -224,6 +230,11 @@ class Parser {
   E expression(int minimum=1,bool subject=false) {
     bool matching=matchAhead()&&peek(1).text!="::"&&!(subject&&peek(1).kind==Token::Symbol&&peek(1).text!="!");E e; auto token=take();
     if(matching)e=matchValue(token.span);
+    else if(token.text=="fn"||((token.text=="shared"||token.text=="client"||token.text=="server")&&peek().text=="fn")){
+      if(lambdaDepth>=64)throw Error("E_FUNCTION_LIMIT","closure nesting exceeds 64",token.span);struct LambdaDepth{unsigned &value;LambdaDepth(unsigned &value):value(value){++value;}~LambdaDepth(){--value;}} depth(lambdaDepth);
+      e=std::make_shared<Expr>();e->kind=Expr::Lambda;e->span=token.span;e->number=lambdaCounter++;e->lambda=std::make_shared<Function>();auto &fn=*e->lambda;fn.span=token.span;if(token.text!="fn"){fn.realm=token.text;expect("fn");}
+      expect("(");if(!accept(")")){do{auto parameter=name();expect(":");fn.params.push_back({parameter.text,type(),parameter.span});if(fn.params.size()>1024)throw Error("E_FUNCTION_LIMIT","closure exceeds 1024 parameters",parameter.span);}while(accept(","));expect(")");}expect("->");fn.result=type();fn.effects=effects();fn.body=block();fn.span.end=e->span.end=tokens.at(i-1).span.end;
+    }
     else if(token.kind==Token::String) {
       e=std::make_shared<Expr>();e->kind=Expr::String;e->span=token.span;
       try{e->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
@@ -254,9 +265,10 @@ class Parser {
         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
       }
     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
-    while(peek().text=="."||peek().text=="[") {
+    while(peek().text=="."||peek().text=="["||peek().text=="(") {
       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
       if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
+      else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
       e=b;
     }
@@ -341,7 +353,7 @@ public:
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->"); f.result=type();
       if(accept("!")) {expect("{");if(!accept("}")){do {auto n=name();if(!f.effects.insert(n.text).second)throw Error("E_EFFECT","duplicate effect",n.span);}while(accept(","));expect("}");}}
-      f.body=block();f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
+      lambdaCounter=0;f.body=block();f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
     }
     return std::move(p);
   }
@@ -349,8 +361,12 @@ public:
 struct Binding {Type type;bool mutableValue;};
 class Checker {
   Program &p; Function *f=nullptr; std::vector<std::map<std::string,Binding>> scopes;
+  struct CaptureScope {size_t boundary;std::map<std::string,Binding> bindings;};
+  std::vector<CaptureScope*> captures;bool watching=false;
+  bool hasLocal(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return true;return false;}
+  bool localFunction(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return it->at(name).type.kind==Type::Function;return false;}
   Binding lookup(const std::string &name,Span span) {
-    for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return it->at(name);
+    for(size_t index=scopes.size();index>0;--index)if(scopes[index-1].contains(name)){auto value=scopes[index-1].at(name);for(auto capture:captures)if(index-1<capture->boundary){value.mutableValue=false;capture->bindings[name]=value;}return value;}
     throw Error("E_NAME","unknown local '"+name+"'",span);
   }
   void same(Type actual,Type expected,Span span) {
@@ -372,6 +388,7 @@ class Checker {
       for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],instance.typeArguments[i],bound,span);return;
     }
     if(formal.kind!=actual.kind)throw Error("E_TYPE","expected "+typeName(formal)+", found "+typeName(actual),span);
+    if(formal.kind==Type::Function){if(formal.arguments.size()!=actual.arguments.size()||formal.realm!=actual.realm||formal.effects!=actual.effects)throw Error("E_TYPE","callable signatures differ",span);for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],actual.arguments[i],bound,span);unify(*formal.element,*actual.element,bound,span);return;}
     if(formal.element){unify(*formal.element,*actual.element,bound,span);return;}same(actual,formal,span);
   }
   std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected){
@@ -407,8 +424,47 @@ class Checker {
     if(!statements){if(result==Type::Unknown)throw Error("E_INFER","match result requires an expected or inferable arm type",e->span);for(auto arm:e->arms){scope(arm);same(expr(e->args[arm->value],result),result,arm->span);scopes.pop_back();}}
     checkMatchCoverage(p,e);e->type=statements?Type(Type::Unit):result;return all;
   }
+  Type signature(const Function &fn){std::vector<Type> args;for(const auto &param:fn.params)args.push_back(param.type);return Type::function(std::move(args),fn.result,fn.realm,fn.effects);}
+  void callableRealm(const Type &type,Span span){if(type.realm!="shared"&&type.realm!=f->realm)throw Error("E_REALM","callable realm "+type.realm+" is unavailable from "+f->realm,span);}
+  Type reference(E e,Type expected){
+    const Function *target=&p.function(e->text,e->span);
+    if(!target->typeParameters.empty()){
+      const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,Type> bound;
+      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size())throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<raw.typeParameters.size();++i){auto type=e->typeArguments[i];validType(type,e->span);bound[raw.typeParameters[i]]=type;}}
+      if(expected.kind==Type::Function)unify(signature(raw),expected,bound,e->span);
+      std::vector<Type> arguments;for(const auto &parameter:raw.typeParameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","generic function value requires explicit types or a function-type context",e->span);arguments.push_back(bound.at(parameter));}
+      target=&instantiateFunction(p,*target,arguments,e->span);e->typeArguments=arguments;
+    }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
+    if(target->test)throw Error("E_TEST","test functions cannot be function values",e->span);
+    auto type=signature(*target);callableRealm(type,e->span);f->dependencies.insert(target->name);e->text=target->name;e->kind=Expr::FunctionRef;return e->type=type;
+  }
+  Type lambda(E e){
+    if(e->lambda->checked){f->dependencies.insert(e->text);return e->type;}
+    if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
+    auto &fn=*e->lambda;auto outer=f;auto signatureType=signature(fn);validType(signatureType,e->span);callableRealm(signatureType,e->span);
+    fn.result=*signatureType.element;for(size_t i=0;i<fn.params.size();++i)fn.params[i].type=signatureType.arguments[i];
+    fn.owner=outer->owner;fn.unit=outer->unit;fn.localName=outer->localName+"::$lambda_"+std::to_string(e->number);fn.name=outer->name+"::"+(watching?"$watch_lambda_":"$lambda_")+std::to_string(e->number);fn.closureOwner=outer->name;fn.closure=true;
+    auto boundary=scopes.size();CaptureScope capture{boundary,{}};scopes.emplace_back();captures.push_back(&capture);f=&fn;fn.dependencies.clear();
+    try{
+      for(const auto &param:fn.params)define(param.name,{param.type,false},param.span);
+      if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all closure paths return a value",fn.span);
+    }catch(...){captures.pop_back();scopes.resize(boundary);f=outer;throw;}
+    captures.pop_back();scopes.resize(boundary);f=outer;fn.captures.clear();e->args.clear();
+    for(const auto &[name,value]:capture.bindings){fn.captures.push_back({name,value.type,e->span});auto argument=std::make_shared<Expr>();argument->kind=Expr::Name;argument->span=e->span;argument->text=name;argument->type=value.type;e->args.push_back(std::move(argument));}
+    if(fn.captures.size()>1024)throw Error("E_FUNCTION_LIMIT","closure exceeds 1024 captures",e->span);
+    if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
+    fn.checked=true;e->text=fn.name;e->type=signatureType;p.functions.push_back(fn);f->dependencies.insert(fn.name);return e->type;
+  }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
+    case Expr::FunctionRef:reference(e,expected);break;
+    case Expr::Lambda:lambda(e);break;
+    case Expr::Invoke:{
+      auto type=expr(e->args[0]);if(type.kind!=Type::Function)throw Error("E_TYPE","called expression is not a function",e->span);
+      if(e->args.size()!=type.arguments.size()+1)throw Error("E_ARITY","incorrect number of callable arguments",e->span);
+      for(size_t i=0;i<type.arguments.size();++i)same(expr(e->args[i+1],type.arguments[i]),type.arguments[i],e->args[i+1]->span);
+      callableRealm(type,e->span);for(const auto &effect:type.effects)if(!f->effects.contains(effect))throw Error("E_EFFECT","indirect call requires declared effect "+effect,e->span);e->type=*type.element;break;
+    }
     case Expr::Match:matching(e,expected,false);break;
     case Expr::Integer:e->type=expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
     case Expr::Boolean:e->type=Type::Bool;break;
@@ -430,7 +486,7 @@ class Checker {
       if(base.kind!=Type::List&&base!=Type::Str)throw Error("E_TYPE","indexing requires a list or string",e->span);
       e->type=base==Type::Str?Type(Type::Str):*base.element;break;
     }
-    case Expr::Name:e->type=lookup(e->text,e->span).type;break;
+    case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
     case Expr::Unary: {
       auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64));
       if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"integer"))throw Error("E_TYPE","unary - requires integer constraint or i64",e->span);
@@ -454,6 +510,11 @@ class Checker {
       break;
     }
     case Expr::Call: {
+      auto local=e->localName.empty()?e->text:e->localName;
+      if(localFunction(local)){
+        if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","function values do not accept type arguments at invocation",e->span);
+        auto callee=std::make_shared<Expr>();callee->kind=Expr::Name;callee->text=local;callee->span=e->span;e->args.insert(e->args.begin(),std::move(callee));e->kind=Expr::Invoke;e->text.clear();return expr(e,expected);
+      }
       if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
       if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
@@ -476,12 +537,12 @@ class Checker {
         e->type=e->text=="is_ok"?Type(Type::Bool):e->text=="unwrap"?*item.element:Type(Type::Str);break;
       }
       if(e->text=="encode_json"){
-        arity(1);auto type=expr(e->args[0]);validType(type,e->span);e->type=Type::Str;break;
+        arity(1);auto type=expr(e->args[0]);validType(type,e->span);if(!satisfiesConstraint(p,type,"wire"))throw Error("E_GENERIC_BOUND","encode_json requires a wire type or a wire generic constraint",e->span);e->type=Type::Str;break;
       }
       if(e->text=="decode_json"){
         arity(1);same(expr(e->args[0],Type::Str),Type::Str,e->span);
         if(e->annotation==Type::Unknown)throw Error("E_INFER","decode_json requires an explicit type: decode_json<T>(text)",e->span);
-        validType(e->annotation,e->span);e->type=Type::result(e->annotation);break;
+        validType(e->annotation,e->span);if(!satisfiesConstraint(p,e->annotation,"wire"))throw Error("E_GENERIC_BOUND","decode_json requires a wire type or a wire generic constraint",e->span);e->type=Type::result(e->annotation);break;
       }
       if(const Structure *owner=nullptr;auto variant=p.variant(e->text,&owner)){
         if(!owner->typeParameters.empty()){
@@ -585,7 +646,7 @@ public:
   Type watch(const std::string &function,E expression,const std::map<std::string,Type> &locals){
     auto selected=function;
     prepareGenerics(p);
-    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();
+    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();watching=true;
     for(const auto &[name,value]:locals){auto type=value;validType(type,expression->span);define(name,{type,false},expression->span);}
     auto result=expr(expression);for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);return result;
   }
@@ -610,7 +671,7 @@ public:
     for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);
     std::set<std::string> publicSeen;
     std::function<void(const Type&,Span)> publicType=[&](const Type &t,Span span){
-      if(t.kind==Type::List||t.kind==Type::Result)publicType(*t.element,span);
+      if(t.element)publicType(*t.element,span);if(t.kind==Type::Function)for(const auto &argument:t.arguments)publicType(argument,span);
       if(t.kind==Type::Record){const auto &s=p.structure(t.name);if(!s.exported)throw Error("E_VISIBILITY","public API exposes private type '"+t.name+"'",span);if(publicSeen.insert(s.name).second){for(const auto &argument:s.typeArguments)publicType(argument,span);for(auto field:s.members())publicType(field->type,field->span);}}
     };
     for(const auto &s:p.structures)if(s.exported&&s.templateName.empty())for(auto field:s.members())publicType(field->type,field->span);
@@ -648,6 +709,7 @@ llvm::json::Value exprJSON(E e) {
   if(!e)return nullptr;
   llvm::json::Array args;for(auto a:e->args)args.push_back(exprJSON(a));
   llvm::json::Object result{{"kind",int64_t(e->kind)},{"operator",e->text},{"value",e->number},{"type",typeName(e->type)},{"args",std::move(args)}};
+  if(e->kind==Expr::Lambda)result["lambda"]=canonical(*e->lambda);
   if(e->kind==Expr::Match){llvm::json::Array arms;for(auto arm:e->arms)arms.push_back(llvm::json::Object{{"pattern",canonicalPattern(arm->pattern)},{"guard",int64_t(arm->guard)},{"value",int64_t(arm->value)},{"body",blockJSON(arm->body)}});result["arms"]=std::move(arms);result["statement"]=e->statementMatch;}return result;
 }
 llvm::json::Array blockJSON(const std::vector<S> &body) {
@@ -677,7 +739,8 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  return llvm::json::Object{{"format","nex.function/7"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  llvm::json::Object result{{"format","nex.function/7"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
@@ -690,7 +753,7 @@ llvm::json::Value canonical(const Endpoint &endpoint){
 }
 std::string revision(const Program &p) {
   std::map<std::string,std::string> ordered;
-  for(const auto &f:p.functions)if(f.templateName.empty())ordered[f.name]=json(canonical(f),false);
+  for(const auto &f:p.functions)if(f.templateName.empty()&&!f.closure)ordered[f.name]=json(canonical(f),false);
   llvm::json::Object functions;for(const auto &[name,text]:ordered)functions[name]=text;
   llvm::json::Object structures;for(const auto &s:p.structures)if(s.templateName.empty())structures[s.name]=canonical(s);
   llvm::json::Object modules;

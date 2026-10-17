@@ -5,7 +5,7 @@
 namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
-const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match"};
+const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda"};
 const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
@@ -34,6 +34,7 @@ class Tree {
     auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get());
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
     if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
+    if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::Match){expression(e->args[0],path,"argument",0);arms(e,path);}
     else for(unsigned i=0;i<e->args.size();++i)expression(e->args[i],path,"argument",i);
   }
@@ -58,6 +59,7 @@ public:
   Tree(const Program &p,const Function &f):p(p),f(f){}
   std::vector<Operation> run(){
     scopes.emplace_back();
+    for(unsigned i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto path="capture/"+std::to_string(i);add(path,"","capture",i,"capture",capture.name,capture.span,Object{{"kind","capture"},{"name",capture.name},{"type",typeName(capture.type)}});scopes.back()[capture.name]=path;}
     for(unsigned i=0;i<f.params.size();++i){const auto &param=f.params[i];auto path="parameter/"+std::to_string(i);add(path,"","parameter",i,"parameter",param.name,param.span,Object{{"kind","parameter"},{"name",param.name},{"type",typeName(param.type)}});scopes.back()[param.name]=path;}
     block(f.body,"","body",f.span,false);
     std::map<std::string,Array> children;auto functionHash=hash(json(canonical(f),false));

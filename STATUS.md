@@ -8,6 +8,16 @@ and x86-64. The x86-64 run uses Docker emulation; it does not certify
 physical Intel/AMD hardware. Live LLDB/DAP is verified on macOS ARM64 and Linux
 ARM64. The matrix and installed-SDK checks are recorded below.
 
+Unreleased work in progress: typed function values and snapshot closures are
+being integrated for the next language version. The checker, interpreter,
+native indirect calls, TypeScript, capture ownership and operation/cache
+metadata have a tested prototype under `tests/function_values.py` and
+`examples/functions`. Debug callable capture/validation, versioned migration,
+the final language/LLM specification and the installed cross-platform SDK gate
+remain open. `docs/function-values-design.md` records the design and current
+evidence; this draft is not a completed 0.23 release. Keep the verified 0.22 SDK
+for its existing receipts and frames.
+
 ## Implemented and exercised
 
 - Toolchain 0.22 / language 0.9 adds typed recursive patterns, result/record/exact-list/literal matching, immutable arm bindings, ordered guards, value matches and bounded matrix coverage/usefulness analysis. Native, interpreter and TypeScript preserve selection/order/cleanup; pure watches demand selected paths. The checkpoint matrix and installed SDK workflow passed as recorded below; OR/rest/range patterns and custom extractors remain pending.

@@ -82,8 +82,8 @@ test fn context_and_aliases() -> unit {
 enum Maybe<T> {None; Some(value:T);}
 fn id<T>(x:T) -> T {return x;}
 fn same<T>(x:T,y:T) -> bool {return id(x) == id(y);}
-fn parse<T>(text:str) -> result<T> {return decode_json<T>(text);}
-fn take<T>(text:str) -> T {return unwrap(parse(text));}
+fn parse<T:wire>(text:str) -> result<T> {return decode_json<T>(text);}
+fn take<T:wire>(text:str) -> T {return unwrap(parse(text));}
 fn main() -> unit {}
 test fn contexts() -> unit {
  let same:bool = id(42) == 42;assert(same);

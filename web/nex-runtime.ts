@@ -1,7 +1,8 @@
 // NEX value semantics shared by generated TypeScript and browser applications.
 export const TYPE: unique symbol = Symbol('NEX.type');
 export const CASE: unique symbol = Symbol('NEX.case');
-export type Value = bigint | boolean | string | ReadonlyArray<Value> | RecordValue;
+export type Callable = (...arguments_: never[]) => Value | void;
+export type Value = bigint | boolean | string | ReadonlyArray<Value> | RecordValue | Callable;
 export interface RecordValue {
   readonly [TYPE]: string;
   readonly [CASE]?: string;
@@ -105,13 +106,14 @@ function quoted(value: string): string {
   return '"' + value.replace(/["\\\u0000-\u001f]/g, c => c === '"' || c === '\\' ? '\\' + c : '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '"';
 }
 export function representation(value: Value): string {
+  if (typeof value === 'function') return quoted('<function>');
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
   if (isList(value)) return '[' + value.map(representation).join(',') + ']';
   const fields = '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';
   return value[CASE] === undefined ? fields : '{"case":' + quoted(value[CASE]) + ',"fields":' + fields + '}';
 }
-export function str(value: Value): string { return typeof value === 'string' ? value : representation(value); }
+export function str(value: Value): string { return typeof value === 'string' ? value : typeof value === 'function' ? '<function>' : representation(value); }
 export function print(value: Value): void { console.log(str(value)); }
 
 type Descriptor = 'i64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
@@ -122,6 +124,7 @@ function bytes(text: string): number { return new TextEncoder().encode(text).len
 export function encodeJSON(value: Value, site?: Site): string {
   let nodes = 0;
   function encode(value: Value, depth: number): string {
+    if (typeof value === 'function') invalidJSON('function values cannot cross the JSON boundary');
     if (depth > JSON_DEPTH || ++nodes > JSON_NODES) invalidJSON('JSON value exceeds depth/node limit');
     if (typeof value === 'bigint') return quoted(String(value));
     if (typeof value === 'boolean') return String(value);

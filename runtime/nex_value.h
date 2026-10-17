@@ -27,13 +27,14 @@ struct Value {
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
-  enum Kind { String, List, Record, Success, Failure, Enum } kind;
+  enum Kind { String, List, Record, Success, Failure, Enum, Closure } kind;
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
   std::vector<std::string> names;
+  void *code=nullptr;
   explicit Data(Kind kind):kind(kind){profileAllocate(this,sizeof(Data),1);++liveObjects;}
-  Data(const Data &other):kind(other.kind),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data(const Data &other):kind(other.kind),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code){profileAllocate(this,sizeof(Data),1);++liveObjects;}
   ~Data(){profileFree(this);--liveObjects;}
 };
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
@@ -117,6 +118,7 @@ inline bool equal(const Value &a,const Value &b) {
   if(a.tag!=Value::Object)return a.scalar==b.scalar;
   if(a.object==b.object)return true;
   const auto &x=*a.object,&y=*b.object;
+  if(x.kind==Data::Closure||y.kind==Data::Closure)return false;
   if(x.kind!=y.kind||x.ordinal!=y.ordinal||x.text!=y.text||x.names!=y.names||x.values.size()!=y.values.size())return false;
   for(size_t i=0;i<x.values.size();++i)if(!equal(x.values[i],y.values[i]))return false;
   return true;
@@ -130,6 +132,7 @@ inline std::string representation(const Value &v) {
   if(v.tag==Value::Integer)return std::to_string(v.scalar);
   if(v.tag==Value::Boolean)return v.scalar?"true":"false";
   const auto &d=*v.object;
+  if(d.kind==Data::Closure)return quoted("<function>");
   if(d.kind==Data::String)return quoted(d.text);
   if(d.kind==Data::Success)return "{\"ok\":"+representation(d.values[0])+"}";
   if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+quoted(d.text)+",\"message\":"+representation(d.values[0])+"}}";
@@ -138,5 +141,5 @@ inline std::string representation(const Value &v) {
   for(size_t i=0;i<d.values.size();++i){if(i)text+=",";if(d.kind==Data::Record)text+=quoted(d.names[i])+":";text+=representation(d.values[i]);}
   return text+(d.kind==Data::List?"]":"}");
 }
-inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:representation(v);}
+inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:v.tag==Value::Object&&v.object->kind==Data::Closure?"<function>":representation(v);}
 }

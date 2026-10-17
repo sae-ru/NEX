@@ -118,3 +118,6 @@ add_test(NAME constraints COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/constraints.py $<TARGET_FILE:nex>)
 add_test(NAME matching COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/matching.py $<TARGET_FILE:nex>)
+
+add_test(NAME function_values COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/function_values.py $<TARGET_FILE:nex>)

@@ -19,6 +19,7 @@ std::string type(const Type &t){
   case Type::List:return "ReadonlyArray<"+type(*t.element)+">";
   case Type::Result:return "nex.Result<"+type(*t.element)+">";
   case Type::Record:return "T_"+symbol(t.name);
+  case Type::Function:{std::string result="((";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+="argument"+std::to_string(i)+": "+type(t.arguments[i]);}return result+") => "+type(*t.element)+")";}
   default:throw Error("E_INTERNAL","unresolved TypeScript type");
   }
 }
@@ -34,14 +35,14 @@ class Generator {
   void statement(const std::string &text){write(std::string(depth*2,' ')+text+"\n");}
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
   void needed(const Type &t){
-    if(t.kind==Type::List||t.kind==Type::Result)needed(*t.element);
+    if(t.element)needed(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)needed(argument);
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }
   void visit(const Function &f){
     if(!f.typeParameters.empty()||std::any_of(f.typeArguments.begin(),f.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","browser entry/closure must be concrete",f.span);
     if(f.realm=="server")throw Error("E_REALM","server function cannot be emitted to the browser: "+f.name,f.span);
     if(!functions.insert(f.name).second)return;
-    needed(f.result);for(const auto &param:f.params)needed(param.type);
+    needed(f.result);for(const auto &param:f.params)needed(param.type);for(const auto &capture:f.captures)needed(capture.type);
     std::function<void(E)> expression=[&](E e){if(e){needed(e->type);for(auto a:e->args)expression(a);}};
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);childBlocks(s,block);}};
     block(f.body);for(const auto &name:f.dependencies)visit(p.function(name));
@@ -80,6 +81,13 @@ class Generator {
   }
   std::string expr(E e){
     switch(e->kind){
+    case Expr::FunctionRef:case Expr::Lambda:{
+      const auto &fn=p.function(e->text);std::string captureParams,captureValues,parameters,arguments;
+      for(size_t i=0;i<e->args.size();++i){auto name="capture_"+std::to_string(++unique);if(i){captureParams+=", ";captureValues+=", ";arguments+=", ";}captureParams+=name+": "+type(fn.captures[i].type);captureValues+=expr(e->args[i]);arguments+=name;}
+      for(size_t i=0;i<fn.params.size();++i){auto name="argument_"+std::to_string(++unique);if(i)parameters+=", ";if(!arguments.empty())arguments+=", ";parameters+=name+": "+type(fn.params[i].type);arguments+=name;}
+      return "(("+captureParams+"): "+type(e->type)+" => ("+parameters+"): "+type(fn.result)+" => "+symbol(fn.name)+"("+arguments+"))("+captureValues+")";
+    }
+    case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}return text+")";}
     case Expr::Match:return matchExpression(e);
     case Expr::Integer:return "("+std::to_string(e->number)+"n)";
     case Expr::Boolean:return e->number?"true":"false";
@@ -161,7 +169,8 @@ public:
     for(const auto &name:functions){
       const auto &f=p.function(name);scopes.clear();scopes.emplace_back();unique=0;
       auto start=line;std::string signature="export function "+symbol(f.name)+"(";
-      for(size_t i=0;i<f.params.size();++i){if(i)signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
+      for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
+      for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
       write(signature+"): "+type(f.result)+" {\n");depth=1;block(f.body,false);depth=0;write("}\n\n");
       included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }

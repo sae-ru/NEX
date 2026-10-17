@@ -44,6 +44,8 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
   visit(p.function(entry));return names;
 }
 std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::Bool?"i1":"()";}
+std::string callableType(const Type &type){std::string result="(!llvm.ptr";for(const auto &argument:type.arguments)result+=", "+ty(argument);return result+") -> "+ty(*type.element);}
+std::string closureSymbol(const Function &function){return nativeSymbol(function.name)+(function.closure?"":"__closure_bridge");}
 struct Value {std::string name;Type type;bool address=false;};
 // Emit standard MLIR debug attributes alongside the checked source projection.
 // Heap values keep their real handle representation; no fabricated record layout
@@ -83,6 +85,7 @@ public:
   }
   std::string function(const Function &f){
     auto source=file(p.location(f.span));std::string signature=type(f.result);
+    if(f.closure){type(Type::Str);signature+=", "+types.at("$handle");}
     for(const auto &param:f.params)signature+=", "+type(param.type);
     auto subroutine=attribute("#llvm.di_subroutine_type<callingConvention = DW_CC_normal, types = "+signature+">");
     // Each subprogram must be distinct, including functions sharing source lines.
@@ -225,6 +228,20 @@ class Emitter {
   }
   Value expression(E e){
     SiteScope site(activeSite,sites.at(e.get()));
+    if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){
+      const auto &target=p.function(e->text);auto function=fresh(),pointer=fresh();auto signature=callableType(e->type);
+      line(function+" = func.constant @"+closureSymbol(target)+" : "+signature,e->span);line(pointer+" = builtin.unrealized_conversion_cast "+function+" : "+signature+" to !llvm.ptr",e->span);
+      auto count=[&](int64_t value){return constant(value,Type::I64,e->span);};auto closure=call("nex_closure_new",{{pointer,Type::Str},count(e->args.size())},e->type,e->span);
+      auto name=rawBytes(e->text,e->span);call("nex_record_name",{closure,name,count(e->text.size())},Type::Unit,e->span);
+      for(size_t i=0;i<e->args.size();++i){auto value=expression(e->args[i]);auto name=rawBytes(target.captures[i].name,e->span);call("nex_record_field_name",{closure,count(i),name,count(target.captures[i].name.size())},Type::Unit,e->span);
+        if(value.type.heap())call("nex_record_init_heap",{closure,count(i),value},Type::Unit,e->span);else call("nex_record_init_i64",{closure,count(i),asI64(value,e->span),count(value.type==Type::Bool)},Type::Unit,e->span);release(value,e->span);
+      }return closure;
+    }
+    if(e->kind==Expr::Invoke){
+      auto closure=expression(e->args[0]);std::vector<Value> args{closure};for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));
+      auto pointer=call("nex_closure_code",{closure},Type::Str,e->span);std::string operands,types;for(const auto &argument:args){if(!operands.empty()){operands+=", ";types+=", ";}operands+=argument.name;types+=ty(argument.type);}
+      auto name=e->type==Type::Unit?"":fresh();line((name.empty()?"":name+" = ")+"llvm.call "+pointer.name+"("+operands+") : !llvm.ptr, ("+types+") -> "+ty(e->type),e->span);for(auto argument:args)release(argument,e->span);return {name,e->type};
+    }
     if(e->kind==Expr::Match)return matching(e).first;
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return constant(e->number,e->type,e->span);
     if(e->kind==Expr::String)return text(e->text,e->span);
@@ -368,6 +385,7 @@ public:
     declaration("nex_poll","i64");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}
     declaration("nex_string_new","!llvm.ptr, i64, i64","!llvm.ptr");declaration("nex_list_new","","!llvm.ptr");declaration("nex_record_new","i64","!llvm.ptr");declaration("nex_enum_new","i64, i64","!llvm.ptr");declaration("nex_enum_tag","!llvm.ptr, i64, i64","i64");
+    declaration("nex_closure_new","!llvm.ptr, i64","!llvm.ptr");declaration("nex_closure_code","!llvm.ptr","!llvm.ptr");
     declaration("nex_record_name","!llvm.ptr, !llvm.ptr, i64");declaration("nex_record_field_name","!llvm.ptr, i64, !llvm.ptr, i64");
     declaration("nex_list_append_i64","!llvm.ptr, i64, i64");declaration("nex_list_append_heap","!llvm.ptr, !llvm.ptr");
     declaration("nex_record_init_i64","!llvm.ptr, i64, i64, i64");declaration("nex_record_init_heap","!llvm.ptr, i64, !llvm.ptr");
@@ -381,30 +399,35 @@ public:
     declaration("nex_encode_json_i64","i64, i64, i64","!llvm.ptr");declaration("nex_encode_json_heap","!llvm.ptr, i64","!llvm.ptr");declaration("nex_decode_json","!llvm.ptr, !llvm.ptr, i64, i64","!llvm.ptr");
     declaration("nex_read_env","!llvm.ptr","!llvm.ptr");declaration("nex_store_get","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_put","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");declaration("nex_store_remove","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_keys","!llvm.ptr, i64","!llvm.ptr");
     auto names=reachable(p,entry);
+    auto bridges=nativeFunctionBridges(p,names);
     if(selected){
       names=*selected;std::set<std::string> external;
       for(const auto &name:names)for(const auto &callee:p.function(name).dependencies)if(!names.contains(callee))external.insert(callee);
       for(const auto &name:external){
         const auto &f=p.function(name);std::string args;
-        for(const auto &param:f.params){if(!args.empty())args+=", ";args+=ty(param.type);}
+        if(f.closure)args="!llvm.ptr";for(const auto &param:f.params){if(!args.empty())args+=", ";args+=ty(param.type);}
         declaration(nativeSymbol(f.name),args,f.result==Type::Unit?"":ty(f.result));
+        if(!f.closure&&bridges.contains(f.name))declaration(closureSymbol(f),"!llvm.ptr"+(args.empty()?"":", "+args),f.result==Type::Unit?"":ty(f.result));
       }
     }
     for(const auto &f:p.functions)if(names.contains(f.name)){
       debug.scope=debug.function(f);
       scopes.clear();scopes.emplace_back();slots.clear();matchSlots.clear();patternSlots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
-      for(size_t i=0;i<f.params.size();++i){if(i)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
+      std::string environment;if(f.closure){environment=fresh();out<<environment<<": !llvm.ptr";}
+      for(size_t i=0;i<f.params.size();++i){if(i||f.closure)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
       prologue=true;
       for(size_t i=0;i<f.params.size();++i){
         const auto &param=f.params[i];auto slot=allocateSlot(param.type,param.span);
         // Debug storage borrows the parameter and never participates in cleanup.
-        writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1);
+        writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1+(f.closure?1:0));
       }
+      for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);if(capture.type==Type::Bool)value=asBool(value,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
       allocate(f.body);prologue=false;
       if(profiling){auto name=rawBytes(f.name,f.span),file=rawBytes(p.location(f.span),f.span),content=rawBytes(hash(json(canonical(f),false)),f.span);call("nex_profile_enter",{name,file,constant(f.span.line,Type::I64,f.span),content},Type::Unit,f.span);}
       call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);
       if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
+      if(!f.closure&&bridges.contains(f.name)){debug.scope.clear();out<<"  func.func @"<<closureSymbol(f)<<"(%closure_environment: !llvm.ptr";std::vector<Value> args;for(const auto &param:f.params){auto name=fresh();out<<", "<<name<<": "<<ty(param.type);args.push_back({name,param.type});}out<<")"<<(f.result==Type::Unit?"":" -> "+ty(f.result))<<" {\n";auto value=call(nativeSymbol(f.name),args,f.result,f.span);line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),f.span);out<<"  }\n";}
     }
     debug.scope.clear();out<<globals.str();if(libraryEntry||!names.contains(main.name)){out<<"}\n";return debug.str()+out.str();}out<<"  func.func @main() -> i32 {\n";
     auto value=call(nativeSymbol(main.name),{},main.result,main.span);call("nex_runtime_finish",{},Type::Unit,main.span);
