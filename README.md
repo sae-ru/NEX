@@ -35,7 +35,7 @@ python3 tools/linux/check.py --arch arm64
 python3 tools/linux/check.py --arch amd64
 ```
 
-The pinned Ubuntu/LLVM image builds the compiler, runs the full regression suite and verifies an installed SDK with external network disabled. Linux application linking uses LLVM LLD with verified ELF debug information. The report records native versus emulated execution and platform-specific skips. See [the Linux guide](docs/linux.md), also available as `nex guide --kind linux`.
+The pinned Ubuntu/LLVM image builds the compiler, runs the full regression suite and verifies an installed SDK with external network disabled. Linux ARM64 execution and LLDB/DAP are exercised; Linux x86-64 execution is exercised through Docker emulation. Linux application linking uses LLVM LLD with verified ELF debug information. Reports retain execution architecture and platform-specific skips. See [the Linux guide](docs/linux.md), also available as `nex guide --kind linux`.
 
 ## Use
 
@@ -64,7 +64,7 @@ Generated native output runs without the compiler, LLVM or a model. Pure program
 ./build/nex build examples/server/main.nex --target server --toolchain /path/to/toolchain.json --json
 ```
 
-On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records the target, compiler, optional SDK and target SQLite/OpenSSL paths. Build metadata and caches distinguish architectures. Local run/test/debug/profile commands require the host architecture; no emulator is configured. Intel artifacts have been cross-built on ARM64, but Intel execution and debugger sessions remain unverified. See [the native build guide](docs/incremental.md) and [toolchain schema](llm/toolchain.schema.json).
+On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records the target, compiler, optional linker/SDK and target SQLite/OpenSSL paths. Build metadata and caches distinguish architectures. Local run/test/debug/profile commands require the compiler host architecture; NEX does not launch an emulator itself. macOS Intel artifacts have been cross-built on ARM64; macOS Intel execution/debugging remains unverified. The Linux workflow runs matching ARM64/x86-64 compiler containers. See [the native build guide](docs/incremental.md) and [toolchain schema](llm/toolchain.schema.json).
 
 ## Web applications
 
@@ -171,4 +171,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.20.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts use their matching SDK. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS arm64/x86_64 cross-compilation is configured; Intel execution/debugging remains unverified on this ARM64 host. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The compiler/toolchain is **0.20.0**, source language **0.7**. Language 0.5/0.6 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. Match expressions/guards/result patterns, generic constraints/function values, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

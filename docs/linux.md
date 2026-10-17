@@ -46,6 +46,8 @@ python3 tools/linux/check.py --arch arm64 --live --skip-image-build
 This grants `SYS_PTRACE` and disables the container's syscall filter for that
 test run, retaining its isolated PID namespace, read-only sources and disabled
 external network. These permissions support debugging the test children.
+The live run includes the debugging, expression and generic suites, exercising
+both ordinary previews and exact/partial NEX watch captures through LLDB/DAP.
 Foreign CPU emulation can lack native ptrace support; source/DWARF checks alone
 do not establish live debugger support. See the debug/expression guides for
 frame/watch limits and permission failures.
@@ -75,7 +77,11 @@ objects linked with Ubuntu's GNU ld failed LLVM 22's string-offset verification,
 while the LLD output passed. NEX retains verified MLIR/LLVM IR and uses the
 existing strict DWARF tests. Artifact copies stream bytes and preserve file
 permissions rather than relying on filesystem-specific fast-copy syscalls,
-which failed on Docker/macOS shared folders. LLVM ELF/archive output is staged separately so literal percent signs in project paths are not treated as temporary-name placeholders. Historical 0.5/0.6 migration tests restore stores captured from the actual older SDKs when their native macOS binaries cannot execute on Linux; the same history/ID assertions still run.
+which failed on Docker/macOS shared folders. LLVM ELF/archive output is staged
+separately so literal percent signs in project paths are not treated as
+temporary-name placeholders. Historical 0.5/0.6 migration tests restore stores
+captured from the actual older SDKs when their native macOS binaries cannot
+execute on Linux; the same history/ID assertions still run.
 
 Fingerprint policy `nex.toolchain-snapshot/2` adds selected linker bytes. Review
 new toolchain hashes when moving from 0.19's policy; saved receipts retain their

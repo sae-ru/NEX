@@ -4,14 +4,14 @@
 |---|---|---|
 | LLVM / MLIR 22.1.8 | Linked compiler infrastructure and native toolchain | [Apache-2.0 with LLVM exceptions](https://llvm.org/docs/DeveloperPolicy.html#copyright-license-and-patents) |
 | BLAKE3 through LLVM Support | Content hashing via `llvm/Support/BLAKE3.h` | Uses the implementation already distributed with LLVM; [upstream licensing](https://github.com/BLAKE3-team/BLAKE3#licenses) |
-| SQLite 3.53.1 | Linked project/revision database and optional native per-principal KV storage | [SQLite public-domain dedication](https://sqlite.org/copyright.html) |
+| SQLite 3.53.1 (macOS); 3.45.1 Ubuntu package (Linux) | Linked project/revision database and optional native per-principal KV storage | [SQLite public-domain dedication](https://sqlite.org/copyright.html) |
 | nlohmann/json 3.12.0 | Strict typed wire JSON in the compiler/interpreter and selected native runtime components | MIT; vendored `runtime/third_party/json.hpp` and `JSON-LICENSE.MIT` |
 | cpp-httplib 0.61.0 | Native HTTP/HTTPS host with bounded worker/queue settings | MIT; vendored `runtime/third_party/httplib.h` and `HTTPLIB-LICENSE` |
-| OpenSSL 3.6.3 | TLS and bearer digest comparison in native HTTP servers | Installed OpenSSL 3 library; [Apache-2.0](https://github.com/openssl/openssl/blob/master/LICENSE.txt) |
+| OpenSSL 3.6.3 (macOS); 3.0.13 Ubuntu package (Linux) | TLS and bearer digest comparison in native HTTP servers | Installed OpenSSL 3 library; [Apache-2.0](https://github.com/openssl/openssl/blob/master/LICENSE.txt) |
 | Tracy 0.14.1 client | Optional instrumentation in native profile output | BSD-3-Clause with embedded LZ4/concurrentqueue/SPSCQueue/rpmalloc notices; pinned source inventory in `runtime/third_party/tracy/manifest.json` |
 | Z3 5.3.1 | Linked scalar verifier in the development compiler; absent from generated applications | MIT; external official release, notice copied to `docs/licenses/Z3-LICENSE.txt`; configuration/provenance in `docs/verification.md` |
-| Apple LLDB | Optional local debugger used for integration checks | Installed tool; [LLVM licensing and LLDB documentation](https://lldb.llvm.org/) |
-| Python 3.9.6 | Integration-test runner | Installed interpreter; no Python runtime in generated programs |
+| Apple LLDB (macOS); LLVM LLDB 22.1.8 (Linux) | Optional local debugger used for integration checks | Installed tool; [LLVM licensing and LLDB documentation](https://lldb.llvm.org/) |
+| Python 3.9.6 (macOS); 3.12.3 (Linux) | Integration-test runner | Installed interpreter; no Python runtime in generated programs |
 | React / React DOM 19.3.1; Scheduler 0.28.0 | Runtime of generated browser applications | MIT; copies of package license text are included in `web/THIRD_PARTY_NOTICES.txt` and generated `dist` |
 | TypeScript 7.0.2 | Checks generated browser source | Apache-2.0; npm development dependency |
 | Vite 8.3.4 | Browser dev/preview server and bundler | MIT; npm development dependency |

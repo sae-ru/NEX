@@ -48,20 +48,23 @@ reorder source steps; use the default `debug` profile for variable inspection.
 ## Value previews and model tools
 
 The formatter reads the stopped process through LLDB's SBValue APIs and standard
-C++ library formatters. It never evaluates an expression, invokes an inferior
+C++ library layouts/formatters. It never evaluates an expression, invokes an inferior
 function, retains an application value or changes a value's ownership. Strings
-use the standard library's escaped preview, including embedded zero bytes and
-Unicode. Lists, named records and recoverable results have summaries and
+read a bounded byte prefix using the actual string length and buffer, preserving
+embedded zero bytes, literal escapes and Unicode. A truncated UTF-8 prefix ends
+before an incomplete scalar and displays an ellipsis. Lists, named records and recoverable results have summaries and
 expandable children. Synthetic aggregate children retain their runtime
 `nexrt::Value` type; their summaries show the source values. Native scalar
 parameters/locals retain the NEX `i64`/`bool` aliases.
 
 Previews bound depth to six, collection children to 32, recursive value visits
-to 256 and text per summary to 4096 characters. Unavailable or incompatible
+to 256 and string reads to 4096 bytes before escaping. Unavailable or incompatible
 data produces an explicit unavailable preview. The runtime-view identifier is
 versioned; loading an incompatible manifest is rejected. The current exercised
-host is macOS ARM64 with libc++; other runtime/debugger combinations still need
-platform verification.
+hosts are macOS ARM64 with Apple LLDB/libc++ and Ubuntu 24.04 ARM64 with
+LLVM LLDB 22/libstdc++. Linux x86-64 builds/DWARF run under emulation, but
+live ptrace/debugger support there remains unverified. Other runtime/debugger
+combinations still need platform verification.
 
 `nex-values` prints a `nex.debug-values/1` JSON object for the selected stopped
 frame: revision, logical function when mapped, native symbol, projected file,

@@ -252,7 +252,7 @@ def __lldb_init_module(debugger, context):
             self.source('module string_preview; fn stop(small:str,escaped:str,cut:str) -> unit !{io} { print(small);print(escaped);print(cut); } fn main() -> unit !{io} { stop('+','.join(json.dumps(x,ensure_ascii=False) for x in (small,escaped,cut))+'); }')
             self.cli('check');symbol=self.cli('context','--symbol','stop')['native_symbol']
             self.cli('debug')
-            report=self.root/'string-values.json';script=self.root/'string-capture.py'
+            report=self.root/'string-values.json';script=self.root/'string_capture.py'
             script.write_text('''import json, lldb
 def __lldb_init_module(debugger, context):
     debugger.SetAsync(False)

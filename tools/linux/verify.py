@@ -32,7 +32,7 @@ def main():
         run('sdk',['python3','/src/tools/linux/sdk_smoke.py','/build/sdk'])
         report['sdk']=json.loads((root/'sdk-smoke.json').read_text())
         if args.live:
-            for suite in ('debugging','generics'):
+            for suite in ('debugging','expressions','generics'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['packages']=subprocess.check_output(['dpkg-query','-W','-f=${Package}\t${Version}\n'],text=True).splitlines()
