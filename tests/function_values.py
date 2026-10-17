@@ -70,6 +70,18 @@ fn main()->unit!{io}{print(choose(ok(Maybe::Some(42))));}
         self.cli('check');after=self.cli('operations','--symbol','choose')['nodes']
         self.assertEqual({n['path']:n['id'] for n in before},{n['path']:n['id'] for n in after})
 
+    def test_portable_022_sql_archive_preserves_recorded_operation_ids(self):
+        fixture=json.loads((harness.REPO/'tests/fixtures/language-0.9.json').read_text())
+        self.source(fixture['source']);saved=self.historical_store('0.9')
+        current=self.cli('migrate')
+        self.assertEqual(current['language'],'0.10')
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.10'})
+        self.assertEqual({n['name']:n['id'] for n in saved['graph']['nodes']},
+                         {n['name']:n['id'] for n in self.cli('graph')['nodes']})
+        self.assertEqual({n['path']:n['id'] for n in saved['operations']},
+                         {n['path']:n['id'] for n in self.cli('operations','--symbol','choose')['nodes']})
+        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
+
     def test_rejected_legacy_serializer_migration_is_atomic_and_explicitly_repairable(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.9-wire.json').read_text())
         self.source(fixture['source']);old=self.historical_store('0.9-wire')

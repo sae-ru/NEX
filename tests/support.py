@@ -54,7 +54,9 @@ class ToolchainCase(unittest.TestCase):
         self.assertEqual(self.file.read_text(),metadata['source'])
         self.assertEqual(hashlib.sha256(metadata['source'].encode()).hexdigest(),metadata['source_sha256'])
         directory=self.root/'.nex';directory.mkdir(exist_ok=True)
-        with sqlite3.connect(directory/metadata['database']) as connection:
+        # The genuine SDK 0.22 sidecar predates this optional filename field.
+        # Keep its archived SQL/JSON bytes intact; NEX stores use graph.db.
+        with sqlite3.connect(directory/metadata.get('database','graph.db')) as connection:
             connection.executescript(sql.decode())
             connection.execute('PRAGMA user_version='+str(metadata.get('user_version',0)))
         return metadata
