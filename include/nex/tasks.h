@@ -4,6 +4,7 @@ namespace nex {
 struct TaskOptions {
   std::string root,compiler,revision,directory,expectedHash;
   std::map<std::string,std::string> candidates;
+  std::map<std::string,std::string> toolchains;
 };
 llvm::json::Value taskTemplate(const Program &program,const std::string &entry);
 llvm::json::Value checkTask(const llvm::json::Value &task,const TaskOptions &options);

@@ -26,7 +26,8 @@
     "partial_debug_frame_schema": "llm/debug-frame-v2.schema.json",
     "operations": "docs/operations.md",
     "operations_schema": "llm/operations.schema.json",
-    "native_toolchain_schema": "llm/toolchain.schema.json"
+    "native_toolchain_schema": "llm/toolchain.schema.json",
+    "toolchain_catalog_schema": "llm/toolchains.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation --json",
   "context_command": "nex context --symbol NAME",
@@ -105,5 +106,11 @@
     "nex context --operation ID --revision REVISION --json",
     "nex context --site SITE --revision REVISION --json",
     "nex-operation (at an LLDB stop)"
+  ],
+  "toolchain_commands": [
+    "nex toolchain FILE --json",
+    "nex task TASK.json --kind check --toolchains CATALOG.json --json",
+    "nex task TASK.json --kind run --toolchains CATALOG.json --json",
+    "nex task RECEIPT.json --kind replay --toolchains CATALOG.json --json"
   ]
 }

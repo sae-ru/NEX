@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.18.0 LANGUAGES C CXX)
+project(NEX VERSION 0.19.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -92,6 +92,8 @@ add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/verification.py $<TARGET_FILE:nex>)
 add_test(NAME tasks COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tasks.py $<TARGET_FILE:nex>)
+add_test(NAME task_toolchains COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_toolchains.py $<TARGET_FILE:nex>)
 if(NEX_Z3_EXECUTABLE)
   set_tests_properties(verification PROPERTIES ENVIRONMENT "NEX_Z3_EXECUTABLE=${NEX_Z3_EXECUTABLE}")
 endif()

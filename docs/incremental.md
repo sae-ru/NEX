@@ -1,4 +1,4 @@
-# Native compilation and toolchains — toolchain 0.18
+# Native compilation and toolchains — toolchain 0.19
 
 Current source language is 0.7. The native compiler now produces an object for each
 source module containing functions reachable from the selected entry. It can
@@ -73,8 +73,14 @@ Cache hits retain the same target metadata.
 and instrumented profile builds. `run`, `test`, `debug` and `profile` execute
 locally and reject foreign architectures with E_TARGET_RUN. No emulator is
 configured. An interpreter result cannot certify foreign native execution;
-run the output/tests on a matching machine. Task-contract native execution still
-selects the host; foreign toolchain capture/replay remains pending.
+run the output/tests on a matching machine. Task contracts can pin toolchain
+fingerprints and capture/replay foreign build checks through a current trusted
+catalog. Foreign execution checks remain unsupported; see the task guide.
+
+`nex toolchain FILE --json` reports a normalized configuration and a read-only
+fingerprint for task acceptance. It hashes the driver and configured dependency
+inputs/SDK settings without invoking the compiler. See `nex guide --kind task`
+for the exact fingerprint scope and current-catalog requirement on replay.
 
 macOS x86_64 artifacts, LLVM/object/archive/dSYM architecture, cache isolation and
 archived builds are checked on the ARM64 development host. Intel execution and

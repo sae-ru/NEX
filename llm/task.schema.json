@@ -79,6 +79,12 @@
                 },
                 "minItems": 1,
                 "maxItems": 64
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -88,7 +94,31 @@
               "target",
               "tests"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "dependentRequired": {
+              "toolchain": [
+                "toolchain_hash"
+              ],
+              "toolchain_hash": [
+                "toolchain"
+              ]
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "toolchain"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "const": "native"
+                    }
+                  }
+                }
+              }
+            ]
           },
           {
             "type": "object",
@@ -126,6 +156,12 @@
                   "library",
                   "module"
                 ]
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -134,7 +170,33 @@
               "kind",
               "target"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "dependentRequired": {
+              "toolchain": [
+                "toolchain_hash"
+              ],
+              "toolchain_hash": [
+                "toolchain"
+              ]
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "toolchain"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "not": {
+                        "const": "web"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
           },
           {
             "type": "object",
@@ -188,6 +250,12 @@
                   "exit_code"
                 ],
                 "additionalProperties": false
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -197,7 +265,31 @@
               "target",
               "expect"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "dependentRequired": {
+              "toolchain": [
+                "toolchain_hash"
+              ],
+              "toolchain_hash": [
+                "toolchain"
+              ]
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "toolchain"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "const": "native"
+                    }
+                  }
+                }
+              }
+            ]
           },
           {
             "type": "object",
@@ -380,6 +472,12 @@
                   "target"
                 ],
                 "additionalProperties": false
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -408,8 +506,30 @@
                     "hardware"
                   ]
                 }
+              },
+              {
+                "if": {
+                  "required": [
+                    "toolchain"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "const": "native"
+                    }
+                  }
+                }
               }
-            ]
+            ],
+            "dependentRequired": {
+              "toolchain": [
+                "toolchain_hash"
+              ],
+              "toolchain_hash": [
+                "toolchain"
+              ]
+            }
           },
           {
             "type": "object",

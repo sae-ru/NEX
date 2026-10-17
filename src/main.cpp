@@ -33,7 +33,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -70,6 +70,7 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  if(o.values.contains("--toolchains")&&o.command!="task")throw Error("E_OPTION","--toolchains FILE is for task check/run/replay");
   if(o.values.contains("--toolchain")){
     const std::set<std::string> nativeCommands={"build","run","test","debug","profile","emit"};
     if(o.get("--toolchain").empty()||!nativeCommands.contains(o.command)||o.get("--target")=="web"||o.has("--interpreter-only")||(o.command=="emit"&&o.get("--kind")!="llvm"))
@@ -77,17 +78,22 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation [--json]\n  nex doctor\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
-      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN]\n  nex contract --kind intent --contracts FILE\n"
+      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server --toolchain FILE\n"
       "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
+  if(o.command=="toolchain"){
+    if(o.positional.empty())throw Error("E_OPTION","toolchain requires a configuration file");
+    BuildOptions options;options.toolchain=o.positional[0];auto snapshot=inspectNativeToolchain(options);
+    print(llvm::json::Object{{"schema","nex.toolchain-report/1"},{"ok",true},{"hash",snapshot.hash},{"target",snapshot.target},{"host_compatible",snapshot.hostCompatible},{"manifest",std::move(snapshot.manifest)},{"inputs",std::move(snapshot.inputs)}});return 0;
+  }
   if(o.command=="inspect"){
     auto path=o.get("--manifest"),expression=o.get("--expression");if(path.empty()||expression.empty())throw Error("E_OPTION","inspect requires --manifest FILE and --expression TEXT");
     auto kind=o.get("--kind","value");if(kind!="plan"&&kind!="value"&&kind!="demand")throw Error("E_OPTION","inspect kind must be plan, demand or value");std::string frame;
@@ -102,7 +108,13 @@ int run(const Options &o) {
   }
   if(o.command=="task"){
     if(o.positional.empty())throw Error("E_OPTION","task requires a source, task or receipt path");auto path=fs::absolute(o.positional[0]);auto root=projectRoot(path.parent_path());
-    TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}};
+    TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}, {}};
+    if(o.values.contains("--toolchains")){
+      auto file=fs::absolute(o.get("--toolchains"));if(!fs::is_regular_file(file)||fs::file_size(file)>65536)throw Error("E_OPTION","toolchain catalog requires a JSON file of at most 64 KiB");
+      auto map=parseJSON(readFile(file.string()));auto catalog=map.getAsObject();if(!catalog||catalog->empty()||catalog->size()>16)throw Error("E_OPTION","toolchain catalog must map 1..16 IDs to trusted configuration paths");
+      for(const auto &[id,v]:*catalog){auto name=id.str();auto path=v.getAsString();if(name.empty()||name.size()>64||!std::all_of(name.begin(),name.end(),[](unsigned char c){return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_'||c=='-';})||!path||path->empty()||path->size()>8192||path->contains('\0'))throw Error("E_OPTION","invalid toolchain catalog ID/path");
+        fs::path manifest(path->str());if(manifest.is_relative())manifest=file.parent_path()/manifest;options.toolchains[name]=manifest.lexically_normal().string();}
+    }
     if(!o.get("--candidates").empty()){auto file=o.get("--candidates");if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_OPTION","candidate map requires a bounded JSON file");auto map=parseJSON(readFile(file));auto object=map.getAsObject();if(!object||object->size()>8)throw Error("E_OPTION","candidate file must map program IDs to archived revisions");for(const auto &[id,v]:*object){auto revision=v.getAsString();if(!revision)throw Error("E_OPTION","candidate revision must be a string");options.candidates[id.str()]=revision->str();}}
     auto kind=o.get("--kind","check");
     if(kind=="init"){

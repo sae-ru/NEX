@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Trusted NEX task toolchain catalog",
+  "type": "object",
+  "minProperties": 1,
+  "maxProperties": 16,
+  "propertyNames": {
+    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+  },
+  "additionalProperties": {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 8192,
+    "not": {
+      "pattern": "\\u0000"
+    }
+  }
+}

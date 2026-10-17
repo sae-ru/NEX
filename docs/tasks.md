@@ -83,7 +83,7 @@ contracts do not inject runtime pre/postconditions or remove runtime guards.
 | Kind | Target | Acceptance |
 | --- | --- | --- |
 | `test` | `native`, `web` | Named, hash-pinned tests pass in interpreter and native/TypeScript execution; excluded realms cannot pass. |
-| `build` | `native`, host triple, `server`, `web` | Requested application, native library or web module is generated successfully. |
+| `build` | `native`, configured triple, `server`, `web` | Requested application, native library or web module is generated successfully. Foreign artifacts do not certify execution. |
 | `run` | `native` | Native and reference stdout match the exact expected text; exit status and an optional runtime error code agree. |
 | `verify` | `source` | All functions in a property-pinned scalar contract are proven. |
 | `effects` | `source` | Every function in the selected transitive call closure stays within allowed declared effects and realms. |
@@ -101,6 +101,86 @@ not a browser application build or an independent TypeScript typecheck.
 Native executables/archives and notices, web `dist`, modules and API generated
 sources are copied to the run's artifacts. Build metadata can refer to shared
 cache paths; copied binaries are not promised to be portable SDK bundles.
+
+## Pinned native toolchains
+
+Toolchain 0.19 adds optional `toolchain` and `toolchain_hash` fields to native
+build/test/run/profile checks. Supply both. `toolchain` is an ID (1–64 ASCII
+letters/digits/underscores/hyphens); `toolchain_hash` is the reviewed fingerprint:
+
+```sh
+nex toolchain /path/to/intel.json --json
+```
+
+This read-only command returns `nex.toolchain-report/1`: `hash`, `target`,
+`host_compatible`, normalized `manifest` and fingerprint `inputs`. It never runs
+the selected driver. Review the configuration and copy its hash into the check:
+
+```json
+{
+  "id": "intel-library",
+  "program": "app",
+  "kind": "build",
+  "target": "native",
+  "mode": "library",
+  "entry": "app::compute",
+  "toolchain": "intel",
+  "toolchain_hash": "REPLACE_WITH_REVIEWED_64_CHARACTER_HASH"
+}
+```
+
+Link the check to a reviewed requirement as usual. `target` still selects output
+kind; the toolchain selects its precise native ABI. A concrete target triple
+must match the selected configuration. `server` can select a toolchain too.
+Web/source checks cannot select native toolchains. Local test/run/profile checks
+use `target: native` and require a host-compatible configuration; a foreign
+configuration is reported unsupported and cannot satisfy execution requirements.
+
+Pass a separate trusted catalog on check/run/replay:
+
+```json
+{"intel": "/path/to/intel.json"}
+```
+
+```sh
+nex task task.json --kind check --toolchains trusted.json --json
+nex task task.json --kind run --toolchains trusted.json --task-hash HASH --json
+nex task /absolute/run/receipt.json --kind replay --toolchains trusted.json --json
+```
+
+`llm/toolchains.schema.json` defines this map of 1–16 IDs to configuration paths.
+Relative paths resolve against the catalog directory. Only configurations used
+by the task are inspected. The catalog is a current, explicitly selected source
+of trusted paths; replay does not execute a compiler merely because a receipt
+names it. Omitting a required current catalog entry, changing a pinned input or
+disagreeing with the captured configuration fails with E_TASK_TOOLCHAIN. A new
+trusted configuration file with the same normalized inputs may replace a deleted
+original file. Changing the reviewed fingerprint changes task intent.
+
+Runs capture normalized `inputs/toolchains/ID/config.json` and `identity.json`,
+indexed alongside the source/runtime inputs. Summaries and receipts report each
+selected toolchain's hash/ABI/host compatibility; native check rows report their
+resolved target. Replay checks the capture against the current trusted catalog
+and the pinned hash before creating a run. Fingerprints are rechecked before and
+after child commands: a successful child cannot satisfy a check if either
+inspection finds different pinned inputs. Changes restored between reads are
+not detected. Independent checks still continue.
+
+The fingerprint includes the compiler executable bytes, configured SQLite
+header/library, OpenSSL header tree/libraries, normalized configuration paths and
+explicit SDK settings files. Defaults and explicit equivalent paths normalize
+identically, preserving the final `clang++` driver name. Inspection is bounded
+to 4096 files, 512 MiB per file, 1 GiB total and 4 MiB of metadata. Header directory
+cycles are bounded. Paths are part of this identity; it is not a portable package
+identity or signed attestation. File hashes/metadata are saved, not full external
+toolchain copies.
+
+SDK contents beyond settings, compiler support files, linker/system libraries
+and the environment remain external. This fingerprint detects changes within
+its stated scope; it does not promise hermetic or bit-for-bit builds. Intel
+artifact acceptance is exercised by cross-building on ARM64. Intel native
+execution and live debugging still need a matching machine or configured
+emulator. No emulator is configured.
 
 Profile budgets use canonical unsigned decimal strings. Available maxima are
 `max_duration_ns`, `max_peak_handles`, `max_peak_objects`, and `max_calls` keyed

@@ -1,6 +1,7 @@
 #include "nex/tasks.h"
 #include "nex/task_process.h"
 #include "nex/verification.h"
+#include "nex/native_toolchain.h"
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Host.h"
 #include <algorithm>
@@ -32,9 +33,21 @@ std::string content(const Function &f){return hash(json(canonical(f),false));}
 void atomic(const fs::path &path,const JSON &value){auto temporary=path;temporary+=".tmp";writeFile(temporary.string(),json(value)+"\n");fs::rename(temporary,path);}
 void atomic(const fs::path &path,const Object &value){atomic(path,JSON(Object(value)));}
 bool ok(const JSON &v){auto o=v.getAsObject();return o&&o->getBoolean("ok").value_or(false);}
-bool supported(const Object &c){auto kind=text(c,"kind"),target=text(c,"target");if(kind=="test")return target=="native"||target=="web";if(kind=="build")return target=="native"||target=="web"||target=="server"||target==llvm::sys::getDefaultTargetTriple();if(kind=="run"||kind=="profile")return target=="native";return target=="source";}
 struct Candidate {Program program;JSON bundle,graph;std::string revision,sourceHash;};
-struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts;Object linkage;};
+struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts;Object linkage;std::map<std::string,NativeToolchainSnapshot> toolchains;std::map<std::string,std::string> checkTools;};
+bool supported(const Prepared &p,const Object &c){
+  auto kind=text(c,"kind"),target=text(c,"target");
+  if(kind=="build"){
+    if(target=="web")return true;
+    if(c.get("toolchain"))return true; // configureNative validated this selector.
+    BuildOptions options;options.target=target;try{configureNative(options);return true;}catch(const Error &e){if(e.code=="E_TARGET")return false;throw;}
+  }
+  if(c.get("toolchain")&&!p.toolchains.at(text(c,"toolchain")).hostCompatible)return false;
+  if(kind=="test")return target=="native"||target=="web";
+  if(kind=="run"||kind=="profile")return target=="native";
+  return target=="source";
+}
+Object toolchainValues(const Prepared &p){Object result;for(const auto &[id,s]:p.toolchains)result[id]=Object{{"hash",s.hash},{"target",s.target},{"host_compatible",s.hostCompatible}};return result;}
 std::set<std::string> reach(const Program &p,const std::set<std::string> &roots){std::set<std::string> found;std::function<void(const std::string&)> visit=[&](const auto &name){if(found.insert(name).second){const auto &f=p.function(name);if(!f.templateName.empty())visit(f.templateName);for(const auto &d:f.dependencies)visit(d);}};for(const auto &r:roots)visit(r);return found;}
 std::set<std::string> types(const Program &p,const std::set<std::string> &functions){std::set<std::string> found;std::function<void(Type)> visit=[&](auto t){if(t.element)visit(*t.element);if(t.kind==Type::Record&&found.insert(t.name).second){const auto &s=p.structure(t.name);if(!s.templateName.empty())visit(Type::record(s.templateName));for(const auto &argument:s.typeArguments)visit(argument);for(auto field:s.members())visit(field->type);}};std::function<void(E)> expr=[&](E e){if(e){visit(e->type);for(auto a:e->args)expr(a);}};std::function<void(const std::vector<S>&)> block=[&](const auto &b){for(auto s:b){visit(s->type);expr(s->expr);childBlocks(s,block);}};for(const auto &name:functions){const auto &f=p.function(name);visit(f.result);for(const auto &v:f.params)visit(v.type);block(f.body);}return found;}
 uint64_t decimal(const JSON &v){auto s=v.getAsString();if(!s||s->empty()||s->size()>20||(s->size()>1&&(*s)[0]=='0'))invalid("budget must be a canonical unsigned decimal string");uint64_t n=0;for(char c:*s){if(c<'0'||c>'9'||n>(UINT64_MAX-unsigned(c-'0'))/10)invalid("budget exceeds uint64");n=n*10+unsigned(c-'0');}return n;}
@@ -47,7 +60,10 @@ void validateShape(const JSON &task){
     const auto &c=object(value);auto kind=text(c,"kind");std::set<std::string> names={"id","kind","program","target","timeout_seconds"};
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
     if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="api"){}else invalid("unknown check kind: "+kind);
+    if(kind=="build"||kind=="test"||kind=="run"||kind=="profile")add({"toolchain","toolchain_hash"});
     fields(c,names);if(!checks.insert(identifier(c,"id")).second)invalid("duplicate check");if(!programs.contains(text(c,"program")))invalid("unknown check program");text(c,"target");number(c,"timeout_seconds",60);
+    if(bool(c.get("toolchain"))!=bool(c.get("toolchain_hash")))invalid("toolchain and toolchain_hash must be supplied together");
+    if(c.get("toolchain")){identifier(c,"toolchain");digest(c,"toolchain_hash");if(text(c,"target")=="web"||(kind!="build"&&text(c,"target")!="native"))invalid("toolchain requires a native check target");}
     if(kind=="test"){std::set<std::string> seen;for(const auto &v:array(c,"tests")){const auto &pin=object(v);fields(pin,{"symbol","content_hash"});if(!seen.insert(text(pin,"symbol")).second)invalid("duplicate test");digest(pin,"content_hash");}}
     if(kind=="build"||kind=="run"){auto profile=optional(c,"profile","debug");if(profile!="debug"&&profile!="release"&&profile!="profile")invalid("unknown build profile");if(kind=="build"){auto mode=optional(c,"mode","application");if(mode!="application"&&mode!="library"&&mode!="module")invalid("unknown build mode");}if(c.get("entry"))text(c,"entry");}
     if(kind=="run"){auto e=c.getObject("expect");if(!e)invalid("run requires expect");fields(*e,{"stdout","exit_code","runtime_code"});text(*e,"stdout",true,true);number(*e,"exit_code",999,0,255);if(!e->get("exit_code"))invalid("run requires exit_code");if(e->get("runtime_code"))text(*e,"runtime_code");}
@@ -82,6 +98,21 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
   std::map<std::string,std::set<std::string>> covered,structures;std::map<std::string,const Object*> checks;
   for(const auto &value:array(t,"checks")){
     const auto &c=object(value);auto id=text(c,"id"),kind=text(c,"kind");checks[id]=&c;const auto &p=result.programs.at(text(c,"program")).program;std::set<std::string> roots;
+    if(c.get("toolchain")){
+      auto name=text(c,"toolchain");auto selected=options.toolchains.find(name);
+      if(selected==options.toolchains.end())throw Error("E_TASK_TOOLCHAIN","missing trusted toolchain '"+name+"'; supply --toolchains CATALOG.json");
+      BuildOptions native;native.target=text(c,"target");native.toolchain=selected->second;configureNative(native);
+      if(!result.toolchains.contains(name)){
+        auto snapshot=inspectNativeToolchain(native);
+        if(!frozen.empty()){
+          auto base=frozen/"inputs/toolchains"/name;
+          if(json(readJSON(base/"config.json"),false)!=json(snapshot.manifest,false)||json(readJSON(base/"identity.json",4*1048576),false)!=json(snapshot.inputs,false))throw Error("E_TASK_TOOLCHAIN","trusted current toolchain differs from captured inputs: "+name);
+        }
+        result.toolchains.emplace(name,std::move(snapshot));
+      }
+      if(result.toolchains.at(name).hash!=digest(c,"toolchain_hash"))throw Error("E_TASK_TOOLCHAIN","reviewed toolchain fingerprint changed: "+name);
+      result.checkTools[id]=name;
+    }
     auto function=[&](const std::string &name)->const Function&{const auto &f=p.function(name);if(name!=f.name)invalid("task bindings require qualified function names: "+name);roots.insert(f.name);return f;};
     if(kind=="test")for(const auto &v:array(c,"tests")){const auto &pin=object(v);const auto &f=function(text(pin,"symbol"));if(!f.test)invalid("selected function is not a test");if(content(f)!=text(pin,"content_hash"))throw Error("E_TASK_TEST_CHANGED","reviewed test body changed: "+f.name);}
     else if(kind=="verify"){
@@ -136,6 +167,7 @@ void saveInputs(const Prepared &p,const fs::path &directory,const TaskOptions &o
   writeFile((directory/"inputs/task.json").string(),json(p.task)+"\n");
   for(const auto &[id,candidate]:p.programs)writeFile((directory/("inputs/programs/"+id+".json")).string(),json(candidate.bundle)+"\n");
   for(const auto &[id,contract]:p.contracts)writeFile((directory/("inputs/contracts/"+id+".json")).string(),json(contract)+"\n");
+  for(const auto &[id,snapshot]:p.toolchains){writeFile((directory/"inputs/toolchains"/id/"config.json").string(),json(snapshot.manifest)+"\n");writeFile((directory/"inputs/toolchains"/id/"identity.json").string(),json(snapshot.inputs)+"\n");}
   for(const auto &[name,data]:resources())writeFile((directory/"inputs/resources"/name).string(),data);
   auto files=fileIndex(directory/"inputs");Object indexed;uint64_t bytes=0;for(auto &[name,v]:files){bytes+=*object(v).getInteger("bytes");indexed["inputs/"+name.str()]=std::move(v);}if(bytes>128*1048576)invalid("task input snapshot exceeds 128 MiB");
   atomic(directory/"inputs/manifest.json",Object{{"schema","nex.task-inputs/1"},{"task_hash",p.taskHash},{"compiler_build",NEX_BUILD_ID},{"compiler_hash",hash(readFile(options.compiler))},{"files",std::move(indexed)}});
@@ -153,13 +185,21 @@ JSON verifyInputs(const fs::path &directory,const TaskOptions &options,const std
   for(const auto &[name,_]:actual)if(name!="manifest.json"&&!files.get("inputs/"+name.str()))throw Error("E_TASK_INTEGRITY","unindexed task input");
   return manifest;
 }
-JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
+JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(p,c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"toolchains",toolchainValues(p)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
 std::string nonce(){return std::to_string(std::random_device{}())+"-"+std::to_string(std::random_device{}());}
 struct Runner {
   Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;
+  void verifyToolchain(const std::string &id){
+    auto selected=p.checkTools.find(id);if(selected==p.checkTools.end())return;
+    BuildOptions native;native.toolchain=inside(directory,"inputs/toolchains/"+selected->second+"/config.json").string();
+    auto current=inspectNativeToolchain(native);const auto &expected=p.toolchains.at(selected->second);
+    if(current.hash!=expected.hash||json(current.manifest,false)!=json(expected.manifest,false))throw Error("E_TASK_TOOLCHAIN","captured toolchain inputs changed during execution: "+selected->second);
+  }
   JSON command(const std::string &id,const std::string &program,const std::vector<std::string> &args,unsigned timeout,const std::string &label){
     const auto &candidate=p.programs.at(program);auto workspace=directory/"workspaces"/program;
-    std::vector<std::string> command{options.compiler};command.insert(command.end(),args.begin(),args.end());command.insert(command.end(),{"--revision",candidate.revision,"--build-directory",(fs::path(options.root)/".nex/build").string(),"--json"});
+    std::vector<std::string> command{options.compiler};command.insert(command.end(),args.begin(),args.end());
+    if(p.checkTools.contains(id)&&!args.empty()&&(args[0]=="build"||args[0]=="test"||args[0]=="run"||args[0]=="profile"))command.insert(command.end(),{"--toolchain",(directory/"inputs/toolchains"/p.checkTools.at(id)/"config.json").string()});
+    command.insert(command.end(),{"--revision",candidate.revision,"--build-directory",(fs::path(options.root)/".nex/build").string(),"--json"});
     auto relative="logs/"+id+"/"+label;auto process=runTaskProcess(command,workspace.string(),{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"}},timeout,(directory/relative).string());
     Object result{{"command",Array{}},{"exit_code",process.process.code},{"stdout",relative+"/stdout"},{"stderr",relative+"/stderr"},{"timed_out",process.timedOut},{"output_limit",process.outputLimit},{"interrupted",process.interrupted}};
     for(const auto &arg:command)result.getArray("command")->push_back(arg);
@@ -177,16 +217,17 @@ struct Runner {
   JSON check(const Object &c){
     auto id=text(c,"id"),kind=text(c,"kind"),program=text(c,"program"),target=text(c,"target");const auto &candidate=p.programs.at(program);const auto &source=candidate.program;
     Object row{{"id",id},{"kind",kind},{"program",program},{"target",target},{"status","failed"}};
-    if(!supported(c)){row["status"]="unsupported";row["reason"]="target is not configured on this host";return row;}
+    if(p.checkTools.contains(id)){const auto &snapshot=p.toolchains.at(p.checkTools.at(id));row["toolchain"]=p.checkTools.at(id);row["toolchain_hash"]=snapshot.hash;row["native_target"]=snapshot.target;row["host_compatible"]=snapshot.hostCompatible;}
+    if(!supported(p,c)){row["status"]="unsupported";row["reason"]="target is not configured on this host";return row;}
     auto started=std::chrono::steady_clock::now();auto timeout=number(c,"timeout_seconds",60);auto artifact=directory/"artifacts"/id;fs::create_directories(artifact);
-    auto invoke=[&](std::vector<std::string> args,const std::string &label){auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");auto value=command(id,program,args,timeout-unsigned(elapsed),label);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
+    auto invoke=[&](std::vector<std::string> args,const std::string &label){verifyToolchain(id);auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");auto value=command(id,program,args,timeout-unsigned(elapsed),label);verifyToolchain(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
     auto successful=[&](const JSON &v){return object(v).getInteger("exit_code")==0&&object(v).get("response")&&ok(*object(v).get("response"));};
     auto response=[&](const JSON &v)->const Object&{auto result=object(v).get("response");if(!result||!result->getAsObject())throw Error("E_TASK_PROCESS","compiler did not produce a JSON response");return object(*result);};
     auto entry=optional(c,"entry",source.module+"::"+(target=="server"?"handle":"main"));
     bool passed=false;
     if(kind=="test"){
       passed=true;Array results;unsigned index=0;for(const auto &v:array(c,"tests")){auto name=text(object(v),"symbol");const auto &f=source.function(name);if((target=="web"&&f.realm=="server")||(target=="native"&&f.realm=="client")){row["status"]="unsupported";row["reason"]="selected test realm is unavailable on the requested target";return row;}
-        auto value=invoke({"test","--symbol",name,"--target",target=="native"?llvm::sys::getDefaultTargetTriple():target},"test-"+std::to_string(index++));bool found=false;if(successful(value)){auto tests=response(value).getArray("tests");if(tests)for(const auto &r:*tests)if(object(r).getString("name")==name&&ok(r)&&!object(r).getBoolean("skipped").value_or(false))found=true;}passed&=found;results.push_back(Object{{"symbol",name},{"ok",found},{"receipt",text(object(value),"receipt")}});if(interrupted)break;}
+        auto value=invoke({"test","--symbol",name,"--target",target},"test-"+std::to_string(index++));bool found=false;if(successful(value)){auto tests=response(value).getArray("tests");if(tests)for(const auto &r:*tests)if(object(r).getString("name")==name&&ok(r)&&!object(r).getBoolean("skipped").value_or(false))found=true;}passed&=found;results.push_back(Object{{"symbol",name},{"ok",found},{"receipt",text(object(value),"receipt")}});if(interrupted)break;}
       row["tests"]=std::move(results);
     }else if(kind=="effects"){
       auto allowed=strings(c,"allowed_effects",0);auto realms=c.get("allowed_realms")?strings(c,"allowed_realms"):std::vector<std::string>{"shared","client","server"};std::set<std::string> roots;for(const auto &s:strings(c,"symbols"))roots.insert(s);Array violations;
@@ -215,7 +256,7 @@ struct Runner {
       auto mode=optional(c,"mode","application");if(target=="web"&&mode=="library")invalid("web libraries use mode module");if(target!="web"&&mode=="module")invalid("module output requires target web");
       std::vector<std::string> args;
       if(mode=="module")args={"emit","--kind","typescript","--entry",entry,"--directory",(artifact/"module").string()};
-      else {args={"build","--target",target=="native"?llvm::sys::getDefaultTargetTriple():target,"--profile",optional(c,"profile","debug")};if(target!="web"){args.insert(args.end(),{"--entry",entry});if(mode=="library")args.push_back("--library");}}
+      else {args={"build","--target",target,"--profile",optional(c,"profile","debug")};if(target!="web"){args.insert(args.end(),{"--entry",entry});if(mode=="library")args.push_back("--library");}}
       auto value=invoke(args,"build");passed=successful(value);row["receipt"]=text(object(value),"receipt");
       if(passed&&mode!="module"){const auto &r=response(value);if(target=="web")copyArtifact(text(r,"dist"),artifact/"dist");else {auto exe=fs::path(text(r,"executable"));copyArtifact(exe,artifact/exe.filename());auto notices=r.getString("notices").value_or("").str();if(!notices.empty())copyArtifact(notices,artifact/"THIRD_PARTY_NOTICES.txt");for(auto k:{"metadata","compilation","debug_manifest"})if(auto path=r.getString(k))if(fs::is_regular_file(path->str()))copyArtifact(path->str(),artifact/(std::string(k)+".json"));}}
     }
@@ -223,7 +264,7 @@ struct Runner {
   }
   void checkpoint(Store &store){auto output=directory/"receipt.json";atomic(output,report);store.recordTask(text(report,"run_id"),p.id,p.taskHash,text(report,"status"),output.string(),hash(readFile(output.string())));}
   JSON run(const std::string &replayOf=""){
-    Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
+    Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
     for(const auto &[id,candidate]:p.programs){auto workspace=directory/"workspaces"/id;writeFile((workspace/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry",candidate.program.entryUnit}})+"\n");Store local(workspace/".nex");local.save(loadBundle(candidate.bundle,workspace.string()));}
     checkpoint(store);
     for(const auto &v:array(object(p.task),"checks")){
