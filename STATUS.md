@@ -18,9 +18,24 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
-## In progress: native build overhead
+## In progress: relocatable development SDK
 
-The working toolchain is **0.26.0**, retaining language **0.11**. A stack sample
+Development toolchain **0.27.0** retains language **0.11**. Relative installed-SDK
+tool/dependency selection and explicit archive/debug-tool overrides are implemented.
+The compiler reports effective paths and rejects broken/escaping SDK descriptors.
+Three host-SDK cases passed with real compile/run/archive subprocesses after a
+Unicode/percent-path relocation; invalid descriptors never invoked a fallback.
+The first fixture failures (a missing fingerprint header and macOS /var alias)
+were corrected; native-target, incremental and task-toolchain regressions passed.
+A macOS assembler copies tools, headers and the non-system dylib closure,
+rewrites copies, records provenance/notices and refreshes ad hoc signatures.
+Its actual bundle/relocation acceptance and the full 0.27 matrix are pending.
+Apple SDK/tools, Python, Node and host debugger remain external prerequisites;
+Linux/Windows packaging, older macOS support and notarization remain open.
+
+## Development milestone: native build overhead
+
+Toolchain **0.26.0** retains language **0.11**. A stack sample
 of a warm 0.25 build found complete MLIR generation used only to validate its
 entry, plus repeated operation-tree construction. Entry checks are now shared
 between the builder/emitter and run before code selection without emitting IR.
@@ -34,9 +49,11 @@ remain required. Actual reused-function LLDB/DAP passed in 7.872 s. The installe
 macOS SDK passed all nine phases in 66.831 s, including archived watches,
 source-deleted replay and both locked Vite builds. Reports:
 `build/native-build-026-{targeted,live}.log` and
-`build/sdk-026-native-build/report.json`. The full new matrix remains pending.
-The preserved 0.25 SDKs are recorded in `build/preserved-sdk-025.json`; its x86-64
-verification continues on the immutable `source-025-901154f5` tree independently.
+`build/sdk-026-native-build/report.json`. All 27 macOS Debug-compiler suites passed
+in 1028.66 s. Linux ARM64 passed 252 declared Python cases (six macOS SDK skips),
+all eight live suites and source-free SDK acceptance. The frozen 0.26 Release
+compiler and Linux emulated x86-64 matrix are still finishing. Preserved 0.25
+SDKs remain recorded in `build/preserved-sdk-025.json`.
 
 In five interleaved paired observations of the same 13-function workload on a
 loaded development host, median warm builds improved from 1.4051 s (0.25) to
@@ -70,8 +87,7 @@ library path. The installed macOS SDK passed all nine maintained phases in
 61.625 s, including one-function invalidation, both archived outputs, actual
 archived DAP, numeric semantics and both locked Vite builds
 (`build/sdk-025-function-cache/report.json`). LLDB's value report was checked to
-resolve a real frozen file through its source map. The full new regression and
-platform matrix is still being completed. Preserve the
+resolve a real frozen file through its source map. The complete regression/platform matrix below passed. Preserve the
 verified 0.24 SDKs recorded in `build/preserved-sdk-024.json`; this development
 work does not replace that checkpoint or complete the broader objective.
 
@@ -81,8 +97,9 @@ ARM64 passed all 27 suites in 422.57 s, with 251 declared Python cases including
 six explicit macOS-SDK skips. All eight live suites passed, including actual
 reused-function LLDB/DAP after source deletion. Its source-free, network-disabled
 SDK passed all nine phases in 53.389 s and required one compiled/two reused
-functions after a same-file edit (`build/linux-arm64-025`). The emulated x86-64
-run remains in progress; that host does not claim live debugging.
+functions after a same-file edit (`build/linux-arm64-025`). The emulated x86-64 run passed all 27 suites in 1587.36 s and its source-free
+nine-phase SDK acceptance in 205.889 s; that host does not claim live debugging.
+`build/function-cache-milestone-025.json` records the completed matrix.
 
 The new SDK preserves the earlier semantic revision and reviewed task hash.
 SDK 0.24 still inspects/replays its own original frame/receipt; 0.25 rejects

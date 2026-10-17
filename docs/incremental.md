@@ -1,4 +1,4 @@
-# Native compilation and toolchains — toolchain 0.26
+# Native compilation and toolchains — toolchain 0.27
 
 Current source language is 0.11. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
@@ -37,6 +37,14 @@ their original `granularity: module`. Lifted closure and specialized generic
 names remain derived metadata.
 
 ## Native targets and SDKs
+
+Toolchain 0.27 also selects compiler, archive/debug tools and host dependencies
+from a relative installed-SDK descriptor when present. Explicit toolchain
+manifests can override `archiver` and `debug_packager`; their bytes participate
+in native cache keys and read-only toolchain fingerprints. A broken bundle
+descriptor fails with E_SDK rather than selecting build-machine defaults.
+`doctor` reports the effective paths, including `NEX_CLANG` overrides.
+See [SDK bundling and acceptance](sdk.md) for layout, provenance and prerequisites.
 
 `--target native` selects the host ABI. `--target TRIPLE` selects a concrete
 64-bit native ABI. On a macOS host, macOS arm64 and x86_64 builds are configured:

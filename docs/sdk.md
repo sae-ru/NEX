@@ -16,6 +16,59 @@ seventeen installed guides. Python 3.9+, the SDK's development dependencies
 (LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required.
 This is an installed-development-chain check, not a portable SDK bundle.
 
+## Relocatable macOS development bundle (0.27, under validation)
+
+```sh
+cmake --install build --prefix /absolute/installed-sdk
+python3 tools/sdk_bundle.py --sdk /absolute/installed-sdk \
+  --output /absolute/new-nex-bundle --notices /absolute/notices.json
+mv /absolute/new-nex-bundle '/absolute/moved NEX SDK'
+python3 '/absolute/moved NEX SDK/share/nex/tools/sdk_acceptance.py' \
+  '/absolute/moved NEX SDK' --output /absolute/new-bundle-evidence --browser --live
+```
+
+The packager currently runs on macOS. It copies the installed compiler, matching
+resources, Clang/llvm-ar/dsymutil, Clang builtin/runtime resources, libc++ headers,
+SQLite/OpenSSL headers/libraries and their transitive non-system Mach-O libraries.
+It rewrites copied load commands to bundle-relative `@loader_path` references,
+removes build-machine rpaths and refreshes ad hoc code signatures. Source
+installations are never rewritten. Apple SDK/command line tools, the system C++
+runtime/linker, Python, Node/npm and host LLDB/lldb-dap remain prerequisites.
+Developer ID signing/notarization, older macOS versions, Linux/Windows bundles
+and mobile SDKs remain pending. The resulting manifest records the maximum
+minimum macOS version of its shipped images; the development compiler built
+on this host requires macOS 27.0 even when generated applications target 13.0.
+
+`--notices` supplies a `nex.sdk-notices/1` JSON object with `components`, each
+containing a unique `name`, `version`, upstream `url`, local `roots` and
+`license_files` arrays. Paths are relative to that JSON file or absolute.
+Every external file must belong to a declared root; overlapping roots use the
+most specific match. Full UTF-8 notice files are retained with their hashes.
+For example one entry can describe the LLVM installation prefix and its complete
+LLVM and component notice files. Add entries for every actual dependency found
+in the closure, including compression libraries. Missing provenance stops the
+packaging process. Keep the completed component/notice inventory with the bundle.
+
+`share/nex/sdk-host.json` (`nex.sdk-host/1`,
+[`sdk-host.schema.json`](../llm/sdk-host.schema.json)) selects tools and dependency
+paths relative to the actual executable's installation prefix. Paths must resolve
+inside that prefix. A present but invalid/incomplete descriptor fails with E_SDK;
+it does not fall back to paths from the compiler's build machine.
+`NEX_RESOURCE_DIR` selects language/runtime text resources separately.
+`NEX_CLANG` and explicit `--toolchain` configurations retain their normal override
+precedence; `doctor` now reports the effective compiler, archive/debug tools and
+dependency paths. An explicit native toolchain can select `archiver` and
+`debug_packager`; both are fingerprinted alongside the selected linker.
+
+`share/nex/sdk-bundle.json` inventories packaged bytes, original external hashes,
+component notices, prerequisites and minimum OS. `ok: true` there means assembly
+and static load-command/signature validation passed. `acceptance_passed: false`
+requires the separate maintained acceptance run after moving the directory.
+That manifest does not claim testing on another machine or older OS.
+
+The layout follows [Apple's guidance for nonstandard code bundles](https://developer.apple.com/documentation/xcode/embedding-nonstandard-code-structures-in-a-bundle)
+and uses the [LLVM toolchain components](https://clang.llvm.org/docs/Toolchain.html).
+
 The maintained scenario performs these actual operations:
 
 1. Create, check, test and execute a new project.

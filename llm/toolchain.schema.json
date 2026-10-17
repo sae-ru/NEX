@@ -67,6 +67,14 @@
     "linker": {
       "type": "string",
       "minLength": 1
+    },
+    "archiver": {
+      "type": "string",
+      "minLength": 1
+    },
+    "debug_packager": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }

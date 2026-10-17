@@ -810,7 +810,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     linkStage=temporary.str().str();linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
   }
   if(options.libraryEntry){
-    std::vector<std::string> archive={(std::filesystem::path(NEX_LLVM_TOOLS)/"llvm-ar").string(),"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
+    std::vector<std::string> archive={toolchain.archiver,"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
   }else {if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);if(storage)link.push_back(toolchain.sqliteLibrary);link.insert(link.end(),{"-o",linkOutput,"-g"});}
   if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
   if(!linkStage.empty()){
@@ -818,7 +818,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     catch(const Error &e){throw Error(e.code,std::string(e.what())+"; link output retained at "+linkStage.string(),e.span);}
   }
   if(!options.libraryEntry&&driverABI.isOSDarwin()) {
-    auto dsym=(std::filesystem::path(NEX_LLVM_TOOLS)/"dsymutil").string();
+    auto dsym=toolchain.debugPackager;
     if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
     writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }

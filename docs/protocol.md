@@ -199,3 +199,10 @@ and bounded contexts include callback parameter/result types and nominal
 phantom arguments. Genuine 0.9 archives require explicit migration with original
 history/source/IDs retained. Task/proof snapshot pins must be reviewed/regenerated
 without weakening acceptance intent; old frames/receipts need SDK 0.22.
+
+Toolchain 0.27 adds relative installed host-SDK selection (`nex.sdk-host/1`).
+`doctor` reports effective native compiler/archive/debug/linker and SQLite/OpenSSL
+paths plus `sdk_manifest`. Native toolchain configurations accept optional
+`archiver` and `debug_packager`; read-only snapshot/2 fingerprints include their
+bytes. The SDK guide defines bundle assembly versus moved-directory acceptance
+and prerequisites. Source language and graph canonical formats are unchanged.

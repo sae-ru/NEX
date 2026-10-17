@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.26.0 LANGUAGES C CXX)
+project(NEX VERSION 0.27.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -63,6 +63,7 @@ install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools)
 install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
 enable_testing()
 find_package(Threads REQUIRED)
 add_executable(nex_float_runtime_probe tests/float_runtime.cpp runtime/runtime.cpp runtime/nex_json.cpp)
@@ -93,6 +94,8 @@ add_test(NAME incremental COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/incremental.py $<TARGET_FILE:nex>)
 add_test(NAME native_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_targets.py $<TARGET_FILE:nex>)
+add_test(NAME sdk_host COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_host.py $<TARGET_FILE:nex>)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
 add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
