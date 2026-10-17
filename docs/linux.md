@@ -116,3 +116,12 @@ separate work. Check `STATUS.md` and actual saved reports for verified results.
 Upstream inputs: [LLVM packages](https://apt.llvm.org/),
 [Node 22.22.3](https://nodejs.org/en/download/archive/v22.22.3),
 [Z3 5.3.1](https://github.com/Z3Prover/z3/releases/tag/z3-5.3.1).
+
+## Relocatable SDK bundle
+
+Toolchain 0.28 adds ELF SDK assembly through `python3 tools/linux/bundle.py
+--sdk PREFIX --arch arm64 --output NEW_DIRECTORY` (or `--arch amd64`). The separate
+packaging image adds patchelf; clean runtime and archive verification run without
+LLVM/MLIR/Z3/Clang packages, source mounts or external network. The system GCC C/C++
+SDK and GNU runtime remain prerequisites. [The SDK guide](sdk.md) defines the
+copied closure, notice inventory, relocation/archive gates and scope limits.

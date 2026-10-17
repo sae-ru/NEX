@@ -39,7 +39,8 @@
     "sdk_handoff": "docs/sdk.md",
     "sdk_acceptance": "tools/sdk_acceptance.py",
     "host_sdk_schema": "llm/sdk-host.schema.json",
-    "sdk_bundle": "tools/sdk_bundle.py"
+    "sdk_bundle": "tools/sdk_bundle.py",
+    "linux_sdk_bundle": "tools/linux/bundle.py"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function --json",
   "context_command": "nex context --symbol NAME",

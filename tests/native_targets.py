@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import unittest
@@ -69,6 +70,33 @@ server fn main() -> unit !{db,io} {
         archive = self.cli('build', '--library', '--entry', 'main', *args)
         self.assertEqual(archive['kind'], 'static_library')
         self.assertGreater(Path(archive['executable']).stat().st_size, 100)
+
+    @unittest.skipUnless(platform.system() == 'Linux', 'ELF runtime library selection')
+    def test_selected_sqlite_is_actually_loaded_from_literal_elf_directory(self):
+        original=self.doctor['native_sqlite_library']
+        dynamic=subprocess.check_output(['readelf','-d',original],text=True)
+        soname=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic).group(1)
+        directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
+        library=directory/soname;shutil.copy2(original,library)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(library)})
+        self.source('''module selected_elf_store;
+server fn main() -> unit !{db,io} {
+  assert(unwrap(store_put("item","persistent 🧠")));
+  print(unwrap(store_get("item")));
+}
+''')
+        built=self.cli('build','--toolchain',self.config)
+        environment={'PATH':'/usr/bin:/bin','NEX_DATABASE':str(self.root/'data.sqlite'),'NEX_STORAGE_OWNER':'alice'}
+        run=subprocess.run([built['executable']],env=environment,capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,'persistent 🧠\n'),run.stderr)
+        dependencies=subprocess.check_output(['ldd',built['executable']],env=environment,text=True)
+        actual=re.search(r'^\s*'+re.escape(soname)+r'\s*=>\s*(.*?)\s+\(0x',dependencies,re.M)
+        self.assertIsNotNone(actual,dependencies)
+        self.assertEqual(Path(actual.group(1)).resolve(),library.resolve())
+        self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
+        invalid=self.root/'invalid:elf';invalid.mkdir();shutil.copy2(original,invalid/soname)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(invalid/soname)})
+        self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
 
     def test_invalid_manifests_and_non_native_commands_reject(self):
         for value in ([], {}, {'schema':'bad','target':self.doctor['host']},

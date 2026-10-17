@@ -170,3 +170,52 @@ macOS, generated storage/server executables record the selected dependency
 directories as runtime search paths for `@rpath` install names. Moving an SDK
 after building an application requires rebuilding that application; distributing
 application runtime libraries remains separate platform packaging work.
+
+## Linux bundle assembly and clean validation (0.28, under validation)
+
+From a matching installed Linux SDK built with the pinned Ubuntu 24.04/LLVM 22
+recipe:
+
+```sh
+python3 tools/linux/bundle.py --sdk /absolute/linux-sdk --arch arm64 \
+  --output /absolute/new-linux-bundle-evidence
+# Use --arch amd64 for x86-64; execution is emulated on an ARM64 Docker host.
+```
+
+The helper builds separate packaging and runtime images. It does not change
+`nex-linux-toolchain`. The packaging image adds pinned patchelf 0.18.0; the
+runtime image has the system GCC C/C++ SDK, Python, OpenSSL CLI and external
+Node/npm prerequisites, with no installed LLVM, MLIR, Z3 or Clang. Both acceptance
+containers disable external network and have no source or original SDK mount.
+The helper freezes the input SDK and assembler before packaging.
+
+The bundle includes Clang/llvm-ar/LLD and Clang resources, SQLite/OpenSSL headers
+(including the architecture-specific OpenSSL configuration) and all non-platform
+ELF dependencies. Copied images get `$ORIGIN` RUNPATH entries; SONAME aliases are
+retained and absolute DT_NEEDED entries are normalized. Each direct library
+resolution must stay within the bundle. GNU glibc/loader, libstdc++/libgcc and the
+GCC development headers/CRT stay part of the external platform SDK. This is a
+supported-platform development bundle, not a libc-independent Linux executable.
+The manifest records the build distribution, observed GLIBC/GLIBCXX requirements,
+platform prerequisites and the actual patchelf version. Broader Linux distributions,
+older glibc baselines and physical x86-64 execution need separate validation.
+
+Explicit notice roots still describe unmanaged official Z3 files. `--dpkg-notices`
+adds component ownership, exact package/source versions, installed copyright texts
+and referenced common license texts for Debian/Ubuntu-managed files. Missing
+ownership or copyright files stop assembly. Patchelf is a packaging dependency;
+it is absent from the resulting SDK's runtime requirements.
+
+After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
+all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
+and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
+server. It runs all ten maintained phases including both locked browser builds.
+The helper then creates a normalized `.tar.gz` and hash, extracts it into another
+source-free container and repeats the workflow with the restored compiler.
+`verification.json` retains commands, image IDs, logs and both acceptance reports.
+Live LLDB is a separate verified host prerequisite; these minimal containers report
+`live_debugger: false` rather than claiming debugger execution.
+
+Native Linux executable builds now record configured SQLite/OpenSSL directories
+as ELF runtime search paths, preserving literal commas, Unicode and percent signs.
+A colon in such a directory is rejected because it separates ELF search entries.

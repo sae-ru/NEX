@@ -1,4 +1,4 @@
-# Native compilation and toolchains — toolchain 0.27
+# Native compilation and toolchains — toolchain 0.28
 
 Current source language is 0.11. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
@@ -234,3 +234,9 @@ For macOS storage/server executables, selected SQLite/OpenSSL library directorie
 are passed as separate runtime-search-path arguments, allowing `@rpath` dylib
 install names while preserving literal commas, percent signs and Unicode.
 Native archives leave dependency resolution to the final host link.
+
+Toolchain 0.28 also records selected Linux library directories as ELF runtime
+search paths. The integration test executes SQLite storage and checks the actual
+loader resolution in a comma/Unicode/percent directory. ELF search-list colons
+are rejected explicitly. Linux SDK assembly and clean archive acceptance are
+described in the SDK and Linux guides.

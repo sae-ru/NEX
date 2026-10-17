@@ -18,6 +18,33 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
+## In progress: Linux development bundles
+
+Development toolchain **0.28.0** retains source language **0.11**. Linux native
+storage/server builds now select configured library directories at execution time,
+with an observable SQLite/loader regression for comma/Unicode/percent paths and
+explicit rejection of ELF search-list colons. The three macOS native-target,
+host-SDK and task-toolchain suites passed in 115.07 s; their Linux/complete 0.28
+validation is pending.
+
+ELF assembly copies Clang/llvm-ar/LLD, Clang resources, SQLite/OpenSSL headers
+(including multiarch configuration) and non-platform libraries. Copied images get
+origin-relative RUNPATH and matching SONAME aliases. GNU loader/glibc/libstdc++/
+libgcc and C/C++ development headers/CRT remain external platform prerequisites.
+Debian/Ubuntu ownership metadata supplies exact package/source versions and full
+copyright/common-license texts; unmanaged files need explicit component notices.
+An assembly-only prototype on the preserved 0.27 SDK inventoried 723 files and
+23 components. It is not accepted application evidence: ELF application paths
+require the current 0.28 compiler.
+
+`tools/linux/bundle.py` freezes an installed SDK/assembler, uses a separate
+patchelf image, moves the assembled SDK, runs all ten maintained phases in a
+source-free/network-disabled image with no LLVM/MLIR/Z3/Clang, creates an archive
+and repeats validation after extracting it elsewhere. Actual 0.28 bundle and
+archive validation remains pending. The original compiler images are unchanged.
+All broader language, resource/async/FFI, compiler-cache/LTO and platform work
+remains in scope; this step does not complete the requested toolchain.
+
 ## In progress: relocatable development SDK
 
 Development toolchain **0.27.0** retains language **0.11**. Relative installed-SDK
@@ -58,7 +85,13 @@ The companion manifest records compiler tree
 `333666ed7c1ad70f9e44f6e6685ea5f292379c46` and the three tested SDK-resource overlays.
 Archive verification is `build/sdk-027-archive-verification.json`.
 
-The complete 0.27 Debug/Release and Linux matrix is still running. A first mixed
+The 0.27 macOS Debug and Release compilers passed all 28 suites in 986.25 s
+and 847.04 s respectively (256 declared Python cases plus the C++ probe). The
+installed verified Debug SDK passed ten phases in 87.948 s. Linux ARM64 passed
+all 28 suites in 429.66 s, all eight live suites and ten source-free SDK phases
+in 66.587 s. Its compiler/runtime/test inputs match `333666ed`, with five recorded
+SDK validation/document overlays from `7b0f8ca4`; all 64 indexed resources match.
+The emulated Linux x86-64 0.27 run remains in progress. A first mixed
 source-test/old-binary run was explicitly invalidated; it is not accepted evidence.
 Current compiler/runtime/test inputs match the frozen `333666ed` source snapshot;
 SDK validation later corrected only its `/api/` fixture and packaging resources.
@@ -87,8 +120,11 @@ source-deleted replay and both locked Vite builds. Reports:
 `build/sdk-026-native-build/report.json`. All 27 macOS Debug-compiler suites passed
 in 1028.66 s. Linux ARM64 passed 252 declared Python cases (six macOS SDK skips),
 all eight live suites and source-free SDK acceptance. The frozen 0.26 Release compiler passed all 27 suites in 910.45 s; its installed
-SDK passed nine phases in 58.588 s. Linux emulated x86-64 is still finishing. Preserved 0.25
-SDKs remain recorded in `build/preserved-sdk-025.json`.
+SDK passed nine phases in 58.588 s. Linux emulated x86-64 passed all 27 suites
+in 1792.24 s and its source-free nine-phase SDK in 201.835 s. This completes the
+0.26 matrix (252 declared Python cases plus the C++ probe per platform; Linux
+records six macOS-SDK skips). `build/native-build-milestone-026.json` and
+`build/preserved-sdk-026.json` retain reports and four untouched SDK prefixes.
 
 In five interleaved paired observations of the same 13-function workload on a
 loaded development host, median warm builds improved from 1.4051 s (0.25) to

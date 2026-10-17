@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Assemble a relocatable macOS development SDK from an installed NEX SDK.
+"""Assemble a relocatable macOS/Linux development SDK from an installed SDK.
 
-Only copies are rewritten/signed. Apple SDK, system C++ runtime/linker/debugger,
-Python and Node/npm remain host prerequisites. See docs/sdk.md for acceptance.
+Only copies are rewritten. Platform C/C++ SDK/runtime, Python, Node/npm and
+host debugger remain prerequisites. See docs/sdk.md for acceptance.
 """
 import argparse
 import hashlib
@@ -45,14 +45,51 @@ def macho(path):
     return bool(re.search(r'\b(EXECUTE|DYLIB|BUNDLE|DYLINKER)\b', run(['/usr/bin/otool', '-hv', path])))
 
 
+class DebianNotices:
+    """Ownership metadata only; never runs package-supplied maintainer scripts."""
+    def __init__(self, components):
+        self.components, self.owners, self.packages = components, {}, {}
+        for listing in Path('/var/lib/dpkg/info').glob('*.list'):
+            for name in listing.read_text().splitlines():
+                if name.startswith('/'):
+                    self.owners.setdefault(name, listing.name[:-5])
+
+    def component(self, source):
+        owner = self.owners.get(str(source))
+        if owner is None:
+            raise ValueError('unmanaged external file needs explicit component/notice: ' + str(source))
+        if owner not in self.packages:
+            fields = run(['dpkg-query', '-W', '-f=${Version}\n${source:Package}\n${source:Version}\n${Homepage}', owner]).splitlines()
+            copyright_file = Path('/usr/share/doc') / owner.split(':')[0] / 'copyright'
+            if not copyright_file.is_file():
+                raise ValueError('missing installed copyright metadata for ' + owner)
+            text = copyright_file.read_text()
+            licenses = [str(copyright_file.resolve())]
+            for name in sorted(set(re.findall(r'/usr/share/common-licenses/([A-Za-z0-9_.+-]+)', text))):
+                path = Path('/usr/share/common-licenses') / name
+                if path.is_file():
+                    licenses.append(str(path.resolve()))
+            component = {'name': 'deb-' + owner.replace(':', '_'), 'version': fields[0],
+                         'url': fields[3] if len(fields) > 3 and fields[3] else 'https://packages.ubuntu.com/noble/' + owner.split(':')[0],
+                         'package': owner, 'source_package': fields[1], 'source_version': fields[2],
+                         'roots': [], 'license_files': list(dict.fromkeys(licenses))}
+            if any(item['name'] == component['name'] for item in self.components):
+                raise ValueError('automatic notice component name collision: ' + component['name'])
+            self.components.append(component)
+            self.packages[owner] = component
+        component = self.packages[owner]
+        component['roots'].append(str(source))
+        return component['name']
+
+
 class Bundle:
-    def __init__(self, sdk, output, notices):
+    def __init__(self, sdk, output, notices, dpkg_notices=False):
         self.sdk, self.output = sdk, output
         self.origins, self.images, self.destinations, self.dependencies = {}, {}, {}, {}
         self.minimum_os = (0,)
         self.system_libraries = set()
         self.components = json.loads(notices.read_text())
-        if self.components.get('schema') != 'nex.sdk-notices/1' or not self.components.get('components'):
+        if self.components.get('schema') != 'nex.sdk-notices/1' or (not self.components.get('components') and not dpkg_notices):
             raise ValueError('expected nex.sdk-notices/1 with nonempty components')
         names = set()
         for component in self.components['components']:
@@ -64,13 +101,22 @@ class Bundle:
                 raise ValueError('component needs version, url, roots and license_files: ' + name)
             component['roots'] = [str((notices.parent / root).resolve(strict=True)) for root in component['roots']]
             component['license_files'] = [str((notices.parent / file).resolve(strict=True)) for file in component['license_files']]
+        self.debian = DebianNotices(self.components['components']) if dpkg_notices else None
+        self.component_cache = {}
 
     def component(self, source):
+        if source in self.component_cache:
+            return self.component_cache[source]
         matches = [(len(root), component['name']) for component in self.components['components']
                    for root in component['roots'] if source == Path(root) or Path(root) in source.parents]
         if not matches:
-            raise ValueError('no component/license provenance for external file: ' + str(source))
-        return max(matches)[1]
+            if not self.debian:
+                raise ValueError('no component/license provenance for external file: ' + str(source))
+            name = self.debian.component(source)
+        else:
+            name = max(matches)[1]
+        self.component_cache[source] = name
+        return name
 
     def external(self, source, destination):
         source = source.resolve(strict=True)
@@ -228,12 +274,19 @@ class Bundle:
                 resolved = Path(dependency.replace('@loader_path', str(destination.parent))).resolve()
                 if not dependency.startswith('@loader_path/') or self.output not in resolved.parents or not resolved.is_file():
                     raise ValueError('external dependency remains: ' + dependency)
+        return self.finish(configuration, doctor, {
+            'platform': 'macos', 'minimum_macos': '.'.join(map(str, self.minimum_os)),
+            'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
+                                       'Python 3.9+', 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
+            'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.'})
+
+    def finish(self, configuration, doctor, details):
         installed_components = []
         used = {item['component'] for item in self.origins.values()}
         for component in self.components['components']:
             if component['name'] not in used:
                 continue
-            notice = {key: component[key] for key in ['name', 'version', 'url']}
+            notice = {key: component[key] for key in ['name', 'version', 'url', 'package', 'source_package', 'source_version'] if key in component}
             notice['license_files'] = []
             for index, filename in enumerate(component['license_files']):
                 source = Path(filename)
@@ -255,14 +308,146 @@ class Bundle:
                 files[relative] = {'sha256': sha256(path), 'bytes': path.stat().st_size,
                                    'executable': bool(path.stat().st_mode & 0o111), **self.origins.get(relative, {})}
         report = {'schema': 'nex.sdk-bundle/1', 'ok': True, 'toolchain': doctor['version'], 'language': doctor['language'],
-                  'host': doctor['host'], 'minimum_macos': '.'.join(map(str, self.minimum_os)),
-                  'system_libraries': sorted(self.system_libraries), 'components': installed_components,
-                  'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
-                                             'Python 3.9+', 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
-                  'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.',
+                  'host': doctor['host'], 'system_libraries': sorted(self.system_libraries),
+                  'components': installed_components, **details,
                   'acceptance_passed': False, 'files': files}
         (self.output / 'share/nex/sdk-bundle.json').write_text(json.dumps(report, indent=2) + '\n')
         return report
+
+
+def elf_image(path):
+    with path.open('rb') as source:
+        header = source.read(20)
+    return (len(header) == 20 and header[:4] == b'\x7fELF' and header[5] in (1, 2)
+            and int.from_bytes(header[16:18], 'little' if header[5] == 1 else 'big') in (2, 3))
+
+
+class LinuxBundle(Bundle):
+    # GNU platform runtime belongs to the external C/C++ SDK. Keeping it outside
+    # the bundle also preserves its loader/NSS/locale integration on the host.
+    HOST_LIBRARIES = {'libc.so.6', 'libm.so.6', 'libpthread.so.0', 'libdl.so.2', 'librt.so.1',
+                      'libresolv.so.2', 'libutil.so.1', 'libstdc++.so.6', 'libgcc_s.so.1',
+                      'ld-linux-aarch64.so.1', 'ld-linux-x86-64.so.2'}
+
+    def collect_elf(self, source, destination):
+        source = source.resolve(strict=True)
+        if source in self.images:
+            if self.images[source]['destination'] != destination:
+                raise ValueError('duplicate ELF image destination: ' + str(source))
+            return
+        dynamic = run(['readelf', '-d', source])
+        needed = re.findall(r'\(NEEDED\).*?\[([^]]+)\]', dynamic)
+        resolved = {}
+        for line in run(['ldd', source], env=self.environment).splitlines():
+            match = re.match(r'\s*(\S+)\s+=>\s+(.*?)\s+\(0x', line)
+            if match:
+                resolved[match.group(1)] = Path(match.group(2)).resolve()
+        image = {'destination': destination, 'dependencies': {}}
+        self.images[source] = image
+        for name in needed:
+            if Path(name).name in self.HOST_LIBRARIES:
+                self.system_libraries.add(name)
+                continue
+            original = Path(name).resolve() if Path(name).is_absolute() else resolved.get(name)
+            if original is None or not original.is_file():
+                raise ValueError('unresolved ELF dependency ' + name + ' of ' + str(source))
+            target = self.output / 'lib/nex/host' / original.name
+            self.external(original, target)
+            alias = name if '/' not in name else original.name
+            alias_path = target.parent / alias
+            if alias_path != target:
+                if alias_path.exists() and alias_path.resolve() != target.resolve():
+                    raise ValueError('ELF SONAME collision: ' + alias)
+                if not alias_path.exists():
+                    alias_path.symlink_to(target.name)
+            image['dependencies'][name] = alias
+            self.destinations[original] = target
+            self.collect_elf(original, target)
+
+    def assemble(self, patchelf):
+        environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
+        for name in ('NEX_CLANG', 'LD_LIBRARY_PATH', 'LD_PRELOAD'):
+            environment.pop(name, None)
+        self.environment = environment
+        doctor = json.loads(run([self.sdk / 'bin/nex', 'doctor', '--json'], env=environment))
+        if doctor.get('sdk_manifest') or not doctor.get('native_linker'):
+            raise ValueError('input must be an unbundled installed Linux SDK with LLVM LLD')
+        if tuple(map(int, doctor['version'].split('.')[:2])) < (0, 28):
+            raise ValueError('Linux application dependency selection requires NEX toolchain 0.28+')
+        shutil.copytree(self.sdk, self.output, symlinks=True)
+        if any(path.is_symlink() for path in self.output.rglob('*')):
+            raise ValueError('input SDK contains symlinks; install a plain development SDK first')
+        configuration = {'schema': 'nex.sdk-host/1', 'tools': {}}
+        for name, field in [('clang++', 'native_compiler'), ('llvm-ar', 'native_archiver'), ('ld.lld', 'native_linker')]:
+            target = self.output / 'libexec/nex/llvm/bin' / name
+            self.external(Path(doctor[field]), target)
+            key = {'clang++': 'compiler', 'llvm-ar': 'archiver', 'ld.lld': 'linker'}[name]
+            configuration['tools'][key] = str(target.relative_to(self.output))
+        (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
+        resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
+        self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
+        includes = self.output / 'lib/nex/deps/include'
+        for name in ('sqlite3.h', 'sqlite3ext.h'):
+            self.external(Path(doctor['native_sqlite_include']) / name, includes / name)
+        openssl_include = Path(doctor['native_openssl_include'])
+        self.external_tree(openssl_include / 'openssl', includes / 'openssl')
+        multiarch = run(['g++', '-print-multiarch']).strip()
+        architecture_headers = openssl_include / multiarch / 'openssl'
+        if architecture_headers.is_dir():
+            self.external_tree(architecture_headers, includes / 'openssl')
+        initial = [(self.sdk / 'bin/nex', self.output / 'bin/nex')]
+        for relative, origin in list(self.origins.items()):
+            if elf_image(self.output / relative):
+                initial.append((Path(origin['source']), self.output / relative))
+        for source, destination in initial:
+            self.collect_elf(source, destination)
+        for key in ('native_sqlite_library', 'native_openssl_ssl', 'native_openssl_crypto'):
+            original = Path(doctor[key]).resolve()
+            target = self.output / 'lib/nex/host' / original.name
+            self.external(original, target)
+            self.destinations[original] = target
+            self.collect_elf(original, target)
+            dynamic = run(['readelf', '-d', original])
+            soname = re.search(r'\(SONAME\).*?\[([^]]+)\]', dynamic)
+            if soname and soname[1] != target.name:
+                alias = target.parent / soname[1]
+                if not alias.exists():
+                    alias.symlink_to(target.name)
+        configuration['sqlite'] = {'include': str(includes.relative_to(self.output)),
+                                   'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
+        configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
+                                    **{key: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
+                                       for key, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
+        required_glibc, required_glibcxx = set(), set()
+        for source, image in self.images.items():
+            target = image['destination']
+            for old, new in image['dependencies'].items():
+                if old != new:
+                    run([patchelf, '--replace-needed', old, new, target])
+            relative = os.path.relpath(self.output / 'lib/nex/host', target.parent)
+            rpath = '$ORIGIN' if relative == '.' else '$ORIGIN/' + relative
+            run([patchelf, '--set-rpath', rpath, target])
+            if run([patchelf, '--print-rpath', target]).strip() != rpath:
+                raise ValueError('ELF runtime path was not retained: ' + str(target))
+            versions = run(['readelf', '--version-info', target])
+            required_glibc.update(re.findall(r'\bGLIBC_[A-Za-z0-9_.]+', versions))
+            required_glibcxx.update(re.findall(r'\bGLIBCXX_[0-9.]+', versions))
+            # ldd uses the new origin paths, with no loader environment override.
+            dependencies = run(['ldd', target], env=environment)
+            for old, alias in image['dependencies'].items():
+                match = re.search(r'^\s*' + re.escape(alias) + r'\s*=>\s*(.*?)\s+\(0x', dependencies, re.M)
+                if match is None or (self.output / 'lib/nex/host') not in Path(match[1]).resolve().parents:
+                    raise ValueError('ELF dependency escaped the bundle: ' + alias + ' in ' + dependencies)
+        return self.finish(configuration, doctor, {
+            'platform': 'linux', 'tested_build_distribution': Path('/etc/os-release').read_text(),
+            'host_glibc': run(['getconf', 'GNU_LIBC_VERSION']).strip(),
+            'required_glibc_symbols': sorted(required_glibc), 'required_glibcxx_symbols': sorted(required_glibcxx),
+            'host_cxx_sdk': run(['g++', '--version']).splitlines()[0],
+            'packager_patchelf': run([patchelf, '--version']).strip(),
+            'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT/libstdc++/libgcc)',
+                                       'Python 3.9+', 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
+                                       'host LLDB/lldb-dap for live debugging'],
+            'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. GNU platform runtime remains external. Source installations unchanged.'})
 
 
 def main():
@@ -271,14 +456,25 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--notices', type=Path, required=True,
                         help='nex.sdk-notices/1 provenance and full local license text paths')
+    parser.add_argument('--dpkg-notices', action='store_true', help='Supplement explicit notices from installed Debian/Ubuntu package metadata')
+    parser.add_argument('--patchelf', default='patchelf', help='ELF rewriting tool for Linux packaging only')
     arguments = parser.parse_args()
-    if platform.system() != 'Darwin':
-        parser.error('Mach-O bundling currently requires macOS; Linux/Windows packaging is pending')
+    system = platform.system()
+    if system not in ('Darwin', 'Linux'):
+        parser.error('SDK bundling currently supports macOS/Linux; Windows packaging is pending')
     sdk, output = arguments.sdk.resolve(strict=True), arguments.output.resolve()
     if output.exists() or sdk in output.parents or output in sdk.parents:
         parser.error('--output must be new and separate from the input SDK')
-    report = Bundle(sdk, output, arguments.notices.resolve(strict=True)).assemble()
-    print(json.dumps({key: report[key] for key in ['ok', 'toolchain', 'language', 'host', 'minimum_macos', 'acceptance_passed']}))
+    if system == 'Linux':
+        patchelf = shutil.which(arguments.patchelf)
+        if not patchelf:
+            parser.error('Linux packaging requires patchelf; it is not needed to use the assembled SDK')
+        report = LinuxBundle(sdk, output, arguments.notices.resolve(strict=True), arguments.dpkg_notices).assemble(patchelf)
+    else:
+        if arguments.dpkg_notices:
+            parser.error('--dpkg-notices is Linux-only')
+        report = Bundle(sdk, output, arguments.notices.resolve(strict=True)).assemble()
+    print(json.dumps({key: report[key] for key in ['ok', 'platform', 'toolchain', 'language', 'host', 'acceptance_passed']}))
 
 
 if __name__ == '__main__':

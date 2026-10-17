@@ -107,3 +107,11 @@ Keep SDK 0.23 for old language-0.10 receipts/frames; migrate archived sources
 explicitly, repairing new reserved/builtin name conflicts without rewriting old
 history or weakening reviewed task/proof intent. Check numeric_integration_pending
 for validation still open; do not infer cross-platform support from this feature.
+
+For SDK packaging, query `sdk_bundle_platforms` and retrieve the SDK/Linux guides
+from the language pack. Installed host-SDK descriptors use prefix-relative paths;
+`nex doctor` reports the selected tools and dependencies. Linux 0.28 bundles
+retain an external GNU platform SDK/runtime and validate copied dependencies in
+a clean environment. Bundle assembly alone is not application, debugger or
+cross-platform execution evidence. Keep checked acceptance reports and explicit
+platform prerequisites with distributed artifacts.
