@@ -9,20 +9,23 @@
 #include <charconv>
 #include <atomic>
 #include "nex_profile.h"
+#include "nex_float.h"
 
 namespace nexrt {
-struct DataError : std::runtime_error {
-  std::string code;
-  size_t offset=0;
-  DataError(std::string code,std::string message,size_t offset=0):std::runtime_error(std::move(message)),code(std::move(code)),offset(offset){}
-};
 struct Data;
 struct Value {
-  enum Tag { Integer, Boolean, Object } tag = Integer;
+  enum Tag { Integer, Boolean, Object, Floating } tag = Integer;
   int64_t scalar = 0;
   std::shared_ptr<Data> object;
   Value()=default;
   Value(int64_t v,bool boolean=false):tag(boolean?Boolean:Integer),scalar(v){}
+  static Value floating(double value){Value result;result.tag=Floating;result.scalar=floatBits(value);return result;}
+  static Value taggedScalar(int64_t value,int64_t tag){
+    if(tag==2)return floating(floatValue(value));
+    if(tag!=0&&tag!=1)throw DataError("E_RUNTIME","invalid scalar tag");
+    return Value(value,tag==1);
+  }
+  double floating()const{return floatValue(scalar);}
   explicit Value(std::shared_ptr<Data> v):tag(Object),object(std::move(v)){}
 };
 inline std::atomic<int64_t> liveObjects{0};
@@ -129,6 +132,7 @@ inline std::string quoted(const std::string &text) {
   return out+'"';
 }
 inline std::string representation(const Value &v) {
+  if(v.tag==Value::Floating)return formatFloat(v.floating());
   if(v.tag==Value::Integer)return std::to_string(v.scalar);
   if(v.tag==Value::Boolean)return v.scalar?"true":"false";
   const auto &d=*v.object;

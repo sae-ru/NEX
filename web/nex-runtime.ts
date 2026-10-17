@@ -2,7 +2,7 @@
 export const TYPE: unique symbol = Symbol('NEX.type');
 export const CASE: unique symbol = Symbol('NEX.case');
 export type Callable = (...arguments_: never[]) => Value | void;
-export type Value = bigint | boolean | string | ReadonlyArray<Value> | RecordValue | Callable;
+export type Value = bigint | number | boolean | string | ReadonlyArray<Value> | RecordValue | Callable;
 export interface RecordValue {
   readonly [TYPE]: string;
   readonly [CASE]?: string;
@@ -49,6 +49,33 @@ export function rem(a: bigint, b: bigint, site?: Site): bigint {
   if (b === 0n) fail('E_DIV_ZERO', 'division by zero', site);
   return a % b;
 }
+// Finite binary64 helpers for the upcoming source-language milestone. Keep
+// per-operation rounding visible; never combine expressions under fast-math.
+export function finiteFloat(value: number, site?: Site): number {
+  if (!Number.isFinite(value)) fail('E_FLOAT', 'non-finite f64 result', site);
+  return value === 0 ? 0 : value;
+}
+export function floatAdd(a: number, b: number, site?: Site): number { return finiteFloat(finiteFloat(a, site) + finiteFloat(b, site), site); }
+export function floatSub(a: number, b: number, site?: Site): number { return finiteFloat(finiteFloat(a, site) - finiteFloat(b, site), site); }
+export function floatMul(a: number, b: number, site?: Site): number { return finiteFloat(finiteFloat(a, site) * finiteFloat(b, site), site); }
+export function floatDiv(a: number, b: number, site?: Site): number {
+  a = finiteFloat(a, site); b = finiteFloat(b, site);
+  if (b === 0) fail('E_DIV_ZERO', 'division by zero', site);
+  return finiteFloat(a / b, site);
+}
+export function floatRem(a: number, b: number, site?: Site): number {
+  a = finiteFloat(a, site); b = finiteFloat(b, site);
+  if (b === 0) fail('E_DIV_ZERO', 'division by zero', site);
+  return finiteFloat(a % b, site);
+}
+export function floatNeg(value: number, site?: Site): number { return finiteFloat(-finiteFloat(value, site), site); }
+export function asFloat(value: bigint): number { return finiteFloat(Number(checked(value))); }
+export function asInteger(value: number): Result<bigint> {
+  value = finiteFloat(value);
+  if (value < -9223372036854775808 || value >= 9223372036854775808) return err('E_RANGE', 'f64 value is outside i64 range');
+  return ok(BigInt(Math.trunc(value)));
+}
+export function formatFloat(value: number): string { return finiteFloat(value).toExponential().replace('e+', 'e'); }
 export function assert(value: boolean, site?: Site): void { if (!value) fail('E_ASSERT', 'assertion failed', site); }
 export function string(value: string, site?: Site): string {
   for (let i = 0; i < value.length; ++i) {
@@ -106,6 +133,7 @@ function quoted(value: string): string {
   return '"' + value.replace(/["\\\u0000-\u001f]/g, c => c === '"' || c === '\\' ? '\\' + c : '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '"';
 }
 export function representation(value: Value): string {
+  if (typeof value === 'number') return formatFloat(value);
   if (typeof value === 'function') return quoted('<function>');
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
@@ -116,7 +144,7 @@ export function representation(value: Value): string {
 export function str(value: Value): string { return typeof value === 'string' ? value : typeof value === 'function' ? '<function>' : representation(value); }
 export function print(value: Value): void { console.log(str(value)); }
 
-type Descriptor = 'i64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
+type Descriptor = 'i64' | 'f64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
 export type Schema = { schema: 'nex.wire/1' | 'nex.wire/2'; root: Descriptor; records: Record<string, ReadonlyArray<{ name: string; type: Descriptor }>>; enums?: Record<string, ReadonlyArray<{ name: string; fields: ReadonlyArray<{name: string; type: Descriptor}> }>> };
 const JSON_BYTES = 1024 * 1024, JSON_DEPTH = 64, JSON_ITEMS = 10000, JSON_NODES = 100000;
 function invalidJSON(message: string): never { throw new NexError('E_JSON', message); }
@@ -128,6 +156,7 @@ export function encodeJSON(value: Value, site?: Site): string {
     if (depth > JSON_DEPTH || ++nodes > JSON_NODES) invalidJSON('JSON value exceeds depth/node limit');
     if (typeof value === 'bigint') return quoted(String(value));
     if (typeof value === 'boolean') return String(value);
+    if (typeof value === 'number') return formatFloat(value);
     if (typeof value === 'string') return quoted(value);
     if (!isList(value)) {
       if (value[TYPE] === 'nex.result.ok') return '{"ok":' + encode(value.ok, depth + 1) + '}';
@@ -197,6 +226,7 @@ export function decodeJSON<T extends Value>(text: string, schema: Schema): Resul
       const number = BigInt(value); if (number < MIN || number > MAX) invalidJSON('JSON integer is outside i64 range'); return number;
     }
     if (type === 'bool') { if (typeof value !== 'boolean') invalidJSON('expected JSON boolean'); return value; }
+    if (type === 'f64') { if (typeof value !== 'number' || !Number.isFinite(value)) invalidJSON('f64 requires a finite JSON number'); return finiteFloat(value); }
     if (type === 'str') { if (typeof value !== 'string') invalidJSON('expected JSON string'); return string(value); }
     if (typeof type === 'string') return invalidJSON('unsupported wire type');
     if ('list' in type) {

@@ -2,7 +2,8 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain **0.23 / language 0.10**, with typed
+The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
+`e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and
 validated lazy callable watches. Canonical formats are function/8 and program/9.
 It passed the macOS ARM64 and Linux ARM64/x86-64 matrix recorded below. Linux
@@ -16,6 +17,40 @@ projection are implemented. The model-independent function guide, grammar and
 prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
+
+## In progress: finite binary64
+
+The next language milestone is `f64`; its source syntax, checker/backend/debugger
+integration, API schemas, migration and model pack are still pending. Language
+0.10 and its capability descriptor remain unchanged. The design and complete
+acceptance scope are in `docs/floats-design.md`.
+
+The runtime foundation now has finite checked arithmetic, rounding/environment
+isolation, normalized zero, explicit integer conversions, distinct aggregate
+scalar storage and strict numeric JSON. C++ and JavaScript agree on **4,546
+deterministic vectors**, including Python bit-result oracles, gradual underflow,
+rounding ties, integer bounds and rejected non-finite inputs. Native checks also
+exercise caller rounding/status flags, flush-to-zero modes, threads, trap source
+lines and owned cleanup. Optimized checks passed on macOS ARM64 with UBSan
+(`build/float-runtime-O3-ubsan.json`), Linux ARM64 and emulated Linux x86-64
+(`build/float-runtime-linux-{arm64,amd64}/report.json`). The pinned Linux images
+lack compiler-rt sanitizer archives; those two runs used ordinary O3 builds.
+
+The full macOS regression exercised 26 CTest suites: 25 passed, and profiling
+passed on rerun after its old empty-notice expectation was updated to preserve
+Tracy exclusion while accepting Dragonbox's license. Runtime/compiler bytes did
+not change between those runs. Logs: `build/float-runtime-full-ctest.log` and
+`build/float-runtime-profiling-rerun.log`. A separate installed SDK passed all nine
+acceptance phases, including actual LLDB/DAP, source-deleted archive replay,
+scalar proof and a locked TypeScript/Vite build in 76.573 s
+(`build/sdk-float-runtime-acceptance/report.json`). These are foundation checks,
+not evidence that the new source type or its whole platform matrix is complete.
+
+Dragonbox 1.1.3 is pinned unmodified, with license/hash inventory and native
+distribution notices, so formatting preserves the macOS 13.0 build target.
+The accepted 0.23 SDKs are preserved and a genuine language 0.10 SQL/source/graph
+fixture was captured using that SDK for the upcoming migration. No old source,
+task/proof acceptance intent or archived fixture was rewritten.
 
 ## Implemented and exercised
 

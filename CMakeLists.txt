@@ -64,6 +64,11 @@ install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION s
 install(DIRECTORY tools/linux DESTINATION share/nex/tools)
 install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
 enable_testing()
+find_package(Threads REQUIRED)
+add_executable(nex_float_runtime_probe tests/float_runtime.cpp runtime/runtime.cpp runtime/nex_json.cpp)
+target_include_directories(nex_float_runtime_probe PRIVATE runtime)
+target_link_libraries(nex_float_runtime_probe PRIVATE Threads::Threads)
+add_test(NAME float_runtime_native COMMAND nex_float_runtime_probe --self-test)
 add_test(NAME integration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration.py $<TARGET_FILE:nex>)
 add_test(NAME modules COMMAND ${Python3_EXECUTABLE}
@@ -101,6 +106,8 @@ if(NEX_Z3_EXECUTABLE)
 endif()
 find_program(NEX_NODE_EXECUTABLE node)
 if(NEX_NODE_EXECUTABLE)
+  add_test(NAME float_runtime COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/float_runtime.py $<TARGET_FILE:nex_float_runtime_probe> ${NEX_NODE_EXECUTABLE})
   add_test(NAME web COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/web.py $<TARGET_FILE:nex>)
   add_test(NAME web_commands COMMAND ${Python3_EXECUTABLE}

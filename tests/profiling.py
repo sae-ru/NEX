@@ -175,7 +175,10 @@ int main(){
         self.assertTrue(Path(str(target) + '.THIRD_PARTY_NOTICES.txt').is_file())
         self.assertEqual(subprocess.check_output([str(target)], text=True), self.cli('eval')['stdout'])
         normal = self.cli('build', '--profile', 'release')
-        self.assertEqual(normal['notices'], '')
+        normal_notice=Path(normal['notices']).read_text()
+        expected='Dragonbox 1.1.3\n\n'+(harness.REPO/'runtime/third_party/dragonbox/LICENSE-Boost').read_text()+'\n\n'
+        self.assertEqual(normal_notice,expected)
+        self.assertNotIn('Tracy',normal_notice)
         self.assertNotIn('nex_profile_enter', Path(normal['llvm']).read_text())
         self.assertIn('nex_profile_enter', Path(built['llvm']).read_text())
 

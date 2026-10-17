@@ -75,6 +75,15 @@ int64_t nex_mul(int64_t a,int64_t b,int64_t line){int64_t r;if(__builtin_mul_ove
 int64_t nex_div(int64_t a,int64_t b,int64_t line){if(!b)fail("E_DIV_ZERO","division by zero",line);if(a==std::numeric_limits<int64_t>::min()&&b==-1)fail("E_OVERFLOW","i64 arithmetic overflow",line);return a/b;}
 int64_t nex_mod(int64_t a,int64_t b,int64_t line){if(!b)fail("E_DIV_ZERO","division by zero",line);if(a==std::numeric_limits<int64_t>::min()&&b==-1)return 0;return a%b;}
 int64_t nex_neg(int64_t a,int64_t line){return nex_sub(0,a,line);}
+double nex_f64_add(double a,double b,int64_t line){return guarded(line,[&]{return nexrt::floatArithmetic(a,b,'+');});}
+double nex_f64_sub(double a,double b,int64_t line){return guarded(line,[&]{return nexrt::floatArithmetic(a,b,'-');});}
+double nex_f64_mul(double a,double b,int64_t line){return guarded(line,[&]{return nexrt::floatArithmetic(a,b,'*');});}
+double nex_f64_div(double a,double b,int64_t line){return guarded(line,[&]{return nexrt::floatArithmetic(a,b,'/');});}
+double nex_f64_mod(double a,double b,int64_t line){return guarded(line,[&]{return nexrt::floatArithmetic(a,b,'%');});}
+double nex_f64_neg(double value,int64_t line){return guarded(line,[&]{return nexrt::finiteFloat(-nexrt::finiteFloat(value));});}
+double nex_as_f64(int64_t value,int64_t line){return guarded(line,[&]{return nexrt::integerToFloat(value);});}
+Handle *nex_as_i64(double value,int64_t line){return guarded(line,[&]{int64_t result=0;return owned((nexrt::floatToInteger(value,result)?nexrt::success(nexrt::Value(result)):nexrt::failure("E_RANGE","f64 value is outside i64 range")).object);});}
+void nex_print_f64(double value){guarded(0,[&]{auto text=nexrt::formatFloat(value);std::puts(text.c_str());});}
 void nex_print_i64(int64_t a){std::printf("%lld\n",static_cast<long long>(a));}
 void nex_print_bool(int64_t a){std::puts(a?"true":"false");}
 void nex_assert(int64_t a,int64_t line){if(!a)fail("E_ASSERT","assertion failed",line);}
@@ -90,13 +99,13 @@ Handle *nex_enum_new(int64_t count,int64_t ordinal){return guarded(0,[&]{auto d=
 int64_t nex_enum_tag(Handle *value,int64_t count,int64_t line){return guarded(line,[&]{if(value->data->kind!=nexrt::Data::Enum||value->data->ordinal<0||value->data->ordinal>=count)throw nexrt::DataError("E_ENUM","invalid enum discriminant");return value->data->ordinal;});}
 void nex_record_name(Handle *p,const char *name,int64_t size){guarded(0,[&]{p->data->text.assign(name,size);});}
 void nex_record_field_name(Handle *p,int64_t index,const char *name,int64_t size){guarded(0,[&]{p->data->names.at(index).assign(name,size);});}
-void nex_list_append_i64(Handle *p,int64_t value,int64_t boolean){guarded(0,[&]{p->data->values.emplace_back(value,boolean);});}
+void nex_list_append_i64(Handle *p,int64_t value,int64_t tag){guarded(0,[&]{p->data->values.push_back(nexrt::Value::taggedScalar(value,tag));});}
 void nex_list_append_heap(Handle *p,Handle *value){guarded(0,[&]{p->data->values.emplace_back(value->data);});}
-void nex_record_init_i64(Handle *p,int64_t index,int64_t value,int64_t boolean){p->data->values.at(index)=nexrt::Value(value,boolean);}
+void nex_record_init_i64(Handle *p,int64_t index,int64_t value,int64_t tag){guarded(0,[&]{p->data->values.at(index)=nexrt::Value::taggedScalar(value,tag);});}
 void nex_record_init_heap(Handle *p,int64_t index,Handle *value){p->data->values.at(index)=nexrt::Value(value->data);}
 int64_t nex_collection_get_i64(Handle *p,int64_t index,int64_t line){return guarded(line,[&]{return nexrt::get(p->data,index).scalar;});}
 Handle *nex_collection_get_heap(Handle *p,int64_t index,int64_t line){return guarded(line,[&]{return owned(nexrt::get(p->data,index).object);});}
-Handle *nex_list_update_i64(Handle *p,int64_t index,int64_t value,int64_t boolean,int64_t mode,int64_t line){return guarded(line,[&]{return updated(p,index,nexrt::Value(value,boolean),mode);});}
+Handle *nex_list_update_i64(Handle *p,int64_t index,int64_t value,int64_t tag,int64_t mode,int64_t line){return guarded(line,[&]{return updated(p,index,nexrt::Value::taggedScalar(value,tag),mode);});}
 Handle *nex_list_update_heap(Handle *p,int64_t index,Handle *value,int64_t mode,int64_t line){return guarded(line,[&]{return updated(p,index,nexrt::Value(value->data),mode);});}
 int64_t nex_length(Handle *p){return guarded(0,[&]{return nexrt::length(p->data);});}
 int64_t nex_heap_equal(Handle *a,Handle *b){return nexrt::equal(nexrt::Value(a->data),nexrt::Value(b->data));}
@@ -106,12 +115,13 @@ Handle *nex_heap_concat(Handle *a,Handle *b,int64_t line){return guarded(line,[&
 });}
 Handle *nex_string_slice(Handle *p,int64_t start,int64_t count,int64_t line){return guarded(line,[&]{return owned(nexrt::slice(p->data,start,count));});}
 int64_t nex_string_contains(Handle *a,Handle *b){return a->data->text.find(b->data->text)!=std::string::npos;}
-Handle *nex_format_i64(int64_t value,int64_t boolean){return guarded(0,[&]{return owned(nexrt::string(nexrt::representation(nexrt::Value(value,boolean))));});}
+Handle *nex_format_i64(int64_t value,int64_t tag){return guarded(0,[&]{return owned(nexrt::string(nexrt::representation(nexrt::Value::taggedScalar(value,tag))));});}
+Handle *nex_format_f64(double value){return guarded(0,[&]{return owned(nexrt::string(nexrt::formatFloat(value)));});}
 Handle *nex_format_heap(Handle *p){return guarded(0,[&]{return owned(nexrt::string(nexrt::printable(nexrt::Value(p->data))));});}
 void nex_print_heap(Handle *p){guarded(0,[&]{auto text=nexrt::printable(nexrt::Value(p->data));std::fwrite(text.data(),1,text.size(),stdout);std::fputc('\n',stdout);});}
 void nex_runtime_finish(){if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",0);}
 void nex_poll(int64_t line){if(nexrt::currentRequest)nexrt::currentRequest->poll(line,false);}
-Handle *nex_ok_i64(int64_t value,int64_t boolean){return guarded(0,[&]{return owned(nexrt::success(nexrt::Value(value,boolean)).object);});}
+Handle *nex_ok_i64(int64_t value,int64_t tag){return guarded(0,[&]{return owned(nexrt::success(nexrt::Value::taggedScalar(value,tag)).object);});}
 Handle *nex_ok_heap(Handle *value){return guarded(0,[&]{return owned(nexrt::success(nexrt::Value(value->data)).object);});}
 Handle *nex_err(Handle *code,Handle *message){return guarded(0,[&]{return owned(nexrt::failure(code->data->text,message->data->text).object);});}
 int64_t nex_is_ok(Handle *value){return nexrt::isSuccess(nexrt::Value(value->data));}
