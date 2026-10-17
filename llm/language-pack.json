@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.7",
+  "language_version": "0.8",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -58,7 +58,8 @@
     "operations": "examples/operations/main.nex",
     "enums": "examples/enums/main.nex",
     "generics": "examples/generics/main.nex",
-    "generic_browser": "examples/generics/web.nex"
+    "generic_browser": "examples/generics/web.nex",
+    "constraints": "examples/constraints.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

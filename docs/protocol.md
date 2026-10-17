@@ -102,7 +102,7 @@ For a one-file revision, `nex export --revision HEAD -o PATH` writes just that s
 
 ## Language/database migration
 
-The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.7. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
+The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.8. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
 
 `nex migrate --json` reparses and checks the archived HEAD under the current language, atomically adopts its new revision if HEAD is unchanged, and preserves the old revision. `--revision HASH` selects another retained snapshot. `nex migrate GRAPH.json --json` accepts legacy `nex.graph/1` single-file source or a `nex.graph/2` bundle and explicitly adopts its checked source. That operation treats the old hash as declared metadata, not as a verified current hash. Ordinary `import` rejects a language mismatch or an incorrect recomputed revision. Migration does not overwrite source files; materialize the chosen result with `export`.
 
@@ -143,7 +143,7 @@ The result is `nex.profile-session/1`, with process exit status/output, `revisio
 
 ## Scalar verification protocol
 
-`nex contract FILE --symbol NAME [-o CONTRACT.json] --json` produces a `nex.verification-contracts/1` scaffold tied to semantic revision, exact source-bundle hash, function content and loop coordinates. `nex verify FILE --contracts CONTRACT.json [--revision HASH] [--symbol NAME] --json` verifies all listed roots or the selected root. Use `--solver-timeout MS`, `--resource-limit COUNT` and `--timeout SECONDS` for the bounded solver/run work. Current source-language version is 0.7.
+`nex contract FILE --symbol NAME [-o CONTRACT.json] --json` produces a `nex.verification-contracts/1` scaffold tied to semantic revision, exact source-bundle hash, function content and loop coordinates. `nex verify FILE --contracts CONTRACT.json [--revision HASH] [--symbol NAME] --json` verifies all listed roots or the selected root. Use `--solver-timeout MS`, `--resource-limit COUNT` and `--timeout SECONDS` for the bounded solver/run work. Current source-language version is 0.8.
 
 The CLI returns `nex.verification-session/1`; `output` identifies the complete `nex.verification/1` report and source/contract/query artifacts. Each function has its current project node ID and status: proven, counterexample, inconsistent_preconditions, unknown, timeout or unsupported. Only all-proven is exit 0. Counterexample i64 values are decimal strings; booleans are JSON booleans. Inductive-state witnesses are not necessarily reachable inputs. CLI details retain at most 32 non-success obligations per function; the saved report keeps all. See `nex guide --kind verify --json` and `llm/verification.schema.json` for contract fields, exact semantics, limits and proof trust boundaries.
 
@@ -155,7 +155,7 @@ The CLI returns `nex.verification-session/1`; `output` identifies the complete `
 
 `nex contract --kind intent --contracts FILE` returns `nex.verification-intent/1` and `intent_hash`. Task verification fixes these pre/postconditions while rebasing only source/revision/function hashes in a separate derived contract. Loop annotations remain checked proof strategy. `nex test --symbol NAME` selects one test and rejects ordinary functions. `--build-directory PATH` selects a build workspace (default remains project `.nex/build`), allowing task workspaces to reuse validated module objects.
 
-See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are 0.7/2.
+See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are 0.8/2.
 
 ## Stopped-frame expressions
 
@@ -177,6 +177,10 @@ Interpreter `eval` failures from checked operations add `operation_id`, `operati
 
 ## Generic source and derived instances (language 0.7)
 
-Function/structure/enum canonical definitions carry type_parameters, template and type_arguments. Context for a function instance identifies its source template, concrete arguments and editable:false. Patch the source template; direct instance replacements return E_PATCH_SPECIALIZATION. All callers and template bodies are rechecked before committing. Program/6 hashes include checked source definitions and exclude derived instances; function/5, structure/3 and enum/2 retain per-instance definitions for context/cache/site attribution. Source exports contain each original declaration once. Explicit 0.6 migration preserves old history and local function/operation IDs. Preserve SDK 0.16 for old frames/receipts, and review/regenerate acceptance pins under 0.7.
+In language 0.7, function/structure/enum canonical definitions carry type_parameters, template and type_arguments. Context for a function instance identifies its source template, concrete arguments and editable:false. Patch the source template; direct instance replacements return E_PATCH_SPECIALIZATION. All callers and template bodies are rechecked before committing. Program/6 hashes include checked source definitions and exclude derived instances; function/5, structure/3 and enum/2 retain per-instance definitions for context/cache/site attribution. Source exports contain each original declaration once. Explicit 0.6 migration preserves old history and local function/operation IDs. Preserve SDK 0.16 for old frames/receipts, and review/regenerate acceptance pins under 0.7.
 
 Toolchain 0.19 adds `nex toolchain FILE --json` (`nex.toolchain-report/1`) for read-only normalized native configuration/fingerprint discovery. `--toolchains CATALOG.json` provides current trusted configurations to task check/run/replay. Native checks pair `toolchain` with `toolchain_hash`; captures and receipts retain target/fingerprint identity. Changed inputs or missing current trust fail with E_TASK_TOOLCHAIN. The task guide defines fingerprint scope, replay validation and foreign-build versus execution evidence.
+
+## Bounded generic declarations (language 0.8)
+
+Canonical function/6, structure/4 and enum/3 definitions add sorted `type_bounds`; program/7 revisions include them. Function context exposes the same map keyed by scoped type-parameter name. `describe.generic_constraints` reports builtin domains/implications. Bounds are checked on unused declarations and abstract forwarding before specialization. Protocol 2 is retained. Explicit 0.7→0.8 migration preserves historical sources and local identities; old frames/receipts require their original 0.20 compiler/resources.

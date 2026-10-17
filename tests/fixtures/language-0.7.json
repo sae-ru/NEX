@@ -1,0 +1,1574 @@
+{
+  "language": "0.7",
+  "toolchain": "0.20.0",
+  "compiler_sha256": "e2dfd7d4776b08ce394c1aa0f3da26f1856811d5505114d6757ac5ccc9a8363d",
+  "source": "module bounds_legacy; struct Box<T> {value:T;} fn identity<T>(x:T) -> T {return x;} fn main() -> unit !{io} {let b:Box<i64> = Box(identity(42));print(b.value);} test fn example() -> unit {assert(identity(42) == 42);}",
+  "source_sha256": "ed80b9a5397ee97ab9594eb1701c2d95799da1e60af1e3155380ad239049b192",
+  "sql_sha256": "8be94c2bdc1ee4117f131c2060517b8f2ab3541bc565637f0f17853adaa462ca",
+  "revision": "8ac39f2d9171a414d99d4b6f19efa57967b766b0f275d785ce0bd1b98c482f17",
+  "graph": {
+    "bundle": {
+      "entry": "main.nex",
+      "files": {
+        "main.nex": "module bounds_legacy; struct Box<T> {value:T;} fn identity<T>(x:T) -> T {return x;} fn main() -> unit !{io} {let b:Box<i64> = Box(identity(42));print(b.value);} test fn example() -> unit {assert(identity(42) == 42);}"
+      },
+      "schema": "nex.sources/1"
+    },
+    "endpoints": [],
+    "language": "0.7",
+    "module": "bounds_legacy",
+    "modules": [
+      {
+        "file": "main.nex",
+        "imports": [],
+        "name": "bounds_legacy"
+      }
+    ],
+    "nodes": [
+      {
+        "definition": {
+          "body": [
+            {
+              "body": [],
+              "else": [],
+              "expression": {
+                "args": [],
+                "kind": 2,
+                "operator": "x",
+                "type": "$bounds_legacy::identity::T",
+                "value": 0
+              },
+              "kind": 4,
+              "name": "",
+              "type": "unknown"
+            }
+          ],
+          "effects": [],
+          "format": "nex.function/5",
+          "name": "bounds_legacy::identity",
+          "owner": "bounds_legacy",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "$bounds_legacy::identity::T"
+            }
+          ],
+          "public": false,
+          "realm": "shared",
+          "result": "$bounds_legacy::identity::T",
+          "template": "",
+          "test": false,
+          "type_arguments": [],
+          "type_parameters": [
+            "bounds_legacy::identity::T"
+          ]
+        },
+        "dependencies": [],
+        "file": "main.nex",
+        "hash": "6f02b5f1966552b0e482904413ba94a6edced4590b5953acb2470a899aece9c6",
+        "id": "ddd62db9d749f4f15a818d968b48e900",
+        "line": 1,
+        "local_name": "identity",
+        "module": "bounds_legacy",
+        "name": "bounds_legacy::identity",
+        "native_symbol": "nex_13_bounds_legacy_8_identity",
+        "source": "fn identity<T>(x:T) -> T {return x;}"
+      },
+      {
+        "definition": {
+          "body": [
+            {
+              "body": [],
+              "else": [],
+              "expression": {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [],
+                        "kind": 0,
+                        "operator": "",
+                        "type": "i64",
+                        "value": 42
+                      }
+                    ],
+                    "kind": 5,
+                    "operator": "bounds_legacy::identity<i64>",
+                    "type": "i64",
+                    "value": 0
+                  }
+                ],
+                "kind": 5,
+                "operator": "bounds_legacy::Box<i64>",
+                "type": "bounds_legacy::Box<i64>",
+                "value": 0
+              },
+              "kind": 0,
+              "name": "b",
+              "type": "bounds_legacy::Box<i64>"
+            },
+            {
+              "body": [],
+              "else": [],
+              "expression": {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [],
+                        "kind": 2,
+                        "operator": "b",
+                        "type": "bounds_legacy::Box<i64>",
+                        "value": 0
+                      }
+                    ],
+                    "kind": 8,
+                    "operator": "value",
+                    "type": "i64",
+                    "value": 0
+                  }
+                ],
+                "kind": 5,
+                "operator": "print",
+                "type": "unit",
+                "value": 0
+              },
+              "kind": 3,
+              "name": "",
+              "type": "unknown"
+            }
+          ],
+          "effects": [
+            "io"
+          ],
+          "format": "nex.function/5",
+          "name": "bounds_legacy::main",
+          "owner": "bounds_legacy",
+          "parameters": [],
+          "public": false,
+          "realm": "shared",
+          "result": "unit",
+          "template": "",
+          "test": false,
+          "type_arguments": [],
+          "type_parameters": []
+        },
+        "dependencies": [
+          {
+            "id": "029280bd4cd9199f9ed8153729bba051",
+            "name": "bounds_legacy::identity<i64>"
+          }
+        ],
+        "file": "main.nex",
+        "hash": "1e559ce25a194e5eea5d1a6945b188dfbe29a73f85fe09d4c0d4200048d04714",
+        "id": "1844f50ee1bcc4a831791fa973a47cc5",
+        "line": 1,
+        "local_name": "main",
+        "module": "bounds_legacy",
+        "name": "bounds_legacy::main",
+        "native_symbol": "nex_13_bounds_legacy_4_main",
+        "source": "fn main() -> unit !{io} {let b:Box<i64> = Box(identity(42));print(b.value);}"
+      },
+      {
+        "definition": {
+          "body": [
+            {
+              "body": [],
+              "else": [],
+              "expression": {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [],
+                            "kind": 0,
+                            "operator": "",
+                            "type": "i64",
+                            "value": 42
+                          }
+                        ],
+                        "kind": 5,
+                        "operator": "bounds_legacy::identity<i64>",
+                        "type": "i64",
+                        "value": 0
+                      },
+                      {
+                        "args": [],
+                        "kind": 0,
+                        "operator": "",
+                        "type": "i64",
+                        "value": 42
+                      }
+                    ],
+                    "kind": 4,
+                    "operator": "==",
+                    "type": "bool",
+                    "value": 0
+                  }
+                ],
+                "kind": 5,
+                "operator": "assert",
+                "type": "unit",
+                "value": 0
+              },
+              "kind": 3,
+              "name": "",
+              "type": "unknown"
+            }
+          ],
+          "effects": [],
+          "format": "nex.function/5",
+          "name": "bounds_legacy::example",
+          "owner": "bounds_legacy",
+          "parameters": [],
+          "public": false,
+          "realm": "shared",
+          "result": "unit",
+          "template": "",
+          "test": true,
+          "type_arguments": [],
+          "type_parameters": []
+        },
+        "dependencies": [
+          {
+            "id": "029280bd4cd9199f9ed8153729bba051",
+            "name": "bounds_legacy::identity<i64>"
+          }
+        ],
+        "file": "main.nex",
+        "hash": "94e9cd5a09b898800220751b1c67c70a353f1258beb2298bbc64ef0b2964b142",
+        "id": "85e76316c09cc195ec5edd3927a13996",
+        "line": 1,
+        "local_name": "example",
+        "module": "bounds_legacy",
+        "name": "bounds_legacy::example",
+        "native_symbol": "nex_13_bounds_legacy_7_example",
+        "source": "test fn example() -> unit {assert(identity(42) == 42);}"
+      },
+      {
+        "definition": {
+          "body": [
+            {
+              "body": [],
+              "else": [],
+              "expression": {
+                "args": [],
+                "kind": 2,
+                "operator": "x",
+                "type": "i64",
+                "value": 0
+              },
+              "kind": 4,
+              "name": "",
+              "type": "unknown"
+            }
+          ],
+          "effects": [],
+          "format": "nex.function/5",
+          "name": "bounds_legacy::identity<i64>",
+          "owner": "bounds_legacy",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "i64"
+            }
+          ],
+          "public": false,
+          "realm": "shared",
+          "result": "i64",
+          "template": "bounds_legacy::identity",
+          "test": false,
+          "type_arguments": [
+            "i64"
+          ],
+          "type_parameters": []
+        },
+        "dependencies": [],
+        "file": "main.nex",
+        "hash": "6a1d8258accd32df6baeaf10b6d02891fd220cafd0849d782c2919d92e27a191",
+        "id": "029280bd4cd9199f9ed8153729bba051",
+        "line": 1,
+        "local_name": "identity<i64>",
+        "module": "bounds_legacy",
+        "name": "bounds_legacy::identity<i64>",
+        "native_symbol": "nex_inst_bf6abbae08645051ee6018b1cc26871e8d77a68a197aa35e4310824d6be0cd95",
+        "source": "fn identity<T>(x:T) -> T {return x;}"
+      }
+    ],
+    "operation_graph": {
+      "identity_policy": "nex.operation-identity/1",
+      "identity_scope": "local_store",
+      "language": "0.7",
+      "nodes": [
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "parameter",
+            "name": "x",
+            "type": "$bounds_legacy::identity::T"
+          },
+          "definition_bytes": 68,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity",
+          "function_id": "ddd62db9d749f4f15a818d968b48e900",
+          "hash": "a87d19f4b3a0c921425d4c9b333a1f544431dc48e875bd91b2909b85193b5ede",
+          "id": "c7f2676488c10670eaf2ca24d47c43b2",
+          "kind": "parameter",
+          "location": {
+            "byte_begin": 62,
+            "byte_end": 63,
+            "column": 63,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "ddd62db9d749f4f15a818d968b48e900",
+          "path": "parameter/0",
+          "references": [],
+          "role": "parameter",
+          "site": "a07c09b4f804b9a3003d0afdc2ee3f2c003c700b57997ecd581f358ecfca23ce"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "2645e488d3c8ce0ad31329bd737aa507",
+              "ordinal": 0,
+              "role": "statement",
+              "site": "cd1fe057af277b2da92908150e91a62d8c499da6f8173c04f769995755d38fea"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "block"
+          },
+          "definition_bytes": 16,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity",
+          "function_id": "ddd62db9d749f4f15a818d968b48e900",
+          "hash": "2a2c03466846a4f05866b31676fb116c20216c66a93f85de90d1e5d884ea76e5",
+          "id": "f662495beab149599451c26c27f97ee3",
+          "kind": "block",
+          "location": {
+            "byte_begin": 47,
+            "byte_end": 83,
+            "column": 48,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "ddd62db9d749f4f15a818d968b48e900",
+          "path": "body",
+          "references": [],
+          "role": "body",
+          "site": "83fc05384f281636278f0d7d769b7c50a2d1ca374b1b3a26d00f028dcef5e397"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "43c1699e124d3cf38e8f9ab6feee98bb",
+              "ordinal": 0,
+              "role": "expression",
+              "site": "2e7ec2841e812909b857b383d6fda6e8d314fc1cd06e14279874d2a32729d74e"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "statement.return",
+            "name": "",
+            "type": "unknown"
+          },
+          "definition_bytes": 54,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity",
+          "function_id": "ddd62db9d749f4f15a818d968b48e900",
+          "hash": "ccfc3e1cedd69820b9373dd86883aea92675913522b8c1afb134537afd4dab7a",
+          "id": "2645e488d3c8ce0ad31329bd737aa507",
+          "kind": "statement.return",
+          "location": {
+            "byte_begin": 73,
+            "byte_end": 79,
+            "column": 74,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "f662495beab149599451c26c27f97ee3",
+          "path": "body/statement/0",
+          "references": [],
+          "role": "statement",
+          "site": "cd1fe057af277b2da92908150e91a62d8c499da6f8173c04f769995755d38fea"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.name",
+            "number": "0",
+            "text": "x",
+            "type": "$bounds_legacy::identity::T"
+          },
+          "definition_bytes": 87,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity",
+          "function_id": "ddd62db9d749f4f15a818d968b48e900",
+          "hash": "237f9f8b2e2e7a2184c270c4b6486c1f8c3dc7a3bd3961897181d352254193b8",
+          "id": "43c1699e124d3cf38e8f9ab6feee98bb",
+          "kind": "expression.name",
+          "location": {
+            "byte_begin": 80,
+            "byte_end": 81,
+            "column": 81,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "2645e488d3c8ce0ad31329bd737aa507",
+          "path": "body/statement/0/expression/0",
+          "references": [
+            {
+              "id": "c7f2676488c10670eaf2ca24d47c43b2",
+              "role": "binding"
+            }
+          ],
+          "role": "expression",
+          "site": "2e7ec2841e812909b857b383d6fda6e8d314fc1cd06e14279874d2a32729d74e"
+        },
+        {
+          "child_count": 2,
+          "children": [
+            {
+              "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+              "ordinal": 0,
+              "role": "statement",
+              "site": "4abd80756ee7e88a2f2c830e6ec5d10c79eb6abd636d738345316cc929ee08fd"
+            },
+            {
+              "id": "0b1367c321d47985ea78c940e90aa8cc",
+              "ordinal": 1,
+              "role": "statement",
+              "site": "83407d043b153cfc183682c94e22f39c9294f4bd7f608e4387f8f7b7dd5ff614"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "block"
+          },
+          "definition_bytes": 16,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "d3f9d3dd985a230562e489345f2514fc59686afa36cd2d72d752ec7cd47146e8",
+          "id": "2980d70bb3062397d9988d9bc4f69e6b",
+          "kind": "block",
+          "location": {
+            "byte_begin": 84,
+            "byte_end": 160,
+            "column": 85,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "1844f50ee1bcc4a831791fa973a47cc5",
+          "path": "body",
+          "references": [],
+          "role": "body",
+          "site": "73830b9aaebcd7a459d941ef4b6a8cca403daf4485fc63290945d8117db8fa13"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "eaa81ab4af96e1f00306aa83c5a080da",
+              "ordinal": 0,
+              "role": "expression",
+              "site": "248866087e711bcc2e952fbc655f4afb0dfd0014af47adc4edf93fbe73e0bf6f"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "statement.let",
+            "name": "b",
+            "type": "bounds_legacy::Box<i64>"
+          },
+          "definition_bytes": 68,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "67a96407ad6a5e0d65aa9d05b751260727a8e5256e5a3c21e6010a485a459c23",
+          "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+          "kind": "statement.let",
+          "location": {
+            "byte_begin": 109,
+            "byte_end": 112,
+            "column": 110,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "2980d70bb3062397d9988d9bc4f69e6b",
+          "path": "body/statement/0",
+          "references": [],
+          "role": "statement",
+          "site": "4abd80756ee7e88a2f2c830e6ec5d10c79eb6abd636d738345316cc929ee08fd"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "36c86318e2d496a8c7103d45ef2a17fd",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "a2be1bbafab6b49f66e3946873d309b303d6fc857e1518916ea8cd15bf027220"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.call",
+            "number": "0",
+            "text": "bounds_legacy::Box<i64>",
+            "type": "bounds_legacy::Box<i64>"
+          },
+          "definition_bytes": 105,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "e788d4a26c31de76cf53d3f0118eb490b76ebce623794e1bdefac203a02c65d6",
+          "id": "eaa81ab4af96e1f00306aa83c5a080da",
+          "kind": "expression.call",
+          "location": {
+            "byte_begin": 126,
+            "byte_end": 129,
+            "column": 127,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "b781756e3c096c537ac6c6e8e5e7fc70",
+          "path": "body/statement/0/expression/0",
+          "references": [],
+          "role": "expression",
+          "site": "248866087e711bcc2e952fbc655f4afb0dfd0014af47adc4edf93fbe73e0bf6f"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "2ea2ae3eefe8f318442f4ea918a68968",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "e3cdb0faaf1e90f240973f72d8ce859f23b8d8daa16e265f9117469a8f425d6a"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.call",
+            "number": "0",
+            "text": "bounds_legacy::identity<i64>",
+            "type": "i64"
+          },
+          "definition_bytes": 90,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "b01b6f58195d604c185ea51645fa6db733bdaa6e53495fc5f52220676f08666f",
+          "id": "36c86318e2d496a8c7103d45ef2a17fd",
+          "kind": "expression.call",
+          "location": {
+            "byte_begin": 130,
+            "byte_end": 138,
+            "column": 131,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "eaa81ab4af96e1f00306aa83c5a080da",
+          "path": "body/statement/0/expression/0/argument/0",
+          "references": [
+            {
+              "id": "029280bd4cd9199f9ed8153729bba051",
+              "role": "callee",
+              "symbol": "bounds_legacy::identity<i64>"
+            }
+          ],
+          "role": "argument",
+          "site": "a2be1bbafab6b49f66e3946873d309b303d6fc857e1518916ea8cd15bf027220"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.integer",
+            "number": "42",
+            "text": "",
+            "type": "i64"
+          },
+          "definition_bytes": 66,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+          "id": "2ea2ae3eefe8f318442f4ea918a68968",
+          "kind": "expression.integer",
+          "location": {
+            "byte_begin": 139,
+            "byte_end": 141,
+            "column": 140,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "36c86318e2d496a8c7103d45ef2a17fd",
+          "path": "body/statement/0/expression/0/argument/0/argument/0",
+          "references": [],
+          "role": "argument",
+          "site": "e3cdb0faaf1e90f240973f72d8ce859f23b8d8daa16e265f9117469a8f425d6a"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "5af2708f3d8e165d8cc5929ddb05c691",
+              "ordinal": 0,
+              "role": "expression",
+              "site": "91ba1499f42f3c355333b2a5c37edf5845cc6ecf4425ec179bf89697a6d3b1da"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "statement.expression",
+            "name": "",
+            "type": "unknown"
+          },
+          "definition_bytes": 58,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "5772912fd2a2189f95fe86f5de98ae834245ca3c08920c867e691ce8d752a7fe",
+          "id": "0b1367c321d47985ea78c940e90aa8cc",
+          "kind": "statement.expression",
+          "location": {
+            "byte_begin": 144,
+            "byte_end": 149,
+            "column": 145,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 1,
+          "parent": "2980d70bb3062397d9988d9bc4f69e6b",
+          "path": "body/statement/1",
+          "references": [],
+          "role": "statement",
+          "site": "83407d043b153cfc183682c94e22f39c9294f4bd7f608e4387f8f7b7dd5ff614"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "1339532e66abe295c9eba0da23a7eeba",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "4c992c8f02648e77c8a1da41812502b0e2eaae13433182626ff7586d1ff5b8fd"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.call",
+            "number": "0",
+            "text": "print",
+            "type": "unit"
+          },
+          "definition_bytes": 68,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "5d2bc4cf9e818c3429353145c0eb3b81e886bf1d922ee455e97521e33bf6cf2c",
+          "id": "5af2708f3d8e165d8cc5929ddb05c691",
+          "kind": "expression.call",
+          "location": {
+            "byte_begin": 144,
+            "byte_end": 149,
+            "column": 145,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "0b1367c321d47985ea78c940e90aa8cc",
+          "path": "body/statement/1/expression/0",
+          "references": [],
+          "role": "expression",
+          "site": "91ba1499f42f3c355333b2a5c37edf5845cc6ecf4425ec179bf89697a6d3b1da"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "e993bf0b14fda354b396abf6a25e1865",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "e5a2894727263bf43dac2380346b860402a56fccfe1f56c463082a874ae31e32"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.field",
+            "number": "0",
+            "text": "value",
+            "type": "i64"
+          },
+          "definition_bytes": 68,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "f5a87e8e2c97e59bcc6666b0e722adaeec0250279c953c5a47b2d97810fd4d27",
+          "id": "1339532e66abe295c9eba0da23a7eeba",
+          "kind": "expression.field",
+          "location": {
+            "byte_begin": 151,
+            "byte_end": 152,
+            "column": 152,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "5af2708f3d8e165d8cc5929ddb05c691",
+          "path": "body/statement/1/expression/0/argument/0",
+          "references": [],
+          "role": "argument",
+          "site": "4c992c8f02648e77c8a1da41812502b0e2eaae13433182626ff7586d1ff5b8fd"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.name",
+            "number": "0",
+            "text": "b",
+            "type": "bounds_legacy::Box<i64>"
+          },
+          "definition_bytes": 83,
+          "definition_omitted": false,
+          "function": "bounds_legacy::main",
+          "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+          "hash": "4bedc00021472eb3f27f5e919c039d7b88d7a1ad338d0c24a9de56c142aeda41",
+          "id": "e993bf0b14fda354b396abf6a25e1865",
+          "kind": "expression.name",
+          "location": {
+            "byte_begin": 150,
+            "byte_end": 151,
+            "column": 151,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "1339532e66abe295c9eba0da23a7eeba",
+          "path": "body/statement/1/expression/0/argument/0/argument/0",
+          "references": [
+            {
+              "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+              "role": "binding"
+            }
+          ],
+          "role": "argument",
+          "site": "e5a2894727263bf43dac2380346b860402a56fccfe1f56c463082a874ae31e32"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "35884491470e400ed4bc2ef0977bcb73",
+              "ordinal": 0,
+              "role": "statement",
+              "site": "b44d465da65f1a6cf71056d4406c91cc4f973ddbb17c82a582855d18d12601b0"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "block"
+          },
+          "definition_bytes": 16,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "b79117b363fc1c6a06b9ac7db8c3a1b90d2b1330d2498d5bd916997fc43079cc",
+          "id": "9e6b6a3020938717c50b06f55251e3a6",
+          "kind": "block",
+          "location": {
+            "byte_begin": 161,
+            "byte_end": 216,
+            "column": 162,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "85e76316c09cc195ec5edd3927a13996",
+          "path": "body",
+          "references": [],
+          "role": "body",
+          "site": "2e4a7ab68f21e37f7c8ea2745dc2460df14d5f1beb38a0f2eb9e71314d95cc6c"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "d997abc02ea495d754ff906dd36b9fbe",
+              "ordinal": 0,
+              "role": "expression",
+              "site": "1c708745d92cc7402f4c09a2090eddf455280c24dcb58cae2bff530c6a8b29be"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "statement.expression",
+            "name": "",
+            "type": "unknown"
+          },
+          "definition_bytes": 58,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "d5eccde3970b2a097d04a287cf8801d12d6c35cea024091d149deb91861031b8",
+          "id": "35884491470e400ed4bc2ef0977bcb73",
+          "kind": "statement.expression",
+          "location": {
+            "byte_begin": 188,
+            "byte_end": 194,
+            "column": 189,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "9e6b6a3020938717c50b06f55251e3a6",
+          "path": "body/statement/0",
+          "references": [],
+          "role": "statement",
+          "site": "b44d465da65f1a6cf71056d4406c91cc4f973ddbb17c82a582855d18d12601b0"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "6f95589f4123a331f3de2fb9040bbe71",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "207bb0636260d0572f61e7f89d164c5341bc12dc28c7c058dcced477172526a0"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.call",
+            "number": "0",
+            "text": "assert",
+            "type": "unit"
+          },
+          "definition_bytes": 69,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "369182feee4b73bf99beb0cc16aa2b555e551066eee102a32e91c9377f3b9a93",
+          "id": "d997abc02ea495d754ff906dd36b9fbe",
+          "kind": "expression.call",
+          "location": {
+            "byte_begin": 188,
+            "byte_end": 194,
+            "column": 189,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "35884491470e400ed4bc2ef0977bcb73",
+          "path": "body/statement/0/expression/0",
+          "references": [],
+          "role": "expression",
+          "site": "1c708745d92cc7402f4c09a2090eddf455280c24dcb58cae2bff530c6a8b29be"
+        },
+        {
+          "child_count": 2,
+          "children": [
+            {
+              "id": "1a75f0a62141f8fae7633434956211ca",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "09fac398b665a4dac8a8558445ba28f242702976e222bb18a0881bc3b548b9fc"
+            },
+            {
+              "id": "c801c9dd092d4a1af8b4cf9bb667312d",
+              "ordinal": 1,
+              "role": "argument",
+              "site": "13c54ec096f341222e8a30fb09b256a43a9cf612175004c832048a3263195420"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.binary",
+            "number": "0",
+            "text": "==",
+            "type": "bool"
+          },
+          "definition_bytes": 67,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "af259d536a64a0b72bd8487071acda41452f0b327f64d717d63033aaaca78d05",
+          "id": "6f95589f4123a331f3de2fb9040bbe71",
+          "kind": "expression.binary",
+          "location": {
+            "byte_begin": 208,
+            "byte_end": 210,
+            "column": 209,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "d997abc02ea495d754ff906dd36b9fbe",
+          "path": "body/statement/0/expression/0/argument/0",
+          "references": [],
+          "role": "argument",
+          "site": "207bb0636260d0572f61e7f89d164c5341bc12dc28c7c058dcced477172526a0"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "a8cae42e263049f4524386db0547b26a",
+              "ordinal": 0,
+              "role": "argument",
+              "site": "ccd310dd03473138a9f1fef92f7bb15549981b5b153980bd8a1d468191f778d7"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.call",
+            "number": "0",
+            "text": "bounds_legacy::identity<i64>",
+            "type": "i64"
+          },
+          "definition_bytes": 90,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "b01b6f58195d604c185ea51645fa6db733bdaa6e53495fc5f52220676f08666f",
+          "id": "1a75f0a62141f8fae7633434956211ca",
+          "kind": "expression.call",
+          "location": {
+            "byte_begin": 195,
+            "byte_end": 203,
+            "column": 196,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "6f95589f4123a331f3de2fb9040bbe71",
+          "path": "body/statement/0/expression/0/argument/0/argument/0",
+          "references": [
+            {
+              "id": "029280bd4cd9199f9ed8153729bba051",
+              "role": "callee",
+              "symbol": "bounds_legacy::identity<i64>"
+            }
+          ],
+          "role": "argument",
+          "site": "09fac398b665a4dac8a8558445ba28f242702976e222bb18a0881bc3b548b9fc"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.integer",
+            "number": "42",
+            "text": "",
+            "type": "i64"
+          },
+          "definition_bytes": 66,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+          "id": "a8cae42e263049f4524386db0547b26a",
+          "kind": "expression.integer",
+          "location": {
+            "byte_begin": 204,
+            "byte_end": 206,
+            "column": 205,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "1a75f0a62141f8fae7633434956211ca",
+          "path": "body/statement/0/expression/0/argument/0/argument/0/argument/0",
+          "references": [],
+          "role": "argument",
+          "site": "ccd310dd03473138a9f1fef92f7bb15549981b5b153980bd8a1d468191f778d7"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.integer",
+            "number": "42",
+            "text": "",
+            "type": "i64"
+          },
+          "definition_bytes": 66,
+          "definition_omitted": false,
+          "function": "bounds_legacy::example",
+          "function_id": "85e76316c09cc195ec5edd3927a13996",
+          "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+          "id": "c801c9dd092d4a1af8b4cf9bb667312d",
+          "kind": "expression.integer",
+          "location": {
+            "byte_begin": 211,
+            "byte_end": 213,
+            "column": 212,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 1,
+          "parent": "6f95589f4123a331f3de2fb9040bbe71",
+          "path": "body/statement/0/expression/0/argument/0/argument/1",
+          "references": [],
+          "role": "argument",
+          "site": "13c54ec096f341222e8a30fb09b256a43a9cf612175004c832048a3263195420"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "parameter",
+            "name": "x",
+            "type": "i64"
+          },
+          "definition_bytes": 44,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity<i64>",
+          "function_id": "029280bd4cd9199f9ed8153729bba051",
+          "hash": "d787d3e2245722635195719eb2c331e23f648f235c36cc89a22c6d9b574b64fd",
+          "id": "95ca92e08ec2be6c2c12f6d1e6966545",
+          "kind": "parameter",
+          "location": {
+            "byte_begin": 62,
+            "byte_end": 63,
+            "column": 63,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "029280bd4cd9199f9ed8153729bba051",
+          "path": "parameter/0",
+          "references": [],
+          "role": "parameter",
+          "site": "fd4e3e160b6b7d0c6a0414daaf1cdd94c76c28ace557f444d47a3601eb4d5614"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "345f2a743796862a55cf0ba9a5650eac",
+              "ordinal": 0,
+              "role": "statement",
+              "site": "9f5d1cfa7c30121027afb649c383a01cfea653977e9b7992bf1752d9aaa01a90"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "block"
+          },
+          "definition_bytes": 16,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity<i64>",
+          "function_id": "029280bd4cd9199f9ed8153729bba051",
+          "hash": "ad02915de6d688f33f2d33b975f70454531d01edc678176d990cefb6773a4746",
+          "id": "3149c2a977938928ef20e87a90c291ad",
+          "kind": "block",
+          "location": {
+            "byte_begin": 47,
+            "byte_end": 83,
+            "column": 48,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "029280bd4cd9199f9ed8153729bba051",
+          "path": "body",
+          "references": [],
+          "role": "body",
+          "site": "17a8c6b89bc2dd5833f4566a23306c7e4c63554e96605806d678942ae04d8f4a"
+        },
+        {
+          "child_count": 1,
+          "children": [
+            {
+              "id": "59bee481f42fcd7cdb76a84c465ee1a1",
+              "ordinal": 0,
+              "role": "expression",
+              "site": "72c30ca4dbd6c2796fec4da4a35966893df901da4a35d8052d5d903b9942f248"
+            }
+          ],
+          "children_truncated": false,
+          "definition": {
+            "kind": "statement.return",
+            "name": "",
+            "type": "unknown"
+          },
+          "definition_bytes": 54,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity<i64>",
+          "function_id": "029280bd4cd9199f9ed8153729bba051",
+          "hash": "afd706832e813252bd0b319df72f7988f66e45f339562161f08d078103c35553",
+          "id": "345f2a743796862a55cf0ba9a5650eac",
+          "kind": "statement.return",
+          "location": {
+            "byte_begin": 73,
+            "byte_end": 79,
+            "column": 74,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "3149c2a977938928ef20e87a90c291ad",
+          "path": "body/statement/0",
+          "references": [],
+          "role": "statement",
+          "site": "9f5d1cfa7c30121027afb649c383a01cfea653977e9b7992bf1752d9aaa01a90"
+        },
+        {
+          "child_count": 0,
+          "children": [],
+          "children_truncated": false,
+          "definition": {
+            "kind": "expression.name",
+            "number": "0",
+            "text": "x",
+            "type": "i64"
+          },
+          "definition_bytes": 63,
+          "definition_omitted": false,
+          "function": "bounds_legacy::identity<i64>",
+          "function_id": "029280bd4cd9199f9ed8153729bba051",
+          "hash": "ce32a65a58487055e25dd790108ce6fc3b2a9d665c9bc004fc8e8da77aed39fa",
+          "id": "59bee481f42fcd7cdb76a84c465ee1a1",
+          "kind": "expression.name",
+          "location": {
+            "byte_begin": 80,
+            "byte_end": 81,
+            "column": 81,
+            "file": "main.nex",
+            "line": 1
+          },
+          "ordinal": 0,
+          "parent": "345f2a743796862a55cf0ba9a5650eac",
+          "path": "body/statement/0/expression/0",
+          "references": [
+            {
+              "id": "95ca92e08ec2be6c2c12f6d1e6966545",
+              "role": "binding"
+            }
+          ],
+          "role": "expression",
+          "site": "72c30ca4dbd6c2796fec4da4a35966893df901da4a35d8052d5d903b9942f248"
+        }
+      ],
+      "offset": 0,
+      "revision": "8ac39f2d9171a414d99d4b6f19efa57967b766b0f275d785ce0bd1b98c482f17",
+      "schema": "nex.operations/1",
+      "source_hash": "9d836c8b6ee423dbba5c16d9d1e70e60bc4c2a28c47603b3070ef1fc10cd5906",
+      "total": 24,
+      "truncated": false
+    },
+    "path": "/private/var/folders/hg/b7ggtzxs1pd_5jwc99gprqwh0000gq/T/nex-07-fixture-jsj46nt_/main.nex",
+    "revision": "8ac39f2d9171a414d99d4b6f19efa57967b766b0f275d785ce0bd1b98c482f17",
+    "schema": "nex.graph/2",
+    "source": "module bounds_legacy; struct Box<T> {value:T;} fn identity<T>(x:T) -> T {return x;} fn main() -> unit !{io} {let b:Box<i64> = Box(identity(42));print(b.value);} test fn example() -> unit {assert(identity(42) == 42);}",
+    "structures": [
+      {
+        "fields": [
+          {
+            "name": "value",
+            "type": "$bounds_legacy::Box::T"
+          }
+        ],
+        "format": "nex.structure/3",
+        "name": "bounds_legacy::Box",
+        "owner": "bounds_legacy",
+        "public": false,
+        "template": "",
+        "type_arguments": [],
+        "type_parameters": [
+          "bounds_legacy::Box::T"
+        ]
+      },
+      {
+        "fields": [
+          {
+            "name": "value",
+            "type": "i64"
+          }
+        ],
+        "format": "nex.structure/3",
+        "name": "bounds_legacy::Box<i64>",
+        "owner": "bounds_legacy",
+        "public": false,
+        "template": "bounds_legacy::Box",
+        "type_arguments": [
+          "i64"
+        ],
+        "type_parameters": []
+      }
+    ]
+  },
+  "operations": [
+    {
+      "child_count": 2,
+      "children": [
+        {
+          "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+          "ordinal": 0,
+          "role": "statement",
+          "site": "4abd80756ee7e88a2f2c830e6ec5d10c79eb6abd636d738345316cc929ee08fd"
+        },
+        {
+          "id": "0b1367c321d47985ea78c940e90aa8cc",
+          "ordinal": 1,
+          "role": "statement",
+          "site": "83407d043b153cfc183682c94e22f39c9294f4bd7f608e4387f8f7b7dd5ff614"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "block"
+      },
+      "definition_bytes": 16,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "d3f9d3dd985a230562e489345f2514fc59686afa36cd2d72d752ec7cd47146e8",
+      "id": "2980d70bb3062397d9988d9bc4f69e6b",
+      "kind": "block",
+      "location": {
+        "byte_begin": 84,
+        "byte_end": 160,
+        "column": 85,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "1844f50ee1bcc4a831791fa973a47cc5",
+      "path": "body",
+      "references": [],
+      "role": "body",
+      "site": "73830b9aaebcd7a459d941ef4b6a8cca403daf4485fc63290945d8117db8fa13"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "eaa81ab4af96e1f00306aa83c5a080da",
+          "ordinal": 0,
+          "role": "expression",
+          "site": "248866087e711bcc2e952fbc655f4afb0dfd0014af47adc4edf93fbe73e0bf6f"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "statement.let",
+        "name": "b",
+        "type": "bounds_legacy::Box<i64>"
+      },
+      "definition_bytes": 68,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "67a96407ad6a5e0d65aa9d05b751260727a8e5256e5a3c21e6010a485a459c23",
+      "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+      "kind": "statement.let",
+      "location": {
+        "byte_begin": 109,
+        "byte_end": 112,
+        "column": 110,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "2980d70bb3062397d9988d9bc4f69e6b",
+      "path": "body/statement/0",
+      "references": [],
+      "role": "statement",
+      "site": "4abd80756ee7e88a2f2c830e6ec5d10c79eb6abd636d738345316cc929ee08fd"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "36c86318e2d496a8c7103d45ef2a17fd",
+          "ordinal": 0,
+          "role": "argument",
+          "site": "a2be1bbafab6b49f66e3946873d309b303d6fc857e1518916ea8cd15bf027220"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.call",
+        "number": "0",
+        "text": "bounds_legacy::Box<i64>",
+        "type": "bounds_legacy::Box<i64>"
+      },
+      "definition_bytes": 105,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "e788d4a26c31de76cf53d3f0118eb490b76ebce623794e1bdefac203a02c65d6",
+      "id": "eaa81ab4af96e1f00306aa83c5a080da",
+      "kind": "expression.call",
+      "location": {
+        "byte_begin": 126,
+        "byte_end": 129,
+        "column": 127,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "b781756e3c096c537ac6c6e8e5e7fc70",
+      "path": "body/statement/0/expression/0",
+      "references": [],
+      "role": "expression",
+      "site": "248866087e711bcc2e952fbc655f4afb0dfd0014af47adc4edf93fbe73e0bf6f"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "2ea2ae3eefe8f318442f4ea918a68968",
+          "ordinal": 0,
+          "role": "argument",
+          "site": "e3cdb0faaf1e90f240973f72d8ce859f23b8d8daa16e265f9117469a8f425d6a"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.call",
+        "number": "0",
+        "text": "bounds_legacy::identity<i64>",
+        "type": "i64"
+      },
+      "definition_bytes": 90,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "b01b6f58195d604c185ea51645fa6db733bdaa6e53495fc5f52220676f08666f",
+      "id": "36c86318e2d496a8c7103d45ef2a17fd",
+      "kind": "expression.call",
+      "location": {
+        "byte_begin": 130,
+        "byte_end": 138,
+        "column": 131,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "eaa81ab4af96e1f00306aa83c5a080da",
+      "path": "body/statement/0/expression/0/argument/0",
+      "references": [
+        {
+          "id": "029280bd4cd9199f9ed8153729bba051",
+          "role": "callee",
+          "symbol": "bounds_legacy::identity<i64>"
+        }
+      ],
+      "role": "argument",
+      "site": "a2be1bbafab6b49f66e3946873d309b303d6fc857e1518916ea8cd15bf027220"
+    },
+    {
+      "child_count": 0,
+      "children": [],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.integer",
+        "number": "42",
+        "text": "",
+        "type": "i64"
+      },
+      "definition_bytes": 66,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+      "id": "2ea2ae3eefe8f318442f4ea918a68968",
+      "kind": "expression.integer",
+      "location": {
+        "byte_begin": 139,
+        "byte_end": 141,
+        "column": 140,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "36c86318e2d496a8c7103d45ef2a17fd",
+      "path": "body/statement/0/expression/0/argument/0/argument/0",
+      "references": [],
+      "role": "argument",
+      "site": "e3cdb0faaf1e90f240973f72d8ce859f23b8d8daa16e265f9117469a8f425d6a"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "5af2708f3d8e165d8cc5929ddb05c691",
+          "ordinal": 0,
+          "role": "expression",
+          "site": "91ba1499f42f3c355333b2a5c37edf5845cc6ecf4425ec179bf89697a6d3b1da"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "statement.expression",
+        "name": "",
+        "type": "unknown"
+      },
+      "definition_bytes": 58,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "5772912fd2a2189f95fe86f5de98ae834245ca3c08920c867e691ce8d752a7fe",
+      "id": "0b1367c321d47985ea78c940e90aa8cc",
+      "kind": "statement.expression",
+      "location": {
+        "byte_begin": 144,
+        "byte_end": 149,
+        "column": 145,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 1,
+      "parent": "2980d70bb3062397d9988d9bc4f69e6b",
+      "path": "body/statement/1",
+      "references": [],
+      "role": "statement",
+      "site": "83407d043b153cfc183682c94e22f39c9294f4bd7f608e4387f8f7b7dd5ff614"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "1339532e66abe295c9eba0da23a7eeba",
+          "ordinal": 0,
+          "role": "argument",
+          "site": "4c992c8f02648e77c8a1da41812502b0e2eaae13433182626ff7586d1ff5b8fd"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.call",
+        "number": "0",
+        "text": "print",
+        "type": "unit"
+      },
+      "definition_bytes": 68,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "5d2bc4cf9e818c3429353145c0eb3b81e886bf1d922ee455e97521e33bf6cf2c",
+      "id": "5af2708f3d8e165d8cc5929ddb05c691",
+      "kind": "expression.call",
+      "location": {
+        "byte_begin": 144,
+        "byte_end": 149,
+        "column": 145,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "0b1367c321d47985ea78c940e90aa8cc",
+      "path": "body/statement/1/expression/0",
+      "references": [],
+      "role": "expression",
+      "site": "91ba1499f42f3c355333b2a5c37edf5845cc6ecf4425ec179bf89697a6d3b1da"
+    },
+    {
+      "child_count": 1,
+      "children": [
+        {
+          "id": "e993bf0b14fda354b396abf6a25e1865",
+          "ordinal": 0,
+          "role": "argument",
+          "site": "e5a2894727263bf43dac2380346b860402a56fccfe1f56c463082a874ae31e32"
+        }
+      ],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.field",
+        "number": "0",
+        "text": "value",
+        "type": "i64"
+      },
+      "definition_bytes": 68,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "f5a87e8e2c97e59bcc6666b0e722adaeec0250279c953c5a47b2d97810fd4d27",
+      "id": "1339532e66abe295c9eba0da23a7eeba",
+      "kind": "expression.field",
+      "location": {
+        "byte_begin": 151,
+        "byte_end": 152,
+        "column": 152,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "5af2708f3d8e165d8cc5929ddb05c691",
+      "path": "body/statement/1/expression/0/argument/0",
+      "references": [],
+      "role": "argument",
+      "site": "4c992c8f02648e77c8a1da41812502b0e2eaae13433182626ff7586d1ff5b8fd"
+    },
+    {
+      "child_count": 0,
+      "children": [],
+      "children_truncated": false,
+      "definition": {
+        "kind": "expression.name",
+        "number": "0",
+        "text": "b",
+        "type": "bounds_legacy::Box<i64>"
+      },
+      "definition_bytes": 83,
+      "definition_omitted": false,
+      "function": "bounds_legacy::main",
+      "function_id": "1844f50ee1bcc4a831791fa973a47cc5",
+      "hash": "4bedc00021472eb3f27f5e919c039d7b88d7a1ad338d0c24a9de56c142aeda41",
+      "id": "e993bf0b14fda354b396abf6a25e1865",
+      "kind": "expression.name",
+      "location": {
+        "byte_begin": 150,
+        "byte_end": 151,
+        "column": 151,
+        "file": "main.nex",
+        "line": 1
+      },
+      "ordinal": 0,
+      "parent": "1339532e66abe295c9eba0da23a7eeba",
+      "path": "body/statement/1/expression/0/argument/0/argument/0",
+      "references": [
+        {
+          "id": "b781756e3c096c537ac6c6e8e5e7fc70",
+          "role": "binding"
+        }
+      ],
+      "role": "argument",
+      "site": "e5a2894727263bf43dac2380346b860402a56fccfe1f56c463082a874ae31e32"
+    }
+  ],
+  "database": "graph.db",
+  "user_version": 0
+}

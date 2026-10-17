@@ -1,4 +1,4 @@
-# Linux compiler and development chain — toolchain 0.20
+# Linux compiler and development chain — toolchain 0.21
 
 The Linux environment builds NEX itself and native NEX programs with C++20,
 LLVM/MLIR/LLD 22.1.8, SQLite, OpenSSL 3, Z3 5.3.1 and Node.js 22.22.3.
@@ -46,7 +46,7 @@ python3 tools/linux/check.py --arch arm64 --live --skip-image-build
 This grants `SYS_PTRACE` and disables the container's syscall filter for that
 test run, retaining its isolated PID namespace, read-only sources and disabled
 external network. These permissions support debugging the test children.
-The live run includes the debugging, expression and generic suites, exercising
+The live run includes the debugging, expression, generic and constraint suites, exercising
 both ordinary previews and exact/partial NEX watch captures through LLDB/DAP.
 Foreign CPU emulation can lack native ptrace support; source/DWARF checks alone
 do not establish live debugger support. See the debug/expression guides for
@@ -85,7 +85,7 @@ execute on Linux; the same history/ID assertions still run.
 
 Fingerprint policy `nex.toolchain-snapshot/2` adds selected linker bytes. Review
 new toolchain hashes when moving from 0.19's policy; saved receipts retain their
-matching SDK and original inputs. This does not change source language 0.7.
+matching SDK and original inputs. The linker-policy change in 0.20 retained source language 0.7. Toolchain 0.21 adds language 0.8 constraints and requires explicit source migration.
 Default macOS system-linker contents remain external unless explicitly selected.
 
 ## Installed SDK and scope

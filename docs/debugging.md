@@ -1,6 +1,6 @@
 # Native debugging — NEX toolchain 0.15
 
-Current source language is 0.7. Debug information describes real native parameters,
+Current source language is 0.8. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.

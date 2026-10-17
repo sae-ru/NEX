@@ -25,13 +25,18 @@ def main():
             value=json.loads(p.stdout);assert p.returncode==0,(args,p.stdout,p.stderr);return value
         try:
             descriptor=cli('describe');doctor=cli('doctor');assert 'linux' in doctor['host']
-            assert descriptor['version']=='0.7' and cli('guide','--kind','linux')['text']
+            assert descriptor['version']=='0.8' and cli('guide','--kind','linux')['text']
             pack=json.loads((resources/'llm/language-pack.json').read_text())
             indexed=[*pack['documents'].values(),*pack['examples'].values()]
             for name in indexed:
                 assert (resources/name).read_bytes()==(Path('/src')/name).read_bytes(),name
+            constrained=root/'constraints';constrained.mkdir();shutil.copyfile(resources/'examples/constraints.nex',constrained/'main.nex')
+            (constrained/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.8','entry':'main.nex'}))
+            constrained_output=cli('eval',cwd=constrained)['stdout'];assert constrained_output=='NEX 🧠\n42\n[1,2,3]\n'
+            assert cli('run',cwd=constrained)['stdout']==constrained_output;cli('test',cwd=constrained);cli('test','--target','web',cwd=constrained)
+            report['constrained_backends']='native/interpreter/TypeScript passed'
             for name in ('main.nex','model.nex'):shutil.copyfile(resources/'examples/generics'/name,root/name)
-            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.7','entry':'main.nex'}))
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.8','entry':'main.nex'}))
             checked=cli('check');assert cli('context','--symbol','main')['symbol']=='generics::main'
             expected=cli('eval')['stdout'];cli('test');cli('test','--target','web')
             built=cli('build');assert built['host_compatible']
@@ -64,7 +69,7 @@ def main():
             report.update(task_document=task,toolchain_manifest=snapshot['manifest'],toolchain_catalog={'linux':'native.json'},receipts=saved)
             shared=Path('/build/sdk-shared-work');shared.mkdir(exist_ok=True)
             (shared/'main.nex').write_text('module shared_linux; fn main() -> unit !{io} { print(7); } test fn example() -> unit { assert(3 + 4 == 7); }')
-            (shared/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.7','entry':'main.nex'}))
+            (shared/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.8','entry':'main.nex'}))
             cli('check',cwd=shared);assert cli('run',cwd=shared)['stdout']=='7\n'
             shared_task=cli('task',shared/'main.nex','--kind','init',cwd=shared)
             shared_file=shared/'task.json';shared_file.write_text(json.dumps(shared_task))
@@ -72,10 +77,10 @@ def main():
             shared_replay=cli('task',shared_run['output'],'--kind','replay',cwd=shared)
             assert shared_replay['status']=='passed'
             proof=root/'proof';shutil.copytree(resources/'examples/verification',proof)
-            (proof/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.7','entry':'main.nex'}))
+            (proof/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.8','entry':'main.nex'}))
             verified=cli('verify','--contracts',proof/'contracts.json',cwd=proof);assert verified['ok'] and verified['functions'] and all(f['status']=='proven' for f in verified['functions'])
             service=root/'service';service.mkdir()
-            (service/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.7','entry':'main.nex'}))
+            (service/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.8','entry':'main.nex'}))
             (service/'main.nex').write_text('''module linux_sdk_server;
 import "std/http.nex" as http;
 server fn handle(request:http::Request) -> http::Response !{db} {

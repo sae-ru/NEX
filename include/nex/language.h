@@ -9,7 +9,8 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.7";
+inline constexpr const char *languageVersion = "0.8";
+using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
@@ -53,6 +54,7 @@ struct Structure {
   std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit;
   bool enumeration=false; std::vector<Variant> variants;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
+  TypeBounds typeBounds;
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
@@ -62,6 +64,7 @@ struct Function {
   std::vector<S> body; Span span; bool test = false;
   bool exported=false; std::string owner,localName,unit;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
+  TypeBounds typeBounds;
 };
 struct Import { std::string path,alias,target; Span span; };
 struct Endpoint {
@@ -79,6 +82,7 @@ struct Program {
   std::map<std::string,SourceUnit> units;
   std::map<std::string,Function> functionTemplates;
   std::map<std::string,Structure> structureTemplates;
+  std::map<std::string,std::set<std::string>> parameterBounds;
   const Function &function(const std::string &name,Span span={}) const;
   const Structure &structure(const std::string &name) const;
   bool hasStructure(const std::string &name) const;
@@ -100,6 +104,8 @@ llvm::json::Value dependencyLock(const Program &program);
 void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language);
 std::string nativeSymbol(const std::string &name);
 void prepareGenerics(Program &program);
+bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint);
+llvm::json::Value canonicalBounds(const std::vector<std::string> &parameters,const TypeBounds &bounds);
 Type substituteType(Type type,const std::map<std::string,Type> &arguments);
 Type resolveType(Program &program,Type type,Span span={},unsigned depth=0);
 Function &instantiateFunction(Program &program,const Function &source,const std::vector<Type> &arguments,Span span);

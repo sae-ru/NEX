@@ -160,9 +160,11 @@ class Parser {
   }
   std::string qualified(){auto result=name().text;while(accept("::"))result+="::"+name().text;return result;}
   void typeEnd(){if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");}
-  std::vector<std::string> templateParameters(){
-    parameters.clear();std::vector<std::string> result;if(!accept("<"))return result;
-    do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);}while(accept(","));typeEnd();return result;
+  std::vector<std::string> templateParameters(TypeBounds &bounds){
+    parameters.clear();bounds.clear();std::vector<std::string> result;if(!accept("<"))return result;
+    do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
+      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
+    }while(accept(","));typeEnd();return result;
   }
   std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
   Type type() {
@@ -297,7 +299,7 @@ public:
       }
       auto start=peek().span;bool exported=accept("pub");
       if(peek().text=="enum") {
-        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters();expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds);expect("{");
         if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){
           auto tag=name();Variant v;v.name=tag.text;v.span=tag.span;v.ordinal=s.variants.size();
@@ -307,14 +309,14 @@ public:
         s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
       }
       if(peek().text=="struct") {
-        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters();expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds);expect("{");
         if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
         s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
-      f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters();expect("(");
+      f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds);expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->"); f.result=type();
       if(accept("!")) {expect("{");if(!accept("}")){do {auto n=name();if(!f.effects.insert(n.text).second)throw Error("E_EFFECT","duplicate effect",n.span);}while(accept(","));expect("}");}}
@@ -372,7 +374,7 @@ class Checker {
   }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
-    case Expr::Integer:e->type=Type::I64;break;
+    case Expr::Integer:e->type=expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
     case Expr::Boolean:e->type=Type::Bool;break;
     case Expr::String:e->type=Type::Str;break;
     case Expr::List: {
@@ -393,20 +395,26 @@ class Checker {
       e->type=base==Type::Str?Type(Type::Str):*base.element;break;
     }
     case Expr::Name:e->type=lookup(e->text,e->span).type;break;
-    case Expr::Unary:
-      same(expr(e->args[0],e->text=="!"?Type::Bool:Type::I64),e->text=="!"?Type::Bool:Type::I64,e->span);e->type=e->args[0]->type;break;
+    case Expr::Unary: {
+      auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64));
+      if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"integer"))throw Error("E_TYPE","unary - requires integer constraint or i64",e->span);
+      e->type=operand;break;
+    }
     case Expr::Binary: {
       const auto &op=e->text;
       bool equality=op=="=="||op=="!=";Type hint=Type::I64;
       if(equality)hint=Type::Unknown;else if(op=="&&"||op=="||")hint=Type::Bool;
-      else if(op=="+")hint=expected==Type::I64||expected==Type::Str||expected.kind==Type::List?expected:Type();
+      else if(op=="+")hint=satisfiesConstraint(p,expected,"add")?expected:Type();
+      else if(expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")&&op!="<"&&op!="<="&&op!=">"&&op!=">=")hint=expected;
       Type a,b;bool rightTyped=false;
       try{a=expr(e->args[0],hint);}catch(const Error &error){if(!equality||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
-      if(!rightTyped)b=expr(e->args[1],a);same(b,a,e->span);
+      if(!rightTyped)b=expr(e->args[1],a);
+      if(a==Type::I64&&b.kind==Type::Parameter&&satisfiesConstraint(p,b,"integer"))a=expr(e->args[0],b);
+      same(b,a,e->span);
       if(op=="&&"||op=="||"){same(a,Type::Bool,e->span);e->type=Type::Bool;}
       else if(op=="=="||op=="!="){if(a==Type::Unit)throw Error("E_TYPE","cannot compare unit",e->span);e->type=Type::Bool;}
-      else if(op=="+"&&(a==Type::Str||a.kind==Type::List))e->type=a;
-      else {same(a,Type::I64,e->span);e->type=(op=="<"||op=="<="||op==">"||op==">=")?Type::Bool:Type::I64;}
+      else {bool ordering=op=="<"||op=="<="||op==">"||op==">=";auto bound=ordering?"ordered":op=="+"?"add":"integer";
+        if(!satisfiesConstraint(p,a,bound))throw Error("E_TYPE","operator '"+op+"' requires '"+bound+"' for "+typeName(a),e->span);e->type=ordering?Type(Type::Bool):a;}
       break;
     }
     case Expr::Call: {
@@ -643,11 +651,11 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  return llvm::json::Object{{"format","nex.function/5"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  return llvm::json::Object{{"format","nex.function/6"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format",s.enumeration?"nex.enum/2":"nex.structure/3"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  llvm::json::Object result{{"format",s.enumeration?"nex.enum/3":"nex.structure/4"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
   if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}result["variants"]=std::move(variants);}
   else{llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});result["fields"]=std::move(fields);}return result;
 }
@@ -662,7 +670,7 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/6"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/7"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
@@ -672,7 +680,8 @@ llvm::json::Value describe() {
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
     {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
+    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered"}}}}}},
     {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},

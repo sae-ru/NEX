@@ -17,10 +17,21 @@ std::vector<S> cloneBlock(const std::vector<S> &source,const std::map<std::strin
     for(auto old:original->arms){auto arm=std::make_shared<MatchArm>(*old);arm->body=cloneBlock(old->body,arguments);for(auto &binding:arm->bindings)binding.type=Type::Unknown;statement->arms.push_back(std::move(arm));}
     result.push_back(std::move(statement));}return result;
 }
-std::map<std::string,Type> bindTypeArguments(const std::vector<std::string> &parameters,const std::vector<Type> &arguments,Span span){
+std::map<std::string,Type> bindTypeArguments(const Program &program,const std::vector<std::string> &parameters,const TypeBounds &bounds,const std::vector<Type> &arguments,Span span){
   if(parameters.size()!=arguments.size())throw Error("E_GENERIC_ARITY","incorrect number of generic type arguments",span);
-  std::map<std::string,Type> bound;for(size_t i=0;i<parameters.size();++i){if(arguments[i]==Type::Unit||arguments[i]==Type::Unknown)throw Error("E_TYPE","generic arguments must be non-unit types",span);bound[parameters[i]]=arguments[i];}return bound;
+  std::map<std::string,Type> bound;for(size_t i=0;i<parameters.size();++i){if(arguments[i]==Type::Unit||arguments[i]==Type::Unknown)throw Error("E_TYPE","generic arguments must be non-unit types",span);
+    if(i<bounds.size())for(const auto &constraint:bounds[i])if(!satisfiesConstraint(program,arguments[i],constraint))throw Error("E_GENERIC_BOUND",typeName(arguments[i])+" does not satisfy '"+constraint+"' for "+parameters[i],span);
+    bound[parameters[i]]=arguments[i];}return bound;
 }
+}
+bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint){
+  if(type.kind==Type::Parameter){auto found=program.parameterBounds.find(type.name);return found!=program.parameterBounds.end()&&(found->second.contains(constraint)||((constraint=="add"||constraint=="ordered")&&found->second.contains("integer")));}
+  if(constraint=="add")return type==Type::I64||type==Type::Str||type.kind==Type::List;
+  if(constraint=="ordered"||constraint=="integer")return type==Type::I64;
+  return false;
+}
+llvm::json::Value canonicalBounds(const std::vector<std::string> &parameters,const TypeBounds &bounds){
+  llvm::json::Object result;for(size_t i=0;i<parameters.size();++i){llvm::json::Array values;if(i<bounds.size())for(const auto &bound:bounds[i])values.push_back(bound);result[parameters[i]]=std::move(values);}return result;
 }
 bool containsParameter(const Type &type){
   if(type.kind==Type::Parameter||(type.kind==Type::Record&&type.name.find('$')!=std::string::npos))return true;if(type.element&&containsParameter(*type.element))return true;
@@ -35,6 +46,8 @@ Type substituteType(Type type,const std::map<std::string,Type> &arguments){
   for(auto &argument:type.arguments)argument=substituteType(argument,arguments);return type;
 }
 void prepareGenerics(Program &p){
+  auto registerBounds=[&](const auto &source){for(size_t i=0;i<source.typeParameters.size();++i)p.parameterBounds[source.typeParameters[i]]=i<source.typeBounds.size()?source.typeBounds[i]:std::set<std::string>{};};
+  for(const auto &source:p.structures)registerBounds(source);for(const auto &source:p.functions)registerBounds(source);
   // Bound instance counts keep references stable while checking recursive calls.
   size_t functionInstances=0,structureInstances=0;for(const auto &f:p.functions)functionInstances+=!f.templateName.empty();for(const auto &s:p.structures)structureInstances+=!s.templateName.empty();
   if(functionInstances>maxInstances||structureInstances>maxInstances)throw Error("E_GENERIC_LIMIT","generic instance limit exceeded");
@@ -52,10 +65,10 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
     if(!type.arguments.empty())throw Error("E_GENERIC_ARITY","type is not generic: "+type.name,span);
     if(!p.hasStructure(type.name))throw Error("E_TYPE","unknown type '"+type.name+"'",span);return type;
   }
-  const auto &source=found->second;auto arguments=bindTypeArguments(source.typeParameters,type.arguments,span);auto name=genericName(source.name,type.arguments);
+  const auto &source=found->second;auto arguments=bindTypeArguments(p,source.typeParameters,source.typeBounds,type.arguments,span);auto name=genericName(source.name,type.arguments);
   if(p.hasStructure(name))return Type::record(name);
   size_t instances=0;for(const auto &s:p.structures)instances+=!s.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic nominal instance limit exceeded",span);
-  auto instance=source;instance.name=name;instance.localName=genericName(source.localName.empty()?source.name:source.localName,type.arguments);instance.templateName=source.name;instance.typeArguments=type.arguments;instance.typeParameters.clear();
+  auto instance=source;instance.name=name;instance.localName=genericName(source.localName.empty()?source.name:source.localName,type.arguments);instance.templateName=source.name;instance.typeArguments=type.arguments;instance.typeParameters.clear();instance.typeBounds.clear();
   for(auto field:instance.members())field->type=substituteType(field->type,arguments);
   p.structures.push_back(std::move(instance));auto &stored=p.structures.back();
   for(auto field:stored.members())field->type=resolveType(p,field->type,field->span,depth+1);
@@ -63,10 +76,10 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
 }
 Function &instantiateFunction(Program &p,const Function &source,const std::vector<Type> &types,Span span){
   auto original=p.functionTemplates.find(source.name);if(original==p.functionTemplates.end())throw Error("E_GENERIC_ARITY","function is not generic: "+source.name,span);
-  const auto &raw=original->second;auto arguments=bindTypeArguments(raw.typeParameters,types,span);auto name=genericName(raw.name,types);
+  const auto &raw=original->second;auto arguments=bindTypeArguments(p,raw.typeParameters,raw.typeBounds,types,span);auto name=genericName(raw.name,types);
   for(auto &f:p.functions)if(f.name==name)return f;
   size_t instances=0;for(const auto &f:p.functions)instances+=!f.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic function instance limit exceeded",span);
-  auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types);instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.dependencies.clear();instance.checked=false;
+  auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types);instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.dependencies.clear();instance.checked=false;
   instance.result=resolveType(p,substituteType(raw.result,arguments),span);
   for(auto &parameter:instance.params)parameter.type=resolveType(p,substituteType(parameter.type,arguments),parameter.span);
   instance.body=cloneBlock(raw.body,arguments);p.functions.push_back(std::move(instance));return p.functions.back();

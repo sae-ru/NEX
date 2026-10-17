@@ -166,7 +166,7 @@ Value generateAPI(const Program &p,const std::string &directory){
   std::map<std::string,std::vector<const Structure*>> groups;
   for(const auto &name:models){const auto &s=p.structure(name);if(s.unit.starts_with("@"))standard(client,s.unit);else groups[s.owner].push_back(&s);}
   for(const auto &[owner,structures]:groups){auto path=modelPath(owner);SourceTypes types{p,path,owner,{},true,{}};std::string body;
-    for(auto s:structures){auto name=s->localName;if(!s->typeParameters.empty()){name+="<";for(size_t i=0;i<s->typeParameters.size();++i){if(i)name+=", ";const auto &parameter=s->typeParameters[i];name+=parameter.substr(parameter.rfind("::")+2);}name+=">";}
+    for(auto s:structures){auto name=s->localName;if(!s->typeParameters.empty()){name+="<";for(size_t i=0;i<s->typeParameters.size();++i){if(i)name+=", ";const auto &parameter=s->typeParameters[i];name+=parameter.substr(parameter.rfind("::")+2);if(i<s->typeBounds.size()&&!s->typeBounds[i].empty()){name+=": ";bool first=true;for(const auto &bound:s->typeBounds[i]){if(!first)name+=" + ";first=false;name+=bound;}}}name+=">";}
       if(s->enumeration){body+="pub enum "+name+" { ";for(const auto &variant:s->variants){body+=variant.name;if(!variant.fields.empty()){body+="(";for(size_t i=0;i<variant.fields.size();++i){if(i)body+=", ";body+=variant.fields[i].name+": "+types.type(variant.fields[i].type);}body+=")";}body+="; ";}body+="}\n";}
       else{body+="pub struct "+name+" { ";for(const auto &field:s->fields)body+=field.name+": "+types.type(field.type)+"; ";body+="}\n";}}
     client[path]="module "+owner+";\n"+types.imports()+body;

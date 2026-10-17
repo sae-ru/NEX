@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Executed inside the Linux toolchain container; retain all verification logs."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import time
 
@@ -32,13 +34,23 @@ def main():
         run('sdk',['python3','/src/tools/linux/sdk_smoke.py','/build/sdk'])
         report['sdk']=json.loads((root/'sdk-smoke.json').read_text())
         if args.live:
-            for suite in ('debugging','expressions','generics'):
+            for suite in ('debugging','expressions','generics','constraints'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
+        report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['packages']=subprocess.check_output(['dpkg-query','-W','-f=${Package}\t${Version}\n'],text=True).splitlines()
         report['ok']=True
     finally:
         report['seconds']=round(time.monotonic()-started,3);save()
+    # Keep completed evidence when the rolling build directory is reused.
+    checkpoint=root/'checkpoints'/report['doctor']['version']
+    try:
+        checkpoint.mkdir(parents=True,exist_ok=True)
+        for name in ['verification.json','environment.json','sdk-smoke.json',*[p['name']+'.log' for p in report['phases']]]:
+            if (root/name).is_file():shutil.copyfile(root/name,checkpoint/name)
+        shutil.copyfile(root/'Testing/Temporary/LastTest.log',checkpoint/'LastTest.log')
+    except OSError as error:
+        report.update(ok=False,checkpoint_error=str(error));save();raise
     print(json.dumps({'ok':True,'cases':sum(report['case_counts']),'skips':report['skips'],'seconds':report['seconds'],'host':report['doctor']['host']}),flush=True)
 
 
