@@ -2,7 +2,7 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In development: authorized native module loading
+## Development: authorized native module loading
 
 Toolchain **0.39.0 / language 0.14** adds a separate C module descriptor and a
 trusted host loader. Explicit library/export grants, manifest/signature pins,
@@ -16,7 +16,11 @@ real LLDB/DAP and browser builds. Separate source-free Linux ARM64/emulated
 x86-64 containers execute the loaded nominal module and match the NEX model.
 Private snapshot cleanup leaves no temporary files. The initial Linux run's
 Docker `noexec` denial and successful corrected run are retained separately.
-Full current macOS Debug regression is in progress. Source foreign
+Full macOS ARM64 Debug regression passes all 46 suites (336 Python cases and
+nine C++ probes) in 1596.33 s. Broader current Release/Linux compiler,
+isolated Linux SDK and distribution validation remain pending.
+[Evidence](docs/evidence/ffi-modules-0.39.0.json) binds the source, binaries and
+executed checks. Source foreign
 declarations/invocation, general dependency-closure packaging, callbacks and
 async remain pending; `foreign_boundary.source_support` stays false.
 

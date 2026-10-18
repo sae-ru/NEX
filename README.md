@@ -66,7 +66,10 @@ Development 0.39 adds explicit host grants and content-pinned native module
 loading with checked signatures, private verified snapshots and resource-scoped
 physical leases. It keeps language 0.14 unchanged. The
 [module contract](docs/ffi-design.md) records trust, dependency lookup and pending
-source/packaging work. Current validation is tracked in `STATUS.md`.
+source/packaging work. macOS Debug passes 46 suites and the installed SDK passes
+thirteen workflow phases; component sanitizers pass on macOS ARM64 and Linux
+ARM64/emulated x86-64. See [the evidence](docs/evidence/ffi-modules-0.39.0.json)
+and `STATUS.md` for the exact scope and remaining checks.
 
 ## Build
 

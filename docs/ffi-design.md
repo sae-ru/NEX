@@ -210,6 +210,8 @@ host must provide a trusted process environment. A general dependency-closure
 builder/auditor, platform signing, distributable packaging, Windows/mobile
 support and source integration remain pending. The present target list states
 implemented host branches; executed validation belongs in `STATUS.md`.
+The host temporary directory must allow executable mappings: a `noexec` mount
+rejects the sealed image with `E_FFI_LOAD`, even when all content checks pass.
 Initializer timing and lookup behavior follow the
 [Linux loader contract](https://man7.org/linux/man-pages/man3/dlopen.3.html) and
 [Apple dynamic library guidance](https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryUsageGuidelines.html).
