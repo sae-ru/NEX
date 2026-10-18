@@ -37,7 +37,17 @@ Compiler/runtime code did not change for that test correction. This covers 301
 declared Python cases and four native C++ probes, including the independent
 48-update binary oracle and retained aliases. Both initial and corrective
 reports are preserved; the initial invocation remains recorded as failed.
-Current Linux/Release and source-free SDK matrix acceptance remain pending.
+macOS Release then passed all 37 suites directly in 563.23 s. Linux ARM64
+passed all 37 in 554.30 s; both frozen cohorts contain 300 Python cases and
+four C++ probes, with the later independent oracle separately passing through
+each matching compiler/SDK. All nine Linux live-debugger suites passed in
+60.145 s. The source-free Linux SDK passed all twelve workflow phases, both
+without live debugging (113.735 s) and with real LLDB/DAP (120.542 s).
+All nineteen managed ownership cases passed under Linux GCC 13.3
+ASan/UBSan/LSan; the preserved Clang image lacked sanitizer libraries, and its
+initial linker failure is recorded separately. Production compiler tests use
+LLVM/MLIR 22.1. Current emulated x86-64 and restored/bundled SDK validation
+remain pending.
 The [source binary evidence](docs/evidence/bytes-source-0.33.0.json) records exact
 source/binary hashes, browser versions, installed SDK phases and remaining scope.
 See [bytes.md](docs/bytes.md).

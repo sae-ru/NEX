@@ -1,6 +1,6 @@
 {
   "schema": "nex.binary-source-acceptance/1",
-  "recorded_at": "2026-10-18T04:39:44.624081+00:00",
+  "recorded_at": "2026-10-18T04:49:46.920230+00:00",
   "toolchain": "0.33.0",
   "language": "0.13",
   "status": "source-and-installed-sdk-passed-platform-matrix-pending",
@@ -383,6 +383,19 @@
       "path": "build/sdk-033-source-bytes-acceptance/report.json",
       "sha256": "1617359216a6da09ebfdb180e51d18bbc8eee977056c3ca4ad8747899ce341a2",
       "bytes": 50454
+    },
+    "linux_clang_missing_sanitizer_runtime": {
+      "report": {
+        "path": "build/bytes-values-033-linux-arm64-sanitized/verification.json",
+        "sha256": "47c194d2e2d8977a8ab578ae9443e669fbc6177ba9452328e7b6d1e7d439b173",
+        "bytes": 1288
+      },
+      "build_log": {
+        "path": "build/bytes-values-033-linux-arm64-sanitized/build.log",
+        "sha256": "26f5a8a6da13d396d93eac401429e4135b02be0c2460fb2ea08c456d8b2045e6",
+        "bytes": 486
+      },
+      "reason": "Clang ASan libraries are absent in the preserved packager image. GCC 13.3 ASan/UBSan/LSan ran all 19 cases; production compiler validation remains LLVM/MLIR 22.1."
     }
   },
   "native_owner_fix": {
@@ -401,12 +414,128 @@
       "sha256": "ac1854720dc593a74b9a1f446c11b78ec32e95279b54a2b3d516caa07aecdc76",
       "bytes": 1049
     },
-    "managed_native_cases": 19
+    "managed_native_cases": 19,
+    "linux_arm64_sanitizers": {
+      "report": {
+        "path": "build/bytes-values-033-linux-arm64-gcc-sanitized/verification.json",
+        "sha256": "55ca2c7a576c710fad7f45b6732de43a4751d6c5024b3f3bd4b8873389d931a2",
+        "bytes": 1739
+      },
+      "cases": 19,
+      "sanitizers": [
+        "ASan",
+        "UBSan",
+        "LSan"
+      ],
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+      "binary_sha256": "ec554b1a3a935d8eb43dcb8c6d7e3a288705fd52efe32448ad4a438ba8d138be",
+      "sanitizer_options": {
+        "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
+      "seconds": 45.202
+    }
   },
   "pending": [
-    "Linux ARM64/x86-64 source/debug/SDK acceptance",
-    "current compiler Release acceptance",
+    "current Linux x86-64 compiler/SDK acceptance (emulated run in progress)",
     "source-free/restored current SDK bundles",
     "the remaining full NEX language/development-chain scope"
-  ]
+  ],
+  "linux_arm64": {
+    "verification": {
+      "path": "build/linux-arm64-033/verification.json",
+      "sha256": "137acd5b2facb88aced54aee9b86b4d9ccf281097f749d87ce8c2e4d98ae4aad",
+      "bytes": 17571
+    },
+    "full_ctest": {
+      "suites": 37,
+      "passed": 37,
+      "seconds": 554.3,
+      "declared_python_cases": 300,
+      "cpp_probes": 4,
+      "log": {
+        "path": "build/linux-arm64-033/ctest.log",
+        "sha256": "08c609f8254e778ea91da2a20d6c2784728d765b9713977b932924a8549cf5ba",
+        "bytes": 3781
+      }
+    },
+    "additional_current_test": {
+      "name": "independent 48-update oracle via installed Linux SDK",
+      "status": "passed",
+      "cases": 1,
+      "seconds": 5.092,
+      "log": {
+        "path": "build/bytes-oracle-033-linux-arm64-overlay.log",
+        "sha256": "8af2aa1f450c13f2e6976dc4e486db7bc62b56bd01ecb10433a60c96dae80e23",
+        "bytes": 98
+      }
+    },
+    "live_debugger": {
+      "report": {
+        "path": "build/linux-arm64-033-live/verification.json",
+        "sha256": "a559b70aee32fbd932110bb4a38cc4636e9dea50efc79ae5242317b06696f0cc",
+        "bytes": 4356
+      },
+      "suites": 9,
+      "seconds": 60.145,
+      "compiler_sha256": "61d0b32a9c8ac3e1957f1f4d515142effad580235f58bbd96e14ae6a16ac0ac5"
+    },
+    "source_free_live_sdk": {
+      "report": {
+        "path": "build/linux-arm64-033-live-sdk/workflow/report.json",
+        "sha256": "8f9f534d7eb0207396a665d8fa55b908eea61ea6d3c36dd49fa9a54212b33e61",
+        "bytes": 54652
+      },
+      "phases": 12,
+      "seconds": 120.542,
+      "compiler_sha256": "61d0b32a9c8ac3e1957f1f4d515142effad580235f58bbd96e14ae6a16ac0ac5",
+      "source_checkout_mounted": false,
+      "live_debugger": true,
+      "browser_build": true
+    },
+    "source_free_without_live_sdk": {
+      "report": {
+        "path": "build/linux-arm64-033/source-free-sdk.json",
+        "sha256": "feb8d1b20c88627bc2980c5ce5f73726d9fa698496f5eb454696d4b2cf79be3e",
+        "bytes": 53641
+      },
+      "seconds": 113.735,
+      "phases": 12,
+      "source_checkout_mounted": false,
+      "live_debugger": false
+    },
+    "source_tree": "a55c5f53c3a3be71647e0b8fe6d7ff809f20365d"
+  },
+  "macos_release": {
+    "verification": {
+      "path": "build/release-033/verification.json",
+      "sha256": "2458cfc91c7286a13242b4603453f23058517b64b5cac8b350b92dc32235a99f",
+      "bytes": 1229
+    },
+    "compiler_sha256": "4a2fa536ab0ffb92d589542afdfcaece565b638490cab72c2ef2a68968fb2300",
+    "full_ctest": {
+      "suites": 37,
+      "passed": 37,
+      "seconds": 563.23,
+      "declared_python_cases": 300,
+      "cpp_probes": 4,
+      "log": {
+        "path": "build/release-033/ctest.log",
+        "sha256": "4700975404eb885b23d25c091560166ad8bb0d1212d64bd90439318a0d40c957",
+        "bytes": 3898
+      }
+    },
+    "additional_current_test": {
+      "name": "independent 48-update oracle via Release compiler",
+      "status": "passed",
+      "cases": 1,
+      "seconds": 4.736,
+      "log": {
+        "path": "build/bytes-oracle-033-release-overlay.log",
+        "sha256": "29a13935822803b1c86249490693ef6d14c7738adfc8b1ce1a107b0eff9e60cc",
+        "bytes": 98
+      }
+    },
+    "source_tree": "a55c5f53c3a3be71647e0b8fe6d7ff809f20365d"
+  }
 }
