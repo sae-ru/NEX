@@ -129,8 +129,11 @@ external code and its binding metadata are excluded from browser output.
 
 `nex ffi FILE --symbol NAME --json` exports the actual value contract. The
 [FFI guide](ffi-design.md) defines C ABI, limits, trust and error behavior.
-Callbacks into NEX, general external resource kinds, trusted task-catalogue
-capture and automatic package dependency closures remain pending. `package`
+Toolchain 0.42 adds reviewed task catalogue capture: inspect with `nex foreign`,
+pin `foreign_hash` in native execution checks and supply current operator trust
+with `nex task --foreign HOST.json`. See the task guide for source-deleted replay.
+Callbacks into NEX, general external resource kinds and automatic package
+dependency closures remain pending. `package`
 explicitly rejects reachable external calls instead of emitting an incomplete
 package. Full current verification scope is recorded in `STATUS.md`.
 

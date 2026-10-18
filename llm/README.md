@@ -102,6 +102,12 @@ Language 0.15 adds concrete server-only `extern` functions with `ffi`. Query
 `nex guide --kind ffi --json`, export the actual signature with `nex ffi`, and
 obtain a separately trusted host catalogue for execution. Source pins identify
 code and confer no authority. Use `--foreign HOST.json` for direct execution;
-callbacks into NEX, task catalogue capture and automatic package dependency
-closures remain pending. The indexed source template is materialized by SDK
+callbacks into NEX and automatic package dependency closures remain pending. The indexed source template is materialized by SDK
 acceptance with a real manifest pin.
+
+Toolchain 0.42 adds `nex foreign HOST.json --json` for read-only inventory
+verification and a location-independent operator fingerprint. Reviewed native
+task execution checks pin it as `foreign_hash`; task check/run/replay also require
+current explicit `--foreign HOST.json`. Captures include binary members and
+notices, while the receipt itself confers no execution authority. The prompt,
+task schema and task/FFI guides describe these same rules.

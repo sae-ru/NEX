@@ -33,7 +33,11 @@ deleting the C++ host source. The same phase materializes
 external call in the interpreter, native Debug/Release and native tests with an
 explicit operator catalogue. It also checks a portable client test, archived
 execution after source deletion and the standalone native binary with compiler
-resources unavailable. Packaging of external dependency closures remains pending.
+resources unavailable. Toolchain 0.42 additionally runs reviewed native task
+checks with a pinned operator catalogue, captures exact module bytes and replays
+after deleting NEX sources/task documents while requiring current operator trust.
+Its evidence records both task receipts. Packaging of external dependency
+closures remains pending.
 
 ## Relocatable macOS development bundle (0.27, under validation)
 

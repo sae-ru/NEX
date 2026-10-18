@@ -11,6 +11,13 @@ struct ForeignLibraryGrant {
   std::string manifestSha256;
   std::set<std::string> exports;
 };
+struct ForeignBundleSnapshot {
+  std::string manifest,entry;
+  std::map<std::string,std::string> files,exports;
+};
+// Copies and verifies bounded inventory bytes without dlopen or module entry.
+ForeignBundleSnapshot inspectForeignBundle(const ForeignLibraryGrant &grant,
+    size_t maximumBytes=256*1048576,std::function<void()> poll={});
 class ForeignFunction {
   struct Impl;std::shared_ptr<Impl> impl;
   explicit ForeignFunction(std::shared_ptr<Impl> impl):impl(std::move(impl)){}
@@ -29,6 +36,8 @@ public:
   ForeignLibraries &operator=(const ForeignLibraries&)=delete;
   void revoke()noexcept;
   std::vector<std::string> grantedDirectories()const;
+  std::map<std::string,ForeignLibraryGrant> operatorGrants()const;
+  size_t moduleLimit()const noexcept;
   ForeignFunction bind(const std::string &library,const std::string &name,
                        const ForeignSignature &signature,const std::string &expectedManifestSha256,
                        std::function<void()> poll={})const;

@@ -2,6 +2,7 @@
 #include "nex/task_process.h"
 #include "nex/verification.h"
 #include "nex/native_toolchain.h"
+#include "nex/foreign_catalogue.h"
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Host.h"
 #include <algorithm>
@@ -34,7 +35,7 @@ void atomic(const fs::path &path,const JSON &value){auto temporary=path;temporar
 void atomic(const fs::path &path,const Object &value){atomic(path,JSON(Object(value)));}
 bool ok(const JSON &v){auto o=v.getAsObject();return o&&o->getBoolean("ok").value_or(false);}
 struct Candidate {Program program;JSON bundle,graph;std::string revision,sourceHash;};
-struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts;Object linkage;std::map<std::string,NativeToolchainSnapshot> toolchains;std::map<std::string,std::string> checkTools;};
+struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts;Object linkage;std::map<std::string,NativeToolchainSnapshot> toolchains;std::map<std::string,std::string> checkTools;std::optional<ForeignCatalogueSnapshot> foreign;std::set<std::string> foreignChecks;};
 bool supported(const Prepared &p,const Object &c){
   auto kind=text(c,"kind"),target=text(c,"target");
   if(kind=="build"){
@@ -47,6 +48,7 @@ bool supported(const Prepared &p,const Object &c){
   if(kind=="run"||kind=="profile")return target=="native";
   return target=="source";
 }
+Object foreignValues(const Prepared &p){return p.foreign?Object{{"hash",p.foreign->hash},{"platform",p.foreign->platform}}:Object{};}
 Object toolchainValues(const Prepared &p){Object result;for(const auto &[id,s]:p.toolchains)result[id]=Object{{"hash",s.hash},{"target",s.target},{"host_compatible",s.hostCompatible}};return result;}
 std::set<std::string> reach(const Program &p,const std::set<std::string> &roots){std::set<std::string> found;std::function<void(const std::string&)> visit=[&](const auto &name){if(found.insert(name).second){const auto &f=p.function(name);if(!f.templateName.empty())visit(f.templateName);for(const auto &d:f.dependencies)visit(d);}};for(const auto &r:roots)visit(r);return found;}
 std::set<std::string> types(const Program &p,const std::set<std::string> &functions){std::set<std::string> found;std::function<void(Type)> visit=[&](auto t){if(t.element)visit(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)visit(argument);if(t.kind==Type::Record&&found.insert(t.name).second){const auto &s=p.structure(t.name);if(!s.templateName.empty())visit(Type::record(s.templateName));for(const auto &argument:s.typeArguments)visit(argument);for(auto field:s.members())visit(field->type);}};std::function<void(E)> expr=[&](E e){if(e){visit(e->type);for(auto a:e->args)expr(a);}};std::function<void(const std::vector<S>&)> block=[&](const auto &b){for(auto s:b){visit(s->type);expr(s->expr);childBlocks(s,block);}};for(const auto &name:functions){const auto &f=p.function(name);visit(f.result);for(const auto &v:f.params)visit(v.type);for(const auto &capture:f.captures)visit(capture.type);block(f.body);}return found;}
@@ -61,9 +63,11 @@ void validateShape(const JSON &task){
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
     if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="api"){}else invalid("unknown check kind: "+kind);
     if(kind=="build"||kind=="test"||kind=="run"||kind=="profile")add({"toolchain","toolchain_hash"});
+    if(kind=="test"||kind=="run"||kind=="profile")add({"foreign_hash"});
     fields(c,names);if(!checks.insert(identifier(c,"id")).second)invalid("duplicate check");if(!programs.contains(text(c,"program")))invalid("unknown check program");text(c,"target");number(c,"timeout_seconds",60);
     if(bool(c.get("toolchain"))!=bool(c.get("toolchain_hash")))invalid("toolchain and toolchain_hash must be supplied together");
     if(c.get("toolchain")){identifier(c,"toolchain");digest(c,"toolchain_hash");if(text(c,"target")=="web"||(kind!="build"&&text(c,"target")!="native"))invalid("toolchain requires a native check target");}
+    if(c.get("foreign_hash")){digest(c,"foreign_hash");if(text(c,"target")!="native")invalid("foreign_hash requires a native execution check");}
     if(kind=="test"){std::set<std::string> seen;for(const auto &v:array(c,"tests")){const auto &pin=object(v);fields(pin,{"symbol","content_hash"});if(!seen.insert(text(pin,"symbol")).second)invalid("duplicate test");digest(pin,"content_hash");}}
     if(kind=="build"||kind=="run"){auto profile=optional(c,"profile","debug");if(profile!="debug"&&profile!="release"&&profile!="profile")invalid("unknown build profile");if(kind=="build"){auto mode=optional(c,"mode","application");if(mode!="application"&&mode!="library"&&mode!="module")invalid("unknown build mode");}if(c.get("entry"))text(c,"entry");}
     if(kind=="run"){auto e=c.getObject("expect");if(!e)invalid("run requires expect");fields(*e,{"stdout","exit_code","runtime_code"});text(*e,"stdout",true,true);number(*e,"exit_code",999,0,255);if(!e->get("exit_code"))invalid("run requires exit_code");if(e->get("runtime_code"))text(*e,"runtime_code");}
@@ -128,7 +132,19 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       for(const auto &f:p.functions)if(f.owner==p.module&&(f.localName=="initial"||f.localName=="update"||f.localName=="view"||f.localName=="title"||f.localName=="route"||f.localName=="commands"))function(f.name);
     }else function(optional(c,"entry",p.module+"::"+(text(c,"target")=="server"?"handle":"main")));
     covered[id]=reach(p,roots);structures[id]=types(p,covered[id]);
+    bool executes=kind=="run"||kind=="profile"||(kind=="test"&&text(c,"target")=="native");
+    bool external=false;for(const auto &name:covered[id])external|=p.function(name).foreign.has_value();
+    if(executes&&external&&!c.get("foreign_hash"))throw Error("E_TASK_FOREIGN","external execution check must pin foreign_hash: "+id);
+    if(c.get("foreign_hash")){
+      if(options.foreign.empty())throw Error("E_TASK_FOREIGN","supply a current trusted --foreign HOST.json for check: "+id);
+      if(!result.foreign)result.foreign=inspectForeignCatalogue(options.foreign);
+      if(result.foreign->hash!=digest(c,"foreign_hash"))throw Error("E_TASK_FOREIGN","operator catalogue differs from reviewed foreign_hash: "+id);
+      for(const auto &name:covered[id])checkForeignBinding(*result.foreign,p,p.function(name));
+      result.foreignChecks.insert(id);
+    }
   }
+  if(!options.foreign.empty()&&!result.foreign)throw Error("E_TASK_FOREIGN","no task execution check pins the supplied operator catalogue");
+  if(result.foreign&&!frozen.empty())verifyForeignCatalogue(*result.foreign,frozen/"inputs/foreign");
   for(const auto &value:array(t,"requirements")){
     const auto &r=object(value);auto linked=strings(r,"checks");std::set<std::string> targets;for(const auto &id:linked)targets.insert(text(*checks.at(id),"target"));for(const auto &target:strings(r,"targets"))if(!targets.contains(target))invalid("requirement target has no linked check: "+target);
     Array bindings;
@@ -162,15 +178,18 @@ std::map<std::string,std::string> resources(){
     }
   }return files;
 }
-Object fileIndex(const fs::path &root){Object files;uint64_t bytes=0;for(const auto &e:fs::recursive_directory_iterator(root)){if(e.is_symlink())throw Error("E_TASK_INTEGRITY","symlink in saved artifact");if(!e.is_regular_file())continue;bytes+=e.file_size();if(bytes>256*1048576||files.size()>=8192)invalid("artifact size/count limit exceeded");auto data=readFile(e.path().string());files[e.path().lexically_relative(root).generic_string()]=Object{{"hash",hash(data)},{"bytes",int64_t(data.size())}};}return files;}
+Object fileIndex(const fs::path &root,size_t maximumFiles=8192){Object files;uint64_t bytes=0;for(const auto &e:fs::recursive_directory_iterator(root)){if(e.is_symlink())throw Error("E_TASK_INTEGRITY","symlink in saved artifact");if(!e.is_regular_file())continue;bytes+=e.file_size();if(bytes>256*1048576||files.size()>=maximumFiles)invalid("artifact size/count limit exceeded");auto data=readFile(e.path().string());files[e.path().lexically_relative(root).generic_string()]=Object{{"hash",hash(data)},{"bytes",int64_t(data.size())}};}return files;}
 void saveInputs(const Prepared &p,const fs::path &directory,const TaskOptions &options){
   writeFile((directory/"inputs/task.json").string(),json(p.task)+"\n");
   for(const auto &[id,candidate]:p.programs)writeFile((directory/("inputs/programs/"+id+".json")).string(),json(candidate.bundle)+"\n");
   for(const auto &[id,contract]:p.contracts)writeFile((directory/("inputs/contracts/"+id+".json")).string(),json(contract)+"\n");
   for(const auto &[id,snapshot]:p.toolchains){writeFile((directory/"inputs/toolchains"/id/"config.json").string(),json(snapshot.manifest)+"\n");writeFile((directory/"inputs/toolchains"/id/"identity.json").string(),json(snapshot.inputs)+"\n");}
+  if(p.foreign)saveForeignCatalogue(*p.foreign,directory/"inputs/foreign");
   for(const auto &[name,data]:resources())writeFile((directory/"inputs/resources"/name).string(),data);
   auto files=fileIndex(directory/"inputs");Object indexed;uint64_t bytes=0;for(auto &[name,v]:files){bytes+=*object(v).getInteger("bytes");indexed["inputs/"+name.str()]=std::move(v);}if(bytes>128*1048576)invalid("task input snapshot exceeds 128 MiB");
-  atomic(directory/"inputs/manifest.json",Object{{"schema","nex.task-inputs/1"},{"task_hash",p.taskHash},{"compiler_build",NEX_BUILD_ID},{"compiler_hash",hash(readFile(options.compiler))},{"files",std::move(indexed)}});
+  JSON manifest=Object{{"schema","nex.task-inputs/1"},{"task_hash",p.taskHash},{"compiler_build",NEX_BUILD_ID},{"compiler_hash",hash(readFile(options.compiler))},{"files",std::move(indexed)}};
+  if(json(manifest).size()+1>4*1048576)invalid("task input index exceeds 4 MiB");
+  atomic(directory/"inputs/manifest.json",manifest);
 }
 JSON verifyInputs(const fs::path &directory,const TaskOptions &options,const std::string &expected){
   auto manifest=readJSON(inside(directory,"inputs/manifest.json"),4*1048576);const auto &m=object(manifest);
@@ -181,14 +200,15 @@ JSON verifyInputs(const fs::path &directory,const TaskOptions &options,const std
   if(savedResources!=resources())throw Error("E_TASK_RESOURCE","saved executable resources differ from the compiler's trusted resources");
   // Reject extra input files too, rather than allowing an unindexed header to
   // participate in a later compilation. The manifest itself is the only extra.
-  auto actual=fileIndex(directory/"inputs");if(actual.size()!=files.size()+1)throw Error("E_TASK_INTEGRITY","unindexed task inputs");
+  auto actual=fileIndex(directory/"inputs",8193);if(actual.size()!=files.size()+1)throw Error("E_TASK_INTEGRITY","unindexed task inputs");
   for(const auto &[name,_]:actual)if(name!="manifest.json"&&!files.get("inputs/"+name.str()))throw Error("E_TASK_INTEGRITY","unindexed task input");
   return manifest;
 }
-JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(p,c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"toolchains",toolchainValues(p)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
+JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(p,c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
 std::string nonce(){return std::to_string(std::random_device{}())+"-"+std::to_string(std::random_device{}());}
 struct Runner {
   Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;
+  void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id))verifyForeignCatalogue(*p.foreign,directory/"inputs/foreign");}
   void verifyToolchain(const std::string &id){
     auto selected=p.checkTools.find(id);if(selected==p.checkTools.end())return;
     BuildOptions native;native.toolchain=inside(directory,"inputs/toolchains/"+selected->second+"/config.json").string();
@@ -199,6 +219,7 @@ struct Runner {
     const auto &candidate=p.programs.at(program);auto workspace=directory/"workspaces"/program;
     std::vector<std::string> command{options.compiler};command.insert(command.end(),args.begin(),args.end());
     if(p.checkTools.contains(id)&&!args.empty()&&(args[0]=="build"||args[0]=="test"||args[0]=="run"||args[0]=="profile"))command.insert(command.end(),{"--toolchain",(directory/"inputs/toolchains"/p.checkTools.at(id)/"config.json").string()});
+    if(p.foreignChecks.contains(id)&&!args.empty()&&(args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="profile"))command.insert(command.end(),{"--foreign",(directory/"inputs/foreign/host.json").string()});
     command.insert(command.end(),{"--revision",candidate.revision,"--build-directory",(fs::path(options.root)/".nex/build").string(),"--json"});
     auto relative="logs/"+id+"/"+label;auto process=runTaskProcess(command,workspace.string(),{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"}},timeout,(directory/relative).string());
     Object result{{"command",Array{}},{"exit_code",process.process.code},{"stdout",relative+"/stdout"},{"stderr",relative+"/stderr"},{"timed_out",process.timedOut},{"output_limit",process.outputLimit},{"interrupted",process.interrupted}};
@@ -218,9 +239,10 @@ struct Runner {
     auto id=text(c,"id"),kind=text(c,"kind"),program=text(c,"program"),target=text(c,"target");const auto &candidate=p.programs.at(program);const auto &source=candidate.program;
     Object row{{"id",id},{"kind",kind},{"program",program},{"target",target},{"status","failed"}};
     if(p.checkTools.contains(id)){const auto &snapshot=p.toolchains.at(p.checkTools.at(id));row["toolchain"]=p.checkTools.at(id);row["toolchain_hash"]=snapshot.hash;row["native_target"]=snapshot.target;row["host_compatible"]=snapshot.hostCompatible;}
+    if(p.foreignChecks.contains(id))row["foreign_hash"]=p.foreign->hash;
     if(!supported(p,c)){row["status"]="unsupported";row["reason"]="target is not configured on this host";return row;}
     auto started=std::chrono::steady_clock::now();auto timeout=number(c,"timeout_seconds",60);auto artifact=directory/"artifacts"/id;fs::create_directories(artifact);
-    auto invoke=[&](std::vector<std::string> args,const std::string &label){verifyToolchain(id);auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");auto value=command(id,program,args,timeout-unsigned(elapsed),label);verifyToolchain(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
+    auto invoke=[&](std::vector<std::string> args,const std::string &label){verifyToolchain(id);verifyForeign(id);auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");auto value=command(id,program,args,timeout-unsigned(elapsed),label);verifyToolchain(id);verifyForeign(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
     auto successful=[&](const JSON &v){return object(v).getInteger("exit_code")==0&&object(v).get("response")&&ok(*object(v).get("response"));};
     auto response=[&](const JSON &v)->const Object&{auto result=object(v).get("response");if(!result||!result->getAsObject())throw Error("E_TASK_PROCESS","compiler did not produce a JSON response");return object(*result);};
     auto entry=optional(c,"entry",source.module+"::"+(target=="server"?"handle":"main"));
@@ -264,7 +286,7 @@ struct Runner {
   }
   void checkpoint(Store &store){auto output=directory/"receipt.json";atomic(output,report);store.recordTask(text(report,"run_id"),p.id,p.taskHash,text(report,"status"),output.string(),hash(readFile(output.string())));}
   JSON run(const std::string &replayOf=""){
-    Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
+    Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
     for(const auto &[id,candidate]:p.programs){auto workspace=directory/"workspaces"/id;writeFile((workspace/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry",candidate.program.entryUnit}})+"\n");Store local(workspace/".nex");local.save(loadBundle(candidate.bundle,workspace.string()));}
     checkpoint(store);
     for(const auto &v:array(object(p.task),"checks")){

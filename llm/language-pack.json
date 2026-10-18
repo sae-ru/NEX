@@ -62,7 +62,9 @@
     "foreign_host_schema": "llm/foreign-host.schema.json",
     "foreign_binding_schema": "llm/foreign-binding.schema.json",
     "foreign_scope_header": "runtime/nex_foreign.h",
-    "foreign_native_bridge": "runtime/nex_foreign_abi.h"
+    "foreign_native_bridge": "runtime/nex_foreign_abi.h",
+    "foreign_catalogue_schema": "llm/foreign-catalogue.schema.json",
+    "foreign_catalogue_report_schema": "llm/foreign-catalogue-report.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
@@ -165,5 +167,11 @@
     "nex task TASK.json --kind run --toolchains CATALOG.json --json",
     "nex task RECEIPT.json --kind replay --toolchains CATALOG.json --json"
   ],
-  "foreign_signature_command": "nex ffi FILE --symbol NAME --json"
+  "foreign_signature_command": "nex ffi FILE --symbol NAME --json",
+  "foreign_catalogue_command": "nex foreign HOST.json --json",
+  "task_foreign_commands": [
+    "nex task task.json --kind check --foreign HOST.json --json",
+    "nex task task.json --kind run --task-hash HASH --foreign HOST.json --json",
+    "nex task RECEIPT.json --kind replay --foreign CURRENT_HOST.json --json"
+  ]
 }

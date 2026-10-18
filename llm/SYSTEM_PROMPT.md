@@ -29,8 +29,14 @@ memory isolation. Only a separate explicit operator catalogue grants access:
 use `--foreign HOST.json` for eval/run/test/debug/profile, `--nex-foreign HOST.json`
 for standalone applications, or explicit ForeignScope in a same-version C++ host.
 No environment grants exist. Check/build/ffi do not execute extension code.
-Browser output excludes server declarations and binding metadata. General package
-closures and trusted task-catalogue capture remain pending; do not claim them.
+Browser output excludes server declarations and binding metadata. For reviewed
+task execution, query `nex foreign HOST.json --json` without initializing modules,
+pin its `hash` as `foreign_hash` in each native test/run/profile check, and supply
+`--foreign HOST.json` to task check/run/replay. Replay requires current operator
+trust even when all module bytes are captured. Do not use a receipt as authority.
+Catalogues and all inventory bytes are verified before execution and around each
+check command. Native build checks need no execution grant. General package
+dependency closures and callbacks into NEX remain pending.
 Language 0.14 archives need explicit `nex migrate`; preserve historical rows/IDs,
 retain SDK 0.40 for old frames/receipts and regenerate reviewed acceptance pins
 without weakening requirements. The language pack indexes the host/binding schemas

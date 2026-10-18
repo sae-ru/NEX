@@ -234,7 +234,57 @@ Language 0.7 links a reached generic instance back to its original function/type
 
 Policy 2 adds selected linker identity. Toolchain 0.19 SDKs retain policy 1 for their saved receipts; inspect/review replacement fingerprints rather than silently changing task intent. Policy 2 originally retained language 0.7; language 0.8 adds explicit generic bounds and requires a reviewed migration.
 
-Language 0.15 adds the server-only opaque `ffi` effect. Effect checks can bound
-it explicitly, but task capture/replay does not yet retain a trusted operator
-catalogue. `nex task --foreign` is rejected; use direct eval/run/test/profile
-with an explicit catalogue while this integration remains pending.
+## Reviewed foreign libraries (toolchain 0.42)
+
+Language 0.15 external calls remain server-only and declare the opaque `ffi`
+effect. A native `test`, `run` or `profile` check that reaches an external
+function must contain a reviewed `foreign_hash`. Obtain it without running
+native module initializers:
+
+```sh
+nex foreign /trusted/host.json --json
+# Review the catalogue and copy its hash into the execution check.
+nex task task.json --kind check --foreign /trusted/host.json --json
+nex task task.json --kind run --task-hash REVIEWED_TASK_HASH --foreign /trusted/host.json --json
+nex task /saved/run/receipt.json --kind replay --foreign /current/trusted/host.json --json
+```
+
+`foreign_hash` is the BLAKE3 fingerprint of `nex.foreign-catalogue/1`: platform,
+module limit and the complete normalized operator catalogue, including all
+library/export permissions and SHA-256 manifest pins. Each manifest and every
+inventory member are read and checked before the fingerprint is returned. The
+fingerprint is independent of directory location and JSON field/export ordering;
+relocation to an identical verified bundle preserves identity. Inspection does
+not load a module, inspect a running descriptor or prove that native execution
+will succeed. `check` validates every reachable external binding's grant, manifest
+pin and compiler-derived signature without initializing native code.
+
+One explicit operator catalogue applies to the checks that pin it. A supplied
+catalogue with no matching execution check is rejected. Browser/source/build
+checks cannot request this execution authority. Build checks can compile external
+wrappers without loading modules. All current bindings must fit the reviewed
+policy; new candidate code cannot silently broaden the check's authority.
+
+`run` saves normalized `inputs/foreign/host.json`, `identity.json` and exact
+binary/notice/manifest bytes under `inputs/foreign/bundles/PIN/`. The input index
+covers them like source and compiler resources. Each selected eval/native/test/
+profile command receives the captured catalogue explicitly; other commands do
+not. Captured bytes/policy are checked before and after commands. Foreign input
+capture is bounded by the existing task limits: 128 MiB of total inputs, at most
+8192 indexed files, 64 MiB per input file and a 4 MiB input index. Oversized
+captures fail explicitly.
+These bounds include sources and compiler resources; they do not guarantee that
+every combination of standalone loader limits fits one task.
+
+Replay requires a current explicitly supplied trusted catalogue whose normalized
+fingerprint, permissions and verified bytes agree with reviewed/captured inputs.
+A saved receipt grants no native authority. Changing copied files and recomputing
+receipt hashes cannot replace current operator trust. Current grants may point
+to relocated identical bundles after original source/catalogue files are removed.
+The CLI summary/receipt records `foreign_catalogue` with hash/platform, and each
+executing check records `foreign_hash`.
+
+Native modules remain trusted code with ordinary OS actions and dependency
+lookup. Capturing inventoried members does not freeze the OS, all transitive
+libraries or external state, and does not provide a sandbox. Automatic dependency
+closure packaging and callbacks into NEX remain pending.

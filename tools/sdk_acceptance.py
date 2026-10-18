@@ -574,7 +574,20 @@ int main() {
         cli('test', '--foreign', host_file, cwd=source)
         cli('test', '--target', 'web', cwd=source)
         external = cli('build', '--profile', 'release', cwd=source)
+        catalogue = cli('foreign', host_file, cwd=source)
+        external_task = cli('task', source_file, '--kind', 'init', cwd=source)
+        for check in external_task['checks']:
+            if check['kind'] == 'test':
+                check['foreign_hash'] = catalogue['hash']
+        external_task_file = source / 'task.json'
+        external_task_file.write_text(json.dumps(external_task))
+        checked = cli('task', external_task_file, '--kind', 'check', '--foreign', host_file, cwd=source)
+        accepted = cli('task', external_task_file, '--kind', 'run', '--task-hash', checked['task_hash'],
+                       '--foreign', host_file, cwd=source)
+        require(accepted['ok'] and accepted['foreign_catalogue']['hash'] == catalogue['hash'],
+                'reviewed external task failed')
         source_file.unlink()
+        external_task_file.unlink()
         require(cli('eval', '--revision', source_revision, '--foreign', host_file, cwd=source)['stdout'] == expected_typed,
                 'source-deleted external interpreter replay differs')
         try:
@@ -583,11 +596,17 @@ int main() {
                     'standalone source external binary output differs')
         finally:
             environment['NEX_RESOURCE_DIR'] = original
+        replayed = cli('task', accepted['output'], '--kind', 'replay', '--foreign', host_file, cwd=source)
+        require(replayed['ok'] and replayed['task_hash'] == accepted['task_hash'],
+                'source-deleted trusted external task replay differs')
         report['evidence']['foreign_boundary']['source_external'] = {
             'source_support': True, 'language': report['doctor']['language'],
             'revision': source_revision, 'interpreter_debug_release_agreement': True,
             'server_tests': True, 'portable_web_test': True, 'sources_deleted': True,
-            'standalone': external['executable'], 'host_file': str(host_file)}
+            'standalone': external['executable'], 'host_file': str(host_file),
+            'reviewed_task': {'hash': checked['task_hash'], 'foreign_hash': catalogue['hash'],
+                'receipt': accepted['output'], 'replay': replayed['output'],
+                'source_deleted_trusted_replay': True}}
 
     def binary_values():
         directory = root / 'binary-values'

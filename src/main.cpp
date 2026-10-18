@@ -6,6 +6,7 @@
 #include "nex/profiling.h"
 #include "nex/verification.h"
 #include "nex/tasks.h"
+#include "nex/foreign_catalogue.h"
 #include "nex/debugging.h"
 #include "nex/packaging.h"
 #include "llvm/Support/FileSystem.h"
@@ -84,7 +85,7 @@ int run(const Options &o) {
     auto output=fs::absolute(o.get("--directory")).lexically_normal();
     if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   }
-  if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile")throw Error("E_OPTION","--foreign FILE is an execution capability for eval/run/test/debug/profile; task capture and package closure support are pending");
+  if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile"&&o.command!="task")throw Error("E_OPTION","--foreign FILE is for eval/run/test/debug/profile or reviewed task execution; package closure support is pending");
   if(o.values.contains("--toolchains")&&o.command!="task")throw Error("E_OPTION","--toolchains FILE is for task check/run/replay");
   if(o.values.contains("--toolchain")){
     const std::set<std::string> nativeCommands={"build","package","run","test","debug","profile","emit"};
@@ -95,13 +96,13 @@ int run(const Options &o) {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex ffi [file] --symbol NAME [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
+      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server --toolchain FILE\n"
-      "         --foreign HOST.json (eval/run/test/debug/profile)\n         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
+      "         --foreign HOST.json (eval/run/test/debug/profile/task check/run/replay)\n         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
   if(o.command=="toolchain"){
@@ -121,9 +122,10 @@ int run(const Options &o) {
     auto path=o.get("--contracts");if(path.empty()||!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_OPTION","intent requires a bounded --contracts JSON file");
     auto value=parseJSON(readFile(path));print(llvm::json::Object{{"schema","nex.verification-intent/1"},{"intent_hash",verificationIntentHash(value)}});return 0;
   }
+  if(o.command=="foreign"){if(o.positional.empty())throw Error("E_OPTION","foreign requires a trusted host catalogue path");print(describeForeignCatalogue(inspectForeignCatalogue(o.positional[0])));return 0;}
   if(o.command=="task"){
     if(o.positional.empty())throw Error("E_OPTION","task requires a source, task or receipt path");auto path=fs::absolute(o.positional[0]);auto root=projectRoot(path.parent_path());
-    TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}, {}};
+    TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}, {},o.get("--foreign")};
     if(o.values.contains("--toolchains")){
       auto file=fs::absolute(o.get("--toolchains"));if(!fs::is_regular_file(file)||fs::file_size(file)>65536)throw Error("E_OPTION","toolchain catalog requires a JSON file of at most 64 KiB");
       auto map=parseJSON(readFile(file.string()));auto catalog=map.getAsObject();if(!catalog||catalog->empty()||catalog->size()>16)throw Error("E_OPTION","toolchain catalog must map 1..16 IDs to trusted configuration paths");
@@ -132,6 +134,7 @@ int run(const Options &o) {
     }
     if(!o.get("--candidates").empty()){auto file=o.get("--candidates");if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_OPTION","candidate map requires a bounded JSON file");auto map=parseJSON(readFile(file));auto object=map.getAsObject();if(!object||object->size()>8)throw Error("E_OPTION","candidate file must map program IDs to archived revisions");for(const auto &[id,v]:*object){auto revision=v.getAsString();if(!revision)throw Error("E_OPTION","candidate revision must be a string");options.candidates[id.str()]=revision->str();}}
     auto kind=o.get("--kind","check");
+    if(o.values.contains("--foreign")&&(options.foreign.empty()||(kind!="check"&&kind!="run"&&kind!="replay")))throw Error("E_OPTION","task --foreign requires a nonempty catalogue for check/run/replay");
     if(kind=="init"){
       auto p=loadProgram(path.string(),root.string());Store store(root/".nex");store.save(p,"",false);auto result=taskTemplate(p,p.entryUnit);auto output=o.get("--output");
       if(output.empty())print(std::move(result));else {if(fs::exists(output))throw Error("E_EXISTS","task init requires a new output file");writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"task_hash",hash(json(result,false))}});}return 0;

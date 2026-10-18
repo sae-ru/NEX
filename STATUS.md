@@ -2,47 +2,59 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Working snapshot: source foreign declarations
+## Development: reviewed foreign inputs for tasks
+
+Toolchain **0.42.0 / language 0.15** adds read-only `nex foreign HOST.json`
+discovery, location-independent operator fingerprints and per-check
+`foreign_hash` in native task tests/runs/profiles. Task execution captures all
+inventoried binary/notice/manifest bytes and passes the normalized catalogue
+only to selected execution commands. Replay requires current operator trust;
+rehashed captured receipts cannot grant authority. Checks validate current grants
+and source binding/signature pins before native module initialization. Input
+integrity is checked around each command. The exact 8192-input boundary now
+counts the integrity index separately, and oversized indexes fail before running.
+
+Seven expanded task-FFI cases pass in 212.511 s in an isolated development build,
+including readonly discovery, invalid grants/signatures, source-deleted replay,
+profile invocation, tampered/rehashed captures and replay with exactly 8192 input
+files. A separate command-time mutation case passes in 19.580 s and confirms that
+the next native command cannot start after a captured policy changes. The current
+eight-case task-FFI and fourteen-case source-FFI CTest groups pass in 242.74 s and
+302.14 s. The installed macOS ARM64 SDK passes all thirteen phases in 247.092 s,
+including the reviewed nominal C-module task and source-deleted trusted replay.
+The complete current regression and broader platform validation remain pending.
+The updated installed workflow exercises reviewed tasks with the nominal C
+module as well as direct source calls. The [task-FFI evidence](docs/evidence/ffi-tasks-0.42.0.json)
+records tested inputs and pending validation. This is an experimental integration,
+not completion of NEX. Dependency-closure packaging, callbacks into NEX,
+general resources, async and remaining platform adapters are still open.
+
+## Verified development milestone: source foreign declarations
 
 Toolchain **0.41.0 / language 0.15** connects experimental server-only `extern`
-declarations and the `ffi` effect to the checker, reference interpreter and native
-backend. Source bindings pin a manifest; an explicit host catalogue supplies
-runtime authority. CLI execution, profiling/debug arguments, archived execution
-and browser reachability handling have initial integration coverage. Packaging
-of reachable external calls and trusted task catalogue capture remain pending
-and are explicitly rejected.
+declarations and `ffi` to the checker, interpreter/native backend, explicit CLI
+execution, profiling/debugging and browser exclusion. Source bindings identify
+a manifest; a separate operator catalogue grants authority.
 
-The development build succeeds. The corrected installed macOS ARM64 SDK passes
-all thirteen phases in 250.044 s, including independent C module calls from
-NEX in the interpreter and native Debug/Release, tests, portable web tests,
-source-deleted replay, standalone execution, real LLDB/DAP and browser builds.
-A separate real LLDB stop in the external wrapper reads its typed parameter
-and continues through the authorized C call. That check found an argument-option
-terminator missing from the LLDB init command; the corrected compiler passes
-its live LLDB scenario. The first SDK run's client-only portable test was fixed
-to shared scope; client/native realm restrictions remain enforced.
+The final macOS ARM64 Debug regression passes all **48 groups** (350 Python cases
+and ten C++ probes) in **889.25 s**. The corrected installed macOS SDK passes all
+thirteen phases in **250.044 s**, including independent C module calls from NEX,
+native Debug/Release, source-deleted replay, standalone output, real LLDB/DAP
+and browser builds. Linux ARM64 passes all **48 groups**, the live debugger
+matrix including an external-wrapper watch, and the thirteen-phase SDK workflow
+in a separate source-free container with external networking disabled. That SDK
+workflow takes **193.294 s**. Seven Linux cases explicitly skip unavailable
+macOS cross-SDK/Mach-O checks. Supplemental current imported-callable and stronger
+HTTP/static-root scenarios pass on Linux in **50.728 s**.
 
-The corrected initial source run passes sixteen cases (fourteen source cases,
-including live LLDB, plus two existing HTTP cases accidentally imported into
-unittest discovery). Discovery is corrected, and an additional imported external
-function/callback case passes separately. The expanded HTTP error assertion
-initially used the wrong JSON shape; the correction reads `error.code` from the
-existing HTTP contract. Original failed logs are retained. The latest source
-suite and complete regression are still running. The initial macOS full run
-uses the compiler before the LLDB argument correction; a final build/regression
-must follow. Linux ARM64 verification uses a frozen corrected implementation;
-its earlier run was stopped after the SDK-template defect was identified.
-
-Example task/proof metadata has been regenerated under 0.15 with all reviewed
-requirements, postconditions, loop invariants and test bodies unchanged. All 37
-historical fixture/header hashes remain unchanged. Broader Release/Linux x86-64,
-SDK distribution, task catalogue capture, package dependency closures, general
-resources, callbacks into NEX and async remain pending. This is an unfinished
-experimental integration, not an accepted release or completion of NEX. The
-0.40 evidence below applies to that earlier snapshot.
-The [source integration evidence](docs/evidence/source-ffi-0.41.0.json) records
-the checked inputs, passing SDK/source scenarios, original failures and pending
-regression/platform work separately.
+All 37 historical fixture/header hashes remain unchanged. Reviewed task/proof
+metadata was regenerated under 0.15 without changing requirements, postconditions,
+loop invariants or test bodies. The [source integration evidence](docs/evidence/source-ffi-0.41.0.json)
+binds inputs, artifacts, initial failures/corrections and the executed scope.
+Broader Release/Linux x86-64, sanitizer and distribution checks for 0.41 remain
+pending. Its task-catalogue and package closures were explicitly unavailable;
+the task integration is added in 0.42 above. The earlier 0.40 evidence below
+applies to that preceding snapshot.
 
 ## Earlier milestone: scoped foreign invocation adapter
 

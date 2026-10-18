@@ -68,7 +68,7 @@ template<class Consume> size_t readFile(int fd,size_t limit,const Poll &poll,Con
     if(size_t(n)>limit-total)fail("E_FFI_LIMIT","bundle member exceeds byte limit");consume(buffer.data(),size_t(n));total+=size_t(n);
   }return total;
 }
-struct Manifest {FD root;std::string pin,entry;std::map<std::string,std::string> files,exports;};
+struct Manifest {FD root;std::string pin,entry,text;std::map<std::string,std::string> files,exports;};
 std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Poll &poll){
   auto result=std::make_shared<Manifest>();result->pin=grant.manifestSha256;pollNow(poll);
   result->root=FD(::open(grant.directory.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));if(result->root.fd<0)fail("E_FFI_IO","configured bundle directory is unavailable");
@@ -91,7 +91,7 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
     for(const auto &notice:notices){auto path=string(notice);if(!result->files.contains(path)||!unique.insert(path).second)fail("E_FFI_MANIFEST","invalid or duplicate bundle notice");}
   }catch(const J::exception&){fail("E_FFI_MANIFEST","invalid foreign bundle JSON");}
   catch(const DataError &e){if(e.code=="E_JSON"||e.code=="E_UTF8"||e.code=="E_LIMIT")fail("E_FFI_MANIFEST","invalid foreign bundle JSON");throw;}
-  pollNow(poll);return result;
+  result->text=std::move(text);pollNow(poll);return result;
 }
 struct Image {
   fs::path directory;void *handle=nullptr;
@@ -176,12 +176,28 @@ std::string foreignPlatform(){
 #endif
 }
 std::string foreignSignatureDigest(const ForeignSignature &signature){return digest(signature.canonical());}
+ForeignBundleSnapshot inspectForeignBundle(const ForeignLibraryGrant &grant,size_t maximumBytes,Poll poll){
+  if(!maximumBytes||maximumBytes>257*1048576)fail("E_FFI_LIMIT","invalid bundle capture byte limit");
+  auto manifest=readManifest(grant,poll);
+  ForeignBundleSnapshot result;result.manifest=manifest->text;result.entry=manifest->entry;result.exports=manifest->exports;
+  if(result.manifest.size()>maximumBytes)fail("E_FFI_LIMIT","bundle capture exceeds byte limit");
+  size_t total=result.manifest.size(),members=0;
+  for(const auto &[name,sha]:manifest->files){
+    auto file=openFile(manifest->root.fd,name,poll);std::string bytes;Digest d;
+    auto limit=std::min({size_t(64*1048576),size_t(256*1048576)-members,maximumBytes-total});
+    auto size=readFile(file.fd,limit,poll,[&](const char *data,size_t size){d.add(data,size);bytes.append(data,size);});
+    if(d.finish()!=sha)fail("E_FFI_HASH","foreign bundle member hash differs");
+    total+=size;members+=size;result.files.emplace(name,std::move(bytes));
+  }
+  for(const auto &name:grant.exports)if(!result.exports.contains(name))fail("E_FFI_SIGNATURE","granted export is absent from pinned bundle");
+  result.files.emplace("manifest.json",result.manifest);pollNow(poll);return result;
+}
 struct ForeignFunction::Impl {ResourceOwner<Module> owner;ForeignSignature signature;nex_ffi_callback_v1 callback;void *user;};
 struct ForeignLibraries::Impl {
-  const std::map<std::string,ForeignLibraryGrant> grants;ResourceDomain resources;std::mutex mutex;
+  const std::map<std::string,ForeignLibraryGrant> grants;const size_t limit;ResourceDomain resources;std::mutex mutex;
   std::map<std::string,std::shared_ptr<Manifest>> manifests;
   std::map<std::pair<const void*,std::string>,std::shared_ptr<AuthSlot>> slots;
-  Impl(std::map<std::string,ForeignLibraryGrant> grants,size_t limit):grants(std::move(grants)),resources(limit){}
+  Impl(std::map<std::string,ForeignLibraryGrant> grants,size_t limit):grants(std::move(grants)),limit(limit),resources(limit){}
 };
 ForeignLibraries::ForeignLibraries(std::map<std::string,ForeignLibraryGrant> grants,size_t limit){
   if(grants.size()>128)fail("E_FFI_LIMIT","host library catalogue exceeds 128 grants");
@@ -191,6 +207,8 @@ ForeignLibraries::ForeignLibraries(std::map<std::string,ForeignLibraryGrant> gra
 ForeignLibraries::~ForeignLibraries(){revoke();}
 void ForeignLibraries::revoke()noexcept{auto retained=impl;if(retained)retained->resources.revoke();}
 std::vector<std::string> ForeignLibraries::grantedDirectories()const{auto retained=impl;std::vector<std::string> result;for(const auto &[name,grant]:retained->grants){(void)name;result.push_back(grant.directory);}return result;}
+std::map<std::string,ForeignLibraryGrant> ForeignLibraries::operatorGrants()const{return impl->grants;}
+size_t ForeignLibraries::moduleLimit()const noexcept{return impl->limit;}
 ForeignFunction ForeignLibraries::bind(const std::string &library,const std::string &name,const ForeignSignature &signature,const std::string &expectedManifestSha256,Poll poll)const{
   auto retained=impl;auto libraryName=library,exportName=name,expectedPin=expectedManifestSha256;auto contract=signature;
   const auto &grant=retained->grants;auto it=grant.find(libraryName);

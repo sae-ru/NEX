@@ -2,9 +2,9 @@
   "schema": "nex.source-ffi-evidence/1",
   "toolchain": "0.41.0",
   "language": "0.15",
-  "checked_at": "2026-10-18T12:46:01.478588+00:00",
+  "checked_at": "2026-10-18T13:06:07.090922+00:00",
   "source_support": true,
-  "status": "experimental_partial_validation",
+  "status": "verified_source_macos_linux_arm64_development",
   "full_objective_complete": false,
   "accepted_release": false,
   "source_sha256": {
@@ -220,6 +220,56 @@
       "cases": 1,
       "log": "/Users/sae/projects/NEX/build/source-ffi-041-http-repaired.log",
       "log_sha256": "cb015b906b6c6649904f3e5042c7dc85c48ec68658862c69814f51834f3d5bf0"
+    },
+    "final_macos_regression": {
+      "ok": true,
+      "suite_count": 48,
+      "python_cases": 350,
+      "seconds": 889.25,
+      "log": "/Users/sae/projects/NEX/build/ctest-041-final.log",
+      "log_sha256": "47398641fccb4813c4905c3cd76d9abe45e6782177f670591abb4d8b0e25a075",
+      "LastTest": "/Users/sae/projects/NEX/build/source-ffi-041-macos-LastTest.log",
+      "LastTest_sha256": "311fb632080f1787d5d1290a486dd074ed40c4f498d52ed762ca97fcad9bd6c7",
+      "compiler_sha256": "dd39a03a7ceef25efb0e0a795c34d85214aa4ce7498a123605d71fff97ef902d"
+    },
+    "linux_arm64": {
+      "ok": true,
+      "suite_count": 48,
+      "python_cases": 351,
+      "skips": [
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
+      "host": "aarch64-unknown-linux-gnu",
+      "report": "/Users/sae/projects/NEX/build/linux-041-source-corrected-arm64/verification.json",
+      "report_sha256": "f7b09c6d5ec48bff84bb2d6bb7f8830dd9f4bf8421f3703b33125656d70e5dfa",
+      "source_snapshot": "/Users/sae/projects/NEX/build/ffi-041-source-20261018-123723",
+      "source_free_sdk": {
+        "ok": true,
+        "phases": 13,
+        "seconds": 193.294,
+        "source_checkout_mounted": false,
+        "report": "/Users/sae/projects/NEX/build/linux-041-source-corrected-arm64/source-free-sdk.json",
+        "report_sha256": "e9df942b407aa1410e6d721a39a1f45489d3f6afefe3c3ac715f7c82b7fcefa0"
+      },
+      "source_live_lldb": true
+    },
+    "linux_arm64_supplemental": {
+      "ok": true,
+      "cases": 2,
+      "seconds": 50.728,
+      "log": "/Users/sae/projects/NEX/build/source-ffi-041-linux-supplemental.log",
+      "log_sha256": "6b12c97dc1a9e92a4ce2c95d4dbaaf225469e8657e790ea9023f0d029d784955",
+      "tests": [
+        "imported_external_function_can_be_passed_as_a_checked_server_callable",
+        "http_authorization_precedes_module_initialization_and_calls_use_request_scopes"
+      ],
+      "test_source_sha256": "58c5be539231d31984718d8b5468017f3d108dc0ecd67cb57a8fc6ca255065e9"
     }
   },
   "installed_sdk": {
@@ -408,8 +458,6 @@
     "Expanded HTTP assertion expected a flat error string; existing API uses error.code. Corrected HTTP scenario passes."
   ],
   "pending": [
-    "final_current_full_macos_regression",
-    "linux_arm64_full_compiler_and_source_free_sdk_validation",
     "current_macos_release_and_linux_x86_64_validation",
     "current_sanitizer_and_distribution_matrix",
     "trusted_task_catalogue_capture",

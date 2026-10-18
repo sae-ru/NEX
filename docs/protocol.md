@@ -264,4 +264,26 @@ Language-0.14 migration is explicit and retains original snapshots and local
 identities, including ordinary identifiers `ffi`, `extern` and `foreign`.
 Current example acceptance pins must be reviewed/regenerated without weakening
 their properties. Keep SDK 0.40 for old receipts/frames. Automatic package
-dependency closures and trusted task catalogue capture remain pending.
+dependency closures remain pending. Toolchain 0.42 connects reviewed task
+catalogue capture and current-trust replay, described below.
+
+## Reviewed task foreign inputs (toolchain 0.42)
+
+`nex foreign HOST.json --json` returns `nex.foreign-catalogue-report/1` with a
+content fingerprint, platform, normalized catalogue, bounded inventory size and
+`module_initialization:false`. Its `hash` covers `nex.foreign-catalogue/1` using
+BLAKE3; the embedded bundle/member pins remain SHA-256. All member bytes are
+verified, without dlopen. Native module ABI/behavior is checked during execution.
+
+Native task `test`, `run` and `profile` checks accept `foreign_hash`. Reachable
+external calls require that field and explicit current `--foreign HOST.json`
+for task check/run/replay. Other targets/check kinds reject the field. Task schema
+1 and language 0.15 are retained; old documents without external execution retain
+their meaning. Receipt replay still requires its captured compiler/build.
+
+Captured `inputs/foreign/host.json`, `identity.json` and `bundles/PIN/` participate
+in the ordinary task integrity index. Current operator trust is compared against
+the captured normalized policy and all binary bytes before replay; command-time
+checks detect changed captures. Receipts/summaries expose `foreign_catalogue`
+hash/platform and selected execution rows record `foreign_hash`. See the task
+guide for quotas and the native trust/dependency boundary.

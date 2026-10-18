@@ -4,8 +4,8 @@ Development 0.41 / language 0.15 adds experimental source declarations, checked
 bindings and interpreter/native invocation. Earlier versions 0.37–0.40 introduce
 the C transport, checked signatures, native module loader and invocation contexts
 described below without changing their language 0.14. C module ABI 1 retains its
-original table prefix. Automatic dependency-closure packaging, trusted task
-catalogue capture, generic external resources, callbacks into NEX and source
+original table prefix. Toolchain 0.42 adds reviewed task catalogue capture and current-trust replay.
+Automatic dependency-closure packaging, generic external resources, callbacks into NEX and source
 async remain pending. This is not a published stable FFI. `STATUS.md` records
 the exact validation scope.
 
@@ -38,8 +38,10 @@ Only reachable native declarations add the loader/Crypto runtime. HTTP calls use
 an authenticated request's scope; operator/module files must stay outside the
 static asset root. Server declarations and binding metadata are excluded from
 emitted clients. `nex package` rejects reachable external calls until dependency
-closure packaging is implemented. Task capture/replay cannot yet carry a trusted
-catalogue, and `nex task --foreign` is rejected explicitly.
+closure packaging is implemented. Toolchain 0.42 task execution requires a
+reviewed per-check `foreign_hash` and a separate current `--foreign HOST.json`.
+`nex foreign HOST.json` verifies inventory bytes without initializing modules;
+capture/replay rules and bounds are documented in [the task guide](tasks.md).
 
 `examples/ffi/source.nex.in` is a template materialized with a real manifest pin
 by the installed SDK acceptance workflow. It calls the independent C module and

@@ -8,12 +8,12 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The current working snapshot is toolchain **0.41.0 / language 0.15**, with
-experimental source `extern` declarations and explicit native-library grants.
-The installed macOS ARM64 SDK passes thirteen workflow phases, including real
-source external calls and source-deleted execution. This snapshot preserves work
-in progress; complete current regression and broader platform checks remain
-open. See `STATUS.md` for the validation boundary and earlier verified milestones.
+The current working snapshot is toolchain **0.42.0 / language 0.15**. It adds
+reviewed foreign-library catalogues to task check/run/replay, including captured
+binary bytes and a required current operator grant. The new task integration is
+under validation. The preceding 0.41 source-FFI implementation passes 48 suites
+on macOS ARM64 and Linux ARM64, installed SDK workflows on both hosts and real
+LLDB/DAP. See `STATUS.md` for exact evidence and remaining work.
 
 Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
 
@@ -85,6 +85,20 @@ The [host contract](docs/ffi-design.md) records the implemented adapter. macOS
 Debug passes 47 suites and the installed SDK passes thirteen phases; component
 sanitizers and source-free Linux bridge hosts pass on the stated scope.
 See [the evidence](docs/evidence/ffi-contexts-0.40.0.json) and `STATUS.md`.
+
+Development 0.41 / language 0.15 connects concrete server `extern` declarations
+and `ffi` to the checker, interpreter/native backend, CLI, profiler, debugger
+and browser reachability rules. Its [evidence](docs/evidence/source-ffi-0.41.0.json)
+records full macOS/Linux ARM64 regressions and installed SDK scenarios, including
+source-deleted execution. Broader current platforms and stable ABI validation
+remain pending.
+
+Development 0.42 keeps language 0.15 and adds `nex foreign HOST.json` read-only
+inventory discovery. Native task execution checks pin `foreign_hash`; task
+check/run/replay requires current `--foreign HOST.json`, captures exact module
+bytes and rejects changed/unauthorized inputs. See [tasks](docs/tasks.md) for
+trust, input limits and replay. Automatic dependency-closure packaging remains
+pending; current validation is recorded in `STATUS.md`.
 
 ## Build
 
