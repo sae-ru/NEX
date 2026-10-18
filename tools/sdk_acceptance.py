@@ -524,6 +524,39 @@ int main() {
             'standalone': str(module_host), 'bundle': str(bundle),
             'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
                 for name in ('nex_ffi_loader.cpp', 'nex_ffi_loader.h', 'nex_ffi_module.h', 'nex_resource.h')}}
+        scoped_source = loaded / 'scoped_host.cpp'
+        shutil.copyfile(resources / 'examples/ffi/scoped_host.cpp', scoped_source)
+        host_file = loaded / 'host.json'
+        binding_file = loaded / 'binding.json'
+        host_file.write_text(json.dumps({'schema': 'nex.foreign-host/1', 'module_limit': 64,
+            'libraries': {'example': {'directory': 'bundle', 'manifest_sha256': manifest_pin,
+                                      'exports': ['contract']}}}))
+        binding_file.write_text(json.dumps({'schema': 'nex.foreign-binding/1', 'library': 'example',
+            'export': 'contract', 'manifest_sha256': manifest_pin, 'signature': contract}))
+        scoped_host = loaded / 'scoped-host'
+        run([driver, '-std=c++20', '-pthread', '-I' + str(runtime),
+             '-I' + report['doctor']['native_openssl_include'], scoped_source,
+             runtime / 'runtime.cpp', runtime / 'foreign_runtime.cpp', runtime / 'nex_foreign.cpp',
+             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
+             runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
+             report['doctor']['native_openssl_crypto'],
+             *(['-ldl'] if platform.system() == 'Linux' else []), '-o', scoped_host])
+        scoped_source.unlink()
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-scoped-foreign-resources')
+            require(run([scoped_host, host_file, binding_file]) == expected_typed,
+                    'scoped native value bridge/NEX model output differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = original
+        report['evidence']['foreign_boundary']['scoped_native_bridge'] = {
+            'source_support': False, 'host_schema': 'nex.foreign-host/1',
+            'binding_schema': 'nex.foreign-binding/1', 'real_request_scope': True,
+            'native_managed_handle_bridge': True, 'sources_deleted': True,
+            'matches_nex_model': True, 'standalone': str(scoped_host),
+            'host_file': str(host_file), 'binding_file': str(binding_file),
+            'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
+                for name in ('nex_foreign.cpp', 'nex_foreign.h', 'foreign_runtime.cpp',
+                             'nex_foreign_abi.h', 'runtime.cpp', 'nex_host.h')}}
 
     def binary_values():
         directory = root / 'binary-values'

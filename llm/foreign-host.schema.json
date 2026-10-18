@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.dev/schemas/foreign-host-1.json",
+  "title": "NEX explicit operator foreign-library catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "module_limit", "libraries"],
+  "properties": {
+    "schema": {"const": "nex.foreign-host/1"},
+    "module_limit": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "libraries": {"type": "object", "maxProperties": 128,
+      "propertyNames": {"pattern": "^[A-Za-z_][A-Za-z_0-9]{0,127}(?![\\s\\S])"},
+      "additionalProperties": {"type": "object", "additionalProperties": false,
+        "required": ["directory", "manifest_sha256", "exports"],
+        "properties": {
+          "directory": {"type": "string", "minLength": 1, "maxLength": 4096,
+            "description": "UTF-8 path without NUL, at most 4096 bytes. Relative paths resolve against the actual configuration parent; runtime also bounds the resulting absolute path."},
+          "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"},
+          "exports": {"type": "array", "minItems": 1, "maxItems": 1024, "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,127}(?![\\s\\S])"}}
+        }}}
+  },
+  "description": "Explicit host input, limited to one MiB and loaded only from a regular file without following the final symlink. Reading this catalogue does not load native code. This metadata enables no NEX source declaration or implicit environment grant."
+}

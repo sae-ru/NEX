@@ -3,7 +3,8 @@
 Development 0.37 adds an experimental C value boundary; 0.38 adds checked host
 signatures and nominal constructors. Language 0.14 and its canonical formats do
 not change. Development 0.39 adds trusted host module loading, described below.
-Source external declarations and binding checks,
+Development 0.40 adds explicit invocation contexts and an internal native value
+bridge. Source external declarations and binding checks,
 packaging, generic external resources, callbacks into NEX
 and source async remain pending. This transport is a foundation for those
 features; it is not a published stable FFI or an implemented source feature.
@@ -222,6 +223,83 @@ image and `NOTICE` in the inventory, and use `module_host.cpp` with the explicit
 bundle pin and exported signature. The installed SDK acceptance workflow builds
 and loads this actual C shared module after deleting its C/C++ sources and with
 NEX resources unavailable; it compares the nested result against the NEX model.
+
+## Scoped invocation adapter (development 0.40)
+
+`loadForeignLibraries(path)` reads an explicit `nex.foreign-host/1` operator
+catalogue, described by [`foreign-host.schema.json`](../llm/foreign-host.schema.json):
+
+```json
+{
+  "schema": "nex.foreign-host/1",
+  "module_limit": 64,
+  "libraries": {
+    "example": {
+      "directory": "bundle",
+      "manifest_sha256": "<exact 64 lowercase hexadecimal digits>",
+      "exports": ["contract"]
+    }
+  }
+}
+```
+
+The placeholder above must be replaced by the actual manifest SHA-256. The
+configuration is at most 1 MiB and must be a regular file; its final component
+cannot be a symlink. Parent components resolve before opening it. Relative grant
+directories resolve against that actual configuration parent, retaining normal
+filesystem symlink/`..` behavior. Reading the catalogue validates its structure
+and creates a capability object, without loading modules or executing native
+initializers. There is no `NEX_FOREIGN_CONFIG` or other environment fallback.
+A binding supplied by a program never supplies operator authority.
+
+Trusted C++ hosts enter `ForeignScope(shared_ptr<ForeignLibraries>, limits)`
+and call `invokeScopedForeign(bindingJSON, arguments, poll)`. Binding JSON follows
+[`foreign-binding.schema.json`](../llm/foreign-binding.schema.json): schema
+`nex.foreign-binding/1`, logical `library`, logical `export`, exact
+`manifest_sha256` and a full compiler-exported `signature` object. Both the host
+catalogue and binding must independently agree with the pinned bundle.
+
+Contexts are lexical and local to a thread. A nested empty catalogue denies
+access instead of falling back to its parent. Destroying a context ends its
+authority immediately, including through callbacks or out-of-order destruction;
+ended/expired entries are pruned. Host code may share a catalogue across threads,
+but each thread enters its own context. An external shared catalogue remains
+owned by its host; ending one borrowed context does not revoke other host uses.
+Calls retain their metadata, values, callback and context state before any host
+poll. Scope checks surround every poll. A library is rebound inside each native
+request before polling, including after a metadata cache hit; cached metadata
+cannot turn ended request authority into process authority. Caching never stores
+a request-independent callable to bypass those checks.
+
+Default bounds are 4096 cached bindings and 64 MiB of cumulative cached binding
+UTF-8, with at most 1 MiB per binding, 4096 arguments and 64 nested scopes. Hosts
+can lower those cache limits and choose supported `ForeignCallLimits`. The byte
+counter bounds retained input metadata; parsed layouts and bookkeeping consume
+additional memory within their separate structural limits. Exhaustion reports
+`E_FFI_LIMIT` and already cached bindings remain usable. Invalid binding metadata
+reports `E_FFI_BINDING`; invalid operator configuration reports `E_FFI_GRANT`.
+`E_FFI_SCOPE` distinguishes a context ended during a call. File IO failures use
+`E_FFI_IO`, while loader, type and sticky host errors keep their existing codes.
+
+`foreign_runtime.cpp` provides the internal same-version native ABI
+`nex_foreign_invoke(bindingBytes, size, argumentListHandle, sourceLine)`. This is
+an adapter for generated code, not an extension of the stable-prefix C value
+table. It receives genuine managed runtime handles, calls the common scoped
+adapter, and returns an internal owned one-slot result box. A generated caller
+extracts its statically checked scalar/heap result and releases the box; unit
+has no observable source value. Native host errors preserve their source line;
+real request cancellation remains sticky even when C ignores a failed poll.
+The adapter registers terminal context/catalogue cleanup for standalone
+`nex_runtime_finish` or fatal runtime exit. Embedded hosts use `RequestScope`
+so failures unwind as `Trap`; they must not finalize a runtime while unrelated
+work still uses its catalogues.
+
+`examples/ffi/scoped_host.cpp` exercises this actual native handle bridge using
+the existing typed module, a real request and explicit host/binding JSON. The SDK
+workflow deletes its C++ source, removes NEX resources from the selected
+environment and compares its output with the NEX model. This still adds no
+source `extern` declaration, `ffi` effect, interpreter call or MLIR lowering.
+Those must land together with source migration and browser exclusion checks.
 
 ## Source integration gates
 

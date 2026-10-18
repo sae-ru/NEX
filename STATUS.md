@@ -2,7 +2,32 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: authorized native module loading
+## Development: scoped foreign invocation adapter
+
+Toolchain **0.40.0 / language 0.14** adds explicit `nex.foreign-host/1` operator
+catalogues, `nex.foreign-binding/1` metadata, thread-local lexical contexts and a
+common invocation path with a native managed-handle bridge. Metadata caches
+rebind every call to current request authority; there is no environment grant.
+Native cancellation preserves the original diagnostic code/line and standalone
+terminal cleanup revokes module owners. The 24 new C/C++ cases pass on macOS
+ARM64, including all value kinds, real requests, callback destruction, shared
+images across eight independent thread contexts and actual fatal-exit cleanup.
+Full macOS ARM64 Debug regression passes all 47 suites (336 Python cases and ten
+C++ probes) in 790.04 s with two parallel groups. The installed macOS SDK passes
+all thirteen phases in 215.308 s, including the actual scoped native bridge with
+deleted C++ sources, real LLDB/DAP and browser builds. All 125 transport, loader,
+resource and context cases pass ASan/UBSan/LSan on macOS ARM64 and Linux
+ARM64/emulated x86-64; macOS also passes ThreadSanitizer. Independent source-free
+Linux hosts execute the scoped bridge against the same NEX value contract.
+Private snapshot cleanup leaves no temporary files. Broader current Release/
+Linux compiler, isolated Linux SDK and distribution checks remain pending.
+[Evidence](docs/evidence/ffi-contexts-0.40.0.json) binds the checked inputs and
+scope. Source
+declarations, interpreter/MLIR calls, migration, browser exclusion, general
+resources, callbacks and async remain pending. The descriptor keeps
+`foreign_boundary.source_support:false`.
+
+## Verified development milestone: authorized native module loading
 
 Toolchain **0.39.0 / language 0.14** adds a separate C module descriptor and a
 trusted host loader. Explicit library/export grants, manifest/signature pins,

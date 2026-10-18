@@ -26,6 +26,10 @@ canonical compiler-exported signature, grants only the named export, deletes
 the C/C++ sources and compares loaded output with the native/reference/
 TypeScript NEX model. The host links the selected OpenSSL Crypto (and `dl` on
 Linux); this does not verify a distributable native dependency closure.
+The same phase exercises the scoped native handle bridge with explicit
+operator/binding JSON, relative bundle paths and a real request scope after
+deleting the C++ host source. This is an installed adapter check; NEX source
+external calls remain pending.
 
 ## Relocatable macOS development bundle (0.27, under validation)
 
