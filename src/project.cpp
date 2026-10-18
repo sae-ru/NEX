@@ -1,5 +1,6 @@
 #include "nex/project.h"
 #include "nex/operation_store.h"
+#include "nex/graph_store.h"
 #include <sqlite3.h>
 #include <random>
 #include <algorithm>
@@ -55,12 +56,13 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
     else if(version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
     sql(impl->db,"COMMIT");
   }catch(...){sql(impl->db,"ROLLBACK");throw;}
-
+  initializeGraphIdentities(impl->db);
 }
 Store::~Store()=default;
 std::string Store::save(const Program &p,const std::string &expected,bool makeHead) {
   if(p.units.empty())throw Error("E_STORE","cannot save a program without its source snapshot");
-  auto db=impl->db;auto rev=revision(p);sql(db,"BEGIN IMMEDIATE");
+  auto db=impl->db;auto rev=revision(p);bool outer=sqlite3_get_autocommit(db)!=0;
+  sql(db,outer?"BEGIN IMMEDIATE":"SAVEPOINT nex_save_program");
   try{
     if(!expected.empty()&&head(db)!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
     {Statement q(db,"INSERT INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?) ON CONFLICT(hash) DO UPDATE SET language=excluded.language");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,languageVersion);q.row();}
@@ -84,9 +86,28 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
       auto data=json(canonical(endpoint),false);Statement node(db,"INSERT OR IGNORE INTO nodes(revision,id,hash,canonical) VALUES(?,?,?,?)");node.bind(1,rev);node.bind(2,id);node.bind(3,hash(data));node.bind(4,data);node.row();
       const auto &handler=p.function(endpoint.target);Statement edge(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");edge.bind(1,rev);edge.bind(2,id);edge.bind(3,nodeId(db,handler.owner,handler.localName));edge.row();
     }
+    saveGraphDeclarations(db,p);
     if(makeHead){Statement q(db,"INSERT INTO head(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision");q.bind(1,rev);q.row();}
-    sql(db,"COMMIT");return rev;
-  }catch(...){sql(db,"ROLLBACK");throw;}
+    sql(db,outer?"COMMIT":"RELEASE nex_save_program");return rev;
+  }catch(...){sql(db,outer?"ROLLBACK":"ROLLBACK TO nex_save_program; RELEASE nex_save_program");throw;}
+}
+llvm::json::Value Store::declarations(const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
+  if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return graphDeclarations(impl->db,p,kind,symbol,offset,limit);
+}
+llvm::json::Value Store::identities(const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
+  if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return graphIdentities(impl->db,p,kind,symbol,offset,limit);
+}
+llvm::json::Value Store::reconcileIdentities(const Program &p,const llvm::json::Value &manifest,const std::string &expectedHead){
+  if(expectedHead.empty())throw Error("E_OPTION","identity reconciliation requires an expected graph HEAD");
+  sql(impl->db,"BEGIN IMMEDIATE");
+  try{
+    if(head(impl->db)!=(expectedHead=="EMPTY"?"":expectedHead))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+    if(!graphDeclarationsReady(impl->db,p))save(p,"",false);
+    auto result=reconcileGraphIdentities(impl->db,p,manifest);sql(impl->db,"COMMIT");return result;
+  }catch(...){sql(impl->db,"ROLLBACK");throw;}
+}
+llvm::json::Value Store::resolveIdentity(const Program &p,const std::string &origin,const std::string &sourceRevision,const std::string &id){
+  if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return resolveGraphIdentity(impl->db,p,origin,sourceRevision,id);
 }
 llvm::json::Value Store::operations(const Program &p,const std::string &symbol,const std::string &selector,unsigned offset,unsigned limit,bool context){
   bool ready=false;{Statement q(impl->db,"SELECT count(*) FROM operation_functions WHERE revision=?");q.bind(1,revision(p));q.row();ready=q.text(0)==std::to_string(p.functions.size());}
@@ -94,6 +115,7 @@ llvm::json::Value Store::operations(const Program &p,const std::string &symbol,c
 }
 llvm::json::Value Store::graph(const Program &p) {
   auto operationGraph=operations(p,"","",0,0);
+  auto declarations=this->declarations(p,"","",0,0);auto declarationNodes=declarations.getAsObject()->getArray("nodes");
   llvm::json::Array nodes;
   for(const auto &f:p.functions){
     llvm::json::Array deps;for(const auto &d:f.dependencies){const auto &callee=p.function(d);deps.push_back(llvm::json::Object{{"name",d},{"id",nodeId(impl->db,callee.owner,callee.localName)}});}
@@ -104,8 +126,9 @@ llvm::json::Value Store::graph(const Program &p) {
   llvm::json::Array structures;for(const auto &s:p.structures)structures.push_back(canonical(s));
   llvm::json::Array endpoints;for(const auto &endpoint:p.endpoints){auto data=canonical(endpoint);const auto &handler=p.function(endpoint.target);endpoints.push_back(llvm::json::Object{{"id",nodeId(impl->db,endpoint.owner,"@endpoint/"+endpoint.localName)},{"name",endpoint.name},{"file",endpoint.unit},{"module",endpoint.owner},{"line",int64_t(endpoint.span.line)},{"source",p.definition(endpoint)},{"definition",data},{"hash",hash(json(data,false))},{"handler_id",nodeId(impl->db,handler.owner,handler.localName)}});}
   llvm::json::Array modules;
-  for(const auto &[key,unit]:p.units){llvm::json::Array imports;for(const auto &dep:unit.imports)imports.push_back(llvm::json::Object{{"alias",dep.alias},{"path",dep.path},{"target",dep.target},{"module",p.units.at(dep.target).module}});modules.push_back(llvm::json::Object{{"file",key},{"name",unit.module},{"imports",std::move(imports)}});}
-  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"operation_graph",std::move(operationGraph)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
+  for(const auto &[key,unit]:p.units){llvm::json::Array imports;for(const auto &dep:unit.imports)imports.push_back(llvm::json::Object{{"alias",dep.alias},{"path",dep.path},{"target",dep.target},{"module",p.units.at(dep.target).module}});llvm::json::Object module{{"file",key},{"name",unit.module},{"imports",std::move(imports)}};
+    for(const auto &node:*declarationNodes){auto value=node.getAsObject();if(value->getString("kind")=="module"&&value->getString("symbol")==unit.module){module["id"]=value->getString("id")->str();module["hash"]=value->getString("hash")->str();module["context_hash"]=value->getString("context_hash")->str();break;}}modules.push_back(std::move(module));}
+  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"identity_namespace",graphIdentityNamespace(impl->db)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"operation_graph",std::move(operationGraph)},{"declaration_graph",std::move(declarations)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
 }
 llvm::json::Value Store::history() {
   llvm::json::Array rows;Statement q(impl->db,"SELECT hash,module,created,language FROM revisions ORDER BY created DESC,hash");

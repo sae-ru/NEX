@@ -1,0 +1,249 @@
+#include "nex/graph_store.h"
+#include "nex/operations.h"
+#include <sqlite3.h>
+#include <algorithm>
+#include <functional>
+#include <random>
+#include <tuple>
+
+namespace nex {
+namespace {
+using Value=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
+constexpr size_t maximumNodes=100000,maximumEdges=2000000,maximumPage=1000;
+struct Query {
+  sqlite3 *db;sqlite3_stmt *statement=nullptr;
+  Query(sqlite3 *db,const char *sql):db(db){if(sqlite3_prepare_v2(db,sql,-1,&statement,nullptr)!=SQLITE_OK)throw Error("E_STORE",sqlite3_errmsg(db));}
+  ~Query(){sqlite3_finalize(statement);}
+  void bind(int index,const std::string &value){if(sqlite3_bind_text(statement,index,value.data(),int(value.size()),SQLITE_TRANSIENT)!=SQLITE_OK)throw Error("E_STORE",sqlite3_errmsg(db));}
+  bool row(){int code=sqlite3_step(statement);if(code==SQLITE_ROW)return true;if(code==SQLITE_DONE)return false;throw Error("E_STORE",sqlite3_errmsg(db));}
+  std::string text(int column){auto data=sqlite3_column_text(statement,column);return data?std::string(reinterpret_cast<const char*>(data),sqlite3_column_bytes(statement,column)):"";}
+};
+void sql(sqlite3 *db,const char *text){char *message=nullptr;if(sqlite3_exec(db,text,nullptr,nullptr,&message)!=SQLITE_OK){std::string detail=message?message:"database error";sqlite3_free(message);throw Error("E_STORE",detail);}}
+std::string fresh(){std::random_device random;std::string entropy;for(unsigned i=0;i<8;++i)entropy+=std::to_string(random())+"/";return hash(entropy).substr(0,32);}
+using Key=std::pair<std::string,std::string>;
+struct Entity {
+  std::string kind,symbol,module,file,source,id,content,context;
+  Value definition=nullptr;bool derived=false;std::set<Key> dependencies;
+};
+using Entities=std::map<Key,Entity>;
+bool digest(const std::string &value){return value.size()==64&&value.find_first_not_of("0123456789abcdef")==std::string::npos;}
+std::string token(const Object &object,const std::string &key,size_t maximum=8192){auto text=object.getString(key);if(!text||text->empty()||text->size()>maximum||text->contains('\0'))throw Error("E_IDENTITY_SCHEMA","invalid identity field: "+key);return text->str();}
+void keys(const Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))throw Error("E_IDENTITY_SCHEMA","unknown identity field: "+key.str());}}
+std::string clipped(const std::string &text,size_t limit){if(text.size()<=limit)return text;while(limit&&(static_cast<unsigned char>(text[limit])&0xc0)==0x80)--limit;return text.substr(0,limit);}
+Key add(Entities &entities,std::string kind,std::string symbol,std::string module,std::string file,Value definition,std::string source={},bool derived=false){
+  Key key{kind,symbol};Entity value;value.kind=std::move(kind);value.symbol=std::move(symbol);value.module=std::move(module);value.file=std::move(file);value.source=std::move(source);value.content=hash(json(definition,false));value.definition=std::move(definition);value.derived=derived;
+  if(entities.size()>=maximumNodes)throw Error("E_IDENTITY_LIMIT","declaration graph exceeds 100000 nodes");
+  if(!entities.emplace(key,std::move(value)).second)throw Error("E_STORE","duplicate checked graph entity");return key;
+}
+Entities describeEntities(const Program &p){
+  Entities result;
+  for(const auto &f:p.functions)add(result,"function",f.name,f.owner,f.unit,canonical(f),p.definition(f),!f.templateName.empty()||f.closure);
+  for(const auto &s:p.structures)add(result,"type",s.name,s.owner,s.unit,canonical(s),p.definition(s),!s.templateName.empty());
+  for(const auto &e:p.endpoints)add(result,"endpoint",e.name,e.owner,e.unit,canonical(e),p.definition(e));
+  for(const auto &[file,unit]:p.units){
+    std::set<std::string> imported;for(const auto &dependency:unit.imports)imported.insert(p.units.at(dependency.target).module);
+    Array imports,members;for(const auto &name:imported)imports.push_back(name);
+    for(const auto &[key,entity]:result)if(entity.module==unit.module&&!entity.derived)members.push_back(Object{{"kind",key.first},{"symbol",key.second},{"hash",entity.content}});
+    add(result,"module",unit.module,unit.module,file,Object{{"format","nex.module/1"},{"name",unit.module},{"imports",std::move(imports)},{"members",std::move(members)}});
+  }
+  auto types=[&](Entity &entity,const Type &type,auto &&self)->void{
+    if(type.kind==Type::Record){Key key{"type",type.name};if(result.contains(key))entity.dependencies.insert(key);}
+    if(type.element)self(entity,*type.element,self);for(const auto &argument:type.arguments)self(entity,argument,self);
+  };
+  for(const auto &s:p.structures){auto &entity=result.at({"type",s.name});for(auto field:s.members())types(entity,field->type,types);for(const auto &argument:s.typeArguments)types(entity,argument,types);if(!s.templateName.empty())entity.dependencies.insert({"type",s.templateName});}
+  for(const auto &f:p.functions){
+    auto &entity=result.at({"function",f.name});for(const auto &name:f.dependencies)entity.dependencies.insert({"function",p.function(name).name});
+    if(!f.templateName.empty())entity.dependencies.insert({"function",f.templateName});
+    types(entity,f.result,types);for(const auto &parameter:f.params)types(entity,parameter.type,types);for(const auto &capture:f.captures)types(entity,capture.type,types);for(const auto &argument:f.typeArguments)types(entity,argument,types);
+    std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
+    block=[&](const auto &body){for(const auto &statement:body){types(entity,statement->type,types);expression(statement->expr);childBlocks(statement,block);}};
+    expression=[&](E value){if(!value)return;types(entity,value->type,types);types(entity,value->annotation,types);for(const auto &argument:value->typeArguments)types(entity,argument,types);for(auto argument:value->args)expression(argument);
+      if(value->lambda){types(entity,value->lambda->result,types);for(const auto &parameter:value->lambda->params)types(entity,parameter.type,types);block(value->lambda->body);}
+      for(auto arm:value->arms){for(const auto &binding:arm->bindings)types(entity,binding.type,types);block(arm->body);}
+    };block(f.body);
+  }
+  for(const auto &endpoint:p.endpoints)result.at({"endpoint",endpoint.name}).dependencies.insert({"function",p.function(endpoint.target).name});
+  for(const auto &[file,unit]:p.units){(void)file;auto &entity=result.at({"module",unit.module});
+    for(const auto &dependency:unit.imports)entity.dependencies.insert({"module",p.units.at(dependency.target).module});
+    for(const auto &[key,member]:result)if(member.kind!="module"&&member.module==unit.module&&!member.derived)entity.dependencies.insert(key);
+  }
+  return result;
+}
+void identify(sqlite3 *db,Entities &entities){
+  for(auto &[key,entity]:entities){
+    if(entity.kind=="module"||entity.kind=="type"){
+      Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,key.first);q.bind(2,key.second);if(q.row())entity.id=q.text(0);
+    }else{
+      auto local=entity.kind=="endpoint"?"@endpoint/"+entity.symbol.substr(entity.symbol.rfind("::")+2):entity.symbol.substr(entity.module.size()+2);
+      Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,entity.module);q.bind(2,local);if(q.row())entity.id=q.text(0);
+    }
+    if(entity.id.empty())throw Error("E_STORE","missing persistent graph identity: "+entity.symbol);
+  }
+}
+// Iterative SCC construction avoids recursive hashing and stack depth limits.
+// Incoming callers are deliberately excluded from a node's context fingerprint.
+void contexts(Entities &entities){
+  std::vector<Entity*> nodes;std::map<Key,size_t> indices;for(auto &[key,value]:entities){indices[key]=nodes.size();nodes.push_back(&value);}
+  std::vector<std::vector<size_t>> edges(nodes.size()),reverse(nodes.size());size_t count=0;
+  for(size_t i=0;i<nodes.size();++i)for(const auto &key:nodes[i]->dependencies){auto found=indices.find(key);if(found==indices.end())throw Error("E_STORE","missing checked graph dependency: "+key.second);if(++count>maximumEdges)throw Error("E_IDENTITY_LIMIT","declaration graph exceeds 2000000 edges");edges[i].push_back(found->second);reverse[found->second].push_back(i);}
+  std::vector<bool> seen(nodes.size());std::vector<size_t> order;
+  for(size_t i=0;i<nodes.size();++i)if(!seen[i]){
+    std::vector<std::pair<size_t,size_t>> stack{{i,0}};seen[i]=true;
+    while(!stack.empty()){auto &[node,next]=stack.back();if(next<edges[node].size()){auto child=edges[node][next++];if(!seen[child]){seen[child]=true;stack.emplace_back(child,0);}}else{order.push_back(node);stack.pop_back();}}
+  }
+  std::vector<size_t> component(nodes.size(),nodes.size());std::vector<std::vector<size_t>> groups;
+  for(auto iterator=order.rbegin();iterator!=order.rend();++iterator)if(component[*iterator]==nodes.size()){
+    auto id=groups.size();groups.emplace_back();std::vector<size_t> stack{*iterator};component[*iterator]=id;
+    while(!stack.empty()){auto node=stack.back();stack.pop_back();groups[id].push_back(node);for(auto child:reverse[node])if(component[child]==nodes.size()){component[child]=id;stack.push_back(child);}}
+    std::sort(groups[id].begin(),groups[id].end());
+  }
+  std::vector<std::string> hashes(groups.size());
+  for(size_t id=groups.size();id-->0;){Array members,dependencies;std::set<std::string> unique;
+    for(auto node:groups[id]){members.push_back(Object{{"kind",nodes[node]->kind},{"symbol",nodes[node]->symbol},{"hash",nodes[node]->content}});for(auto child:edges[node])if(component[child]!=id){if(hashes[component[child]].empty())throw Error("E_STORE","invalid graph component ordering");unique.insert(hashes[component[child]]);}}
+    for(const auto &dependency:unique)dependencies.push_back(dependency);
+    hashes[id]=hash(json(Object{{"format","nex.graph-component/1"},{"members",std::move(members)},{"dependencies",std::move(dependencies)}},false));
+    for(auto node:groups[id])nodes[node]->context=hash(json(Object{{"format","nex.graph-context/1"},{"kind",nodes[node]->kind},{"symbol",nodes[node]->symbol},{"component",hashes[id]}},false));
+  }
+}
+Entities checkedEntities(sqlite3 *db,const Program &p){auto entities=describeEntities(p);identify(db,entities);contexts(entities);return entities;}
+Object reference(const Entity &entity,const std::string &path="",const std::string &id="",const std::string &content="",const std::string &context=""){
+  return Object{{"kind",path.empty()?entity.kind:"operation"},{"symbol",entity.symbol},{"path",path},{"id",id.empty()?entity.id:id},
+    {"hash",content.empty()?entity.content:content},{"context_hash",context.empty()?entity.context:context}};
+}
+std::string operationContext(const Entity &owner,const Operation &operation){return hash(json(Object{{"format","nex.graph-operation-context/1"},{"function",owner.context},{"path",operation.path},{"kind",operation.kind},{"hash",operation.content}},false));}
+std::string selectedSymbol(const Program &p,const Entities &entities,const std::string &kind,const std::string &symbol){
+  if(symbol.empty())return {};auto name=symbol.find("::")==std::string::npos?p.module+"::"+symbol:symbol;
+  if(kind=="module"){if(entities.contains({"module",symbol}))return symbol;throw Error("E_IDENTITY_SYMBOL","module is not in the selected graph");}
+  if(kind=="all")for(const auto &candidate:{"function","type","endpoint"})if(entities.contains({candidate,name}))return name;
+  if(kind=="all"&&entities.contains({"module",symbol}))return symbol;
+  if(kind=="operation"){if(entities.contains({"function",name}))return name;}
+  else if(entities.contains({kind,name}))return name;
+  throw Error("E_IDENTITY_SYMBOL","symbol is not in the selected graph");
+}
+struct Selection {std::string kind,symbol;bool module=false;};
+Selection select(const Program &p,const Entities &entities,const std::string &kind,const std::string &symbol){
+  if(!std::set<std::string>{"all","module","type","function","endpoint","operation"}.contains(kind))throw Error("E_OPTION","entity must be all, module, type, function, endpoint or operation");
+  auto name=selectedSymbol(p,entities,kind,symbol);return {kind,name,!name.empty()&&(kind=="module"||(kind=="all"&&entities.contains({"module",name})))};
+}
+bool includes(const Selection &selection,const Entity &entity,bool operation=false){
+  if(selection.module)return entity.module==selection.symbol&&!entity.derived;
+  if(!selection.symbol.empty()&&entity.symbol!=selection.symbol)return false;
+  if(operation)return selection.kind=="all"||selection.kind=="operation";
+  return selection.kind=="all"||selection.kind==entity.kind;
+}
+std::map<std::string,std::string> operationIds(sqlite3 *db,const Program &p,const Entity &owner){
+  Query q(db,"SELECT path,id FROM operation_versions WHERE revision=? AND function=?");q.bind(1,revision(p));q.bind(2,owner.id);std::map<std::string,std::string> result;while(q.row())result[q.text(0)]=q.text(1);return result;
+}
+Object operationReference(sqlite3 *db,const Program &p,const Entity &owner,const std::string &path){
+  auto ids=operationIds(db,p,owner);for(const auto &operation:operationTree(p,p.function(owner.symbol)))if(operation.path==path){
+    auto id=ids.find(path);if(id==ids.end())throw Error("E_STORE","missing operation identity");return reference(owner,path,id->second,operation.content,operationContext(owner,operation));
+  }
+  throw Error("E_IDENTITY_CONTENT","operation path is absent from the checked target graph");
+}
+Value localRecord(sqlite3 *db,const Program &p,const Entities &entities,const std::string &kind,const std::string &symbol,const std::string &path){
+  auto key=Key{kind=="operation"?"function":kind,symbol};auto found=entities.find(key);
+  if(found==entities.end())throw Error("E_IDENTITY_CONTENT","identity symbol is absent from the checked target graph: "+symbol);
+  if(kind=="operation")return operationReference(db,p,found->second,path);
+  return reference(found->second);
+}
+}
+
+void initializeGraphIdentities(sqlite3 *db){
+  sql(db,"BEGIN IMMEDIATE");
+  try{
+    sql(db,"CREATE TABLE IF NOT EXISTS declaration_ids(kind TEXT NOT NULL,symbol TEXT NOT NULL,id TEXT NOT NULL UNIQUE,PRIMARY KEY(kind,symbol));"
+      "CREATE TABLE IF NOT EXISTS declaration_versions(revision TEXT NOT NULL REFERENCES revisions(hash),kind TEXT NOT NULL,symbol TEXT NOT NULL,id TEXT NOT NULL REFERENCES declaration_ids(id),hash TEXT NOT NULL,canonical TEXT NOT NULL,PRIMARY KEY(revision,kind,symbol));"
+      "CREATE TABLE IF NOT EXISTS graph_edges(revision TEXT NOT NULL REFERENCES revisions(hash),source_kind TEXT NOT NULL,source TEXT NOT NULL,target_kind TEXT NOT NULL,target TEXT NOT NULL,PRIMARY KEY(revision,source_kind,source,target_kind,target));"
+      "CREATE TABLE IF NOT EXISTS identity_revisions(revision TEXT PRIMARY KEY REFERENCES revisions(hash),policy TEXT NOT NULL);"
+      "CREATE TABLE IF NOT EXISTS identity_links(origin TEXT NOT NULL,remote_id TEXT NOT NULL,source_revision TEXT NOT NULL,target_revision TEXT NOT NULL REFERENCES revisions(hash),local_id TEXT NOT NULL,kind TEXT NOT NULL,symbol TEXT NOT NULL,path TEXT NOT NULL,hash TEXT NOT NULL,context_hash TEXT NOT NULL,manifest_hash TEXT NOT NULL,PRIMARY KEY(origin,remote_id,source_revision,target_revision),UNIQUE(origin,source_revision,target_revision,kind,symbol,path));"
+      "INSERT OR IGNORE INTO metadata VALUES('identity_schema','1');");
+    {Query q(db,"SELECT value FROM metadata WHERE key='identity_schema'");if(!q.row()||q.text(0)!="1")throw Error("E_SCHEMA","unsupported graph identity extension");}
+    {Query q(db,"SELECT value FROM metadata WHERE key='identity_namespace'");if(!q.row()){Query insert(db,"INSERT INTO metadata VALUES('identity_namespace',?)");insert.bind(1,fresh());insert.row();}}
+    sql(db,"COMMIT");
+  }catch(...){sql(db,"ROLLBACK");throw;}
+}
+std::string graphIdentityNamespace(sqlite3 *db){Query q(db,"SELECT value FROM metadata WHERE key='identity_namespace'");if(!q.row())throw Error("E_STORE","missing graph identity namespace");return q.text(0);}
+bool graphDeclarationsReady(sqlite3 *db,const Program &p){Query q(db,"SELECT policy FROM identity_revisions WHERE revision=?");q.bind(1,revision(p));return q.row()&&q.text(0)=="nex.graph-identity/1";}
+void saveGraphDeclarations(sqlite3 *db,const Program &p){
+  auto entities=describeEntities(p);auto rev=revision(p);
+  for(auto &[key,entity]:entities)if(key.first=="module"||key.first=="type"){
+    std::string id;{Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,key.first);q.bind(2,key.second);if(q.row())id=q.text(0);}
+    if(id.empty()){id=fresh();Query q(db,"INSERT INTO declaration_ids(kind,symbol,id) VALUES(?,?,?)");q.bind(1,key.first);q.bind(2,key.second);q.bind(3,id);q.row();}
+    auto canonical=json(entity.definition,false);
+    {Query q(db,"SELECT id,hash,canonical FROM declaration_versions WHERE revision=? AND kind=? AND symbol=?");q.bind(1,rev);q.bind(2,key.first);q.bind(3,key.second);if(q.row()&&(q.text(0)!=id||q.text(1)!=entity.content||q.text(2)!=canonical))throw Error("E_STORE","stored declaration differs from checked source: "+key.second);}
+    Query q(db,"INSERT OR IGNORE INTO declaration_versions(revision,kind,symbol,id,hash,canonical) VALUES(?,?,?,?,?,?)");q.bind(1,rev);q.bind(2,key.first);q.bind(3,key.second);q.bind(4,id);q.bind(5,entity.content);q.bind(6,canonical);q.row();
+  }
+  identify(db,entities);
+  for(const auto &[key,entity]:entities)for(const auto &dependency:entity.dependencies){
+    auto found=entities.find(dependency);if(found==entities.end())throw Error("E_STORE","missing checked graph dependency: "+dependency.second);
+    Query q(db,"INSERT OR IGNORE INTO graph_edges(revision,source_kind,source,target_kind,target) VALUES(?,?,?,?,?)");q.bind(1,rev);q.bind(2,key.first);q.bind(3,entity.id);q.bind(4,dependency.first);q.bind(5,found->second.id);q.row();
+  }
+  Query q(db,"INSERT OR REPLACE INTO identity_revisions(revision,policy) VALUES(?,?)");q.bind(1,rev);q.bind(2,"nex.graph-identity/1");q.row();
+}
+Value graphDeclarations(sqlite3 *db,const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
+  if(limit>maximumPage)throw Error("E_IDENTITY_LIMIT","declaration page exceeds 1000 nodes");
+  auto entities=checkedEntities(db,p);auto selection=select(p,entities,kind.empty()?"all":kind,symbol);Array rows;uint64_t total=0;
+  for(const auto &[key,entity]:entities){if((key.first!="module"&&key.first!="type")||(!kind.empty()&&key.first!=kind)||(!selection.symbol.empty()&&key.second!=selection.symbol))continue;
+    if(total++<offset||(limit&&rows.size()>=limit))continue;
+    Array dependencies;for(const auto &dependency:entity.dependencies){if(limit&&dependencies.size()>=100)break;const auto &node=entities.at(dependency);dependencies.push_back(reference(node));}
+    auto definition=entity.definition;auto definitionBytes=json(definition,false).size();bool omitted=limit&&definitionBytes>8192;if(omitted)definition=nullptr;
+    auto source=limit?clipped(entity.source,4096):entity.source;
+    auto value=reference(entity);value["module"]=entity.module;value["file"]=entity.file;value["source"]=std::move(source);value["source_bytes"]=int64_t(entity.source.size());value["source_truncated"]=limit&&entity.source.size()>4096;
+    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=!entity.derived;value["derived"]=entity.derived;
+    value["references"]=std::move(dependencies);value["reference_count"]=int64_t(entity.dependencies.size());value["references_truncated"]=limit&&entity.dependencies.size()>100;rows.push_back(std::move(value));
+  }
+  return Object{{"schema","nex.declarations/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},
+    {"identity_policy","nex.graph-identity/1"},{"total",int64_t(total)},{"offset",int64_t(offset)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
+}
+Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
+  if(!limit||limit>maximumPage)throw Error("E_IDENTITY_LIMIT","identity page must contain 1..1000 nodes");
+  auto entities=checkedEntities(db,p);auto selection=select(p,entities,kind,symbol);Array rows;uint64_t total=0;
+  auto append=[&](Object row){if(total++>=offset&&rows.size()<limit)rows.push_back(std::move(row));};
+  for(const auto &[key,entity]:entities){(void)key;if(includes(selection,entity))append(reference(entity));}
+  for(const auto &f:p.functions){const auto &entity=entities.at({"function",f.name});if(!includes(selection,entity,true))continue;
+    auto ids=operationIds(db,p,entity);auto operations=operationTree(p,f);if(ids.size()!=operations.size())throw Error("E_STORE","missing operation identities");
+    for(const auto &operation:operations)append(reference(entity,operation.path,ids.at(operation.path),operation.content,operationContext(entity,operation)));
+  }
+  return Object{{"schema","nex.identities/1"},{"language",languageVersion},{"identity_policy","nex.graph-identity/1"},{"namespace",graphIdentityNamespace(db)},
+    {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",Object{{"entity",kind},{"symbol",selection.symbol}}},
+    {"offset",int64_t(offset)},{"total",int64_t(total)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
+}
+Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifest){
+  auto object=manifest.getAsObject();if(!object)throw Error("E_IDENTITY_SCHEMA","identity manifest must be an object");
+  keys(*object,{"schema","language","identity_policy","namespace","revision","source_hash","selection","offset","total","truncated","nodes"});
+  if(token(*object,"schema")!="nex.identities/1"||token(*object,"identity_policy")!="nex.graph-identity/1")throw Error("E_IDENTITY_SCHEMA","unsupported graph identity protocol");
+  if(token(*object,"language")!=languageVersion)throw Error("E_LANGUAGE_VERSION","identity manifest uses another language version");
+  auto origin=token(*object,"namespace",32),sourceRevision=token(*object,"revision",64),sourceHash=token(*object,"source_hash",64),current=revision(p),localNamespace=graphIdentityNamespace(db);
+  if(origin.size()!=32||origin.find_first_not_of("0123456789abcdef")!=std::string::npos||!digest(sourceRevision)||!digest(sourceHash))throw Error("E_IDENTITY_SCHEMA","invalid namespace or source digest");
+  auto nodes=object->getArray("nodes");if(!nodes||nodes->empty()||nodes->size()>maximumPage)throw Error("E_IDENTITY_LIMIT","reconciliation requires 1..1000 identity records");
+  auto entities=checkedEntities(db,p);Array mappings;std::set<std::string> remoteIds;std::set<std::tuple<std::string,std::string,std::string>> selected;auto manifestHash=hash(json(manifest,false));
+  struct Link{std::string remote,local,kind,symbol,path,content,context;};std::vector<Link> links;
+  for(const auto &value:*nodes){auto node=value.getAsObject();if(!node)throw Error("E_IDENTITY_SCHEMA","identity record must be an object");keys(*node,{"kind","symbol","path","id","hash","context_hash"});
+    auto kind=token(*node,"kind",16),symbol=token(*node,"symbol"),remote=token(*node,"id",128),content=token(*node,"hash",64),context=token(*node,"context_hash",64);auto path=node->getString("path");
+    if(!path||path->size()>8192||path->contains('\0')||!std::set<std::string>{"module","type","function","endpoint","operation"}.contains(kind)||((kind=="operation")!=!path->empty())||!digest(content)||!digest(context))throw Error("E_IDENTITY_SCHEMA","invalid checked identity record");
+    if(!remoteIds.insert(remote).second||!selected.emplace(kind,symbol,path->str()).second)throw Error("E_IDENTITY_SCHEMA","duplicate identity record or remote ID");
+    auto local=localRecord(db,p,entities,kind,symbol,path->str());auto target=local.getAsObject();
+    if(target->getString("hash")!=content||target->getString("context_hash")!=context)throw Error("E_IDENTITY_CONTENT","definition or dependency context differs: "+symbol+(path->empty()?"":" at "+path->str()));
+    auto id=target->getString("id")->str();if(origin==localNamespace&&remote!=id)throw Error("E_IDENTITY_CONFLICT","manifest would rename an identity in this store's own namespace");
+    {Query q(db,"SELECT local_id,kind,symbol,path,hash,context_hash FROM identity_links WHERE origin=? AND remote_id=? AND source_revision=? AND target_revision=?");q.bind(1,origin);q.bind(2,remote);q.bind(3,sourceRevision);q.bind(4,current);
+      if(q.row()&&(q.text(0)!=id||q.text(1)!=kind||q.text(2)!=symbol||q.text(3)!=path->str()||q.text(4)!=content||q.text(5)!=context))throw Error("E_IDENTITY_CONFLICT","remote identity already has another checked mapping");}
+    {Query q(db,"SELECT remote_id FROM identity_links WHERE origin=? AND source_revision=? AND target_revision=? AND kind=? AND symbol=? AND path=?");q.bind(1,origin);q.bind(2,sourceRevision);q.bind(3,current);q.bind(4,kind);q.bind(5,symbol);q.bind(6,path->str());if(q.row()&&q.text(0)!=remote)throw Error("E_IDENTITY_CONFLICT","source snapshot assigns another ID to the same node");}
+    mappings.push_back(Object{{"source",Object{{"namespace",origin},{"revision",sourceRevision},{"id",remote}}},{"target",Object{{"namespace",localNamespace},{"revision",current},{"id",id}}},{"kind",kind},{"symbol",symbol},{"path",path->str()},{"hash",content},{"context_hash",context}});
+    links.push_back({remote,id,kind,symbol,path->str(),content,context});
+  }
+  for(const auto &link:links){Query q(db,"INSERT OR IGNORE INTO identity_links(origin,remote_id,source_revision,target_revision,local_id,kind,symbol,path,hash,context_hash,manifest_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?)");q.bind(1,origin);q.bind(2,link.remote);q.bind(3,sourceRevision);q.bind(4,current);q.bind(5,link.local);q.bind(6,link.kind);q.bind(7,link.symbol);q.bind(8,link.path);q.bind(9,link.content);q.bind(10,link.context);q.bind(11,manifestHash);q.row();}
+  return Object{{"schema","nex.identity-reconciliation/1"},{"ok",true},{"language",languageVersion},{"revision",current},{"namespace",localNamespace},{"source_namespace",origin},{"source_revision",sourceRevision},{"manifest_hash",manifestHash},{"mappings",std::move(mappings)},{"source_unchanged",true},{"head_unchanged",true}};
+}
+Value resolveGraphIdentity(sqlite3 *db,const Program &p,const std::string &origin,const std::string &sourceRevision,const std::string &id){
+  auto entities=checkedEntities(db,p);auto targetRevision=revision(p);Value result=nullptr;std::string manifestHash;
+  Query q(db,"SELECT local_id,kind,symbol,path,hash,context_hash,manifest_hash FROM identity_links WHERE origin=? AND remote_id=? AND source_revision=? AND target_revision=?");q.bind(1,origin);q.bind(2,id);q.bind(3,sourceRevision);q.bind(4,targetRevision);
+  if(q.row()){result=localRecord(db,p,entities,q.text(1),q.text(2),q.text(3));auto record=result.getAsObject();if(record->getString("id")!=q.text(0)||record->getString("hash")!=q.text(4)||record->getString("context_hash")!=q.text(5))throw Error("E_IDENTITY_CONFLICT","stored mapping differs from the selected checked graph");manifestHash=q.text(6);}
+  else if(origin==graphIdentityNamespace(db)&&sourceRevision==targetRevision){
+    for(const auto &[key,entity]:entities){(void)key;if(entity.id==id){result=reference(entity);break;}}
+    if(result.getAsNull())for(const auto &f:p.functions){const auto &owner=entities.at({"function",f.name});auto ids=operationIds(db,p,owner);for(const auto &[path,local]:ids)if(local==id){result=operationReference(db,p,owner,path);break;}if(!result.getAsNull())break;}
+  }
+  if(result.getAsNull())throw Error("E_IDENTITY_REF","identity reference has no mapping in the selected revision");
+  return Object{{"schema","nex.identity-resolution/1"},{"language",languageVersion},{"source",Object{{"namespace",origin},{"revision",sourceRevision},{"id",id}}},
+    {"target",Object{{"namespace",graphIdentityNamespace(db)},{"revision",targetRevision},{"node",std::move(result)}}},{"manifest_hash",manifestHash}};
+}
+}

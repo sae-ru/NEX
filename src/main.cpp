@@ -36,7 +36,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -77,6 +77,15 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities")throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
+  for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities")throw Error("E_OPTION",std::string(name)+" is for graph identities");
+  if(o.command=="identities"){
+    auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve")throw Error("E_OPTION","identities kind must be export, reconcile or resolve");
+    if(kind!="export"&&!o.positional.empty())throw Error("E_OPTION","identity mutation/lookup selects an archived graph, without source-file synchronization");
+    if(kind=="reconcile"&&(o.get("--expected-revision").empty()||o.get("--manifest").empty()))throw Error("E_OPTION","reconcile requires --manifest FILE and --expected-revision HEAD_HASH");
+    if(kind=="resolve"&&(o.get("--origin").empty()||o.get("--node").empty()||o.get("--from-revision").empty()))throw Error("E_OPTION","resolve requires --origin NAMESPACE --from-revision SOURCE_HASH --node ID");
+    if(kind!="export")for(const auto &name:{"--entity","--symbol","--offset","--limit"})if(o.values.contains(name))throw Error("E_OPTION","identity reconciliation/lookup uses complete references, without export filters");
+  }
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
   if(o.command=="package"){
     if(o.get("--directory").empty())throw Error("E_OPTION","package requires --directory NEW_DIRECTORY");
@@ -186,11 +195,11 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
-  const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify","ffi"};
+  const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify","ffi","declarations","identities"};
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="migrate"){
@@ -267,7 +276,20 @@ int run(const Options &o) {
     auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
-  bool saved=o.command=="graph"||o.command=="context"||o.command=="operations";auto p=load(o,root,store,saved);
+  bool saved=o.command=="graph"||o.command=="context"||o.command=="operations"||((o.command=="declarations"||o.command=="identities")&&o.positional.empty());auto p=load(o,root,store,saved);
+  if(o.command=="declarations"||o.command=="identities"){
+    auto count=[&](const std::string &option,unsigned fallback,unsigned maximum){auto text=o.get(option);if(text.empty())return fallback;uint64_t value=0;for(char c:text){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid range for "+option);value=value*10+unsigned(c-'0');}return unsigned(value);};
+    auto kind=o.get("--kind","export");llvm::json::Value result=nullptr;
+    if(o.command=="declarations"||kind=="export"){
+      auto offset=count("--offset",0,10000000),limit=count("--limit",100,1000);if(!limit)throw Error("E_OPTION","graph page limit must be 1..1000");
+      if(o.command=="declarations"){auto entity=o.get("--entity");if(!entity.empty()&&entity!="module"&&entity!="type")throw Error("E_OPTION","declarations entity must be module or type");result=store.declarations(p,entity,o.get("--symbol"),offset,limit);}
+      else result=store.identities(p,o.get("--entity","all"),o.get("--symbol"),offset,limit);
+    }else if(kind=="reconcile"){
+      auto file=o.get("--manifest");if(!fs::is_regular_file(file)||fs::file_size(file)>4*1048576)throw Error("E_IDENTITY_LIMIT","identity manifest requires a regular JSON file of at most 4 MiB");
+      result=store.reconcileIdentities(p,parseJSON(readFile(file)),o.get("--expected-revision"));
+    }else result=store.resolveIdentity(p,o.get("--origin"),o.get("--from-revision"),o.get("--node"));
+    auto output=o.get("--output");if(output.empty())print(std::move(result));else {writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"revision",revision(p)}});}return 0;
+  }
   if(o.command=="contract"){
     if(o.get("--symbol").empty())throw Error("E_OPTION","contract requires --symbol NAME");
     auto value=contractTemplate(p,o.get("--symbol"));auto output=o.get("--output");
@@ -305,6 +327,12 @@ int run(const Options &o) {
   }
   if(o.command=="context") {
     auto name=o.get("--symbol");if(name.empty())throw Error("E_OPTION","context requires --symbol NAME");
+    auto entity=o.get("--entity");
+    if(entity=="module"||entity=="type"){
+      auto value=store.declarations(p,entity,name,0,1);auto object=value.getAsObject();auto nodes=object->getArray("nodes");if(nodes->empty())throw Error("E_IDENTITY_SYMBOL","declaration is not in the selected graph");
+      print(llvm::json::Object{{"schema","nex.declaration-context/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",object->getString("namespace")->str()},{"node",(*nodes)[0]}});return 0;
+    }
+    if(!entity.empty()&&entity!="function"&&entity!="endpoint")throw Error("E_OPTION","context entity must be module, type, function or endpoint");
     for(const auto &endpoint:p.endpoints)if(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name)){
       const auto &handler=p.function(endpoint.target);auto descriptor=describeAPI(p);llvm::json::Value contract=nullptr;
       for(const auto &item:*descriptor.getAsObject()->getArray("endpoints"))if(item.getAsObject()->getString("name")==endpoint.name)contract=item;
