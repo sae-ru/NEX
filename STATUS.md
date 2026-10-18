@@ -1,13 +1,31 @@
 # NEX implementation status
 
-## Isolated 0.51 physical-project version boundary
+## Verified 0.49 / language 0.15: atomic change history and restore
 
-The 0.50 compiler accepted an explicit language0.14 physical manifest as language0.15; baseline evidence is retained locally. The prototype rejects noncurrent root and reachable configured-library declarations, validates project metadata, and preflights root physical workflows before graph initialization. Archived queries/current-revision execution, explicit history-preserving migration and snapshot recovery remain independent of physical declarations. The repository's current example manifest now declares0.15. Language grammar/canonical forms and graph schema4 are unchanged. Current focused/full/SDK validation is pending.
+The corrected current compiler passes all 57 regression groups on macOS ARM64
+(447 Python cases + 11 C++ probes, 1375.92 s) and Linux ARM64 (1166.28 s). Both
+thirteen-phase installed SDK workflows pass: macOS 412.565 s and Linux 263.748 s
+in a network-disabled container without the source checkout. Linux additionally
+passes eleven live debugger suites. Exact hashes, source scope, platform skips
+and retained failed/cancelled baseline attempts are in
+[the evidence](docs/evidence/change-history-0.49.0.json). The optional old 0.43
+SDK now proves original schema 3 readability and schema 4 refusal. A legacy
+migration fixture no longer fabricates unjournaled HEAD writes; an independent
+case verifies tampering is rejected without candidate rows.
 
-## Isolated 0.50 graph snapshot/recovery prototype
+The journal records actual atomic HEAD transitions and declared labels, with
+bounded page/link checks. Guarded restore retains sources/IDs/history and does
+not materialize physical files. Schema 4 starts an explicit old HEAD base rather
+than inventing prior transitions. This is scoped development evidence, not
+proof of every platform, full-system safety or stable cross-SDK ABI.
 
-Language 0.15 and graph schema4 are unchanged. `nex snapshot` captures a consistent, self-contained SQLite database; `nex recover` preserves its rows, UUIDs, aliases and journal in an exclusively new project. Fifteen focused macOS ARM64 checks pass after discovery/schema/model-pack integration, including a capture during an open WAL write transaction. Six emitted manifest/result forms pass offline JSON Schema validation and seventeen malformed variants are rejected. Three related history/identity/module groups also pass; full current regression/platform checks and the fourteen-phase installed-SDK workflow remain pending. The 0.49 baseline full runs exposed two fixture/legacy-expectation mismatches; corrected checks are being rerun. External receipts/artifacts, application data and SDK/native dependencies require separate preservation.
-
+Isolated 0.50 adds consistent complete graph snapshots/recovery; fifteen focused
+cases, offline schema checks and the macOS installed SDK 14 passes, while its
+Linux full/live/SDK matrix is still running. Isolated 0.51 corrects the observed
+physical project/library version-declaration gap, including preflight before
+store creation/upgrade, and has its own current full/SDK checks running. Those
+capabilities are not part of the root 0.49 compiler. Broader language/platform
+and development-chain work remains pending.
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 

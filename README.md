@@ -8,21 +8,15 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated working tree is toolchain **0.51.0 / language 0.15**, adding
-[explicit project/library version checks](docs/compatibility.md). Its validation
-is pending. Declared old physical projects require explicit migration; archived
-queries and current-revision execution stay independent of stale source metadata.
-
-This preceding isolated working tree is toolchain **0.50.0 / language 0.15**, adding
-[consistent graph snapshots and recovery](docs/snapshots.md). The prototype
-passes fifteen focused checks; full regression/platform/SDK validation remains
-pending. External application data and task artifact files are not included.
-
-The preceding working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
+The working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
 HEAD-transition journal and checked, optimistic restoration of archived source.
 Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
-without inventing older provenance. Actor/note labels are declared data. Current
-full validation is pending; see [change history](docs/history.md) and `STATUS.md`.
+without inventing older provenance. Actor/note labels are declared data. All
+57 regression groups pass on macOS/Linux ARM64, alongside both thirteen-phase
+installed SDK workflows and eleven Linux live debugger suites.
+[The evidence](docs/evidence/change-history-0.49.0.json) records exact scope,
+corrected fixtures and remaining work. Physical project-version enforcement
+is still an isolated 0.51 fix; see `STATUS.md`.
 
 The preceding verified **0.48.0 / language 0.15** adds source-operation patches
 and parser tree-depth bounds. All 56 regression groups and both thirteen-phase
@@ -160,7 +154,7 @@ native loader scope, trust and pending platforms.
 
 ## Build
 
-Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite **3.37+**, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
+Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug

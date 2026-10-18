@@ -134,7 +134,3 @@ digit         = "0" .. "9" ;
 (* Toolchain 0.48 syntax intervals and graph operation patches add no syntax.
    Statement/expression parser recursion, resulting expression trees and each postfix/binary chain are bounded
    to 256; type, pattern and lambda bounds remain as documented. *)
-
-(* Toolchain0.51 project/language/schema preflight changes no source grammar.
-   Explicit nex.json root/reachable-library versions must match the compiler;
-   archived source and explicit migration remain independent of live metadata. *)
