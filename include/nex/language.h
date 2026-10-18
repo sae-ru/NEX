@@ -129,6 +129,8 @@ P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
 Type parseType(std::string source);
 void bindExpression(const Program &program,const std::string &function,E expression);
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
+// Check explicit physical-project version/format without opening its graph store.
+void validateProjectMetadata(const std::string &root);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
 llvm::json::Value sourceBundle(const Program &program);

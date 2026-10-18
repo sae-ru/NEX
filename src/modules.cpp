@@ -14,6 +14,27 @@ bool identifier(const std::string &s){
   if(s.empty()||!(std::isalpha(static_cast<unsigned char>(s[0]))||s[0]=='_'))return false;
   return std::all_of(s.begin(),s.end(),[](unsigned char c){return std::isalnum(c)||c=='_';});
 }
+void projectVersion(const llvm::json::Object &object,const std::string &file){
+  Span span{1,1,0,0,file};
+  if(auto value=object.get("schema");value&&value->getAsString()!="nex.project/1")
+    throw Error("E_MANIFEST","unsupported project schema; expected nex.project/1",span);
+  if(auto value=object.get("entry")){
+    auto entry=value->getAsString();
+    if(!entry||entry->empty()||entry->find('\0')!=llvm::StringRef::npos)
+      throw Error("E_MANIFEST","project entry must be a nonempty path without NUL",span);
+  }
+  if(auto value=object.get("language")){
+    auto language=value->getAsString();
+    if(!language||language->empty()||language->size()>32||language->find('\0')!=llvm::StringRef::npos)
+      throw Error("E_MANIFEST","project language must be a nonempty version of at most 32 UTF-8 bytes without NUL",span);
+    if(*language!=languageVersion)
+      throw Error("E_LANGUAGE_VERSION","project declares language "+language->str()+"; use its matching SDK to archive source, then nex migrate and export a current-language project",span);
+  }
+  if(auto value=object.get("libraries")){
+    auto libraries=value->getAsObject();if(!libraries)throw Error("E_MANIFEST","libraries must map package names to local directories",span);
+    for(const auto &[name,path]:*libraries){auto text=path.getAsString();if(!identifier(name.str())||!text||text->empty()||text->find('\0')!=llvm::StringRef::npos)throw Error("E_MANIFEST","invalid library name or directory",span);}
+  }
+}
 void safeKey(const std::string &key){
   if(key.empty()||key.front()=='/'||key.find_first_of("\\:")!=std::string::npos||key.find('\0')!=std::string::npos||!key.ends_with(".nex")||fs::path(key).lexically_normal().generic_string()!=key)
     throw Error("E_IMPORT_PATH","source paths must be normalized relative .nex paths");
@@ -83,6 +104,7 @@ class Loader {
   std::map<std::string,int> states;
   std::vector<std::string> stack;
   std::map<std::string,Symbols> symbols;
+  std::set<std::string> checkedPackages;
   const std::set<std::string> &builtins=builtinNames();
   fs::path physical(const std::string &key){
     if(frozen)return root/(key.starts_with("@")?fs::path(".nex/snapshot")/key:fs::path(key));
@@ -95,7 +117,12 @@ class Loader {
       auto slash=key.find('/',5);auto name=key.substr(5,slash-5);relative=key.substr(slash+1);
       if(!packages.contains(name))throw Error("E_IMPORT_PACKAGE","package '"+name+"' is not configured in nex.json libraries");base=packages.at(name);
     }
-    base=fs::weakly_canonical(base);auto path=fs::weakly_canonical(base/relative);
+    base=fs::weakly_canonical(base);
+    if(key.starts_with("@")&&checkedPackages.insert(base.string()).second&&fs::is_regular_file(base/"nex.json")){
+      auto file=(base/"nex.json").string();auto value=decoded(readFile(file));auto object=value.getAsObject();
+      if(!object)throw Error("E_MANIFEST","library nex.json must be an object",Span{1,1,0,0,file});projectVersion(*object,file);
+    }
+    auto path=fs::weakly_canonical(base/relative);
     if(!inside(path,base))throw Error("E_IMPORT_PATH","import resolves outside its declared root");
     if(!fs::is_regular_file(path))throw Error("E_IMPORT_FILE","source file not found: "+path.string());return path;
   }
@@ -108,7 +135,7 @@ class Loader {
     try{
       path=physical(key);
       if(!texts.contains(key)){if(frozen)throw Error("E_BUNDLE","snapshot is missing source "+key);texts[key]=readFile(path.string());}
-    }catch(Error &e){e.span=importing;throw;}
+    }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
     try{unit=parse(texts.at(key),path.string());}catch(Error &e){e.span.file=key;throw;}
@@ -157,9 +184,9 @@ public:
       :root(fs::weakly_canonical(root)),frozen(frozen),entry(std::move(entry)),texts(std::move(sources)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
+      projectVersion(*obj,"nex.json");
       if(auto item=obj->get("libraries")){
-        auto libraries=item->getAsObject();if(!libraries)throw Error("E_MANIFEST","libraries must map package names to local directories");
-        for(const auto &[name,path]:*libraries){auto text=path.getAsString();if(!identifier(name.str())||!text||text->empty()||text->find('\0')!=llvm::StringRef::npos)throw Error("E_MANIFEST","invalid library name or directory");packages[name.str()]=fs::weakly_canonical(this->root/text->str());}
+        for(const auto &[name,path]:*item->getAsObject())packages[name.str()]=fs::weakly_canonical(this->root/path.getAsString()->str());
       }
     }
   }
@@ -177,6 +204,11 @@ std::string materialized(const std::string &key,const std::string &prefix){
   if(key.starts_with("@pkg/"))return prefix+"/packages/"+key.substr(5);
   return key;
 }
+}
+void validateProjectMetadata(const std::string &root){
+  auto path=fs::path(root)/"nex.json";if(!fs::is_regular_file(path))return;
+  auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
+  if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json");
 }
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);

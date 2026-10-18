@@ -88,6 +88,10 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
   validateShape(task);Prepared result;result.task=task;result.taskHash=hash(json(task,false));const auto &t=object(task);result.id=text(t,"id");
   if(!options.expectedHash.empty()&&options.expectedHash!=result.taskHash)throw Error("E_TASK_INTENT","task definition differs from --task-hash");
   if(!options.revision.empty()&&array(t,"programs").size()!=1)invalid("--revision requires a single program; use --candidates for multiple programs");
+  if(frozen.empty())for(const auto &value:array(t,"programs")){
+    auto id=text(object(value),"id"),selected=options.revision;if(options.candidates.contains(id))selected=options.candidates.at(id);
+    if(selected.empty()){validateProjectMetadata(options.root);break;}
+  }
   Store store(fs::path(options.root)/".nex");std::map<std::string,std::string> shared;
   for(const auto &value:array(t,"programs")){
     const auto &p=object(value);auto id=text(p,"id"),entry=text(p,"entry"),selected=options.revision;
