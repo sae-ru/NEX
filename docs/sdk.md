@@ -113,6 +113,15 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
+The current workflow has twelve phases. Its binary-value phase additionally
+compares source bytes, codecs, generic wire models and captured callbacks across
+reference/native Debug/Release/TypeScript. It replays an archived binary program
+after deleting source, runs an independent executable with resources unavailable,
+and packages a binary-file application that preserves NUL and invalid UTF-8
+octets. `--live` also checks typed byte watches and paged children after source
+deletion. The browser phase includes immutable binary state and strict codec
+edits from `examples/bytes-web.nex`.
+
 The source workflow also exercises generic snapshot closures and wire-bounded
 roundtrips across reference/native/TypeScript output. Discovery checks the
 matching function guide and callback capabilities. These checks are included in
@@ -125,7 +134,7 @@ resumes to clean exit and evaluates that exact snapshot offline. Without
 `--live`, the report records `live_debugger: false`; creating a manifest does
 not establish debugger execution. The host must permit child debugging.
 
-`--browser` additionally performs both real locked TypeScript/Vite release builds
+`--browser` additionally performs all three real locked TypeScript/Vite release builds
 and checks emitted assets/maps for their server sentinels. Without this flag only
 TypeScript semantic tests and project generation run; browser production
 compilation is recorded as false. Actual browser interaction remains covered by
@@ -213,7 +222,8 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all eleven maintained phases including both locked browser builds and the text-file application workflow.
+server. It runs all twelve maintained phases, including the three locked browser
+builds and the text/binary-file application workflows.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
 `verification.json` retains commands, image IDs, logs and both acceptance reports.

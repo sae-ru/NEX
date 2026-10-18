@@ -378,6 +378,11 @@ class _ExactBytes:
         if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
             raise ValueError("unavailable owned byte layout for this build")
         self.value = data.CreateValueFromAddress("binary", data.GetLoadAddress(), layout)
+        # Use this runtime's DWARF scalar type. Apple's LLDB may resolve a
+        # target-wide basic type through Swift, yielding an unreadable value.
+        self.scalar_type = _member(data, "ordinal").GetType()
+        if not self.scalar_type.IsValid() or self.scalar_type.GetByteSize() != 8:
+            raise ValueError("unavailable runtime i64 layout for byte children")
         buffer = _member(self.value, "buffer")
         offset, self.size = _integer(_member(buffer, "offset")), _integer(_member(buffer, "count"))
         if self.size > 9223372036854775807 or offset > 9223372036854775807 - self.size:
@@ -404,7 +409,7 @@ class _ExactBytes:
         value = self.read(index, 1)[0]
         target = self.value.GetTarget()
         data = lldb.SBData.CreateDataFromUInt64Array(target.GetByteOrder(), target.GetAddressByteSize(), [value])
-        return target.CreateValueFromData("[%d]" % index, data, target.GetBasicType(lldb.eBasicTypeLongLong))
+        return self.value.CreateValueFromData("[%d]" % index, data, self.scalar_type)
 
 
 def _enum_case(data, descriptor, records, budget):

@@ -19,7 +19,7 @@ class Constraints(harness.ToolchainCase):
             self.cli('test','--profile',profile)
         self.cli('test','--target','web')
         descriptor=self.cli('describe');self.assertEqual(descriptor['version'],'0.13')
-        self.assertEqual(descriptor['generic_constraints']['add'],['i64','f64','str','list<T>'])
+        self.assertEqual(descriptor['generic_constraints']['add'],['i64','f64','str','bytes','list<T>'])
         context=self.cli('context','--symbol','combine')
         self.assertEqual(context['type_bounds'],{'constraints::combine::T':['add']})
 

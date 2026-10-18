@@ -16,6 +16,19 @@ class BinaryPrograms(ToolchainCase):
         for profile in ('debug', 'release'):
             self.assertEqual(self.cli('run', '--profile', profile, env=env)['stdout'], expected)
 
+    def test_browser_state_preserves_native_typescript_and_reference_semantics(self):
+        self.source((harness.REPO/'examples/bytes-web.nex').read_text())
+        self.agree('AP+AQQA=\n')
+        self.cli('test')
+        if shutil.which('node'):
+            self.cli('test', '--target', 'web')
+        directory = self.root/'browser'
+        self.cli('web', '--directory', directory)
+        for path in (directory/'src').rglob('*.ts'):
+            source = path.read_text()
+            self.assertNotIn('BINARY_WEB_SERVER_ONLY_SENTINEL', source)
+            self.assertNotIn('file_read_bytes', source)
+
     def test_examples_generics_callbacks_and_immutable_owners(self):
         self.source((harness.REPO / 'examples/bytes.nex').read_text())
         self.agree('AP+AQQ==\nE_UTF8\n{"name":"raw","data":"AP+AQQ=="}\n')

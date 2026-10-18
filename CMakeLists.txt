@@ -158,5 +158,9 @@ add_test(NAME function_values COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/function_values.py $<TARGET_FILE:nex>)
 add_test(NAME function_debug COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/function_debug.py $<TARGET_FILE:nex>)
+add_test(NAME bytes COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes.py $<TARGET_FILE:nex>)
+add_test(NAME bytes_debug COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes_debug.py $<TARGET_FILE:nex>)
 add_test(NAME numbers COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/numbers.py $<TARGET_FILE:nex>)

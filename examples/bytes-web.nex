@@ -1,0 +1,69 @@
+module bytes_web;
+import "std/web.nex" as web;
+
+struct State {
+  data:bytes;
+  input:str;
+  error:str;
+  history:list<bytes>;
+  append:fn(bytes)->bytes;
+}
+
+fn combine<T:add>(left:T,right:T)->T{return left+right;}
+fn appender(suffix:bytes)->fn(bytes)->bytes{
+  return fn(value:bytes)->bytes{return combine(value,suffix);};
+}
+fn replace(state:State,data:bytes)->State{
+  return State(data,state.input,"",state.history+[data],state.append);
+}
+fn title()->str{return "NEX binary values";}
+fn initial()->State{
+  let data:bytes=unwrap(bytes([0,255,128,65]));
+  return State(data,encode_base64(data),"",[data],appender(unwrap(bytes([0]))));
+}
+fn update(state:State,event:web::Event)->State{
+  if event.name=="input"{return State(state.data,event.value,"",state.history,state.append);}
+  if event.name=="apply"{
+    let decoded:result<bytes>=decode_base64(state.input);
+    if is_ok(decoded){return replace(state,unwrap(decoded));}
+    return State(state.data,state.input,error_code(decoded),state.history,state.append);
+  }
+  if event.name=="append"{return replace(state,state.append(state.data));}
+  if event.name=="tail"{
+    if len(state.data)<2{return state;}
+    return replace(state,slice(state.data,len(state.data)-2,2));
+  }
+  if event.name=="reset"{return initial();}
+  return state;
+}
+fn view(state:State)->web::View{
+  let text:result<str>=decode_utf8(state.data);
+  let decoded:str=match text{ok(value)=>value,err(code,_)=>code};
+  return web::element("main",[],[],[
+    web::element("h1",[],[],[web::text(title())]),
+    web::element("p",[web::attr("role","status")],[],[web::text(encode_base64(state.data))]),
+    web::element("p",[web::attr("aria-label","Octets")],[],[web::text(str(len(state.data)))]),
+    web::element("p",[web::attr("aria-label","UTF-8")],[],[web::text(decoded)]),
+    web::element("label",[web::attr("for","binary")],[],[web::text("Base64")]),
+    web::input("binary",state.input,"input"),
+    web::button("Apply","apply"),web::button("Append NUL","append"),
+    web::button("Keep last 2","tail"),web::button("Reset","reset"),
+    web::element("p",[web::attr("role","alert")],[],[web::text(state.error)]),
+    web::element("pre",[web::attr("aria-label","History")],[],[web::text(encode_json(state.history))])
+  ]);
+}
+fn main()->unit!{io}{print(encode_base64(update(initial(),web::Event("append","","/")).data));}
+test fn transitions()->unit{
+  let before:State=initial();
+  let after:State=update(before,web::Event("append","","/"));
+  assert(encode_base64(after.data)=="AP+AQQA=");
+  assert(len(before.data)==4);assert(len(after.data)==5);
+  assert(before.history==[before.data]);assert(after.history==[before.data,after.data]);
+  let invalid:State=update(after,web::Event("input","AB==","/"));
+  let rejected:State=update(invalid,web::Event("apply","","/"));
+  assert(rejected.error=="E_BASE64");assert(rejected.data==after.data);
+  assert(rejected.history==after.history);
+  let empty:State=update(update(after,web::Event("input","","/")),web::Event("apply","","/"));
+  assert(len(empty.data)==0);assert(update(empty,web::Event("tail","","/")).data==empty.data);
+}
+server fn excluded()->result<bytes>!{fs}{return file_read_bytes("BINARY_WEB_SERVER_ONLY_SENTINEL");}

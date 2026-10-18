@@ -177,6 +177,10 @@ pub fn safe(x: i64) -> i64 { return x; }
         programs = [
             ('module unverified; pub fn f(x:f64)->f64{return x+x;}', 'f'),
             ('module unverified; pub fn f()->bool{return 1e0<2e0;}', 'f'),
+            ('module unverified; pub fn f(x:bytes)->i64{return x[0];}', 'f'),
+            ('module unverified; pub fn f()->bool{return len(utf8_bytes("x"))==1;}', 'f'),
+            ('module unverified; pub fn f()->bool{return is_ok(decode_base64("AA=="));}', 'f'),
+            ('module unverified; pub server fn f()->bool!{fs}{return is_ok(file_read_bytes("x"));}', 'f'),
             ('module unverified; pub fn f(x: str) -> str { return x; }', 'f'),
             ('module unverified; pub fn f(n: i64) -> i64 { if n == 0 { return 0; } return f(n - 1); }', 'f'),
             ('module unverified; pub fn f() -> unit !{io} { print(1); }', 'f'),

@@ -51,6 +51,7 @@
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
+    "binary_browser": "examples/bytes-web.nex",
     "core": "examples/arithmetic.nex",
     "data": "examples/data.nex",
     "modules": "examples/modules/main.nex",

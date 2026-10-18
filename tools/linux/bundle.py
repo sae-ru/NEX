@@ -77,7 +77,7 @@ def verify(sdk, output):
         run(command)
         accepted = json.loads((output / 'workflow/report.json').read_text())
         expected = ['discovery', 'new-project', 'reviewed-failure', 'graph-repair-import',
-                    'backend-agreement', 'text-files', 'profile', 'archive-debug-replay-export',
+                    'backend-agreement', 'binary-values', 'text-files', 'profile', 'archive-debug-replay-export',
                     'scalar-proof', 'authenticated-storage', 'browser']
         if not accepted['ok'] or [phase['name'] for phase in accepted['phases']] != expected or any(
                 phase['status'] != 'passed' for phase in accepted['phases']):

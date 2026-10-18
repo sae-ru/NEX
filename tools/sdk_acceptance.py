@@ -224,6 +224,9 @@ test fn examples() -> unit {
         require('typed_nested_patterns' in descriptor['match_features'], 'SDK lacks checked nested patterns')
         require('snapshot_closures' in descriptor['function_value_features'], 'SDK lacks snapshot closures')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
+        require('bytes' in descriptor['types'] and
+                'immutable_contiguous_octets' in descriptor['binary_features'],
+                'SDK lacks checked binary values')
         require('fs' in descriptor['effects'] and
                 'no_implicit_http_capability' in descriptor['file_features'] and
                 descriptor['file_environment']['http_inherits_environment'] is False,
@@ -384,6 +387,108 @@ test fn examples() -> unit {
         report['evidence']['function_cache'] = {'before_revision': before['revision'],
             'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
             'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
+
+    def binary_values():
+        directory = root / 'binary-values'
+        directory.mkdir()
+        shutil.copyfile(resources / 'examples/bytes.nex', directory / 'main.nex')
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        revision = cli('check', cwd=directory)['revision']
+        expected_binary = 'AP+AQQ==\nE_UTF8\n{"name":"raw","data":"AP+AQQ=="}\n'
+        require(cli('eval', cwd=directory)['stdout'] == expected_binary, 'binary reference output differs')
+        for profile in ('debug', 'release'):
+            cli('test', '--profile', profile, cwd=directory)
+            require(cli('run', '--profile', profile, cwd=directory)['stdout'] == expected_binary,
+                    'binary native/reference output differs')
+        cli('test', '--target', 'web', cwd=directory)
+        built = cli('build', '--profile', 'release', cwd=directory)
+        standalone = root / 'binary-standalone'
+        shutil.copyfile(built['executable'], standalone); standalone.chmod(0o755)
+        (directory / 'main.nex').unlink()
+        require(cli('run', '--revision', revision, cwd=directory)['stdout'] == expected_binary,
+                'binary archived revision failed after source deletion')
+        unavailable = environment['NEX_RESOURCE_DIR']
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+            require(run([standalone]) == expected_binary, 'independent binary executable differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = unavailable
+        files = root / 'binary-files'; files.mkdir()
+        (files / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        (files / 'main.nex').write_text('''module binary_file_handoff;
+server fn main()->unit!{io,fs}{
+ let value:bytes=unwrap(bytes([0,255,128,65]));
+ assert(unwrap(file_write_bytes("octets.bin",value)));
+ print(encode_base64(unwrap(file_read_bytes("octets.bin"))));
+ print(error_code(file_read_text("octets.bin")));
+}
+''')
+        data = root / 'binary data % 🧠'; data.mkdir()
+        saved = {name: environment.get(name) for name in ('NEX_FILES_ROOT', 'NEX_FILES_WRITE')}
+        try:
+            environment.update(NEX_FILES_ROOT=str(data), NEX_FILES_WRITE='1')
+            expected_file = 'AP+AQQ==\nE_UTF8\n'
+            require(cli('eval', cwd=files)['stdout'] == expected_file, 'binary file reference differs')
+            require(cli('run', cwd=files)['stdout'] == expected_file, 'binary file native differs')
+            packaged = cli('package', '--directory', root / 'binary-file-application', cwd=files)
+            manifest = json.loads(Path(packaged['manifest']).read_text())
+            executable = Path(packaged['directory']) / 'bin/app'
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+            require(run([executable]) == expected_file and
+                    (data / 'octets.bin').read_bytes() == bytes([0, 255, 128, 65]),
+                    'independent binary file application changed octets')
+            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files']['bin/app']['sha256'],
+                    'binary file executable differs from package inventory')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = unavailable
+            for name, value in saved.items():
+                if value is None: environment.pop(name, None)
+                else: environment[name] = value
+        evidence = {'revision': revision, 'native_profiles': ['debug', 'release'], 'typescript': True,
+                    'source_deleted_replay': True, 'standalone_without_resources': str(standalone),
+                    'binary_file_package': str(executable), 'live_watch': False}
+        if args.live:
+            debug = root / 'binary-debug'; debug.mkdir()
+            (debug / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': 'main.nex'}))
+            source = debug / 'main.nex'
+            source.write_text('''module binary_debug_handoff;
+fn observe(data:bytes)->unit!{io}{
+ print(data[1]); // binary-sdk-stop
+}
+fn main()->unit!{io}{observe(unwrap(bytes([0,255,128,65])));}
+''')
+            session = cli('debug', '--kind', 'nex-dap', cwd=debug)
+            manifest = json.loads(Path(session['manifest']).read_text())
+            projected = manifest['sources'][0]['projection']
+            line = next(i+1 for i, text in enumerate(source.read_text().splitlines()) if '// binary-sdk-stop' in text)
+            source.unlink()
+            client = DAP(session['adapter_command'], debug, environment)
+            try:
+                client.request('initialize', {'adapterID': 'nex', 'pathFormat': 'path', 'linesStartAt1': True})
+                pending = client.send('launch', dict(session['launch'], disableASLR=False))
+                client.event('initialized')
+                client.request('setBreakpoints', {'source': {'path': projected}, 'breakpoints': [{'line': line}]})
+                client.request('configurationDone'); client.response(pending)
+                stopped = client.event('stopped')
+                frame = client.request('stackTrace', {'threadId': stopped['threadId']})['stackFrames'][0]['id']
+                value = client.request('evaluate', {'expression': 'data[1]', 'frameId': frame, 'context': 'watch'})
+                require(value['nex']['value'] == '255', 'installed binary index watch differs')
+                binary = client.request('evaluate', {'expression': 'data', 'frameId': frame, 'context': 'watch'})
+                require(binary['type'] == 'bytes' and binary['indexedVariables'] == 4,
+                        'installed byte watch lost its type or length')
+                children = client.request('variables', {'variablesReference': binary['variablesReference'],
+                    'start': 1, 'count': 2})['variables']
+                require([(v['name'], v['value']) for v in children] == [('[1]', '255'), ('[2]', '128')],
+                        'installed byte watch page differs')
+                client.request('continue', {'threadId': stopped['threadId']})
+                require(client.event('exited')['exitCode'] == 0, 'binary debuggee failed')
+                evidence['live_watch'] = True
+            finally:
+                client.close()
+        report['evidence']['binary_language'] = evidence
 
     def text_files():
         directory = root / 'text-files'
@@ -666,12 +771,37 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                             'numeric server code entered browser assets')
             numeric_evidence['dist'] = str(numeric_dist)
         report['evidence']['numeric_browser'] = numeric_evidence
+        binary = root / 'binary-browser'; binary.mkdir()
+        shutil.copyfile(resources / 'examples/bytes-web.nex', binary / 'main.nex')
+        (binary / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        cli('test', cwd=binary)
+        binary_tests = cli('test', '--target', 'web', cwd=binary)
+        require('bytes_web::transitions' in {t['name'] for t in binary_tests['tests']},
+                'binary browser tests selected another project')
+        generated_binary = root / 'generated-binary-web'
+        cli('web', '--directory', generated_binary, cwd=binary)
+        require(not any('BINARY_WEB_SERVER_ONLY_SENTINEL' in path.read_text()
+                        for path in generated_binary.rglob('*.ts')), 'binary server code entered client')
+        binary_evidence = {'native_tests': True, 'typescript_tests': True,
+                           'generated': str(generated_binary), 'browser_build': args.browser}
+        if args.browser:
+            built = cli('build', '--target', 'web', '--profile', 'release', cwd=binary, timeout=300)
+            dist = Path(built['dist'])
+            require((dist / 'index.html').is_file() and any(dist.rglob('*.js')), 'missing binary browser assets')
+            for path in dist.rglob('*'):
+                if path.is_file():
+                    require(b'BINARY_WEB_SERVER_ONLY_SENTINEL' not in path.read_bytes(),
+                            'binary server code entered browser assets')
+            binary_evidence['dist'] = str(dist)
+        report['evidence']['binary_browser'] = binary_evidence
         report['evidence']['browser_build'] = args.browser
 
     try:
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
-                ('backend-agreement', backend_agreement), ('text-files', text_files), ('profile', measured),
+                ('backend-agreement', backend_agreement), ('binary-values', binary_values),
+                ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('authenticated-storage', authenticated_storage), ('browser', browser)]:
             phase(name, action)

@@ -17,7 +17,23 @@ its owner until all borrowed views finish. The reproduction now exits cleanly
 under ASan/UBSan, and the extended 19-case managed-value probe passes. The 0.32
 compiler/SDK cohorts below use their preserved sources; they do not validate this
 new source-language version. Current 0.33 source, debugger, migration and full
-platform/SDK acceptance remain in progress. See [bytes.md](docs/bytes.md).
+platform/SDK acceptance remain in progress. The 10-case source suite passed,
+followed by the native/reference/TypeScript binary browser-state case. Seven
+offline binary watch cases and the real macOS LLDB/DAP case passed, including
+selected reads of a 4 MiB value, retained-slice previews, paged read-only octets
+and source-deleted replay. The generic binary API/OpenAPI/SDK/live-HTTP case
+passed, including strict malformed-wire rejection and cleanup after traps.
+Apple LLDB's target-wide basic type selected a Swift integer; byte children now
+use the actual runtime DWARF i64 type. All six production UI checks passed in
+Chromium, Firefox and WebKit. The installed macOS ARM64 SDK passed all twelve
+workflow phases in 126.717 s, including actual byte DAP watches, independent
+binary-file packages, archived replay and all three locked browser builds.
+The first SDK attempt revealed missing manifests in two new acceptance projects;
+their corrected explicit projects were exercised by the complete second run.
+Full 37-suite regression is running; its stale exact add-bound inventory was
+corrected to include bytes, and that case passed again. Current Linux/Release
+and source-free SDK matrix acceptance remain pending.
+See [bytes.md](docs/bytes.md).
 
 ## In progress: managed binary values
 

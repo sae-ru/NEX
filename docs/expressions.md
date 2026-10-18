@@ -1,6 +1,6 @@
 # NEX expressions in stopped frames — toolchain 0.14
 
-NEX expressions use the language 0.11 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.13 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -298,3 +298,9 @@ larger slices. Full equality/formatting/codecs need complete values. Byte ranges
 retain immutable owners, and aliased callable capture observations must agree.
 Keep SDK 0.30/0.32 for their original language-0.12 frames; migrate source
 explicitly and regenerate a matching debug build.
+
+`tests/bytes_debug.py` checks canonical wire values, bounds, selected-octet
+budgets, aliased captures and source-deleted replay. Its optional `--live
+LiveBinaryDebug` check uses real LLDB/DAP: a four-MiB buffer remains stopped while
+only its length/selected octets are read; whole capture explicitly exceeds its
+budget. Byte children are read-only paged NEX integers.

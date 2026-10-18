@@ -66,6 +66,13 @@ for its opt-in production Chromium/Firefox/WebKit interaction checks. The
 installed SDK acceptance workflow requires this project's native/TypeScript
 transitions and, with `--browser`, its locked production build.
 
+`examples/bytes-web.nex` exercises immutable byte state, generic concatenation,
+captured binary callbacks, retained slices and strict base64/UTF-8 edits. Rejected
+base64 preserves the current value and history. Build it with the same commands;
+`python3 tests/bytes_web_browser.py GENERATED_PROJECT --browsers-path CACHE`
+checks its production UI in Chromium, Firefox and WebKit. The SDK acceptance
+workflow includes its native/TypeScript transitions and optional production build.
+
 ## Request commands and responses
 
 Import `std/net.nex` and optionally define this fifth pure client/shared entry:
