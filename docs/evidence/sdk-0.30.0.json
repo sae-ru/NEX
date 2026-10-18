@@ -1,0 +1,246 @@
+{
+  "schema": "nex.development-sdk-evidence/1",
+  "toolchain": "0.30.0",
+  "language": "0.12",
+  "compiler_runtime_test_source_tree": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+  "implementation_commit": "6e8a3b4881a6a4b84d21b9e0fd28eb1090dbd5df",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "compiler_checks": {
+    "macos_debug": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 1231.14,
+      "log": "build/ctest-030-language012-debug.log",
+      "log_sha256": "58d77deec30baa465b3939272a00baa9d09d16953b7de79beea608385b3ef3e1",
+      "python_cases_declared": 275,
+      "skips": [
+        "ELF runtime library selection"
+      ],
+      "build_compiler_sha256": "8b163db39c6497ceae1ebdbc3d8c0fdcc5657f979c6cc0db2260c52e4a4bd530",
+      "source_snapshot": "548a0b5762aed7b4c5b898b31a7dd06a5594bb2d",
+      "core_equivalent_to": "c93c47863a2a907c6a501501847ef9f80c8f38c6"
+    },
+    "macos_release": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 1073.95,
+      "log": "build/release-030/ctest.log",
+      "log_sha256": "3ac5e75830d16074bf50a1190b13faa1746bd66be61ba90a4c62a59fbbceb455",
+      "python_cases_declared": 275,
+      "skips": [
+        "ELF runtime library selection"
+      ],
+      "build_compiler_sha256": "efd34705a136abebb9d35dd6b444830c6d84f5b7f1acb0a22a6f5494367b8647",
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6"
+    },
+    "linux_arm64": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 496.79,
+      "log": "build/linux-arm64-030/ctest.log",
+      "log_sha256": "df43ad655a5be379eefca9ad20cc944da8923c503c5e5a4bf39e13ec182f4224",
+      "python_cases_declared": 275,
+      "skips": [
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
+      "emulated": false,
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+      "full_driver_ok": true,
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-arm64-030/sdk-acceptance/1f127271bfeb403fa4d54394009408e4/workflow/report.json",
+        "compiler_sha256": "f64dbeac7102f2951f42ceea123810f588ad55239114f3b05d5e027138a8e8d1",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": true,
+        "browser_build": true,
+        "seconds": 83.069
+      },
+      "build_compiler_sha256": "111d9fdb18e6a0808ae8f45081e1159d754a336332a627e749b826fdf6944d40",
+      "installed_sdk_compiler_sha256": "f64dbeac7102f2951f42ceea123810f588ad55239114f3b05d5e027138a8e8d1",
+      "live_suites": 8
+    },
+    "linux_amd64": {
+      "state": "running",
+      "emulated": true,
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+      "report": "build/linux-amd64-030/verification.json"
+    }
+  },
+  "artifacts": [
+    {
+      "platform": "macos-arm64",
+      "ok": true,
+      "archive": "build/releases/nex-sdk-0.30.0-macos-arm64-development.tar.gz",
+      "archive_sha256": "94355e77df8d9a706041494233f3665125c1cd33ba435dccdbfbfe6779067477",
+      "archive_bytes": 115718029,
+      "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+      "files_verified": 2411,
+      "sdk_phases": 11,
+      "sdk_seconds": 106.313,
+      "live_debugger": true,
+      "minimum_macos": "27.0",
+      "external_prerequisites": [
+        "Apple command line tools/SDK and system C++ runtime/linker",
+        "Python 3.9+",
+        "Node.js/npm for browser builds",
+        "host LLDB/lldb-dap for live debugging"
+      ],
+      "restored_archive_kernel_isolation": {
+        "ok": true,
+        "new_project_check_run_test": true,
+        "package_after_archive_restore": true,
+        "native_package_without_source": true,
+        "text_file_native_package": true,
+        "file_source_deleted_replay": true,
+        "file_capability_denial": true,
+        "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb"
+      },
+      "kernel_isolation_negative_control_exit": 1
+    },
+    {
+      "platform": "linux-arm64",
+      "ok": true,
+      "emulated": false,
+      "archive": "build/linux-arm64-030-bundle-v2/nex-sdk-0.30.0-linux-arm64-development.tar.gz",
+      "archive_sha256": "4c79acd0d14184cf8f749f74f06b610c8ed79ddbb746b82263edb3d69eee88eb",
+      "archive_bytes": 140770310,
+      "compiler_sha256": "492ca21d5922f6e6316cb2d719c8192a3f54cd438226312cbaff54a167e7555f",
+      "files_verified": 743,
+      "clean_sdk_phases": 11,
+      "restored_archive_phases": 11,
+      "clean_sdk_seconds": 105.935,
+      "restored_archive_seconds": 108.354,
+      "external_network": "none",
+      "source_checkout_mounted": false,
+      "host_llvm_mlir_z3_clang_present": false,
+      "images": {
+        "nex-linux-toolchain:arm64": "sha256:d8cc8012fd6b07d7bba21eabe87cfc0b0d28b11ea8efba8d0130d0aecfefabb8",
+        "nex-sdk-packager:arm64": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "nex-sdk-runtime:arm64": "sha256:b8567b9108fd7236e1c09d7fb1686ca33ba3841e2c51ae94009b6401cf3aa3f0"
+      },
+      "metadata_boundaries": {
+        "ok": true,
+        "unsafe_absolute_soname_rejected": true,
+        "no_outside_write": true,
+        "parent_component_names_rejected": true
+      },
+      "resource_overlay": {
+        "tools/linux/BundleRuntime.Dockerfile": {
+          "before_sha256": "eaebe3dbda748f0b1f8068eadf531cd0b20a0ab252b1330829cd9bff6f1872ff",
+          "after_sha256": "0f047a9b068d6ab2e2a58904ef0c8bded7e729b8c8cac47591b8aee9fa44c269"
+        },
+        "docs/sdk.md": {
+          "before_sha256": "8a9d3713ec0f774b2a11d83aae9140c727b7bfcdb43a2c2871bdf1cebd9e9ecb",
+          "after_sha256": "a74629877b7abb66b0d763a10620aec25ba2cffa7a8ee8c3d18cd9c4fe83346f"
+        }
+      }
+    }
+  ],
+  "file_application_deployment": [
+    {
+      "platform": "linux-arm64",
+      "ok": true,
+      "emulated": false,
+      "compiler_sha256": "111d9fdb18e6a0808ae8f45081e1159d754a336332a627e749b826fdf6944d40",
+      "images": {
+        "nex-sdk-packager:arm64": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "nex-application-runtime:arm64": "sha256:dfc0e34d564fecee8ad4223b0470e4740fc473a751dd72cd420a8b4aefaaaf2d"
+      },
+      "source_sdk_compiler_mounted": false,
+      "files_verified": 3,
+      "manifest_sha256": "0d4850573c15b768706f9b50d594bedc74d74a2a371c93269c5e8dc0e3b8d4f4",
+      "strict_unicode_nul_roundtrip": true,
+      "capability_and_readonly_denial": true,
+      "no_temporary_files": true,
+      "direct_native_without_python": true,
+      "python_hidden_negative_control_exit": 127,
+      "ldd": "\tlinux-vdso.so.1 (0x0000ffff8a68c000)\n\tlibstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff8a280000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff8a1d0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff8a190000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff89fd0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff8a650000)\n",
+      "seconds": 3.844
+    },
+    {
+      "platform": "linux-amd64",
+      "ok": true,
+      "emulated": true,
+      "compiler_sha256": "fb6065c7029963c0cf385fcaf4bbb5d9bd515134900c40624ddfbd4acc729cca",
+      "images": {
+        "nex-sdk-packager:amd64": "sha256:28ebb20df892de8e5b9bf09c0063ee68b587a564556c07112c352a2974f15af4",
+        "nex-application-runtime:amd64": "sha256:0b723e2766e1cdd93d71320b75da008212078d3023731e865e46e084e6623b59"
+      },
+      "source_sdk_compiler_mounted": false,
+      "files_verified": 3,
+      "manifest_sha256": "494f28b36c0e3fa62e118522f8d7b71fd0f65a6c7d9fe55e01e1e055c926455e",
+      "strict_unicode_nul_roundtrip": true,
+      "capability_and_readonly_denial": true,
+      "no_temporary_files": true,
+      "direct_native_without_python": true,
+      "python_hidden_negative_control_exit": 127,
+      "ldd": "\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fffff417000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fffff32e000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fffff300000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fffff0ed000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007ffffffc6000)\n",
+      "seconds": 13.477
+    }
+  ],
+  "historical_next_version_baselines": {
+    "tests/fixtures/language-0.12": {
+      "language": "0.12",
+      "toolchain": "0.30.0",
+      "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+      "revision": "9d825b127f0c5d38bab5d655273d63878ecdae1a67982eb85f000a931cc87608",
+      "sql_sha256": "3aaad52a3763c4b01a1d4f4ed16d5f71b2460bde45bdd348d4f6d03833901f8d",
+      "future_builtin_name_conflict": false,
+      "native_and_interpreter_test_passed": true,
+      "typescript_test_passed": true
+    },
+    "tests/fixtures/language-0.12-intrinsic": {
+      "language": "0.12",
+      "toolchain": "0.30.0",
+      "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+      "revision": "cebd983a15c57924b829326438e9eca9a67b41d8b1ac8e2e057d0b8bd046bede",
+      "sql_sha256": "4707a12e672953f96f186fb5ac46d07a20a28742770747a1f305c9926e12bba9",
+      "future_builtin_name_conflict": true,
+      "native_and_interpreter_test_passed": true,
+      "typescript_test_passed": true
+    }
+  },
+  "runtime_environment_correction": {
+    "reason": "The SDK workflow now packages a file application; the old clean runtime lacked required patchelf and failed E_PACKAGE. No compiler/runtime/test inputs changed.",
+    "initial_failed_report": "build/linux-arm64-030-bundle/verification.json",
+    "corrected_recipe_sha256": "0f047a9b068d6ab2e2a58904ef0c8bded7e729b8c8cac47591b8aee9fa44c269",
+    "patchelf_version": "0.18.0-1.1build1",
+    "previous_images_preserved": {
+      "arm64": {
+        "ok": true,
+        "architecture": "arm64",
+        "previous_id": "sha256:5ab703e472c9a49678f4d30d0ba3bda29c5981990b2dadb98b9bafa027a97831",
+        "preserved_tag": "nex-sdk-runtime-029-preserved:arm64",
+        "new_id": "sha256:b8567b9108fd7236e1c09d7fb1686ca33ba3841e2c51ae94009b6401cf3aa3f0",
+        "patchelf": "patchelf 0.18.0",
+        "recipe_sha256": "0f047a9b068d6ab2e2a58904ef0c8bded7e729b8c8cac47591b8aee9fa44c269"
+      },
+      "amd64": {
+        "ok": true,
+        "architecture": "amd64",
+        "previous_id": "sha256:71e713ddd6aef32f3dd60e45396e30ef7f6a69dca49836eb3553465c0013fa07",
+        "preserved_tag": "nex-sdk-runtime-029-preserved:amd64",
+        "new_id": "sha256:2f93fd4da7355574edf453f5d48d52f97b97a3d59b5a9ed1b94895624e33a5a4",
+        "patchelf": "patchelf 0.18.0",
+        "recipe_sha256": "0f047a9b068d6ab2e2a58904ef0c8bded7e729b8c8cac47591b8aee9fa44c269"
+      }
+    },
+    "packaging_tools_are_not_application_runtime_dependencies": true
+  },
+  "remaining_validation": [
+    "full_linux_amd64_driver_and_source_free_sdk",
+    "linux_amd64_sdk_bundle_and_archive_restore"
+  ],
+  "platform_limits": [
+    "Linux x86-64 execution is emulated; live x86-64 debugging remains unverified.",
+    "macOS Intel execution, broader OS/distribution baselines, Windows/mobile/UI/GPU/Wasm and the remaining full-goal plan items are not established by this evidence."
+  ]
+}

@@ -19,8 +19,30 @@ native Debug/Release/reference agreement, Unicode/NUL/BOM, limits and denial,
 evaluation order, snapshot closures, TypeScript exclusion, genuine 0.11 migration,
 reserved-name repair, HTTP denial, trusted-host cancellation cleanup, reviewed
 task effects and pure-watch rejection. The installed SDK adds a dedicated file
-phase covering capability denial and independent packaging; its complete workflow
-and the full language-0.12 compiler/platform matrix are still under validation.
+phase covering capability denial and independent packaging. All 31 suites passed
+on macOS Debug/Release (1231.14/1073.95 s) and Linux ARM64 (496.79 s), with
+275 declared Python cases plus the two C++ probes. macOS records one Linux-only
+skip; Linux records seven macOS-only skips. Linux ARM64 also passed eight live
+suites and its source-free 11-phase SDK in 83.069 s. The emulated Linux x86-64
+full regression and its installed/archive SDK workflow are still running.
+
+The moved macOS Release SDK passed all 11 phases with actual LLDB/DAP and both
+locked browser builds in 106.313 s. Its restored archive verified 2411 files and
+compiled/ran new projects and file applications with kernel-denied access to the
+checkout, Homebrew and MacPorts. A forbidden-read control failed as required.
+The Linux ARM64 bundle passed all 11 phases in a source-free image without host
+LLVM/MLIR/Z3/Clang, then repeated all 11 after extraction (105.935/108.354 s),
+checking all 743 files. The first clean-image attempt exposed a missing packaging
+prerequisite, patchelf; the maintained image/guide now declare it. Compiler,
+runtime and language-test inputs remain the frozen `c93c4786` set; Linux SDK
+resources carry the two documented recipe/guide corrections.
+
+File packages separately passed native Unicode/NUL output, denied writes and
+unchanged content in runtime-only Linux ARM64/emulated x86-64 images without SDK
+or development tools. Direct runs hid `/usr/bin` and used an unavailable PATH;
+the Python negative controls failed and native file execution succeeded.
+[Durable 0.30 evidence](docs/evidence/sdk-0.30.0.json) records hashes, exact scopes
+and pending x86-64 checks. This does not complete the broader requested project.
 
 The earlier internal adapter passed 13 direct C++ cases on macOS ARM64, Linux
 ARM64 and emulated Linux x86-64; its source-0.11 prototype passed all 30 macOS
@@ -28,6 +50,12 @@ suites in 921.16 s. Genuine SDK 0.29 / language 0.11 store/export fixtures retai
 old sources/history before migration. These historical results do not substitute
 for the new language-version matrix. See [the file guide](docs/files.md) and
 [the design](docs/files-design.md).
+
+Genuine SDK 0.30 / language 0.12 SQL fixtures also preserve current generic wire,
+server `fs` and callable-reference code before the next language change. The
+conflict fixture retains currently valid user names proposed for binary buffers.
+[The next buffer design](docs/bytes-design.md) is a plan; buffers are not yet
+advertised or accepted by the compiler.
 
 ## Development milestone: native application packages
 

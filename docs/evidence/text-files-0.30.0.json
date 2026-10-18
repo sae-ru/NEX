@@ -41,12 +41,165 @@
     "source_hashes_preserved": true,
     "historical_fixture_hashes_preserved": true
   },
-  "installed_sdk_validation": "pending",
-  "full_compiler_matrix": "pending",
+  "installed_sdk_validation": {
+    "macos_debug": {
+      "ok": true,
+      "phases": 11,
+      "seconds": 96.317
+    },
+    "macos_release": {
+      "ok": true,
+      "phases": 11,
+      "seconds": 106.313
+    },
+    "linux_arm64": {
+      "ok": true,
+      "source_free_phases": 11,
+      "seconds": 83.069,
+      "live_debugger": true
+    },
+    "linux_amd64": {
+      "state": "pending"
+    }
+  },
+  "full_compiler_matrix": {
+    "macos_debug": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 1231.14,
+      "log": "build/ctest-030-language012-debug.log",
+      "log_sha256": "58d77deec30baa465b3939272a00baa9d09d16953b7de79beea608385b3ef3e1",
+      "python_cases_declared": 275,
+      "skips": [
+        "ELF runtime library selection"
+      ],
+      "build_compiler_sha256": "8b163db39c6497ceae1ebdbc3d8c0fdcc5657f979c6cc0db2260c52e4a4bd530",
+      "source_snapshot": "548a0b5762aed7b4c5b898b31a7dd06a5594bb2d",
+      "core_equivalent_to": "c93c47863a2a907c6a501501847ef9f80c8f38c6"
+    },
+    "macos_release": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 1073.95,
+      "log": "build/release-030/ctest.log",
+      "log_sha256": "3ac5e75830d16074bf50a1190b13faa1746bd66be61ba90a4c62a59fbbceb455",
+      "python_cases_declared": 275,
+      "skips": [
+        "ELF runtime library selection"
+      ],
+      "build_compiler_sha256": "efd34705a136abebb9d35dd6b444830c6d84f5b7f1acb0a22a6f5494367b8647",
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6"
+    },
+    "linux_arm64": {
+      "ok": true,
+      "suites": 31,
+      "seconds": 496.79,
+      "log": "build/linux-arm64-030/ctest.log",
+      "log_sha256": "df43ad655a5be379eefca9ad20cc944da8923c503c5e5a4bf39e13ec182f4224",
+      "python_cases_declared": 275,
+      "skips": [
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
+      "emulated": false,
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+      "full_driver_ok": true,
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-arm64-030/sdk-acceptance/1f127271bfeb403fa4d54394009408e4/workflow/report.json",
+        "compiler_sha256": "f64dbeac7102f2951f42ceea123810f588ad55239114f3b05d5e027138a8e8d1",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": true,
+        "browser_build": true,
+        "seconds": 83.069
+      },
+      "build_compiler_sha256": "111d9fdb18e6a0808ae8f45081e1159d754a336332a627e749b826fdf6944d40",
+      "installed_sdk_compiler_sha256": "f64dbeac7102f2951f42ceea123810f588ad55239114f3b05d5e027138a8e8d1",
+      "live_suites": 8
+    },
+    "linux_amd64": {
+      "state": "running",
+      "emulated": true,
+      "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+      "report": "build/linux-amd64-030/verification.json"
+    }
+  },
   "limits": {
     "text_bytes": 1048576,
     "path_bytes": 4096,
     "path_components": 128
   },
-  "http_policy": "No inherited environment capability; trusted C++ FileScope only. Standard server has no file-grant option."
+  "http_policy": "No inherited environment capability; trusted C++ FileScope only. Standard server has no file-grant option.",
+  "compiler_runtime_test_source_tree": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
+  "sdk_archive_evidence": "docs/evidence/sdk-0.30.0.json",
+  "runtime_only_file_deployment": [
+    {
+      "platform": "linux-arm64",
+      "ok": true,
+      "emulated": false,
+      "compiler_sha256": "111d9fdb18e6a0808ae8f45081e1159d754a336332a627e749b826fdf6944d40",
+      "images": {
+        "nex-sdk-packager:arm64": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "nex-application-runtime:arm64": "sha256:dfc0e34d564fecee8ad4223b0470e4740fc473a751dd72cd420a8b4aefaaaf2d"
+      },
+      "source_sdk_compiler_mounted": false,
+      "files_verified": 3,
+      "manifest_sha256": "0d4850573c15b768706f9b50d594bedc74d74a2a371c93269c5e8dc0e3b8d4f4",
+      "strict_unicode_nul_roundtrip": true,
+      "capability_and_readonly_denial": true,
+      "no_temporary_files": true,
+      "direct_native_without_python": true,
+      "python_hidden_negative_control_exit": 127,
+      "ldd": "\tlinux-vdso.so.1 (0x0000ffff8a68c000)\n\tlibstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff8a280000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff8a1d0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff8a190000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff89fd0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff8a650000)\n",
+      "seconds": 3.844
+    },
+    {
+      "platform": "linux-amd64",
+      "ok": true,
+      "emulated": true,
+      "compiler_sha256": "fb6065c7029963c0cf385fcaf4bbb5d9bd515134900c40624ddfbd4acc729cca",
+      "images": {
+        "nex-sdk-packager:amd64": "sha256:28ebb20df892de8e5b9bf09c0063ee68b587a564556c07112c352a2974f15af4",
+        "nex-application-runtime:amd64": "sha256:0b723e2766e1cdd93d71320b75da008212078d3023731e865e46e084e6623b59"
+      },
+      "source_sdk_compiler_mounted": false,
+      "files_verified": 3,
+      "manifest_sha256": "494f28b36c0e3fa62e118522f8d7b71fd0f65a6c7d9fe55e01e1e055c926455e",
+      "strict_unicode_nul_roundtrip": true,
+      "capability_and_readonly_denial": true,
+      "no_temporary_files": true,
+      "direct_native_without_python": true,
+      "python_hidden_negative_control_exit": 127,
+      "ldd": "\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fffff417000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fffff32e000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fffff300000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fffff0ed000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007ffffffc6000)\n",
+      "seconds": 13.477
+    }
+  ],
+  "next_version_baselines": {
+    "tests/fixtures/language-0.12": {
+      "language": "0.12",
+      "toolchain": "0.30.0",
+      "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+      "revision": "9d825b127f0c5d38bab5d655273d63878ecdae1a67982eb85f000a931cc87608",
+      "sql_sha256": "3aaad52a3763c4b01a1d4f4ed16d5f71b2460bde45bdd348d4f6d03833901f8d",
+      "future_builtin_name_conflict": false,
+      "native_and_interpreter_test_passed": true,
+      "typescript_test_passed": true
+    },
+    "tests/fixtures/language-0.12-intrinsic": {
+      "language": "0.12",
+      "toolchain": "0.30.0",
+      "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+      "revision": "cebd983a15c57924b829326438e9eca9a67b41d8b1ac8e2e057d0b8bd046bede",
+      "sql_sha256": "4707a12e672953f96f186fb5ac46d07a20a28742770747a1f305c9926e12bba9",
+      "future_builtin_name_conflict": true,
+      "native_and_interpreter_test_passed": true,
+      "typescript_test_passed": true
+    }
+  }
 }

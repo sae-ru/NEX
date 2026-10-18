@@ -13,7 +13,7 @@ evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
 eighteen installed guides. Python 3.9+, the SDK's development dependencies
-(LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI.
+(LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI. On Linux, its application-packaging phase additionally requires `patchelf`, `readelf` and `ldd`; these are development/packaging tools rather than generated-application dependencies.
 The text-file phase checks explicit capability/read-only denial, native/reference
 Unicode/NUL agreement, source-deleted replay and a packaged file application
 executed with compiler resources unavailable. File access requires no SQLite or

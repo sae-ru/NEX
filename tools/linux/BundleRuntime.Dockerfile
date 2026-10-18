@@ -2,9 +2,10 @@ ARG TOOLCHAIN_IMAGE=nex-linux-toolchain:arm64
 FROM ${TOOLCHAIN_IMAGE} AS host_tools
 FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 ENV DEBIAN_FRONTEND=noninteractive
+ARG PATCHELF_VERSION=0.18.0-1.1build1
 # The platform's C/C++ development SDK remains a declared prerequisite. No
 # LLVM, MLIR, Z3 or NEX libraries are installed in this validation environment.
-RUN apt-get update && apt-get install -y --no-install-recommends g++ python3 openssl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends g++ python3 openssl ca-certificates patchelf="${PATCHELF_VERSION}" \
     && rm -rf /var/lib/apt/lists/*
 # Node/npm are external browser-build prerequisites, separate from the SDK.
 COPY --from=host_tools /usr/local/bin/node /usr/local/bin/node
