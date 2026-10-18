@@ -193,7 +193,8 @@
           "type": "boolean"
         },
         "editable": {
-          "const": false
+          "type": "boolean",
+          "description": "True when the producing compiler supports replacing this source declaration. Older producers may report false."
         },
         "derived": {
           "type": "boolean"
@@ -211,7 +212,36 @@
         "references_truncated": {
           "type": "boolean"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "kind": {
+                    "const": "module"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "derived": {
+                    "const": true
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "editable": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
     },
     "mapping": {
       "type": "object",

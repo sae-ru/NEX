@@ -227,6 +227,7 @@ test fn examples() -> unit {
         require('snapshot_scoped_identity_reconciliation' in descriptor['graph_features'] and
                 descriptor['graph_identity_policy'] == 'nex.graph-identity/1',
                 'SDK lacks checked graph references')
+        require('type' in descriptor.get('patch_entities', []), 'SDK lacks atomic source-type replacements')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
         require('bytes' in descriptor['types'] and
                 'immutable_contiguous_octets' in descriptor['binary_features'],
@@ -338,6 +339,38 @@ test fn examples() -> unit {
         report['evidence']['graph_reconciliation'] = {
             'source_namespace': source_namespace, 'target_namespace': imported_ids['namespace'],
             'mappings': len(mappings), 'resolved': resolved, 'destination_ids_unchanged': True}
+        typed_project = root / 'atomic-type-patch'
+        typed_project.mkdir()
+        for name in ('main.nex', 'model.nex', 'nex.json', 'patch.json'):
+            shutil.copy2(resources / 'examples/type-patches' / name, typed_project / name)
+        typed_before = cli('check', cwd=typed_project)['revision']
+        typed_ids = {n['symbol']: n['id'] for n in cli('declarations', '--entity', 'type', cwd=typed_project)['nodes']}
+        typed_patch = json.loads((typed_project / 'patch.json').read_text())
+        require(typed_patch['expected_revision'] == typed_before, 'type example source no longer matches its reviewed patch')
+        partial_file = typed_project / 'partial.json'
+        partial_file.write_text(json.dumps({'expected_revision': typed_before,
+                                          'replacements': [typed_patch['replacements'][0]]}))
+        cli('apply', '--patch', partial_file, cwd=typed_project, expected_success=False)
+        require(cli('history', cwd=typed_project)['head'] == typed_before, 'invalid type-only edit changed HEAD')
+        typed_after = cli('apply', '--patch', typed_project / 'patch.json', cwd=typed_project)['revision']
+        require({n['symbol']: n['id'] for n in cli('declarations', '--entity', 'type', cwd=typed_project)['nodes']} == typed_ids,
+                'atomic type replacement rewrote persistent type IDs')
+        require(cli('context', '--entity', 'type', '--symbol', 'type_patch::model::Parcel', cwd=typed_project)['node']['editable'],
+                'source type context is not editable')
+        for name in ('main.nex', 'model.nex'):
+            (typed_project / name).unlink()
+        typed_expected = '43\nготово\n'
+        require(cli('eval', '--revision', 'HEAD', cwd=typed_project)['stdout'] == typed_expected and
+                cli('run', '--revision', 'HEAD', cwd=typed_project)['stdout'] == typed_expected,
+                'source-deleted type replacement disagrees across reference/native')
+        cli('test', '--revision', 'HEAD', cwd=typed_project)
+        cli('test', '--revision', 'HEAD', '--target', 'web', cwd=typed_project)
+        require(cli('eval', '--revision', typed_before, cwd=typed_project)['stdout'] == '42\n',
+                'type replacement changed archived layout behavior')
+        report['evidence']['atomic_type_patches'] = {
+            'before_revision': typed_before, 'after_revision': typed_after,
+            'persistent_type_ids': len(typed_ids), 'invalid_partial_edit_rejected': True,
+            'source_deleted': True, 'native_reference_typescript': True}
         passed = cli('task', state['task'], '--kind', 'run', '--revision', state['after'],
                      '--task-hash', state['task_hash'], cwd=project, timeout=300)
         require(passed['status'] == 'passed' and passed['task_hash'] == state['task_hash'], 'reviewed task changed or failed')

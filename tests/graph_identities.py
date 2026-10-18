@@ -283,7 +283,7 @@ class GraphIdentities(harness.ToolchainCase):
         self.assertTrue(node['source_truncated'])
         self.assertLessEqual(len(node['source'].encode()), 4096)
         self.assertTrue(node['definition_omitted'])
-        self.assertFalse(node['editable'])
+        self.assertTrue(node['editable'])
 
     def test_concurrent_conflicting_aliases_commit_one_complete_page(self):
         first, _ = self.project('source')

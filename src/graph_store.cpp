@@ -227,7 +227,7 @@ Value graphDeclarations(sqlite3 *db,const Program &p,const std::string &kind,con
     auto definition=entity.definition;auto definitionBytes=json(definition,false).size();bool omitted=limit&&definitionBytes>8192;if(omitted)definition=nullptr;
     auto source=limit?clipped(entity.source,4096):entity.source;
     auto value=reference(entity);value["module"]=entity.module;value["file"]=entity.file;value["source"]=std::move(source);value["source_bytes"]=int64_t(entity.source.size());value["source_truncated"]=limit&&entity.source.size()>4096;
-    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=false;value["derived"]=entity.derived;
+    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=entity.kind=="type"&&!entity.derived;value["derived"]=entity.derived;
     value["references"]=std::move(dependencies);value["reference_count"]=int64_t(entity.dependencies.size());value["references_truncated"]=limit&&entity.dependencies.size()>100;rows.push_back(std::move(value));
   }
   return Object{{"schema","nex.declarations/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},

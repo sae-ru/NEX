@@ -4,7 +4,8 @@ Toolchain 0.44 retains language 0.15 and database schema 3. It adds independent
 module/type nodes and checked references between stores. Query `nex describe
 --json` for the installed compiler's policy and limits; `nex guide --kind graph
 --json` returns this guide. `llm/graph-identity.schema.json` describes the JSON
-responses with local schema references only.
+responses with local schema references only. Toolchain 0.45 adds atomic source
+type replacements through the existing patch protocol.
 
 ## Identity and content
 
@@ -50,9 +51,10 @@ like `check`. Reconcile and resolve accept saved revisions only.
 `nex.declaration-context/1`. Module/type context clips source at 4096 UTF-8 bytes,
 omits canonical definitions larger than 8192 bytes and caps outgoing reference
 previews at 100. Counts and omission/truncation flags remain explicit. Module
-source is empty: its definition represents membership/imports. `editable` is
-currently false for these nodes because `apply` still replaces only functions
-and endpoints. Export/edit/check source to change type declarations.
+source is empty: its definition represents membership/imports. Source type nodes are `editable` in toolchain 0.45; modules and derived
+specializations remain read-only. Replace a source type and its affected
+functions/endpoints together with `nex apply --patch FILE`. Adding top-level definitions
+or changing imports still requires export/edit/check.
 
 `identities` exports `nex.identities/1`. Supported entities are `all`, `module`,
 `type`, `function`, `endpoint` and `operation`. A selected module exports itself,
@@ -128,3 +130,21 @@ operation IDs or HEAD. Older compilers can still read their original tables.
 No language migration or fixture retagging is involved. Readers verify stored
 declaration/edge and identity-operation metadata against checked source, and
 reject unsupported identity policies.
+
+## Atomic type replacements (toolchain 0.45)
+
+A replacement names an existing source struct or enum, optionally with
+`kind: "type"`, and provides exactly that local declaration. The same patch
+can repair constructors, signatures, exhaustive matches and endpoint handlers
+across modules. Generic instances are regenerated from their source templates;
+patching a specialization directly is rejected. A valid struct-to-enum
+refactoring can keep the same logical name and persistent type ID.
+
+The compiler rechecks the complete candidate before one guarded transaction
+commits. Invalid layouts, visibility, effects, realms, call sites or patterns
+leave HEAD and history unchanged. Physical source files remain unchanged.
+Build/test with `--revision HEAD`; export to materialize the accepted graph.
+Archived revisions keep their original layouts and execution. Optional `kind`
+can also be `function` or `endpoint` and must match the selected declaration.
+Unknown patch fields are rejected. See `examples/type-patches` and
+`llm/patch.schema.json`.

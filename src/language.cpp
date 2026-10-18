@@ -885,6 +885,8 @@ llvm::json::Value describe() {
     {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index","persistent_module_ids","persistent_type_ids","paged_declaration_context","transitive_dependency_context","snapshot_scoped_identity_reconciliation","atomic_identity_pages","history_preserving_declaration_backfill"}},
     {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
     {"graph_identity_policy","nex.graph-identity/1"},{"graph_identity_schema",1},{"graph_guide","docs/graph.md"},{"graph_schema","llm/graph-identity.schema.json"},
+    {"patch_entities",llvm::json::Array{"function","endpoint","type"}},
+    {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","persistent_declaration_ids"}},
     {"graph_identity_limits",llvm::json::Object{{"declaration_nodes",100000},{"dependency_edges",2000000},{"page_nodes",1000},{"manifest_bytes",4194304},{"context_source_bytes",4096},{"context_definition_bytes",8192},{"context_references",100},{"symbol_bytes",8192},{"operation_path_bytes",8192},{"id_bytes",128}}},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},

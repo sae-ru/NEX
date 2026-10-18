@@ -112,7 +112,10 @@
     "foreign_module": "examples/ffi/module.c",
     "foreign_module_host": "examples/ffi/module_host.cpp",
     "foreign_scoped_host": "examples/ffi/scoped_host.cpp",
-    "foreign_source_template": "examples/ffi/source.nex.in"
+    "foreign_source_template": "examples/ffi/source.nex.in",
+    "atomic_type_patch_source": "examples/type-patches/main.nex",
+    "atomic_type_patch_models": "examples/type-patches/model.nex",
+    "atomic_type_patch": "examples/type-patches/patch.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -185,5 +188,11 @@
     "nex identities --entity module --symbol MODULE --offset 0 --limit 100 -o PAGE.json",
     "nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH --json",
     "nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID --json"
-  ]
+  ],
+  "patch_entities": [
+    "function",
+    "endpoint",
+    "type"
+  ],
+  "type_patch_example": "examples/type-patches/patch.json"
 }

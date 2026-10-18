@@ -263,9 +263,12 @@ int run(const Options &o) {
   if(o.command=="apply") {
     auto patchFile=o.get("--patch");if(patchFile.empty())throw Error("E_OPTION","apply requires --patch FILE");
     auto value=parseJSON(readFile(patchFile));auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
-    auto expected=required(*obj,"expected_revision");if(expected.empty())throw Error("E_JSON","expected_revision cannot be empty");
+    auto fields=[](const llvm::json::Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))throw Error("E_JSON","unknown patch field '"+key.str()+"'");}};
+    fields(*obj,{"expected_revision","replacements"});
+    auto expected=required(*obj,"expected_revision");if(expected.size()!=64||expected.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_JSON","expected_revision must be a lowercase 64-character digest");
     auto replacements=obj->getArray("replacements");if(!replacements||replacements->empty())throw Error("E_JSON","replacements must be a nonempty array");
     auto selected=store.headRevision();
+    if(selected!=expected)throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
     if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to an older graph");
     auto p=loadBundle(store.bundle(selected),root.string());
     if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");
@@ -273,16 +276,26 @@ int run(const Options &o) {
     std::map<std::string,std::vector<Replacement>> edits;std::set<std::string> names;
     for(const auto &item:*replacements){
       auto entry=item.getAsObject();if(!entry)throw Error("E_JSON","replacement must be an object");
+      fields(*entry,{"name","source","kind"});
       auto name=required(*entry,"name"),source=required(*entry,"source");
+      std::string requestedKind;if(auto value=entry->get("kind")){auto label=value->getAsString();if(!label||(label!="function"&&label!="endpoint"&&label!="type"))throw Error("E_JSON","replacement kind must be function, endpoint or type");requestedKind=label->str();}
       const Endpoint *endpoint=nullptr;for(const auto &candidate:p.endpoints)if(candidate.name==name||(candidate.owner==p.module&&candidate.localName==name))endpoint=&candidate;
-      auto symbol=endpoint?endpoint->name:p.function(name).name;
+      const Structure *type=!endpoint&&p.hasStructure(name)?&p.structure(name):nullptr;
+      const Function *function=!endpoint&&!type?&p.function(name):nullptr;
+      auto kind=endpoint?"endpoint":type?"type":"function";
+      if(!requestedKind.empty()&&requestedKind!=kind)throw Error("E_PATCH_TARGET","replacement kind differs from the checked declaration");
+      auto symbol=endpoint?endpoint->name:type?type->name:function->name;
       if(!names.insert(symbol).second)throw Error("E_JSON","duplicate replacement");
+      if(type&&!type->templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+type->templateName+"'; specializations are derived",type->span);
       auto fragment=parse("module fragment;\n"+source,"<patch>");
       if(endpoint){
         if(fragment.endpoints.size()!=1||fragment.endpoints[0].name!=endpoint->localName||!fragment.functions.empty()||!fragment.structures.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local endpoint");
         edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source});
+      }else if(type){
+        if(fragment.structures.size()!=1||fragment.structures[0].name!=type->localName||!fragment.functions.empty()||!fragment.endpoints.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local structure or enum");
+        edits[type->unit].push_back({type->span.begin,type->span.end,source});
       }else{
-        const auto &f=p.function(name);
+        const auto &f=*function;
         if(!f.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+f.templateName+"'; specializations are derived",f.span);
         if(f.closure)throw Error("E_PATCH_CLOSURE","replace the source owner '"+f.closureOwner+"'; closures are derived",f.span);
         if(fragment.functions.size()!=1||fragment.functions[0].name!=f.localName||!fragment.structures.empty()||!fragment.imports.empty()||!fragment.endpoints.empty())throw Error("E_PATCH","replacement must define exactly the named local function");

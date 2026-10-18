@@ -84,7 +84,9 @@ Project files have normalized relative keys; library keys use `@std/FILE` or `@p
 }
 ```
 
-`nex apply --patch patch.json --json` replaces existing function definitions. Each source defines exactly the requested local function, preserving required `pub`, realm, test marker and effects. It cannot inject imports, structures or additional functions. Patch names can be fully qualified or entry-module shorthand; duplicate resolved symbols are rejected. Multiple files can be changed in one patch. The complete candidate bundle is reparsed and checked before a transaction commits. The transaction verifies HEAD against `expected_revision`; stale context returns `E_CONFLICT` and changes nothing.
+`nex apply --patch patch.json --json` replaces existing function, endpoint and (toolchain 0.45) source struct/enum definitions. Each source defines exactly the requested local declaration; include the required `pub`, realm, test marker and effects. Optional `kind` is `function`, `endpoint` or `type` and must match the selected definition. Additional top-level definitions and imports cannot be injected. Patch names can be fully qualified or entry-module shorthand; duplicate resolved symbols and unknown JSON fields are rejected. Multiple files and definition kinds can change in one patch. The complete candidate bundle is reparsed and checked before a transaction commits. HEAD is checked before preparing the candidate and again inside the write transaction; stale context returns `E_CONFLICT` and changes nothing. The revision must be a lowercase 64-character digest.
+
+Type replacements preserve logical type IDs and retained snapshots. Generic instances are derived: patch their source template together with affected constructors, signatures and matches. Struct-to-enum changes are allowed when the complete replacement bundle type-checks. See [the graph guide](graph.md) and `examples/type-patches`.
 
 The patch changes the graph, leaving source files unchanged. To validate/build the graph, use:
 

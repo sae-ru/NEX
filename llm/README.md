@@ -1,5 +1,11 @@
 # Model-independent NEX language pack
 
+Toolchain 0.45 adds atomic replacements of existing source structs/enums and
+their affected functions/endpoints. Discover `patch_entities` first; use
+`patch.schema.json`, typed context editability and `examples/type-patches`.
+Optional replacement `kind` is checked, source templates regenerate generic
+instances, and a failed full-bundle check preserves HEAD/history.
+
 Toolchain 0.44 adds [the graph guide](../docs/graph.md) and
 `graph-identity.schema.json` for bounded module/type context and explicit,
 atomic identity reconciliation between checked stores. Source namespace,
