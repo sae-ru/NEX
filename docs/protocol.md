@@ -102,7 +102,7 @@ For a one-file revision, `nex export --revision HEAD -o PATH` writes just that s
 
 ## Language/database migration
 
-The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.14. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
+The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.15. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
 
 `nex migrate --json` reparses and checks the archived HEAD under the current language, atomically adopts its new revision if HEAD is unchanged, and preserves the old revision. `--revision HASH` selects another retained snapshot. `nex migrate GRAPH.json --json` accepts legacy `nex.graph/1` single-file source or a `nex.graph/2` bundle and explicitly adopts its checked source. That operation treats the old hash as declared metadata, not as a verified current hash. Ordinary `import` rejects a language mismatch or an incorrect recomputed revision. Migration does not overwrite source files; materialize the chosen result with `export`.
 
@@ -155,7 +155,7 @@ The CLI returns `nex.verification-session/1`; `output` identifies the complete `
 
 `nex contract --kind intent --contracts FILE` returns `nex.verification-intent/1` and `intent_hash`. Task verification fixes these pre/postconditions while rebasing only source/revision/function hashes in a separate derived contract. Loop annotations remain checked proof strategy. `nex test --symbol NAME` selects one test and rejects ordinary functions. `--build-directory PATH` selects a build workspace (default remains project `.nex/build`), allowing task workspaces to reuse validated module objects.
 
-See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are 0.9/2.
+See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are 0.15/2.
 
 ## Stopped-frame expressions
 
@@ -234,7 +234,7 @@ SDK 0.29 fixtures cover ordinary migration and new builtin-name collisions.
 Rejected candidates leave HEAD and old sources untouched; an explicitly repaired
 exported bundle can be migrated without replacing the original revision. Keep
 the matching old SDK for receipts/frames. Function/9, program/10, structure/4
-and enum/3 remain current; the language version changes program revision identity.
+and enum/3 remained unchanged in that migration; the language version changes program revision identity.
 
 ## File resources (language 0.14)
 
@@ -243,3 +243,25 @@ They share identity/close state and cannot enter JSON/API or client code.
 Pure debug values use a separate non-authoritative opaque identity marker.
 See [the resource guide](resources.md) for ownership, limits, callbacks and
 explicit history-preserving migration from 0.13.
+
+## Source foreign calls (language 0.15)
+
+Concrete server `extern fn` declarations carry `ffi` and a checked
+`foreign(library, export, manifest_sha256)` body. Canonical `nex.function/12`
+includes this binding; `nex.program/13` revisions include the new language and
+function definitions. Graph/context protocol 2 remains unchanged. Function
+context adds `foreign` with library/export/pin, or null for ordinary functions.
+`nex ffi --symbol NAME --json` exports the actual `nex.foreign-signature/1`.
+Signature export and compilation do not load modules or confer execution rights.
+
+`eval`, `run`, `test`, `debug` and `profile` accept an explicit `--foreign
+HOST.json`. Standalone binaries accept `--nex-foreign`; HTTP servers accept
+`--foreign` and create per-request contexts. The binding and host catalogue
+must agree; no environment variable grants authority. Loader errors preserve
+their public `E_FFI_*` codes. See [the FFI guide](ffi-design.md).
+
+Language-0.14 migration is explicit and retains original snapshots and local
+identities, including ordinary identifiers `ffi`, `extern` and `foreign`.
+Current example acceptance pins must be reviewed/regenerated without weakening
+their properties. Keep SDK 0.40 for old receipts/frames. Automatic package
+dependency closures and trusted task catalogue capture remain pending.

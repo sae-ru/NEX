@@ -2,7 +2,7 @@
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.11; this is a development-tool protocol.
+LLM vendor. Current source language is 0.15; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 
@@ -233,3 +233,8 @@ operations and measured cross-model trials remain pending.
 Language 0.7 links a reached generic instance back to its original function/type template, including phantom type arguments, so requirements can bind source declarations while tests exercise concrete instances. This is static lineage, not dynamic coverage of every instantiation. Profile max_calls budgets use exact concrete instance names from the measured report; a source-template name without a measured row remains unobserved and cannot pass.
 
 Policy 2 adds selected linker identity. Toolchain 0.19 SDKs retain policy 1 for their saved receipts; inspect/review replacement fingerprints rather than silently changing task intent. Policy 2 originally retained language 0.7; language 0.8 adds explicit generic bounds and requires a reviewed migration.
+
+Language 0.15 adds the server-only opaque `ffi` effect. Effect checks can bound
+it explicitly, but task capture/replay does not yet retain a trusted operator
+catalogue. `nex task --foreign` is rejected; use direct eval/run/test/profile
+with an explicit catalogue while this integration remains pending.

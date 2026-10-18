@@ -36,6 +36,8 @@ def main():
         if args.live:
             for suite in ('debugging','expressions','generics','constraints','matching','function_debug','bytes_debug','resource_debug','numbers','incremental'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
+            run('live-source-ffi',['python3','/src/tests/source_ffi.py','/build/sdk/bin/nex','--live',
+                'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

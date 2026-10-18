@@ -10,9 +10,10 @@ NEX is a language and development toolchain built around a checked semantic grap
 
 The current working snapshot is toolchain **0.41.0 / language 0.15**, with
 experimental source `extern` declarations and explicit native-library grants.
-This snapshot preserves work in progress; the complete regression and installed
-SDK acceptance for 0.41 have not been completed. See `STATUS.md` for the current
-validation boundary and the earlier verified milestones below.
+The installed macOS ARM64 SDK passes thirteen workflow phases, including real
+source external calls and source-deleted execution. This snapshot preserves work
+in progress; complete current regression and broader platform checks remain
+open. See `STATUS.md` for the validation boundary and earlier verified milestones.
 
 Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
 

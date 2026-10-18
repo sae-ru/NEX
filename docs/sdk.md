@@ -28,8 +28,12 @@ TypeScript NEX model. The host links the selected OpenSSL Crypto (and `dl` on
 Linux); this does not verify a distributable native dependency closure.
 The same phase exercises the scoped native handle bridge with explicit
 operator/binding JSON, relative bundle paths and a real request scope after
-deleting the C++ host source. This is an installed adapter check; NEX source
-external calls remain pending.
+deleting the C++ host source. The same phase materializes
+`examples/ffi/source.nex.in` with the actual manifest pin and runs its source
+external call in the interpreter, native Debug/Release and native tests with an
+explicit operator catalogue. It also checks a portable client test, archived
+execution after source deletion and the standalone native binary with compiler
+resources unavailable. Packaging of external dependency closures remains pending.
 
 ## Relocatable macOS development bundle (0.27, under validation)
 
@@ -127,8 +131,9 @@ The maintained scenario performs these actual operations:
 The current workflow has thirteen phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
-with NEX resources unavailable. This tests the experimental host transport, not
-source external declarations. The same phase exports a checked NEX function's
+with NEX resources unavailable. This tests the experimental host transport. The
+same phase additionally runs the 0.15 source external declaration described
+above. It exports a checked NEX function's
 value schema and uses a C producer to construct its generic record/enum/result.
 Its C host agrees with the reference/native/TypeScript model and runs after
 source deletion with only the retained type metadata. Its binary-value phase additionally

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.local/schemas/debug-wire-1.json",
   "title": "NEX debug value type descriptor, including checked callable targets",
-  "description": "Language 0.14 callable, numeric, binary and opaque file debug values. Application JSON uses nex.wire/2 and rejects functions/resources. File markers have no IO authority. The compiler enforces checked layouts, identities and bounds beyond this schema.",
+  "description": "Language 0.15 callable, numeric, binary and opaque file debug values. Application JSON uses nex.wire/2 and rejects functions/resources. File markers have no IO authority. The compiler enforces checked layouts, identities and bounds beyond this schema.",
   "type": "object",
   "required": [
     "schema",

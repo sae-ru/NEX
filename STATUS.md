@@ -12,14 +12,37 @@ and browser reachability handling have initial integration coverage. Packaging
 of reachable external calls and trusted task catalogue capture remain pending
 and are explicitly rejected.
 
-The development build succeeds. The first source-FFI run passed nine of ten
-cases; its migration test used the wrong invocation after deleting the source.
-The corrected migration case passes on its own. The full corrected source suite,
-complete regression, installed SDK workflow and broader platform checks have
-not yet been run for this snapshot. Example acceptance metadata and the remaining
-guides still need review for language 0.15. This backup preserves unfinished work
-and does not designate an accepted release. The 0.40 evidence below applies to
-that earlier snapshot.
+The development build succeeds. The corrected installed macOS ARM64 SDK passes
+all thirteen phases in 250.044 s, including independent C module calls from
+NEX in the interpreter and native Debug/Release, tests, portable web tests,
+source-deleted replay, standalone execution, real LLDB/DAP and browser builds.
+A separate real LLDB stop in the external wrapper reads its typed parameter
+and continues through the authorized C call. That check found an argument-option
+terminator missing from the LLDB init command; the corrected compiler passes
+its live LLDB scenario. The first SDK run's client-only portable test was fixed
+to shared scope; client/native realm restrictions remain enforced.
+
+The corrected initial source run passes sixteen cases (fourteen source cases,
+including live LLDB, plus two existing HTTP cases accidentally imported into
+unittest discovery). Discovery is corrected, and an additional imported external
+function/callback case passes separately. The expanded HTTP error assertion
+initially used the wrong JSON shape; the correction reads `error.code` from the
+existing HTTP contract. Original failed logs are retained. The latest source
+suite and complete regression are still running. The initial macOS full run
+uses the compiler before the LLDB argument correction; a final build/regression
+must follow. Linux ARM64 verification uses a frozen corrected implementation;
+its earlier run was stopped after the SDK-template defect was identified.
+
+Example task/proof metadata has been regenerated under 0.15 with all reviewed
+requirements, postconditions, loop invariants and test bodies unchanged. All 37
+historical fixture/header hashes remain unchanged. Broader Release/Linux x86-64,
+SDK distribution, task catalogue capture, package dependency closures, general
+resources, callbacks into NEX and async remain pending. This is an unfinished
+experimental integration, not an accepted release or completion of NEX. The
+0.40 evidence below applies to that earlier snapshot.
+The [source integration evidence](docs/evidence/source-ffi-0.41.0.json) records
+the checked inputs, passing SDK/source scenarios, original failures and pending
+regression/platform work separately.
 
 ## Earlier milestone: scoped foreign invocation adapter
 

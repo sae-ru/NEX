@@ -1,13 +1,53 @@
-# Versioned foreign-call transport
+# Foreign calls and versioned C transport
 
-Development 0.37 adds an experimental C value boundary; 0.38 adds checked host
-signatures and nominal constructors. Language 0.14 and its canonical formats do
-not change. Development 0.39 adds trusted host module loading, described below.
-Development 0.40 adds explicit invocation contexts and an internal native value
-bridge. Source external declarations and binding checks,
-packaging, generic external resources, callbacks into NEX
-and source async remain pending. This transport is a foundation for those
-features; it is not a published stable FFI or an implemented source feature.
+Development 0.41 / language 0.15 adds experimental source declarations, checked
+bindings and interpreter/native invocation. Earlier versions 0.37–0.40 introduce
+the C transport, checked signatures, native module loader and invocation contexts
+described below without changing their language 0.14. C module ABI 1 retains its
+original table prefix. Automatic dependency-closure packaging, trusted task
+catalogue capture, generic external resources, callbacks into NEX and source
+async remain pending. This is not a published stable FFI. `STATUS.md` records
+the exact validation scope.
+
+## Source declarations (language 0.15)
+
+```nex
+pub server extern fn transform(data:bytes) -> bytes !{ffi} =
+  foreign("images", "transform", "0000000000000000000000000000000000000000000000000000000000000000");
+```
+
+Replace the zero pin with the SHA-256 of the exact bundle `manifest.json` bytes.
+Library/export names are ASCII identifiers of at most 128 bytes. External
+declarations must be concrete, server-only, non-test functions and declare `ffi`.
+Their types derive the value contract returned by `nex ffi --symbol NAME --json`.
+Nominal generic model types are supported; external function templates are not.
+`extern` and `foreign` are contextual, so ordinary identifiers keep their meaning.
+`ffi` denotes opaque trusted native effects, which can include arbitrary OS work.
+
+Supply the independent operator catalogue with `--foreign HOST.json` to
+`nex eval`, `run`, `test`, `debug` or `profile`. A standalone generated executable
+accepts `--nex-foreign HOST.json`; a generated HTTP server accepts `--foreign`.
+Compilation and signature discovery load no native module. Source metadata
+identifies intended code and grants no authority. There is no environment grant.
+The host catalogue must permit the library, export and exact bundle pin. The
+loader also checks the compiler-derived signature before module initialization.
+Arguments evaluate once in source order; short-circuiting, checked return types
+and immutable/resource ownership semantics apply in interpreter and native code.
+
+Only reachable native declarations add the loader/Crypto runtime. HTTP calls use
+an authenticated request's scope; operator/module files must stay outside the
+static asset root. Server declarations and binding metadata are excluded from
+emitted clients. `nex package` rejects reachable external calls until dependency
+closure packaging is implemented. Task capture/replay cannot yet carry a trusted
+catalogue, and `nex task --foreign` is rejected explicitly.
+
+`examples/ffi/source.nex.in` is a template materialized with a real manifest pin
+by the installed SDK acceptance workflow. It calls the independent C module and
+compares native and interpreter results with the reference NEX model. The
+workflow includes source-deleted replay and standalone execution. Explicit
+`nex migrate` preserves language-0.14 snapshots and identities; function/12 and
+program/13 include the checked binding in current semantic hashes. Rebuild and
+review current acceptance pins; keep the old SDK for historical frames/receipts.
 
 ## Boundary and ownership
 
@@ -209,7 +249,7 @@ inventory does not prove that every transitive loaded dependency is pinned.
 Copied dependent libraries must use appropriate loader-relative paths. The
 host must provide a trusted process environment. A general dependency-closure
 builder/auditor, platform signing, distributable packaging, Windows/mobile
-support and source integration remain pending. The present target list states
+support remain pending. The present target list states
 implemented host branches; executed validation belongs in `STATUS.md`.
 The host temporary directory must allow executable mappings: a `noexec` mount
 rejects the sealed image with `E_FFI_LOAD`, even when all content checks pass.
@@ -297,13 +337,15 @@ work still uses its catalogues.
 `examples/ffi/scoped_host.cpp` exercises this actual native handle bridge using
 the existing typed module, a real request and explicit host/binding JSON. The SDK
 workflow deletes its C++ source, removes NEX resources from the selected
-environment and compares its output with the NEX model. This still adds no
-source `extern` declaration, `ffi` effect, interpreter call or MLIR lowering.
-Those must land together with source migration and browser exclusion checks.
+environment and compares its output with the NEX model. That adapter example
+exercises the internal bridge directly; the separate 0.41 source template
+exercises `extern`, the `ffi` effect, interpreter and MLIR lowering.
 
-## Source integration gates
+## Stable FFI acceptance gates
 
-Before exposing foreign calls to NEX programs, implement all of the following:
+Before claiming a stable FFI, complete and verify all of the following on the
+stated target matrix. Experimental 0.41 implements the source path; pending
+packaging and broader validation remain visible in `STATUS.md`:
 
 - Checked declarations and versioned signatures with explicit realm/effects,
   library/symbol identities and content-pinned dependency/configuration inputs.

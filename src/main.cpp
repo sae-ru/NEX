@@ -51,6 +51,10 @@ llvm::json::Value parseJSON(const std::string &text) {
   auto value=llvm::json::parse(text);if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));return std::move(*value);
 }
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
+std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
+  try{return nexrt::loadForeignLibraries(path);}
+  catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
+}
 std::string defaultSource(const fs::path &root){
   if(fs::exists(root/"nex.json")){auto value=parseJSON(readFile((root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","manifest must be an object");return (root/required(*obj,"entry")).string();}
   return (root/"main.nex").string();
@@ -89,15 +93,15 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
+      "  nex ffi [file] --symbol NAME [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server --toolchain FILE\n"
-      "         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
+      "         --foreign HOST.json (eval/run/test/debug/profile)\n         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){print(describe());return 0;}
   if(o.command=="toolchain"){
@@ -341,7 +345,7 @@ int run(const Options &o) {
     if(o.has("--json"))print(std::move(result));else std::cout<<"Web assets: "<<result.getAsObject()->getString("dist")->str()<<'\n';return 0;
   }
   if(o.command=="eval") {
-    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(nexrt::loadForeignLibraries(o.get("--foreign")));
+    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     uint64_t limit=1000000;
     if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
     Evaluation result;
@@ -375,7 +379,7 @@ int run(const Options &o) {
   }
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
   if(o.command=="test") {
-    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(nexrt::loadForeignLibraries(o.get("--foreign")));
+    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     int count=0;llvm::json::Array tests;
     auto selected=o.get("--symbol");if(!selected.empty()){const auto &f=p.function(selected);if(!f.test)throw Error("E_TEST","--symbol must select a test function");selected=f.name;}
     for(const auto &f:p.functions)if(f.test&&(selected.empty()||selected==f.name)){
@@ -420,7 +424,7 @@ int run(const Options &o) {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
     auto folder=fs::path(result.executable).parent_path();auto manifest=(folder/"debug.json").string();
     std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)+" --compiler "+json(o.compiler,false)};
-    if(!foreignArguments.empty()){std::string command="settings set target.run-args";for(const auto &argument:foreignArguments)command+=" "+json(argument,false);init.push_back(std::move(command));}
+    if(!foreignArguments.empty()){std::string command="settings set -- target.run-args";for(const auto &argument:foreignArguments)command+=" "+json(argument,false);init.push_back(std::move(command));}
     if(o.has("--json")||kind=="dap"||kind=="nex-dap"){
       llvm::json::Array commands;for(const auto &command:init)commands.push_back(command);
       auto backend=std::getenv("NEX_LLDB_DAP");std::string dap=backend?backend:"lldb-dap";auto found=llvm::sys::findProgramByName(dap);bool available=bool(found);if(found)dap=*found;

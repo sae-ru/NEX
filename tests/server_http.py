@@ -3,6 +3,7 @@ import concurrent.futures
 import hashlib
 import http.client
 import json
+import os
 from pathlib import Path
 import queue
 import re
@@ -19,12 +20,15 @@ import support as harness
 
 
 class HTTP(harness.ToolchainCase):
-    def launch(self, executable, auth, *, tls=False, budget=10000, timeout=5000):
+    def launch(self, executable, auth, *, tls=False, budget=10000, timeout=5000, foreign=None, env=None):
         args = [executable, '--auth', str(auth), '--database', str(self.root / 'app.sqlite'), '--port', '0',
                 '--static', str(self.root / 'assets'), '--budget', str(budget), '--timeout-ms', str(timeout)]
         if tls:
             args += ['--cert', str(self.root / 'cert.pem'), '--key', str(self.root / 'key.pem')]
-        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if foreign is not None:
+            args += ['--foreign', str(foreign)]
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                   env=None if env is None else {**os.environ, **env})
         lines = queue.Queue()
         threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
         try:

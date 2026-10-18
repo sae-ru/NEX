@@ -159,6 +159,12 @@ The result contains `program.ts`, its `nex-runtime.ts` and mapping metadata. The
 
 ## Tests
 
+Language 0.15 external functions require the server realm and `ffi`. Browser
+generation rejects reaching them and excludes unused server declarations,
+library/export identifiers and manifest pins from emitted client code. Use a
+checked HTTP endpoint to call server functionality from a browser. A browser
+test receives no native-library authority from `--foreign`.
+
 `nex test --target web` runs reachable-project shared/client tests in the interpreter and in generated TypeScript using Node, comparing successful exit/output. Server tests are explicitly reported as skipped. This checks language semantics and is distinct from browser UI tests. Native tests remain `nex test` without the web target; a client test is not a native entry.
 
 Language 0.4's result<T> and typed JSON also compile to the browser backend. Wire i64 values use canonical decimal strings; decode_json<T> reconstructs BigInt/nominal immutable values and returns recoverable errors. Strict duplicate-key, Unicode, field-shape and resource checks match the native/interpreter codec. The request adapter uses this boundary; codecs themselves remain pure.

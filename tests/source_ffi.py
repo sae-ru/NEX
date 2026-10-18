@@ -1,12 +1,18 @@
 """Real NEX external declarations, checked C modules and preserved language history."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
+import shutil
 import sqlite3
 import subprocess
+import sys
 import unittest
+LIVE='--live' in sys.argv
+if LIVE:sys.argv.remove('--live')
 import support as harness
+import server_http as http_harness
 
 PIN='0'*64
 C=r'''
@@ -31,9 +37,9 @@ class SourceFFI(harness.ToolchainCase):
         self.marker=self.root/'events'
         self.env={'NEX_SOURCE_FFI_MARKER':str(self.marker)}
 
-    def program(self,source,exports):
+    def program(self,source,exports,*,symbols=None):
         self.source(source.replace('@PIN@',PIN))
-        self.signatures={name:self.cli('ffi','--symbol',name,env=self.env) for name in exports}
+        self.signatures={name:self.cli('ffi','--symbol',(symbols or {}).get(name,name),env=self.env) for name in exports}
         rows=[]
         for name,body in exports.items():
             digest=hashlib.sha256(json.dumps(self.signatures[name],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
@@ -98,6 +104,17 @@ server test fn checks()->unit!{ffi}{let value:fn(i64)->i64=fn(x:i64)->i64{return
 ''',{'forward':'echo'})
         self.both('42\n')
 
+    def test_imported_external_function_can_be_passed_as_a_checked_server_callable(self):
+        native=self.root/'native.nex'
+        native.write_text('module bridge;pub server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","'+PIN+'");')
+        self.program('''module interop;import "./native.nex" as native;
+server fn invoke(callback:server fn(i64)->i64!{ffi})->i64!{ffi}{return callback(42);}
+server fn main()->unit!{ffi,io}{let callback:server fn(i64)->i64!{ffi}=native::echo;print(invoke(callback));}
+server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
+''',{'echo':'echo'},symbols={'echo':'bridge::echo'})
+        native.write_text(native.read_text().replace(PIN,self.pin))
+        self.both('42\n')
+
     def test_explicit_authority_is_required_and_environment_cannot_grant_it(self):
         self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
         env={**self.env,'NEX_FOREIGN_CONFIG':str(self.host)}
@@ -152,5 +169,81 @@ server test fn checks()->unit!{ffi}{let value:fn(i64)->i64=fn(x:i64)->i64{return
         report=self.cli('profile','--foreign',self.host,'--output',self.root/'profile',timeout=120);self.assertEqual(report['exit_code'],0)
         session=self.cli('debug','--kind','nex-dap','--foreign',self.host,timeout=120);self.assertEqual(session['launch']['args'],['--nex-foreign',str(self.host)])
         self.assertEqual(self.cli('package','--directory',self.root/'package',ok=False,timeout=120)['code'],'E_FFI_PACKAGE')
+
+    def test_catalogue_errors_keep_their_public_diagnostics(self):
+        self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
+        for text in ('{', '{"schema":"wrong"}'):
+            self.host.write_text(text)
+            for command in ('eval','test'):
+                diagnostic=self.cli(command,'--foreign',self.host,ok=False)
+                self.assertTrue(diagnostic['code'].startswith('E_FFI'),diagnostic)
+                self.assertEqual(diagnostic['schema'],'nex.diagnostic/1')
+        self.assertEqual(self.events(),'')
+
+    def test_http_authorization_precedes_module_initialization_and_calls_use_request_scopes(self):
+        self.program('''module interop;
+import "std/http.nex" as http;
+server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");
+server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_response(200,encode_json(echo(42)));}
+''',{'echo':'echo'})
+        auth=self.root/'auth.json';token=self.cli('token','--user','alice','--auth',auth)['token']
+        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('NEX source FFI')
+        built=self.cli('build','--target','server','--profile','release',timeout=180)
+        process=http_harness.HTTP.launch(self,built['executable'],auth,env=self.env)
+        try:
+            status,body,_=http_harness.HTTP.request(self,'/api/value',token=token)
+            self.assertEqual((status,body['error']['code']),(500,'E_FFI_GRANT'))
+        finally:http_harness.HTTP.stop(self,process)
+        self.assertEqual(self.events(),'')
+        process=http_harness.HTTP.launch(self,built['executable'],auth,foreign=self.host,env=self.env)
+        try:
+            self.assertEqual(http_harness.HTTP.request(self,'/health')[0],200)
+            self.assertEqual(http_harness.HTTP.request(self,'/api/value')[0],401)
+            self.assertEqual(self.events(),'')
+            for _ in range(3):self.assertEqual(http_harness.HTTP.request(self,'/api/value',token=token)[:2],(200,'42'))
+            before=self.events();self.assertEqual(before.count('C'),3)
+            self.assertEqual(http_harness.HTTP.request(self,'/api/value',token='invalid')[0],401)
+            self.assertEqual(self.events(),before)
+        finally:http_harness.HTTP.stop(self,process)
+        # Startup must reject serving the operator catalogue as a public asset.
+        exposed=assets/'host.json';exposed.write_text(json.dumps({**self.catalogue,'libraries':{'test':{**self.catalogue['libraries']['test'],'directory':str(self.root/'bundle')}}}))
+        denied=subprocess.run([built['executable'],'--auth',str(auth),'--database',str(self.root/'private.sqlite'),'--static',str(assets),'--foreign',str(exposed)],capture_output=True,text=True,timeout=15)
+        self.assertNotEqual(denied.returncode,0);self.assertIn('outside the static root',denied.stderr)
+        shutil.copytree(self.root/'bundle',assets/'bundle')
+        self.catalogue['libraries']['test']['directory']='assets/bundle';self.host.write_text(json.dumps(self.catalogue))
+        denied=subprocess.run([built['executable'],'--auth',str(auth),'--database',str(self.root/'private.sqlite'),'--static',str(assets),'--foreign',str(self.host)],capture_output=True,text=True,timeout=15)
+        self.assertNotEqual(denied.returncode,0);self.assertIn('module directories must be outside',denied.stderr)
+
+    def test_changed_source_manifest_pin_invalidates_native_wrapper_and_preserves_old_binary(self):
+        bundle=self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn helper()->i64{return 42;}server fn main()->unit!{ffi,io}{print(echo(helper()));}''',{'echo':'echo'})
+        first=self.cli('build',timeout=120);old_pin=self.pin
+        notice=bundle/'NOTICE';notice.write_text(notice.read_text()+'Reviewed bundle update\n')
+        manifest=json.loads((bundle/'manifest.json').read_text())
+        for item in manifest['files']:
+            if item['path']=='NOTICE':item['sha256']=hashlib.sha256(notice.read_bytes()).hexdigest()
+        (bundle/'manifest.json').write_text(json.dumps(manifest));new_pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest()
+        self.catalogue['libraries']['test']['manifest_sha256']=new_pin;self.host.write_text(json.dumps(self.catalogue))
+        self.file.write_text(self.file.read_text().replace(old_pin,new_pin))
+        second=self.cli('build',timeout=120);self.assertNotEqual(first['build_key'],second['build_key'])
+        self.assertGreater(second['compiled_functions'],0);self.assertGreater(second['reused_functions'],0)
+        self.assertEqual(self.cli('run','--foreign',self.host,timeout=120)['stdout'],'42\n')
+        old=subprocess.run([first['executable'],'--nex-foreign',str(self.host)],capture_output=True,text=True,timeout=15)
+        self.assertEqual(old.returncode,70);self.assertIn('E_FFI_HASH',old.stderr)
+
+    if LIVE:
+        def test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments(self):
+            self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
+            session=self.cli('debug','--kind','nex-dap','--foreign',self.host,timeout=120)
+            symbol=self.cli('context','--symbol','echo')['native_symbol']
+            commands=session['launch']['initCommands']+['settings set target.disable-aslr false','breakpoint set -n '+symbol,'run','nex-eval x','continue']
+            arguments=[shutil.which('lldb'),'--batch',session['launch']['program']]
+            for command in commands:arguments+=['-o',command]
+            result=subprocess.run(arguments,capture_output=True,text=True,timeout=60,env={**os.environ,**self.env})
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            self.assertNotIn('unknown or ambiguous option',result.stdout+result.stderr)
+            values=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
+            self.assertTrue(any(value.get('schema')=='nex.expression/1' and value.get('value')=='42' for value in values),result.stdout)
+            self.assertIn('exited with status = 0',result.stdout)
+            self.assertEqual(self.events().count('C'),1);self.assertTrue(self.events().endswith('D'))
 
 if __name__=='__main__':unittest.main()
