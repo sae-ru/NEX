@@ -9,8 +9,15 @@ trusted C++ invocation wrapper. Call-local, non-reused tokens retain immutable
 values without exposing C++ layouts, pointers into NEX storage or raw file
 descriptors. The boundary copies UTF-8/binary payloads, checks thread/reference
 ownership and quotas, and preserves sticky host traps across cooperative polls.
-The independently compiled C producer and 25 lifecycle/value cases pass the
-initial macOS probe. Full regression, sanitizer and Linux validation are pending.
+The independently compiled C producer and 25 lifecycle/value cases pass on
+macOS ARM64 and Linux ARM64/emulated x86-64 with ASan/UBSan/LSan; macOS also passes
+ThreadSanitizer. Full macOS Debug regression passes all 43 suites (328 Python
+cases and seven C++ probes) in 753.03 s. The installed macOS SDK passes thirteen
+phases in 148.878 s, including an independently compiled C11 producer/C++20 host,
+deleted-source execution without NEX resources, real LLDB/DAP and three browser
+builds. Its compiler, runtime inputs and maintained workflow match these sources.
+Current Release/Linux compiler and isolated SDK/distribution checks remain
+pending. [Evidence](docs/evidence/ffi-transport-0.37.0.json) binds the checked inputs.
 Language/canonical formats are unchanged. Source extern declarations, checked
 signatures, library loading/authorization, packaging, general resource kinds,
 callbacks into NEX and async remain pending. The descriptor keeps

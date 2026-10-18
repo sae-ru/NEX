@@ -113,7 +113,11 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
-The current workflow has twelve phases. Its binary-value phase additionally
+The current workflow has thirteen phases. Its foreign-boundary phase compiles a
+C11 producer and C++20 host using only the installed runtime, verifies copied
+UTF-8/binary values, deletes their source files and runs the independent host
+with NEX resources unavailable. This tests the experimental host transport, not
+source external declarations. Its binary-value phase additionally
 compares source bytes, codecs, generic wire models and captured callbacks across
 reference/native Debug/Release/TypeScript. It replays an archived binary program
 after deleting source, runs an independent executable with resources unavailable,
@@ -222,7 +226,7 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all twelve maintained phases, including the three locked browser
+server. It runs all thirteen maintained phases, including the three locked browser
 builds and the text/binary-file application workflows.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
@@ -252,7 +256,7 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
-path, then runs all twelve acceptance phases. `sandbox-exec` denies reads from
+path, then runs all thirteen acceptance phases. `sandbox-exec` denies reads from
 the explicitly supplied source/dependency roots and denies writes to the SDK.
 Each denied root needs a readable input/notice file for an actual negative
 control; a separate control verifies SDK write denial. Node/npm/Python must be

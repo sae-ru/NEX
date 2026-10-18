@@ -240,7 +240,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'linux', 'match', 'function', 'files', 'bytes'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -387,6 +387,60 @@ test fn examples() -> unit {
         report['evidence']['function_cache'] = {'before_revision': before['revision'],
             'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
             'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
+
+    def foreign_boundary():
+        directory = root / 'foreign-boundary'
+        directory.mkdir()
+        descriptor = cli('describe')['foreign_boundary']
+        require(descriptor['source_support'] is False and descriptor['abi_version'] == 1,
+                'C host transport must not advertise source FFI')
+        c = directory / 'producer.c'
+        c.write_text(r'''#include "nex_ffi.h"
+#include <string.h>
+nex_ffi_status producer(const nex_ffi_api_v1 *api,nex_ffi_call call,
+    const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user) {
+  uint8_t bytes[4],text[]={0xd0,0xaf,0,0xf0,0x9f,0xa7,0xa0};
+  uint64_t n=0; nex_ffi_ref value=0; nex_ffi_status status; (void)user;
+  if(count!=1 || api->abi_version!=1)return NEX_FFI_ARGUMENT;
+  status=api->copy_bytes(call,args[0],0,bytes,4,&n);
+  if(status || n!=4 || bytes[0]!=0 || bytes[1]!=255 || bytes[2]!=128 || bytes[3]!=1)return NEX_FFI_TYPE;
+  status=api->make_string(call,text,sizeof(text),&value);memset(text,0,sizeof(text));
+  if(status)return status;
+  return api->make_success(call,value,out);
+}
+''')
+        host = directory / 'host.cpp'
+        host.write_text(r'''#include "nex_ffi_host.h"
+#include <array>
+#include <iostream>
+extern "C" nex_ffi_status producer(const nex_ffi_api_v1*,nex_ffi_call,const nex_ffi_ref*,uint64_t,nex_ffi_ref*,void*);
+int main() {
+  std::array<uint8_t,4> data{0,255,128,1};
+  std::vector<nexrt::Value> args{nexrt::Value(nexrt::bytes(nexrt::ByteBuffer::copy(data)))};
+  auto value=nexrt::unwrap(nexrt::invokeForeign(producer,args));
+  if(value.object->text!=std::string("\xd0\xaf\0\xf0\x9f\xa7\xa0",7))return 1;
+  std::cout<<"C ABI OK\n";
+}
+''')
+        runtime = resources / 'runtime'
+        driver = report['doctor']['native_compiler']
+        obj = directory / 'producer.o'
+        executable = directory / 'host'
+        run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', c, '-o', obj])
+        run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), host, obj,
+             runtime / 'nex_ffi.cpp', runtime / 'nex_files.cpp', '-o', executable])
+        c.unlink(); host.unlink(); obj.unlink()
+        original = environment['NEX_RESOURCE_DIR']
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-foreign-resources')
+            require(run([executable]) == 'C ABI OK\n', 'independent installed C ABI example differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = original
+        report['evidence']['foreign_boundary'] = {'abi_version': 1, 'source_support': False,
+            'c11_producer': True, 'cpp20_host': True, 'copied_utf8_and_bytes': True,
+            'sources_deleted': True, 'standalone': str(executable),
+            'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
+                for name in ('nex_ffi.h', 'nex_ffi_host.h', 'nex_ffi.cpp', 'nex_files.cpp')}}
 
     def binary_values():
         directory = root / 'binary-values'
@@ -828,7 +882,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('binary-values', binary_values),
-                ('text-files', text_files), ('profile', measured),
+                ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('authenticated-storage', authenticated_storage), ('browser', browser)]:
             phase(name, action)

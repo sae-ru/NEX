@@ -47,7 +47,10 @@ pending. See [the evidence](docs/evidence/source-resources-0.36.0.json).
 Development 0.37 keeps language 0.14 unchanged and adds an experimental C value
 transport for trusted hosts. Its [contract](docs/ffi-design.md) covers copied
 payloads, call-local owners, quotas, thread checks and sticky host traps. The
-first C/C++ probe passes 25 cases; broader current checks remain pending. Source
+25 C/C++ cases pass with sanitizers on macOS ARM64 and Linux ARM64/emulated
+x86-64. macOS Debug passes 43 suites and the installed SDK passes thirteen
+workflow phases, including an independent C/C++ host. Broader current compiler
+and SDK/distribution checks remain pending. Source
 foreign declarations and library loading are not implemented yet.
 
 ## Build
