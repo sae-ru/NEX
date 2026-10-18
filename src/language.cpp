@@ -1,5 +1,4 @@
 #include "nex/language.h"
-#include "nex/frontend_diagnostics.h"
 #include "llvm/Support/BLAKE3.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/Support/FormatVariadic.h"
@@ -164,13 +163,12 @@ public:
   }
 };
 class Parser {
-  Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::set<std::string> parameters;
+  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::set<std::string> parameters;
   struct SyntaxDepth {
     unsigned &depth;
     SyntaxDepth(unsigned &value,const Span &span):depth(value){if(depth>=256)throw Error("E_PARSE_LIMIT","syntax recursion exceeds 256 levels",span);++depth;}
     ~SyntaxDepth(){--depth;}
   };
-  void annotate(Error &error)const{attachFrontendDiagnostic(error,{{p.path,p.source}},p.path,inputKind,"parse",true);}
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
   SourceRange syntaxRange(size_t begin)const{return {begin,tokens.at(i-1).span.end,true};}
@@ -357,17 +355,15 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit"):inputKind(std::move(kind)) {
-    p.source=std::move(source);p.path=std::move(path);
-    try{Lexer lex(p.source,p.path);
-      do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
-    }catch(Error &error){annotate(error);throw;}
+  Parser(std::string source,std::string path,unsigned maxTokens=0) {
+    p.source=std::move(source);p.path=std::move(path);Lexer lex(p.source,p.path);
+    do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
   }
-  E expressionOnly()try{auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}catch(Error &error){annotate(error);throw;}
-  S statementOnly()try{auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}catch(Error &error){annotate(error);throw;}
-  P patternOnly()try{unsigned nodes=0;auto value=pattern(0,nodes);if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after pattern",peek().span);return value;}catch(Error &error){annotate(error);throw;}
-  Type typeOnly()try{auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}catch(Error &error){annotate(error);throw;}
-  Program run() try {
+  E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
+  S statementOnly(){auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}
+  P patternOnly(){unsigned nodes=0;auto value=pattern(0,nodes);if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after pattern",peek().span);return value;}
+  Type typeOnly(){auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}
+  Program run() {
     expect("module");p.module=qualified();expect(";");
     while(peek().kind!=Token::End) {
       if(accept("endpoint")){
@@ -414,7 +410,7 @@ public:
       f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
     }
     return std::move(p);
-  }catch(Error &error){annotate(error);throw;}
+  }
 };
 struct Binding {Type type;bool mutableValue;};
 class Checker {
@@ -815,29 +811,29 @@ llvm::json::Array blockJSON(const std::vector<S> &body) {
   return out;
 }
 }
-namespace {
-void sourceUTF8(const std::string &source,const std::string &path,const std::string &kind){
-  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &error){
-    Span span;span.begin=span.end=error.offset;span.file=path;
-    for(size_t i=0;i<error.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
-    Error diagnostic(error.code,error.what(),span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true);throw diagnostic;
+Program parse(std::string source,std::string path){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){
+    Span span;span.begin=span.end=err.offset;span.file=path;
+    for(size_t i=0;i<err.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
+    throw Error(err.code,err.what(),span);
   }
+  return Parser(std::move(source),std::move(path)).run();
 }
-}
-Program parse(std::string source,std::string path){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path)).run();}
-void check(Program &p){
-  try{Checker(p).run();}catch(Error &error){
-    std::map<std::string,std::string> sources;
-    for(const auto &[key,unit]:p.units)sources[key]=unit.source;
-    if(sources.empty())sources[p.path]=p.source;
-    attachFrontendDiagnostic(error,sources,p.units.empty()?p.path:p.entryUnit,p.units.empty()?"unit":"project","check",true);throw;
-  }
-}
+void check(Program &p){Checker(p).run();}
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
-Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type").typeOnly();}
-E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression").expressionOnly();}
-S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement").statementOnly();}
-P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern").patternOnly();}
+Type parseType(std::string source){return Parser(std::move(source),"<debug-type>").typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path),maxTokens).expressionOnly();
+}
+S parseStatement(std::string source,std::string path,unsigned maxTokens){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path),maxTokens).statementOnly();
+}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path),maxTokens).patternOnly();
+}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
@@ -927,9 +923,6 @@ llvm::json::Value describe() {
     {"snapshot_external_artifacts_included",false},{"snapshot_guide","docs/snapshots.md"},{"snapshot_schema","llm/graph-snapshot.schema.json"},
     {"project_features",llvm::json::Array{"declared_source_language_guard","root_version_preflight_before_store","reachable_library_language_guard","declared_project_schema_guard","legacy_omitted_metadata","archived_manifest_independence"}},
     {"project_manifest_schema","llm/project.schema.json"},{"compatibility_guide","docs/compatibility.md"},
-    {"frontend_diagnostic_features",llvm::json::Array{"captured_source_inputs","parser_binder_checker_context","explicit_partial_source_closure","bounded_utf8_or_base64_preview","content_diagnostic_identity","uncommitted_candidate_context","watch_frame_bound_context","preserved_runtime_operation_metadata"}},
-    {"frontend_diagnostic_limits",llvm::json::Object{{"preview_bytes",4096},{"label_bytes",1024}}},
-    {"frontend_diagnostic_guide","docs/frontend-diagnostics.md"},{"frontend_diagnostic_schema","llm/frontend-diagnostics.schema.json"},
     {"graph_identity_policy","nex.graph-identity/1"},{"graph_identity_schema",1},{"graph_guide","docs/graph.md"},{"graph_schema","llm/graph-identity.schema.json"},
     {"patch_entities",llvm::json::Array{"function","endpoint","type","operation"}},
     {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","persistent_declaration_ids","local_operation_replacements","exact_source_guard","single_syntax_fragment","overlap_rejection","isolated_comment_boundaries"}},

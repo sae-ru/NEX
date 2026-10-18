@@ -1,5 +1,4 @@
 #include "nex/language.h"
-#include "nex/frontend_diagnostics.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <functional>
@@ -37,7 +36,6 @@ void projectVersion(const llvm::json::Object &object,const std::string &file){
   }
 }
 void safeKey(const std::string &key){
-  if(!llvm::json::isUTF8(key))throw Error("E_IMPORT_PATH","source paths must be valid UTF-8");
   if(key.empty()||key.front()=='/'||key.find_first_of("\\:")!=std::string::npos||key.find('\0')!=std::string::npos||!key.ends_with(".nex")||fs::path(key).lexically_normal().generic_string()!=key)
     throw Error("E_IMPORT_PATH","source paths must be normalized relative .nex paths");
   for(const auto &part:fs::path(key))if(part==".."||part==".")throw Error("E_IMPORT_PATH","source path escapes its module root");
@@ -193,20 +191,12 @@ public:
     }
   }
   Program run(){
-    std::string phase="load";bool complete=false;
-    try{
     safeKey(entry);if(entry.starts_with("@"))throw Error("E_BUNDLE","entry must be a project source path");visit(entry);
-    if(frozen&&parsed.size()!=texts.size())throw Error("E_BUNDLE","snapshot contains unreachable source files");
-    complete=true;phase="bind";bind();
+    if(frozen&&parsed.size()!=texts.size())throw Error("E_BUNDLE","snapshot contains unreachable source files");bind();
     Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
     for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));}
-    p.imports=p.units.at(entry).imports;phase="check";check(p);return p;
-    }catch(Error &error){
-      if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
-      if(phase=="load")if(auto context=error.frontend.getAsObject())if(auto value=context->getString("phase"))phase=value->str();
-      attachFrontendDiagnostic(error,texts,entry,"project",phase,complete);throw;
-    }
+    p.imports=p.units.at(entry).imports;check(p);return p;
   }
 };
 std::string materialized(const std::string &key,const std::string &prefix){

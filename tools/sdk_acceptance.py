@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Exercise an installed NEX development chain, retaining reviewable evidence."""
 import argparse
-import base64
 import hashlib
 import json
 import os
@@ -236,8 +235,6 @@ test fn examples() -> unit {
         require('optimistic_archived_restore' in descriptor.get('history_features', []) and
                 descriptor.get('graph_database_schema') == 4,
                 'SDK lacks checked change history and revision restore')
-        require({'captured_source_inputs', 'uncommitted_candidate_context', 'watch_frame_bound_context'} <=
-                set(descriptor.get('frontend_diagnostic_features', [])), 'SDK lacks captured frontend error context')
         require({'declared_source_language_guard', 'root_version_preflight_before_store',
                  'reachable_library_language_guard', 'archived_manifest_independence'} <=
                 set(descriptor.get('project_features', [])), 'SDK lacks explicit physical project version boundaries')
@@ -265,7 +262,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -679,69 +676,6 @@ test fn examples() -> unit {
             'current_library_accepted': True, 'stale_physical_manifest_rejected': True,
             'archived_native_reference_execution': True, 'journal_preserved': True,
             'current_export_checked': True}
-
-    def frontend_diagnostics():
-        project = root / 'frontend-error-context'
-        project.mkdir()
-        (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
-            'language': report['doctor']['language'], 'entry': 'main.nex'}))
-        source = project / 'main.nex'
-        original = ('module sdk_frontend;fn value()->i64{return 41;}'
-            'fn main()->unit!{io}{print(value());}test fn retained()->unit{assert(value()>=41);}')
-        source.write_text(original)
-        before = cli('check', cwd=project)['revision']
-        changes = cli('changes', cwd=project)
-        patch = project / 'candidate.json'
-        request = {'expected_revision': before, 'replacements': [
-            {'name': 'value', 'source': 'fn value()->i64{return "bad";}'}]}
-        patch.write_text(json.dumps(request))
-        error = cli('apply', '--patch', patch, cwd=project, expected_success=False)
-        context = error.get('frontend', {})
-        require(error['code'] == 'E_TYPE' and context.get('schema') == 'nex.frontend-diagnostic/1' and
-                context.get('phase') == 'check' and context.get('input_kind') == 'project' and
-                context.get('source_inputs_complete') is True and
-                'return "bad"' in context['preview']['data'], 'failed candidate context refers to wrong input')
-        require(source.read_text() == original and cli('changes', cwd=project) == changes and
-                'revision' not in error and 'operation_id' not in error,
-                'failed candidate changed source/history or fabricated graph identity')
-        require(cli('apply', '--patch', patch, cwd=project, expected_success=False)['frontend']['id'] == context['id'],
-                'identical failed input changed diagnostic identity')
-        session = cli('debug', cwd=project)
-        identity = json.loads(Path(session['manifest']).read_text())
-        frame = {'schema': 'nex.debug-frame/1', 'language': report['doctor']['language'],
-            'revision': identity['revision'], 'build_key': identity['build_key'],
-            'function': 'sdk_frontend::value',
-            'stop': {'process_id': '1', 'thread_id': '2', 'frame_id': 0, 'stop_id': '1'},
-            'bindings': [], 'truncated': False}
-        frame_file = project / 'frame.json'
-        frame_file.write_text(json.dumps(frame))
-        watched = cli('inspect', frame_file, '--manifest', session['manifest'], '--expression', '1 + true',
-                      cwd=project, expected_success=False)
-        require(watched['frontend']['input_kind'] == 'expression' and
-                watched['frontend']['phase'] == 'check' and
-                watched['frontend']['watch']['revision'] == before and
-                watched['frontend']['watch']['build_key'] == identity['build_key'],
-                'static watch error lost its source/frame identity')
-        raw = b'module bad;\n\xff'
-        source.write_bytes(raw)
-        invalid = cli('check', cwd=project, expected_success=False)
-        require(invalid['code'] == 'E_UTF8' and invalid['frontend']['source']['utf8'] is False and
-                invalid['frontend']['preview']['encoding'] == 'base64' and
-                base64.b64decode(invalid['frontend']['preview']['data'], validate=True) == raw and
-                cli('changes', cwd=project) == changes, 'invalid UTF-8 source context is lossy or mutates history')
-        source.write_text(original)
-        request['replacements'][0]['source'] = 'fn value()->i64{return 42;}'
-        patch.write_text(json.dumps(request))
-        after = cli('apply', '--patch', patch, cwd=project)['revision']
-        require(cli('run', '--revision', after, cwd=project)['stdout'] == '42\n' and source.read_text() == original,
-                'repaired candidate failed archived execution or overwrote physical source')
-        report['evidence']['frontend_diagnostics'] = {'before': before, 'after': after,
-            'diagnostic_id': context['id'], 'candidate_source_hash': context['source']['hash'],
-            'source_inputs_hash': context['source_inputs_hash'], 'captured_uncommitted_candidate': True,
-            'physical_source_preserved': True, 'failed_transition_absent': True,
-            'repeatable_error_identity': True, 'invalid_utf8_lossless': True,
-            'static_watch_supplied_frame': True, 'watch_frame_hash': watched['frontend']['watch']['frame_hash'],
-            'repaired_archived_native_execution': True}
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'
@@ -1463,8 +1397,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
-                ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
-                ('binary-values', binary_values),
+                ('project-version-boundaries', project_version_boundaries), ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('authenticated-storage', authenticated_storage), ('browser', browser)]:

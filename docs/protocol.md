@@ -384,11 +384,3 @@ archived `--revision`, migration and recovery keep their own independent guards.
 `llm/project.schema.json` describes current manifests. Omitted legacy language
 means current compiler input. Explicit migration retains old archives and
 requires validation/export before using a current physical projection.
-
-## Captured frontend error context (toolchain 0.52)
-
-The existing `nex.diagnostic/1` envelope can include a versioned `frontend`
-object. Read [its guide](frontend-diagnostics.md) and schema from the language
-pack. It identifies actual captured source/fragment input and bounded previews;
-failed candidate bytes may differ from physical files. Runtime operation metadata
-is retained, and diagnostic IDs are not graph node/revision authority.

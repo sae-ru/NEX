@@ -1,5 +1,4 @@
 #include "nex/backend.h"
-#include "nex/frontend_diagnostics.h"
 #include "nex/native_diagnostics.h"
 #include "nex/native_toolchain.h"
 #include "nex/project.h"
@@ -160,7 +159,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
@@ -238,9 +237,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"}};
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility or frontend");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot or compatibility");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -357,7 +356,7 @@ int run(const Options &o) {
           else if(kind=="statement"){parseStatement(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
           else if(kind=="pattern"){parsePattern(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
           else throw Error("E_PATCH_TARGET","operation source kind is not replaceable");
-        }catch(const Error &error){if(error.code=="E_DEBUG_LIMIT"){Error translated("E_PATCH_LIMIT","operation fragment exceeds 100000 tokens",error.span);translated.frontend=error.frontend;throw translated;}throw;}
+        }catch(const Error &error){if(error.code=="E_DEBUG_LIMIT")throw Error("E_PATCH_LIMIT","operation fragment exceeds 100000 tokens");throw;}
         edits[function.unit].push_back({size_t(*range->getInteger("byte_begin")),size_t(*range->getInteger("byte_end")),std::move(fragment)});
         continue;
       }
@@ -615,7 +614,7 @@ int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
   try{return run(options(argc,argv));}
   catch(const nex::Error &e){
-    if(machine)print(nex::diagnosticJSON(e,NEX_VERSION,NEX_BUILD_ID));
+    if(machine){llvm::json::Object diagnostic{{"schema","nex.diagnostic/1"},{"ok",false},{"code",e.code},{"message",e.what()},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"file",e.span.file},{"stdout",e.output}};if(!e.operationSite.empty()){diagnostic["operation_site"]=e.operationSite;diagnostic["revision"]=e.operationRevision;diagnostic["source_hash"]=e.operationSource;}if(!e.operationId.empty())diagnostic["operation_id"]=e.operationId;print(std::move(diagnostic));}
     else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.what()<<'\n';}return 1;
-  }catch(const std::exception &e){if(machine)print(nex::diagnosticJSON(nex::Error("E_INTERNAL",e.what()),NEX_VERSION,NEX_BUILD_ID));else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
+  }catch(const std::exception &e){if(machine)print(llvm::json::Object{{"ok",false},{"code","E_INTERNAL"},{"message",e.what()}});else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
 }
