@@ -15,14 +15,25 @@ Source migration uses new function/11 and program/12 formats. Genuine 0.13
 snapshots migrate with preserved history; conflicting old user names require
 reviewed source repair and failed migrations leave HEAD unchanged. Pure watches
 use opaque IDs with no IO authority. Fourteen source tests, five synthetic watch
-tests and eleven live/synthetic LLDB/DAP cases pass. The baseline installed macOS
-SDK passes its twelve workflow phases, including source file resources. The full
-baseline regression found an incorrect capability descriptor advertising `file`
-under generic addition; the checker correctly rejects that operation. The source
-descriptor is corrected, but rebuilt full regression and installed-SDK acceptance
-for that correction remain pending. This is a work-in-progress checkpoint, not an
-accepted 0.36 release. General FFI, async and broader platform validation remain
-pending.
+tests and eleven live/synthetic macOS LLDB/DAP cases pass. The corrected compiler
+passes all 42 suites on macOS ARM64 Debug and Release (328 Python cases and six
+C++ probes), and Linux ARM64. Linux also passes ten live-debugger suites and all
+twelve installed-SDK workflow phases in a separate container without the source
+checkout mounted. The installed macOS SDK passes all twelve phases, including
+file programs, source-deleted replay, standalone packaging and three browser
+builds. Its compiler and runtime inputs match the verified sources.
+
+All 21 managed-file cases pass ASan/UBSan/LSan on macOS ARM64, Linux ARM64 and
+emulated Linux x86-64; macOS also passes ThreadSanitizer. All 33 genuine historical
+fixture files and 34 previous source examples remain unchanged. Task/proof
+acceptance intent and the new version's revision/content pins are checked.
+The initial regression caught an inaccurate generic-add descriptor; the checker
+correctly rejected file addition. Corrected macOS/Linux ARM64 runs pass that
+descriptor check. The corrected Linux x86-64 compiler/SDK matrix is still running.
+Current moved/restored SDK archives, general FFI, source async and broader
+platform validation remain pending. This is a development checkpoint, not an
+accepted release. [Evidence](docs/evidence/source-resources-0.36.0.json) binds
+the checked inputs, results and remaining scope.
 
 ## Verified milestone: managed file resource values
 

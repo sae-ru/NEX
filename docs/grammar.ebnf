@@ -114,3 +114,11 @@ digit         = "0" .. "9" ;
    and qualified import aliases, but cannot name a nominal declaration or generic
    parameter. Intrinsic definitions are reserved. Binary values have no literals
    or pattern syntax; see language.md for exact signatures, bounds and migration. *)
+
+(* Language 0.14 adds contextual primitive file and server/fs streaming intrinsics.
+   Local variables and qualified import aliases may still be named file. Nominal
+   declarations, generic parameters and the ten intrinsic declaration names are
+   reserved. File-bearing values, including phantom type arguments and captures,
+   require server realm and cannot enter JSON/API or browser code. Identity
+   equality and immutable owner aliases add no pointer or constructor syntax.
+   Explicit migration from 0.13 preserves history; see resources.md. *)

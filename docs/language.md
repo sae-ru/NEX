@@ -4,7 +4,7 @@ This document describes the implemented language, independently of any LLM provi
 
 ## Source and program structure
 
-Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match` and `bytes` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
+Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
 
 ```nex
 module arithmetic;
@@ -140,7 +140,7 @@ struct Pair<T: add> { left:T; right:T; }
 
 A declaration can attach one or more builtin capabilities to each parameter:
 `<T: add + ordered, U: integer, V>`. `add` permits `+` on two values of the same
-T and accepts i64, f64, str or any list type. `ordered` permits `<`, `<=`, `>`, `>=`
+T and accepts i64, f64, str, bytes or any list type. `ordered` permits `<`, `<=`, `>`, `>=`
 on equal T and accepts i64 or f64. `integer` permits checked integer arithmetic,
 unary minus and contextual i64 literals; it currently accepts i64 and implies
 `number`, `add`, `ordered` and `wire`. `number` permits equal-type arithmetic
