@@ -97,7 +97,13 @@ server `fs` functions and function references. The conflict fixture contains
 currently valid user definitions named `bytes`, `file_read_bytes` and
 `file_write_bytes`. Migration must retain old SQL/source/history and logical IDs,
 reject conflicting names without moving HEAD, and accept only an explicitly
-repaired candidate. Keep SDK 0.30 for original frames and receipts.
+repaired candidate. The additional genuine `language-0.12-byte-names` fixture
+retains a user nominal type named `bytes`, all four proposed codec-like function
+names, a wire generic and a captured callback. Native/interpreter/TypeScript
+checks passed under SDK 0.30 before capturing its original SQL. Migration must
+also reject a conflicting nominal declaration after the function names have
+been repaired, rather than silently interpreting its constructor as a primitive.
+Keep SDK 0.30 for original frames and receipts.
 
 Acceptance must include arbitrary octets and malformed UTF-8, alias immutability,
 left-to-right/short-circuit behavior, strict codec rejection, generic/callback/API
