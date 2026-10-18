@@ -130,3 +130,7 @@ task execution checks pin it as `foreign_hash`; task check/run/replay also requi
 current explicit `--foreign HOST.json`. Captures include binary members and
 notices, while the receipt itself confers no execution authority. The prompt,
 task schema and task/FFI guides describe these same rules.
+
+The [native diagnostics schema](native-diagnostics.schema.json) describes bounded
+process reports and checked local mappings. The [guide](../docs/native-diagnostics.md)
+covers standalone/HTTP logs and source-deleted graph recovery.

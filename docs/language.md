@@ -561,3 +561,8 @@ logical IDs. Keep SDK 0.30/0.32 for their original frames/receipts. Language 0.1
 uses function/10 and program/11. Current 0.14 uses function/11 and program/12; regenerate snapshot metadata while retaining
 reviewed task tests and formal properties. Platform/matrix validation status is
 separate from this specification and remains recorded in `STATUS.md`.
+
+Toolchain 0.46 adds [native failure metadata](native-diagnostics.md) without
+changing these language semantics. Mapped native traps identify the checked
+operation and exact source/build snapshot; metadata does not authenticate
+arbitrary native code or identify an instruction inside an external module.

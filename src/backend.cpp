@@ -117,6 +117,49 @@ class Emitter {
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
+  bool runtimeDeclarations=false;std::set<std::string> runtimeCalls;
+  struct SiteDescription {std::string function,site,kind;int64_t begin,end;};
+  std::map<std::string,SiteDescription> siteDescriptions;
+  std::map<std::string,std::string> pathSites,byteGlobals,functionGlobals,siteGlobals;
+  std::string rawGlobal(const std::string &text){
+    auto [found,inserted]=byteGlobals.emplace(text,"nex_bytes_"+std::to_string(serial++));
+    if(inserted){
+      static const char *hex="0123456789ABCDEF";std::string escaped;
+      for(unsigned char c:text){escaped+='\\';escaped+=hex[c>>4];escaped+=hex[c&15];}escaped+="\\00";
+      globals<<"  llvm.mlir.global private constant @"<<found->second<<"(\""<<escaped<<"\")\n";
+    }
+    return found->second;
+  }
+  std::string structureGlobal(const std::string &prefix,const std::vector<std::string> &pointers,const std::vector<int64_t> &integers={}){
+    std::string symbol=prefix+std::to_string(serial++),type="!llvm.struct<(";
+    for(size_t i=0;i<pointers.size();++i){if(i)type+=", ";type+="!llvm.ptr";}
+    for(size_t i=0;i<integers.size();++i){if(!pointers.empty()||i)type+=", ";type+="i64";}type+=")>";
+    globals<<"  llvm.mlir.global private constant @"<<symbol<<"() : "<<type<<" {\n    %s0 = llvm.mlir.undef : "<<type<<"\n";
+    unsigned n=1,position=0;std::string aggregate="%s0";
+    for(const auto &pointer:pointers){auto value="%s"+std::to_string(n++),next="%s"+std::to_string(n++);
+      globals<<"    "<<value<<" = llvm.mlir.addressof @"<<pointer<<" : !llvm.ptr\n    "<<next<<" = llvm.insertvalue "<<value<<", "<<aggregate<<"["<<position++<<"] : "<<type<<"\n";aggregate=next;
+    }
+    for(auto integer:integers){auto value="%s"+std::to_string(n++),next="%s"+std::to_string(n++);
+      globals<<"    "<<value<<" = llvm.mlir.constant("<<integer<<" : i64) : i64\n    "<<next<<" = llvm.insertvalue "<<value<<", "<<aggregate<<"["<<position++<<"] : "<<type<<"\n";aggregate=next;
+    }
+    globals<<"    llvm.return "<<aggregate<<" : "<<type<<"\n  }\n";return symbol;
+  }
+  void selectFunction(const Function &function){
+    siteDescriptions.clear();pathSites.clear();
+    auto content=hash(json(canonical(function),false)),source=hash(p.definition(function)),key=content+source;
+    auto entry=functionGlobals.find(key);
+    if(entry==functionGlobals.end())entry=functionGlobals.emplace(key,structureGlobal("nex_site_function_",{rawGlobal(content),rawGlobal(source),rawGlobal(NEX_BUILD_ID)})).first;
+    for(const auto &op:operationTree(p,function)){
+      pathSites[op.path]=op.site;
+      siteDescriptions.emplace(op.site,SiteDescription{entry->second,op.site,op.kind,int64_t(op.span.begin)-int64_t(function.span.begin),int64_t(op.span.end)-int64_t(function.span.begin)});
+    }
+    activeSite=pathSites.at("body");
+  }
+  Value siteAddress(const SiteDescription &site,Span span){
+    auto key=site.function+site.site;auto entry=siteGlobals.find(key);
+    if(entry==siteGlobals.end())entry=siteGlobals.emplace(key,structureGlobal("nex_site_",{site.function,rawGlobal(site.site),rawGlobal(site.kind)},{site.begin,site.end})).first;
+    auto n=fresh();line(n+" = llvm.mlir.addressof @"+entry->second+" : !llvm.ptr",span);return {n,Type::Str};
+  }
   struct SiteScope {std::string &value,old;SiteScope(std::string &value,std::string next):value(value),old(value){value=std::move(next);}~SiteScope(){value=std::move(old);}};
   std::string fresh(){return "%v"+std::to_string(serial++);}
   std::string label(){return "b"+std::to_string(serial++);}
@@ -128,10 +171,15 @@ class Emitter {
   }
   Value null(Type type,Span span){auto n=fresh();line(n+" = llvm.mlir.zero : !llvm.ptr",span);return {n,type};}
   Value call(const std::string &name,const std::vector<Value> &args,Type result,Span span){
+    auto operandsWithSite=args;auto target=name;
+    if(runtimeCalls.contains(name)){
+      auto site=siteDescriptions.find(activeSite);if(site==siteDescriptions.end())throw Error("E_INTERNAL","native runtime call has no checked operation site",span);
+      operandsWithSite.push_back(siteAddress(site->second,span));target+="_at";
+    }
     std::string operands,types;
-    for(const auto &a:args){if(!operands.empty()){operands+=", ";types+=", ";}operands+=a.name;types+=ty(a.type);}
+    for(const auto &a:operandsWithSite){if(!operands.empty()){operands+=", ";types+=", ";}operands+=a.name;types+=ty(a.type);}
     auto n=result==Type::Unit?"":fresh();
-    line((n.empty()?"":n+" = ")+"func.call @"+name+"("+operands+") : ("+types+") -> "+ty(result),span);return {n,result};
+    line((n.empty()?"":n+" = ")+"func.call @"+target+"("+operands+") : ("+types+") -> "+ty(result),span);return {n,result};
   }
   Value asI64(Value v,Span span){if(v.type==Type::I64)return v;auto n=fresh();line(n+(v.type==Type::F64?" = arith.bitcast ":" = arith.extui ")+v.name+" : "+ty(v.type)+" to i64",span);return {n,Type::I64};}
   Value asBool(Value v,Span span){auto n=fresh();line(n+" = arith.trunci "+v.name+" : i64 to i1",span);return {n,Type::Bool};}
@@ -167,10 +215,7 @@ class Emitter {
   }
   void cleanupAll(Span span){for(auto i=scopes.rbegin();i!=scopes.rend();++i)cleanup(*i,span);}
   Value rawBytes(const std::string &text,Span span){
-    static const char *hex="0123456789ABCDEF";std::string escaped;
-    for(unsigned char c:text){escaped+='\\';escaped+=hex[c>>4];escaped+=hex[c&15];}
-    escaped+="\\00";auto symbol="nex_bytes_"+std::to_string(serial++),n=fresh();
-    globals<<"  llvm.mlir.global private constant @"<<symbol<<"(\""<<escaped<<"\")\n";
+    auto symbol=rawGlobal(text),n=fresh();
     line(n+" = llvm.mlir.addressof @"+symbol+" : !llvm.ptr",span);return {n,Type::Str};
   }
   Value text(const std::string &text,Span span){
@@ -391,13 +436,15 @@ class Emitter {
     if(scoped)scopes.pop_back();debug.scope=previousDebugScope;return returned;
   }
   void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
-    out<<"  func.func private @"<<name<<"("<<arguments<<")"<<(result.empty()?"":" -> "+result)<<"\n";
+    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave";
+    if(located)runtimeCalls.insert(name);
+    out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
   explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr):p(p),debug(p,optimized),profiling(profiling),sites(sharedSites?*sharedSites:ownedSites){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr){
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry);
-    out<<"module {\n";
+    out<<"module {\n";runtimeDeclarations=true;
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_f64_"+std::string(name),"f64, f64, i64","f64");
     declaration("nex_f64_neg","f64, i64","f64");declaration("nex_f64_validate","f64, i64","f64");declaration("nex_f64_compare","f64, f64, i64, i64","i64");
@@ -428,6 +475,7 @@ public:
     declaration("nex_file_write","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
     for(auto name:{"file_close","file_is_open"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","i64");
     for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
+    runtimeDeclarations=false;
     auto names=reachable(p,entry);
     auto bridges=nativeFunctionBridges(p,names);
     if(selected){
@@ -441,19 +489,19 @@ public:
       }
     }
     for(const auto &f:p.functions)if(names.contains(f.name)){
-      debug.scope=debug.function(f);
+      selectFunction(f);debug.scope=debug.function(f);
       scopes.clear();scopes.emplace_back();slots.clear();matchSlots.clear();patternSlots.clear();shortSlots.clear();out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
       std::string environment;if(f.closure){environment=fresh();out<<environment<<": !llvm.ptr";}
       for(size_t i=0;i<f.params.size();++i){if(i||f.closure)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
       prologue=true;
       for(size_t i=0;i<f.params.size();++i){
-        const auto &param=f.params[i];auto slot=allocateSlot(param.type,param.span);
+        const auto &param=f.params[i];SiteScope parameterSite(activeSite,pathSites.at("parameter/"+std::to_string(i)));auto slot=allocateSlot(param.type,param.span);
         if(param.type==Type::F64)scopes.back()[param.name]=call("nex_f64_validate",{scopes.back().at(param.name),constant(param.span.line,Type::I64,param.span)},Type::F64,param.span);
         // Debug storage borrows the parameter and never participates in cleanup.
         writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1+(f.closure?1:0));
       }
-      for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);value=fromScalar(value,capture.type,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
+      for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];SiteScope captureSite(activeSite,pathSites.at("capture/"+std::to_string(i)));auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);value=fromScalar(value,capture.type,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
       allocate(f.body);prologue=false;
       if(profiling){auto name=rawBytes(f.name,f.span),file=rawBytes(p.location(f.span),f.span),content=rawBytes(hash(json(canonical(f),false)),f.span);call("nex_profile_enter",{name,file,constant(f.span.line,Type::I64,f.span),content},Type::Unit,f.span);}
       call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);
@@ -466,14 +514,15 @@ public:
       }else if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
       if(!f.closure&&bridges.contains(f.name)){debug.scope.clear();out<<"  func.func @"<<closureSymbol(f)<<"(%closure_environment: !llvm.ptr";std::vector<Value> args;for(const auto &param:f.params){auto name=fresh();out<<", "<<name<<": "<<ty(param.type);args.push_back({name,param.type});}out<<")"<<(f.result==Type::Unit?"":" -> "+ty(f.result))<<" {\n";auto value=call(nativeSymbol(f.name),args,f.result,f.span);line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),f.span);out<<"  }\n";}
     }
-    debug.scope.clear();out<<globals.str();if(libraryEntry||!names.contains(main.name)){out<<"}\n";return debug.str()+out.str();}
+    debug.scope.clear();if(libraryEntry||!names.contains(main.name)){out<<globals.str()<<"}\n";return debug.str()+out.str();}
+    selectFunction(main);
     auto all=reachable(p,entry);bool foreign=false;for(const auto &name:all)foreign|=p.function(name).foreign.has_value();
     out<<(foreign?"  func.func @main(%nex_argc: i32, %nex_argv: !llvm.ptr) -> i32 {\n":"  func.func @main() -> i32 {\n");
     if(foreign){line("%nex_argc64 = arith.extsi %nex_argc : i32 to i64",main.span);call("nex_foreign_configure",{{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::Unit,main.span);}
     auto value=call(nativeSymbol(main.name),{},main.result,main.span);call("nex_runtime_finish",{},Type::Unit,main.span);
     if(main.result==Type::I64){auto n=fresh();line(n+" = arith.trunci "+value.name+" : i64 to i32",main.span);line("func.return "+n+" : i32",main.span);}
     else{auto n=fresh();line(n+" = arith.constant 0 : i32",main.span);line("func.return "+n+" : i32",main.span);}
-    out<<"  }"<<loc(main.span)<<"\n}\n";return debug.str()+out.str();
+    out<<"  }"<<loc(main.span)<<"\n"<<globals.str()<<"}\n";return debug.str()+out.str();
   }
 };
 std::string lower(const std::string &source,const std::string &sourcePath,const std::string &triple,const std::string &layout) {
@@ -679,7 +728,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(const auto &f:p.functions)if(names.contains(f.name)){
     collectType(f.result);for(const auto &param:f.params)collectType(param.type);for(const auto &capture:f.captures)collectType(capture.type);collectLocals(f.body);
     auto operations=operationTree(p,f);for(const auto &operation:operations)if(operation.ast)operationIndex[operation.ast]=operation.site;
-    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"native_symbol",nativeSymbol(f.name)},{"callable_symbol",f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"operation_sites",operationSites(f,operations)}});
+    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"function_hash",hash(json(canonical(f),false))},{"function_source_hash",hash(p.definition(f))},{"native_symbol",nativeSymbol(f.name)},{"callable_symbol",f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"operation_sites",operationSites(f,operations)}});
   }
   for(auto &[unitKey,unit]:snapshot.units){
     auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/1"},{"unit",unitKey},{"module",unit.module},{"source",unit.source}},false));
@@ -823,6 +872,14 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
     if(execute(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
     link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
+  }
+  if(!options.libraryEntry){
+    // Whole-program provenance is linked separately from reusable function objects.
+    auto identity=json(llvm::json::Object{{"schema","nex.native-application/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},
+      {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"build_key",key},{"compiler_build",NEX_BUILD_ID}},false);
+    auto source=(folder/"application-identity.cpp").string(),object=(folder/"application-identity.o").string();
+    writeFile(source,"extern \"C\" const char *nex_application_identity()noexcept{return "+json(identity,false)+";}\n");
+    if(execute(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","application identity compilation failed");link.push_back(object);
   }
   if(profiling){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX

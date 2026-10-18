@@ -1,6 +1,6 @@
 # Native debugging — NEX toolchain 0.15
 
-Current source language is 0.11. Debug information describes real native parameters,
+Current source language is 0.15. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.
@@ -123,3 +123,8 @@ maps, crash/core workflows and other target platforms
 remain parts of the open development plan.
 
 Native function/managed shallow allocation profiling and optional Tracy CPU capture are documented in [profiling.md](profiling.md).
+
+Checked native runtime failures can be resolved through `nex run --json` or
+`nex diagnose --manifest DEBUG.json --log STDERR.log --revision HASH`. See the
+[native diagnostic guide](native-diagnostics.md) for archived sources, local IDs,
+operator request logs, bounds and attribution limits.

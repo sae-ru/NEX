@@ -140,6 +140,12 @@ server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
         self.file.write_text(original)
         self.assertEqual(self.cli('eval','--foreign',self.host,env=self.env,ok=False)['code'],'E_FFI_TYPE')
         native=self.cli('run','--foreign',self.host,env=self.env,ok=False,timeout=120);self.assertEqual(native['exit_code'],70);self.assertIn('E_FFI_TYPE',native['stderr']);self.assertTrue(self.events().endswith('D'))
+        mapped=native['native_diagnostics']['diagnostics'][0]
+        self.assertEqual(mapped['status'],'mapped');self.assertEqual(mapped['symbol'],'interop::echo')
+        self.assertEqual(mapped['report']['code'],'E_FFI_TYPE')
+        self.assertEqual(mapped['report']['source']['kind'],'block')
+        self.assertEqual(self.cli('context','--site',mapped['operation_site'])['nodes'][0]['id'],mapped['operation_id'])
+
 
     def test_rejected_declarations_effects_realms_and_bindings(self):
         valid='module rejected;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","'+PIN+'");'

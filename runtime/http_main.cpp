@@ -137,7 +137,7 @@ int main(int argc,char **argv){
         if(status<300){auto committed=db.commit();if(!nexrt::isSuccess(committed)){error(response,503,committed.object->text,id);return;}}
         else db.rollback();
         response.status=int(status);response.set_content(std::move(body),contentType);
-      }catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));}
+      }catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));if(auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap))nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located->source,id.c_str());}
       catch(const nexrt::DataError &failure){error(response,failure.code=="E_UTF8"?400:503,failure.code,id);}
       catch(const std::exception &){error(response,500,"E_RUNTIME",id);}
     };

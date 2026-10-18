@@ -8,11 +8,16 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.45.0 / language 0.15**, adding atomic source
-type replacements together with affected functions/endpoints. Optional patch
-kinds, strict fields and complete candidate checks preserve type IDs and
-archived layouts. All 52 groups pass on macOS/Linux ARM64, along with both
-thirteen-phase installed SDK workflows and Linux live debugger checks.
+The working tree is toolchain **0.46.0 / language 0.15**, adding bounded native
+runtime trap reports, checked graph mapping and archived log diagnosis.
+`nex run --json` reports local operation IDs after checking build/source metadata;
+`nex diagnose --manifest DEBUG.json --log STDERR.log --revision HASH` maps retained
+standalone/server logs. [The guide](docs/native-diagnostics.md) defines trust and
+limits. Current validation is tracked in `STATUS.md`.
+
+The preceding verified **0.45.0 / language 0.15** snapshot adds atomic source
+type replacements together with affected functions/endpoints. All 52 groups pass
+on macOS/Linux ARM64, with both installed SDK workflows and Linux live checks.
 [The evidence](docs/evidence/type-patches-0.45.0.json) records exact scope.
 
 The preceding verified **0.44.0 / language 0.15** snapshot adds persistent

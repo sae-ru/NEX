@@ -321,3 +321,15 @@ records `source_identity_file` within the code inventory. Additional component
 notices use catalogue-relative paths when `notices_root` is `"catalogue"`;
 absence retains the older bundle-relative convention. Package schema references
 resolve through canonical `$id` URIs registered from the indexed local files.
+
+## Native diagnostic logs
+
+`nex run --json` adds a bounded `native_diagnostics` response while retaining
+`ok`, `exit_code`, `stdout`, `stderr` and `build_key`.
+`nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH]`
+reads retained logs without compiling or executing them. Retrieve
+`nex guide --kind diagnostic --json` and
+[`native-diagnostics.schema.json`](../llm/native-diagnostics.schema.json). Only
+`mapped` records carry local graph IDs; preserve the reported revision and exact
+source hash when requesting context. `unmapped` records carry no verified local
+identity.

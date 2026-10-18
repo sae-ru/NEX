@@ -76,7 +76,7 @@ Array operationSites(const Program &p,const Function &f){
   return operationSites(f,operationTree(p,f));
 }
 Array operationSites(const Function &f,const std::vector<Operation> &operations){
-  Array a;for(const auto &o:operations)a.push_back(Object{{"site",o.site},{"path",o.path},{"parent",o.parent},{"kind",o.kind},{"file",f.unit},{"line",int64_t(o.span.line)},{"column",int64_t(o.span.column)}});
+  Array a;for(const auto &o:operations)a.push_back(Object{{"site",o.site},{"path",o.path},{"parent",o.parent},{"kind",o.kind},{"file",f.unit},{"line",int64_t(o.span.line)},{"column",int64_t(o.span.column)},{"byte_begin",int64_t(o.span.begin)-int64_t(f.span.begin)},{"byte_end",int64_t(o.span.end)-int64_t(f.span.begin)}});
   return a;
 }
 std::map<std::string,std::string> matchOperations(const std::vector<Operation> &current,const std::vector<Operation> &previous,const std::map<std::string,std::string> &ids){

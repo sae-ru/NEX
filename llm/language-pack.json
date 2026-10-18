@@ -69,7 +69,9 @@
     "foreign_catalogue_schema": "llm/foreign-catalogue.schema.json",
     "foreign_catalogue_report_schema": "llm/foreign-catalogue-report.schema.json",
     "graph": "docs/graph.md",
-    "graph_identity_schema": "llm/graph-identity.schema.json"
+    "graph_identity_schema": "llm/graph-identity.schema.json",
+    "native_diagnostics": "docs/native-diagnostics.md",
+    "native_diagnostics_schema": "llm/native-diagnostics.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
@@ -115,7 +117,8 @@
     "foreign_source_template": "examples/ffi/source.nex.in",
     "atomic_type_patch_source": "examples/type-patches/main.nex",
     "atomic_type_patch_models": "examples/type-patches/model.nex",
-    "atomic_type_patch": "examples/type-patches/patch.json"
+    "atomic_type_patch": "examples/type-patches/patch.json",
+    "native_diagnostics": "examples/native-diagnostics.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

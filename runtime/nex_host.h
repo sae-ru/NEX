@@ -9,6 +9,24 @@ struct Trap : std::runtime_error {
   std::string code; int64_t line;
   Trap(std::string code,std::string message,int64_t line):std::runtime_error(std::move(message)),code(std::move(code)),line(line){}
 };
+// Rich locations are an additive internal runtime ABI. Legacy exported helpers
+// and the original Trap layout remain available to trusted C/C++ hosts.
+// Compiler-private 64-bit descriptor layout, mirrored by MLIR constant globals.
+// Function hashes are shared by all sites in that function. Serialization is cold.
+struct NativeFunctionSite {const char *functionHash,*sourceHash,*compilerBuild;};
+struct NativeSite {const NativeFunctionSite *function;const char *site,*kind;int64_t begin,end;};
+static_assert(sizeof(NativeFunctionSite)==24&&sizeof(NativeSite)==40);
+struct SourceLocation {
+  int64_t line=0;const NativeSite *site=nullptr;
+  SourceLocation(int64_t line=0,const NativeSite *site=nullptr):line(line),site(site){}
+  operator int64_t()const{return line;}
+};
+struct LocatedTrap : Trap {
+  std::string source;
+  LocatedTrap(const Trap &trap,std::string source);
+};
+[[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location);
+void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
 // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
 class RequestScope {
   struct Impl;std::shared_ptr<Impl> impl;
@@ -27,18 +45,19 @@ public:
 Handle *makeHandle(const Value &value);
 Value readHandle(const Handle *handle);
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
+[[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location);
 bool inRequestScope();
 void pollHostOperation(int64_t line);
 void registerRuntimeCleanup(void (*cleanup)() noexcept);
 void cleanupRuntimeResources();
-template<class F> auto hostOperation(int64_t line,F operation)->decltype(operation()){
+template<class F> auto hostOperation(SourceLocation line,F operation)->decltype(operation()){
   try{return operation();}
-  catch(const Trap &){throw;}
+  catch(const Trap &trap){propagateTrap(trap,line);}
   catch(const DataError &e){runtimeFail(e.code.c_str(),e.what(),line);}
   catch(const std::bad_alloc &){runtimeFail("E_MEMORY","allocation failed",line);}
   catch(const std::exception &){runtimeFail("E_RUNTIME","host value operation failed",line);}
 }
-template<class F> Handle *hostValue(int64_t line,F operation){
+template<class F> Handle *hostValue(SourceLocation line,F operation){
   return hostOperation(line,[&]{return makeHandle(operation());});
 }
 }

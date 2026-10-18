@@ -1,4 +1,5 @@
 #include "nex/backend.h"
+#include "nex/native_diagnostics.h"
 #include "nex/native_toolchain.h"
 #include "nex/project.h"
 #include "nex/web.h"
@@ -41,7 +42,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -56,16 +57,16 @@ void print(llvm::json::Value value){std::cout<<json(value)<<'\n';}
 llvm::json::Value parseJSON(const std::string &text) {
   auto value=llvm::json::parse(text);if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));return std::move(*value);
 }
-llvm::json::Value readIdentityManifest(const std::string &path){
-  constexpr size_t limit=4*1048576;
+std::string readBoundedText(const std::string &path,size_t limit,const std::string &label,const std::string &code){
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
-  if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error("E_IDENTITY_LIMIT","identity manifest requires a regular non-symlink JSON file of at most 4 MiB");
+  if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error(code,label+" requires a regular non-symlink file of at most "+std::to_string(limit)+" bytes");
   std::string text;std::array<char,65536> buffer{};
-  for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read identity manifest");}if(!count)break;if(size_t(count)>limit-text.size())throw Error("E_IDENTITY_LIMIT","identity manifest exceeds 4 MiB");text.append(buffer.data(),size_t(count));}
-  try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON","identity manifest must be valid UTF-8");}
-  return parseJSON(text);
+  for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read "+label);}if(!count)break;if(size_t(count)>limit-text.size())throw Error(code,label+" exceeds "+std::to_string(limit)+" bytes");text.append(buffer.data(),size_t(count));}
+  try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
+  return text;
 }
+llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON(readBoundedText(path,4*1048576,"identity manifest","E_IDENTITY_LIMIT"));}
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
   try{return nexrt::loadForeignLibraries(path);}
@@ -128,6 +129,7 @@ int run(const Options &o) {
       "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
+      "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server --toolchain FILE\n"
@@ -198,9 +200,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"}};
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources or ffi");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi or diagnostic");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -216,7 +218,7 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
@@ -392,6 +394,12 @@ int run(const Options &o) {
     llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
     print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
+  if(o.command=="diagnose"){
+    if(o.get("--manifest").empty()||o.get("--log").empty())throw Error("E_OPTION","diagnose requires --manifest and --log");
+    auto manifest=parseNativeManifest(readBoundedText(o.get("--manifest"),64*1048576,"native manifest","E_DIAGNOSTIC_LIMIT"));
+    auto log=readBoundedText(o.get("--log"),4*1048576,"native diagnostic log","E_DIAGNOSTIC_LIMIT");
+    print(nativeDiagnostics(p,manifest,store,log));return 0;
+  }
   if(o.command=="ffi"){auto symbol=o.get("--symbol");if(symbol.empty())throw Error("E_OPTION","ffi requires --symbol for a concrete named function");print(foreignSignature(p,p.function(symbol)));return 0;}
   if(o.command=="check"){if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"revision",revision(p)},{"functions",int64_t(p.functions.size())}});else std::cout<<"Checked "<<p.functions.size()<<" functions; revision "<<revision(p)<<'\n';return 0;}
   if(o.command=="api"){auto directory=o.get("--directory");print(directory.empty()?describeAPI(p):generateAPI(p,directory));return 0;}
@@ -483,7 +491,9 @@ int run(const Options &o) {
   if(o.command=="emit") {auto text=readFile(result.llvm);auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
   if(o.command=="run") {
     if(!o.has("--json")){std::vector<std::string> arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
-    auto child=capture(executionArguments(result.executable));print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
+    auto arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());auto child=capture(arguments);
+    auto manifest=parseJSON(readFile((fs::path(result.executable).parent_path()/"debug.json").string()));
+    print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key},{"native_diagnostics",nativeDiagnostics(p,manifest,store,child.errors)}});return child.code;
   }
   if(o.command=="debug") {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");

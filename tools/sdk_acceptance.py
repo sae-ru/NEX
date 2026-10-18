@@ -228,6 +228,8 @@ test fn examples() -> unit {
                 descriptor['graph_identity_policy'] == 'nex.graph-identity/1',
                 'SDK lacks checked graph references')
         require('type' in descriptor.get('patch_entities', []), 'SDK lacks atomic source-type replacements')
+        require('manifest_checked_trap_mapping' in descriptor.get('diagnostic_features', []),
+                'SDK lacks checked native runtime diagnostics')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
         require('bytes' in descriptor['types'] and
                 'immutable_contiguous_octets' in descriptor['binary_features'],
@@ -452,6 +454,47 @@ test fn examples() -> unit {
         report['evidence']['function_cache'] = {'before_revision': before['revision'],
             'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
             'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
+
+        diagnostic_project = root / 'native-diagnostics'
+        diagnostic_project.mkdir()
+        (diagnostic_project / 'nex.json').write_text(json.dumps({'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        diagnostic_source = diagnostic_project / 'main.nex'
+        diagnostic_source.write_text('module sdk_trap;fn divide(n:i64)->i64{return 42/n;}fn main()->unit!{io}{print("before");print(divide(0));}')
+        checked = cli('check', cwd=diagnostic_project)
+        expected_error = cli('eval', cwd=diagnostic_project, expected_success=False)
+        for profile in ('debug', 'release'):
+            failed = cli('run', '--profile', profile, cwd=diagnostic_project, expected_success=False)
+            records = failed['native_diagnostics']['diagnostics']
+            require(failed['exit_code'] == 70 and failed['stdout'] == 'before\n' and len(records) == 1,
+                    'native trap process observation differs')
+            record = records[0]
+            require(record['status'] == 'mapped' and record['report']['code'] == 'E_DIV_ZERO' and
+                    record['operation_id'] == expected_error['operation_id'] and
+                    record['operation_site'] == expected_error['operation_site'],
+                    'native/interpreter operation attribution differs')
+        built = cli('build', '--profile', 'release', cwd=diagnostic_project)
+        graph_file = root / 'native-diagnostic-graph.json'
+        graph_file.write_text(json.dumps(cli('graph', cwd=diagnostic_project)))
+        standalone = root / 'native-diagnostic-app'
+        shutil.copy2(built['executable'], standalone)
+        diagnostic_source.unlink()
+        require(run([standalone], expected_success=False) == 'before\n' and report['commands'][-1]['exit_code'] == 70,
+                'source-deleted standalone did not retain its native trap')
+        diagnostic_log = Path(report['commands'][-1]['stderr'])
+        restored = root / 'native-diagnostic-restored'
+        restored.mkdir()
+        (restored / 'nex.json').write_text(json.dumps({'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        cli('import', graph_file, cwd=restored)
+        mapped = cli('diagnose', '--revision', checked['revision'], '--manifest', built['debug_manifest'],
+                     '--log', diagnostic_log, cwd=restored)['diagnostics'][0]
+        require(mapped['status'] == 'mapped' and mapped['operation_site'] == record['operation_site'] and
+                mapped['operation_id'] != record['operation_id'] and not (restored / 'main.nex').exists(),
+                'source-deleted imported graph did not resolve its own local operation ID')
+        report['evidence']['native_diagnostics'] = {'revision': checked['revision'],
+            'site': mapped['operation_site'], 'native_profiles': ['debug', 'release'],
+            'native_interpreter_agreement': True, 'source_deleted': True,
+            'standalone_without_sdk_lookup': str(standalone), 'new_store_local_ids': True,
+            'manifest': built['debug_manifest']}
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'

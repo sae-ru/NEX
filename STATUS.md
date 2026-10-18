@@ -2,6 +2,22 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: native runtime trap attribution
+
+Toolchain **0.46.0 / language 0.15** adds explicit operation metadata to checked
+runtime helper calls, per-link application identity, bounded `NEX_NATIVE_TRAP`
+records and manifest/source-checked local graph resolution. `nex run --json`
+returns native diagnostics; `nex diagnose` maps retained standalone or HTTP
+operator logs against a checked current/archived program. Successful calls pass
+constant metadata without allocating diagnostic state or updating a thread-local
+site. Original helper signatures, `Trap` layout, C ABI 1 and language semantics
+are preserved. The [guide](docs/native-diagnostics.md) defines boundaries.
+
+Initial implementation and focused runtime/graph checks are in progress. Full
+compiler, installed SDK, Linux and broader platform validation remain pending.
+This is not completion of NEX. Parser/checker identities, signal/core PC
+attribution and the remaining language/toolchain plan remain open.
+
 ## Verified development milestone: atomic source-type replacements
 
 Toolchain **0.45.0 / language 0.15** adds replacement of existing source
