@@ -117,7 +117,10 @@ The current workflow has thirteen phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
 with NEX resources unavailable. This tests the experimental host transport, not
-source external declarations. Its binary-value phase additionally
+source external declarations. The same phase exports a checked NEX function's
+value schema and uses a C producer to construct its generic record/enum/result.
+Its C host agrees with the reference/native/TypeScript model and runs after
+source deletion with only the retained type metadata. Its binary-value phase additionally
 compares source bytes, codecs, generic wire models and captured callbacks across
 reference/native Debug/Release/TypeScript. It replays an archived binary program
 after deleting source, runs an independent executable with resources unavailable,

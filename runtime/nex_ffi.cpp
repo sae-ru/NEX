@@ -1,4 +1,5 @@
 #include "nex_ffi_host.h"
+#include "nex_ffi_types.h"
 #include <algorithm>
 #include <atomic>
 #include <cstring>
@@ -42,6 +43,10 @@ struct State {
   const std::thread::id owner=std::this_thread::get_id();
   ForeignCallLimits limits;
   std::map<nex_ffi_ref,Entry> refs;
+  std::shared_ptr<TypedContext> types;
+  std::vector<Value> arguments;
+  std::map<nex_ffi_type,size_t> typeRefs;
+  std::map<size_t,nex_ffi_type> typeTokens;
   std::function<void()> poll;
   std::exception_ptr hostTrap;
   uint64_t operations=0,copiedBytes=0;
@@ -50,6 +55,12 @@ struct State {
   void charge(uint64_t count){require(count<=limits.copiedBytes-copiedBytes,NEX_FFI_LIMIT);copiedBytes+=count;}
   const Entry &entry(nex_ffi_ref ref) const {auto i=refs.find(ref);require(i!=refs.end(),NEX_FFI_REF);return i->second;}
   Value read(nex_ffi_ref ref) const {return entry(ref).value;}
+  TypedContext &typed(){require(bool(types),NEX_FFI_TYPE);return *types;}
+  nex_ffi_type typeToken(size_t index){
+    typed();auto i=typeTokens.find(index);if(i!=typeTokens.end())return i->second;
+    require(typeTokens.size()<4096,NEX_FFI_LIMIT);auto ref=token();typeRefs.emplace(ref,index);try{typeTokens.emplace(index,ref);}catch(...){typeRefs.erase(ref);throw;}return ref;
+  }
+  size_t type(nex_ffi_type ref){typed();auto i=typeRefs.find(ref);require(i!=typeRefs.end(),NEX_FFI_REF);return i->second;}
   nex_ffi_ref add(Value value,unsigned depth=0){
     (void)kind(value);require(refs.size()<limits.references&&depth<=128,NEX_FFI_LIMIT);
     auto ref=token();refs.emplace(ref,Entry{std::move(value),depth});return ref;
@@ -77,7 +88,7 @@ struct Registration {
     {std::lock_guard lock(r.mutex);auto i=r.calls.find(id);if(i!=r.calls.end()){retained=std::move(i->second);r.calls.erase(i);}}
     // Lookups on other threads can retain State, but never read these owner-only
     // fields. Release payloads and callback targets on the invoking thread.
-    if(retained){retained->refs.clear();retained->poll={};retained->hostTrap={};}
+    if(retained){retained->refs.clear();retained->arguments.clear();retained->types.reset();retained->poll={};retained->hostTrap={};}
   }
 };
 template<class F> nex_ffi_status guarded(nex_ffi_call call,F body) noexcept {
@@ -95,6 +106,8 @@ template<class F> nex_ffi_status guarded(nex_ffi_call call,F body) noexcept {
     if(e.code=="E_RANGE"||e.code=="E_FLOAT")return NEX_FFI_RANGE;
     if(e.code=="E_BOUNDS")return NEX_FFI_BOUNDS;
     if(e.code=="E_LIMIT")return NEX_FFI_LIMIT;
+    if(e.code=="E_FFI_TYPE")return NEX_FFI_TYPE;
+    if(e.code=="E_FFI_LIMIT")return NEX_FFI_LIMIT;
     return NEX_FFI_INTERNAL;
   }catch(const std::bad_alloc &){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_LIMIT;}
   catch(...){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_INTERNAL;}
@@ -162,14 +175,29 @@ nex_ffi_status makeFailure(nex_ffi_call c,const uint8_t *code,uint64_t cn,const 
 nex_ffi_status retain(nex_ffi_call c,nex_ffi_ref r,nex_ffi_ref *o) noexcept {return guarded(c,[&](State &s){output(o);auto e=s.entry(r);*o=s.add(e.value,e.depth);});}
 nex_ffi_status release(nex_ffi_call c,nex_ffi_ref r) noexcept {return guarded(c,[&](State &s){auto i=s.refs.find(r);require(i!=s.refs.end(),NEX_FFI_REF);s.refs.erase(i);});}
 nex_ffi_status poll(nex_ffi_call c) noexcept {return guarded(c,[](State &s){s.hostPoll();});}
-const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll};
+nex_ffi_status argumentType(nex_ffi_call c,uint64_t i,nex_ffi_type *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typeToken(s.typed().parameter(i));});}
+nex_ffi_status resultType(nex_ffi_call c,nex_ffi_type *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typeToken(s.typed().resultType());});}
+nex_ffi_status typeKind(nex_ffi_call c,nex_ffi_type r,uint32_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().kind(s.type(r));});}
+nex_ffi_status typeChildCount(nex_ffi_call c,nex_ffi_type r,uint64_t v,uint64_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().children(s.type(r),v);});}
+nex_ffi_status typeChild(nex_ffi_call c,nex_ffi_type r,uint64_t v,uint64_t i,nex_ffi_type *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typeToken(s.typed().child(s.type(r),v,i));});}
+nex_ffi_status typeVariantCount(nex_ffi_call c,nex_ffi_type r,uint64_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().variants(s.type(r));});}
+nex_ffi_status makeNominal(nex_ffi_call c,nex_ffi_type r,uint64_t v,const nex_ffi_ref *p,uint64_t n,nex_ffi_ref *o) noexcept {return guarded(c,[&](State &s){
+  output(o);auto type=s.type(r);require(!n||p,NEX_FFI_ARGUMENT);require(n<=1024,NEX_FFI_LIMIT);s.charge(s.typed().nominalBytes(type,v));
+  std::vector<Value> values;values.reserve(size_t(n));unsigned depth=1;
+  for(uint64_t i=0;i<n;++i){auto &e=s.entry(p[i]);values.push_back(e.value);depth=std::max(depth,e.depth+1);}
+  auto result=s.typed().nominal(type,v,values,[&]{s.hostPoll();});*o=s.add(std::move(result),depth);
+});}
+nex_ffi_status signatureSize(nex_ffi_call c,uint64_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().description().size();});}
+nex_ffi_status copySignature(nex_ffi_call c,uint64_t off,uint8_t *p,uint64_t cap,uint64_t *o) noexcept {return guarded(c,[&](State &s){const auto &text=s.typed().description();copy(s,{reinterpret_cast<const uint8_t*>(text.data()),text.size()},off,p,cap,o);});}
+const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature};
 }
 
 extern "C" const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi,uint32_t minimum){
   return abi==NEX_FFI_ABI_V1&&minimum<=sizeof(nex_ffi_api_v1)?&nexrt::foreign_detail::api:nullptr;
 }
 namespace nexrt {
-Value invokeForeign(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits){
+namespace {
+Value invoke(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits,std::shared_ptr<foreign_detail::TypedContext> types){
   if(!callback||!limits.references||limits.references>65536||!limits.copiedBytes||limits.copiedBytes>67108864||!limits.operations||limits.operations>1048576)
     throw DataError("E_FFI_CONFIG","invalid foreign callback or limits");
   if(arguments.size()>4096||arguments.size()>limits.references)throw DataError("E_FFI_LIMIT","too many foreign arguments");
@@ -177,12 +205,19 @@ Value invokeForeign(nex_ffi_callback_v1 callback,std::span<const Value> argument
   try{
     auto state=std::make_shared<State>(limits,std::move(poll));std::vector<nex_ffi_ref> refs;refs.reserve(arguments.size());
     for(const auto &value:arguments)refs.push_back(state->add(value));
-    Registration registration(state);state->hostPoll();nex_ffi_ref out=0;nex_ffi_status status;
+    state->types=std::move(types);if(state->types)state->arguments.assign(arguments.begin(),arguments.end());
+    Registration registration(state);state->hostPoll();
+    if(state->types)state->types->arguments(state->arguments,[&]{state->hostPoll();});
+    nex_ffi_ref out=0;nex_ffi_status status;
     try{status=callback(&api,registration.id,refs.data(),refs.size(),&out,user);}
     catch(...){if(state->hostTrap)std::rethrow_exception(state->hostTrap);throw DataError("E_FFI_EXCEPTION","foreign callback threw across its C boundary");}
     state->hostPoll();
     if(status!=NEX_FFI_OK)throw DataError("E_FFI","foreign callback returned status "+std::to_string(status));
-    return state->read(out);
+    if(state->types&&state->types->unitResult()){if(out)throw DataError("E_FFI_TYPE","unit foreign callback returned a value");return Value();}
+    auto result=state->read(out);if(state->types)state->types->result(result,[&]{state->hostPoll();});return result;
   }catch(const Failure &f){throw DataError("E_FFI","invalid foreign value or call state (status "+std::to_string(f.status)+")");}
 }
+}
+Value invokeForeign(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits){return invoke(callback,arguments,user,std::move(poll),limits,{});}
+Value invokeForeignTyped(nex_ffi_callback_v1 callback,std::span<const Value> arguments,const ForeignSignature &signature,void *user,std::function<void()> poll,ForeignCallLimits limits){return invoke(callback,arguments,user,std::move(poll),limits,std::make_shared<foreign_detail::TypedContext>(signature));}
 }

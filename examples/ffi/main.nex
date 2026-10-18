@@ -1,0 +1,18 @@
+module ffi_example;
+
+pub struct Packet<T> { data:T; text:str; }
+pub enum Reply<T> { Ready(packet:Packet<T>); Error(code:str); }
+
+// This ordinary NEX function supplies a value contract for a trusted C adapter.
+// NEX source external declarations and native library loading remain pending.
+pub fn contract(data:bytes) -> result<Reply<bytes>> {
+  return ok(Reply::Ready(Packet(data,"Я\u0000🧠")));
+}
+fn main() -> unit !{io} {
+  print(encode_json(contract(unwrap(bytes([0,255,128,1])))));
+}
+test fn model() -> unit {
+  assert(is_ok(contract(utf8_bytes("data"))));
+}
+
+test fn wire_model()->unit{assert(encode_json(contract(unwrap(bytes([0,255,128,1]))))=="{\"ok\":{\"case\":\"Ready\",\"fields\":{\"packet\":{\"data\":\"AP+AAQ==\",\"text\":\"Я\\u0000🧠\"}}}}");}

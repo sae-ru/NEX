@@ -2,7 +2,26 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: versioned C value transport
+## Development: checked C value signatures
+
+Toolchain **0.38.0 / language 0.14** adds compiler-derived
+`nex.foreign-signature/1` metadata, exported with `nex ffi --symbol NAME`, and a
+typed host invocation path. Inputs and results are checked through aggregates,
+nominal/phantom identities, enum variants, callable authority and file owners.
+Appended ABI-1 table slots construct checked records/enums and expose scoped type
+tokens. The original C table prefix is preserved and an unchanged installed-0.37
+header compiles the legacy producer. Language syntax/canonical formats remain
+unchanged. Source declarations, loading/authorization, source backend invocation,
+general resources and async remain pending. Current validation is in progress;
+the descriptor continues to report `source_support:false`.
+
+A genuine language-0.14 source/SQL fixture was captured using the accepted
+installed SDK 0.37 before future declarations. It keeps ordinary `ffi`, `extern`
+and `foreign` names, actual server file signatures, callbacks and original IDs.
+Its native Debug/Release, interpreter and TypeScript checks pass without retagging
+history. [The C transport guide](docs/ffi-design.md) describes the new host scope.
+
+## Verified development milestone: versioned C value transport
 
 Toolchain **0.37.0 / language 0.14** adds an experimental C11 value table and a
 trusted C++ invocation wrapper. Call-local, non-reused tokens retain immutable

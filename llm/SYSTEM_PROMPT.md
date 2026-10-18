@@ -13,7 +13,7 @@ JSON/API, browser state and scalar proofs, including phantom type arguments.
 Native HTTP has no implicit environment file grant. Pure watches may inspect
 opaque identities and compare aliases, but cannot run any filesystem operation.
 Use explicit history-preserving migration from 0.13; repair newly reserved old
-user names in an exported graph. General source FFI and async/await remain pending. A toolchain may expose an experimental C host transport through `foreign_boundary`; this does not enable external declarations or library loading in NEX source. Retrieve `nex guide --kind ffi` for its actual scope and do not invent extern syntax.
+user names in an exported graph. General source FFI and async/await remain pending. A toolchain may expose an experimental C host transport through `foreign_boundary`; this does not enable external declarations or library loading in NEX source. Retrieve `nex guide --kind ffi` for its actual scope and do not invent extern syntax. `nex ffi FILE --symbol NAME --json` exports a concrete function's C value schema for trusted host adapters; it does not execute foreign code.
 
 ---
 

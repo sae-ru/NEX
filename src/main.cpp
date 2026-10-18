@@ -177,11 +177,11 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
-  const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify"};
+  const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify","ffi"};
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="migrate"){
@@ -321,6 +321,7 @@ int run(const Options &o) {
     llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
     print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
+  if(o.command=="ffi"){auto symbol=o.get("--symbol");if(symbol.empty())throw Error("E_OPTION","ffi requires --symbol for a concrete named function");print(foreignSignature(p,p.function(symbol)));return 0;}
   if(o.command=="check"){if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"revision",revision(p)},{"functions",int64_t(p.functions.size())}});else std::cout<<"Checked "<<p.functions.size()<<" functions; revision "<<revision(p)<<'\n';return 0;}
   if(o.command=="api"){auto directory=o.get("--directory");print(directory.empty()?describeAPI(p):generateAPI(p,directory));return 0;}
   if(o.command=="web"){

@@ -428,7 +428,8 @@ int main() {
         executable = directory / 'host'
         run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', c, '-o', obj])
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), host, obj,
-             runtime / 'nex_ffi.cpp', runtime / 'nex_files.cpp', '-o', executable])
+             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
+             runtime / 'nex_files.cpp', runtime / 'nex_json.cpp', '-o', executable])
         c.unlink(); host.unlink(); obj.unlink()
         original = environment['NEX_RESOURCE_DIR']
         try:
@@ -440,7 +441,44 @@ int main() {
             'c11_producer': True, 'cpp20_host': True, 'copied_utf8_and_bytes': True,
             'sources_deleted': True, 'standalone': str(executable),
             'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
-                for name in ('nex_ffi.h', 'nex_ffi_host.h', 'nex_ffi.cpp', 'nex_files.cpp')}}
+                for name in ('nex_ffi.h', 'nex_ffi_host.h', 'nex_ffi.cpp', 'nex_ffi_types.h',
+                             'nex_ffi_types.cpp', 'nex_files.cpp', 'nex_json.cpp')}}
+        typed = directory / 'typed'
+        typed.mkdir()
+        for name in ('main.nex', 'producer.c', 'host.cpp'):
+            shutil.copyfile(resources / 'examples/ffi' / name, typed / name)
+        (typed / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        revision = cli('check', cwd=typed)['revision']
+        contract = cli('ffi', '--symbol', 'ffi_example::contract', cwd=typed)
+        contract_file = typed / 'signature.json'
+        contract_file.write_text(json.dumps(contract))
+        expected_typed = cli('eval', cwd=typed)['stdout']
+        for profile in ('debug', 'release'):
+            require(cli('run', '--profile', profile, cwd=typed)['stdout'] == expected_typed,
+                    'typed C model native/reference output differs')
+        cli('test', '--target', 'web', cwd=typed)
+        typed_obj = typed / 'producer.o'
+        typed_host = typed / 'host'
+        run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', typed / 'producer.c', '-o', typed_obj])
+        run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), typed / 'host.cpp', typed_obj,
+             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
+             runtime / 'nex_files.cpp', runtime / 'nex_json.cpp', '-o', typed_host])
+        for name in ('main.nex', 'producer.c', 'host.cpp', 'producer.o'):
+            (typed / name).unlink()
+        require(cli('ffi', '--revision', revision, '--symbol', 'ffi_example::contract', cwd=typed) == contract,
+                'archived C value contract changed after source deletion')
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-typed-foreign-resources')
+            require(run([typed_host, contract_file]) == expected_typed,
+                    'independent typed C/NEX model output differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = original
+        report['evidence']['foreign_boundary']['typed_nominal'] = {
+            'schema': contract['schema'], 'model_revision': revision,
+            'contract_sha256': hashlib.sha256(contract_file.read_bytes()).hexdigest(),
+            'checked_record_enum_result': True, 'source_deleted': True,
+            'native_reference_typescript_model_agreement': True, 'standalone': str(typed_host)}
 
     def binary_values():
         directory = root / 'binary-values'

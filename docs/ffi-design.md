@@ -1,8 +1,9 @@
 # Versioned foreign-call transport
 
-Development 0.37 adds an experimental C value boundary. Language 0.14 and its
-canonical formats do not change. Source external declarations, library loading,
-signature checking, packaging, generic external resources, callbacks into NEX
+Development 0.37 adds an experimental C value boundary; 0.38 adds checked host
+signatures and nominal constructors. Language 0.14 and its canonical formats do
+not change. Source external declarations, library loading and binding checks,
+packaging, generic external resources, callbacks into NEX
 and source async remain pending. This transport is a foundation for those
 features; it is not a published stable FFI or an implemented source feature.
 
@@ -38,8 +39,9 @@ children; record labels, qualified enum tags and error codes expose copied UTF-8
 labels. String/byte payloads expose bounded byte copies. Closures remain opaque;
 file identity is diagnostic and grants no IO. References can forward any valid
 input value, including owned resources, without reconstructing its representation.
-Builders create scalar/string/bytes/list/result values. Nominal constructors and
-NEX callback invocation require the later checked signature/adapter layer.
+Builders create scalar/string/bytes/list/result values. Typed calls additionally
+construct records/enums from checked type tokens. NEX callback invocation still
+requires the later source adapter layer.
 
 `retain` creates another call-local owner; `release` consumes only its token.
 All other tokens expire when the call exits, including failed calls and traps.
@@ -74,6 +76,63 @@ Native work must poll cooperatively; arbitrary blocking C cannot be forcibly
 interrupted by this transport. Pure value operations consume the operation
 budget; `poll` invokes the supplied host callback. Source adapters must bind it
 to the native request/interpreter budget and cancellation mechanism.
+
+## Checked host signatures (0.38)
+
+Export a concrete named function's value contract without executing it:
+
+```sh
+nex ffi examples/ffi/main.nex --symbol ffi_example::contract --json > signature.json
+```
+
+`nex.foreign-signature/1` uses a flat table of types and numeric table indices,
+including recursive nominal layouts, specialized/phantom identities, opaque
+function keys and file types. These indices are metadata, not C tokens. Generic
+templates, tests and hidden closure entries are rejected; select a concrete
+named specialization. Both compiler export and the host constructor use the
+same schema validator. The language-pack JSON schema describes the format;
+runtime checks also enforce identities, reachability and recursive graph rules.
+
+Trusted hosts construct an immutable `ForeignSignature` and use
+`invokeForeignTyped`. Inputs are retained and checked before entering C. The
+result is checked after the exit poll. Wrong scalar kinds, heterogeneous lists,
+nominal identities, field names/order/counts, enum tags or result payloads fail
+with `E_FFI_TYPE`. Malformed metadata fails with `E_FFI_SIGNATURE`. This layer
+expects genuine runtime values; it does not validate arbitrary raw C++ memory.
+
+The original 0.37 table prefix and ABI major 1 remain unchanged. New table slots
+come after `NEX_FFI_V1_TRANSPORT_SIZE`. New clients must negotiate their required
+table size; separately compiled old C producers keep using their original
+prefix. Type queries/constructors on an untyped call return `NEX_FFI_TYPE`.
+
+`argument_type` and `result_type` return call-local `nex_ffi_type` tokens.
+`type_child`/`type_child_count` inspect list/result element types or ordered
+record/enum payload fields; records use variant zero, enums use their ordinal.
+`type_variant_count` applies to enums. `type_kind` uses the value kind constants,
+plus type-only `NEX_FFI_UNIT` and `NEX_FFI_RESULT`. `make_nominal` obtains labels,
+identity and discriminant from the selected type, then checks every supplied
+field. It cannot create a function or resource. Metadata copies via
+`signature_size`/`copy_signature` consume the normal byte budget and expose no
+borrowed pointer. At most 4096 type tokens exist separately from value owners.
+
+Only original compatible callable values discovered through the input graph
+may cross back as functions. A library cannot relabel their realm/effect/type
+key. Captures stay opaque and retain their original ownership. Genuine closed
+file owners may still be forwarded, while diagnostic identities are rejected;
+forwarding does not restore revoked IO rights. Unit exists only as a result:
+the C callback leaves `*out` zero and returns success. There is no unit value
+token to insert in a list or record.
+
+Metadata is limited to 1 MiB, 4096 types, 65536 fields overall, 1024 fields per
+payload and 4096 enum cases. Value checks allow depth 128 and 100000 visited
+nodes, poll the host periodically, reject cycles and memoize aliases. Limits
+report `E_FFI_LIMIT`. Existing source programs can contain larger layouts; a
+contract export that exceeds this transport's limits fails explicitly.
+
+`examples/ffi/producer.c` and `host.cpp` demonstrate the actual interface. The
+host consumes the exported JSON and constructs a typed generic record/enum/result
+through C. It is compiled from the SDK runtime as a C++20 host plus C11 producer.
+It does not turn the ordinary NEX model function into a source external call.
 
 ## Source integration gates
 

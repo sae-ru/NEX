@@ -54,7 +54,8 @@
     "resources": "docs/resources.md",
     "foreign_boundary": "docs/ffi-design.md",
     "foreign_c_header": "runtime/nex_ffi.h",
-    "foreign_host_header": "runtime/nex_ffi_host.h"
+    "foreign_host_header": "runtime/nex_ffi_host.h",
+    "foreign_signature_schema": "llm/foreign-signature.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
@@ -90,7 +91,10 @@
     "numeric_browser": "examples/numbers-web.nex",
     "text_files": "examples/files.nex",
     "bytes": "examples/bytes.nex",
-    "file_resources": "examples/resources.nex"
+    "file_resources": "examples/resources.nex",
+    "foreign_contract": "examples/ffi/main.nex",
+    "foreign_producer": "examples/ffi/producer.c",
+    "foreign_host": "examples/ffi/host.cpp"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -149,5 +153,6 @@
     "nex task TASK.json --kind check --toolchains CATALOG.json --json",
     "nex task TASK.json --kind run --toolchains CATALOG.json --json",
     "nex task RECEIPT.json --kind replay --toolchains CATALOG.json --json"
-  ]
+  ],
+  "foreign_signature_command": "nex ffi FILE --symbol NAME --json"
 }

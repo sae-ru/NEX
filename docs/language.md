@@ -97,6 +97,11 @@ its declaration/generic-parameter name and streaming builtin names are reserved.
 Explicit migration from 0.13 preserves old snapshots and requires reviewed
 repairs for conflicting user declarations. General FFI and async remain pending.
 
+The experimental C host transport can export a concrete function's value shape
+with `nex ffi FILE --symbol NAME --json`. This metadata and typed C/C++ host
+invocation add no source external declaration or new effect. See the
+[host contract](ffi-design.md); source FFI remains pending.
+
 ### Generic types and functions
 
 ```nex

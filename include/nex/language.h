@@ -145,6 +145,7 @@ const std::set<std::string> &builtinNames();
 const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);
+llvm::json::Value foreignSignature(const Program &program,const Function &function);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",
                     uint64_t stepLimit = 1000000);

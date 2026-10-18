@@ -53,6 +53,13 @@ workflow phases, including an independent C/C++ host. Broader current compiler
 and SDK/distribution checks remain pending. Source
 foreign declarations and library loading are not implemented yet.
 
+Development 0.38 adds checked host signatures exported by `nex ffi FILE --symbol
+NAME --json`, typed input/result validation and C constructors for nominal values.
+It preserves the original ABI-1 table prefix and language 0.14. The
+[typed host example](examples/ffi/main.nex) agrees with an independent C producer;
+current validation is tracked in `STATUS.md`. Source external calls remain
+pending.
+
 ## Build
 
 Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.

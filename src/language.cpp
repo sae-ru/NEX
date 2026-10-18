@@ -831,11 +831,12 @@ llvm::json::Value describe() {
     {"file_guide","docs/files.md"},
     {"resource_guide","docs/resources.md"},
     {"foreign_boundary",llvm::json::Object{
-      {"source_support",false},{"status","experimental_c_transport"},{"abi_version",1},
+      {"source_support",false},{"status","experimental_typed_c_transport"},{"abi_version",1},
       {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
-      {"features",llvm::json::Array{"call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts"}},
+      {"signature_schema","nex.foreign-signature/1"},{"signature_command","nex ffi FILE --symbol NAME --json"},
+      {"features",llvm::json::Array{"call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},
       {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
-      {"pending",llvm::json::Array{"source_declarations","checked_signatures","library_authorization_and_loading","platform_packaging","callbacks_into_nex","stable_abi_validation"}}}},
+      {"pending",llvm::json::Array{"source_declarations","checked_source_bindings","library_authorization_and_loading","platform_packaging","callbacks_into_nex","stable_abi_validation"}}}},
     {"resource_features",llvm::json::Array{"server_file_type","identity_aliases","owned_aggregate_and_capture_values","explicit_close","scope_revocation","bounded_streaming_io","opaque_pure_debug_identity","no_wire_or_browser_authority"}},
     {"host_resource_runtime",llvm::json::Object{
       {"source_support",true},{"status","development_source_files"},{"design","docs/resources-design.md"},
