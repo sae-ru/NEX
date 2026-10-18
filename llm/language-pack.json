@@ -49,7 +49,8 @@
     "application_package_schema": "llm/application-package.schema.json",
     "application_package_acceptance": "tools/application_acceptance.py",
     "files": "docs/files.md",
-    "bytes": "docs/bytes.md"
+    "bytes": "docs/bytes.md",
+    "resource_design": "docs/resources-design.md"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes --json",
   "context_command": "nex context --symbol NAME",

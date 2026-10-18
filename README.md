@@ -28,6 +28,12 @@ interfaces; the [design history](docs/bytes-design.md) preserves prototype scope
 
 ## Build
 
+Development 0.34 keeps language 0.13 unchanged and adds an internal typed resource
+runtime with domain revocation, physical operation leases/quotas and streaming
+regular files. [The ownership design](docs/resources-design.md) defines cleanup
+and cancellation. Source handles, FFI and async remain pending; current checks
+are tracked in `STATUS.md`.
+
 Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
 
 ```sh

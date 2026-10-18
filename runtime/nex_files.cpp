@@ -4,6 +4,8 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
+#include <mutex>
 #include <string_view>
 #include <fcntl.h>
 #include <sys/random.h>
@@ -84,6 +86,7 @@ struct Temporary {
 struct TextFiles::Impl {
   Descriptor root;
   bool writable;
+  ResourceDomain resources;
   Impl(const std::string &path,bool writable):writable(writable){
     if(path.empty() || path.find('\0')!=std::string::npos)throw DataError("CAPABILITY","file root is not configured");
     // The host selects the root. User-supplied paths below it never follow links.
@@ -93,8 +96,9 @@ struct TextFiles::Impl {
   template<class Content> Content read(const std::string &relative,const Poll &poll) const;
   template<class Validate> void write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const;
 };
-TextFiles::TextFiles(const std::string &root,bool writable):impl(std::make_unique<Impl>(root,writable)){}
+TextFiles::TextFiles(const std::string &root,bool writable):impl(std::make_shared<Impl>(root,writable)){}
 TextFiles::~TextFiles()=default;
+std::unique_ptr<TextFiles> TextFiles::retain() const {return std::unique_ptr<TextFiles>(new TextFiles(impl));}
 template<class Content> Content TextFiles::Impl::read(const std::string &relative,const Poll &poll) const {
   check(poll);auto parts=components(relative);auto directory=parent(root.get(),parts,poll);
   Descriptor file(::openat(directory.get(),parts.back().c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK));
@@ -136,25 +140,119 @@ template<class Validate> void TextFiles::Impl::write(const std::string &relative
   temporary.published=true;
 }
 Value TextFiles::read(const std::string &relative,const Poll &poll) const {
-  try{return success(Value(string(impl->read<std::string>(relative,poll))));}
+  auto retained=impl;auto path=relative;auto callback=poll;
+  try{return success(Value(string(retained->read<std::string>(path,callback))));}
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 Value TextFiles::write(const std::string &relative,const std::string &text,const Poll &poll) const {
+  auto retained=impl;auto path=relative;auto content=text;auto callback=poll;
   try{
-    impl->write(relative,{reinterpret_cast<const uint8_t*>(text.data()),text.size()},poll,[&]{unicodeOffsets(text,false);});
+    retained->write(path,{reinterpret_cast<const uint8_t*>(content.data()),content.size()},callback,[&]{unicodeOffsets(content,false);});
     return success(Value(1,true));
   }catch(const DataError &error){return failure(error.code,error.what());}
 }
 Value TextFiles::readBytes(const std::string &relative,const Poll &poll) const {
-  try{return success(Value(bytes(ByteBuffer::owned(impl->read<std::vector<uint8_t>>(relative,poll)))));}
+  auto retained=impl;auto path=relative;auto callback=poll;
+  try{return success(Value(bytes(ByteBuffer::owned(retained->read<std::vector<uint8_t>>(path,callback)))));}
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 Value TextFiles::writeBytes(const std::string &relative,const ByteBuffer &bytes,const Poll &poll) const {
   // Poll may release the caller's last value. Retain immutable storage until
   // every borrowed write view has finished, including exceptional exits.
-  auto retained=bytes;
-  try{impl->write(relative,retained.view(),poll,[]{});return success(Value(1,true));}
+  auto content=bytes;auto retained=impl;auto path=relative;auto callback=poll;
+  try{retained->write(path,content.view(),callback,[]{});return success(Value(1,true));}
   catch(const DataError &error){return failure(error.code,error.what());}
+}
+
+struct FileResource::State {
+  Descriptor descriptor;
+  const FileMode mode;
+  mutable std::mutex mutex;
+  State(Descriptor descriptor,FileMode mode):descriptor(std::move(descriptor)),mode(mode){}
+};
+namespace {
+template<class Lease,class Operation>
+auto streamCall(const Lease &lease,const TextFiles::Poll &poll,Operation operation) {
+  const auto &state=lease.value();
+  for(;;){
+    check(poll);lease.check();
+    decltype(operation(state)) result;int error;
+    {
+      std::lock_guard guard(state.mutex);lease.check();
+      result=operation(state);error=errno;
+    }
+    if(result<0){if(error==EINTR)continue;ioError(error);}
+    check(poll);lease.check();return result;
+  }
+}
+}
+ByteBuffer FileResource::read(int64_t maximum,const Poll &poll) const {
+  auto lease=owner.acquire();auto callback=poll;
+  if(lease.value().mode!=FileMode::Read)throw DataError("CAPABILITY","file handle does not permit reads");
+  if(maximum<0)throw DataError("E_RANGE","read size must be nonnegative");
+  if(uint64_t(maximum)>TextFiles::byteLimit)throw DataError("LIMIT","read size exceeds byte limit");
+  std::vector<uint8_t> content(static_cast<size_t>(maximum));
+  auto count=streamCall(lease,callback,[&](const auto &state){return ::read(state.descriptor.get(),content.data(),content.size());});
+  content.resize(size_t(count));return ByteBuffer::owned(std::move(content));
+}
+int64_t FileResource::write(const ByteBuffer &bytes,const Poll &poll) const {
+  auto lease=owner.acquire();auto content=bytes;auto callback=poll;
+  if(lease.value().mode==FileMode::Read)throw DataError("CAPABILITY","file handle does not permit writes");
+  if(uint64_t(content.length())>TextFiles::byteLimit)throw DataError("LIMIT","write size exceeds byte limit");
+  auto view=content.view();
+  return streamCall(lease,callback,[&](const auto &state){return ::write(state.descriptor.get(),view.data(),view.size());});
+}
+int64_t FileResource::seek(int64_t offset,const Poll &poll) const {
+  auto lease=owner.acquire();auto callback=poll;
+  if(offset<0 || uint64_t(offset)>uint64_t(std::numeric_limits<off_t>::max()))
+    throw DataError("E_RANGE","file offset is outside supported range");
+  return streamCall(lease,callback,[&](const auto &state){return ::lseek(state.descriptor.get(),off_t(offset),SEEK_SET);});
+}
+int64_t FileResource::size(const Poll &poll) const {
+  auto lease=owner.acquire();auto callback=poll;
+  return streamCall(lease,callback,[](const auto &state)->int64_t{
+    struct stat info{};if(::fstat(state.descriptor.get(),&info))return -1;
+    if(info.st_size<0 || uint64_t(info.st_size)>uint64_t(std::numeric_limits<int64_t>::max()))
+      throw DataError("LIMIT","file size exceeds supported range");
+    return int64_t(info.st_size);
+  });
+}
+void FileResource::flush(const Poll &poll) const {
+  auto lease=owner.acquire();auto callback=poll;
+  if(lease.value().mode==FileMode::Read)throw DataError("CAPABILITY","file handle does not permit writes");
+  streamCall(lease,callback,[](const auto &state){return ::fsync(state.descriptor.get());});
+}
+ResourceDomain TextFiles::resourceScope(size_t limit) const {return impl->resources.child(limit);}
+FileResource TextFiles::open(const std::string &relative,FileMode mode,const Poll &poll) const {
+  auto retained=impl;
+  return openIn(retained->resources,relative,mode,poll);
+}
+FileResource TextFiles::openIn(const ResourceDomain &scope,const std::string &relative,FileMode mode,const Poll &poll) const {
+  auto retained=impl;auto path=relative;auto callback=poll;
+  if(!scope.descendsFrom(retained->resources))throw DataError("CAPABILITY","file resource scope belongs to another capability");
+  if(mode!=FileMode::Read&&mode!=FileMode::WriteTruncate&&mode!=FileMode::Append)
+    throw DataError("VALIDATION","invalid file mode");
+  if(mode!=FileMode::Read&&!retained->writable)throw DataError("CAPABILITY","file capability does not permit writes");
+  return FileResource(scope.make<FileResource::State>([retained,path=std::move(path),callback=std::move(callback),mode](const ResourcePermit &permit){
+    auto poll=[&]{permit.check();check(callback);permit.check();};
+    poll();auto parts=components(path);auto directory=parent(retained->root.get(),parts,poll);poll();
+    struct stat existing{};
+    if(!::fstatat(directory.get(),parts.back().c_str(),&existing,AT_SYMLINK_NOFOLLOW)){
+      if(!S_ISREG(existing.st_mode))throw DataError("VALIDATION","only regular files are supported");
+    }else if(errno!=ENOENT)ioError(errno);
+    int flags=O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK;
+    flags|=mode==FileMode::Read?O_RDONLY:O_WRONLY|O_CREAT;
+    if(mode==FileMode::Append)flags|=O_APPEND;
+    Descriptor file(::openat(directory.get(),parts.back().c_str(),flags,0600));
+    if(file.get()<0)ioError(errno);
+    struct stat info{};if(::fstat(file.get(),&info))ioError(errno);
+    if(!S_ISREG(info.st_mode))throw DataError("VALIDATION","only regular files are supported");
+    poll();
+    if(mode==FileMode::WriteTruncate){
+      while(::ftruncate(file.get(),0)){if(errno!=EINTR)ioError(errno);poll();}
+    }
+    return std::make_unique<FileResource::State>(std::move(file),mode);
+  }));
 }
 
 namespace {
@@ -162,16 +260,15 @@ struct Access {
   std::string root, errorCode, errorMessage;
   bool writable=false, attempted=false;
   std::unique_ptr<TextFiles> owned;
-  TextFiles *provided=nullptr;
+  std::unique_ptr<ResourceDomain> resources;
   explicit Access(bool environmentAllowed){
     if(environmentAllowed){
       if(auto *value=std::getenv("NEX_FILES_ROOT"))root=value;
       if(auto *value=std::getenv("NEX_FILES_WRITE"))writable=std::string_view(value)=="1";
     }
   }
-  explicit Access(TextFiles &capability):provided(&capability){}
+  explicit Access(std::unique_ptr<TextFiles> capability):attempted(true),owned(std::move(capability)){}
   TextFiles &capability(){
-    if(provided)return *provided;
     if(!attempted){
       attempted=true;
       try{
@@ -182,6 +279,11 @@ struct Access {
     }
     if(!owned)throw DataError(errorCode.empty()?"CAPABILITY":errorCode,errorMessage.empty()?"file capability is not configured":errorMessage);
     return *owned;
+  }
+  FileResource open(const std::string &path,FileMode mode,const TextFiles::Poll &poll){
+    auto &files=capability();
+    if(!resources)resources=std::make_unique<ResourceDomain>(files.resourceScope());
+    return files.openIn(*resources,path,mode,poll);
   }
 };
 thread_local Access *currentFiles=nullptr;
@@ -197,11 +299,11 @@ struct FileScope::Impl {
   Access value;
   Access *previous;
   explicit Impl(bool allowed):value(allowed),previous(currentFiles){currentFiles=&value;}
-  explicit Impl(TextFiles &capability):value(capability),previous(currentFiles){currentFiles=&value;}
+  explicit Impl(std::unique_ptr<TextFiles> capability):value(std::move(capability)),previous(currentFiles){currentFiles=&value;}
   ~Impl(){currentFiles=previous;}
 };
 FileScope::FileScope(bool allowed):impl(std::make_unique<Impl>(allowed)){}
-FileScope::FileScope(TextFiles &capability):impl(std::make_unique<Impl>(capability)){}
+FileScope::FileScope(TextFiles &capability):impl(std::make_unique<Impl>(capability.retain())){}
 FileScope::~FileScope()=default;
 Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().read(relative,poll);}
@@ -220,4 +322,7 @@ Value fileWriteBytes(const std::string &relative,const ByteBuffer &bytes,bool en
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 void resetFileEnvironment() noexcept {environmentFiles.reset();}
+FileResource fileOpen(const std::string &relative,FileMode mode,bool environmentAllowed,const TextFiles::Poll &poll){
+  return access(environmentAllowed).open(relative,mode,poll);
+}
 }

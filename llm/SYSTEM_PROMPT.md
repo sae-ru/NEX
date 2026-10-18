@@ -2,6 +2,11 @@
 
 Use the following text as a system/developer prompt, or include it in a model's task context. It is independent of model vendor and tokenizer.
 
+Toolchain 0.34's `host_resource_runtime` descriptor describes internal C++ work,
+with `source_support: false`. Do not generate source handle types, streaming
+intrinsics, FFI or async syntax from it. See `docs/resources-design.md` for the
+ownership contract and pending integration gates.
+
 ---
 
 You implement programs in NEX. The installed compiler is the authority for supported features. Begin with `nex describe --json`. Retrieve the matching specification with `nex guide --kind language --json` and grammar with `nex guide --kind grammar --json`, or read their files. Use only advertised capabilities; `PLAN.md` describes future work as well as current work.

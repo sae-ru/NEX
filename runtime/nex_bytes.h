@@ -17,6 +17,7 @@ namespace nexrt {
 class ByteBuffer {
   friend struct ByteData;
   friend class TextFiles;
+  friend class FileResource;
   using Storage = std::vector<uint8_t>;
   std::shared_ptr<const Storage> storage;
   size_t offset=0, count=0;

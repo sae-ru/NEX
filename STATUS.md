@@ -2,6 +2,29 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## Development: resource ownership foundation
+
+Toolchain **0.34.0 / language 0.13** adds a typed internal C++ resource runtime
+and streaming regular-file adapter. Physical leases retain payloads across
+logical close; ancestor/request domains revoke aliases, reserve physical quotas
+before factories and check revocation again before publication. File operations
+snapshot callbacks/arguments and retain services before polling. Existing
+whole-file replacements retain their commit/cancellation semantics.
+
+The [ownership contract](docs/resources-design.md) records scope, IO errors,
+partial cancellation and source/FFI integration requirements. New lifecycle,
+race and real-file probe passes all 29 cases on macOS ARM64, Linux ARM64 and
+emulated Linux x86-64 with ASan/UBSan/LSan. macOS also passes ThreadSanitizer.
+The installed macOS SDK passes all twelve workflow phases, including real
+LLDB/DAP, file programs and three browser builds. This is an installed SDK check
+with source/external tools available, not a moved/restored isolated bundle check.
+Full current macOS Debug regression passes all 39 suites in 657.99 s, including
+309 Python cases and five C++ probes. The broader current compiler and
+distribution matrix remains pending. Source resource types/streaming intrinsics,
+stable FFI and async remain unimplemented. [Evidence](docs/evidence/resources-host-0.34.0.json)
+binds the probe inputs and retained reports.
+The verified 0.33 distribution below remains a separate historical milestone.
+
 ## Development milestone: current SDK distribution
 
 Toolchain 0.33 / language 0.13 now has a maintained macOS distribution helper
