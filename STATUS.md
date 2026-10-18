@@ -2,21 +2,39 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: native runtime trap attribution
+## Verified development milestone: native runtime trap attribution
 
-Toolchain **0.46.0 / language 0.15** adds explicit operation metadata to checked
-runtime helper calls, per-link application identity, bounded `NEX_NATIVE_TRAP`
-records and manifest/source-checked local graph resolution. `nex run --json`
-returns native diagnostics; `nex diagnose` maps retained standalone or HTTP
-operator logs against a checked current/archived program. Successful calls pass
-constant metadata without allocating diagnostic state or updating a thread-local
-site. Original helper signatures, `Trap` layout, C ABI 1 and language semantics
-are preserved. The [guide](docs/native-diagnostics.md) defines boundaries.
+Toolchain **0.46.0 / language 0.15** adds compact constant operation descriptors,
+per-link application identity, bounded `NEX_NATIVE_TRAP` records and checked local
+graph resolution. `nex run --json` returns native diagnostics; `nex diagnose`
+maps retained standalone/HTTP operator logs against current or archived checked
+sources. Error propagation preserves the innermost located trap. Original helper
+signatures, `Trap` definition, C value ABI 1 and language semantics remain intact.
+The [guide](docs/native-diagnostics.md) defines data trust and attribution limits.
 
-Initial implementation and focused runtime/graph checks are in progress. Full
-compiler, installed SDK, Linux and broader platform validation remain pending.
-This is not completion of NEX. Parser/checker identities, signal/core PC
-attribution and the remaining language/toolchain plan remain open.
+The corrected implementation passes all **54 regression groups** on macOS ARM64
+in **1258.90 s** and Linux ARM64 in **1078.17 s**, including **412 Python cases**
+and **eleven C++ probes**. Both installed SDKs pass thirteen workflow phases;
+macOS takes **310.851 s**, source-free Linux takes **306.114 s** with networking
+disabled. Linux also passes eleven live debugger suites. Native diagnostics agree
+with interpreter operation IDs in debug/release, remain available after source
+deletion, and resolve to distinct local IDs after graph import into a new store.
+HTTP operator reports retain request IDs while public responses keep their generic
+messages. Offline JSON Schema validation accepts actual mapped/unmapped records
+and the sanitized C++ producer; six malformed variants are rejected. All 37
+historical fixture hashes, six C/value headers and the original `Trap` definition
+match 0.45. The [evidence](docs/evidence/native-diagnostics-0.46.0.json) binds exact
+compiler/source/report hashes and preserves the initial Linux build failure.
+
+The Linux build initially selected `std::quoted` through ADL; explicit
+`nexrt::quoted` fixes that portability defect. Compact typed descriptors reduce
+a synthetic many-site executable from 687,584 to 391,168 bytes compared with the
+initial JSON-per-site prototype. Arithmetic-call overhead remains visible in a
+limited local experiment; isolated 0.47 moves checked integer success paths into
+SSA. These measurements are observations, not general performance guarantees.
+Broader current Release, sanitizer, x86-64 and SDK distribution checks remain
+pending. Parser/checker identities, signal/core recovery, remaining platform and
+language/toolchain features are open. This milestone does not complete NEX.
 
 ## Verified development milestone: atomic source-type replacements
 
