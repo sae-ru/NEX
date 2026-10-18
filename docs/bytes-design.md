@@ -63,6 +63,16 @@ Node-only API. Source authoring and debugger/API integration below remain open;
 validation of the new internal value boundary is recorded separately from the
 preserved 0.31 primitive evidence.
 
+The [0.32 evidence](evidence/bytes-values-0.32.0.json) binds the implementation
+to 18 native managed-value/file/ownership cases and three independent C++ /
+TypeScript / Python-oracle suites on macOS ARM64, Linux ARM64 and emulated Linux
+x86-64. Native sanitizer checks passed on macOS and Linux ARM64; seven managed
+cases passed in each actual Chromium/Firefox/WebKit engine. The full macOS Debug
+run plus its corrected exact web-inventory rerun cover all 35 suites. Broader
+compiler/installed-SDK validation is still pending. Reproduce the optional browser
+checks with `python3 tests/bytes_browser.py PROJECT --managed --output NEW_DIRECTORY
+--browsers-path PATH`, using existing locked TypeScript/Playwright dependencies.
+
 ## Remaining source-language integration
 
 Proposed operations are checked byte construction from `list<i64>`, explicit

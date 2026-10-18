@@ -160,9 +160,26 @@
     }
   },
   "macos_debug_full_suite": {
-    "status": "running_with_known_inventory_failure",
+    "status": "passed_after_inventory_assertion_correction",
     "suites": 35,
-    "log": "build/ctest-032-bytes-values.log"
+    "initial_passed": 34,
+    "initial_failed": [
+      "web"
+    ],
+    "initial_exit_code": 8,
+    "initial_seconds": 1158.95,
+    "initial_log_sha256": "f3ea6fb1c9621009c8f54eb8081f75ac6abece7d88c535499155e05e7b69f092",
+    "initial_last_test_log_sha256": "686079960f8a7ac8a06fabd702381bd02c7fac6e21b7e8498a295d3906848ac7",
+    "corrected_web_suites": 1,
+    "corrected_web_cases": 7,
+    "corrected_web_log_sha256": "d3b60f4ea0faa1c6e519e5f21ed3ab9fd100f5e2a19d9bf9addb2708fb63868c",
+    "corrected_web_seconds": 5.19,
+    "python_declared_cases": 281,
+    "cpp_probes": 4,
+    "compiler_runtime_unchanged": true,
+    "initial_test_tree": "f1daabd3f7bb6b8e18023dfad433035a3fed192e",
+    "corrected_test_tree": "1b6d9d9d95ddb2574751448d0e1e8c45408c3cff",
+    "scope": "All 35 suite behaviors passed: 34 in the initial full run and the strict corrected web inventory/content assertions in the rerun. This is not a claim that the initial full invocation exited successfully."
   },
   "remaining": [
     "source checker/type/grammar and descriptor",
@@ -173,9 +190,9 @@
     "full Release/Linux compiler and installed/archive SDK matrix for this checkpoint",
     "other open PLAN.md requirements"
   ],
-  "checked_at": "2026-10-18T03:34:15.727699+00:00",
+  "checked_at": "2026-10-18T03:38:15.670839+00:00",
   "initial_full_run_findings": {
-    "web": "Expected emitted file inventory omitted required src/nex-bytes.ts; exact-set assertion now includes it and also checks byte-module content. Corrected web validation is recorded separately.",
+    "web": "Corrected exact file inventory and added byte-module content assertion; all seven cases passed in direct execution and the CTest rerun. No compiler/runtime code changed for this repair.",
     "linux": "Old toolchain images lack patchelf. Initial Linux ARM64 run completed 35 suites in 536.94 s; packaging and old web inventory failed, other 33 passed. Rerun with the tested packager image is pending. Original failed logs are retained.",
     "source_compiler_runtime_changed_for_findings": false
   },

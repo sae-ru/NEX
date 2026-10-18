@@ -12,13 +12,25 @@ isolation as text files. Native allocation accounting and handle cleanup include
 the binary subtype; ordinary object layouts retain their size and field offsets.
 Generated TypeScript/browser resources include the binary module. This does not
 expose a source type or binary intrinsic yet. Targeted managed-value/oracle checks
-passed; full regression and platform validation of 0.32 are in progress.
+passed. The full macOS Debug run exercised all 35 suites in 1158.95 s: 34
+passed, and web failed only its obsolete exact file inventory. The corrected
+inventory retains the exact-set check, adds byte-for-byte module comparison,
+and passed all seven web cases in a 5.19 s CTest rerun. No compiler/runtime
+code changed for that correction. This covers 281 declared Python cases and
+four C++ probes; the original failed invocation remains recorded. Full Release,
+Linux and installed-SDK validation of 0.32 remain in progress.
 
 Frontend/interpreter/MLIR emission, source TypeScript typing, API/debugger
 integration and an explicit 0.12 migration are still required for source binary
 programs. The [buffer design](docs/bytes-design.md) defines implemented host
 semantics and the remaining integration. SDK 0.30/0.31 and genuine historical
-stores are preserved.
+stores are preserved. [Managed-value evidence](docs/evidence/bytes-values-0.32.0.json)
+records each tested source, binary and correction separately. Initial Linux runs
+used old toolchain images without `patchelf`; their failed logs are retained.
+The tested packager images have the identical base layers plus that dependency.
+The corrected ARM64 run has already passed packaging/web, with the same compiler
+hash; its remaining suites and SDK phases are still running. This is not a
+completed platform matrix or source-language binary feature.
 
 ## In progress: immutable binary primitives
 
