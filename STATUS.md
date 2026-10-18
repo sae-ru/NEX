@@ -60,6 +60,17 @@ with the corrected helper resources is being verified. The compiler/runtime/
 existing language-test inputs remain the frozen `a979829a` set; these later
 changes affect packaging resources/documentation only. The original compiler
 images are unchanged.
+The final guarded ARM64 and emulated x86-64 bundles each passed ten source-free
+phases and repeated ten after archive extraction. ARM64 observed 95.469/88.360 s;
+x86-64 observed 263.207/253.742 s. Both verified 727 files and 23 components.
+The shared macOS assembler also passed ten phases with actual LLDB/DAP, native
+kernel-exclusion checks, and archive extraction with all 2395 file hashes plus
+new-project native execution/tests. macOS Debug/Release passed all 28 suites
+(257 declared Python cases, including one Linux-only skip) in 1190.63/1003.25 s.
+The full emulated x86-64 compiler regression remains pending independently of its
+successful clean SDK/archive checks. [Durable SDK evidence](docs/evidence/sdk-0.28.0.json)
+records immutable archive/compiler hashes, tested prerequisites and scope.
+
 All broader language, resource/async/FFI, compiler-cache/LTO and platform work
 remains in scope; this step does not complete the requested toolchain.
 
@@ -109,7 +120,9 @@ installed verified Debug SDK passed ten phases in 87.948 s. Linux ARM64 passed
 all 28 suites in 429.66 s, all eight live suites and ten source-free SDK phases
 in 66.587 s. Its compiler/runtime/test inputs match `333666ed`, with five recorded
 SDK validation/document overlays from `7b0f8ca4`; all 64 indexed resources match.
-The emulated Linux x86-64 0.27 run remains in progress. A first mixed
+The emulated Linux x86-64 0.27 run passed all 28 suites in 1774.58 s and its
+ten-phase source-free SDK in 246.708 s, completing that compiler/SDK matrix
+(`build/sdk-host-milestone-027.json`). It does not claim live x86-64 debugging. A first mixed
 source-test/old-binary run was explicitly invalidated; it is not accepted evidence.
 Current compiler/runtime/test inputs match the frozen `333666ed` source snapshot;
 SDK validation later corrected only its `/api/` fixture and packaging resources.
