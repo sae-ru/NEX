@@ -85,7 +85,7 @@ int run(const Options &o) {
     auto output=fs::absolute(o.get("--directory")).lexically_normal();
     if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   }
-  if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile"&&o.command!="task")throw Error("E_OPTION","--foreign FILE is for eval/run/test/debug/profile or reviewed task execution; package closure support is pending");
+  if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile"&&o.command!="task"&&o.command!="package")throw Error("E_OPTION","--foreign FILE is for eval/run/test/debug/profile/package or reviewed task execution");
   if(o.values.contains("--toolchains")&&o.command!="task")throw Error("E_OPTION","--toolchains FILE is for task check/run/replay");
   if(o.values.contains("--toolchain")){
     const std::set<std::string> nativeCommands={"build","package","run","test","debug","profile","emit"};
@@ -408,11 +408,11 @@ int run(const Options &o) {
     auto text=emitMLIR(p,buildOptions.entry,false,buildOptions.libraryEntry||buildOptions.target=="server");auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;
   }
   if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm or typescript");
-  auto result=build(p,directory,buildOptions);
   if(o.command=="package"){
-    if(result.foreignCalls)throw Error("E_FFI_PACKAGE","packaging external module dependency closures is pending; build and run with an explicit operator catalogue");
-    print(packageApplication(p,result,{o.get("--directory"),o.get("--notices"),o.compiler,o.has("--dpkg-notices")}));return 0;
+    print(packageApplication(p,buildOptions,directory,root.string(),store,
+      {o.get("--directory"),o.get("--notices"),o.compiler,o.has("--dpkg-notices"),o.get("--foreign")}));return 0;
   }
+  auto result=build(p,directory,buildOptions);
   if(o.command=="run"||o.command=="debug"||o.command=="profile")requireNativeHost(result);
   if(o.command=="profile"){
     auto report=profileNative(p,result,store.graph(p),profiling);auto object=report.getAsObject();auto code=int(*object->getInteger("exit_code"));

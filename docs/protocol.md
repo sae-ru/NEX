@@ -263,8 +263,8 @@ their public `E_FFI_*` codes. See [the FFI guide](ffi-design.md).
 Language-0.14 migration is explicit and retains original snapshots and local
 identities, including ordinary identifiers `ffi`, `extern` and `foreign`.
 Current example acceptance pins must be reviewed/regenerated without weakening
-their properties. Keep SDK 0.40 for old receipts/frames. Automatic package
-dependency closures remain pending. Toolchain 0.42 connects reviewed task
+their properties. Keep SDK 0.40 for old receipts/frames. Toolchain 0.43 connects
+matching-host package dependency closures, described below. Toolchain 0.42 connects reviewed task
 catalogue capture and current-trust replay, described below.
 
 ## Reviewed task foreign inputs (toolchain 0.42)
@@ -287,3 +287,28 @@ the captured normalized policy and all binary bytes before replay; command-time
 checks detect changed captures. Receipts/summaries expose `foreign_catalogue`
 hash/platform and selected execution rows record `foreign_hash`. See the task
 guide for quotas and the native trust/dependency boundary.
+
+## Native foreign package projection (toolchain 0.43)
+
+`nex package FILE --foreign HOST.json --directory NEW --json` selects only
+reachable libraries/exports, verifies operator intent and native signatures,
+collects native loader dependencies/notices and repins relocated module images.
+The compiler derives and checks a source bundle with only reachable manifest
+literal tokens changed. Both graph revisions remain available; materialized
+source and HEAD are preserved. No language-version migration is needed.
+
+`nex.package/1` reports the actual compiled derived `revision`, additionally
+`source_revision` and the deployed `foreign_catalogue` path. `application.json`
+adds `foreign_projection` (`nex.foreign-projection/1`), identifying both source
+hashes/revisions, changed bindings and `nex.foreign-package/1` preparation
+evidence. Top-level file/component inventories cover both application and module
+dependencies/notices. Internal preparation is not a compiled or execution-verified
+application. Assembly retains `execution_verified:false`.
+
+The native executable defaults to its own `../foreign/host.json`, resolved from
+the actual executable location. Ordinary builds retain explicit-only grants;
+environment variables confer no authority. Explicit standalone/HTTP catalogue
+flags retain their meanings and source pins/signatures remain exact. Matching
+host-target preparation is supported; cross-target module closure assembly and
+arbitrary native dynamic loads remain pending. See the packaging guide for the
+complete trust, dependency and deployment boundary.

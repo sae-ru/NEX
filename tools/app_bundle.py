@@ -62,6 +62,46 @@ def notices_for_sdk(sdk):
     return components, inventory
 
 
+def copy_foreign(request, stage):
+    directory = request.get('foreign_directory')
+    if not directory:
+        if request.get('foreign_files') or request.get('foreign_projection'):
+            raise ValueError('foreign package metadata has no captured directory')
+        return None, [], set()
+    source = Path(directory)
+    if source.is_symlink():
+        raise ValueError('foreign capture root is a symlink')
+    source = source.resolve(strict=True)
+    expected = request['foreign_files']
+    actual = {}
+    for path in source.rglob('*'):
+        if path.is_symlink():
+            raise ValueError('symlink in captured foreign inputs')
+        if path.is_file():
+            actual[str(path.relative_to(source))] = sha256(path)
+        elif not path.is_dir():
+            raise ValueError('non-regular captured foreign input')
+    if not actual or actual != expected:
+        raise ValueError('foreign capture changed after compilation')
+    target = stage / 'foreign'
+    shutil.copytree(source, target)
+    if {str(path.relative_to(target)): sha256(path) for path in target.rglob('*') if path.is_file()} != expected:
+        raise ValueError('foreign copy changed after compilation')
+    projection = request['foreign_projection']
+    if projection.get('schema') != 'nex.foreign-projection/1' or projection['packaged_revision'] != request['revision']:
+        raise ValueError('foreign source projection differs from the compiled program')
+    components, system = [], set()
+    for library in projection['preparation']['libraries'].values():
+        system.update(library['system_libraries'])
+        prefix = Path('foreign/bundles') / library['manifest_sha256']
+        for item in library['components']:
+            component = {**item, 'license_files': [
+                {**record, 'path': str(prefix / record['path'])} for record in item['license_files']]}
+            if component not in components:
+                components.append(component)
+    return projection, components, system
+
+
 def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patchelf'):
     if dpkg_notices and platform.system() != 'Linux':
         raise ValueError('--dpkg-notices is Linux-only')
@@ -119,6 +159,17 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                        'external_prerequisites': ['matching GNU loader/glibc/libstdc++/libgcc runtime'],
                        'packager_patchelf': run([patchelf, '--version']).strip()}
         used_components = collector.copy_notices('licenses')
+        foreign, foreign_components, foreign_system = copy_foreign(request, stage)
+        used_components += foreign_components
+        if foreign:
+            modules = foreign['preparation']['libraries'].values()
+            if system == 'Darwin':
+                minimum = max([tuple(map(int, details['minimum_macos'].split('.')))] +
+                              [tuple(map(int, module['minimum_macos'].split('.'))) for module in modules])
+                details['minimum_macos'] = '.'.join(map(str, minimum))
+            else:
+                for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
+                    details[key] = sorted(set(details[key]).union(*(module[key] for module in modules)))
         runtime_notices = Path(request['runtime_notices'])
         runtime_notices.read_text()  # Preserve complete UTF-8 runtime notices.
         shutil.copy2(runtime_notices, stage / 'THIRD_PARTY_NOTICES.txt')
@@ -130,8 +181,10 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                   'execution_verified': False, 'entry': 'bin/app',
                   **{key: request[key] for key in ('toolchain', 'language', 'revision', 'build_key',
                       'compiler_build', 'profile', 'kind', 'compiler_target', 'host_compatible', 'binary_sha256')},
-                  'components': used_components, 'system_libraries': sorted(collector.system_libraries),
+                  'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
                   **details, 'files': collector.inventory()}
+        if foreign:
+            report['foreign_projection'] = foreign
         (stage / 'application.json').write_text(json.dumps(report, indent=2) + '\n')
         # Claim the destination without replacing an existing file/directory, then
         # publish the fully assembled tree over our own empty reservation.
@@ -141,10 +194,14 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         except Exception:
             output.rmdir()
             raise
-        return {'schema': 'nex.package/1', 'ok': True, 'directory': str(output),
+        result = {'schema': 'nex.package/1', 'ok': True, 'directory': str(output),
                 'executable': str(output / 'bin/app'), 'manifest': str(output / 'application.json'),
                 'build_key': request['build_key'], 'revision': request['revision'],
                 'execution_verified': False, 'files': len(report['files'])}
+        if foreign:
+            result['source_revision'] = foreign['source_revision']
+            result['foreign_catalogue'] = str(output / 'foreign/host.json')
+        return result
     except Exception as error:
         raise RuntimeError(str(error) + '\nPartial package retained at ' + str(stage)) from error
 

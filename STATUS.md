@@ -2,7 +2,27 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: reviewed foreign inputs for tasks
+## Development: native foreign application packaging
+
+Toolchain **0.43.0 / language 0.15** connects explicit `nex package --foreign`
+to recursive Mach-O/ELF dependency collection and complete notices. Only
+reachable logical libraries/exports enter the deployed catalogue. Relocated
+module bytes get new manifest hashes; the compiler changes only the exact
+reachable source pin tokens, rechecks the derived bundle and retains both graph
+revisions without changing HEAD or materialized sources. The binary resolves its
+packaged catalogue relative to its actual executable location. Captured bytes
+are rehashed before publication. C ABI 1 remains unchanged.
+
+The initial four preparation cases pass on macOS ARM64 in 42.264 s, including
+recursive native dependencies, already inventoried images, independent execution
+after removing originals, tampering, missing provenance/dependencies and grant
+selection. Compiler integration, CLI/HTTP package execution, full regression,
+installed SDK and current Linux checks are being validated. This is not a
+release acceptance claim. Cross-target native modules, arbitrary dynamic native
+loads, Windows/mobile installers, callbacks and the remaining language/toolchain
+work stay open.
+
+## Earlier milestone: reviewed foreign inputs for tasks
 
 Toolchain **0.42.0 / language 0.15** adds read-only `nex foreign HOST.json`
 discovery, location-independent operator fingerprints and per-check
@@ -29,8 +49,11 @@ cleanup. Interrupt state is retained before cleanup so cancellation still skips
 remaining checks. The isolated nine-case system-temp run passes in 261.686 s;
 the final timeout/interruption pair passes in 4.381 s. Existing grant, integrity,
 8192-input-boundary and replay cases are included. The corrected ten-case task-FFI group and fourteen-case source-FFI group pass in
-249.03 s and 312.53 s. The corrected full regression and installed SDK are being
-rechecked; current broader platform,
+249.03 s and 312.53 s. The corrected macOS ARM64 full regression passes all
+49 groups in 1058.18 s; the installed SDK passes all thirteen phases in
+260.600 s. The corrected Linux ARM64 full regression passes all 49 groups, its
+live debugger matrix passes, and its thirteen-phase SDK workflow passes in a
+source-free container in 187.131 s with networking disabled. Broader platform,
 sanitizer and distribution validation remains pending.
 
 The [task-FFI evidence](docs/evidence/ffi-tasks-0.42.0.json) records the baseline,

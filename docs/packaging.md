@@ -60,6 +60,56 @@ rejects web/interpreter/library targets and `--output`/`--kind`/application
 arguments. Full-stack deployment bundles and mobile/Windows installers remain
 pending. The source language and runtime semantics are unchanged by packaging.
 
+## Trusted native modules
+
+```sh
+nex package main.nex --foreign host.json --notices notices.json \
+  --directory /new/application --json
+/new/application/bin/app
+```
+
+Toolchain 0.43 accepts explicit operator grants for reachable external calls on
+a matching macOS/Linux host target. Only reachable logical libraries and exports
+enter the deployed catalogue; unused catalogue entries are not deployment inputs.
+The original module inventory, recursively discovered native loader dependencies
+and complete component notices are copied into self-contained module bundles.
+Already inventoried native images keep their relative paths. System libraries
+remain host prerequisites. Provenance is required for every copied external
+file, including the original module. Assembly never calls a module entry point.
+
+Relocating native images changes their bytes. Each prepared module therefore
+gets a new manifest hash. The compiler edits only the exact reachable manifest
+literal tokens in a derived source bundle, rechecks it and verifies that its
+semantic revision differs only by those pins. Original and derived revisions
+are saved in the graph store without moving HEAD or editing source files. A
+package's `revision` is the derived revision actually compiled; its
+`foreign_projection.source_revision` identifies the original reviewed program.
+The projection records both source hashes, each changed binding, original/new
+bundle pins, dependency inventories and component notices. Language 0.15 and
+C ABI 1 remain unchanged.
+
+`foreign/host.json` grants only selected exports and preserves the operator's
+module quota. The native executable resolves it relative to its actual executable
+location, including invocation through a symlink or from another working
+directory. Explicit `--nex-foreign` (CLI) or `--foreign` (HTTP) remains available
+for operator configuration; environment variables cannot grant module access.
+Source pins and signatures still have to match the compiled derived program.
+HTTP authorization and request-scoped owners are unchanged; the catalogue and
+module directories must remain outside the HTTP static root.
+
+The package includes a hash-checked capture of the prepared catalogue and bytes;
+assembly rejects input changes after compilation. Component notice paths in
+`application.json` include both application libraries and module bundles.
+The internal `tools/foreign_bundle.py` preparation stage produces
+`nex.foreign-package/1`; it alone is not a compiled application package.
+
+Native modules are trusted code. Dependency discovery follows Mach-O load
+commands or ELF DT_NEEDED entries; it cannot infer arbitrary `dlopen` strings,
+file accesses, external services or credentials used by native code. These must
+be supplied and tested explicitly. Cross-target foreign-module assembly,
+Windows/mobile packaging, stable ABI validation and general callbacks remain
+pending. Current execution evidence is recorded in `STATUS.md`.
+
 ## Deployment acceptance fixtures
 
 ```sh

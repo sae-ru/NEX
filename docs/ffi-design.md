@@ -5,7 +5,8 @@ bindings and interpreter/native invocation. Earlier versions 0.37–0.40 introdu
 the C transport, checked signatures, native module loader and invocation contexts
 described below without changing their language 0.14. C module ABI 1 retains its
 original table prefix. Toolchain 0.42 adds reviewed task catalogue capture and current-trust replay.
-Automatic dependency-closure packaging, generic external resources, callbacks into NEX and source
+Toolchain 0.43 adds matching-host native dependency-closure packaging with checked
+source-pin projections; see [packaging](packaging.md). Generic external resources, callbacks into NEX and source
 async remain pending. This is not a published stable FFI. `STATUS.md` records
 the exact validation scope.
 
@@ -37,8 +38,9 @@ and immutable/resource ownership semantics apply in interpreter and native code.
 Only reachable native declarations add the loader/Crypto runtime. HTTP calls use
 an authenticated request's scope; operator/module files must stay outside the
 static asset root. Server declarations and binding metadata are excluded from
-emitted clients. `nex package` rejects reachable external calls until dependency
-closure packaging is implemented. Toolchain 0.42 task execution requires a
+emitted clients. `nex package --foreign HOST.json` requires explicit grants and
+produces a derived, checked source-pin projection for relocated bytes while
+preserving original graph history. Toolchain 0.42 task execution requires a
 reviewed per-check `foreign_hash` and a separate current `--foreign HOST.json`.
 `nex foreign HOST.json` verifies inventory bytes without initializing modules;
 capture/replay rules and bounds are documented in [the task guide](tasks.md).
@@ -249,9 +251,10 @@ Dynamic loader dependency lookup and symbol interposition still follow OS
 rules. `RTLD_LOCAL` does not create an isolated dependency namespace, and this
 inventory does not prove that every transitive loaded dependency is pinned.
 Copied dependent libraries must use appropriate loader-relative paths. The
-host must provide a trusted process environment. A general dependency-closure
-builder/auditor, platform signing, distributable packaging, Windows/mobile
-support remain pending. The present target list states
+host must provide a trusted process environment. Toolchain 0.43 packages native
+loader dependency closures on matching hosts; arbitrary dynamic loads and native
+OS actions are outside automatic discovery. Broader dependency auditing,
+platform signing and Windows/mobile support remain pending. The present target list states
 implemented host branches; executed validation belongs in `STATUS.md`.
 The host temporary directory must allow executable mappings: a `noexec` mount
 rejects the sealed image with `E_FFI_LOAD`, even when all content checks pass.

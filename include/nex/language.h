@@ -77,7 +77,12 @@ struct Structure {
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
-struct ForeignBinding {std::string library,symbol,manifest;};
+struct ForeignBinding {
+  std::string library,symbol,manifest;
+  // Non-semantic token location for checked packaging projections. The pin
+  // remains part of canonical identity; this span is not serialized there.
+  Span manifestSpan;
+};
 struct Function {
   std::string name, realm = "shared"; std::vector<Param> params;
   Type result = Type::Unit; std::set<std::string> effects, dependencies;

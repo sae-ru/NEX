@@ -1,0 +1,91 @@
+{
+  "schema": "nex.foreign-package-evidence/1",
+  "toolchain": "0.43.0",
+  "language": "0.15",
+  "module_abi": 1,
+  "recorded_at": "2026-10-18T14:43:33.403026+00:00",
+  "status": "integrated_validation_in_progress",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "source_sha256": {
+    "CMakeLists.txt": "15dabb7db22dd5ddc448584ef50000f2652abd46c529a60ed148c4a8c7bf6c7a",
+    "src/packaging.cpp": "894cc058da19c966caa481037fab9b74b4d637ae0adc8d257e307847b537c7c4",
+    "src/main.cpp": "2766efee7c12d25fa15a876ed1e99ac187623437af256bce5f902b1d5b09051d",
+    "src/language.cpp": "20fd889f8666451843456bd7cfbbd523450e7cfb433def3742d268d6648bd032",
+    "src/backend.cpp": "c01c0daaeca659168467ae4a5c4eb231467ff96626b60f4df7bc854b066b8210",
+    "include/nex/packaging.h": "d9e8dc5f9040ae76cabdff0d081687f9913bf486e7a5c81fe7fff2a5333fc91d",
+    "include/nex/backend.h": "532131fe3a7e3bed4e182073eaea1cf242b7dae726490d60532a69ab93b83c12",
+    "include/nex/language.h": "0de48a136734a17dd67e1e6d110c392cb6168870f26d0f669ea0ab2a50d6e30f",
+    "runtime/nex_foreign.cpp": "77062cbdf0ac65fd9408bd2acfbce579286823101f21d111432449cad1442e28",
+    "runtime/nex_foreign.h": "9a48cd0310f9125c6638750b1a4eb5e3ad3c3e4cee73dd40d084f25cb815121e",
+    "runtime/foreign_runtime.cpp": "24d1ff52e7e4db80eb3a6bf1f433342c6ab211e7c1e3c347415f04099a768013",
+    "runtime/http_main.cpp": "bc5d79ee215aab1558ffc5defa282d55af8929eedd0e7fab81cafa7d685e0036",
+    "tools/sdk_bundle.py": "ab7e6a85b12d5f4822482ed209b53436bf6fb91b9086ff5365e47f2f06549bfb",
+    "tools/app_bundle.py": "0e89ec833ee3dfcd27f603f09484d88630c4d6b1a876506392f5814f22ff6ade",
+    "tools/foreign_bundle.py": "2c8e9ce806733c1b588d674e90a9a58749a9e8457db4e3c3f55035217203b806",
+    "tools/sdk_acceptance.py": "0ba90cd7adc4ea0184746fb388c78cf03c41f255a3b8fff1bf457fa5950d032d",
+    "tests/foreign_packaging.py": "e78e6a8335a38a2694d7362bd6abcbcfc8a13926ea2deeb8e9774206a83906fa",
+    "tests/source_ffi.py": "4402ca887254f527f2d601724c2d11e50da93c9f125f5e0dcebfd04853128a0f",
+    "docs/packaging.md": "4232011ced146b231a0982bc947bf19c71f1e52589969ddf2e65383c70c0d12d",
+    "docs/language.md": "168f86985cde9c7b8af3623fc9d77ce63289582fc94bce43f691228460fab978",
+    "llm/SYSTEM_PROMPT.md": "6da65921ef6131e661e291c35664c0aae54c274472b2d0360ef3df8249274c2c",
+    "llm/language-pack.json": "b71b52bde4b59433c7dfb844afc35a477dbe67320de304c70ea862b4526dec42",
+    "llm/foreign-package.schema.json": "aafe638a5f8b6f8b32c0cf2453648386ffae5c06692f7d8d5d904e94fb16ec87",
+    "llm/foreign-projection.schema.json": "a7492a68316ef83e91f261852d92b931d95438f58f71b45e740f5575fd6a3ee2"
+  },
+  "checks": {
+    "initial_preparation": {
+      "ok": true,
+      "cases": 4,
+      "seconds": 42.264,
+      "log": "build/foreign-package-preparation.log",
+      "scope": "preparation implementation before integrated package and platform requirement aggregation"
+    },
+    "initial_integration": {
+      "cases": 7,
+      "passed": 6,
+      "failed": 1,
+      "seconds": 90.891,
+      "log": "build/foreign-package-043-integration.log",
+      "failure": "HTTP fixture lacked built index.html; corrected without changing runtime policy."
+    },
+    "supplemental_imported_projection": {
+      "ok": true,
+      "cases": 1,
+      "log": "build/foreign-package-043-supplemental.log",
+      "scope": "exact escaped pin token, preserved comments/ordinary strings, imported callable; HTTP in that same run was denied loopback by execution sandbox."
+    },
+    "packaged_http": {
+      "ok": true,
+      "cases": 1,
+      "seconds": 31.405,
+      "log": "build/foreign-package-043-http.log",
+      "scope": "local loopback server, three authorized calls, denied anonymous/invalid credentials, package static-root rejection; approved local test execution"
+    }
+  },
+  "implemented": [
+    "explicit_operator_grants",
+    "reachable_exports_only",
+    "recursive_native_loader_closures",
+    "preserved_original_inventory_paths",
+    "complete_notices",
+    "relocated_pins",
+    "checked_exact_source_token_projection",
+    "original_and_derived_graph_history",
+    "unchanged_source_and_HEAD",
+    "executable_relative_default_catalogue",
+    "ordinary_builds_explicit_only",
+    "captured_input_hashes",
+    "CLI_and_HTTP_native_output"
+  ],
+  "pending": [
+    "current_full_macos_regression",
+    "current_installed_sdk_with_packaged_nominal_application",
+    "current_linux_matrix",
+    "broader_platforms_and_release_sanitizer_distribution_checks",
+    "cross_target_module_packaging",
+    "arbitrary_dynamic_native_load_discovery",
+    "callbacks_into_NEX",
+    "remaining_language_and_development_chain"
+  ]
+}

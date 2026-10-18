@@ -3,6 +3,9 @@
 namespace nexrt {
 // Explicit operator configuration, never an ambient environment grant.
 std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &configuration);
+// Empty in ordinary builds. Packaged builds resolve their reviewed catalogue
+// from the actual executable location, independently of argv[0] and cwd.
+std::string packagedForeignCatalogue();
 struct ForeignScopeLimits {
   size_t bindings=4096;
   uint64_t metadataBytes=64*1048576;

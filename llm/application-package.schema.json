@@ -12,6 +12,7 @@
     "toolchain": {"type": "string"},
     "language": {"type": "string"},
     "revision": {"type": "string"},
+    "foreign_projection": {"$ref": "foreign-projection.schema.json"},
     "build_key": {"type": "string"},
     "compiler_build": {"type": "string"},
     "profile": {"enum": ["debug", "release", "profile"]},

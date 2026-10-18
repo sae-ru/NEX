@@ -15,6 +15,7 @@ extern "C" void nex_foreign_configure(int64_t argc,const char *const *argv){
       if(!path.empty()||i+1>=argc||!argv[i+1])throw nexrt::DataError("E_FFI_GRANT","--nex-foreign requires one operator catalogue");
       auto size=::strnlen(argv[++i],4097);if(!size||size>4096)throw nexrt::DataError("E_FFI_GRANT","invalid operator catalogue path");path.assign(argv[i],size);
     }
+    if(path.empty())path=nexrt::packagedForeignCatalogue();
     if(!path.empty()){
       nexrt::registerRuntimeCleanup(resetStandaloneForeign);
       if(standaloneForeign)throw nexrt::DataError("E_FFI_SCOPE","native foreign configuration is already initialized");

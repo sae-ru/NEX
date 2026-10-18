@@ -172,6 +172,11 @@ class Bundle:
                     dependencies.append(dependency)
         return dependencies, list(dict.fromkeys(rpaths)), identifier
 
+    def dependency_target(self, source):
+        # Application module bundles can already inventory an image at a fixed
+        # relative path. Reuse that destination rather than copying it twice.
+        return self.destinations.get(source, self.output / 'lib/nex/host' / source.name)
+
     def collect(self, source, destination, executable, inherited=()):
         source = source.resolve(strict=True)
         if source in self.images:
@@ -195,7 +200,7 @@ class Bundle:
             resolved = next((path.resolve() for path in candidates if path.is_file()), None)
             if resolved is None:
                 raise ValueError('unresolved dependency ' + dependency + ' of ' + str(source))
-            target = self.output / 'lib/nex/host' / resolved.name
+            target = self.dependency_target(resolved)
             self.external(resolved, target)
             image['dependencies'][dependency] = target
             self.destinations[resolved] = target
@@ -296,6 +301,8 @@ class Bundle:
                 source.read_text()  # Require complete UTF-8 notice text.
                 target = self.output / directory / component['name'] / (str(index) + '-' + source.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
+                if target.is_symlink() or (target.exists() and (not target.is_file() or sha256(target) != sha256(source))):
+                    raise ValueError('bundle notice destination collision: ' + str(target.relative_to(self.output)))
                 shutil.copy2(source, target)
                 notice['license_files'].append({'path': str(target.relative_to(self.output)), 'sha256': sha256(target)})
             installed_components.append(notice)
@@ -353,7 +360,7 @@ class LinuxBundle(Bundle):
             match = re.match(r'\s*(\S+)\s+=>\s+(.*?)\s+\(0x', line)
             if match:
                 resolved[match.group(1)] = Path(match.group(2)).resolve()
-        image = {'destination': destination, 'dependencies': {}}
+        image = {'destination': destination, 'dependencies': {}, 'dependency_targets': {}}
         self.images[source] = image
         for name in needed:
             if Path(name).name in self.HOST_LIBRARIES:
@@ -362,7 +369,7 @@ class LinuxBundle(Bundle):
             original = Path(name).resolve() if Path(name).is_absolute() else resolved.get(name)
             if original is None or not original.is_file():
                 raise ValueError('unresolved ELF dependency ' + name + ' of ' + str(source))
-            target = self.output / 'lib/nex/host' / original.name
+            target = self.dependency_target(original)
             self.external(original, target)
             alias = name if '/' not in name else original.name
             alias_path = target.parent / alias
@@ -372,6 +379,7 @@ class LinuxBundle(Bundle):
                 if not alias_path.exists():
                     alias_path.symlink_to(target.name)
             image['dependencies'][name] = alias
+            image['dependency_targets'][alias] = alias_path
             self.destinations[original] = target
             self.collect_elf(original, target)
 
@@ -450,8 +458,11 @@ class LinuxBundle(Bundle):
             for old, new in image['dependencies'].items():
                 if old != new:
                     run([patchelf, '--replace-needed', old, new, target])
-            relative = os.path.relpath(self.output / 'lib/nex/host', target.parent)
-            rpath = '$ORIGIN' if relative == '.' else '$ORIGIN/' + relative
+            directories = list(dict.fromkeys(path.parent for path in image['dependency_targets'].values()))
+            if not directories:
+                directories = [self.output / 'lib/nex/host']
+            relative = [os.path.relpath(path, target.parent) for path in directories]
+            rpath = ':'.join('$ORIGIN' if path == '.' else '$ORIGIN/' + path for path in relative)
             run([patchelf, '--set-rpath', rpath, target])
             if run([patchelf, '--print-rpath', target]).strip() != rpath:
                 raise ValueError('ELF runtime path was not retained: ' + str(target))
@@ -462,7 +473,8 @@ class LinuxBundle(Bundle):
             dependencies = run(['ldd', target], env=self.environment)
             for old, alias in image['dependencies'].items():
                 match = re.search(r'^\s*' + re.escape(alias) + r'\s*=>\s*(.*?)\s+\(0x', dependencies, re.M)
-                if match is None or (self.output / 'lib/nex/host') not in Path(match[1]).resolve().parents:
+                expected = image['dependency_targets'][alias].resolve(strict=True)
+                if match is None or Path(match[1]).resolve() != expected:
                     raise ValueError('ELF dependency escaped the bundle: ' + alias + ' in ' + dependencies)
         return required_glibc, required_glibcxx
 

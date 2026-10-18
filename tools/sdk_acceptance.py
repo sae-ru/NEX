@@ -607,6 +607,67 @@ int main() {
             'reviewed_task': {'hash': checked['task_hash'], 'foreign_hash': catalogue['hash'],
                 'receipt': accepted['output'], 'replay': replayed['output'],
                 'source_deleted_trusted_replay': True}}
+        package_bundle = directory / 'package-input-bundle'
+        shutil.copytree(bundle, package_bundle)
+        package_host = directory / 'package-host.json'
+        package_host.write_text(json.dumps({'schema': 'nex.foreign-host/1', 'module_limit': 64,
+            'libraries': {'example': {'directory': str(package_bundle), 'manifest_sha256': manifest_pin,
+                                     'exports': ['contract']}}}))
+        notice_components = [{'name': 'acceptance-module', 'version': 'fixture',
+            'url': 'https://example.invalid/nex-sdk-acceptance', 'roots': [str(package_bundle)],
+            'license_files': [str(package_bundle / 'NOTICE')]}]
+        package_flags = []
+        if platform.system() == 'Linux':
+            package_flags.append('--dpkg-notices')
+        else:
+            crypto = Path(report['doctor']['native_openssl_crypto']).resolve(strict=True)
+            if sdk not in crypto.parents:
+                # A development SDK can use the explicit vendor installation.
+                # Preserve its complete license rather than inventing a notice.
+                prefix = crypto.parent.parent
+                license_file = next((prefix / name for name in ('LICENSE.txt', 'LICENSE')
+                                     if (prefix / name).is_file()), None)
+                require(license_file is not None, 'development Crypto installation needs its complete vendor license')
+                notice_components.append({'name': 'acceptance-crypto', 'version': 'installed-vendor',
+                    'url': 'https://openssl-library.org', 'roots': [str(prefix)],
+                    'license_files': [str(license_file)]})
+        package_notices = directory / 'package-notices.json'
+        package_notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': notice_components}))
+        package = directory / 'before-package'
+        packaged = cli('package', '--revision', source_revision, '--foreign', package_host,
+                       '--notices', package_notices, '--directory', package, *package_flags, cwd=source)
+        manifest = json.loads((package / 'application.json').read_text())
+        projection = manifest['foreign_projection']
+        require(packaged['source_revision'] == source_revision and
+                projection['source_revision'] == source_revision and
+                projection['packaged_revision'] == packaged['revision'],
+                'packaged foreign source projection differs from actual compiled revision')
+        require(manifest['execution_verified'] is False, 'assembly must retain separate execution evidence')
+        for name, record in manifest['files'].items():
+            path = package / name
+            if 'symlink' in record:
+                require(path.is_symlink() and str(path.readlink()) == record['symlink'], 'packaged alias differs')
+            else:
+                require(hashlib.sha256(path.read_bytes()).hexdigest() == record['sha256'], 'packaged file hash differs')
+        shutil.rmtree(package_bundle)
+        package_host.unlink()
+        package_notices.unlink()
+        moved_package = directory / 'moved-package'
+        package.rename(moved_package)
+        saved_environment = dict(environment)
+        try:
+            environment.clear()
+            environment.update(PATH='/usr/bin:/bin', NEX_RESOURCE_DIR=str(root / 'absent-packaged-resources'))
+            require(run([moved_package / 'bin/app'], cwd=moved_package) == expected_typed,
+                    'independent packaged nominal foreign application differs')
+        finally:
+            environment.clear()
+            environment.update(saved_environment)
+        report['evidence']['foreign_boundary']['source_external']['application_package'] = {
+            'source_revision': source_revision, 'packaged_revision': packaged['revision'],
+            'source_deleted': True, 'module_inputs_deleted': True, 'moved': True,
+            'environment_without_sdk': True, 'exact_file_inventory': True,
+            'nominal_contract_agreement': True, 'manifest': str(moved_package / 'application.json')}
 
     def binary_values():
         directory = root / 'binary-values'

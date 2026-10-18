@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.foreign-package/1",
+  "title": "NEX prepared native module dependency closures",
+  "type": "object",
+  "required": ["schema", "assembly_passed", "execution_verified", "module_initialization", "source_catalogue_hash", "catalogue_hash", "platform", "libraries"],
+  "properties": {
+    "schema": {"const": "nex.foreign-package/1"},
+    "assembly_passed": {"const": true},
+    "execution_verified": {"const": false},
+    "module_initialization": {"const": false},
+    "source_catalogue_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "catalogue_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "platform": {"enum": ["macos-arm64", "macos-x86_64", "linux-arm64", "linux-x86_64"]},
+    "libraries": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["source_manifest_sha256", "manifest_sha256", "exports", "components", "system_libraries", "files"],
+        "properties": {
+          "source_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "exports": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "components": {"type": "array", "items": {"type": "object", "required": ["name", "version", "url", "license_files"]}},
+          "system_libraries": {"type": "array", "items": {"type": "string"}},
+          "files": {"type": "object", "minProperties": 1, "maxProperties": 128, "additionalProperties": {
+            "type": "object", "required": ["sha256", "bytes", "executable"],
+            "properties": {
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "bytes": {"type": "integer", "minimum": 0, "maximum": 67108864},
+              "executable": {"type": "boolean"}, "component": {"type": "string"}
+            }
+          }}
+        }
+      }
+    }
+  },
+  "description": "A preparation result, not a compiled application. Native loader dependencies and complete notices are relocated and repinned. A compiler must derive and validate the source projection and compile that actual revision. Execution and platform compatibility require separate evidence."
+}

@@ -2,8 +2,8 @@
   "schema": "nex.task-foreign-evidence/1",
   "toolchain": "0.42.0",
   "language": "0.15",
-  "checked_at": "2026-10-18T13:24:49.181993+00:00",
-  "status": "owned_temporary_exit_correction_validation",
+  "checked_at": "2026-10-18T14:37:06.946494+00:00",
+  "status": "corrected_macos_linux_arm64_and_sdk_passed",
   "full_objective_complete": false,
   "accepted_release": false,
   "source_sha256": {
@@ -305,6 +305,32 @@
         "replay": "/Users/sae/projects/NEX/build/sdk-042-owned-acceptance/foreign-boundary/source/.nex/tasks/runs/run-1599562983-3083632836/receipt.json",
         "source_deleted_trusted_replay": true
       }
+    },
+    "corrected_macos_full": {
+      "status": "passed",
+      "groups": 49,
+      "python_cases": 360,
+      "seconds": 1058.18,
+      "log": "build/ctest-042-owned.log",
+      "last_test": "build/task-foreign-042-owned-LastTest.log",
+      "last_test_sha256": "16ed44e0e03d1dcd15e41b13ebffb2db27ace1ec136b524a08588fbbbdace470",
+      "binary": "build/nex-042-owned-verified",
+      "compiler_sha256": "fcf60bd658d0fd7ffa89ebdcc0bfa67cba9568d49c8fca3c387eaa1f057ce46a"
+    },
+    "corrected_linux_arm64": {
+      "ok": true,
+      "groups": 49,
+      "python_cases": 360,
+      "ctest_seconds": 899.87,
+      "source_free_sdk_phases": 13,
+      "source_free_sdk_seconds": 187.131,
+      "live_debugger_matrix": true,
+      "source_checkout_mounted": false,
+      "network": "none",
+      "report": "/Users/sae/projects/NEX/build/linux-042-owned-arm64/verification.json",
+      "report_sha256": "0fc749c1ae9cbcd08c5c546b4edf9dc4f9aef0a495edceca9bffd0d83b8d3b34",
+      "source_snapshot": "build/source-042-owned-20261018-140551",
+      "scope": "corrected owned-temporary implementation, before 0.43 packaging development"
     }
   },
   "implemented": [
@@ -333,7 +359,7 @@
     "probe": "build/task-foreign-042-timeout-probe.json",
     "bug": "A killed native callback left one private snapshot directory.",
     "fix": "Task parent owns a mode-0700 command temporary root and removes it after process-group reaping.",
-    "status": "promoted; corrected ten-case task group and fourteen-case source group pass; final full matrix/SDK validation running"
+    "status": "Corrected full macOS/Linux ARM64 regressions, installed SDK workflows and Linux live debugger matrix pass."
   },
   "baseline_compiler_build": "31a17d79dac916e6bf566cd7526ed84ccf798f1b6d4cf9b6d6b65ab5768c4ee1",
   "baseline_compiler_sha256": "3cb4dce6fa2dce71536ae843b89d7613282e260c21944441fa54b08bbba6bffc",
@@ -342,5 +368,5 @@
   "corrected_compiler_build": "1a070aadfd2e3932173d9173af53d02165672601ed48d6954366f07cf83998a5",
   "corrected_compiler_sha256": "fcf60bd658d0fd7ffa89ebdcc0bfa67cba9568d49c8fca3c387eaa1f057ce46a",
   "corrected_staging_implementation_build_matches": true,
-  "current_corrected_full_validation_pending": true
+  "current_corrected_full_validation_pending": false
 }

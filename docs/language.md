@@ -132,10 +132,16 @@ external code and its binding metadata are excluded from browser output.
 Toolchain 0.42 adds reviewed task catalogue capture: inspect with `nex foreign`,
 pin `foreign_hash` in native execution checks and supply current operator trust
 with `nex task --foreign HOST.json`. See the task guide for source-deleted replay.
-Callbacks into NEX, general external resource kinds and automatic package
-dependency closures remain pending. `package`
-explicitly rejects reachable external calls instead of emitting an incomplete
-package. Full current verification scope is recorded in `STATUS.md`.
+Toolchain 0.43 adds matching-host native package dependency closures with explicit
+`--foreign HOST.json`. Relocation changes image bytes and therefore manifest
+pins. Packaging derives a checked source revision changing only reachable pin
+literals, saves both revisions without changing graph HEAD or materialized
+sources, and records their relationship in `foreign_projection`. The actual
+compiled revision uses the relocated pins; execution preserves exact pin and
+signature checks. Packaged executables resolve the included catalogue from
+their executable location. See [packaging](packaging.md) for native dependency
+and deployment limits. Callbacks into NEX and general external resource kinds
+remain pending. Full current verification scope is recorded in `STATUS.md`.
 
 Language 0.14 sources require explicit `nex migrate`; ordinary old identifier
 names retain their meaning and original snapshots/IDs remain in history. The

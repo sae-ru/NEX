@@ -385,7 +385,7 @@ public:
       if(external){
         expect("=");expect("foreign");expect("(");
         auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
-        ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
+        ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifestSpan=peek().span;binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
       }else{lambdaCounter=0;f.body=block();}
       f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
     }
@@ -853,7 +853,7 @@ llvm::json::Value describe() {
       {"module_loading",llvm::json::Object{{"source_support",true},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
       {"features",llvm::json::Array{"source_external_declarations","server_ffi_effect","pinned_source_bindings","interpreter_native_calls","browser_server_exclusion","call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},
       {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
-      {"pending",llvm::json::Array{"source_validation","dependency_closure_packaging","callbacks_into_nex","stable_abi_validation"}}}},
+      {"pending",llvm::json::Array{"current_platform_validation","callbacks_into_nex","stable_abi_validation"}}}},
     {"resource_features",llvm::json::Array{"server_file_type","identity_aliases","owned_aggregate_and_capture_values","explicit_close","scope_revocation","bounded_streaming_io","opaque_pure_debug_identity","no_wire_or_browser_authority"}},
     {"host_resource_runtime",llvm::json::Object{
       {"source_support",true},{"status","development_source_files"},{"design","docs/resources-design.md"},
@@ -889,10 +889,15 @@ llvm::json::Value describe() {
     {"debug_wire_schema","llm/debug-wire.schema.json"},{"debug_value_protocol","nex.debug-wire/1"},{"debug_runtime_view","nex.runtime-view/3"},{"debug_expression_protocol","nex.debug-expression/3"},
     {"build_features",llvm::json::Array{"native_module_compilation","native_function_compilation","function_source_invalidation","frozen_debug_source_maps","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy","relative_host_sdk","explicit_archive_debug_tools"}},
     {"host_sdk_schema","llm/sdk-host.schema.json"},{"sdk_bundle_tool","tools/sdk_bundle.py"},{"sdk_bundle_platforms",llvm::json::Array{"macos","linux"}},
-    {"application_package_command","nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] --json"},
+    {"application_package_command","nex package [file] --directory NEW [--target server] [--foreign HOST.json] [--notices FILE] [--dpkg-notices] --json"},
     {"application_package_platforms",llvm::json::Array{"macos","linux"}},
     {"application_package_schema","llm/application-package.schema.json"},
     {"application_package_guide","docs/packaging.md"},
+    {"application_package_foreign",llvm::json::Object{{"source_support",true},
+      {"projection_schema","llm/foreign-projection.schema.json"},
+      {"preparation_schema","llm/foreign-package.schema.json"},
+      {"features",llvm::json::Array{"explicit_operator_grant","reachable_library_exports","recursive_native_dependencies","complete_component_notices","relocated_manifest_pins","checked_source_projection","preserved_graph_history","executable_relative_catalogue","captured_file_integrity"}},
+      {"limits",llvm::json::Array{"matching_host_target","native_loader_dependencies_only","trusted_native_code","current_platform_validation_pending"}}}},
     {"application_package_limits",llvm::json::Array{"host_platform_assembly","external_platform_runtime","execution_verified_separately","no_web_assets_or_runtime_secrets","no_gui_installer_or_notarization"}},
     {"native_toolchain_schema","llm/toolchain.schema.json"},{"native_target_policy","64-bit host ABI; macOS arm64/x86_64 cross-builds on macOS; run/test/debug/profile require host architecture; target libraries must be supplied for cross-storage/server builds"},
     {"build_guide","docs/incremental.md"},{"linux_guide","docs/linux.md"},{"toolchain_fingerprint","nex.toolchain-snapshot/2"},
@@ -903,7 +908,7 @@ llvm::json::Value describe() {
     {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay","owned_foreign_temporary_files"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
     {"task_catalogue_command","nex foreign HOST.json --json"},{"task_foreign_field","foreign_hash"},
-    {"not_yet_supported",llvm::json::Array{"custom_traits","higher_kinded_types","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
+    {"not_yet_supported",llvm::json::Array{"custom_traits","higher_kinded_types","async","wasm","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 }

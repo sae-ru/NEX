@@ -5,6 +5,8 @@ struct BuildOptions {
   std::string profile = "debug", target, entry = "main";
   bool testEntry = false, libraryEntry = false;
   std::string toolchain;
+  // Set only by native application packaging, never by ambient environment.
+  std::string foreignCatalogue;
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;

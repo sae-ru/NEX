@@ -35,8 +35,9 @@ pin its `hash` as `foreign_hash` in each native test/run/profile check, and supp
 `--foreign HOST.json` to task check/run/replay. Replay requires current operator
 trust even when all module bytes are captured. Do not use a receipt as authority.
 Catalogues and all inventory bytes are verified before execution and around each
-check command. Native build checks need no execution grant. General package
-dependency closures and callbacks into NEX remain pending.
+check command. Native build checks need no execution grant. Native application
+packaging accepts explicit operator catalogues as described below. Callbacks into
+NEX remain pending.
 Language 0.14 archives need explicit `nex migrate`; preserve historical rows/IDs,
 retain SDK 0.40 for old frames/receipts and regenerate reviewed acceptance pins
 without weakening requirements. The language pack indexes the host/binding schemas
@@ -165,6 +166,18 @@ need --notices or Linux --dpkg-notices. Relocate and execute the resulting bin/a
 on the intended host before claiming deployment verified. Supply credentials,
 keys, databases and web assets explicitly at runtime. Keep execution_verified
 false in the assembly manifest and retain separate acceptance evidence.
+
+For reachable external calls, pass `--foreign HOST.json` to `package`. Only
+reachable libraries/exports are granted in the deployed catalogue. Assembly
+relocates the native loader dependency closure and notices, then derives
+and checks new source manifest pins. It saves the original and derived graph
+revisions without moving HEAD or editing materialized sources. The manifest's
+`foreign_projection` connects `source_revision` to the actual compiled
+`packaged_revision`; do not describe them as the same revision. The native
+executable resolves its packaged catalogue relative to its actual location.
+Source pins/signatures remain enforced. Arbitrary native file opens, dynamic
+`dlopen` names, remote services and runtime credentials cannot be inferred from
+loader dependencies. Cross-target foreign-module packaging remains pending.
 
 For text files (language 0.12), query file_features/file_limits and read
 `nex guide --kind files`. file_read_text(str)->result<str> and

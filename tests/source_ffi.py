@@ -164,7 +164,7 @@ server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids);self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source);self.assertEqual(db.execute('SELECT language FROM revisions WHERE hash=?',(old,)).fetchone()[0],'0.14')
 
-    def test_profile_debug_context_and_explicit_package_pending(self):
+    def test_profile_debug_context_and_package_requires_operator_catalogue(self):
         self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
         report=self.cli('profile','--foreign',self.host,'--output',self.root/'profile',timeout=120);self.assertEqual(report['exit_code'],0)
         session=self.cli('debug','--kind','nex-dap','--foreign',self.host,timeout=120);self.assertEqual(session['launch']['args'],['--nex-foreign',str(self.host)])

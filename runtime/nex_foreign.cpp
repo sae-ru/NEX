@@ -9,7 +9,30 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#if defined(NEX_FOREIGN_DEFAULT) && defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 namespace nexrt {
+std::string packagedForeignCatalogue(){
+#ifdef NEX_FOREIGN_DEFAULT
+  std::string executable;
+#if defined(__APPLE__)
+  uint32_t size=0;_NSGetExecutablePath(nullptr,&size);
+  if(!size||size>1048576)throw DataError("E_FFI_IO","cannot locate packaged executable");
+  std::vector<char> path(size);if(_NSGetExecutablePath(path.data(),&size))throw DataError("E_FFI_IO","cannot locate packaged executable");executable=path.data();
+#elif defined(__linux__)
+  std::vector<char> path(1048576);auto size=::readlink("/proc/self/exe",path.data(),path.size());
+  if(size<=0||size_t(size)>=path.size())throw DataError("E_FFI_IO","cannot locate packaged executable");executable.assign(path.data(),size_t(size));
+#else
+  throw DataError("E_FFI_PLATFORM","packaged catalogue location is unsupported on this platform");
+#endif
+  std::error_code error;auto actual=std::filesystem::canonical(executable,error);
+  if(error)throw DataError("E_FFI_IO","cannot resolve packaged executable");
+  return (actual.parent_path()/NEX_FOREIGN_DEFAULT).lexically_normal().string();
+#else
+  return {};
+#endif
+}
 namespace {
 using J=nlohmann::ordered_json;
 [[noreturn]] void invalid(const char *code,const char *message){throw DataError(code,message);}

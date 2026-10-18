@@ -92,6 +92,7 @@ int main(int argc,char **argv){
   try{
     auto c=config(argc,argv);
 #ifdef NEX_FOREIGN_ENABLED
+    if(c.foreign.empty())c.foreign=nexrt::packagedForeignCatalogue();
     auto foreign=c.foreign.empty()?std::shared_ptr<nexrt::ForeignLibraries>{}:nexrt::loadForeignLibraries(c.foreign);
     if(foreign&&!c.assets.empty()){auto root=fs::weakly_canonical(c.assets);if(inside(fs::weakly_canonical(c.foreign),root))throw std::runtime_error("foreign catalogue must be outside the static root");for(const auto &directory:foreign->grantedDirectories())if(inside(fs::weakly_canonical(directory),root))throw std::runtime_error("foreign module directories must be outside the static root");}
 #else
