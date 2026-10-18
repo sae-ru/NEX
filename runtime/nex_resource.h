@@ -88,11 +88,13 @@ inline uint64_t nextIdentity() {
 template<class T> class ResourceOwner;
 template<class T> class ResourceLease;
 class ResourceDomain;
+class ResourceAccess;
 
 // A factory can check revocation between host operations without keeping a
 // domain wrapper alive. No lock is held while the factory itself runs.
 class ResourcePermit {
   friend class ResourceDomain;
+  friend class ResourceAccess;
   resource_detail::Bindings bindings;
   explicit ResourcePermit(resource_detail::Bindings bindings):bindings(std::move(bindings)){}
 public:
@@ -123,6 +125,7 @@ public:
 // code sees a typed payload, and only while a lease retains its physical owner.
 template<class T> class ResourceOwner {
   friend class ResourceDomain;
+  friend class ResourceAccess;
   std::shared_ptr<resource_detail::Control<T>> control;
   explicit ResourceOwner(std::shared_ptr<resource_detail::Control<T>> control):control(std::move(control)){}
 public:
@@ -142,6 +145,49 @@ public:
     std::lock_guard guard(retained->mutex);
     if(retained->closed->load())throw DataError("E_RESOURCE_CLOSED","resource is closed");
     return ResourceLease<T>(retained,retained->payload);
+  }
+};
+
+// A retained authority snapshot owns no revocation responsibility. It may
+// outlive the unique domain wrapper, but every use still checks its activity.
+class ResourceAccess {
+  friend class ResourceDomain;
+  resource_detail::Bindings bindings;
+  std::shared_ptr<resource_detail::DomainState> own;
+  ResourceAccess(resource_detail::Bindings bindings,std::shared_ptr<resource_detail::DomainState> own)
+      :bindings(std::move(bindings)),own(std::move(own)){}
+public:
+  ResourceAccess()=default;
+  const void *scopeKey()const noexcept{return own.get();}
+  void check()const{auto retained=bindings;auto locks=resource_detail::lock(retained);resource_detail::check(retained);}
+  template<class T,class Factory> ResourceOwner<T> make(Factory &&factory) const {
+    static_assert(std::is_nothrow_destructible_v<T>);
+    auto retained=bindings;
+    auto create=std::forward<Factory>(factory);
+    auto ticket=std::make_shared<resource_detail::Ticket>(retained);
+    {
+      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
+      for(const auto &state:retained)
+        if(state->used.load()>=state->limit)throw DataError("E_RESOURCE_LIMIT","resource domain quota exceeded");
+      for(const auto &state:retained)state->used.fetch_add(1);
+      ticket->reserved=true;
+    }
+    auto identity=resource_detail::nextIdentity();
+    auto value=create(ResourcePermit(retained));
+    if(!value)throw DataError("E_RESOURCE_CLOSED","resource factory returned no value");
+    auto payload=std::make_shared<resource_detail::Payload<T>>(std::move(ticket),std::move(value));
+    auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));
+    {
+      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
+      for(const auto &state:retained){
+        auto &resources=state->resources;
+        // Never acquire the last strong control reference under domain locks:
+        // its destructor could re-enter the domain. Status has no callbacks.
+        std::erase_if(resources,[](const auto &entry){return entry.resource.expired()||entry.closed->load();});
+        resources.push_back({control,control->closed});
+      }
+    }
+    return ResourceOwner<T>(std::move(control));
   }
 };
 
@@ -200,34 +246,9 @@ public:
     }
     for(const auto &entry:resources)if(auto resource=entry.resource.lock())resource->close();
   }
+  ResourceAccess access()const{return ResourceAccess(bindings,own);}
   template<class T,class Factory> ResourceOwner<T> make(Factory &&factory) const {
-    static_assert(std::is_nothrow_destructible_v<T>);
-    auto retained=bindings;
-    auto create=std::forward<Factory>(factory);
-    auto ticket=std::make_shared<resource_detail::Ticket>(retained);
-    {
-      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
-      for(const auto &state:retained)
-        if(state->used.load()>=state->limit)throw DataError("E_RESOURCE_LIMIT","resource domain quota exceeded");
-      for(const auto &state:retained)state->used.fetch_add(1);
-      ticket->reserved=true;
-    }
-    auto identity=resource_detail::nextIdentity();
-    auto value=create(ResourcePermit(retained));
-    if(!value)throw DataError("E_RESOURCE_CLOSED","resource factory returned no value");
-    auto payload=std::make_shared<resource_detail::Payload<T>>(std::move(ticket),std::move(value));
-    auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));
-    {
-      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
-      for(const auto &state:retained){
-        auto &resources=state->resources;
-        // Never acquire the last strong control reference under domain locks:
-        // its destructor could re-enter the domain. Status has no callbacks.
-        std::erase_if(resources,[](const auto &entry){return entry.resource.expired()||entry.closed->load();});
-        resources.push_back({control,control->closed});
-      }
-    }
-    return ResourceOwner<T>(std::move(control));
+    return access().make<T>(std::forward<Factory>(factory));
   }
 };
 namespace resource_detail {

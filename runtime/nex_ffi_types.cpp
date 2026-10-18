@@ -33,7 +33,7 @@ struct Shape {uint32_t kind=0;std::string name;size_t item=0;std::vector<Field> 
 const std::map<std::string,uint32_t> kinds={{"i64",NEX_FFI_I64},{"f64",NEX_FFI_F64},{"bool",NEX_FFI_BOOL},{"str",NEX_FFI_STRING},{"bytes",NEX_FFI_BYTES},{"list",NEX_FFI_LIST},{"record",NEX_FFI_RECORD},{"enum",NEX_FFI_ENUM},{"result",NEX_FFI_RESULT},{"function",NEX_FFI_FUNCTION},{"file",NEX_FFI_FILE},{"unit",NEX_FFI_UNIT}};
 }
 struct ForeignSignature::Layout {
-  std::string description;
+  std::string description,canonical;
   std::vector<Shape> types;
   std::vector<size_t> parameters;
   size_t result=0;
@@ -72,10 +72,11 @@ ForeignSignature::ForeignSignature(const std::string &text){
     while(!pending.empty()){auto i=pending.back();pending.pop_back();if(!visited.insert(i).second)continue;const auto &t=out->types[i];if(t.kind==NEX_FFI_LIST||t.kind==NEX_FFI_RESULT)pending.push_back(t.item);for(const auto &f:t.fields)pending.push_back(f.type);for(const auto &v:t.variants)for(const auto &f:v.fields)pending.push_back(f.type);}
     if(visited.size()!=out->types.size())schemaError("foreign signature contains unreachable types");
     for(size_t i=0;i<out->types.size();++i){std::set<size_t> chain;auto at=i;while(out->types[at].kind==NEX_FFI_LIST||out->types[at].kind==NEX_FFI_RESULT){if(!chain.insert(at).second)schemaError("recursive foreign containers need a nominal type");at=out->types[at].item;}}
-    out->description=doc.dump();layout=std::move(out);
+    out->description=doc.dump();out->canonical=nlohmann::json(doc).dump();layout=std::move(out);
   }catch(const DataError &e){if(e.code=="E_FFI_SIGNATURE")throw;schemaError(e.what());}
   catch(const J::exception &){schemaError("invalid foreign signature JSON");}
 }
+const std::string &ForeignSignature::canonical()const{if(!layout)schemaError("foreign signature has no layout");return layout->canonical;}
 namespace foreign_detail {
 struct TypedContext::Impl {
   std::shared_ptr<const ForeignSignature::Layout> layout;
