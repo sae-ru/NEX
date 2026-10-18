@@ -62,12 +62,13 @@ def main():
     parser.add_argument('--arch',choices=('arm64','amd64'),default='arm64' if platform.machine() in ('arm64','aarch64') else 'amd64')
     parser.add_argument('--jobs',type=int,default=2)
     parser.add_argument('--skip-image-build',action='store_true')
+    parser.add_argument('--image',help='Explicit toolchain image/tag; recorded with its immutable image ID')
     parser.add_argument('--live',action='store_true',help='Also run real LLDB/DAP tests; requires native ptrace support')
     args=parser.parse_args()
     source=args.source.resolve();output=(args.output or source/'build'/('linux-'+args.arch)).resolve()
     if not (source/'CMakeLists.txt').is_file():parser.error('--source must name a NEX source checkout')
     if not 1<=args.jobs<=8:parser.error('--jobs must be 1..8')
-    output.mkdir(parents=True,exist_ok=True);image='nex-linux-toolchain:'+args.arch
+    output.mkdir(parents=True,exist_ok=True);image=args.image or 'nex-linux-toolchain:'+args.arch
     if not args.skip_image_build:
         with (output/'image.log').open('w') as log:
             subprocess.run(['docker','build','--platform','linux/'+args.arch,'--progress','plain','-f',str(source/'tools/linux/Dockerfile'),'-t',image,str(source)],stdout=log,stderr=subprocess.STDOUT,check=True)

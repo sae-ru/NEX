@@ -32,6 +32,9 @@ cmake -S . -B build \
 
 ## Linux development environment
 
+Linux application-package integration tests also require `patchelf` and the
+usual `readelf`/`ldd` tools. The maintained development image installs these.
+
 ```sh
 python3 tools/linux/check.py --arch arm64
 python3 tools/linux/check.py --arch amd64
@@ -60,6 +63,15 @@ Imports use `import "./model.nex" as model;` and exported definitions use `pub f
 Generated native output runs without the compiler, LLVM or a model. Pure programs do not link SQLite; storage programs link SQLite, and HTTP/TLS programs additionally link OpenSSL. The development compiler links against LLVM/MLIR, SQLite and Z3. Generated programs do not depend on Z3. `cmake --install build --prefix /chosen/sdk` installs the compiler and language/runtime resources. The compiler first looks for resources in its installed `share/nex`, then in the source checkout. `NEX_RESOURCE_DIR` explicitly overrides the resource location; `NEX_CLANG` overrides the native compiler driver. Toolchain 0.27 adds relative host-SDK selection and a verified macOS ARM64 development bundle. Development 0.28 adds ELF bundling, installed-package notice inventory and source-free Linux bundle/archive verification; its full validation is in progress. Broader redistributable delivery remains pending. See [SDK bundling](docs/sdk.md).
 
 Verify a complete installed development workflow with `python3 /chosen/sdk/share/nex/tools/sdk_acceptance.py /chosen/sdk --output /new/evidence --browser --live`. It exercises a failed reviewed task, graph repair/import, native/reference/TypeScript agreement (including finite numbers), profile attribution/cleanup, real archived DAP watches, source-deleted replay/export, scalar proof and locked Vite builds for callable and numeric browser state. See [the SDK handoff guide](docs/sdk.md) for dependencies, retained evidence and optional checks. Linux verification also runs this workflow in a separate container with no source checkout mounted.
+
+## Application packages
+
+`nex package FILE --directory NEW_DIRECTORY --json` builds a release application
+and copies only its required non-platform libraries and notices. Native servers
+use `--target server`. The directory can run without NEX SDK; platform runtime
+compatibility and actual deployment execution must be verified separately.
+See [application packaging](docs/packaging.md) for provenance, SDK inventory
+reuse, Linux tools and runtime configuration. This is development 0.29 work.
 
 ## Native target selection
 

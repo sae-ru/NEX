@@ -16,11 +16,17 @@ llvm::json::Value packageApplication(const Program &program, const BuildResult &
   llvm::SmallString<128> temporary;
   if(auto error=llvm::sys::fs::createUniqueDirectory("nex-package",temporary))throw Error("E_FILE",error.message());
   auto folder=fs::path(temporary.str().str()),request=folder/"request.json";
+  auto metadata=llvm::json::parse(readFile((fs::path(built.executable).parent_path()/"build.json").string()));
+  if(!metadata){llvm::consumeError(metadata.takeError());throw Error("E_PACKAGE","invalid native build metadata");}
+  auto info=metadata->getAsObject();
+  if(!info||info->getString("key")!=built.key)throw Error("E_PACKAGE","native build metadata does not match its artifact");
   writeFile(request.string(),json(llvm::json::Object{{"schema","nex.application-request/1"},
     {"binary",built.executable},{"binary_sha256",llvm::toHex(digest,true)},
     {"runtime_notices",built.notices},{"sdk_root",fs::path(options.compiler).parent_path().parent_path().string()},
     {"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(program)},
     {"build_key",built.key},{"target",built.target},{"compiler_target",built.compilerTarget},
+    {"compiler_build",info->getString("compiler_build").value_or("")},
+    {"profile",info->getString("profile").value_or("")},{"kind",info->getString("kind").value_or("")},
     {"host_compatible",built.hostCompatible}})+"\n");
   const char *python=std::getenv("NEX_PYTHON");
   std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),

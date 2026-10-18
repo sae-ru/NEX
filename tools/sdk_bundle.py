@@ -83,13 +83,13 @@ class DebianNotices:
 
 
 class Bundle:
-    def __init__(self, sdk, output, notices, dpkg_notices=False):
+    def __init__(self, sdk, output, notices, dpkg_notices=False, allow_empty=False):
         self.sdk, self.output = sdk, output
         self.origins, self.images, self.destinations, self.dependencies = {}, {}, {}, {}
         self.minimum_os = (0,)
         self.system_libraries = set()
         self.components = json.loads(notices.read_text())
-        if self.components.get('schema') != 'nex.sdk-notices/1' or (not self.components.get('components') and not dpkg_notices):
+        if self.components.get('schema') != 'nex.sdk-notices/1' or not isinstance(self.components.get('components'), list) or (not self.components['components'] and not dpkg_notices and not allow_empty):
             raise ValueError('expected nex.sdk-notices/1 with nonempty components')
         names = set()
         for component in self.components['components']:

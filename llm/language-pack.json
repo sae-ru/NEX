@@ -40,7 +40,11 @@
     "sdk_acceptance": "tools/sdk_acceptance.py",
     "host_sdk_schema": "llm/sdk-host.schema.json",
     "sdk_bundle": "tools/sdk_bundle.py",
-    "linux_sdk_bundle": "tools/linux/bundle.py"
+    "linux_sdk_bundle": "tools/linux/bundle.py",
+    "application_packaging": "docs/packaging.md",
+    "application_packager": "tools/app_bundle.py",
+    "application_package_schema": "llm/application-package.schema.json",
+    "application_package_acceptance": "tools/application_acceptance.py"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function --json",
   "context_command": "nex context --symbol NAME",

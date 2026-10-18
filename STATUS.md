@@ -2,15 +2,25 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Backup checkpoint: unfinished application packaging
+## In progress: native application packages
 
-The working tree now starts development toolchain **0.29.0**, with source language
-**0.11** unchanged. This backup preserves the initial `packaging.h`/`packaging.cpp`
-implementation, its CMake wiring and the SDK collector refactor. It is unfinished:
-`tools/app_bundle.py`, CLI integration and application-package tests are still
-missing. CMake currently names that missing helper for installation. This snapshot
-has not been built or tested as 0.29; the 0.28 results below apply to their recorded
-immutable inputs. Preserve this work as a development backup rather than a release.
+Development toolchain **0.29.0** retains source language **0.11**. `nex package`
+builds an application/server (release by default) and assembles its required
+non-platform library closure, full notices and hash inventory into a new directory.
+It reuses bundled-SDK provenance with byte-integrity checks, supports explicit
+notices and Debian package metadata, rewrites copies and never executes the app.
+The SDK collector shares its relocation/notice/inventory code with this path.
+
+The compiler built successfully. Five macOS tests passed in 24.762 s: archived
+source deletion, output preservation/rejected modes, actual selected SQLite after
+deleting its original library/source/build, SDK-inventory reuse plus changed-library
+rejection, and a moved HTTPS server with authentication, per-user storage,
+persistence across restart and clean exit. An initial `/var` versus `/private/var`
+prefix mismatch was fixed by canonicalizing the staging directory; the server
+test requires permission to open loopback sockets. Full 0.29 platform/installed
+SDK validation is pending. These tests do not establish broader deployment
+compatibility, Windows/mobile packaging or completion of the requested toolchain.
+See [application packaging](docs/packaging.md) for prerequisites and limits.
 
 The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed

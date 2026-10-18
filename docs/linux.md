@@ -1,4 +1,13 @@
-# Linux compiler and development chain — toolchain 0.23
+# Linux compiler and development chain — development toolchain 0.29
+
+Native application packaging uses `readelf`, `ldd` and patchelf 0.18.0; the
+development recipe now installs the pinned patchelf package. Older retained
+images need that packaging dependency before running the new `packaging` suite.
+`tools/linux/check.py --image IMAGE --skip-image-build` can select an existing
+prepared image, retaining its actual immutable image ID and architecture in
+the report. The dedicated `nex-sdk-packager:arm64`/`:amd64` images supplement
+the previously verified compiler images with patchelf without replacing them.
+See [application packages](packaging.md) for the smaller runtime requirements.
 
 The Linux environment builds NEX itself and native NEX programs with C++20,
 LLVM/MLIR/LLD 22.1.8, SQLite, OpenSSL 3, Z3 5.3.1 and Node.js 22.22.3.

@@ -115,3 +115,13 @@ retain an external GNU platform SDK/runtime and validate copied dependencies in
 a clean environment. Bundle assembly alone is not application, debugger or
 cross-platform execution evidence. Keep checked acceptance reports and explicit
 platform prerequisites with distributed artifacts.
+
+For native deployment, query application_package_command/platforms/limits and
+read application_package_guide. `nex package FILE --directory NEW --json`
+defaults to release and never runs the application; `--target server` packages
+HTTP/HTTPS. The package carries only needed non-platform libraries and notices.
+Bundled-SDK dependencies are hash-checked against their inventory; other inputs
+need --notices or Linux --dpkg-notices. Relocate and execute the resulting bin/app
+on the intended host before claiming deployment verified. Supply credentials,
+keys, databases and web assets explicitly at runtime. Keep execution_verified
+false in the assembly manifest and retain separate acceptance evidence.
