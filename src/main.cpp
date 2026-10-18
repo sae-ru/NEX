@@ -2,7 +2,6 @@
 #include "nex/native_diagnostics.h"
 #include "nex/native_toolchain.h"
 #include "nex/project.h"
-#include "nex/graph_snapshot.h"
 #include "nex/web.h"
 #include "nex/api.h"
 #include "nex/profiling.h"
@@ -148,20 +147,11 @@ int run(const Options &o) {
     if(o.get("--toolchain").empty()||!nativeCommands.contains(o.command)||o.get("--target")=="web"||o.has("--interpreter-only")||(o.command=="emit"&&o.get("--kind")!="llvm"))
       throw Error("E_OPTION","--toolchain FILE selects a native build/package/run/test/debug/profile or emit --kind llvm");
   }
-  if(o.command=="snapshot"||o.command=="recover"){
-    const std::set<std::string> allowed={"--directory","--timeout"};
-    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported snapshot/recovery option: "+key);}
-    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported snapshot/recovery flag: "+flag);
-    if(!o.extra.empty()||o.get("--directory").empty()||(o.command=="snapshot"&&!o.positional.empty())||(o.command=="recover"&&o.positional.empty()))throw Error("E_OPTION","snapshot needs --directory NEW; recover needs SNAPSHOT --directory NEW_PROJECT");
-    unsigned seconds=60;if(o.values.contains("--timeout")){auto text=o.get("--timeout");seconds=0;if(text.empty())throw Error("E_OPTION","snapshot timeout must be 1..3600 seconds");for(char c:text){if(c<'0'||c>'9'||seconds>(3600-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid snapshot timeout");seconds=seconds*10+unsigned(c-'0');}if(!seconds)throw Error("E_OPTION","snapshot timeout must be 1..3600 seconds");}
-    auto result=o.command=="snapshot"?createGraphSnapshot(projectRoot(fs::current_path()).string(),o.get("--directory"),seconds):recoverGraphSnapshot(o.positional[0],o.get("--directory"),seconds);
-    print(std::move(result));return 0;
-  }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
+      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"

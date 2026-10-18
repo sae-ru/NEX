@@ -1,6 +1,0 @@
-test_genuine_043_store_backfills_without_rewriting_history (__main__.GraphIdentities) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.187s
-
-OK

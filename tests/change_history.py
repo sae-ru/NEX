@@ -103,6 +103,16 @@ class ChangeHistory(harness.ToolchainCase):
         self.assertEqual(self.cli('apply','--patch',self.patch(43),ok=False)['code'],'E_CHANGE_INTEGRITY')
         self.assertEqual(self.rows(),before)
 
+    def test_head_rewritten_outside_journal_is_rejected_without_new_rows(self):
+        first=self.ready();self.edit(42)
+        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+            db.execute('UPDATE head SET revision=? WHERE id=1',(first,))
+        before=self.rows()
+        self.assertEqual(self.cli('changes',ok=False)['code'],'E_CHANGE_INTEGRITY')
+        self.assertEqual(self.cli('apply','--patch',self.patch(43),ok=False)['code'],'E_CHANGE_INTEGRITY')
+        self.assertEqual(self.restore(first,first,ok=False)['code'],'E_CHANGE_INTEGRITY')
+        self.assertEqual(self.rows(),before)
+
     def test_paging_export_and_utf8_provenance_limits(self):
         self.ready()
         for number in range(42,47):self.edit(number)
