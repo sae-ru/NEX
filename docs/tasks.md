@@ -276,6 +276,13 @@ captures fail explicitly.
 These bounds include sources and compiler resources; they do not guarantee that
 every combination of standalone loader limits fits one task.
 
+Each selected foreign execution command receives a fresh mode-0700 `TMPDIR`
+in the host's temporary root. The parent owns it and removes its contents after the
+supervised process group is reaped, including a timeout of uncooperative native
+code. Private loader snapshots therefore do not depend on a killed child running
+C++ destructors. Cleanup checks directory identity and does not follow a replaced
+root or nested symlinks. Temporary files do not persist between check commands.
+
 Replay requires a current explicitly supplied trusted catalogue whose normalized
 fingerprint, permissions and verified bytes agree with reviewed/captured inputs.
 A saved receipt grants no native authority. Changing copied files and recomputing

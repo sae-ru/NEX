@@ -900,7 +900,7 @@ llvm::json::Value describe() {
     {"profile_guide","docs/profiling.md"},
     {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},
     {"verification_guide","docs/verification.md"},
-    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay"}},
+    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay","owned_foreign_temporary_files"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
     {"task_catalogue_command","nex foreign HOST.json --json"},{"task_foreign_field","foreign_hash"},
     {"not_yet_supported",llvm::json::Array{"custom_traits","higher_kinded_types","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},

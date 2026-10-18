@@ -3,6 +3,9 @@ import copy
 import hashlib
 import json
 import os
+import signal
+import subprocess
+import time
 from pathlib import Path
 import shutil
 import unittest
@@ -200,5 +203,58 @@ class TaskForeign(harness.ToolchainCase):
         self.assertEqual(rows['observe']['code'],'E_TASK_INTEGRITY')
         self.assertTrue((directory/'artifacts/observe/commands/reference.json').is_file())
         self.assertFalse((directory/'artifacts/observe/commands/native.json').exists())
+
+    def test_timeout_reaps_uncooperative_native_code_and_removes_private_snapshots(self):
+        original=fixture.C
+        shutil.rmtree(self.root/'bundle')
+        try:
+            fixture.C=original.replace("mark('C');","mark('C');for(;;){}",1)
+            self.program(SOURCE,{'echo':'echo','done':'unit'})
+        finally:fixture.C=original
+        self.catalogue_report=self.cli('foreign',self.host)
+        task=self.cli('task',self.file,'--kind','init');task['checks']=[];task['requirements']=[]
+        self.add(task,{'id':'timeout','kind':'run','target':'native','entry':'taskffi::main',
+            'timeout_seconds':1,'expect':{'stdout':'42\n','exit_code':0}})
+        self.save(task)
+        ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
+        directory=self.root/'controlled-timeout'
+        result=self.task('run','--directory',directory,ok=False)
+        self.assertEqual(result['checks'][0]['code'],'E_TASK_TIMEOUT')
+        self.assertIn('C',self.events())
+        self.assertEqual(list(ambient.glob('nex-module-*')),[])
+        self.assertEqual(list(ambient.glob('nex-task-*')),[])
+        self.assertEqual(list(directory.glob('temporary/*/*')),[])
+
+    def test_interruption_cleans_native_snapshots_and_skips_remaining_checks(self):
+        original=fixture.C
+        shutil.rmtree(self.root/'bundle')
+        try:
+            fixture.C=original.replace("mark('C');","mark('C');for(;;){}",1)
+            self.program(SOURCE,{'echo':'echo','done':'unit'})
+        finally:fixture.C=original
+        self.catalogue_report=self.cli('foreign',self.host)
+        task=self.cli('task',self.file,'--kind','init');task['checks']=[];task['requirements']=[]
+        self.add(task,{'id':'cancel','kind':'run','target':'native','entry':'taskffi::main','timeout_seconds':5,
+            'expect':{'stdout':'42\n','exit_code':0}})
+        self.add(task,{'id':'later','kind':'effects','target':'source','symbols':['taskffi::main'],
+            'allowed_effects':['io','ffi']})
+        self.save(task)
+        ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
+        process=subprocess.Popen([harness.NEX,'task',str(self.taskfile),'--kind','run','--foreign',str(self.host),'--json'],
+            cwd=self.root,env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        try:
+            deadline=time.monotonic()+15
+            while 'C' not in self.events() and process.poll() is None and time.monotonic()<deadline:time.sleep(.02)
+            self.assertIn('C',self.events())
+            process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=15)
+            self.assertEqual(process.returncode,130,out+err)
+            result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
+            self.assertEqual([c['status'] for c in result['checks']],['interrupted','skipped'])
+            self.assertEqual(list(ambient.glob('nex-module-*')),[])
+            self.assertEqual(list(ambient.glob('nex-task-*')),[])
+        finally:
+            if process.poll() is None:
+                try:process.communicate(timeout=12)
+                except subprocess.TimeoutExpired:process.kill();process.communicate(timeout=10)
 
 if __name__=='__main__':unittest.main()

@@ -14,20 +14,29 @@ and source binding/signature pins before native module initialization. Input
 integrity is checked around each command. The exact 8192-input boundary now
 counts the integrity index separately, and oversized indexes fail before running.
 
-Seven expanded task-FFI cases pass in 212.511 s in an isolated development build,
-including readonly discovery, invalid grants/signatures, source-deleted replay,
-profile invocation, tampered/rehashed captures and replay with exactly 8192 input
-files. A separate command-time mutation case passes in 19.580 s and confirms that
-the next native command cannot start after a captured policy changes. The current
-eight-case task-FFI and fourteen-case source-FFI CTest groups pass in 242.74 s and
-302.14 s. The installed macOS ARM64 SDK passes all thirteen phases in 247.092 s,
+Before the forced-exit correction, 0.42 passed all 49 groups on macOS ARM64
+(358 Python cases and ten C++ probes) in 1019.58 s and all 49 groups on Linux
+ARM64 in 845.31 s. Both installed SDK workflows passed all thirteen phases,
 including the reviewed nominal C-module task and source-deleted trusted replay.
-The complete current regression and broader platform validation remain pending.
-The updated installed workflow exercises reviewed tasks with the nominal C
-module as well as direct source calls. The [task-FFI evidence](docs/evidence/ffi-tasks-0.42.0.json)
-records tested inputs and pending validation. This is an experimental integration,
-not completion of NEX. Dependency-closure packaging, callbacks into NEX,
-general resources, async and remaining platform adapters are still open.
+The macOS SDK workflow took 247.092 s. Those results describe the initial
+0.42 snapshot, not the correction below.
+
+A real uncooperative C callback exposed a cleanup defect: the supervisor reaped
+the timed-out process, but one private module snapshot remained. The task parent
+now owns a fresh mode-0700 system temporary directory for each selected foreign
+command, removes it after group reaping, and verifies directory identity before
+cleanup. Interrupt state is retained before cleanup so cancellation still skips
+remaining checks. The isolated nine-case system-temp run passes in 261.686 s;
+the final timeout/interruption pair passes in 4.381 s. Existing grant, integrity,
+8192-input-boundary and replay cases are included. The corrected ten-case task-FFI group and fourteen-case source-FFI group pass in
+249.03 s and 312.53 s. The corrected full regression and installed SDK are being
+rechecked; current broader platform,
+sanitizer and distribution validation remains pending.
+
+The [task-FFI evidence](docs/evidence/ffi-tasks-0.42.0.json) records the baseline,
+correction and pending checks. This is an experimental integration, not completion
+of NEX. Dependency-closure packaging, callbacks into NEX, general resources,
+async and remaining platform adapters are still open.
 
 ## Verified development milestone: source foreign declarations
 

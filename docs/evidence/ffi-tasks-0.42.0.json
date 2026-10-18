@@ -3,19 +3,15 @@
   "toolchain": "0.42.0",
   "language": "0.15",
   "checked_at": "2026-10-18T13:24:49.181993+00:00",
-  "status": "experimental_partial_validation",
+  "status": "owned_temporary_exit_correction_validation",
   "full_objective_complete": false,
   "accepted_release": false,
-  "compiler_build": "31a17d79dac916e6bf566cd7526ed84ccf798f1b6d4cf9b6d6b65ab5768c4ee1",
-  "current_compiler_sha256": "3cb4dce6fa2dce71536ae843b89d7613282e260c21944441fa54b08bbba6bffc",
-  "tested_staging_compiler_sha256": "46ad49487e193f9e28b6fcf8c00c8d5e6e233e32623600fe9ce161a20c1af9c0",
-  "staging_and_promoted_implementation_build_ids_match": true,
   "source_sha256": {
     "CMakeLists.txt": "4273884b851ce1bf27cae9771e14dd4dbbc388f034e97ad89c5655a0f7c5db6f",
     "docs/ffi-design.md": "49d0cc47a9587be7a80cbd35b63503b7ed0196872e32628a806cfcf36008f360",
     "docs/language.md": "ba403cc0d4061eac6d4b9ce1419c5762b7817657405f1da02742a526907b5185",
     "docs/protocol.md": "75fae0572eb78242830818d0031a339982ba827eb01e386e686cec3856c8a938",
-    "docs/tasks.md": "c03e40e2bb91036883d5a3c510243fcdc23f0bc8f107275d6e898dc28b227c01",
+    "docs/tasks.md": "59cb8446e5f5390a0640d24ab4c07eb62c07908672ae3353efd8ce483c968c0e",
     "include/nex/api.h": "d016bf0fc19d50f934953bcfd04633b8a3678dce1f8be7ea88c4a61d83e9f038",
     "include/nex/backend.h": "ff0658439f58ec0ab172b02ebb299873f67742510a17e246b1e932bf699a9061",
     "include/nex/debug_values.h": "8cc861de337977e7997de868b682f12ba6faca9943e1708392232e92d4d9374e",
@@ -182,7 +178,7 @@
     "src/generics.cpp": "34072c0fb313fc448453948b7990b515f2565e5e0cca43b97ab03ac3565d4274",
     "src/incremental.cpp": "46991cd96917511912c9860f64a04018b2101d84ba642ed74e05c2d2786e6a8f",
     "src/interpreter.cpp": "f8521b67bbb57b9cbbe21c1ef69e37a668ad56c31f1fb25147462061a54bd519",
-    "src/language.cpp": "3313d5ede231b9f8a7413aa735f3a0f484301806271e200a634536f9af3e37d8",
+    "src/language.cpp": "221654ebdab86112876256753eb384b1882da6813f28e7073791d5a887e43b45",
     "src/main.cpp": "2edb950249778516c5d3c094480fb782c47c22f9f4305fb2983a4e0d41884b36",
     "src/matching.cpp": "47501d61fecd6d67c54ed5fe86880a911f34176bcce7368905a7cc4d4561d174",
     "src/modules.cpp": "9932fe346494a0191fa328ce22cb57ee4d6f7ac94623bde36262f81dabd58119",
@@ -193,13 +189,13 @@
     "src/profiling.cpp": "f903dbf9a0abcf470e82cec27588dfbbf276c732d72b40c0c403a12ba0d7aad4",
     "src/project.cpp": "fbbc169d322a3f5941efd3883fc532659b3ca6faf6126a244db8e825ed0a34bf",
     "src/task_process.cpp": "7ac1a2f6f22997469f8fc24c8a6844a83b0e21cf797b7084599e22328d72d1cb",
-    "src/tasks.cpp": "794791326aa0c099a6b5a22f40a98ec1c1498abe5e3f32a8d52d311a195ec5c4",
+    "src/tasks.cpp": "206f2b11d06f64a822e1a99621bd6ce626b6f979df6353cac60eb21b691e8ba8",
     "src/typescript.cpp": "84232a8268204ab3c4e3ec3f073ce1c895c4cd10f46c4567646e76ea39577231",
     "src/verification.cpp": "3c74a537c14038fa660c9c14b593a77d6f003bb9c6fa5087681218233231729c",
     "src/watch_values.cpp": "e3a6e5a01e08806fb4222be418733f3c5ec3970d8b70a021cbe92d49eadb2038",
     "src/web.cpp": "789e64faef96976a6f8c3c11f0f7a69ba43757ac9c869f12e8954041e38ffee7",
     "src/wire_schema.cpp": "4c7c70ab6808d67d8f1b59898a12ce3e895636ebab18689888c6167b9ec752d5",
-    "tests/task_foreign.py": "16f69840fb38496018378b35e000cb67d7cc673c7da27cb93e22a941822887ac",
+    "tests/task_foreign.py": "eb69cce9145a3d9c84fc9170c6a24146b4fb79820998d91b8f984d4a556dd74e",
     "tools/sdk_acceptance.py": "430a3d7a982fa8b50ca9333df29f4e4eb6bac3ffe971f7f27a7229d73b691008"
   },
   "checks": {
@@ -217,24 +213,39 @@
       "log": "/Users/sae/projects/NEX/build/task-foreign-042-mutation.log",
       "sha256": "3d82faf1dd19ded00e5634bf67a9a366be8722c3a020c8248d59e0d2be39025d"
     },
-    "installed_macos_arm64_sdk": {
+    "baseline_macos_full_regression": {
       "ok": true,
-      "phases": 13,
-      "seconds": 247.092,
-      "report": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/report.json",
-      "sha256": "dd6edf69c778e91708f7b8929123a8def837bf9380811a60a71a246ff11f55f8",
+      "groups": 49,
+      "python_cases": 358,
+      "seconds": 1019.58,
       "compiler_sha256": "3cb4dce6fa2dce71536ae843b89d7613282e260c21944441fa54b08bbba6bffc",
-      "all_indexed_resources_match_workspace": true,
-      "reviewed_nominal_task": {
-        "hash": "6959afe7666948e43a7d66286bae235e2e25504283b115f053f728258ce4dcf1",
-        "foreign_hash": "334ffebd3c073aad1ffc86377e46eebdfb5dbfb06d3503237854e02f60292123",
-        "receipt": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/foreign-boundary/source/.nex/tasks/runs/run-1008333924-1138793599/receipt.json",
-        "replay": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/foreign-boundary/source/.nex/tasks/runs/run-3195566732-4199177517/receipt.json",
-        "source_deleted_trusted_replay": true
-      },
-      "capture_and_replay_operator_hashes_agree": true
+      "scope": "before owned temporary-directory timeout fix"
     },
-    "current_completed_ctest_groups": {
+    "baseline_linux_arm64": {
+      "ok": true,
+      "groups": 49,
+      "python_cases": 358,
+      "source_free_sdk_phases": 13,
+      "sdk_seconds": 192.103,
+      "report": "/Users/sae/projects/NEX/build/linux-042-task-arm64/verification.json",
+      "report_sha256": "ea3d4a6fd9beac669523117bae54a0d081fee28e2998bf27ec75f24f0d88fd14",
+      "scope": "before owned temporary-directory timeout fix"
+    },
+    "owned_system_temp_cases": {
+      "ok": true,
+      "cases": 9,
+      "seconds": 261.686,
+      "log": "/Users/sae/projects/NEX/build/task-foreign-042-owned-system-temp.log",
+      "scope": "system temporary root; before interrupt-priority adjustment"
+    },
+    "owned_timeout_and_interrupt": {
+      "ok": true,
+      "cases": 2,
+      "seconds": 4.381,
+      "log": "/Users/sae/projects/NEX/build/task-foreign-042-owned-signal-final.log",
+      "sha256": "3187ab99dc10fc5402ec542dc2fb46b0507cde4ac2a855d4e993a27bbdf5a6c1"
+    },
+    "baseline_completed_ctest_groups": {
       "task_foreign": {
         "ok": true,
         "cases": 8,
@@ -247,6 +258,37 @@
         "seconds": 302.14,
         "source_log": "/Users/sae/projects/NEX/build/ctest-042-task.log"
       }
+    },
+    "baseline_installed_macos_arm64_sdk": {
+      "ok": true,
+      "phases": 13,
+      "seconds": 247.092,
+      "report": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/report.json",
+      "sha256": "dd6edf69c778e91708f7b8929123a8def837bf9380811a60a71a246ff11f55f8",
+      "compiler_sha256": "3cb4dce6fa2dce71536ae843b89d7613282e260c21944441fa54b08bbba6bffc",
+      "reviewed_nominal_task": {
+        "hash": "6959afe7666948e43a7d66286bae235e2e25504283b115f053f728258ce4dcf1",
+        "foreign_hash": "334ffebd3c073aad1ffc86377e46eebdfb5dbfb06d3503237854e02f60292123",
+        "receipt": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/foreign-boundary/source/.nex/tasks/runs/run-1008333924-1138793599/receipt.json",
+        "replay": "/Users/sae/projects/NEX/build/sdk-042-task-acceptance/foreign-boundary/source/.nex/tasks/runs/run-3195566732-4199177517/receipt.json",
+        "source_deleted_trusted_replay": true
+      },
+      "capture_and_replay_operator_hashes_agree": true,
+      "indexed_resources_matched_initial_workspace": true
+    },
+    "corrected_completed_ctest_groups": {
+      "task_foreign": {
+        "ok": true,
+        "cases": 10,
+        "seconds": 249.03,
+        "source_log": "/Users/sae/projects/NEX/build/ctest-042-owned.log"
+      },
+      "source_ffi": {
+        "ok": true,
+        "cases": 14,
+        "seconds": 312.53,
+        "source_log": "/Users/sae/projects/NEX/build/ctest-042-owned.log"
+      }
     }
   },
   "implemented": [
@@ -258,16 +300,32 @@
     "source_deleted_replay_with_current_operator_trust",
     "rehashed_capture_rejection",
     "command_time_capture_integrity",
-    "exact_8192_file_boundary_replay"
+    "exact_8192_file_boundary_replay",
+    "parent_owned_temporary_cleanup_on_timeout_and_interruption"
   ],
   "baseline_source_integration_evidence": "docs/evidence/source-ffi-0.41.0.json",
   "pending": [
-    "current_full_macos_regression",
-    "current_linux_arm64_and_x86_64_validation",
+    "corrected_current_full_macos_regression",
+    "corrected_current_installed_sdk",
+    "corrected_current_linux_arm64_and_x86_64_validation",
     "current_sanitizer_and_distribution_matrix",
     "foreign_dependency_closure_packaging",
     "callbacks_into_nex",
     "general_resources",
     "async_and_remaining_platform_adapters"
-  ]
+  ],
+  "known_correction_in_progress": {
+    "probe": "build/task-foreign-042-timeout-probe.json",
+    "bug": "A killed native callback left one private snapshot directory.",
+    "fix": "Task parent owns a mode-0700 command temporary root and removes it after process-group reaping.",
+    "status": "promoted; corrected ten-case task group and fourteen-case source group pass; final full matrix/SDK validation running"
+  },
+  "baseline_compiler_build": "31a17d79dac916e6bf566cd7526ed84ccf798f1b6d4cf9b6d6b65ab5768c4ee1",
+  "baseline_compiler_sha256": "3cb4dce6fa2dce71536ae843b89d7613282e260c21944441fa54b08bbba6bffc",
+  "baseline_staging_compiler_sha256": "46ad49487e193f9e28b6fcf8c00c8d5e6e233e32623600fe9ce161a20c1af9c0",
+  "baseline_staging_and_promoted_implementation_build_ids_match": true,
+  "corrected_compiler_build": "1a070aadfd2e3932173d9173af53d02165672601ed48d6954366f07cf83998a5",
+  "corrected_compiler_sha256": "fcf60bd658d0fd7ffa89ebdcc0bfa67cba9568d49c8fca3c387eaa1f057ce46a",
+  "corrected_staging_implementation_build_matches": true,
+  "current_corrected_full_validation_pending": true
 }

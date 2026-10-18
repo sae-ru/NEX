@@ -11,6 +11,10 @@
 #include <functional>
 #include <random>
 #include <thread>
+#include <cerrno>
+#include <cstdlib>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace nex {
 namespace {
@@ -206,6 +210,39 @@ JSON verifyInputs(const fs::path &directory,const TaskOptions &options,const std
 }
 JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(p,c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
 std::string nonce(){return std::to_string(std::random_device{}())+"-"+std::to_string(std::random_device{}());}
+class ForeignTemporary {
+  fs::path path;dev_t device=0;ino_t inode=0;
+  bool cleanup()noexcept{
+    try{
+      if(path.empty())return true;
+      struct stat current{};
+      if(::lstat(path.c_str(),&current)){if(errno==ENOENT){path.clear();return true;}return false;}
+      // A native callback must not redirect parent cleanup to another object.
+      if(current.st_dev!=device||current.st_ino!=inode||!S_ISDIR(current.st_mode))return false;
+      std::error_code ec;fs::permissions(path,fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);if(ec)return false;
+      for(fs::recursive_directory_iterator it(path,ec),end;!ec&&it!=end;it.increment(ec)){
+        auto status=it->symlink_status(ec);if(ec)return false;
+        if(fs::is_directory(status))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);
+      }
+      if(ec)return false;fs::remove_all(path,ec);if(ec)return false;path.clear();return true;
+    }catch(...){return false;}
+  }
+public:
+  ForeignTemporary(){
+    std::error_code ec;auto root=fs::temp_directory_path(ec);
+    if(ec)throw Error("E_TASK_TEMP","native temporary root is unavailable");
+    root=fs::absolute(root,ec);if(ec)throw Error("E_TASK_TEMP","native temporary root is unavailable");
+    auto pattern=(root/"nex-task-XXXXXX").string();
+    if(!::mkdtemp(pattern.data()))throw Error("E_TASK_TEMP","cannot create a fresh native temporary directory");
+    path=pattern;
+    struct stat created{};
+    if(::lstat(path.c_str(),&created)||!S_ISDIR(created.st_mode)||::chmod(path.c_str(),0700)){fs::remove(path,ec);throw Error("E_TASK_TEMP","cannot protect native temporary directory");}
+    device=created.st_dev;inode=created.st_ino;
+  }
+  ~ForeignTemporary(){cleanup();}
+  const fs::path &directory()const{return path;}
+  void finish(){if(!cleanup())throw Error("E_TASK_CLEANUP","cannot clean owned native temporary files");}
+};
 struct Runner {
   Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;
   void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id))verifyForeignCatalogue(*p.foreign,directory/"inputs/foreign");}
@@ -221,10 +258,15 @@ struct Runner {
     if(p.checkTools.contains(id)&&!args.empty()&&(args[0]=="build"||args[0]=="test"||args[0]=="run"||args[0]=="profile"))command.insert(command.end(),{"--toolchain",(directory/"inputs/toolchains"/p.checkTools.at(id)/"config.json").string()});
     if(p.foreignChecks.contains(id)&&!args.empty()&&(args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="profile"))command.insert(command.end(),{"--foreign",(directory/"inputs/foreign/host.json").string()});
     command.insert(command.end(),{"--revision",candidate.revision,"--build-directory",(fs::path(options.root)/".nex/build").string(),"--json"});
-    auto relative="logs/"+id+"/"+label;auto process=runTaskProcess(command,workspace.string(),{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"}},timeout,(directory/relative).string());
+    std::map<std::string,std::string> environment{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"}};
+    std::unique_ptr<ForeignTemporary> temporary;
+    if(p.foreignChecks.contains(id)){temporary=std::make_unique<ForeignTemporary>();environment["TMPDIR"]=temporary->directory().string();}
+    auto relative="logs/"+id+"/"+label;auto process=runTaskProcess(command,workspace.string(),environment,timeout,(directory/relative).string());
+    if(process.interrupted){interrupted=true;report["signal"]=process.interrupted;}
+    // runTaskProcess has reaped the owned group, including uncooperative C.
+    if(temporary)temporary->finish();
     Object result{{"command",Array{}},{"exit_code",process.process.code},{"stdout",relative+"/stdout"},{"stderr",relative+"/stderr"},{"timed_out",process.timedOut},{"output_limit",process.outputLimit},{"interrupted",process.interrupted}};
     for(const auto &arg:command)result.getArray("command")->push_back(arg);
-    if(process.interrupted){interrupted=true;report["signal"]=process.interrupted;}
     JSON response=nullptr;if(!process.outputLimit){auto parsed=llvm::json::parse(process.process.output);if(parsed)response=std::move(*parsed);else llvm::consumeError(parsed.takeError());}
     auto file="artifacts/"+id+"/commands/"+label+".json";result["response"]=response;atomic(directory/file,result);
     return Object{{"ok",!process.timedOut&&!process.outputLimit&&!process.interrupted},{"exit_code",process.process.code},{"receipt",file},{"response",std::move(response)},{"timed_out",process.timedOut},{"output_limit",process.outputLimit}};
