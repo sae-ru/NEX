@@ -11,8 +11,9 @@ NEX is a language and development toolchain built around a checked semantic grap
 The working tree is toolchain **0.47.0 / language 0.15**, adding checked native
 integer fast paths. Signed overflow checks and guarded division/remainder stay
 in SSA; failure branches retain native operation diagnostics. Source syntax,
-evaluation order, C value ABI 1 and canonical identities are unchanged. Current
-validation is tracked in `STATUS.md` and the [build guide](docs/incremental.md).
+evaluation order, C value ABI 1 and canonical identities are unchanged. All 55 groups and both installed SDK workflows pass on macOS/Linux ARM64;
+[the evidence](docs/evidence/native-arithmetic-0.47.0.json) records exact scope.
+Broader validation remains pending in `STATUS.md`.
 
 The preceding verified **0.46.0 / language 0.15** snapshot adds bounded native
 runtime trap reports, checked graph mapping and archived log diagnosis. All 54
@@ -330,4 +331,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The current verified development checkpoint is **0.46.0 / language 0.15**, with 54 regression groups passing on macOS/Linux ARM64, installed SDK workflows and Linux live debugger checks. Broader current Release, sanitizer, x86-64 and SDK distribution checks remain pending; consult `STATUS.md` for exact coverage. Language 0.5/0.6/0.7/0.8/0.9/0.10/0.11 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and broader SDK/platform distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The current verified development checkpoint is **0.47.0 / language 0.15**, with 55 regression groups passing on macOS/Linux ARM64, installed SDK workflows and Linux live debugger checks. Broader current Release, sanitizer, x86-64 and SDK distribution checks remain pending; consult `STATUS.md` for exact coverage. Language 0.5/0.6/0.7/0.8/0.9/0.10/0.11 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and broader SDK/platform distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

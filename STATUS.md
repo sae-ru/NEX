@@ -2,28 +2,32 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: checked native integer fast paths
+## Verified development milestone: checked native integer fast paths
 
-Toolchain **0.47.0 / language 0.15** emits signed checked arithmetic intrinsics
-and guarded division/remainder directly in SSA. Only arithmetic failure branches pass
-their operation metadata to the existing integer runtime helpers. Assertions also
-branch directly on their evaluated boolean and retain the same failure helper. `MIN % -1` is explicitly defined
-without an LLVM undefined operation. Argument order, overflow/division codes,
-source identities, floating rules and C value ABI 1 remain unchanged.
+Toolchain **0.47.0 / language 0.15** keeps signed overflow checks and guarded
+division/remainder in SSA, with integer runtime calls on failure branches.
+Assertions branch on their evaluated boolean; failure retains checked operation
+metadata. `MIN % -1` is defined without LLVM undefined behavior. Arguments still
+evaluate once, left to right. Error codes/sites, floating rules, canonical
+definitions and C value ABI 1 are retained.
 
-The initial isolated compiler passes three acceptance cases in **54.643 s**:
-more than a thousand valid boundary/random operations agree across native
-Debug/Release/Profile, interpreter and TypeScript execution; every integer fault
-matches the reference error and operation ID; loops and effectful nested operands
-retain order. Final isolated arithmetic/diagnostic/runtime groups pass in **97.66 s**, including
-fifteen Python cases and the eight-case C++ runtime probe. Full current validation
-remains pending. Initial interleaved
-local observations show 71.9 ms vs 105.9 ms for a 20-million-iteration loop in
-0.47 vs 0.46, and 259,040 vs 391,168 bytes for a constant-expression workload.
-The [build guide](docs/incremental.md) states measurement scope. These are limited
-shared-host observations, not general speed guarantees. Full current compiler,
-platform, installed SDK and distribution checks remain pending. This does not
-complete the requested NEX language/development chain.
+All **55 regression groups** pass on macOS ARM64 in **1303.39 s** and Linux
+ARM64 in **1098.76 s**, including **415 Python cases and eleven C++ probes**.
+Both installed SDK workflows pass thirteen phases: macOS **320.447 s** and
+source-free Linux **226.347 s**, with all eleven Linux live debugger suites.
+Integer acceptance checks boundaries and loops across reference/native Debug
+and Release/TypeScript, then deletes source and replays archived execution.
+Native trap mapping and retained historical fixtures also pass. All SDK resource
+hashes match the frozen 491-file source snapshot. The
+[evidence](docs/evidence/native-arithmetic-0.47.0.json) records exact compiler,
+source and report hashes.
+
+Initial shared-host observations measured 71.9 ms vs 105.9 ms for a 20-million
+iteration loop and 259,040 vs 391,168 bytes for a constant-expression workload
+against 0.46. That initial compiler preceded final descriptor/assertion changes;
+these measurements are limited observations, not a general speed guarantee.
+Current full Release, sanitizer, x86-64 and SDK distribution checks remain
+pending, as does the rest of the requested language and development chain.
 
 ## Verified development milestone: native runtime trap attribution
 
