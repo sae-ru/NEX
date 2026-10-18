@@ -35,9 +35,17 @@
       "source_free_sdk_seconds": 77.546
     },
     "linux_amd64_full": {
-      "ok": false,
+      "ok": true,
       "emulated": true,
-      "status": "pending"
+      "suites": 28,
+      "python_cases_declared": 257,
+      "macos_only_skips": 7,
+      "ctest_seconds": 1700.52,
+      "compiler_sha256": "67088007f28c2b718f0d2c8e816ea8cbd0e38985bbcd191ccd044f5d3afa8abc",
+      "sdk_compiler_sha256": "0293c630215aafe07f491c58b8e11aec522d471c756c1bfc50179a87f443ff93",
+      "source_free_sdk_phases": 10,
+      "source_free_sdk_seconds": 201.515,
+      "live_debugger": false
     }
   },
   "artifacts": [

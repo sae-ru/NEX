@@ -251,6 +251,14 @@ class Bundle:
         configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
                                     **{name: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for name, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
+        self.relocate_macho()
+        return self.finish(configuration, doctor, {
+            'platform': 'macos', 'minimum_macos': '.'.join(map(str, self.minimum_os)),
+            'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
+                                       'Python 3.9+', 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
+            'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.'})
+
+    def relocate_macho(self):
         for source, image in self.images.items():
             destination = image['destination']
             arguments = ['/usr/bin/install_name_tool']
@@ -274,13 +282,8 @@ class Bundle:
                 resolved = Path(dependency.replace('@loader_path', str(destination.parent))).resolve()
                 if not dependency.startswith('@loader_path/') or self.output not in resolved.parents or not resolved.is_file():
                     raise ValueError('external dependency remains: ' + dependency)
-        return self.finish(configuration, doctor, {
-            'platform': 'macos', 'minimum_macos': '.'.join(map(str, self.minimum_os)),
-            'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
-                                       'Python 3.9+', 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
-            'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.'})
 
-    def finish(self, configuration, doctor, details):
+    def copy_notices(self, directory="share/nex/licenses/sdk"):
         installed_components = []
         used = {item['component'] for item in self.origins.values()}
         for component in self.components['components']:
@@ -291,12 +294,14 @@ class Bundle:
             for index, filename in enumerate(component['license_files']):
                 source = Path(filename)
                 source.read_text()  # Require complete UTF-8 notice text.
-                target = self.output / 'share/nex/licenses/sdk' / component['name'] / (str(index) + '-' + source.name)
+                target = self.output / directory / component['name'] / (str(index) + '-' + source.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
                 notice['license_files'].append({'path': str(target.relative_to(self.output)), 'sha256': sha256(target)})
             installed_components.append(notice)
-        (self.output / 'share/nex/sdk-host.json').write_text(json.dumps(configuration, indent=2) + '\n')
+        return installed_components
+
+    def inventory(self):
         files = {}
         for path in sorted(self.output.rglob('*')):
             relative = str(path.relative_to(self.output))
@@ -307,6 +312,12 @@ class Bundle:
             elif path.is_file():
                 files[relative] = {'sha256': sha256(path), 'bytes': path.stat().st_size,
                                    'executable': bool(path.stat().st_mode & 0o111), **self.origins.get(relative, {})}
+        return files
+
+    def finish(self, configuration, doctor, details):
+        installed_components = self.copy_notices()
+        (self.output / 'share/nex/sdk-host.json').write_text(json.dumps(configuration, indent=2) + '\n')
+        files = self.inventory()
         report = {'schema': 'nex.sdk-bundle/1', 'ok': True, 'toolchain': doctor['version'], 'language': doctor['language'],
                   'host': doctor['host'], 'system_libraries': sorted(self.system_libraries),
                   'components': installed_components, **details,
@@ -420,6 +431,19 @@ class LinuxBundle(Bundle):
         configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
                                     **{key: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for key, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
+        required_glibc, required_glibcxx = self.relocate_elf(patchelf)
+        return self.finish(configuration, doctor, {
+            'platform': 'linux', 'tested_build_distribution': Path('/etc/os-release').read_text(),
+            'host_glibc': run(['getconf', 'GNU_LIBC_VERSION']).strip(),
+            'required_glibc_symbols': sorted(required_glibc), 'required_glibcxx_symbols': sorted(required_glibcxx),
+            'host_cxx_sdk': run(['g++', '--version']).splitlines()[0],
+            'packager_patchelf': run([patchelf, '--version']).strip(),
+            'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT/libstdc++/libgcc)',
+                                       'Python 3.9+', 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
+                                       'host LLDB/lldb-dap for live debugging'],
+            'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. GNU platform runtime remains external. Source installations unchanged.'})
+
+    def relocate_elf(self, patchelf):
         required_glibc, required_glibcxx = set(), set()
         for source, image in self.images.items():
             target = image['destination']
@@ -435,21 +459,12 @@ class LinuxBundle(Bundle):
             required_glibc.update(re.findall(r'\bGLIBC_[A-Za-z0-9_.]+', versions))
             required_glibcxx.update(re.findall(r'\bGLIBCXX_[0-9.]+', versions))
             # ldd uses the new origin paths, with no loader environment override.
-            dependencies = run(['ldd', target], env=environment)
+            dependencies = run(['ldd', target], env=self.environment)
             for old, alias in image['dependencies'].items():
                 match = re.search(r'^\s*' + re.escape(alias) + r'\s*=>\s*(.*?)\s+\(0x', dependencies, re.M)
                 if match is None or (self.output / 'lib/nex/host') not in Path(match[1]).resolve().parents:
                     raise ValueError('ELF dependency escaped the bundle: ' + alias + ' in ' + dependencies)
-        return self.finish(configuration, doctor, {
-            'platform': 'linux', 'tested_build_distribution': Path('/etc/os-release').read_text(),
-            'host_glibc': run(['getconf', 'GNU_LIBC_VERSION']).strip(),
-            'required_glibc_symbols': sorted(required_glibc), 'required_glibcxx_symbols': sorted(required_glibcxx),
-            'host_cxx_sdk': run(['g++', '--version']).splitlines()[0],
-            'packager_patchelf': run([patchelf, '--version']).strip(),
-            'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT/libstdc++/libgcc)',
-                                       'Python 3.9+', 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
-                                       'host LLDB/lldb-dap for live debugging'],
-            'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. GNU platform runtime remains external. Source installations unchanged.'})
+        return required_glibc, required_glibcxx
 
 
 def main():

@@ -2,6 +2,16 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## Backup checkpoint: unfinished application packaging
+
+The working tree now starts development toolchain **0.29.0**, with source language
+**0.11** unchanged. This backup preserves the initial `packaging.h`/`packaging.cpp`
+implementation, its CMake wiring and the SDK collector refactor. It is unfinished:
+`tools/app_bundle.py`, CLI integration and application-package tests are still
+missing. CMake currently names that missing helper for installation. This snapshot
+has not been built or tested as 0.29; the 0.28 results below apply to their recorded
+immutable inputs. Preserve this work as a development backup rather than a release.
+
 The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and
@@ -67,8 +77,9 @@ The shared macOS assembler also passed ten phases with actual LLDB/DAP, native
 kernel-exclusion checks, and archive extraction with all 2395 file hashes plus
 new-project native execution/tests. macOS Debug/Release passed all 28 suites
 (257 declared Python cases, including one Linux-only skip) in 1190.63/1003.25 s.
-The full emulated x86-64 compiler regression remains pending independently of its
-successful clean SDK/archive checks. [Durable SDK evidence](docs/evidence/sdk-0.28.0.json)
+The full emulated x86-64 compiler regression subsequently passed all 28 suites in
+1700.52 s, followed by all ten source-free SDK phases in 201.515 s. Live x86-64
+debugging remains unverified. [Durable SDK evidence](docs/evidence/sdk-0.28.0.json)
 records immutable archive/compiler hashes, tested prerequisites and scope.
 
 All broader language, resource/async/FFI, compiler-cache/LTO and platform work
