@@ -3,6 +3,7 @@ import base64
 import json
 from pathlib import Path
 import re
+import random
 import shutil
 import sqlite3
 import unittest
@@ -28,6 +29,44 @@ class BinaryPrograms(ToolchainCase):
             source = path.read_text()
             self.assertNotIn('BINARY_WEB_SERVER_ONLY_SENTINEL', source)
             self.assertNotIn('file_read_bytes', source)
+
+    def test_seeded_updates_and_retained_aliases_match_independent_octet_oracle(self):
+        rng = random.Random(0x4E4558)
+        value = bytes(range(256))
+        encode = lambda data: base64.b64encode(data).decode('ascii')
+        lines = ['module binary_oracle;', 'fn exercise()->bytes{',
+                 'var value:bytes=unwrap(decode_base64('+json.dumps(encode(value))+'));']
+        snapshots = []
+        for i in range(48):
+            snapshots.append(encode(value))
+            lines.append('let saved_'+str(i)+':bytes=value;')
+            operation = rng.choice(['push', 'set', 'slice', 'concat'])
+            if operation == 'set' and not value:
+                operation = 'push'
+            if operation == 'push':
+                octet = rng.randrange(256)
+                expression = 'push(value,'+str(octet)+')'; value += bytes([octet])
+            elif operation == 'set':
+                index, octet = rng.randrange(len(value)), rng.randrange(256)
+                expression = 'set(value,'+str(index)+','+str(octet)+')'
+                value = value[:index]+bytes([octet])+value[index+1:]
+            elif operation == 'slice':
+                start = rng.randrange(len(value)+1); count = rng.randrange(len(value)-start+1)
+                expression = 'slice(value,'+str(start)+','+str(count)+')'; value = value[start:start+count]
+            else:
+                extra = bytes(rng.randrange(256) for _ in range(rng.randrange(17)))
+                expression = 'value+unwrap(decode_base64('+json.dumps(encode(extra))+'))'; value += extra
+            lines += ['value='+expression+';',
+                      'assert(encode_base64(value)=='+json.dumps(encode(value))+');']
+        for i, saved in enumerate(snapshots):
+            lines.append('assert(encode_base64(saved_'+str(i)+')=='+json.dumps(saved)+');')
+        lines += ['return value;}', 'fn main()->unit!{io}{print(encode_base64(exercise()));}',
+                  'test fn oracle()->unit{assert(encode_base64(exercise())=='+json.dumps(encode(value))+');}']
+        self.source('\n'.join(lines))
+        self.agree(encode(value)+'\n')
+        self.cli('test')
+        if shutil.which('node'):
+            self.cli('test', '--target', 'web')
 
     def test_examples_generics_callbacks_and_immutable_owners(self):
         self.source((harness.REPO / 'examples/bytes.nex').read_text())

@@ -30,9 +30,16 @@ workflow phases in 126.717 s, including actual byte DAP watches, independent
 binary-file packages, archived replay and all three locked browser builds.
 The first SDK attempt revealed missing manifests in two new acceptance projects;
 their corrected explicit projects were exercised by the complete second run.
-Full 37-suite regression is running; its stale exact add-bound inventory was
-corrected to include bytes, and that case passed again. Current Linux/Release
-and source-free SDK matrix acceptance remain pending.
+The full 37-suite macOS Debug invocation finished in 673.14 s: 36 suites passed;
+the sole failure was its stale exact add-bound inventory. After adding bytes to
+that exact list, all eleven constraints cases passed in a 76.27 s CTest rerun.
+Compiler/runtime code did not change for that test correction. This covers 301
+declared Python cases and four native C++ probes, including the independent
+48-update binary oracle and retained aliases. Both initial and corrective
+reports are preserved; the initial invocation remains recorded as failed.
+Current Linux/Release and source-free SDK matrix acceptance remain pending.
+The [source binary evidence](docs/evidence/bytes-source-0.33.0.json) records exact
+source/binary hashes, browser versions, installed SDK phases and remaining scope.
 See [bytes.md](docs/bytes.md).
 
 ## In progress: managed binary values
