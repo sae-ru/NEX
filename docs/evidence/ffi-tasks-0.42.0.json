@@ -289,6 +289,22 @@
         "seconds": 312.53,
         "source_log": "/Users/sae/projects/NEX/build/ctest-042-owned.log"
       }
+    },
+    "corrected_installed_macos_sdk": {
+      "ok": true,
+      "phases": 13,
+      "seconds": 260.6,
+      "report": "/Users/sae/projects/NEX/build/sdk-042-owned-acceptance/report.json",
+      "sha256": "b14ae0ea628b92ba927692c496bca026d841611610d80973673193648426f756",
+      "compiler_sha256": "fcf60bd658d0fd7ffa89ebdcc0bfa67cba9568d49c8fca3c387eaa1f057ce46a",
+      "indexed_resources_match_current_workspace": true,
+      "reviewed_task": {
+        "hash": "de16f75e0c79ac050a394841577e70af588f859e2e674353287e604ff8b245f5",
+        "foreign_hash": "712fdeaf1447793673e01d02cacc1a0c9b94c87e0c6ff628398b1d866156ccb7",
+        "receipt": "/Users/sae/projects/NEX/build/sdk-042-owned-acceptance/foreign-boundary/source/.nex/tasks/runs/run-1439792700-3056517231/receipt.json",
+        "replay": "/Users/sae/projects/NEX/build/sdk-042-owned-acceptance/foreign-boundary/source/.nex/tasks/runs/run-1599562983-3083632836/receipt.json",
+        "source_deleted_trusted_replay": true
+      }
     }
   },
   "implemented": [
@@ -306,7 +322,6 @@
   "baseline_source_integration_evidence": "docs/evidence/source-ffi-0.41.0.json",
   "pending": [
     "corrected_current_full_macos_regression",
-    "corrected_current_installed_sdk",
     "corrected_current_linux_arm64_and_x86_64_validation",
     "current_sanitizer_and_distribution_matrix",
     "foreign_dependency_closure_packaging",
