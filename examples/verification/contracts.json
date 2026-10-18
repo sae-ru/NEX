@@ -1,8 +1,8 @@
 {
-  "expected_revision": "cb479736d83ef79f928967bc55409f02970b654c763ea8d3f87b61159ce8d26a",
+  "expected_revision": "4030be8c3e9cab7023847f1af5e4425f63aac79d2e63e7cb62d21ce8b98f4b88",
   "functions": [
     {
-      "content_hash": "1ea0ed382b3047e0385f48b1528c9a7a15f3d3d7d94ab73ac53ba695bf418c8e",
+      "content_hash": "805277db3e90e3bb7ea3161bb7300ba1de43b75e100c8569d8194f2a1327a334",
       "ensures": [
         "result == x + 1"
       ],
@@ -14,7 +14,7 @@
       "symbol": "verified::increment"
     },
     {
-      "content_hash": "6ba7155d832ceb9e760bbba22806162c51bedf87b17f01c84776c6ade52e839c",
+      "content_hash": "1cacd561724e8e3fbf608c9254e2ecd693dabf6919204717d879c8bf5f937661",
       "ensures": [
         "result == n * 2"
       ],
@@ -38,7 +38,7 @@
       "symbol": "verified::double"
     }
   ],
-  "language": "0.13",
+  "language": "0.14",
   "schema": "nex.verification-contracts/1",
   "source_hash": "a272b7dda1a686bf76367c72143e173002d1376f76bc66ab2d103a26486eb78a"
 }

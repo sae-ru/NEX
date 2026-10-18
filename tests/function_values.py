@@ -12,7 +12,7 @@ import support as harness
 class FunctionValues(harness.ToolchainCase):
     def test_discovery_and_language_pack_advertise_checked_function_values(self):
         descriptor=self.cli('describe')
-        self.assertEqual(descriptor['version'],'0.13')
+        self.assertEqual(descriptor['version'],'0.14')
         self.assertIn('snapshot_closures',descriptor['function_value_features'])
         self.assertEqual(descriptor['function_value_limits']['captures'],1024)
         self.assertEqual(descriptor['function_value_limits']['signature_bytes'],4096)
@@ -22,7 +22,7 @@ class FunctionValues(harness.ToolchainCase):
         for supported in ['function_values','generic_constraints','match_expressions','nested_patterns','pattern_guards','result_patterns']:
             self.assertNotIn(supported,descriptor['not_yet_supported'])
         guide=self.cli('guide','--kind','function')
-        self.assertEqual(guide['language'],'0.13')
+        self.assertEqual(guide['language'],'0.14')
         self.assertEqual(guide['text'],(harness.REPO/'docs/functions.md').read_text())
         self.assertEqual(len(guide['hash']),64)
         pack=json.loads((harness.REPO/'llm/language-pack.json').read_text())
@@ -44,19 +44,19 @@ class FunctionValues(harness.ToolchainCase):
         self.file.unlink()
         (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.9','entry':'main.nex'}))
         self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.13');self.assertNotEqual(current['revision'],old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.13'})
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.14');self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.14'})
         migrated=self.cli('graph')
         self.assertEqual(migrated['bundle'],graph['bundle'])
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in migrated['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in self.cli('operations','--symbol','choose')['nodes']})
-        self.assertTrue(all(n['definition']['format']=='nex.function/10' for n in migrated['nodes']))
+        self.assertTrue(all(n['definition']['format']=='nex.function/11' for n in migrated['nodes']))
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
         old_export=self.root/'old';self.cli('export','--revision',old,'--directory',old_export)
         self.assertEqual(json.loads((old_export/'nex.json').read_text())['language'],'0.9')
         self.assertEqual((old_export/'main.nex').read_text(),fixture['source'])
         exported=self.root/'current';self.cli('export','--revision','HEAD','--directory',exported)
-        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.13')
+        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.14')
         self.assertEqual(self.cli('check',cwd=exported)['revision'],current['revision'])
 
     def test_unchanged_nested_match_operation_ids_survive_other_function_edits(self):
@@ -74,8 +74,8 @@ fn main()->unit!{io}{print(choose(ok(Maybe::Some(42))));}
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.9.json').read_text())
         self.source(fixture['source']);saved=self.historical_store('0.9')
         current=self.cli('migrate')
-        self.assertEqual(current['language'],'0.13')
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.13'})
+        self.assertEqual(current['language'],'0.14')
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.14'})
         self.assertEqual({n['name']:n['id'] for n in saved['graph']['nodes']},
                          {n['name']:n['id'] for n in self.cli('graph')['nodes']})
         self.assertEqual({n['path']:n['id'] for n in saved['operations']},
@@ -93,8 +93,8 @@ fn main()->unit!{io}{print(choose(ok(Maybe::Some(42))));}
         graph=copy.deepcopy(fixture['graph']);graph['source']=fixed;graph['bundle']['files']['main.nex']=fixed
         repair=self.root/'repair.json';repair.write_text(json.dumps(graph))
         current=self.cli('migrate',repair)
-        self.assertEqual(current['language'],'0.13')
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.13'})
+        self.assertEqual(current['language'],'0.14')
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9','0.14'})
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'"42"\n')
         original=self.root/'original';self.cli('export','--revision',old['revision'],'--directory',original)
         self.assertEqual((original/'main.nex').read_text(),fixture['source'])

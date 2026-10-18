@@ -77,13 +77,23 @@ inline std::shared_ptr<Data> bytes(ByteBuffer buffer){return std::make_shared<By
 // ordinary values keep the same base layout and never contain an unused owner.
 struct FileData final : Data {
   const FileResource resource;
-  explicit FileData(FileResource resource):Data(File,sizeof(FileData)),resource(std::move(resource)){}
+  const uint64_t diagnosticIdentity;
+  explicit FileData(FileResource resource,uint64_t diagnosticIdentity=0):Data(File,sizeof(FileData)),resource(std::move(resource)),diagnosticIdentity(diagnosticIdentity){}
 };
 inline const FileResource &fileResource(const std::shared_ptr<Data> &data){
   if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
+  if(static_cast<const FileData&>(*data).diagnosticIdentity)throw DataError("E_RUNTIME","debug file values cannot authorize IO");
   return static_cast<const FileData&>(*data).resource;
 }
 inline std::shared_ptr<Data> fileValue(FileResource resource){return std::make_shared<FileData>(std::move(resource));}
+inline std::shared_ptr<Data> diagnosticFile(uint64_t identity){
+  if(!identity)throw DataError("E_DEBUG_VALUE","file debug identity must be nonzero");
+  return std::make_shared<FileData>(FileResource(),identity);
+}
+inline uint64_t fileIdentity(const std::shared_ptr<Data> &data){
+  if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
+  const auto &value=static_cast<const FileData&>(*data);return value.diagnosticIdentity?value.diagnosticIdentity:value.resource.identity();
+}
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
   std::vector<size_t> offsets;
   for(size_t i=0;i<text.size();) {
@@ -190,7 +200,7 @@ inline bool equal(const Value &a,const Value &b) {
   if(a.object==b.object)return true;
   const auto &x=*a.object,&y=*b.object;
   if(x.kind==Data::File||y.kind==Data::File)
-    return x.kind==y.kind&&fileResource(a.object).identity()==fileResource(b.object).identity();
+    return x.kind==y.kind&&fileIdentity(a.object)==fileIdentity(b.object);
   if(x.kind==Data::Bytes||y.kind==Data::Bytes)
     return x.kind==y.kind&&byteBuffer(a.object)==byteBuffer(b.object);
   if(x.kind==Data::Closure||y.kind==Data::Closure)return false;

@@ -101,6 +101,8 @@ def _preview(value, depth=0, budget=None):
         binary = _ExactBytes(data)
         prefix = binary.read(0, min(binary.size, MAX_ITEMS))
         return "bytes[%d] " % binary.size + json.dumps(base64.b64encode(prefix).decode('ascii')) + ("…" if len(prefix) < binary.size else "")
+    if kind == 8:
+        return "<file " + _file_identity(data) + ">"
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -471,6 +473,22 @@ def _closure_case(data, descriptor, records, budget):
     return result
 
 
+def _file_identity(data):
+    if _integer(_member(data, "kind")) != 8:
+        raise ValueError("runtime file kind differs from checked NEX type")
+    layout = data.GetTarget().FindFirstType("nexrt::FileData")
+    if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
+        raise ValueError("unavailable owned file layout for this build")
+    value = data.CreateValueFromAddress("file", data.GetLoadAddress(), layout)
+    identity = _integer(_member(value, "diagnosticIdentity"))
+    if not identity:
+        control = _shared(_member(_member(_member(value, "resource"), "owner"), "control"))
+        identity = _integer(_member(control, "identity"))
+    if not 0 < identity <= 18446744073709551615:
+        raise ValueError("invalid stopped file identity")
+    return str(identity)
+
+
 def _wire(value, descriptor, records, budget, depth=0):
     if depth > 60 or budget["nodes"] <= 0:
         raise ValueError("exact capture exceeds its node/depth budget")
@@ -500,6 +518,12 @@ def _wire(value, descriptor, records, budget, depth=0):
         if kind != 0:
             raise ValueError("runtime string kind differs from checked NEX type")
         return _raw_string(_member(data, "text"), budget)
+    if descriptor == "file":
+        identity = _file_identity(data)
+        if len(identity) > budget["bytes"]:
+            raise ValueError("file identity exceeds byte budget")
+        budget["bytes"] -= len(identity)
+        return {"file": identity}
     if descriptor == "bytes":
         binary = _ExactBytes(data)
         encoded_size = (binary.size + 2) // 3 * 4

@@ -1,10 +1,11 @@
 # External resource ownership
 
-Development toolchain 0.35 keeps source language 0.13 unchanged. This document
-defines the ownership foundation in `runtime/nex_resource.h` and trusted C++
-streaming files in `runtime/nex_files.h`. Source resource types, streaming
-intrinsics, general FFI and async/await remain pending. Source file functions
-in [files.md](files.md) still operate on whole values.
+Toolchains 0.34/0.35 established the typed C++ ownership foundation and native
+streaming boundary. Toolchain 0.36 / language 0.14 integrates the first source
+resource, `file`, with interpreter/native execution, browser/wire exclusion and
+bounded diagnostic identities. [The resource guide](resources.md) specifies
+source semantics and explicit migration. General resource kinds, stable FFI
+and async/await remain pending.
 
 ## Identity and ownership
 
@@ -33,8 +34,8 @@ subtype destructor. Ordinary `Data` keeps its previous layout; constructing or
 copying an owned payload as base `Data` is rejected. Managed wrapper allocations
 use the profiling hooks with their actual subtype size. Equality compares the
 resource identity, display is the opaque `<file>`, and application JSON rejects
-file values through nested aggregates. These runtime values are not yet source
-types, debugger input values or browser representations.
+file values through nested aggregates. Language 0.14 gives them the server-only source type `file`. Debugger identities
+are non-authoritative; browser representation remains forbidden.
 
 `isOpen()` is a diagnostic snapshot, never an authority decision. Concurrent
 close/revocation can change it immediately. Controls synchronize const operations;
@@ -124,8 +125,8 @@ EINTR retries poll again. Whole-file callbacks use the same input-lifetime rule.
 lowering: open/read/write/seek/size/flush return managed results; close and status
 return boolean scalars. Recoverable IO errors remain results; cancellation,
 budgets and deadlines preserve native traps and source lines. This boundary is
-tested directly, but no source intrinsic is advertised before frontend, backend,
-realm, debugger and migration integration is complete. It is not a stable FFI.
+tested directly, and language 0.14 lowers its checked file intrinsics to these calls. It is not a
+stable FFI.
 
 Logical close reports a state transition, not durability. Physical cleanup calls
 `close` once after the last lease; it does not retry a possibly recycled
@@ -136,12 +137,13 @@ manual](https://man7.org/linux/man-pages/man2/close.2.html), [read
 manual](https://man7.org/linux/man-pages/man2/read.2.html) and [write
 manual](https://man7.org/linux/man-pages/man2/write.2.html).
 
-## Source integration and FFI gates
+## Further resource integration and FFI gates
 
-These requirements describe the next language extension, not supported syntax:
+File integration implements these boundaries for language 0.14. Further resource
+kinds and FFI/async must preserve them:
 
 - Add an opaque handle across the checker, runtime, interpreter, native lowering
-  and TypeScript server path together. File operations require server realm and
+  and TypeScript browser rejection/reachability together. File operations require server realm and
   `fs`. Handles cannot enter browser/shared state, including through captures.
 - Use identity equality and bounded opaque diagnostics without raw descriptors.
   Exclude handles from JSON/API and scalar proof models through nested generics,

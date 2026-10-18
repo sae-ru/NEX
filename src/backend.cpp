@@ -306,8 +306,9 @@ class Emitter {
         auto schema=json(wireSchema(p,e->annotation),false);auto bytes=rawBytes(schema,e->span);result=call("nex_decode_json",{args[0],bytes,c(schema.size()),c(e->span.line)},e->type,e->span);
       }
       else if(e->text=="read_env")result=call("nex_read_env",args,e->type,e->span);
-      else if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"){
-        auto operands=args;operands.push_back(c(e->span.line));result=call("nex_"+e->text,operands,e->type,e->span);
+      else if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text)){
+        auto operands=args;operands.push_back(c(e->span.line));bool scalar=e->type==Type::Bool;
+        result=call("nex_"+e->text,operands,scalar?Type(Type::I64):e->type,e->span);if(scalar)result=asBool(result,e->span);
       }
       else if(e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
         auto operands=args;operands.push_back(c(e->span.line));result=call("nex_"+e->text,operands,e->type,e->span);
@@ -421,6 +422,10 @@ public:
     declaration("nex_read_env","!llvm.ptr","!llvm.ptr");declaration("nex_store_get","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_put","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");declaration("nex_store_remove","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_keys","!llvm.ptr, i64","!llvm.ptr");
     declaration("nex_file_read_text","!llvm.ptr, i64","!llvm.ptr");declaration("nex_file_write_text","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
     declaration("nex_file_read_bytes","!llvm.ptr, i64","!llvm.ptr");declaration("nex_file_write_bytes","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    for(auto name:{"file_open_read","file_open_write","file_open_append","file_size","file_flush"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
+    for(auto name:{"file_read","file_seek"})declaration("nex_"+std::string(name),"!llvm.ptr, i64, i64","!llvm.ptr");
+    declaration("nex_file_write","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    for(auto name:{"file_close","file_is_open"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","i64");
     for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
     auto names=reachable(p,entry);
     auto bridges=nativeFunctionBridges(p,names);
@@ -600,7 +605,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
   bool wire=server,storage=server,files=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
-  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes")files=true;}for(auto arg:e->args)inspect(arg);}};
+  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text))files=true;}for(auto arg:e->args)inspect(arg);}};
   std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");

@@ -86,6 +86,8 @@ def display(value, descriptor, records, budget=None):
         return clipped('true' if value else 'false')
     if descriptor in ('str', 'bytes'):
         return clipped(json.dumps(value, ensure_ascii=False))
+    if descriptor == 'file':
+        return clipped('<file ' + value['file'] + '>')
     if 'function' in descriptor:
         return clipped('<function ' + value['function'] + '>')
     if 'list' in descriptor:
@@ -323,7 +325,7 @@ class Bridge:
                             records['$enums'] = schema.get('enums', {})
                             records['$targets'] = schema.get('targets', {})
                             variable = self.variable('', data['value'], schema['root'], records)
-                        variable['result'] = data['display']; variable.pop('name', None); variable.pop('value', None)
+                        variable['result'] = variable['value'] if data['type'] == 'file' else data['display']; variable.pop('name', None); variable.pop('value', None)
                         variable['nex'] = data
                         return self.response(request, variable)
                     except (ValueError, KeyError, TypeError) as error:

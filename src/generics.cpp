@@ -28,8 +28,23 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
     bound[parameters[i]]=arguments[i];}return bound;
 }
 }
+bool containsFile(const Program &program,const Type &type){
+  std::set<std::string> seen;
+  std::function<bool(const Type&)> visit=[&](const Type &value){
+    if(value==Type::File)return true;
+    if(value.element&&visit(*value.element))return true;
+    for(const auto &argument:value.arguments)if(visit(argument))return true;
+    if(value.kind==Type::Record&&program.hasStructure(value.name)&&seen.insert(value.name).second){
+      const auto &record=program.structure(value.name);
+      for(const auto &argument:record.typeArguments)if(visit(argument))return true;
+      for(auto field:record.members())if(visit(field->type))return true;
+    }
+    return false;
+  };return visit(type);
+}
 bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint){
   if(constraint=="wire"){
+    if(containsFile(program,type))return false;
     std::set<std::string> seen;std::function<bool(const Type&)> visit=[&](const Type &value){
       if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes)return true;
       if(value.kind==Type::Parameter){auto found=program.parameterBounds.find(value.name);return found!=program.parameterBounds.end()&&(found->second.contains("wire")||found->second.contains("integer")||found->second.contains("number")||found->second.contains("ordered"));}

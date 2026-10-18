@@ -94,6 +94,25 @@ class Interpreter {
       if(e->text=="encode_json")return V(nexrt::string(nexrt::encodeJSON(full(args[0]))));
       if(e->text=="decode_json")return nexrt::decodeJSON(full(args[0]).object->text,json(wireSchema(p,e->annotation),false));
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
+      if(streamFileBuiltins().contains(e->text)){
+        auto poll=[&]{step(e->span);};
+        if(e->text=="file_close"||e->text=="file_is_open"){
+          auto file=nexrt::fileResource(full(args[0]).object);poll();
+          return V(e->text=="file_close"?file.close():file.isOpen(),true);
+        }
+        try{
+          if(e->text.starts_with("file_open_")){
+            auto mode=e->text=="file_open_read"?nexrt::FileMode::Read:e->text=="file_open_write"?nexrt::FileMode::WriteTruncate:nexrt::FileMode::Append;
+            return nexrt::success(V(nexrt::fileValue(nexrt::fileOpen(full(args[0]).object->text,mode,true,poll))));
+          }
+          auto file=nexrt::fileResource(full(args[0]).object);
+          if(e->text=="file_read")return nexrt::success(V(nexrt::bytes(file.read(full(args[1]).scalar,poll))));
+          if(e->text=="file_write")return nexrt::success(V(file.write(nexrt::byteBuffer(full(args[1]).object),poll)));
+          if(e->text=="file_seek")return nexrt::success(V(file.seek(full(args[1]).scalar,poll)));
+          if(e->text=="file_size")return nexrt::success(V(file.size(poll)));
+          file.flush(poll);return nexrt::success(V(1,true));
+        }catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.what());}
+      }
       if(e->text=="file_read_text")return nexrt::fileReadText(args[0].object->text,true,[&]{step(e->span);});
       if(e->text=="file_write_text")return nexrt::fileWriteText(args[0].object->text,args[1].object->text,true,[&]{step(e->span);});
       if(e->text=="file_read_bytes")return nexrt::fileReadBytes(args[0].object->text,true,[&]{step(e->span);});

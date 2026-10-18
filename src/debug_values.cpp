@@ -48,7 +48,7 @@ JSON debugValueSchema(const Program &program,const Type &type,const std::set<std
       auto fields=[&](const auto &values){Array result;for(const auto &field:values)result.push_back(Object{{"name",field.name},{"type",describe(field.type)}});return result;};
       if(nominal.enumeration){Array cases;for(const auto &variant:nominal.variants)cases.push_back(Object{{"name",variant.name},{"fields",fields(variant.fields)}});enums[value.name]=std::move(cases);}else records[value.name]=fields(nominal.fields);
     }return Object{{nominal.enumeration?"enum":"record",value.name}};}
-    if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes)return typeName(value);
+    if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes||value==Type::File)return typeName(value);
     invalid("unsupported debug value type: "+typeName(value));
   };
   auto root=describe(type);
@@ -99,6 +99,12 @@ DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned de
     text+=buffer.length();budget(depth);observe(id,prefix,"shape",Object{{"length",std::to_string(buffer.length())}});observe(id,prefix,"value",wire);observeBytes(id,prefix,buffer);
     return V(nexrt::bytes(std::move(buffer)));
   }
+  if(type==Type::File){
+    const auto &value=object(wire);if(value.size()!=1)invalid("debug file requires only its opaque identity");
+    auto text=field(value,"file");auto canonical=nex::identity(Object{{"identity",text}});uint64_t number=0;
+    std::from_chars(canonical.data(),canonical.data()+canonical.size(),number);observe(id,prefix,"value",wire);
+    return V(nexrt::diagnosticFile(number));
+  }
   if(type.kind==Type::Function){
     const auto &value=object(wire);if(value.size()!=3||!value.get("captures"))invalid("debug callable requires function, identity and captures");
     JSON shape=Object{{"function",field(value,"function")},{"identity",field(value,"identity")}};auto [name,identity]=callableShape(type,shape);observe(id,prefix,"shape",shape);
@@ -125,6 +131,7 @@ DebugValues::JSON DebugValues::encode(const Type &type,const V &original,unsigne
   budget(depth);auto value=materialize?materialize(original):original;
   if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::F64){if(value.tag!=V::Floating)invalid("computed f64 lost its scalar tag");return value.floating();}if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
   if(type==Type::Bytes){const auto &buffer=nexrt::byteBuffer(value.object);text+=uint64_t(buffer.length());budget(depth);auto encoded=buffer.base64();text+=encoded.size();budget(depth);return encoded;}
+  if(type==Type::File)return Object{{"file",std::to_string(nexrt::fileIdentity(value.object))}};
   if(type.kind==Type::Function){
     const auto &fn=checkedDebugCallable(program,value.object->text,type);if(value.object->values.size()!=fn.captures.size()||value.object->names.size()!=fn.captures.size())invalid("computed callable capture layout differs");
     auto identity=this->identity(value);if(identity.empty()){identity="computed:"+std::to_string(++computed);identify(value,identity);}Object captures;

@@ -556,6 +556,33 @@ server fn main()->unit!{fs,io}{
                 'strict_unicode_nul_roundtrip': True, 'missing_capability_denied': True,
                 'read_only_write_denied': True, 'standalone_without_resources': str(executable),
                 'application_manifest_sha256': hashlib.sha256((package / 'application.json').read_bytes()).hexdigest()}
+            streams = root / 'file-resources'
+            streams.mkdir()
+            shutil.copyfile(resources / 'examples/resources.nex', streams / 'main.nex')
+            (streams / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': 'main.nex'}))
+            environment.update(NEX_FILES_ROOT=str(data), NEX_FILES_WRITE='1')
+            stream_revision = cli('check', cwd=streams)['revision']
+            expected_stream = 'Я🧠\n<file>\n'
+            require(cli('eval', cwd=streams)['stdout'] == expected_stream,
+                    'installed file resource interpreter output differs')
+            for profile in ('debug', 'release'):
+                cli('test', '--profile', profile, cwd=streams)
+                require(cli('run', '--profile', profile, cwd=streams)['stdout'] == expected_stream,
+                        'installed file resource native/reference output differs')
+            stream_package = root / 'resource-application'
+            cli('package', '--directory', stream_package, cwd=streams)
+            (streams / 'main.nex').unlink()
+            require(cli('run', '--revision', stream_revision, cwd=streams)['stdout'] == expected_stream,
+                    'file resource replay needs original source')
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+            require(run([stream_package / 'bin/app']) == expected_stream and
+                    (data / 'nex-stream.bin').read_bytes() == 'Я🧠'.encode(),
+                    'packaged streaming resource program needs compiler resources')
+            report['evidence']['file_resources'] = {'revision': stream_revision,
+                'language': report['doctor']['language'], 'native_profiles': ['debug', 'release'],
+                'alias_close': True, 'seek_and_eof': True, 'scoped_cleanup_iterations': 80,
+                'source_deleted_replay': True, 'standalone_without_resources': str(stream_package / 'bin/app')}
         finally:
             for key, value in saved.items():
                 if value is None:

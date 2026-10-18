@@ -9,7 +9,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.13";
+inline constexpr const char *languageVersion = "0.14";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
@@ -18,7 +18,7 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   std::string realm="shared";std::set<std::string> effects;
   Type() = default;
@@ -29,7 +29,7 @@ struct Type {
   static Type function(std::vector<Type> parameters,Type result,std::string realm="shared",std::set<std::string> effects={}) {
     Type t(Function);t.arguments=std::move(parameters);t.element=std::make_shared<Type>(std::move(result));t.realm=std::move(realm);t.effects=std::move(effects);return t;
   }
-  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes; }
+  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File; }
   bool operator==(const Type &other) const {
     return kind==other.kind && name==other.name && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
@@ -142,6 +142,8 @@ std::string hash(const std::string &text);
 std::string revision(const Program &program);
 llvm::json::Value describe();
 const std::set<std::string> &builtinNames();
+const std::set<std::string> &streamFileBuiltins();
+bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",

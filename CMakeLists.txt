@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.35.0 LANGUAGES C CXX)
+project(NEX VERSION 0.36.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -69,6 +69,10 @@ install(FILES tools/sdk_archive.py DESTINATION share/nex/tools)
 install(FILES tools/app_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)
 enable_testing()
+add_test(NAME resources COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources.py $<TARGET_FILE:nex>)
+add_test(NAME resource_debug COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_debug.py $<TARGET_FILE:nex>)
 add_test(NAME sdk_archives COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_archives.py)
 add_test(NAME packaging COMMAND ${Python3_EXECUTABLE}

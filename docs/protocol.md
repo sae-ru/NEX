@@ -102,7 +102,7 @@ For a one-file revision, `nex export --revision HEAD -o PATH` writes just that s
 
 ## Language/database migration
 
-The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.12. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
+The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.14. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
 
 `nex migrate --json` reparses and checks the archived HEAD under the current language, atomically adopts its new revision if HEAD is unchanged, and preserves the old revision. `--revision HASH` selects another retained snapshot. `nex migrate GRAPH.json --json` accepts legacy `nex.graph/1` single-file source or a `nex.graph/2` bundle and explicitly adopts its checked source. That operation treats the old hash as declared metadata, not as a verified current hash. Ordinary `import` rejects a language mismatch or an incorrect recomputed revision. Migration does not overwrite source files; materialize the chosen result with `export`.
 
@@ -235,3 +235,11 @@ Rejected candidates leave HEAD and old sources untouched; an explicitly repaired
 exported bundle can be migrated without replacing the original revision. Keep
 the matching old SDK for receipts/frames. Function/9, program/10, structure/4
 and enum/3 remain current; the language version changes program revision identity.
+
+## File resources (language 0.14)
+
+Opaque `file` values and streaming intrinsics require server realm and `fs`.
+They share identity/close state and cannot enter JSON/API or client code.
+Pure debug values use a separate non-authoritative opaque identity marker.
+See [the resource guide](resources.md) for ownership, limits, callbacks and
+explicit history-preserving migration from 0.13.

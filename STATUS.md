@@ -2,7 +2,29 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: managed file resource values
+## Development: source file resources
+
+Toolchain **0.36.0 / language 0.14** adds the `file` source type, ten server/`fs`
+operations, immutable aggregate/capture owners and identity equality. The
+interpreter and native debug/release paths agree on streaming, alias close,
+limits and automatic cleanup. The checker excludes resource-bearing types from
+client/shared functions, JSON/API and scalar proof models, including phantom
+arguments. TypeScript emits no unreachable server resource code.
+
+Source migration uses new function/11 and program/12 formats. Genuine 0.13
+snapshots migrate with preserved history; conflicting old user names require
+reviewed source repair and failed migrations leave HEAD unchanged. Pure watches
+use opaque IDs with no IO authority. Fourteen source tests, five synthetic watch
+tests and eleven live/synthetic LLDB/DAP cases pass. The baseline installed macOS
+SDK passes its twelve workflow phases, including source file resources. The full
+baseline regression found an incorrect capability descriptor advertising `file`
+under generic addition; the checker correctly rejects that operation. The source
+descriptor is corrected, but rebuilt full regression and installed-SDK acceptance
+for that correction remain pending. This is a work-in-progress checkpoint, not an
+accepted 0.36 release. General FFI, async and broader platform validation remain
+pending.
+
+## Verified milestone: managed file resource values
 
 Toolchain **0.35.0 / language 0.13** adds immutable managed file wrappers and an
 internal native streaming boundary. Copies in aggregates/results/captures share

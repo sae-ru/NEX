@@ -17,6 +17,7 @@ std::string type(const Type &t){
   case Type::Bool:return "boolean";
   case Type::Str:return "string";
   case Type::Bytes:return "nex.ByteBuffer";
+  case Type::File:throw Error("E_REALM","file resources cannot enter a browser module");
   case Type::Unit:return "void";
   case Type::List:return "ReadonlyArray<"+type(*t.element)+">";
   case Type::Result:return "nex.Result<"+type(*t.element)+">";

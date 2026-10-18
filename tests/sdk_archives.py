@@ -26,7 +26,7 @@ class Archives(unittest.TestCase):
             path.chmod(0o755 if name == 'bin/nex' else 0o644)
         (self.sdk/'bin/compiler').symlink_to('nex')
         self.manifest = {'schema': 'nex.sdk-bundle/1', 'ok': True, 'acceptance_passed': False,
-                         'toolchain': '0.33.0', 'language': '0.13', 'platform': 'macos', 'files': {}}
+                         'toolchain': '0.33.0', 'language': '0.14', 'platform': 'macos', 'files': {}}
         for path in self.sdk.rglob('*'):
             if path.is_file() or path.is_symlink():
                 name = str(path.relative_to(self.sdk))

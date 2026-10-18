@@ -29,7 +29,7 @@ WatchValues::V WatchValues::proxy(std::string binding,Type type,Array path,std::
   auto captured=reads.find(key(r.binding,r.path,"value"));
   if(captured!=reads.end()&&captured->second->get("value"))return decode(r,read(r,"value"));
   auto kind=r.type==Type::Str?nexrt::Data::String:r.type.kind==Type::List?nexrt::Data::List:r.type.kind==Type::Record?nexrt::Data::Record:r.type.kind==Type::Function?nexrt::Data::Closure:nexrt::Data::Success;
-  auto data=r.type==Type::Bytes?nexrt::bytes({}):std::make_shared<nexrt::Data>(kind);r.owner=data;refs.emplace(data.get(),std::move(r));return V(data);
+  auto data=r.type==Type::Bytes?nexrt::bytes({}):r.type==Type::File?nexrt::fileValue({}):std::make_shared<nexrt::Data>(kind);r.owner=data;refs.emplace(data.get(),std::move(r));return V(data);
 }
 WatchValues::V WatchValues::local(const std::string &name){
   if(auto input=values.get(name)){bindings.insert(name);paths.emplace(key(name,{},"value"),Object{{"binding",name},{"path",Array{}},{"kind","value"}});Ref r{nullptr,name,types.at(name),{},"",{}, {}};return decode(r,*input);}
@@ -96,7 +96,7 @@ bool WatchValues::equal(const V &a,const V &b){
   auto left=concrete(a),right=concrete(b);std::function<bool(const V&,const V&,unsigned)> compare=[&](const V &left,const V &right,unsigned depth){
     if(depth>64||++visits>100000)throw Error("E_DEBUG_LIMIT","expression equality exceeded its value budget");
     if(left.tag!=right.tag)return false;if(left.tag!=V::Object)return left.scalar==right.scalar;
-    if(left.object->kind==nexrt::Data::Bytes||right.object->kind==nexrt::Data::Bytes)return nexrt::equal(left,right);
+    if(left.object->kind==nexrt::Data::Bytes||right.object->kind==nexrt::Data::Bytes||left.object->kind==nexrt::Data::File||right.object->kind==nexrt::Data::File)return nexrt::equal(left,right);
     if(left.object->kind==nexrt::Data::Closure||right.object->kind==nexrt::Data::Closure){if(left.object->kind!=right.object->kind)return false;auto l=callable(left),r=callable(right);auto li=codec.identity(l),ri=codec.identity(r);return !li.empty()&&!ri.empty()?li==ri:l.object==r.object;}
     const auto &l=*left.object,&r=*right.object;if(l.kind!=r.kind||l.ordinal!=r.ordinal||l.text!=r.text||l.names!=r.names||l.values.size()!=r.values.size())return false;for(size_t i=0;i<l.values.size();++i)if(!compare(l.values[i],r.values[i],depth+1))return false;return true;
   };return compare(left,right,0);
@@ -109,7 +109,7 @@ WatchValues::V WatchValues::concrete(const V &value,unsigned depth){
   if(depth>64)throw Error("E_DEBUG_LIMIT","expression materialization exceeded its depth budget");
   if(auto r=reference(value)){if(r->type.kind==Type::Function)return callable(value);return decode(*r,read(*r,"value"));}
   if(!value.object)return value;
-  if(value.object->kind==nexrt::Data::Closure||value.object->kind==nexrt::Data::Bytes)return value;
+  if(value.object->kind==nexrt::Data::Closure||value.object->kind==nexrt::Data::Bytes||value.object->kind==nexrt::Data::File)return value;
   // Computed containers may carry references through pure calls/constructors.
   // Rebuild them without mutating shared interpreter values or proxy objects.
   auto data=std::make_shared<nexrt::Data>(*value.object);

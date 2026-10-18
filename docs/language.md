@@ -1,4 +1,4 @@
-# NEX language specification 0.13
+# NEX language specification 0.14
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -59,7 +59,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.13",
+  "language": "0.14",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -78,18 +78,24 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | `unit` | No result; only as a function result or expression result |
 | `str` | Immutable valid UTF-8 text |
 | `bytes` | Immutable contiguous octets, each from 0 through 255 |
+| `file` | Server-only opaque owner of an opened regular file |
 | `list<T>` | Immutable homogeneous sequence of non-unit values |
 | `result<T>` | Immutable success containing T, or an error with code/message |
 | Named structure | Immutable value with declared, typed fields |
 | Named enum | One declared case with its immutable typed payload |
 | `fn(T)->U` | A checked callable with explicit realm/effects and immutable captures |
 
-There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function values have object identity; other values retain structural equality. User generics follow the rules below. Custom generic traits, higher-kinded types, mutable collections and custom destructors remain unimplemented.
+There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function and file values have object identity; other values retain structural equality. User generics follow the rules below. Custom generic traits, higher-kinded types, mutable collections and custom destructors remain unimplemented.
 
-Toolchain 0.35 develops an internal [resource ownership runtime](resources-design.md).
-It adds no resource type or streaming intrinsic to language 0.13. General FFI
-and source async/await remain pending; resource-related user identifiers are
-unchanged by this host-only implementation.
+Language 0.14 introduces [file resources](resources.md) with server/`fs`
+operations, shared identity, explicit/automatic close and scoped revocation.
+Files remain outside JSON/API, browser code and scalar proof models, including
+nested and phantom type arguments. Function and file values use identity
+rather than structural equality. File formatting is `<file>`. Source has no raw
+descriptor, pointer or file constructor. `file` is contextual in type positions;
+its declaration/generic-parameter name and streaming builtin names are reserved.
+Explicit migration from 0.13 preserves old snapshots and requires reviewed
+repairs for conflicting user declarations. General FFI and async remain pending.
 
 ### Generic types and functions
 
@@ -385,13 +391,13 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 ## Graph and revision semantics
 
-Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.13 uses `nex.function/10`, `nex.structure/4`, `nex.enum/3` and `nex.program/11`. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
+Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.14 uses `nex.function/11`, `nex.structure/4`, `nex.enum/3` and `nex.program/12`. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
 SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11/0.12 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.13, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11/0.12/0.13 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.14, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 
@@ -500,6 +506,6 @@ Language 0.12 archives require explicit `nex migrate`. New reserved function,
 nominal and generic parameter conflicts reject without moving HEAD. Repair an
 exported candidate explicitly; preserve old sources/SQL/history and unchanged
 logical IDs. Keep SDK 0.30/0.32 for their original frames/receipts. Language 0.13
-uses function/10 and program/11; regenerate snapshot metadata while retaining
+uses function/10 and program/11. Current 0.14 uses function/11 and program/12; regenerate snapshot metadata while retaining
 reviewed task tests and formal properties. Platform/matrix validation status is
 separate from this specification and remains recorded in `STATUS.md`.

@@ -1,0 +1,28 @@
+module resource_example;
+
+server fn main() -> unit !{fs,io} {
+  let output:file = unwrap(file_open_write("nex-stream.bin"));
+  let alias:file = output;
+  assert(unwrap(file_write(output,utf8_bytes("Я🧠"))) == 6);
+  assert(unwrap(file_flush(output)));
+  assert(file_close(alias));
+  assert(!file_is_open(output));
+
+  let input:file = unwrap(file_open_read("nex-stream.bin"));
+  print(unwrap(decode_utf8(unwrap(file_read(input,1024)))));
+  assert(len(unwrap(file_read(input,1))) == 0);
+  assert(unwrap(file_seek(input,0)) == 0);
+  assert(unwrap(file_read(input,2)) == utf8_bytes("Я"));
+  print(input);
+
+  var count:i64 = 0;
+  while count < 80 {
+    let scoped:file = unwrap(file_open_read("nex-stream.bin"));
+    assert(unwrap(file_size(scoped)) == 6);
+    count = count + 1;
+  }
+}
+
+test fn binary_payload() -> unit {
+  assert(len(utf8_bytes("Я🧠")) == 6);
+}

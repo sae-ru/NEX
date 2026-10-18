@@ -88,6 +88,12 @@ int main(){try{
     first.revoke();require(!value.isOpen()&&!request.used(),"capability revocation failed");
     auto other=b.make<int>([](const auto &){return std::make_unique<int>(7);});request.revoke();require(!other.isOpen(),"request revocation failed");
   });
+  run("diagnostic file identities cannot authorize native IO",[]{
+    Value a(diagnosticFile(17)),b(diagnosticFile(17)),c(diagnosticFile(18));require(equal(a,b)&&!equal(a,c),"diagnostic identity equality differs");
+    error("E_RUNTIME",[&]{fileResource(a.object);});error("E_JSON",[&]{encodeJSON(a);});
+    RequestScope request;auto file=makeHandle(a);code(readHandle(nex_file_read(file,1,9)),"E_RUNTIME");
+    bool trapped=false;try{nex_file_is_open(file,9);}catch(const Trap &t){trapped=t.code=="E_RUNTIME"&&t.line==9;}require(trapped,"diagnostic file granted status authority");
+  });
   run("native streaming ABI read write append seek flush and close",[]{
     Fixture f;TextFiles files(f.root.string(),true);FileScope grant(files);RequestScope request;
     auto name=path("output"),write=makeHandle(checked(nex_file_open_write(name,10)));
