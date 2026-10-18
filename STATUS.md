@@ -2,6 +2,24 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: managed binary values
+
+Development toolchain **0.32.0** retains source language **0.12**. Internal C++
+and TypeScript value runtimes now represent immutable binary data, typed JSON
+base64 and strict UTF-8 conversions. The POSIX host adapter has bounded binary
+reads/writes under the same directory capability, atomic publication and HTTP
+isolation as text files. Native allocation accounting and handle cleanup include
+the binary subtype; ordinary object layouts retain their size and field offsets.
+Generated TypeScript/browser resources include the binary module. This does not
+expose a source type or binary intrinsic yet. Targeted managed-value/oracle checks
+passed; full regression and platform validation of 0.32 are in progress.
+
+Frontend/interpreter/MLIR emission, source TypeScript typing, API/debugger
+integration and an explicit 0.12 migration are still required for source binary
+programs. The [buffer design](docs/bytes-design.md) defines implemented host
+semantics and the remaining integration. SDK 0.30/0.31 and genuine historical
+stores are preserved.
+
 ## In progress: immutable binary primitives
 
 Development toolchain **0.31.0** retains source language **0.12** while building

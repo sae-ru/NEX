@@ -47,6 +47,7 @@ Project prepare(const Program &p){
   std::map<std::string,std::string> files;
   files["src/program.ts"]=module.source;
   files["src/nex-runtime.ts"]=readFile(resourceFile("web/nex-runtime.ts"));
+  files["src/nex-bytes.ts"]=readFile(resourceFile("web/nex-bytes.ts"));
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));

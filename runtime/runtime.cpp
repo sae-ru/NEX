@@ -72,6 +72,11 @@ template<class F> auto guarded(int64_t line,F operation)->decltype(operation()) 
 }
 Handle *owned(std::shared_ptr<nexrt::Data> data){return new Handle(std::move(data));}
 Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
+  if(list->data->kind==nexrt::Data::Bytes){
+    if(value.tag!=nexrt::Value::Integer)throw nexrt::DataError("E_RUNTIME","byte update requires an i64 value");
+    const auto &buffer=nexrt::byteBuffer(list->data);
+    return owned(nexrt::bytes(mode?buffer.set(index,value.scalar):buffer.append(value.scalar)));
+  }
   auto data=std::make_shared<nexrt::Data>(*list->data);
   if(mode){nexrt::bounds(index,data->values.size());data->values[index]=std::move(value);}
   else data->values.push_back(std::move(value));
@@ -122,10 +127,16 @@ Handle *nex_list_update_heap(Handle *p,int64_t index,Handle *value,int64_t mode,
 int64_t nex_length(Handle *p){return guarded(0,[&]{return nexrt::length(p->data);});}
 int64_t nex_heap_equal(Handle *a,Handle *b){return nexrt::equal(nexrt::Value(a->data),nexrt::Value(b->data));}
 Handle *nex_heap_concat(Handle *a,Handle *b,int64_t line){return guarded(line,[&]{
+  if(a->data->kind==nexrt::Data::Bytes)return owned(nexrt::bytes(nexrt::byteBuffer(a->data).concat(nexrt::byteBuffer(b->data))));
   if(a->data->kind==nexrt::Data::String)return owned(nexrt::string(a->data->text+b->data->text));
   auto d=std::make_shared<nexrt::Data>(*a->data);d->values.insert(d->values.end(),b->data->values.begin(),b->data->values.end());return owned(d);
 });}
 Handle *nex_string_slice(Handle *p,int64_t start,int64_t count,int64_t line){return guarded(line,[&]{return owned(nexrt::slice(p->data,start,count));});}
+Handle *nex_bytes_from_integers(Handle *value,int64_t line){return nexrt::hostValue(line,[&]{return nexrt::bytesFromIntegers(nexrt::readHandle(value));});}
+Handle *nex_utf8_bytes(Handle *value,int64_t line){return nexrt::hostValue(line,[&]{return nexrt::Value(nexrt::utf8Bytes(value->data->text));});}
+Handle *nex_decode_utf8(Handle *value,int64_t line){return nexrt::hostValue(line,[&]{return nexrt::decodeUTF8(nexrt::byteBuffer(value->data));});}
+Handle *nex_encode_base64(Handle *value,int64_t line){return nexrt::hostValue(line,[&]{return nexrt::Value(nexrt::string(nexrt::byteBuffer(value->data).base64()));});}
+Handle *nex_decode_base64(Handle *value,int64_t line){return nexrt::hostValue(line,[&]{return nexrt::decodeBase64(value->data->text);});}
 int64_t nex_string_contains(Handle *a,Handle *b){return a->data->text.find(b->data->text)!=std::string::npos;}
 Handle *nex_format_i64(int64_t value,int64_t tag){return guarded(0,[&]{return owned(nexrt::string(nexrt::representation(nexrt::Value::taggedScalar(value,tag))));});}
 Handle *nex_format_f64(double value){return guarded(0,[&]{return owned(nexrt::string(nexrt::formatFloat(value)));});}

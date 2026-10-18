@@ -13,4 +13,12 @@ Handle *nex_file_write_text(Handle *path,Handle *text,int64_t line){
   return nexrt::hostValue(line,[&]{prepare();return nexrt::fileWriteText(nexrt::readHandle(path).object->text,
     nexrt::readHandle(text).object->text,!nexrt::inRequestScope(),[&]{nexrt::pollHostOperation(line);});});
 }
+Handle *nex_file_read_bytes(Handle *path,int64_t line){
+  return nexrt::hostValue(line,[&]{prepare();return nexrt::fileReadBytes(nexrt::readHandle(path).object->text,
+    !nexrt::inRequestScope(),[&]{nexrt::pollHostOperation(line);});});
+}
+Handle *nex_file_write_bytes(Handle *path,Handle *bytes,int64_t line){
+  return nexrt::hostValue(line,[&]{prepare();return nexrt::fileWriteBytes(nexrt::readHandle(path).object->text,
+    nexrt::byteBuffer(nexrt::readHandle(bytes).object),!nexrt::inRequestScope(),[&]{nexrt::pollHostOperation(line);});});
+}
 }

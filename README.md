@@ -18,6 +18,11 @@ HTTP scopes deny implicit environment grants. The [file guide](docs/files.md)
 describes syntax and limits; full validation of this new language version is
 tracked in `STATUS.md`.
 
+Development 0.32 adds internal managed byte values, strict binary codecs and
+capability-scoped binary file adapters. Source language remains 0.12; the
+`bytes` source type and binary intrinsics are pending. See the [binary design
+and current boundary](docs/bytes-design.md).
+
 ## Build
 
 Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.

@@ -188,6 +188,7 @@ void writeWebModule(const WebModule &module,const std::string &directory){
   auto output=std::filesystem::path(directory);
   writeFile((output/"program.ts").string(),module.source);
   writeFile((output/"nex-runtime.ts").string(),readFile(resourceFile("web/nex-runtime.ts")));
+  writeFile((output/"nex-bytes.ts").string(),readFile(resourceFile("web/nex-bytes.ts")));
   writeFile((output/"nex-map.json").string(),json(module.mapping)+"\n");
 }
 }

@@ -1,8 +1,10 @@
 // NEX value semantics shared by generated TypeScript and browser applications.
+import {ByteBuffer, ByteError} from './nex-bytes.ts';
+export {ByteBuffer};
 export const TYPE: unique symbol = Symbol('NEX.type');
 export const CASE: unique symbol = Symbol('NEX.case');
 export type Callable = (...arguments_: never[]) => Value | void;
-export type Value = bigint | number | boolean | string | ReadonlyArray<Value> | RecordValue | Callable;
+export type Value = bigint | number | boolean | string | ByteBuffer | ReadonlyArray<Value> | RecordValue | Callable;
 export interface RecordValue {
   readonly [TYPE]: string;
   readonly [CASE]?: string;
@@ -87,6 +89,29 @@ export function string(value: string, site?: Site): string {
   }
   return value;
 }
+function byteOperation<T>(operation: () => T, site?: Site): T {
+  try { return operation(); }
+  catch (error) { if (error instanceof ByteError) fail(error.code, error.message, site); throw error; }
+}
+export function bytesFromIntegers(values: ReadonlyArray<bigint>): Result<ByteBuffer> {
+  try { return ok(ByteBuffer.fromIntegers(values)); }
+  catch (error) { if (error instanceof ByteError && error.code === 'E_RANGE') return err(error.code, error.message); throw error; }
+}
+export function utf8Bytes(text: string, site?: Site): ByteBuffer { return ByteBuffer.copy(new TextEncoder().encode(string(text, site))); }
+export function decodeUTF8(value: ByteBuffer): Result<string> {
+  try { return ok(new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(value.toUint8Array())); }
+  catch (error) { if (error instanceof TypeError) return err('E_UTF8', 'invalid UTF-8 string'); throw error; }
+}
+export function encodeBase64(value: ByteBuffer): string { return value.base64(); }
+export function decodeBase64(text: string): Result<ByteBuffer> {
+  try { return ok(ByteBuffer.fromBase64(text)); }
+  catch (error) { if (error instanceof ByteError && error.code === 'E_BASE64') return err(error.code, error.message); throw error; }
+}
+export function bytesIndex(value: ByteBuffer, at: bigint, site?: Site): bigint { return byteOperation(() => value.at(at), site); }
+export function bytesPush(value: ByteBuffer, item: bigint, site?: Site): ByteBuffer { return byteOperation(() => value.append(item), site); }
+export function bytesSet(value: ByteBuffer, at: bigint, item: bigint, site?: Site): ByteBuffer { return byteOperation(() => value.set(at, item), site); }
+export function bytesSlice(value: ByteBuffer, start: bigint, count: bigint, site?: Site): ByteBuffer { return byteOperation(() => value.slice(start, count), site); }
+export function bytesConcat(left: ByteBuffer, right: ByteBuffer, site?: Site): ByteBuffer { return byteOperation(() => left.concat(right), site); }
 export function list<T extends Value>(items: ReadonlyArray<T>): ReadonlyArray<T> { return Object.freeze([...items]); }
 export function record<T extends RecordValue>(name: string, fields: ReadonlyArray<readonly [string, Value]>): T {
   const result = Object.create(null) as Record<string | symbol, Value>;
@@ -113,7 +138,7 @@ export function set<T extends Value>(items: ReadonlyArray<T>, at: bigint, value:
   const i = bounds(at, items.length, site), copy = [...items]; copy[i] = value; return list(copy);
 }
 export function character(text: string, at: bigint, site?: Site): string { const chars = Array.from(text); return chars[bounds(at, chars.length, site)]; }
-export function length(value: string | ReadonlyArray<Value>): bigint { return BigInt(typeof value === 'string' ? Array.from(value).length : value.length); }
+export function length(value: string | ByteBuffer | ReadonlyArray<Value>): bigint { return BigInt(typeof value === 'string' ? Array.from(value).length : value.length); }
 export function slice(text: string, start: bigint, count: bigint, site?: Site): string {
   const chars = Array.from(text), size = BigInt(chars.length);
   if (start < 0n || count < 0n || start > size || count > size - start) fail('E_BOUNDS', 'slice is outside string bounds', site);
@@ -124,6 +149,7 @@ function isList(value: Value): value is ReadonlyArray<Value> { return Array.isAr
 export function equal(a: Value, b: Value): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (a instanceof ByteBuffer || b instanceof ByteBuffer) return a instanceof ByteBuffer && b instanceof ByteBuffer && a.equals(b);
   if (isList(a)) return isList(b) && a.length === b.length && a.every((item, i) => equal(item, b[i]));
   if (isList(b) || a[TYPE] !== b[TYPE] || a[CASE] !== b[CASE]) return false;
   const names = Object.keys(a), other = Object.keys(b);
@@ -137,6 +163,7 @@ export function representation(value: Value): string {
   if (typeof value === 'function') return quoted('<function>');
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
+  if (value instanceof ByteBuffer) return quoted(value.base64());
   if (isList(value)) return '[' + value.map(representation).join(',') + ']';
   const fields = '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';
   return value[CASE] === undefined ? fields : '{"case":' + quoted(value[CASE]) + ',"fields":' + fields + '}';
@@ -144,11 +171,11 @@ export function representation(value: Value): string {
 export function str(value: Value): string { return typeof value === 'string' ? value : typeof value === 'function' ? '<function>' : representation(value); }
 export function print(value: Value): void { console.log(str(value)); }
 
-type Descriptor = 'i64' | 'f64' | 'bool' | 'str' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
+type Descriptor = 'i64' | 'f64' | 'bool' | 'str' | 'bytes' | { list: Descriptor } | { result: Descriptor } | { record: string } | { enum: string };
 export type Schema = { schema: 'nex.wire/1' | 'nex.wire/2'; root: Descriptor; records: Record<string, ReadonlyArray<{ name: string; type: Descriptor }>>; enums?: Record<string, ReadonlyArray<{ name: string; fields: ReadonlyArray<{name: string; type: Descriptor}> }>> };
 const JSON_BYTES = 1024 * 1024, JSON_DEPTH = 64, JSON_ITEMS = 10000, JSON_NODES = 100000;
 function invalidJSON(message: string): never { throw new NexError('E_JSON', message); }
-function bytes(text: string): number { return new TextEncoder().encode(text).length; }
+function utf8Size(text: string): number { return new TextEncoder().encode(text).length; }
 export function encodeJSON(value: Value, site?: Site): string {
   let nodes = 0;
   function encode(value: Value, depth: number): string {
@@ -158,6 +185,10 @@ export function encodeJSON(value: Value, site?: Site): string {
     if (typeof value === 'boolean') return String(value);
     if (typeof value === 'number') return formatFloat(value);
     if (typeof value === 'string') return quoted(value);
+    if (value instanceof ByteBuffer) {
+      if (value.length > BigInt(Math.floor((JSON_BYTES - 2) / 4) * 3)) invalidJSON('JSON value exceeds byte limit');
+      return quoted(value.base64());
+    }
     if (!isList(value)) {
       if (value[TYPE] === 'nex.result.ok') return '{"ok":' + encode(value.ok, depth + 1) + '}';
       if (value[TYPE] === 'nex.result.error') {
@@ -175,15 +206,15 @@ export function encodeJSON(value: Value, site?: Site): string {
     if (names.length > JSON_ITEMS) invalidJSON('JSON collection exceeds item limit');
     const result = isList(value) ? '[' + value.map(item => encode(item, depth + 1)).join(',') + ']'
       : '{' + names.map(name => quoted(name) + ':' + encode(value[name], depth + 1)).join(',') + '}';
-    if (bytes(result) > JSON_BYTES) invalidJSON('JSON value exceeds byte limit');
+    if (utf8Size(result) > JSON_BYTES) invalidJSON('JSON value exceeds byte limit');
     return result;
   }
   try {
-    const text = encode(value, 0); if (bytes(text) > JSON_BYTES) invalidJSON('JSON value exceeds byte limit'); return text;
+    const text = encode(value, 0); if (utf8Size(text) > JSON_BYTES) invalidJSON('JSON value exceeds byte limit'); return text;
   } catch (error) { if (error instanceof NexError && !error.site && site) throw new NexError(error.code, error.message, site); throw error; }
 }
 export function parseJSON(text: string): unknown {
-  string(text); if (bytes(text) > JSON_BYTES) invalidJSON('JSON input exceeds byte limit');
+  string(text); if (utf8Size(text) > JSON_BYTES) invalidJSON('JSON input exceeds byte limit');
   // Match the native wire parser's optional leading UTF-8 byte-order mark.
   // Count it against the byte limit, and preserve BOMs inside string values.
   if (text.startsWith('\ufeff')) text = text.slice(1);
@@ -228,6 +259,11 @@ export function decodeJSON<T extends Value>(text: string, schema: Schema): Resul
     if (type === 'bool') { if (typeof value !== 'boolean') invalidJSON('expected JSON boolean'); return value; }
     if (type === 'f64') { if (typeof value !== 'number' || !Number.isFinite(value)) invalidJSON('f64 requires a finite JSON number'); return finiteFloat(value); }
     if (type === 'str') { if (typeof value !== 'string') invalidJSON('expected JSON string'); return string(value); }
+    if (type === 'bytes') {
+      if (typeof value !== 'string') invalidJSON('bytes require a canonical base64 JSON string');
+      try { return ByteBuffer.fromBase64(value); }
+      catch (error) { if (error instanceof ByteError) invalidJSON('bytes require a canonical base64 JSON string'); throw error; }
+    }
     if (typeof type === 'string') return invalidJSON('unsupported wire type');
     if ('list' in type) {
       if (!Array.isArray(value) || value.length > JSON_ITEMS) invalidJSON('expected JSON array within item limit');

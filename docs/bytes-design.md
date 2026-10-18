@@ -12,24 +12,58 @@ all 33 macOS Debug compiler suites passed. The emitted ES2020 module also passed
 68 assertions in each installed Chromium, Firefox and WebKit engine. The opt-in
 `tests/bytes_browser.py PROJECT --output NEW_DIRECTORY --browsers-path PATH`
 uses existing locked TypeScript/Playwright dependencies and retains its evidence.
-These primitives are not yet NEX values or file operations. The source language
-remains 0.12.
+This preserved 0.31 checkpoint preceded managed-value integration. The source
+language remains 0.12.
 
-The next runtime step is a distinct immutable `bytes` value, so arbitrary file
-data never masquerades as valid UTF-8. Native storage should be contiguous octets
-behind the existing owned handle; copying a NEX value shares immutable storage.
-Updates allocate a new value. No descriptor, mutable pointer or host lifetime
-becomes a source value. A host adapter must copy imported mutable data or retain
-an explicitly immutable owner; borrowed views cannot outlive that owner. General
-source FFI/resources/async remain separate required work.
+## Managed runtime values (development 0.32)
 
-Source integration should avoid enlarging every existing string/list/record for
-an unused binary payload. A separately owned binary `Data` subtype is a candidate:
-the shared-pointer control block must retain its real destructor, generic copies
-must not slice it, and shallow profiling must account for the actual object size.
-Preserve existing native field locations where possible and validate debugger
-layout through the matching compiler build. This representation still needs
-implementation and tests before introducing a binary `Data` kind.
+The C++ value runtime now has a distinct immutable binary `Data::Bytes` kind.
+`ByteData` stores its `ByteBuffer` separately, leaving the field locations and
+size of ordinary `Data` objects unchanged. Its shared-pointer control block keeps
+the derived destructor; direct construction or copying as base `Data` fails with
+`E_RUNTIME` instead of losing the binary payload. Shallow allocation profiling
+accounts for `sizeof(ByteData)`, without claiming vector capacity or total heap
+coverage. Copying a value shares immutable storage; a sliced value retains its
+owner after the original handle is released. No pointer or descriptor becomes a
+source value.
+
+C++ and TypeScript value helpers implement construction from checked i64 lists,
+length, octet indexing, retained slicing, immutable updates/concatenation,
+structural equality, formatting, explicit UTF-8 and canonical base64 conversion.
+Construction returns `E_RANGE` for an octet outside 0..255; indexing and updates
+trap with `E_BOUNDS` for bad indices, checking the index before the replacement's
+range. Pure helper failures preserve the native source line or TypeScript site.
+UTF-8 decoding returns `E_UTF8`, preserves a leading BOM, NUL and normalization,
+and rejects overlong sequences, surrogates, truncation and values above U+10FFFF.
+Explicit base64 decoding returns `E_BASE64`. Formatting a byte value uses its
+quoted base64 representation; explicit encoding produces the unquoted string.
+
+The typed JSON runtimes recognize primitive `"bytes"` as a canonical padded
+base64 JSON string; malformed encodings produce `E_JSON`. Nominal schemas have
+always used objects such as `{"record":"bytes"}`, so historical record names
+retain their meaning. This is an extension of the runtime's wire descriptors;
+the source compiler does not yet emit a bytes descriptor or API model. JSON's
+1 MiB limit includes quotes and padding: at most 786429 raw octets fit as a
+standalone byte value. Larger values fail before allocating the encoded string.
+The existing depth/node limits also apply inside containers.
+
+The POSIX `TextFiles` host capability keeps its compatibility name and now has
+`readBytes` / `writeBytes` and matching native host entry points. Binary and text
+operations share bounded raw I/O, pinned roots, path validation, symlink and
+nonregular-file denial, private atomic replacement and cancellation cleanup.
+The binary reader transfers its freshly allocated vector into immutable storage;
+mutable host imports and exports still copy. File data is limited to 1 MiB.
+Text reads alone validate UTF-8. HTTP request scopes still deny implicit
+environment grants; an explicit trusted `FileScope` can grant either operation.
+No general source FFI/resources/async or binary source intrinsic is exposed yet.
+
+Generated TypeScript projects copy `nex-bytes.ts` with `nex-runtime.ts`; browser
+cache identities include both files. These helpers introduce no dependency or
+Node-only API. Source authoring and debugger/API integration below remain open;
+validation of the new internal value boundary is recorded separately from the
+preserved 0.31 primitive evidence.
+
+## Remaining source-language integration
 
 Proposed operations are checked byte construction from `list<i64>`, explicit
 UTF-8 encode/decode, indexing/length/slicing, immutable concatenation and updates,

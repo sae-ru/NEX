@@ -90,54 +90,70 @@ struct TextFiles::Impl {
     root=Descriptor(::open(path.c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC));
     if(root.get()<0)throw DataError("CAPABILITY","configured file root is unavailable");
   }
+  template<class Content> Content read(const std::string &relative,const Poll &poll) const;
+  template<class Validate> void write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const;
 };
 TextFiles::TextFiles(const std::string &root,bool writable):impl(std::make_unique<Impl>(root,writable)){}
 TextFiles::~TextFiles()=default;
+template<class Content> Content TextFiles::Impl::read(const std::string &relative,const Poll &poll) const {
+  check(poll);auto parts=components(relative);auto directory=parent(root.get(),parts,poll);
+  Descriptor file(::openat(directory.get(),parts.back().c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK));
+  if(file.get()<0)ioError(errno);
+  struct stat info{};if(::fstat(file.get(),&info))ioError(errno);
+  if(!S_ISREG(info.st_mode))throw DataError("VALIDATION","only regular files are supported");
+  if(info.st_size<0 || uint64_t(info.st_size)>byteLimit)throw DataError("LIMIT","file exceeds byte limit");
+  Content content;content.reserve(size_t(info.st_size));std::array<char,65536> buffer{};
+  for(;;){
+    check(poll);auto count=::read(file.get(),buffer.data(),buffer.size());
+    if(count<0){if(errno==EINTR)continue;ioError(errno);}
+    if(!count)break;
+    if(size_t(count)>byteLimit-content.size())throw DataError("LIMIT","file exceeds byte limit");
+    content.insert(content.end(),buffer.data(),buffer.data()+size_t(count));
+  }
+  return content;
+}
+template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
+  if(!writable)throw DataError("CAPABILITY","file capability does not permit writes");
+  check(poll);auto parts=components(relative);
+  if(content.size()>byteLimit)throw DataError("LIMIT","file value exceeds byte limit");
+  validate();
+  auto directory=parent(root.get(),parts,poll);struct stat existing{};
+  if(!::fstatat(directory.get(),parts.back().c_str(),&existing,AT_SYMLINK_NOFOLLOW)){
+    if(!S_ISREG(existing.st_mode))throw DataError("VALIDATION","write destination must be a regular file");
+  }else if(errno!=ENOENT)ioError(errno);
+  Temporary temporary(directory.get());
+  for(size_t offset=0;offset<content.size();){
+    check(poll);auto size=std::min<size_t>(65536,content.size()-offset);
+    auto count=::write(temporary.descriptor.get(),content.data()+offset,size);
+    if(count<0){if(errno==EINTR)continue;ioError(errno);}
+    if(count==0)throw DataError("E_FILE","file write made no progress");
+    offset+=size_t(count);
+  }
+  check(poll);
+  while(::fsync(temporary.descriptor.get())){if(errno!=EINTR)ioError(errno);check(poll);}
+  check(poll);
+  if(::renameat(directory.get(),temporary.name.c_str(),directory.get(),parts.back().c_str()))ioError(errno);
+  temporary.published=true;
+}
 Value TextFiles::read(const std::string &relative,const Poll &poll) const {
-  try{
-    check(poll);auto parts=components(relative);auto directory=parent(impl->root.get(),parts,poll);
-    Descriptor file(::openat(directory.get(),parts.back().c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK));
-    if(file.get()<0)ioError(errno);
-    struct stat info{};if(::fstat(file.get(),&info))ioError(errno);
-    if(!S_ISREG(info.st_mode))throw DataError("VALIDATION","only regular text files are supported");
-    if(info.st_size<0 || uint64_t(info.st_size)>textLimit)throw DataError("LIMIT","text file exceeds byte limit");
-    std::string text;text.reserve(size_t(info.st_size));std::array<char,65536> buffer{};
-    for(;;){
-      check(poll);auto count=::read(file.get(),buffer.data(),buffer.size());
-      if(count<0){if(errno==EINTR)continue;ioError(errno);}
-      if(!count)break;
-      if(size_t(count)>textLimit-text.size())throw DataError("LIMIT","text file exceeds byte limit");
-      text.append(buffer.data(),size_t(count));
-    }
-    return success(Value(string(text)));
-  }catch(const DataError &error){return failure(error.code,error.what());}
+  try{return success(Value(string(impl->read<std::string>(relative,poll))));}
+  catch(const DataError &error){return failure(error.code,error.what());}
 }
 Value TextFiles::write(const std::string &relative,const std::string &text,const Poll &poll) const {
   try{
-    if(!impl->writable)throw DataError("CAPABILITY","file capability does not permit writes");
-    check(poll);auto parts=components(relative);
-    if(text.size()>textLimit)throw DataError("LIMIT","text value exceeds byte limit");
-    unicodeOffsets(text,false);
-    auto directory=parent(impl->root.get(),parts,poll);struct stat existing{};
-    if(!::fstatat(directory.get(),parts.back().c_str(),&existing,AT_SYMLINK_NOFOLLOW)){
-      if(!S_ISREG(existing.st_mode))throw DataError("VALIDATION","write destination must be a regular file");
-    }else if(errno!=ENOENT)ioError(errno);
-    Temporary temporary(directory.get());
-    for(size_t offset=0;offset<text.size();){
-      check(poll);auto size=std::min<size_t>(65536,text.size()-offset);
-      auto count=::write(temporary.descriptor.get(),text.data()+offset,size);
-      if(count<0){if(errno==EINTR)continue;ioError(errno);}
-      if(count==0)throw DataError("E_FILE","file write made no progress");
-      offset+=size_t(count);
-    }
-    check(poll);
-    while(::fsync(temporary.descriptor.get())){if(errno!=EINTR)ioError(errno);check(poll);}
-    check(poll);
-    if(::renameat(directory.get(),temporary.name.c_str(),directory.get(),parts.back().c_str()))ioError(errno);
-    temporary.published=true;
+    impl->write(relative,{reinterpret_cast<const uint8_t*>(text.data()),text.size()},poll,[&]{unicodeOffsets(text,false);});
     return success(Value(1,true));
   }catch(const DataError &error){return failure(error.code,error.what());}
 }
+Value TextFiles::readBytes(const std::string &relative,const Poll &poll) const {
+  try{return success(Value(bytes(ByteBuffer::owned(impl->read<std::vector<uint8_t>>(relative,poll)))));}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+Value TextFiles::writeBytes(const std::string &relative,const ByteBuffer &bytes,const Poll &poll) const {
+  try{impl->write(relative,bytes.view(),poll,[]{});return success(Value(1,true));}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+
 namespace {
 struct Access {
   std::string root, errorCode, errorMessage;
@@ -190,6 +206,14 @@ Value fileReadText(const std::string &relative,bool environmentAllowed,const Tex
 }
 Value fileWriteText(const std::string &relative,const std::string &text,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().write(relative,text,poll);}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+Value fileReadBytes(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
+  try{return access(environmentAllowed).capability().readBytes(relative,poll);}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+Value fileWriteBytes(const std::string &relative,const ByteBuffer &bytes,bool environmentAllowed,const TextFiles::Poll &poll){
+  try{return access(environmentAllowed).capability().writeBytes(relative,bytes,poll);}
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 void resetFileEnvironment() noexcept {environmentFiles.reset();}

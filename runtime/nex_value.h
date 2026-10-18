@@ -10,6 +10,7 @@
 #include <atomic>
 #include "nex_profile.h"
 #include "nex_float.h"
+#include "nex_bytes.h"
 
 namespace nexrt {
 struct Data;
@@ -30,16 +31,46 @@ struct Value {
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
-  enum Kind { String, List, Record, Success, Failure, Enum, Closure } kind;
+  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes } kind;
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
   std::vector<std::string> names;
   void *code=nullptr;
-  explicit Data(Kind kind):kind(kind){profileAllocate(this,sizeof(Data),1);++liveObjects;}
-  Data(const Data &other):kind(other.kind),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+private:
+  friend struct ByteData;
+  Data(Kind kind,size_t allocatedSize):kind(kind){profileAllocate(this,allocatedSize,1);++liveObjects;}
+  static Kind copyKind(const Data &other){
+    if(other.kind==Bytes)throw DataError("E_RUNTIME","binary values cannot be copied as base Data");
+    return other.kind;
+  }
+public:
+  explicit Data(Kind kind):Data(kind,sizeof(Data)){
+    if(kind==Bytes)throw DataError("E_RUNTIME","binary values require an owned byte payload");
+  }
+  Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data &operator=(const Data&)=delete;
   ~Data(){profileFree(this);--liveObjects;}
 };
+// The shared-pointer control block retains ByteData's real destructor. Existing
+// string/list/record layouts do not pay for an unused binary payload or vtable.
+struct ByteData final : Data {
+  const ByteBuffer buffer;
+  explicit ByteData(ByteBuffer buffer):Data(Bytes,sizeof(ByteData)),buffer(std::move(buffer)){}
+  static ByteBuffer fromList(const std::vector<Value> &values){
+    ByteBuffer::sizeAllowed(values.size());std::vector<uint8_t> storage;storage.reserve(values.size());
+    for(const auto &value:values){
+      if(value.tag!=Value::Integer)throw DataError("E_RUNTIME","byte construction requires an i64 list");
+      storage.push_back(ByteBuffer::byte(value.scalar));
+    }
+    return ByteBuffer::owned(std::move(storage));
+  }
+};
+inline const ByteBuffer &byteBuffer(const std::shared_ptr<Data> &data){
+  if(!data||data->kind!=Data::Bytes)throw DataError("E_RUNTIME","expected an immutable byte value");
+  return static_cast<const ByteData&>(*data).buffer;
+}
+inline std::shared_ptr<Data> bytes(ByteBuffer buffer){return std::make_shared<ByteData>(std::move(buffer));}
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
   std::vector<size_t> offsets;
   for(size_t i=0;i<text.size();) {
@@ -59,6 +90,27 @@ inline std::shared_ptr<Data> string(std::string text) {
 inline Value success(Value value){auto d=std::make_shared<Data>(Data::Success);d->values.push_back(std::move(value));return Value(d);}
 inline Value failure(std::string code,std::string message){
   auto d=std::make_shared<Data>(Data::Failure);d->text=std::move(code);d->values.emplace_back(string(std::move(message)));return Value(d);
+}
+inline Value bytesFromIntegers(const Value &list){
+  if(list.tag!=Value::Object||!list.object||list.object->kind!=Data::List)
+    throw DataError("E_RUNTIME","byte construction requires an i64 list");
+  try{return success(Value(bytes(ByteData::fromList(list.object->values))));}
+  catch(const DataError &error){if(error.code!="E_RANGE")throw;return failure(error.code,error.what());}
+}
+inline std::shared_ptr<Data> utf8Bytes(const std::string &text){
+  unicodeOffsets(text,false);
+  return bytes(ByteBuffer::copy({reinterpret_cast<const uint8_t*>(text.data()),text.size()}));
+}
+inline Value decodeUTF8(const ByteBuffer &buffer){
+  try{
+    auto view=buffer.view();std::string text;
+    if(!view.empty())text.assign(reinterpret_cast<const char*>(view.data()),view.size());
+    return success(Value(string(std::move(text))));
+  }catch(const DataError &error){if(error.code!="E_UTF8")throw;return failure(error.code,error.what());}
+}
+inline Value decodeBase64(const std::string &text){
+  try{return success(Value(bytes(ByteBuffer::fromBase64(text))));}
+  catch(const DataError &error){if(error.code!="E_BASE64")throw;return failure(error.code,error.what());}
 }
 inline bool isSuccess(const Value &value){return value.object->kind==Data::Success;}
 inline Value unwrap(const Value &value){
@@ -102,16 +154,19 @@ inline std::string decodeLiteral(const std::string &token) {
   return out;
 }
 inline int64_t length(const std::shared_ptr<Data> &d) {
+  if(d->kind==Data::Bytes)return byteBuffer(d).length();
   return d->kind==Data::String?int64_t(unicodeOffsets(d->text).size()-1):int64_t(d->values.size());
 }
 inline void bounds(int64_t index,size_t size) {
   if(index<0||static_cast<uint64_t>(index)>=size)throw DataError("E_BOUNDS","index is outside collection bounds");
 }
 inline Value get(const std::shared_ptr<Data> &d,int64_t index) {
+  if(d->kind==Data::Bytes)return Value(byteBuffer(d).at(index));
   if(d->kind==Data::String){auto offsets=unicodeOffsets(d->text);bounds(index,offsets.size()-1);return Value(string(d->text.substr(offsets[index],offsets[index+1]-offsets[index])));}
   bounds(index,d->values.size());return d->values[index];
 }
 inline std::shared_ptr<Data> slice(const std::shared_ptr<Data> &d,int64_t start,int64_t count) {
+  if(d->kind==Data::Bytes)return bytes(byteBuffer(d).slice(start,count));
   auto offsets=unicodeOffsets(d->text);auto size=offsets.size()-1;
   if(start<0||count<0||static_cast<uint64_t>(start)>size||static_cast<uint64_t>(count)>size-static_cast<uint64_t>(start))throw DataError("E_BOUNDS","slice is outside string bounds");
   return string(d->text.substr(offsets[start],offsets[start+count]-offsets[start]));
@@ -121,6 +176,8 @@ inline bool equal(const Value &a,const Value &b) {
   if(a.tag!=Value::Object)return a.scalar==b.scalar;
   if(a.object==b.object)return true;
   const auto &x=*a.object,&y=*b.object;
+  if(x.kind==Data::Bytes||y.kind==Data::Bytes)
+    return x.kind==y.kind&&byteBuffer(a.object)==byteBuffer(b.object);
   if(x.kind==Data::Closure||y.kind==Data::Closure)return false;
   if(x.kind!=y.kind||x.ordinal!=y.ordinal||x.text!=y.text||x.names!=y.names||x.values.size()!=y.values.size())return false;
   for(size_t i=0;i<x.values.size();++i)if(!equal(x.values[i],y.values[i]))return false;
@@ -138,6 +195,7 @@ inline std::string representation(const Value &v) {
   const auto &d=*v.object;
   if(d.kind==Data::Closure)return quoted("<function>");
   if(d.kind==Data::String)return quoted(d.text);
+  if(d.kind==Data::Bytes)return quoted(byteBuffer(v.object).base64());
   if(d.kind==Data::Success)return "{\"ok\":"+representation(d.values[0])+"}";
   if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+quoted(d.text)+",\"message\":"+representation(d.values[0])+"}}";
   if(d.kind==Data::Enum){std::string fields="{";for(size_t i=0;i<d.values.size();++i){if(i)fields+=",";fields+=quoted(d.names[i])+":"+representation(d.values[i]);}return "{\"case\":"+quoted(d.text.substr(d.text.rfind("::")+2))+",\"fields\":"+fields+"}}";}

@@ -15,6 +15,8 @@ namespace nexrt {
 // Internal binary-value primitive. Host imports/exports copy; slices retain
 // immutable storage. A view borrows from this value and cannot outlive it.
 class ByteBuffer {
+  friend struct ByteData;
+  friend class TextFiles;
   using Storage = std::vector<uint8_t>;
   std::shared_ptr<const Storage> storage;
   size_t offset=0, count=0;
