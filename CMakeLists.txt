@@ -178,6 +178,8 @@ add_test(NAME expressions COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/expressions.py $<TARGET_FILE:nex>)
 add_test(NAME operations COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/operations.py $<TARGET_FILE:nex>)
+add_test(NAME graph_identities COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/graph_identities.py $<TARGET_FILE:nex>)
 add_test(NAME dap_transport COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/dap_transport.py $<TARGET_FILE:nex>)
 add_test(NAME incremental COMMAND ${Python3_EXECUTABLE}

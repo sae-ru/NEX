@@ -224,6 +224,9 @@ test fn examples() -> unit {
                 'compiler selected resources outside this SDK')
         require('typed_nested_patterns' in descriptor['match_features'], 'SDK lacks checked nested patterns')
         require('snapshot_closures' in descriptor['function_value_features'], 'SDK lacks snapshot closures')
+        require('snapshot_scoped_identity_reconciliation' in descriptor['graph_features'] and
+                descriptor['graph_identity_policy'] == 'nex.graph-identity/1',
+                'SDK lacks checked graph references')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
         require('bytes' in descriptor['types'] and
                 'immutable_contiguous_octets' in descriptor['binary_features'],
@@ -241,7 +244,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -307,6 +310,34 @@ test fn examples() -> unit {
         require(adopted['revision'] == state['after'], 'graph import changed checked revision')
         require((imported / '.nex/graph.db').is_file(), 'graph import used an enclosing project store')
         require(cli('run', '--revision', 'HEAD', cwd=imported)['stdout'] == expected, 'imported graph output differs')
+        imported_ids = cli('identities', '--limit', '1000', cwd=imported)
+        mappings = []
+        offset = 0
+        first_node = None
+        while True:
+            page = cli('identities', '--offset', str(offset), '--limit', '100', cwd=project)
+            require(page['revision'] == state['after'], 'identity export selected another revision')
+            if first_node is None:
+                first_node = page['nodes'][0]
+                source_namespace = page['namespace']
+            packet = root / ('identities-'+str(offset)+'.json')
+            packet.write_text(json.dumps(page))
+            reconciled = cli('identities', '--kind', 'reconcile', '--manifest', packet,
+                             '--expected-revision', state['after'], cwd=imported)
+            mappings += reconciled['mappings']
+            offset += len(page['nodes'])
+            if not page['truncated']:
+                break
+        require(cli('identities', '--limit', '1000', cwd=imported) == imported_ids,
+                'reconciliation rewrote destination identities')
+        resolved = cli('identities', '--kind', 'resolve', '--origin', source_namespace,
+                       '--from-revision', state['after'], '--node', first_node['id'], cwd=imported)
+        require(resolved['target']['node']['context_hash'] == first_node['context_hash'] and
+                cli('history', cwd=imported)['head'] == state['after'],
+                'imported graph reference changed content or HEAD')
+        report['evidence']['graph_reconciliation'] = {
+            'source_namespace': source_namespace, 'target_namespace': imported_ids['namespace'],
+            'mappings': len(mappings), 'resolved': resolved, 'destination_ids_unchanged': True}
         passed = cli('task', state['task'], '--kind', 'run', '--revision', state['after'],
                      '--task-hash', state['task_hash'], cwd=project, timeout=300)
         require(passed['status'] == 'passed' and passed['task_hash'] == state['task_hash'], 'reviewed task changed or failed')

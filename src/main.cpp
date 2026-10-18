@@ -23,6 +23,11 @@
 #include <iostream>
 #include <algorithm>
 #include <functional>
+#include <array>
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace fs=std::filesystem;
 namespace {
@@ -50,6 +55,16 @@ Options options(int argc,char **argv) {
 void print(llvm::json::Value value){std::cout<<json(value)<<'\n';}
 llvm::json::Value parseJSON(const std::string &text) {
   auto value=llvm::json::parse(text);if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));return std::move(*value);
+}
+llvm::json::Value readIdentityManifest(const std::string &path){
+  constexpr size_t limit=4*1048576;
+  struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
+  struct stat info{};
+  if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error("E_IDENTITY_LIMIT","identity manifest requires a regular non-symlink JSON file of at most 4 MiB");
+  std::string text;std::array<char,65536> buffer{};
+  for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read identity manifest");}if(!count)break;if(size_t(count)>limit-text.size())throw Error("E_IDENTITY_LIMIT","identity manifest exceeds 4 MiB");text.append(buffer.data(),size_t(count));}
+  try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON","identity manifest must be valid UTF-8");}
+  return parseJSON(text);
 }
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
@@ -85,7 +100,10 @@ int run(const Options &o) {
     if(kind=="reconcile"&&(o.get("--expected-revision").empty()||o.get("--manifest").empty()))throw Error("E_OPTION","reconcile requires --manifest FILE and --expected-revision HEAD_HASH");
     if(kind=="resolve"&&(o.get("--origin").empty()||o.get("--node").empty()||o.get("--from-revision").empty()))throw Error("E_OPTION","resolve requires --origin NAMESPACE --from-revision SOURCE_HASH --node ID");
     if(kind!="export")for(const auto &name:{"--entity","--symbol","--offset","--limit"})if(o.values.contains(name))throw Error("E_OPTION","identity reconciliation/lookup uses complete references, without export filters");
+    for(const auto &name:{"--origin","--node","--from-revision"})if(kind!="resolve"&&o.values.contains(name))throw Error("E_OPTION",std::string(name)+" requires identities --kind resolve");
+    for(const auto &name:{"--manifest","--expected-revision"})if(kind!="reconcile"&&o.values.contains(name))throw Error("E_OPTION",std::string(name)+" requires identities --kind reconcile");
   }
+  if(o.command=="context"&&o.values.contains("--entity")&&(o.values.contains("--operation")||o.values.contains("--site")))throw Error("E_OPTION","--entity requires declaration context with --symbol");
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
   if(o.command=="package"){
     if(o.get("--directory").empty())throw Error("E_OPTION","package requires --directory NEW_DIRECTORY");
@@ -103,9 +121,11 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
+      "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
+      "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
@@ -178,8 +198,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"}};
-    auto kind=o.get("--kind","prompt");if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, linux, match, function, files, bytes, resources or ffi");
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"}};
+    auto kind=o.get("--kind","prompt");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources or ffi");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -285,8 +306,7 @@ int run(const Options &o) {
       if(o.command=="declarations"){auto entity=o.get("--entity");if(!entity.empty()&&entity!="module"&&entity!="type")throw Error("E_OPTION","declarations entity must be module or type");result=store.declarations(p,entity,o.get("--symbol"),offset,limit);}
       else result=store.identities(p,o.get("--entity","all"),o.get("--symbol"),offset,limit);
     }else if(kind=="reconcile"){
-      auto file=o.get("--manifest");if(!fs::is_regular_file(file)||fs::file_size(file)>4*1048576)throw Error("E_IDENTITY_LIMIT","identity manifest requires a regular JSON file of at most 4 MiB");
-      result=store.reconcileIdentities(p,parseJSON(readFile(file)),o.get("--expected-revision"));
+      result=store.reconcileIdentities(p,readIdentityManifest(o.get("--manifest")),o.get("--expected-revision"));
     }else result=store.resolveIdentity(p,o.get("--origin"),o.get("--from-revision"),o.get("--node"));
     auto output=o.get("--output");if(output.empty())print(std::move(result));else {writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"revision",revision(p)}});}return 0;
   }
@@ -333,7 +353,7 @@ int run(const Options &o) {
       print(llvm::json::Object{{"schema","nex.declaration-context/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",object->getString("namespace")->str()},{"node",(*nodes)[0]}});return 0;
     }
     if(!entity.empty()&&entity!="function"&&entity!="endpoint")throw Error("E_OPTION","context entity must be module, type, function or endpoint");
-    for(const auto &endpoint:p.endpoints)if(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name)){
+    for(const auto &endpoint:p.endpoints)if(entity!="function"&&(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name))){
       const auto &handler=p.function(endpoint.target);auto descriptor=describeAPI(p);llvm::json::Value contract=nullptr;
       for(const auto &item:*descriptor.getAsObject()->getArray("endpoints"))if(item.getAsObject()->getString("name")==endpoint.name)contract=item;
       llvm::json::Array structures;std::set<std::string> seen;
@@ -342,6 +362,7 @@ int run(const Options &o) {
       llvm::json::Array imports;for(const auto &dependency:p.units.at(endpoint.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"file",dependency.target},{"module",p.units.at(dependency.target).module}});
       print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",languageVersion},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
     }
+    if(entity=="endpoint")throw Error("E_IDENTITY_SYMBOL","endpoint is not in the selected graph");
     const auto &f=p.function(name);llvm::json::Array callees,callers;
     for(const auto &d:f.dependencies){const auto &fn=p.function(d);callees.push_back(llvm::json::Object{{"name",fn.name},{"source",p.definition(fn)},{"module",fn.owner},{"file",fn.unit}});}
     for(const auto &fn:p.functions)if(fn.dependencies.contains(f.name))callers.push_back(fn.name);

@@ -98,7 +98,7 @@ Directory export requires a new or empty directory and materializes all archived
 
 For a one-file revision, `nex export --revision HEAD -o PATH` writes just that source; omitting `-o` prints it. Multi-file revisions require `--directory`. `--revision HASH` recovers an earlier source snapshot. Semantically equivalent whitespace/alias/path edits can share a revision represented by its first stored source projection.
 
-`nex import graph.json` requires the current language and `nex.graph/2`. It reparses/checks the archived bundle and recomputes its revision; a mismatched declared revision or conflicting root-source projection is rejected. Derived nodes are regenerated. Node IDs are allocated in the destination store, with stable identity for the same logical module/local name within that store, including when another entry imports the module. Portable ID reconciliation is pending.
+`nex import graph.json` requires the current language and `nex.graph/2`. It reparses/checks the archived bundle and recomputes its revision; a mismatched declared revision or conflicting root-source projection is rejected. Derived nodes are regenerated. Node IDs are allocated in the destination store, with stable identity for the same logical module/local name within that store, including when another entry imports the module. Toolchain 0.44 adds explicit snapshot-scoped identity reconciliation after import; see [the graph guide](graph.md). Import itself ignores foreign identity claims.
 
 ## Language/database migration
 

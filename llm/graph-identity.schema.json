@@ -1,0 +1,568 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.dev/schemas/graph-identity-1.json",
+  "title": "NEX graph identity queries and reconciliation",
+  "description": "Byte limits, checked dependency equality, pagination arithmetic, uniqueness and transaction constraints are enforced by the compiler; see docs/graph.md. Exported empty pages are valid but cannot be reconciled.",
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "symbol",
+        "path",
+        "id",
+        "hash",
+        "context_hash"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "module",
+            "type",
+            "function",
+            "endpoint",
+            "operation"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "context_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "operation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192,
+                "pattern": "^[^\\u0000]*(?![\\s\\S])"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "path": {
+                "const": ""
+              }
+            }
+          }
+        }
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "revision",
+        "id"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        }
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "symbol",
+        "path",
+        "id",
+        "hash",
+        "context_hash",
+        "module",
+        "file",
+        "source",
+        "source_bytes",
+        "source_truncated",
+        "definition",
+        "definition_bytes",
+        "definition_omitted",
+        "editable",
+        "derived",
+        "references",
+        "reference_count",
+        "references_truncated"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "module",
+            "type"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "path": {
+          "const": ""
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "context_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "file": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "source_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_truncated": {
+          "type": "boolean"
+        },
+        "definition": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "definition_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "definition_omitted": {
+          "type": "boolean"
+        },
+        "editable": {
+          "const": false
+        },
+        "derived": {
+          "type": "boolean"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "reference_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "references_truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "target",
+        "kind",
+        "symbol",
+        "path",
+        "hash",
+        "context_hash"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "target": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "kind": {
+          "enum": [
+            "module",
+            "type",
+            "function",
+            "endpoint",
+            "operation"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 8192,
+          "pattern": "^[^\\u0000]*(?![\\s\\S])"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "context_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "identity_policy",
+        "namespace",
+        "revision",
+        "source_hash",
+        "selection",
+        "offset",
+        "total",
+        "truncated",
+        "nodes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.identities/1"
+        },
+        "language": {
+          "const": "0.15"
+        },
+        "identity_policy": {
+          "const": "nex.graph-identity/1"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entity",
+            "symbol"
+          ],
+          "properties": {
+            "entity": {
+              "enum": [
+                "all",
+                "module",
+                "type",
+                "function",
+                "endpoint",
+                "operation"
+              ]
+            },
+            "symbol": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 8192,
+              "pattern": "^[^\\u0000]*(?![\\s\\S])"
+            }
+          }
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          },
+          "maxItems": 1000
+        }
+      }
+    },
+    "declarations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "revision",
+        "namespace",
+        "identity_policy",
+        "total",
+        "offset",
+        "truncated",
+        "nodes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.declarations/1"
+        },
+        "language": {
+          "const": "0.15"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "identity_policy": {
+          "const": "nex.graph-identity/1"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/declaration"
+          },
+          "maxItems": 100000
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "revision",
+        "namespace",
+        "node"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.declaration-context/1"
+        },
+        "language": {
+          "const": "0.15"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "node": {
+          "$ref": "#/$defs/declaration"
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "ok",
+        "language",
+        "revision",
+        "namespace",
+        "source_namespace",
+        "source_revision",
+        "manifest_hash",
+        "mappings",
+        "source_unchanged",
+        "head_unchanged"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.identity-reconciliation/1"
+        },
+        "ok": {
+          "const": true
+        },
+        "language": {
+          "const": "0.15"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "source_namespace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "manifest_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+        },
+        "mappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapping"
+          },
+          "maxItems": 1000,
+          "minItems": 1
+        },
+        "source_unchanged": {
+          "const": true
+        },
+        "head_unchanged": {
+          "const": true
+        }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "source",
+        "target",
+        "manifest_hash"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.identity-resolution/1"
+        },
+        "language": {
+          "const": "0.15"
+        },
+        "source": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "namespace",
+            "revision",
+            "node"
+          ],
+          "properties": {
+            "namespace": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "node": {
+              "$ref": "#/$defs/node"
+            }
+          }
+        },
+        "manifest_hash": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+            },
+            {
+              "const": ""
+            }
+          ]
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/page"
+    },
+    {
+      "$ref": "#/$defs/declarations"
+    },
+    {
+      "$ref": "#/$defs/context"
+    },
+    {
+      "$ref": "#/$defs/reconciliation"
+    },
+    {
+      "$ref": "#/$defs/resolution"
+    }
+  ]
+}

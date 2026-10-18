@@ -1,5 +1,11 @@
 # Model-independent NEX language pack
 
+Toolchain 0.44 adds [the graph guide](../docs/graph.md) and
+`graph-identity.schema.json` for bounded module/type context and explicit,
+atomic identity reconciliation between checked stores. Source namespace,
+revision and ID form a reference; destination IDs and history remain local.
+Use the installed descriptor to discover support before issuing these commands.
+
 The installed pack also contains [the SDK handoff guide](../docs/sdk.md) and
 `tools/sdk_acceptance.py`. Its maintained scenario exercises discovery, a failed
 reviewed task, graph repair/import, backend agreement, profiling and archived

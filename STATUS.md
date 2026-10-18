@@ -2,6 +2,20 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: persistent declaration graph and cross-store references
+
+Toolchain **0.44.0 / language 0.15** adds persistent module/type nodes,
+dependency-context fingerprints, bounded declaration queries and explicit
+snapshot-scoped identity reconciliation. Local function/operation IDs, database
+schema 3, language hashing and runtime semantics remain unchanged. Reconciliation
+checks an expected HEAD and commits a complete page atomically without changing
+source or HEAD. A genuine 0.43 database fixture covers additive backfill.
+The [graph guide](docs/graph.md) defines limits, provenance and mapping scope.
+
+Build and focused tests are under validation. Full current regression,
+installed SDK and Linux checks remain pending. The verified 0.43 evidence below
+does not certify these working changes. This milestone does not complete NEX.
+
 ## Verified development milestone: native foreign application packaging
 
 Toolchain **0.43.0 / language 0.15** connects explicit `nex package --foreign`

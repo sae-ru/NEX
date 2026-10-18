@@ -67,6 +67,7 @@ Entities describeEntities(const Program &p){
     for(const auto &dependency:unit.imports)entity.dependencies.insert({"module",p.units.at(dependency.target).module});
     for(const auto &[key,member]:result)if(member.kind!="module"&&member.module==unit.module&&!member.derived)entity.dependencies.insert(key);
   }
+  size_t edges=0;for(const auto &[key,entity]:result){(void)key;if(entity.dependencies.size()>maximumEdges-edges)throw Error("E_IDENTITY_LIMIT","declaration graph exceeds 2000000 edges");edges+=entity.dependencies.size();}
   return result;
 }
 void identify(sqlite3 *db,Entities &entities){
@@ -105,7 +106,27 @@ void contexts(Entities &entities){
     for(auto node:groups[id])nodes[node]->context=hash(json(Object{{"format","nex.graph-context/1"},{"kind",nodes[node]->kind},{"symbol",nodes[node]->symbol},{"component",hashes[id]}},false));
   }
 }
-Entities checkedEntities(sqlite3 *db,const Program &p){auto entities=describeEntities(p);identify(db,entities);contexts(entities);return entities;}
+Entities checkedEntities(sqlite3 *db,const Program &p){
+  auto entities=describeEntities(p);identify(db,entities);auto rev=revision(p);
+  std::map<Key,std::tuple<std::string,std::string,std::string>> stored;
+  {Query q(db,"SELECT kind,symbol,id,hash,canonical FROM declaration_versions WHERE revision=?");q.bind(1,rev);while(q.row())stored[{q.text(0),q.text(1)}]={q.text(2),q.text(3),q.text(4)};}
+  size_t declarations=0;std::set<std::string> ids;std::set<std::tuple<std::string,std::string,std::string,std::string>> expectedEdges;
+  for(const auto &[key,entity]:entities){
+    if(!ids.insert(entity.id).second)throw Error("E_STORE","duplicate persistent graph identity");
+    auto expected=std::tuple{entity.id,entity.content,json(entity.definition,false)};
+    if(key.first=="module"||key.first=="type"){
+      ++declarations;auto found=stored.find(key);if(found==stored.end()||found->second!=expected)throw Error("E_STORE","declaration metadata differs from checked source: "+key.second);
+    }else{
+      Query q(db,"SELECT hash,canonical FROM nodes WHERE revision=? AND id=?");q.bind(1,rev);q.bind(2,entity.id);
+      if(!q.row()||q.text(0)!=entity.content||q.text(1)!=std::get<2>(expected))throw Error("E_STORE","node metadata differs from checked source: "+key.second);
+    }
+    for(const auto &dependency:entity.dependencies){auto found=entities.find(dependency);if(found==entities.end())throw Error("E_STORE","missing checked graph dependency: "+dependency.second);expectedEdges.emplace(key.first,entity.id,dependency.first,found->second.id);}
+  }
+  if(declarations!=stored.size())throw Error("E_STORE","unexpected stored declarations");
+  {Query q(db,"SELECT source_kind,source,target_kind,target FROM graph_edges WHERE revision=?");q.bind(1,rev);while(q.row())if(!expectedEdges.erase({q.text(0),q.text(1),q.text(2),q.text(3)}))throw Error("E_STORE","unexpected stored graph edge");}
+  if(!expectedEdges.empty())throw Error("E_STORE","missing stored graph edges");
+  contexts(entities);return entities;
+}
 Object reference(const Entity &entity,const std::string &path="",const std::string &id="",const std::string &content="",const std::string &context=""){
   return Object{{"kind",path.empty()?entity.kind:"operation"},{"symbol",entity.symbol},{"path",path},{"id",id.empty()?entity.id:id},
     {"hash",content.empty()?entity.content:content},{"context_hash",context.empty()?entity.context:context}};
@@ -131,19 +152,33 @@ bool includes(const Selection &selection,const Entity &entity,bool operation=fal
   if(operation)return selection.kind=="all"||selection.kind=="operation";
   return selection.kind=="all"||selection.kind==entity.kind;
 }
-std::map<std::string,std::string> operationIds(sqlite3 *db,const Program &p,const Entity &owner){
-  Query q(db,"SELECT path,id FROM operation_versions WHERE revision=? AND function=?");q.bind(1,revision(p));q.bind(2,owner.id);std::map<std::string,std::string> result;while(q.row())result[q.text(0)]=q.text(1);return result;
-}
-Object operationReference(sqlite3 *db,const Program &p,const Entity &owner,const std::string &path){
-  auto ids=operationIds(db,p,owner);for(const auto &operation:operationTree(p,p.function(owner.symbol)))if(operation.path==path){
-    auto id=ids.find(path);if(id==ids.end())throw Error("E_STORE","missing operation identity");return reference(owner,path,id->second,operation.content,operationContext(owner,operation));
+// A reconciliation page can contain many operations from one function. Build
+// and verify that function's tree once, then resolve individual paths in O(log N).
+struct OperationLookup {
+  struct Records {std::vector<Object> ordered;std::map<std::string,size_t> paths;};
+  sqlite3 *db;const Program &program;std::set<std::string> declarationIds;std::map<std::string,Records> cache;
+  OperationLookup(sqlite3 *db,const Program &program,const Entities &entities):db(db),program(program){for(const auto &[key,entity]:entities){(void)key;declarationIds.insert(entity.id);}}
+  const Records &all(const Entity &owner){
+    auto found=cache.find(owner.symbol);if(found!=cache.end())return found->second;
+    auto rev=revision(program);auto operations=operationTree(program,program.function(owner.symbol));
+    {Query q(db,"SELECT content_hash FROM operation_functions WHERE revision=? AND function=?");q.bind(1,rev);q.bind(2,owner.id);if(!q.row()||q.text(0)!=owner.content)throw Error("E_STORE","operation owner differs from checked source");}
+    std::map<std::string,std::vector<std::string>> stored;
+    {Query q(db,"SELECT v.path,v.id,v.kind,v.hash,v.site,v.parent,v.role,v.ordinal,v.anchor,i.function,i.kind FROM operation_versions v LEFT JOIN operation_ids i ON i.id=v.id WHERE v.revision=? AND v.function=?");q.bind(1,rev);q.bind(2,owner.id);while(q.row()){auto &row=stored[q.text(0)];for(int i=1;i<=10;++i)row.push_back(q.text(i));}}
+    if(stored.size()!=operations.size())throw Error("E_STORE","operation identities are missing");
+    Records result;
+    for(const auto &operation:operations){
+      auto item=stored.find(operation.path);if(item==stored.end())throw Error("E_STORE","missing operation path");const auto &row=item->second;
+      if(row[0].empty()||declarationIds.contains(row[0])||row[1]!=operation.kind||row[2]!=operation.content||row[3]!=operation.site||row[4]!=operation.parent||row[5]!=operation.role||row[6]!=std::to_string(operation.ordinal)||row[7]!=operation.anchor||row[8]!=owner.id||row[9]!=operation.kind)throw Error("E_STORE","operation metadata differs from checked source");
+      result.paths[operation.path]=result.ordered.size();result.ordered.push_back(reference(owner,operation.path,row[0],operation.content,operationContext(owner,operation)));
+    }
+    return cache.emplace(owner.symbol,std::move(result)).first->second;
   }
-  throw Error("E_IDENTITY_CONTENT","operation path is absent from the checked target graph");
-}
-Value localRecord(sqlite3 *db,const Program &p,const Entities &entities,const std::string &kind,const std::string &symbol,const std::string &path){
+  Object at(const Entity &owner,const std::string &path){const auto &records=all(owner);auto found=records.paths.find(path);if(found==records.paths.end())throw Error("E_IDENTITY_CONTENT","operation path is absent from the checked target graph");return records.ordered[found->second];}
+};
+Value localRecord(OperationLookup &operations,const Entities &entities,const std::string &kind,const std::string &symbol,const std::string &path){
   auto key=Key{kind=="operation"?"function":kind,symbol};auto found=entities.find(key);
   if(found==entities.end())throw Error("E_IDENTITY_CONTENT","identity symbol is absent from the checked target graph: "+symbol);
-  if(kind=="operation")return operationReference(db,p,found->second,path);
+  if(kind=="operation")return operations.at(found->second,path);
   return reference(found->second);
 }
 }
@@ -159,12 +194,13 @@ void initializeGraphIdentities(sqlite3 *db){
       "INSERT OR IGNORE INTO metadata VALUES('identity_schema','1');");
     {Query q(db,"SELECT value FROM metadata WHERE key='identity_schema'");if(!q.row()||q.text(0)!="1")throw Error("E_SCHEMA","unsupported graph identity extension");}
     {Query q(db,"SELECT value FROM metadata WHERE key='identity_namespace'");if(!q.row()){Query insert(db,"INSERT INTO metadata VALUES('identity_namespace',?)");insert.bind(1,fresh());insert.row();}}
-    sql(db,"COMMIT");
+    (void)graphIdentityNamespace(db);sql(db,"COMMIT");
   }catch(...){sql(db,"ROLLBACK");throw;}
 }
-std::string graphIdentityNamespace(sqlite3 *db){Query q(db,"SELECT value FROM metadata WHERE key='identity_namespace'");if(!q.row())throw Error("E_STORE","missing graph identity namespace");return q.text(0);}
-bool graphDeclarationsReady(sqlite3 *db,const Program &p){Query q(db,"SELECT policy FROM identity_revisions WHERE revision=?");q.bind(1,revision(p));return q.row()&&q.text(0)=="nex.graph-identity/1";}
+std::string graphIdentityNamespace(sqlite3 *db){Query q(db,"SELECT value FROM metadata WHERE key='identity_namespace'");if(!q.row())throw Error("E_STORE","missing graph identity namespace");auto value=q.text(0);if(value.size()!=32||value.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_STORE","invalid graph identity namespace");return value;}
+bool graphDeclarationsReady(sqlite3 *db,const Program &p){Query q(db,"SELECT policy FROM identity_revisions WHERE revision=?");q.bind(1,revision(p));if(!q.row())return false;if(q.text(0)!="nex.graph-identity/1")throw Error("E_SCHEMA","unsupported stored graph identity policy");return true;}
 void saveGraphDeclarations(sqlite3 *db,const Program &p){
+  (void)graphDeclarationsReady(db,p);
   auto entities=describeEntities(p);auto rev=revision(p);
   for(auto &[key,entity]:entities)if(key.first=="module"||key.first=="type"){
     std::string id;{Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,key.first);q.bind(2,key.second);if(q.row())id=q.text(0);}
@@ -189,7 +225,7 @@ Value graphDeclarations(sqlite3 *db,const Program &p,const std::string &kind,con
     auto definition=entity.definition;auto definitionBytes=json(definition,false).size();bool omitted=limit&&definitionBytes>8192;if(omitted)definition=nullptr;
     auto source=limit?clipped(entity.source,4096):entity.source;
     auto value=reference(entity);value["module"]=entity.module;value["file"]=entity.file;value["source"]=std::move(source);value["source_bytes"]=int64_t(entity.source.size());value["source_truncated"]=limit&&entity.source.size()>4096;
-    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=!entity.derived;value["derived"]=entity.derived;
+    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=false;value["derived"]=entity.derived;
     value["references"]=std::move(dependencies);value["reference_count"]=int64_t(entity.dependencies.size());value["references_truncated"]=limit&&entity.dependencies.size()>100;rows.push_back(std::move(value));
   }
   return Object{{"schema","nex.declarations/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},
@@ -200,9 +236,9 @@ Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const
   auto entities=checkedEntities(db,p);auto selection=select(p,entities,kind,symbol);Array rows;uint64_t total=0;
   auto append=[&](Object row){if(total++>=offset&&rows.size()<limit)rows.push_back(std::move(row));};
   for(const auto &[key,entity]:entities){(void)key;if(includes(selection,entity))append(reference(entity));}
-  for(const auto &f:p.functions){const auto &entity=entities.at({"function",f.name});if(!includes(selection,entity,true))continue;
-    auto ids=operationIds(db,p,entity);auto operations=operationTree(p,f);if(ids.size()!=operations.size())throw Error("E_STORE","missing operation identities");
-    for(const auto &operation:operations)append(reference(entity,operation.path,ids.at(operation.path),operation.content,operationContext(entity,operation)));
+  OperationLookup operations{db,p,entities};
+  for(const auto &[key,entity]:entities){if(key.first!="function"||!includes(selection,entity,true))continue;
+    for(const auto &operation:operations.all(entity).ordered)append(operation);
   }
   return Object{{"schema","nex.identities/1"},{"language",languageVersion},{"identity_policy","nex.graph-identity/1"},{"namespace",graphIdentityNamespace(db)},
     {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",Object{{"entity",kind},{"symbol",selection.symbol}}},
@@ -216,13 +252,19 @@ Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifes
   auto origin=token(*object,"namespace",32),sourceRevision=token(*object,"revision",64),sourceHash=token(*object,"source_hash",64),current=revision(p),localNamespace=graphIdentityNamespace(db);
   if(origin.size()!=32||origin.find_first_not_of("0123456789abcdef")!=std::string::npos||!digest(sourceRevision)||!digest(sourceHash))throw Error("E_IDENTITY_SCHEMA","invalid namespace or source digest");
   auto nodes=object->getArray("nodes");if(!nodes||nodes->empty()||nodes->size()>maximumPage)throw Error("E_IDENTITY_LIMIT","reconciliation requires 1..1000 identity records");
-  auto entities=checkedEntities(db,p);Array mappings;std::set<std::string> remoteIds;std::set<std::tuple<std::string,std::string,std::string>> selected;auto manifestHash=hash(json(manifest,false));
+  auto offset=object->getInteger("offset"),total=object->getInteger("total");auto truncated=object->getBoolean("truncated");auto scope=object->getObject("selection");
+  if(!offset||!total||!truncated||!scope||*offset<0||*offset>10000000||*total<*offset||uint64_t(*total-*offset)<nodes->size()||*truncated!=(uint64_t(*total-*offset)>nodes->size()))throw Error("E_IDENTITY_SCHEMA","invalid identity page metadata");
+  keys(*scope,{"entity","symbol"});auto scopeKind=token(*scope,"entity",16);auto scopeSymbol=scope->getString("symbol");if(!scopeSymbol||scopeSymbol->size()>8192||scopeSymbol->contains('\0'))throw Error("E_IDENTITY_SCHEMA","invalid identity selection");
+  auto entities=checkedEntities(db,p);auto selection=select(p,entities,scopeKind,scopeSymbol->str());
+  if(selection.symbol!=scopeSymbol->str())throw Error("E_IDENTITY_SCHEMA","identity selection requires a fully qualified symbol");
+  OperationLookup operations{db,p,entities};Array mappings;std::set<std::string> remoteIds;std::set<std::tuple<std::string,std::string,std::string>> selected;auto manifestHash=hash(json(manifest,false));
   struct Link{std::string remote,local,kind,symbol,path,content,context;};std::vector<Link> links;
   for(const auto &value:*nodes){auto node=value.getAsObject();if(!node)throw Error("E_IDENTITY_SCHEMA","identity record must be an object");keys(*node,{"kind","symbol","path","id","hash","context_hash"});
     auto kind=token(*node,"kind",16),symbol=token(*node,"symbol"),remote=token(*node,"id",128),content=token(*node,"hash",64),context=token(*node,"context_hash",64);auto path=node->getString("path");
     if(!path||path->size()>8192||path->contains('\0')||!std::set<std::string>{"module","type","function","endpoint","operation"}.contains(kind)||((kind=="operation")!=!path->empty())||!digest(content)||!digest(context))throw Error("E_IDENTITY_SCHEMA","invalid checked identity record");
     if(!remoteIds.insert(remote).second||!selected.emplace(kind,symbol,path->str()).second)throw Error("E_IDENTITY_SCHEMA","duplicate identity record or remote ID");
-    auto local=localRecord(db,p,entities,kind,symbol,path->str());auto target=local.getAsObject();
+    auto local=localRecord(operations,entities,kind,symbol,path->str());auto target=local.getAsObject();
+    if(!includes(selection,entities.at({kind=="operation"?"function":kind,symbol}),kind=="operation"))throw Error("E_IDENTITY_SCHEMA","identity record is outside its selection");
     if(target->getString("hash")!=content||target->getString("context_hash")!=context)throw Error("E_IDENTITY_CONTENT","definition or dependency context differs: "+symbol+(path->empty()?"":" at "+path->str()));
     auto id=target->getString("id")->str();if(origin==localNamespace&&remote!=id)throw Error("E_IDENTITY_CONFLICT","manifest would rename an identity in this store's own namespace");
     {Query q(db,"SELECT local_id,kind,symbol,path,hash,context_hash FROM identity_links WHERE origin=? AND remote_id=? AND source_revision=? AND target_revision=?");q.bind(1,origin);q.bind(2,remote);q.bind(3,sourceRevision);q.bind(4,current);
@@ -235,12 +277,13 @@ Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifes
   return Object{{"schema","nex.identity-reconciliation/1"},{"ok",true},{"language",languageVersion},{"revision",current},{"namespace",localNamespace},{"source_namespace",origin},{"source_revision",sourceRevision},{"manifest_hash",manifestHash},{"mappings",std::move(mappings)},{"source_unchanged",true},{"head_unchanged",true}};
 }
 Value resolveGraphIdentity(sqlite3 *db,const Program &p,const std::string &origin,const std::string &sourceRevision,const std::string &id){
-  auto entities=checkedEntities(db,p);auto targetRevision=revision(p);Value result=nullptr;std::string manifestHash;
+  if(origin.size()!=32||origin.find_first_not_of("0123456789abcdef")!=std::string::npos||!digest(sourceRevision)||id.empty()||id.size()>128||id.find('\0')!=std::string::npos)throw Error("E_IDENTITY_SCHEMA","invalid snapshot identity reference");
+  auto entities=checkedEntities(db,p);OperationLookup operations{db,p,entities};auto targetRevision=revision(p);Value result=nullptr;std::string manifestHash;
   Query q(db,"SELECT local_id,kind,symbol,path,hash,context_hash,manifest_hash FROM identity_links WHERE origin=? AND remote_id=? AND source_revision=? AND target_revision=?");q.bind(1,origin);q.bind(2,id);q.bind(3,sourceRevision);q.bind(4,targetRevision);
-  if(q.row()){result=localRecord(db,p,entities,q.text(1),q.text(2),q.text(3));auto record=result.getAsObject();if(record->getString("id")!=q.text(0)||record->getString("hash")!=q.text(4)||record->getString("context_hash")!=q.text(5))throw Error("E_IDENTITY_CONFLICT","stored mapping differs from the selected checked graph");manifestHash=q.text(6);}
+  if(q.row()){result=localRecord(operations,entities,q.text(1),q.text(2),q.text(3));auto record=result.getAsObject();if(record->getString("id")!=q.text(0)||record->getString("hash")!=q.text(4)||record->getString("context_hash")!=q.text(5))throw Error("E_IDENTITY_CONFLICT","stored mapping differs from the selected checked graph");manifestHash=q.text(6);}
   else if(origin==graphIdentityNamespace(db)&&sourceRevision==targetRevision){
     for(const auto &[key,entity]:entities){(void)key;if(entity.id==id){result=reference(entity);break;}}
-    if(result.getAsNull())for(const auto &f:p.functions){const auto &owner=entities.at({"function",f.name});auto ids=operationIds(db,p,owner);for(const auto &[path,local]:ids)if(local==id){result=operationReference(db,p,owner,path);break;}if(!result.getAsNull())break;}
+    if(result.getAsNull())for(const auto &f:p.functions){const auto &owner=entities.at({"function",f.name});for(const auto &node:operations.all(owner).ordered)if(node.getString("id")==id){result=Object(node);break;}if(!result.getAsNull())break;}
   }
   if(result.getAsNull())throw Error("E_IDENTITY_REF","identity reference has no mapping in the selected revision");
   return Object{{"schema","nex.identity-resolution/1"},{"language",languageVersion},{"source",Object{{"namespace",origin},{"revision",sourceRevision},{"id",id}}},

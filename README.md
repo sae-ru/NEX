@@ -8,7 +8,12 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The current working snapshot is toolchain **0.43.0 / language 0.15**. It adds
+The working tree is toolchain **0.44.0 / language 0.15**, adding persistent
+module/type nodes, bounded declaration context and atomic, snapshot-scoped
+identity reconciliation between stores. Its current validation is recorded in
+`STATUS.md`; [the graph guide](docs/graph.md) describes the protocol.
+
+The preceding verified snapshot is toolchain **0.43.0 / language 0.15**. It adds
 matching-host native application packaging with explicit foreign-library grants,
 recursive dependency/notices collection and checked, history-preserving pin
 projections. The corrected implementation passes all 50 macOS/Linux ARM64 suites,

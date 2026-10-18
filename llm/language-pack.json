@@ -67,9 +67,11 @@
     "foreign_scope_header": "runtime/nex_foreign.h",
     "foreign_native_bridge": "runtime/nex_foreign_abi.h",
     "foreign_catalogue_schema": "llm/foreign-catalogue.schema.json",
-    "foreign_catalogue_report_schema": "llm/foreign-catalogue-report.schema.json"
+    "foreign_catalogue_report_schema": "llm/foreign-catalogue-report.schema.json",
+    "graph": "docs/graph.md",
+    "graph_identity_schema": "llm/graph-identity.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -176,5 +178,12 @@
     "nex task task.json --kind check --foreign HOST.json --json",
     "nex task task.json --kind run --task-hash HASH --foreign HOST.json --json",
     "nex task RECEIPT.json --kind replay --foreign CURRENT_HOST.json --json"
+  ],
+  "graph_commands": [
+    "nex declarations --entity type --symbol MODULE::TYPE --json",
+    "nex context --entity module --symbol MODULE --json",
+    "nex identities --entity module --symbol MODULE --offset 0 --limit 100 -o PAGE.json",
+    "nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH --json",
+    "nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID --json"
   ]
 }
