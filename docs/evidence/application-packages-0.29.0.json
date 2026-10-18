@@ -6,7 +6,7 @@
   "implementation_commit": "13736aad0c89352e3a1a8c231471e7a93d0e182a",
   "accepted_release": false,
   "full_objective_complete": false,
-  "full_regression_status": "pending",
+  "full_regression_status": "passed_for_stated_macos_linux_matrix",
   "fixture_correction": {
     "path": "tools/application_acceptance.py",
     "sha256": "0fe3c345c5fa06a5dd1218def392d203d5df1d2ba99033ca5692f6a72c3b9fe0",
@@ -178,6 +178,56 @@
     "suites": 29,
     "python_cases_declared": 262,
     "ctest_seconds": 490.65,
-    "remaining_workflow_status": "live suites and source-free installed SDK pending"
+    "remaining_workflow_status": "all eight live suites and source-free SDK passed"
+  },
+  "compiler_checks": {
+    "macos_debug": {
+      "ok": true,
+      "suites": 29,
+      "python_cases_declared": 262,
+      "linux_only_skip": 1,
+      "seconds": 1190.77,
+      "installed_unbundled_sdk_compiler_sha256": "c68a8e1624751835d89465973a28a23620bcd45cc707748379678dff2917ed54"
+    },
+    "macos_release": {
+      "ok": true,
+      "suites": 29,
+      "python_cases_declared": 262,
+      "linux_only_skip": 1,
+      "seconds": 1007.13,
+      "build_compiler_sha256": "b2f5aeba85e0543dda0b54e7b32d55211aecd789eec88e51f7034651a45ab62b"
+    },
+    "linux_arm64": {
+      "ok": true,
+      "suites": 29,
+      "python_cases_declared": 262,
+      "macos_only_skips": 7,
+      "emulated": false,
+      "seconds": 490.65,
+      "build_compiler_sha256": "2bff5f55f83789beb656f8ef480a38f8aa1f0e5a6ea7c08fd8330451e58979b8",
+      "installed_unbundled_sdk_compiler_sha256": "e6a2321e5ef5d261addc3fae18c4a162bc237962198b6d0fac67f567b2a7134d",
+      "live_suites": 8,
+      "source_free_sdk_phases": 10,
+      "source_free_sdk_seconds": 68.174,
+      "source_free_live_debugger": true
+    },
+    "linux_amd64": {
+      "ok": true,
+      "suites": 29,
+      "python_cases_declared": 262,
+      "macos_only_skips": 7,
+      "emulated": true,
+      "seconds": 1795.98,
+      "build_compiler_sha256": "ed6d6837e50a465850a461148f80d35d01bc8cc45c74b5f640790ba1237aaad4",
+      "installed_unbundled_sdk_compiler_sha256": "f94104b145ee09d8a25997f3f27faea6a9b56418174d3fd45c22dba209048d79",
+      "live_suites": 0,
+      "source_free_sdk_phases": 10,
+      "source_free_sdk_seconds": 212.267,
+      "source_free_live_debugger": false
+    }
+  },
+  "corrected_installed_linux_application_drivers": {
+    "arm64": true,
+    "amd64": true
   }
 }

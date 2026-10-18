@@ -2,7 +2,21 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: native application packages
+## In progress: filesystem adapter
+
+Development toolchain **0.30.0** starts a POSIX directory-capability adapter for
+strict UTF-8 text and atomic replacement. This is an internal prototype; the
+source language remains **0.11** and does not yet expose file builtins or a
+`fs` effect. Frontend/interpreter/native integration and explicit 0.11 migration
+remain required before advertising language 0.12. The independent C++ probe
+covers path rejection, symlinks, limits, cancellation, descriptor cleanup,
+concurrent replacement and pinned roots. All 13 cases passed on macOS ARM64,
+Linux ARM64 and emulated Linux x86-64. A genuine SDK 0.29 store/export fixture
+for language 0.11, including future builtin-name conflicts, is retained before
+starting migration. The full 0.30 prototype regression is running.
+See [the design](docs/files-design.md).
+
+## Development milestone: native application packages
 
 Development toolchain **0.29.0** retains source language **0.11**. `nex package`
 builds an application/server (release by default) and assembles its required
@@ -17,8 +31,8 @@ deleting its original library/source/build, SDK-inventory reuse plus changed-lib
 rejection, and a moved HTTPS server with authentication, per-user storage,
 persistence across restart and clean exit. An initial `/var` versus `/private/var`
 prefix mismatch was fixed by canonicalizing the staging directory; the server
-test requires permission to open loopback sockets. Full 0.29 platform/installed
-SDK validation is pending. These tests do not establish broader deployment
+test requires permission to open loopback sockets. Full 0.29 validation passed
+on the stated macOS/Linux development matrix. These tests do not establish broader deployment
 compatibility, Windows/mobile packaging or completion of the requested toolchain.
 See [application packaging](docs/packaging.md) for prerequisites and limits.
 
@@ -37,13 +51,27 @@ LLDB/DAP and both browser builds in 108.719 s.
 
 The new deployment fixture initially used reserved `server` as its module name;
 its one-line correction is independently exercised by those native probes.
-Compiler/runtime/tests remain the frozen `8cf7621c` inputs. Linux ARM64 passed
-all 29 regression suites; its remaining live/installed-SDK checks, macOS
-Debug/Release and emulated Linux x86-64 regressions remain in progress.
+The verified 0.29 compiler/runtime/tests are the frozen `8cf7621c` inputs.
+All 29 suites passed in macOS Debug/Release (1190.77/1007.13 s), Linux ARM64
+(490.65 s) and emulated Linux x86-64 (1795.98 s). Linux ARM64 passed all eight
+live suites and its ten-phase source-free SDK in 68.174 s; x86-64 passed its
+source-free SDK without claiming live debugger coverage. Corrected installed
+Linux application drivers directly produced packages that passed the minimal
+runtime probe. Both Linux SDK archives repeated all ten phases after extraction.
+The macOS Release SDK passed ten phases in 83.333 s, then archive extraction,
+all 2402 inventoried file checks and fresh project/build/run/test/package under
+kernel-denied source/Homebrew/MacPorts access. Each Linux archive verified 734
+files. [Durable SDK evidence](docs/evidence/sdk-0.29.0.json) records hashes,
+tested prerequisites and exact validation scope.
 [Durable package evidence](docs/evidence/application-packages-0.29.0.json)
 records tested images, application manifest hashes and the fixture correction.
 
-The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
+The most recent fully verified development checkpoint is therefore toolchain
+**0.29 / language 0.11** (function/9, program/10), using compiler tree `8cf7621c`
+and corrected resource tree `ca357378`. Windows/mobile/UI/GPU/Wasm, source
+filesystem/FFI/async and the other open plan items remain required work.
+
+The historical accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and
 validated lazy callable watches. Canonical formats are function/8 and program/9.
