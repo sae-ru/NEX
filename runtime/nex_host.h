@@ -26,6 +26,10 @@ public:
 Handle *makeHandle(const Value &value);
 Value readHandle(const Handle *handle);
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
+bool inRequestScope();
+void pollHostOperation(int64_t line);
+void registerRuntimeCleanup(void (*cleanup)() noexcept);
+void cleanupRuntimeResources();
 template<class F> Handle *hostValue(int64_t line,F operation){
   try{return makeHandle(operation());}
   catch(const Trap &){throw;}

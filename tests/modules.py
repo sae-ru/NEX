@@ -19,9 +19,9 @@ class Modules(harness.ToolchainCase):
             db.execute('UPDATE head SET revision=? WHERE id=1',(old,))
         self.file.unlink()
         self.assertEqual(self.cli('run','--revision',old,ok=False)['code'],'E_LANGUAGE_VERSION')
-        self.assertEqual(self.cli('migrate')['language'],'0.11')
+        self.assertEqual(self.cli('migrate')['language'],'0.12')
         self.assertEqual(self.cli('run','--revision','HEAD')['exit_code'],0)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.4','0.11'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.4','0.12'})
         recovered=self.root / 'recovered'
         self.cli('export','--revision',old,'--directory',recovered)
         self.assertEqual(json.loads((recovered/'nex.json').read_text())['language'],'0.4')
@@ -40,9 +40,9 @@ class Modules(harness.ToolchainCase):
             db.execute('INSERT INTO head VALUES(1,?)', (old,))
         self.assertEqual(self.cli('build', '--revision', old, ok=False)['code'], 'E_LANGUAGE_VERSION')
         migrated=self.cli('migrate')
-        self.assertEqual(migrated['language'], '0.11')
+        self.assertEqual(migrated['language'], '0.12')
         self.assertNotEqual(migrated['revision'], old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.3', '0.11'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.3', '0.12'})
         self.assertEqual(self.cli('run', '--revision', 'HEAD')['stdout'], 'retained\n')
         destination=self.root / 'recovered old project'
         self.cli('export', '--revision', old, '--directory', destination)

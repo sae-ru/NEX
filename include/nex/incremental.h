@@ -5,7 +5,7 @@ namespace nex {
 struct NativeUnit {
   std::string identity, unit, module, contract, source;
   std::set<std::string> functions;
-  bool wire = false, storage = false;
+  bool wire = false, storage = false, files = false;
 };
 struct NativePlan {
   std::vector<NativeUnit> units;

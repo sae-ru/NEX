@@ -18,7 +18,7 @@ class Constraints(harness.ToolchainCase):
             self.assertEqual(self.cli('run','--profile',profile)['stdout'],'NEX 🧠\n42\n[1,2,3]\n')
             self.cli('test','--profile',profile)
         self.cli('test','--target','web')
-        descriptor=self.cli('describe');self.assertEqual(descriptor['version'],'0.11')
+        descriptor=self.cli('describe');self.assertEqual(descriptor['version'],'0.12')
         self.assertEqual(descriptor['generic_constraints']['add'],['i64','f64','str','list<T>'])
         context=self.cli('context','--symbol','combine')
         self.assertEqual(context['type_bounds'],{'constraints::combine::T':['add']})
@@ -139,8 +139,8 @@ test fn examples() -> unit {assert(math::sum(20,22) == 42);}
         else:
             saved=self.historical_store('0.7');old=saved['revision'];graph=saved['graph'];nodes=saved['operations']
         self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.11');self.assertNotEqual(current['revision'],old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.7','0.11'})
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.12');self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.7','0.12'})
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in self.cli('graph')['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in self.cli('operations','--symbol','main')['nodes']})
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
@@ -176,7 +176,7 @@ fn observe<T:integer>(value:T) -> unit !{io} {print(increment(value));}
 fn main() -> unit !{io} {observe(41);}
 ''')
         session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text());revision=session['revision']
-        frame={'schema':'nex.debug-frame/1','language':'0.11','revision':revision,'build_key':manifest['build_key'],
+        frame={'schema':'nex.debug-frame/1','language':'0.12','revision':revision,'build_key':manifest['build_key'],
                'function':'bound_watch::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'i64','value':'41'}],'truncated':False}
         path=self.root/'frame.json';path.write_text(json.dumps(frame))

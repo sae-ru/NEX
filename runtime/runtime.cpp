@@ -6,12 +6,21 @@
 #include "nex_io.h"
 #include <chrono>
 #include <unordered_set>
+#include <algorithm>
+#include <vector>
 
 namespace nexrt {
 namespace {
 thread_local RequestScope *currentRequest=nullptr;
 std::atomic<int64_t> liveHandles{0};
+thread_local std::vector<void(*)() noexcept> resourceCleanups;
 }
+bool inRequestScope(){return currentRequest!=nullptr;}
+void pollHostOperation(int64_t line){if(currentRequest)currentRequest->poll(line,true);}
+void registerRuntimeCleanup(void (*cleanup)() noexcept){
+  if(std::find(resourceCleanups.begin(),resourceCleanups.end(),cleanup)==resourceCleanups.end())resourceCleanups.push_back(cleanup);
+}
+void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=resourceCleanups.back();resourceCleanups.pop_back();cleanup();}}
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
@@ -45,6 +54,7 @@ Value readHandle(const Handle *handle){return Value(handle->data);}
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){
   profileUnwind();
   if(currentRequest)throw Trap(code,message,line);
+  cleanupRuntimeResources();
   std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));std::exit(70);
 }
 }
@@ -121,7 +131,7 @@ Handle *nex_format_i64(int64_t value,int64_t tag){return guarded(0,[&]{return ow
 Handle *nex_format_f64(double value){return guarded(0,[&]{return owned(nexrt::string(nexrt::formatFloat(value)));});}
 Handle *nex_format_heap(Handle *p){return guarded(0,[&]{return owned(nexrt::string(nexrt::printable(nexrt::Value(p->data))));});}
 void nex_print_heap(Handle *p){guarded(0,[&]{auto text=nexrt::printable(nexrt::Value(p->data));std::fwrite(text.data(),1,text.size(),stdout);std::fputc('\n',stdout);});}
-void nex_runtime_finish(){if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",0);}
+void nex_runtime_finish(){nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",0);}
 void nex_poll(int64_t line){if(nexrt::currentRequest)nexrt::currentRequest->poll(line,false);}
 Handle *nex_ok_i64(int64_t value,int64_t tag){return guarded(0,[&]{return owned(nexrt::success(nexrt::Value::taggedScalar(value,tag)).object);});}
 Handle *nex_ok_heap(Handle *value){return guarded(0,[&]{return owned(nexrt::success(nexrt::Value(value->data)).object);});}

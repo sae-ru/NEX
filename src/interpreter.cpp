@@ -5,6 +5,7 @@
 #include "nex_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
+#include "nex_files.h"
 #include "llvm/Support/Error.h"
 #include <limits>
 #include <functional>
@@ -14,6 +15,7 @@ namespace {
 using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
+  nexrt::FileScope files;
   const Program &p; uint64_t limit; Evaluation result;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
@@ -87,6 +89,8 @@ class Interpreter {
       if(e->text=="encode_json")return V(nexrt::string(nexrt::encodeJSON(full(args[0]))));
       if(e->text=="decode_json")return nexrt::decodeJSON(full(args[0]).object->text,json(wireSchema(p,e->annotation),false));
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
+      if(e->text=="file_read_text")return nexrt::fileReadText(args[0].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_write_text")return nexrt::fileWriteText(args[0].object->text,args[1].object->text,true,[&]{step(e->span);});
       if(e->text=="store_get")return nexrt::storageGet(args[0].object->text);
       if(e->text=="store_put")return nexrt::storagePut(args[0].object->text,args[1].object->text);
       if(e->text=="store_remove")return nexrt::storageRemove(args[0].object->text);

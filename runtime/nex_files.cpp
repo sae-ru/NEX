@@ -3,6 +3,8 @@
 #include <array>
 #include <cerrno>
 #include <cstdio>
+#include <cstdlib>
+#include <string_view>
 #include <fcntl.h>
 #include <sys/random.h>
 #include <sys/stat.h>
@@ -136,4 +138,59 @@ Value TextFiles::write(const std::string &relative,const std::string &text,const
     return success(Value(1,true));
   }catch(const DataError &error){return failure(error.code,error.what());}
 }
+namespace {
+struct Access {
+  std::string root, errorCode, errorMessage;
+  bool writable=false, attempted=false;
+  std::unique_ptr<TextFiles> owned;
+  TextFiles *provided=nullptr;
+  explicit Access(bool environmentAllowed){
+    if(environmentAllowed){
+      if(auto *value=std::getenv("NEX_FILES_ROOT"))root=value;
+      if(auto *value=std::getenv("NEX_FILES_WRITE"))writable=std::string_view(value)=="1";
+    }
+  }
+  explicit Access(TextFiles &capability):provided(&capability){}
+  TextFiles &capability(){
+    if(provided)return *provided;
+    if(!attempted){
+      attempted=true;
+      try{
+        if(root.empty()||root.front()!='/')throw DataError("CAPABILITY","file root must be an absolute configured directory");
+        owned=std::make_unique<TextFiles>(root,writable);
+      }
+      catch(const DataError &error){errorCode=error.code;errorMessage=error.what();}
+    }
+    if(!owned)throw DataError(errorCode.empty()?"CAPABILITY":errorCode,errorMessage.empty()?"file capability is not configured":errorMessage);
+    return *owned;
+  }
+};
+thread_local Access *currentFiles=nullptr;
+thread_local std::unique_ptr<Access> environmentFiles;
+Access &access(bool environmentAllowed){
+  if(currentFiles)return *currentFiles;
+  if(!environmentAllowed)throw DataError("CAPABILITY","request file capability is not configured");
+  if(!environmentFiles)environmentFiles=std::make_unique<Access>(true);
+  return *environmentFiles;
+}
+}
+struct FileScope::Impl {
+  Access value;
+  Access *previous;
+  explicit Impl(bool allowed):value(allowed),previous(currentFiles){currentFiles=&value;}
+  explicit Impl(TextFiles &capability):value(capability),previous(currentFiles){currentFiles=&value;}
+  ~Impl(){currentFiles=previous;}
+};
+FileScope::FileScope(bool allowed):impl(std::make_unique<Impl>(allowed)){}
+FileScope::FileScope(TextFiles &capability):impl(std::make_unique<Impl>(capability)){}
+FileScope::~FileScope()=default;
+Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
+  try{return access(environmentAllowed).capability().read(relative,poll);}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+Value fileWriteText(const std::string &relative,const std::string &text,bool environmentAllowed,const TextFiles::Poll &poll){
+  try{return access(environmentAllowed).capability().write(relative,text,poll);}
+  catch(const DataError &error){return failure(error.code,error.what());}
+}
+void resetFileEnvironment() noexcept {environmentFiles.reset();}
 }
