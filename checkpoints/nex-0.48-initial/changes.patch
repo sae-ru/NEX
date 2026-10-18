@@ -1,0 +1,438 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.25)
+-project(NEX VERSION 0.47.0 LANGUAGES C CXX)
++project(NEX VERSION 0.48.0 LANGUAGES C CXX)
+ set(CMAKE_CXX_STANDARD 20)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+@@ -70,6 +70,8 @@
+ install(FILES tools/foreign_bundle.py DESTINATION share/nex/tools)
+ install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)
+ enable_testing()
++add_test(NAME operation_patches COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/operation_patches.py $<TARGET_FILE:nex>)
++set_tests_properties(operation_patches PROPERTIES COST 60 TIMEOUT 1200)
+ add_test(NAME native_arithmetic COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_arithmetic.py $<TARGET_FILE:nex>)
+ set_tests_properties(native_arithmetic PROPERTIES COST 90 TIMEOUT 1200)
+ add_executable(nex_native_sites_probe tests/native_sites_runtime.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+--- a/include/nex/operations.h
++++ b/include/nex/operations.h
+@@ -4,7 +4,7 @@
+ struct Operation {
+   std::string path,parent,role,kind,anchor,content,site,binding,callee;
+   unsigned ordinal=0;
+-  Span span;
++  Span span;SourceRange sourceRange;std::string fragment;
+   llvm::json::Value definition=nullptr;
+   const void *ast=nullptr;
+ };
+--- a/include/nex/language.h
++++ b/include/nex/language.h
+@@ -13,6 +13,9 @@
+ inline constexpr const char *languageVersion = "0.15";
+ using TypeBounds = std::vector<std::set<std::string>>;
+ struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
++// Exact lexical interval, separate from the diagnostic token in Span.
++// Generated semantic nodes leave valid=false; ranges never affect identities.
++struct SourceRange {size_t begin=0,end=0;bool valid=false;};
+ struct Error : std::runtime_error {
+   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
+   Error(std::string code, std::string message, Span span = {})
+@@ -41,7 +44,7 @@
+ using P = std::shared_ptr<Pattern>;
+ struct Pattern {
+   enum Kind { Binding, Wildcard, Constructor, Integer, Boolean, String, List } kind=Wildcard;
+-  Span span;std::string text;int64_t number=0,ordinal=0;Type type;
++  Span span;SourceRange sourceRange;std::string text;int64_t number=0,ordinal=0;Type type;
+   size_t binding=0;std::vector<P> args;
+ };
+ template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto child:pattern->args)visitPattern(child,visit);}
+@@ -49,7 +52,7 @@
+ struct Function;
+ struct Expr {
+   enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda, Floating } kind;
+-  Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
++  Span span;SourceRange sourceRange; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
+   std::string localName;std::shared_ptr<Function> lambda;
+   std::vector<std::shared_ptr<Expr>> args;
+   std::vector<Type> typeArguments;
+@@ -58,7 +61,7 @@
+ using E = std::shared_ptr<Expr>;
+ struct Stmt {
+   enum Kind { Let, Var, Assign, Expression, Return, If, While, Match } kind;
+-  Span span; std::string name; Type type = Type::Unknown; E expr;
++  Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
+   std::vector<std::shared_ptr<Stmt>> body, alternative;
+   std::vector<std::shared_ptr<MatchArm>> arms;
+ };
+@@ -121,6 +124,8 @@
+ };
+ Program parse(std::string source, std::string path);
+ E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
++S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
++P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
+ Type parseType(std::string source);
+ void bindExpression(const Program &program,const std::string &function,E expression);
+ Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
+--- /dev/null
++++ b/tests/operation_patches.py
+@@ -0,0 +1,113 @@
++"""Exact syntax intervals and atomic graph edits that preserve surrounding code."""
++import copy
++import json
++import sqlite3
++import unittest
++import support as harness
++
++
++class OperationPatches(harness.ToolchainCase):
++    def ready(self, source):
++        self.source(source)
++        return self.cli('check')['revision']
++
++    def nodes(self, symbol='main'):
++        return self.cli('operations','--symbol',symbol,'--limit','1000')['nodes']
++
++    def target(self, symbol='main', *, kind=None, text=None, number=None):
++        matches=[node for node in self.nodes(symbol)
++                 if (kind is None or node['kind']==kind)
++                 and (text is None or node['definition'].get('text')==text)
++                 and (number is None or node['definition'].get('number')==str(number))]
++        self.assertEqual(len(matches),1,matches)
++        return matches[0]
++
++    def rows(self):
++        with sqlite3.connect(self.root/'.nex/graph.db') as db:
++            return {name:sorted(db.execute('SELECT * FROM "'+name+'"').fetchall(),key=repr)
++                    for name, in db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
++
++    def apply(self, replacements, *, source_hash=True, revision=None, ok=True):
++        context=self.cli('operations','--symbol','main','--limit','1')
++        patch={'expected_revision':revision or context['revision'],'replacements':replacements}
++        if source_hash is not False:patch['expected_source_hash']=context['source_hash'] if source_hash is True else source_hash
++        path=self.root/'patch.json';path.write_text(json.dumps(patch))
++        return self.cli('apply','--patch',path,ok=ok)
++
++    def op(self, node, source):
++        return {'operation_id':node['id'],'source':source}
++
++    def test_lexical_ranges_cover_complete_expressions_but_keep_diagnostic_points(self):
++        expression='(inc(2) + [5,6][1]) * -3'
++        source='module ranges;fn inc(n:i64)->i64{return n+1;}fn main()->unit!{io}{print('+expression+');}'
++        self.ready(source)
++        node=self.target(kind='expression.binary',text='*')
++        point=node['location'];span=node['source_range'];raw=source.encode()
++        self.assertEqual(raw[point['byte_begin']:point['byte_end']],b'*')
++        self.assertEqual(raw[span['byte_begin']:span['byte_end']].decode(),expression)
++        self.assertTrue(span['editable'])
++        context=self.cli('context','--operation',node['id'])
++        self.assertEqual(context['nodes'][0]['source_preview'],expression)
++        self.assertFalse(context['nodes'][0]['source_truncated'])
++        self.assertEqual(context['nodes'][0]['source_bytes'],len(expression.encode()))
++        self.assertNotIn('source_preview',node)
++
++    def test_expression_replacement_preserves_precedence_and_comment_boundaries(self):
++        source='module edits;fn main()->unit!{io}{print(2*3);}'
++        self.ready(source);node=self.target(kind='expression.integer',number=2)
++        changed=self.apply([self.op(node,'1+2 // comment')])
++        self.assertTrue(changed['ok'])
++        self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],'9\n')
++        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'9\n')
++        self.assertEqual(self.file.read_text(),source)
++
++    def test_declaration_suffix_comment_does_not_swallow_adjacent_function(self):
++        self.ready('module edits;fn a()->i64{return 1;} fn b()->i64{return 2;}\nfn main()->unit!{io}{print(a());print(b());}')
++        before=self.nodes('b')[0]['function_id']
++        self.apply([{'name':'edits::a','source':'fn a()->i64{return 3;}// trailing comment'}])
++        self.assertEqual(self.nodes('b')[0]['function_id'],before)
++        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'3\n2\n')
++
++    def test_rejected_stale_missing_unknown_and_overlapping_edits_are_atomic(self):
++        self.ready('module atomic;fn main()->i64{return 1+2;}')
++        expression=self.target(kind='expression.binary',text='+')
++        leaf=self.target(kind='expression.integer',number=1)
++        baseline=self.rows()
++        checks=[([self.op(leaf,'3')],{'source_hash':False},'E_PATCH_SOURCE'),
++                ([self.op(leaf,'3')],{'source_hash':'0'*64},'E_SOURCE_CONFLICT'),
++                ([{'operation_id':'0'*32,'source':'3'}],{},'E_OPERATION'),
++                ([self.op(expression,'4'),self.op(leaf,'5')],{},'E_PATCH_OVERLAP'),
++                ([self.op(leaf,'3'),self.op(leaf,'4')],{},'E_JSON'),
++                ([self.op(leaf,'3);print(99);(4')],{},'E_PARSE'),
++                ([self.op(leaf,'true')],{},'E_TYPE')]
++        for replacements,options,code in checks:
++            with self.subTest(code=code):
++                error=self.apply(replacements,ok=False,**options)
++                self.assertEqual(error['code'],code,error)
++                self.assertEqual(self.rows(),baseline)
++        body=next(node for node in self.nodes() if node['path']=='body')
++        self.assertIsNone(body['source_range'])
++        self.assertEqual(self.apply([self.op(body,'{}')],ok=False)['code'],'E_PATCH_TARGET')
++        self.assertEqual(self.rows(),baseline)
++
++    def test_statement_and_expression_edits_share_one_checked_transaction(self):
++        self.ready('module mixed;fn value()->i64{return 1;}fn main()->unit!{io}{print(value()+2);}')
++        returned=self.target('value',kind='statement.return')
++        number=self.target(kind='expression.integer',number=2)
++        self.apply([self.op(returned,'return 4;'),self.op(number,'5')])
++        self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],'9\n')
++        self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'9\n')
++        self.assertEqual(self.apply([self.op(returned,'return 1;return 2;')],ok=False)['code'],'E_PARSE')
++
++    def test_context_preview_is_bounded_and_utf8_aligned(self):
++        text='🧠'*1500
++        self.ready('module unicode;fn main()->unit!{io}{print('+json.dumps(text,ensure_ascii=False)+');}')
++        node=self.target(kind='expression.string')
++        context=self.cli('context','--operation',node['id'])['nodes'][0]
++        self.assertTrue(context['source_truncated'])
++        self.assertLessEqual(len(context['source_preview'].encode()),4096)
++        self.assertEqual(context['source_bytes'],len(json.dumps(text,ensure_ascii=False).encode()))
++        self.assertEqual(context['source_preview'].encode().decode(),context['source_preview'])
++
++
++if __name__=='__main__':unittest.main()
+--- a/src/language.cpp
++++ b/src/language.cpp
+@@ -166,6 +166,7 @@
+   Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0;std::set<std::string> parameters;
+   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
+   Token take() { return tokens.at(i++); }
++  SourceRange syntaxRange(size_t begin)const{return {begin,tokens.at(i-1).span.end,true};}
+   bool accept(const std::string &s) { if (peek().text == s) { take(); return true; } return false; }
+   Token expect(const std::string &s) {
+     if (peek().text != s) throw Error("E_PARSE", "expected '"+s+"', found '"+peek().text+"'", peek().span);
+@@ -225,7 +226,7 @@
+     if(depth>64||++nodes>10000)throw Error("E_MATCH_LIMIT","pattern exceeds its node/depth budget",peek().span);
+     auto token=take();auto value=std::make_shared<Pattern>();value->span=token.span;
+     if(token.text=="["||token.kind==Token::Id){
+-      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";return value;}
++      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";value->sourceRange=syntaxRange(token.span.begin);return value;}
+       bool list=token.text=="[";if(!list){--i;token=name();value->text=token.text;while(accept("::"))value->text+="::"+name().text;}
+       if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
+       else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
+@@ -233,7 +234,7 @@
+     else if(token.kind==Token::Num||token.text=="-"){
+       auto text=token.text;if(token.text=="-"){auto number=take();if(number.kind!=Token::Num)throw Error("E_PARSE","negative pattern requires an integer literal",number.span);text+=number.text;}
+       value->kind=Pattern::Integer;auto result=std::from_chars(text.data(),text.data()+text.size(),value->number);if(result.ec!=std::errc())throw Error("E_RANGE","integer pattern is outside i64",token.span);
+-    }else throw Error("E_PARSE","expected a pattern",token.span);return value;
++    }else throw Error("E_PARSE","expected a pattern",token.span);value->sourceRange=syntaxRange(token.span.begin);return value;
+   }
+   E matchValue(Span span){
+     auto value=std::make_shared<Expr>();value->kind=Expr::Match;value->span=span;value->args.push_back(expression(1,true));expect("{");unsigned nodes=0;bool first=true;
+@@ -294,16 +295,17 @@
+         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
+       }
+     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
++    e->sourceRange=syntaxRange(token.span.begin);
+     while(peek().text=="."||peek().text=="["||peek().text=="(") {
+       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
+       if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
+       else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
+       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
+-      e=b;
++      b->sourceRange=syntaxRange(e->sourceRange.begin);e=b;
+     }
+     while(precedence(peek().text)>=minimum) {
+       auto op=take(); auto rhs=expression(precedence(op.text)+1);
+-      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs}; e=b;
++      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs};b->sourceRange={e->sourceRange.begin,rhs->sourceRange.end,true};e=b;
+     }
+     return e;
+   }
+@@ -334,7 +336,7 @@
+     } else if(peek().kind==Token::Id && peek(1).text=="=") {
+       s->kind=Stmt::Assign; s->name=take().text; take(); s->expr=expression();expect(";");
+     } else {s->kind=Stmt::Expression;s->expr=expression();if(s->expr->kind==Expr::Match&&s->expr->statementMatch){s->kind=Stmt::Match;s->arms=s->expr->arms;}else expect(";");}
+-    return s;
++    s->sourceRange=syntaxRange(s->span.begin);return s;
+   }
+ public:
+   Parser(std::string source,std::string path,unsigned maxTokens=0) {
+@@ -342,6 +344,8 @@
+     do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
+   }
+   E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
++  S statementOnly(){auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}
++  P patternOnly(){unsigned nodes=0;auto value=pattern(0,nodes);if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after pattern",peek().span);return value;}
+   Type typeOnly(){auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}
+   Program run() {
+     expect("module");p.module=qualified();expect(";");
+@@ -805,6 +809,14 @@
+ E parseExpression(std::string source,std::string path,unsigned maxTokens){
+   try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+   return Parser(std::move(source),std::move(path),maxTokens).expressionOnly();
++}
++S parseStatement(std::string source,std::string path,unsigned maxTokens){
++  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
++  return Parser(std::move(source),std::move(path),maxTokens).statementOnly();
++}
++P parsePattern(std::string source,std::string path,unsigned maxTokens){
++  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
++  return Parser(std::move(source),std::move(path),maxTokens).patternOnly();
+ }
+ llvm::json::Value canonical(const Function &f) {
+   llvm::json::Array params,effects;
+--- a/src/operations.cpp
++++ b/src/operations.cpp
+@@ -10,9 +10,9 @@
+ class Tree {
+   const Program &p;const Function &f;std::vector<Operation> nodes;
+   std::vector<std::map<std::string,std::string>> scopes;
+-  size_t add(std::string path,std::string parent,std::string role,unsigned ordinal,std::string kind,std::string anchor,Span span,JSON definition,const void *ast=nullptr){
++  size_t add(std::string path,std::string parent,std::string role,unsigned ordinal,std::string kind,std::string anchor,Span span,JSON definition,const void *ast=nullptr,SourceRange sourceRange={},std::string fragment={}){
+     if(nodes.size()>=100000||std::count(path.begin(),path.end(),'/')>512)throw Error("E_GRAPH_LIMIT","function operation graph exceeds its node/depth budget",span);
+-    Operation op;op.path=std::move(path);op.parent=std::move(parent);op.role=std::move(role);op.ordinal=ordinal;op.kind=std::move(kind);op.anchor=std::move(anchor);op.span=std::move(span);op.definition=std::move(definition);op.ast=ast;nodes.push_back(std::move(op));return nodes.size()-1;
++    Operation op;op.path=std::move(path);op.parent=std::move(parent);op.role=std::move(role);op.ordinal=ordinal;op.kind=std::move(kind);op.anchor=std::move(anchor);op.span=std::move(span);op.definition=std::move(definition);op.ast=ast;op.sourceRange=sourceRange;op.fragment=std::move(fragment);nodes.push_back(std::move(op));return nodes.size()-1;
+   }
+   std::string binding(const std::string &name){for(auto i=scopes.rbegin();i!=scopes.rend();++i)if(i->contains(name))return i->at(name);throw Error("E_INTERNAL","checked operation binding is missing: "+name);}
+   void arms(E e,const std::string &key){
+@@ -20,9 +20,9 @@
+       auto parent=key+"/case/"+(legacy?arm->variant:"arm-"+std::to_string(i));
+       add(parent,key,"case",legacy?arm->ordinal:i,"pattern.case",arm->variant,arm->span,legacy?JSON(Object{{"kind","pattern.case"},{"variant",arm->variant},{"number",std::to_string(arm->ordinal)}}):JSON(Object{{"kind","pattern.case"},{"pattern",canonicalPattern(arm->pattern)}}),arm.get());
+       scopes.emplace_back();
+-      auto binding=[&](P pattern,const std::string &path,const std::string &owner,unsigned ordinal){const auto &b=arm->bindings.at(pattern->binding);auto kind=b.name=="_"?"pattern.discard":"pattern.binding";add(path,owner,"parameter",ordinal,kind,b.name,b.span,Object{{"kind",kind},{"name",b.name},{"type",typeName(b.type)}},&b);if(b.name!="_")scopes.back()[b.name]=path;};
++      auto binding=[&](P pattern,const std::string &path,const std::string &owner,unsigned ordinal){const auto &b=arm->bindings.at(pattern->binding);auto kind=b.name=="_"?"pattern.discard":"pattern.binding";add(path,owner,"parameter",ordinal,kind,b.name,b.span,Object{{"kind",kind},{"name",b.name},{"type",typeName(b.type)}},&b,pattern->sourceRange,"pattern");if(b.name!="_")scopes.back()[b.name]=path;};
+       if(legacy){for(unsigned j=0;j<arm->pattern->args.size();++j)binding(arm->pattern->args[j],parent+"/parameter/"+std::to_string(j),parent,j);}
+-      else {std::function<void(P,const std::string&,unsigned)> visit=[&](P pattern,const std::string &owner,unsigned ordinal){auto path=owner+"/pattern/"+std::to_string(ordinal);if(pattern->kind==Pattern::Binding||pattern->kind==Pattern::Wildcard)binding(pattern,path,owner,ordinal);else{add(path,owner,"pattern",ordinal,"pattern.test",pattern->text,pattern->span,canonicalPattern(pattern),pattern.get());for(unsigned j=0;j<pattern->args.size();++j)visit(pattern->args[j],path,j);}};visit(arm->pattern,parent,0);}
++      else {std::function<void(P,const std::string&,unsigned)> visit=[&](P pattern,const std::string &owner,unsigned ordinal){auto path=owner+"/pattern/"+std::to_string(ordinal);if(pattern->kind==Pattern::Binding||pattern->kind==Pattern::Wildcard)binding(pattern,path,owner,ordinal);else{add(path,owner,"pattern",ordinal,"pattern.test",pattern->text,pattern->span,canonicalPattern(pattern),pattern.get(),pattern->sourceRange,"pattern");for(unsigned j=0;j<pattern->args.size();++j)visit(pattern->args[j],path,j);}};visit(arm->pattern,parent,0);}
+       if(arm->guard)expression(e->args[arm->guard],parent,"guard",0);
+       if(e->statementMatch)block(arm->body,parent,"body",arm->span,false);else expression(e->args[arm->value],parent,"value",0);
+       scopes.pop_back();
+@@ -32,7 +32,7 @@
+     if(!e)return;auto path=parent+"/"+role+"/"+std::to_string(ordinal),kind=std::string("expression.")+exprKinds[e->kind];
+     Object definition{{"kind",kind},{"type",typeName(e->type)},{"text",e->text},{"number",std::to_string(e->number)}};
+     if(e->kind==Expr::Floating)definition["literal"]=floatLiteral(e->number);
+-    auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get());
++    auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get(),e->sourceRange,"expression");
+     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
+     if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
+     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
+@@ -46,7 +46,7 @@
+     for(unsigned i=0;i<body.size();++i){
+       auto s=body[i];auto key=path+"/statement/"+std::to_string(i),kind=std::string("statement.")+stmtKinds[s->kind];
+       auto anchor=kind+":"+s->name;if(s->kind==Stmt::Expression&&s->expr&&s->expr->kind==Expr::Call)anchor+=":"+s->expr->text;
+-      auto index=add(key,path,"statement",i,kind,anchor,s->span,Object{{"kind",kind},{"name",s->name},{"type",typeName(s->type)}},s.get());
++      auto index=add(key,path,"statement",i,kind,anchor,s->span,Object{{"kind",kind},{"name",s->name},{"type",typeName(s->type)}},s.get(),s->sourceRange,"statement");
+       if(s->kind==Stmt::Assign)nodes[index].binding=binding(s->name);
+       expression(s->kind==Stmt::Match?s->expr->args[0]:s->expr,key,"expression",0);
+       if(s->kind==Stmt::Let||s->kind==Stmt::Var)scopes.back()[s->name]=key;
+--- a/src/operation_store.cpp
++++ b/src/operation_store.cpp
+@@ -50,9 +50,19 @@
+       if(!o.binding.empty())references.push_back(Object{{"role","binding"},{"id",ids.at(o.binding)}});
+       if(!o.callee.empty())references.push_back(Object{{"role","callee"},{"id",functionId(db,p.function(o.callee))},{"symbol",o.callee}});
+       auto definition=o.definition;auto bytes=json(definition,false).size();bool omitted=limit&&bytes>8192;if(omitted)definition=nullptr;
+-      return Object{{"id",ids.at(o.path)},{"site",o.site},{"function",f.name},{"function_id",owner},{"path",o.path},{"parent",o.parent.empty()?owner:ids.at(o.parent)},{"role",o.role},{"ordinal",int64_t(o.ordinal)},{"kind",o.kind},{"hash",o.content},{"definition",std::move(definition)},{"definition_bytes",int64_t(bytes)},{"definition_omitted",omitted},
++      const auto &source=p.units.contains(f.unit)?p.units.at(f.unit).source:p.source;
++      bool ranged=o.sourceRange.valid&&!o.fragment.empty()&&o.sourceRange.begin<o.sourceRange.end&&o.sourceRange.end<=source.size()&&o.sourceRange.begin>=f.span.begin&&o.sourceRange.end<=f.span.end;
++      JSON range=nullptr;if(ranged)range=Object{{"kind",o.fragment},{"byte_begin",int64_t(o.sourceRange.begin)},{"byte_end",int64_t(o.sourceRange.end)},{"editable",f.templateName.empty()&&!f.closure}};
++      Object value{{"id",ids.at(o.path)},{"site",o.site},{"function",f.name},{"function_id",owner},{"path",o.path},{"parent",o.parent.empty()?owner:ids.at(o.parent)},{"role",o.role},{"ordinal",int64_t(o.ordinal)},{"kind",o.kind},{"hash",o.content},{"definition",std::move(definition)},{"definition_bytes",int64_t(bytes)},{"definition_omitted",omitted},
+         {"location",Object{{"file",f.unit},{"line",int64_t(o.span.line)},{"column",int64_t(o.span.column)},{"byte_begin",int64_t(o.span.begin)},{"byte_end",int64_t(o.span.end)}}},
+-        {"children",std::move(operands)},{"child_count",int64_t(children[o.path].size())},{"children_truncated",children[o.path].size()>100},{"references",std::move(references)}};
++        {"children",std::move(operands)},{"child_count",int64_t(children[o.path].size())},{"children_truncated",children[o.path].size()>100},{"references",std::move(references)},{"source_range",std::move(range)}};
++      if(context&&ranged){
++        auto end=std::min(o.sourceRange.end,o.sourceRange.begin+size_t(4096));
++        while(end>o.sourceRange.begin&&end<source.size()&&(static_cast<unsigned char>(source[end])&0xc0)==0x80)--end;
++        value["source_preview"]=source.substr(o.sourceRange.begin,end-o.sourceRange.begin);
++        value["source_bytes"]=int64_t(o.sourceRange.end-o.sourceRange.begin);value["source_truncated"]=end<o.sourceRange.end;
++      }
++      return value;
+     };
+     for(const auto &o:tree){
+       if(!selector.empty()&&selector!=ids.at(o.path)&&selector!=o.site)continue;
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -66,6 +66,16 @@
+   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
+   return text;
+ }
++llvm::json::Value readPatch(const std::string &path){
++  auto text=readBoundedText(path,4*1048576,"patch","E_PATCH_LIMIT");
++  unsigned depth=0;bool quoted=false,escape=false;
++  for(char c:text){
++    if(quoted){if(escape)escape=false;else if(c=='\\')escape=true;else if(c=='"')quoted=false;continue;}
++    if(c=='"')quoted=true;else if(c=='{'||c=='['){if(++depth>64)throw Error("E_PATCH_LIMIT","patch JSON exceeds depth 64");}
++    else if((c=='}'||c==']')&&depth)--depth;
++  }
++  return parseJSON(text);
++}
+ llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON(readBoundedText(path,4*1048576,"identity manifest","E_IDENTITY_LIMIT"));}
+ std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
+ std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
+@@ -264,20 +274,45 @@
+   }
+   if(o.command=="apply") {
+     auto patchFile=o.get("--patch");if(patchFile.empty())throw Error("E_OPTION","apply requires --patch FILE");
+-    auto value=parseJSON(readFile(patchFile));auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
++    auto value=readPatch(patchFile);auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
+     auto fields=[](const llvm::json::Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))throw Error("E_JSON","unknown patch field '"+key.str()+"'");}};
+-    fields(*obj,{"expected_revision","replacements"});
++    fields(*obj,{"expected_revision","expected_source_hash","replacements"});
+     auto expected=required(*obj,"expected_revision");if(expected.size()!=64||expected.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_JSON","expected_revision must be a lowercase 64-character digest");
+     auto replacements=obj->getArray("replacements");if(!replacements||replacements->empty())throw Error("E_JSON","replacements must be a nonempty array");
++    if(replacements->size()>1000)throw Error("E_PATCH_LIMIT","patch exceeds 1000 replacements");
++    std::string expectedSource;if(auto value=obj->get("expected_source_hash")){auto digest=value->getAsString();if(!digest||digest->size()!=64||digest->find_first_not_of("0123456789abcdef")!=llvm::StringRef::npos)throw Error("E_JSON","expected_source_hash must be a lowercase 64-character digest");expectedSource=digest->str();}
++
+     auto selected=store.headRevision();
+     if(selected!=expected)throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+     if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to an older graph");
+     auto p=loadBundle(store.bundle(selected),root.string());
+     if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");
++    auto selectedSource=hash(json(sourceBundle(p),false));if(!expectedSource.empty()&&expectedSource!=selectedSource)throw Error("E_SOURCE_CONFLICT","exact archived source changed; request operation context for the selected revision");
+     struct Replacement{size_t begin,end;std::string source;};
+     std::map<std::string,std::vector<Replacement>> edits;std::set<std::string> names;
+     for(const auto &item:*replacements){
+       auto entry=item.getAsObject();if(!entry)throw Error("E_JSON","replacement must be an object");
++      bool operation=entry->get("operation_id")||entry->getString("kind")=="operation";
++      if(operation){
++        fields(*entry,{"operation_id","source","kind"});
++        if(auto kind=entry->get("kind");kind&&kind->getAsString()!="operation")throw Error("E_JSON","operation replacement kind must be operation");
++        auto id=required(*entry,"operation_id"),source=required(*entry,"source");
++        if(id.size()!=32||id.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_JSON","operation_id must be a lowercase local 32-character ID");
++        if(expectedSource.empty())throw Error("E_PATCH_SOURCE","operation replacement requires expected_source_hash from exact archived context");
++        if(!names.insert("operation:"+id).second)throw Error("E_JSON","duplicate operation replacement");
++        auto context=store.operations(p,"",id,0,1,true);const auto &node=*(*context.getAsObject()->getArray("nodes"))[0].getAsObject();
++        const auto &function=p.function(node.getString("function")->str());
++        if(!function.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace source operations of template '"+function.templateName+"'; specializations are derived",function.span);
++        if(function.closure)throw Error("E_PATCH_CLOSURE","replace source operations of owner '"+function.closureOwner+"'; closures are derived",function.span);
++        auto range=node.getObject("source_range");if(!range||range->getBoolean("editable")!=true)throw Error("E_PATCH_TARGET","selected operation has no editable source interval");
++        auto kind=range->getString("kind");std::string fragment;
++        if(kind=="expression"){fragment="(\n"+source+"\n)";parseExpression(fragment,"<operation-patch>",100000);}
++        else if(kind=="statement"){parseStatement(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
++        else if(kind=="pattern"){parsePattern(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
++        else throw Error("E_PATCH_TARGET","operation source kind is not replaceable");
++        edits[function.unit].push_back({size_t(*range->getInteger("byte_begin")),size_t(*range->getInteger("byte_end")),std::move(fragment)});
++        continue;
++      }
+       fields(*entry,{"name","source","kind"});
+       auto name=required(*entry,"name"),source=required(*entry,"source");
+       std::string requestedKind;if(auto value=entry->get("kind")){auto label=value->getAsString();if(!label||(label!="function"&&label!="endpoint"&&label!="type"))throw Error("E_JSON","replacement kind must be function, endpoint or type");requestedKind=label->str();}
+@@ -292,22 +327,24 @@
+       auto fragment=parse("module fragment;\n"+source,"<patch>");
+       if(endpoint){
+         if(fragment.endpoints.size()!=1||fragment.endpoints[0].name!=endpoint->localName||!fragment.functions.empty()||!fragment.structures.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local endpoint");
+-        edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source});
++        edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source+"\n"});
+       }else if(type){
+         if(fragment.structures.size()!=1||fragment.structures[0].name!=type->localName||!fragment.functions.empty()||!fragment.endpoints.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local structure or enum");
+-        edits[type->unit].push_back({type->span.begin,type->span.end,source});
++        edits[type->unit].push_back({type->span.begin,type->span.end,source+"\n"});
+       }else{
+         const auto &f=*function;
+         if(!f.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+f.templateName+"'; specializations are derived",f.span);
+         if(f.closure)throw Error("E_PATCH_CLOSURE","replace the source owner '"+f.closureOwner+"'; closures are derived",f.span);
+         if(fragment.functions.size()!=1||fragment.functions[0].name!=f.localName||!fragment.structures.empty()||!fragment.imports.empty()||!fragment.endpoints.empty())throw Error("E_PATCH","replacement must define exactly the named local function");
+-        edits[f.unit].push_back({f.span.begin,f.span.end,source});
++        edits[f.unit].push_back({f.span.begin,f.span.end,source+"\n"});
+       }
+     }
+     auto bundle=sourceBundle(p);auto files=bundle.getAsObject()->getObject("files");
+     for(auto &[key,changes]:edits){
+       std::sort(changes.begin(),changes.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
+-      auto source=p.units.at(key).source;for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
++      auto source=p.units.at(key).source;size_t previous=source.size();
++      for(const auto &e:changes){if(e.begin>e.end||e.end>source.size()||e.end>previous)throw Error("E_PATCH_OVERLAP","replacement intervals overlap or exceed the source snapshot");previous=e.begin;}
++      for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
+     }
+     auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
+     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;

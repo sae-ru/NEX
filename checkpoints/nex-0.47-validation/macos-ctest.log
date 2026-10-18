@@ -1,0 +1,116 @@
+Internal ctest changing into directory: /Users/sae/projects/NEX/build
+Test project /Users/sae/projects/NEX/build
+      Start  5: task_foreign
+      Start 10: foreign_packaging
+ 1/55 Test #10: foreign_packaging ................   Passed  222.64 sec
+      Start  4: source_ffi
+ 2/55 Test  #5: task_foreign .....................   Passed  287.86 sec
+      Start  1: native_arithmetic
+ 3/55 Test  #1: native_arithmetic ................   Passed   52.56 sec
+      Start  3: native_diagnostics
+ 4/55 Test  #3: native_diagnostics ...............   Passed   74.63 sec
+      Start 33: type_patches
+ 5/55 Test #33: type_patches .....................   Passed   27.50 sec
+      Start  6: resources
+ 6/55 Test  #6: resources ........................   Passed   77.31 sec
+      Start 53: bytes
+ 7/55 Test  #4: source_ffi .......................   Passed  306.02 sec
+      Start 21: files
+ 8/55 Test #53: bytes ............................   Passed   90.95 sec
+      Start 55: numbers
+ 9/55 Test #21: files ............................   Passed   96.60 sec
+      Start 32: graph_identities
+10/55 Test #32: graph_identities .................   Passed   11.26 sec
+      Start 49: constraints
+11/55 Test #55: numbers ..........................   Passed   89.40 sec
+      Start 51: function_values
+12/55 Test #49: constraints ......................   Passed   86.13 sec
+      Start 40: tasks
+13/55 Test #51: function_values ..................   Passed   79.50 sec
+      Start 50: matching
+14/55 Test #40: tasks ............................   Passed  105.82 sec
+      Start 48: generics
+15/55 Test #50: matching .........................   Passed   71.81 sec
+      Start 41: task_toolchains
+16/55 Test #48: generics .........................   Passed   87.73 sec
+      Start 28: api
+17/55 Test #41: task_toolchains ..................   Passed   80.02 sec
+      Start  9: packaging
+18/55 Test  #9: packaging ........................   Passed   33.38 sec
+      Start 52: function_debug
+19/55 Test #52: function_debug ...................   Passed   47.10 sec
+      Start  7: resource_debug
+20/55 Test #28: api ..............................   Passed   99.00 sec
+      Start 15: ffi_types
+21/55 Test #15: ffi_types ........................   Passed   20.15 sec
+      Start 35: incremental
+22/55 Test  #7: resource_debug ...................   Passed   24.09 sec
+      Start 36: native_targets
+23/55 Test #36: native_targets ...................   Passed   51.51 sec
+      Start 23: integration
+24/55 Test #35: incremental ......................   Passed   68.41 sec
+      Start 38: profiling
+25/55 Test #38: profiling ........................   Passed   49.84 sec
+      Start 54: bytes_debug
+26/55 Test #23: integration ......................   Passed   78.41 sec
+      Start 47: enums
+27/55 Test #54: bytes_debug ......................   Passed   13.82 sec
+      Start 30: expressions
+28/55 Test #47: enums ............................   Passed   36.82 sec
+      Start 25: results
+29/55 Test #30: expressions ......................   Passed   37.76 sec
+      Start 24: modules
+30/55 Test #24: modules ..........................   Passed   35.05 sec
+      Start 26: storage
+31/55 Test #25: results ..........................   Passed   42.99 sec
+      Start 12: ffi_loader_native
+32/55 Test #12: ffi_loader_native ................   Passed    3.79 sec
+      Start 37: sdk_host
+33/55 Test #37: sdk_host .........................   Passed    8.85 sec
+      Start 11: foreign_scope_native
+34/55 Test #11: foreign_scope_native .............   Passed    3.13 sec
+      Start 29: debugging
+35/55 Test #26: storage ..........................   Passed   26.83 sec
+      Start 39: verification
+36/55 Test #29: debugging ........................   Passed   20.59 sec
+      Start 27: http
+37/55 Test #39: verification .....................   Passed   16.63 sec
+      Start 31: operations
+38/55 Test #31: operations .......................   Passed    8.07 sec
+      Start 46: web_commands
+39/55 Test #27: http .............................   Passed   15.23 sec
+      Start 45: web
+40/55 Test #46: web_commands .....................   Passed    9.08 sec
+      Start 42: bytes_values
+41/55 Test #42: bytes_values .....................   Passed    1.26 sec
+      Start 44: float_runtime
+42/55 Test #44: float_runtime ....................   Passed    0.62 sec
+      Start 43: bytes_runtime
+43/55 Test #43: bytes_runtime ....................   Passed    0.19 sec
+      Start 13: ffi_runtime_native
+44/55 Test #13: ffi_runtime_native ...............   Passed    0.02 sec
+      Start 16: resource_values_native
+45/55 Test #16: resource_values_native ...........   Passed    0.03 sec
+      Start 34: dap_transport
+46/55 Test #45: web ..............................   Passed    5.59 sec
+      Start 20: files_runtime_native
+47/55 Test #20: files_runtime_native .............   Passed    0.13 sec
+      Start 19: bytes_values_native
+48/55 Test #19: bytes_values_native ..............   Passed    0.11 sec
+      Start  8: sdk_archives
+49/55 Test  #8: sdk_archives .....................   Passed    0.07 sec
+      Start  2: native_sites_runtime
+50/55 Test #34: dap_transport ....................   Passed    0.36 sec
+      Start 17: resources_runtime_native
+51/55 Test  #2: native_sites_runtime .............   Passed    0.01 sec
+      Start 14: ffi_typed_native
+52/55 Test #14: ffi_typed_native .................   Passed    0.02 sec
+      Start 22: float_runtime_native
+53/55 Test #22: float_runtime_native .............   Passed    0.00 sec
+      Start 18: bytes_runtime_native
+54/55 Test #18: bytes_runtime_native .............   Passed    0.00 sec
+55/55 Test #17: resources_runtime_native .........   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 55
+
+Total Test time (real) = 1303.39 sec

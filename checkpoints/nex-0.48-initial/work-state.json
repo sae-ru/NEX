@@ -1,0 +1,51 @@
+{
+  "toolchain": "0.48.0",
+  "language": "0.15",
+  "status": "isolated operation-edit range and atomic patch development",
+  "stage": "/Users/sae/projects/NEX/build/working-048-operation-patches",
+  "root": "frozen0.47 full validation running; do not edit root sources",
+  "previous_goal_turn": "progress: verified0.46, implemented0.47 checked scalar codegen and launched root/platform/SDK gates",
+  "baseline_scope_bug": "build/operation-patch-048-comment-baseline.json",
+  "plan": [
+    "separate exact syntax ranges from diagnostic source points",
+    "bound and preview only actual source operations",
+    "validate one fragment and source hash before edit",
+    "reject derived/overlapping targets and mixed scope loss",
+    "whole-bundle check and final expected-head transaction",
+    "regression for comment suffix swallowing adjacent declaration",
+    "keep language/canonical/identity versions unchanged",
+    "current interpreter/native/TypeScript and SDK checks"
+  ],
+  "full_objective_complete": false,
+  "updated": "2026-10-18T20:07:11.838729+00:00",
+  "initial_build": "terminal:exit0",
+  "compiler_sha256": "78887d152ad8ba29ab2d899308b0ad14749289fefc468b4aa8c10c05047bda81",
+  "initial_test_log": "build/operation-patches-048-first.log",
+  "implemented": [
+    "exact_nonsemantic_expression_statement_pattern_ranges",
+    "bounded_utf8_source_context_previews",
+    "local_operation_id_patch_selector",
+    "expected_archived_source_digest",
+    "one_fragment_syntax_validation",
+    "overlap_rejection_before_source_changes",
+    "newline_isolation_for_declaration_suffix_comments",
+    "whole_candidate_recheck_and_final_store_CAS"
+  ],
+  "pending": [
+    "initial tests and fixes",
+    "generic/derived/pattern/multi-module coverage",
+    "schema/capabilities/protocol/prompt/example/SDK updates",
+    "compatibility and historical identity checks",
+    "full root/platform/SDK validation after0.47 evidence"
+  ],
+  "initial_test_session": "terminal:exit0",
+  "initial_checks": {
+    "ok": true,
+    "cases": 6,
+    "seconds": 7.215,
+    "log": "build/operation-patches-048-initial-passed.log"
+  },
+  "initial_snapshot": "build/operation-patches-048-initial-snapshot.json",
+  "restorable_patch": "build/operation-patches-048-initial.patch",
+  "next_action": "Do not promote until discovery/schema/model pack and broad semantics coverage are complete. Poll root0.47 sessions and record final evidence first."
+}
