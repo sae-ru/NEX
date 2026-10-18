@@ -61,12 +61,16 @@ install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
-install(DIRECTORY tools/linux DESTINATION share/nex/tools)
+install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_archive.py DESTINATION share/nex/tools)
 install(FILES tools/app_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)
 enable_testing()
+add_test(NAME sdk_archives COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_archives.py)
 add_test(NAME packaging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/packaging.py $<TARGET_FILE:nex>)
 find_package(Threads REQUIRED)

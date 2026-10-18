@@ -3,7 +3,7 @@
   "recorded_at": "2026-10-18T04:49:46.920230+00:00",
   "toolchain": "0.33.0",
   "language": "0.13",
-  "status": "source-and-installed-sdk-passed-platform-matrix-pending",
+  "status": "source-and-current-supported-development-sdk-matrix-passed",
   "full_objective_complete": false,
   "compiler_sha256": "1c5fd9343662c3fee146bf344c1473b48fa4ba55419ecdb1b4f05b4ee1cc857e",
   "compiler_language": "0.13",
@@ -437,9 +437,8 @@
     }
   },
   "pending": [
-    "current Linux x86-64 compiler/SDK acceptance (emulated run in progress)",
-    "source-free/restored current SDK bundles",
-    "the remaining full NEX language/development-chain scope"
+    "remaining complete NEX language/development-chain scope in PLAN.md",
+    "additional platforms/environment coverage, general resources/FFI/async and other unfinished capabilities"
   ],
   "linux_arm64": {
     "verification": {
@@ -537,5 +536,11 @@
       }
     },
     "source_tree": "a55c5f53c3a3be71647e0b8fe6d7ff809f20365d"
+  },
+  "completion_update": {
+    "sdk_matrix": "docs/evidence/sdk-0.33.0.json",
+    "sdk_matrix_sha256": "6abefd14a65f8f07571c739ee5c844a4c383c87af1ded9a1ce9344550a46a782",
+    "current_supported_compiler_and_development_sdk_matrix_passed": true,
+    "remaining_project_scope": "PLAN.md"
   }
 }

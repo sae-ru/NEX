@@ -2,7 +2,6 @@
 """Package a Linux SDK and verify it in a separate environment without LLVM/Z3."""
 import argparse
 import csv
-import gzip
 import hashlib
 import io
 import json
@@ -12,8 +11,11 @@ import platform
 import re
 import shutil
 import subprocess
-import tarfile
+import sys
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import sdk_archive
 
 
 def digest(path):
@@ -134,6 +136,8 @@ def package(arguments, output):
         report['input_compiler_sha256'] = digest(frozen / 'bin/nex')
         shutil.copyfile(source / 'tools/sdk_bundle.py', output / 'assembler.py')
         report['assembler_sha256'] = digest(output / 'assembler.py')
+        shutil.copyfile(source / 'tools/sdk_archive.py', output / 'archive-helper.py')
+        report['archive_helper_sha256'] = digest(output / 'archive-helper.py')
         notices = {'schema': 'nex.sdk-notices/1', 'components': [{'name': 'z3-official', 'version': '5.3.1',
             'url': 'https://github.com/Z3Prover/z3/releases/tag/z3-5.3.1', 'roots': ['/opt/z3'],
             'license_files': ['/opt/z3/LICENSE.txt']}]}
@@ -163,35 +167,18 @@ def package(arguments, output):
         bundle = json.loads((moved / 'share/nex/sdk-bundle.json').read_text())
         name = 'nex-sdk-' + bundle['toolchain'] + '-linux-' + arguments.arch + '-development'
         archive = output / (name + '.tar.gz')
-        def normalize(member):
-            member.uid = member.gid = 0; member.uname = member.gname = ''; member.mtime = 0; member.pax_headers = {}
-            return member
-        with archive.open('wb') as raw:
-            with gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as compressed:
-                with tarfile.open(mode='w', fileobj=compressed, format=tarfile.PAX_FORMAT) as package:
-                    package.add(moved, arcname=name, filter=normalize)
-        report['archive'] = {'path': str(archive), 'sha256': digest(archive), 'bytes': archive.stat().st_size}
+        report['archive'] = sdk_archive.create(moved, archive, name)
         (output / (archive.name + '.sha256')).write_text(report['archive']['sha256'] + '  ' + archive.name + '\n')
         restored = output / 'archive-acceptance'; restored.mkdir()
-        extract = '''import pathlib, subprocess, tarfile
-root=pathlib.Path('/evidence/extracted SDK, % 🧠');root.mkdir()
-with tarfile.open('/archive.tar.gz') as archive:
-    members=archive.getmembers()
-    for member in members:
-        name=pathlib.PurePosixPath(member.name)
-        assert not name.is_absolute() and '..' not in name.parts
-        assert member.isdir() or member.isfile() or member.issym()
-        if member.issym():
-            target=pathlib.PurePosixPath(member.linkname)
-            assert not target.is_absolute() and '..' not in target.parts
-    tops={pathlib.PurePosixPath(member.name).parts[0] for member in members}
-    assert len(tops)==1
-    archive.extractall(root)
-sdk=root/next(iter(tops))
+        extract = '''import importlib.util, pathlib, subprocess
+spec=importlib.util.spec_from_file_location('sdk_archive','/archive-helper.py')
+archive=importlib.util.module_from_spec(spec);spec.loader.exec_module(archive)
+sdk=archive.restore('/archive.tar.gz',pathlib.Path('/evidence/extracted SDK, % 🧠'),'EXPECTED_SHA256')
 subprocess.run(['python3',str(sdk/'share/nex/tools/linux/bundle.py'),'--verify',str(sdk),'--output','/evidence/report'],check=True)
-'''
+'''.replace('EXPECTED_SHA256', report['archive']['sha256'])
         run('restored-archive', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
-            *mount(archive, '/archive.tar.gz'), *mount(restored, '/evidence', False), runtime, 'python3', '-c', extract])
+            *mount(archive, '/archive.tar.gz'), *mount(output / 'archive-helper.py', '/archive-helper.py'),
+            *mount(restored, '/evidence', False), runtime, 'python3', '-c', extract])
         checked_archive = json.loads((restored / 'report/verification.json').read_text())
         if not checked_archive['ok'] or checked_archive['compiler_sha256'] != accepted['compiler_sha256']:
             raise RuntimeError('restored archive differs from the checked SDK')

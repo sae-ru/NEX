@@ -20,8 +20,10 @@ tracked in `STATUS.md`.
 
 Development 0.33 / language 0.13 connects immutable `bytes` to the checker,
 interpreter, native/TypeScript backends, typed JSON/API and bounded debugger
-values, with server-only binary files. Source/migration/platform/SDK acceptance
-is in progress; consult `STATUS.md`. The [binary guide](docs/bytes.md) gives exact
+values, with server-only binary files. Current compiler and installed-SDK checks
+passed on macOS ARM64 and Linux ARM64/emulated x86-64. The maintained SDK
+distribution workflow verifies moved/restored archives; current artifact status
+is in `STATUS.md`. The [binary guide](docs/bytes.md) gives exact
 interfaces; the [design history](docs/bytes-design.md) preserves prototype scope.
 
 ## Build
@@ -77,6 +79,11 @@ Generated native output runs without the compiler, LLVM or a model. Pure program
 Verify a complete installed development workflow with `python3 /chosen/sdk/share/nex/tools/sdk_acceptance.py /chosen/sdk --output /new/evidence --browser --live`. It exercises a failed reviewed task, graph repair/import, native/reference/TypeScript agreement (including finite numbers), profile attribution/cleanup, real archived DAP watches, source-deleted replay/export, explicit text-file capabilities and independent file applications, scalar proof and locked Vite builds for callable and numeric browser state. See [the SDK handoff guide](docs/sdk.md) for dependencies, retained evidence and optional checks. Linux verification also runs this workflow in a separate container with no source checkout mounted.
 
 ## Application packages
+
+The maintained [SDK distribution workflow](docs/sdk.md) packages development
+tools, validates normalized archives and repeats acceptance after restoration.
+macOS checks source/dependency read denial and SDK write denial with kernel
+controls; Linux checks run in source-free runtime containers.
 
 `nex package FILE --directory NEW_DIRECTORY --json` builds a release application
 and copies only its required non-platform libraries and notices. Native servers

@@ -2,13 +2,38 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: source binary integration
+## Development milestone: current SDK distribution
+
+Toolchain 0.33 / language 0.13 now has a maintained macOS distribution helper
+and a shared inventory-preserving archive boundary for macOS/Linux. Eight owned
+archive cases passed on macOS and Linux ARM64. The full current macOS Debug run
+passed all 38 suites in 755.68 s: 309 Python cases and four C++ probes.
+
+The macOS SDK passed all twelve workflow phases after moving and after archive
+restoration, with actual LLDB/DAP, all three browser builds, kernel read denial
+for the source/Homebrew/MacPorts trees, and SDK write denial. Each denial has an
+actual negative control. Linux ARM64 passed both twelve-phase workflows in
+containers without source or host LLVM/MLIR/Z3, followed by another complete
+bundled-SDK live-debugger workflow using its declared external LLDB prerequisite.
+The x86-64 compiler passed all 37 suites and its source-free SDK workflow.
+Its moved/restored archive workflows also passed all twelve phases under
+emulation. All three current development archives are verified.
+Actual archives, hashes and scope are recorded in
+[SDK evidence](docs/evidence/sdk-0.33.0.json). These are development bundles;
+platform C/C++ SDKs, Python/Node and the stated debugger prerequisites remain.
+
+Genuine language-0.13 SQL/source snapshots were captured with the accepted
+restored SDK and replayed through another compiler location, preserving graph
+revisions and logical IDs. Candidate resource-related names are ordinary user
+definitions in these fixtures; source resources/FFI/async are not implemented.
+
+## Development milestone: source binary integration
 
 Development **0.33.0 / language 0.13** connects `bytes` to checked source types,
 explicit UTF-8/base64 codecs, immutable operations, generic add/wire, native and
 TypeScript emission, typed JSON/API models and bounded debugger demand. Binary
 file calls share the server/fs capability policy. The matching specification,
-grammar, model-independent prompt and schemas are being validated with genuine
+grammar, model-independent prompt and schemas are validated with genuine
 0.12 migration fixtures; the full requested objective remains open.
 
 Host-poll ownership review reproduced a 0.32 adapter use-after-free under ASan
@@ -16,8 +41,7 @@ when a trusted callback dropped the last input ByteBuffer. The 0.33 writer retai
 its owner until all borrowed views finish. The reproduction now exits cleanly
 under ASan/UBSan, and the extended 19-case managed-value probe passes. The 0.32
 compiler/SDK cohorts below use their preserved sources; they do not validate this
-new source-language version. Current 0.33 source, debugger, migration and full
-platform/SDK acceptance remain in progress. The 10-case source suite passed,
+new source-language version. The 10-case source suite passed,
 followed by the native/reference/TypeScript binary browser-state case. Seven
 offline binary watch cases and the real macOS LLDB/DAP case passed, including
 selected reads of a 4 MiB value, retained-slice previews, paged read-only octets
@@ -46,13 +70,13 @@ without live debugging (113.735 s) and with real LLDB/DAP (120.542 s).
 All nineteen managed ownership cases passed under Linux GCC 13.3
 ASan/UBSan/LSan; the preserved Clang image lacked sanitizer libraries, and its
 initial linker failure is recorded separately. Production compiler tests use
-LLVM/MLIR 22.1. Current emulated x86-64 and restored/bundled SDK validation
-remain pending.
+LLVM/MLIR 22.1. The current emulated x86-64 compiler, installed SDK and all
+three moved/restored development bundles have also passed.
 The [source binary evidence](docs/evidence/bytes-source-0.33.0.json) records exact
 source/binary hashes, browser versions, installed SDK phases and remaining scope.
 See [bytes.md](docs/bytes.md).
 
-## In progress: managed binary values
+## Historical 0.32: managed binary values
 
 Development toolchain **0.32.0** retains source language **0.12**. Internal C++
 and TypeScript value runtimes now represent immutable binary data, typed JSON
@@ -67,22 +91,25 @@ passed, and web failed only its obsolete exact file inventory. The corrected
 inventory retains the exact-set check, adds byte-for-byte module comparison,
 and passed all seven web cases in a 5.19 s CTest rerun. No compiler/runtime
 code changed for that correction. This covers 281 declared Python cases and
-four C++ probes; the original failed invocation remains recorded. Full Release,
-Linux and installed-SDK validation of 0.32 remain in progress.
+four C++ probes; the original failed invocation remains recorded. The macOS
+Release invocation likewise passed 34 suites before the corrected web inventory
+passed all seven cases. Both Linux compiler runs subsequently passed all 35
+suites (ARM64 488.52 s; emulated x86-64 1747.18 s), and their source-free
+eleven-phase SDK workflows passed. The installed macOS SDK workflow passed too.
+These preserved 0.32 cohorts do not include the 0.33 host-poll ownership fix.
 
-Frontend/interpreter/MLIR emission, source TypeScript typing, API/debugger
-integration and an explicit 0.12 migration are still required for source binary
-programs. The [buffer design](docs/bytes-design.md) defines implemented host
+Source binary syntax, API/debugger support and explicit 0.12 migration were
+added in 0.33 above. The [buffer design](docs/bytes-design.md) defines implemented host
 semantics and the remaining integration. SDK 0.30/0.31 and genuine historical
 stores are preserved. [Managed-value evidence](docs/evidence/bytes-values-0.32.0.json)
 records each tested source, binary and correction separately. Initial Linux runs
 used old toolchain images without `patchelf`; their failed logs are retained.
 The tested packager images have the identical base layers plus that dependency.
-The corrected ARM64 run has already passed packaging/web, with the same compiler
-hash; its remaining suites and SDK phases are still running. This is not a
-completed platform matrix or source-language binary feature.
+The corrected compiler hashes match the initial cohorts; packaging and exact
+web-inventory checks passed in the completed corrected Linux runs. Source
+toolchain 0.32 retained language 0.12 throughout that internal-runtime milestone.
 
-## In progress: immutable binary primitives
+## Historical 0.31: immutable binary primitives
 
 Development toolchain **0.31.0** retains source language **0.12** while building
 the internal buffer representation and strict base64 codec. Native buffers own

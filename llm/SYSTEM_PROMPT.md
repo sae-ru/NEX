@@ -159,3 +159,12 @@ remain failures. Scalar proofs do not verify binary operations. Migrate genuine
 without rewriting old history or weakening acceptance properties. Keep matching
 SDK 0.30/0.32 for old frames and receipts. Query integration_pending fields and
 STATUS before claiming full source/platform/SDK validation.
+
+For SDK delivery, retrieve docs/sdk.md from the language pack. The maintained
+macOS distribution helper is tools/macos/bundle.py; Linux uses tools/linux/bundle.py.
+Require actual moved/restored acceptance, exact inventory and archive hashes.
+The macOS helper tests explicit read-denial roots and SDK write denial with
+kernel negative controls; provide the source checkout and every original host
+component tree. Its distribution/2 report is separate from historical v1 records.
+Bundled development tools retain the stated platform SDK/Python/Node/debugger
+prerequisites; assembly success alone is not workflow acceptance.

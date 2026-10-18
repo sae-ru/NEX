@@ -238,3 +238,38 @@ Linux packaging also performs a real malformed-ELF metadata check before normal
 assembly. An absolute SONAME must be rejected without creating a link outside
 the output SDK; component names `.` and `..` are rejected. The validator builds
 an owned metadata-only ELF fixture and does not count it as compiler evidence.
+
+## Maintained macOS distribution workflow
+
+With an unbundled installed SDK, the provenance/notice configuration described
+above, and a populated cache for the pinned web lock:
+
+```sh
+python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
+  --notices /absolute/notices.json --output /absolute/new-distribution \
+  --npm-cache /absolute/npm-cache --deny-read /absolute/source-checkout \
+  --deny-read /opt/homebrew --deny-read /opt/local --live
+```
+
+The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
+path, then runs all twelve acceptance phases. `sandbox-exec` denies reads from
+the explicitly supplied source/dependency roots and denies writes to the SDK.
+Each denied root needs a readable input/notice file for an actual negative
+control; a separate control verifies SDK write denial. Node/npm/Python must be
+outside the denied roots; explicit `--node`, `--npm` and `--python` paths are
+available. Apple SDK/linker and host LLDB remain declared prerequisites.
+
+The exact inventoried files and relative links are archived with normalized
+owners/timestamps, then restored into another directory and checked with the
+same kernel policy and complete workflow. Archive checksum, every file hash,
+executable mode and link target are checked. Unexpected files, duplicate keys,
+escaping paths, links through non-directories and privileged archive entries
+are rejected. Regular unmanifested Python cache files are excluded. Both macOS
+and Linux distribution helpers use `tools/sdk_archive.py` for this boundary.
+
+Output includes `.tar.gz`, SHA-256 sidecar and a `nex.sdk-distribution/2` report
+([schema](../llm/sdk-distribution.schema.json)). Historical distribution/1 reports
+remain unchanged. Failed attempts retain their output and working directory;
+new attempts require a new output directory. The helper keeps npm offline;
+it does not claim blocking all external network traffic on macOS. Temporary
+working evidence stays available at the path recorded in the report.

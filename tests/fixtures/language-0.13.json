@@ -1,0 +1,27 @@
+{
+  "language": "0.13",
+  "toolchain": "0.33.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_resources;\npub struct Packet<T:wire>{data:T;scale:f64;}\nfn identity<T:wire>(value:T)->T{return unwrap(decode_json<T>(encode_json(value)));}\nfn capture(value:bytes)->(fn()->bytes){return fn()->bytes{return value;};}\nserver fn preserved_file(path:str)->result<bytes>!{fs}{return file_read_bytes(path);}\nserver fn reader()->(server fn(str)->result<bytes>!{fs}){return preserved_file;}\nfn main()->unit!{io}{\n let original:bytes=unwrap(bytes([0,255,128,65]));\n print(identity(Packet<bytes>(capture(original)(),1.25)));\n print(unwrap(decode_utf8(utf8_bytes(\"Я\\u0000🧠\"))));\n}\ntest fn preserved()->unit{\n let original:bytes=unwrap(bytes([0,255,128,65]));\n assert(capture(original)()==original);\n assert(identity(Packet<bytes>(original,1.25)).data==original);\n assert(encode_base64(slice(original,1,2))==\"/4A=\");\n}\n",
+  "source_sha256": "43899019d7e2bfc50ff0dd13e52c276ce9fb5bb3d60db9e9dbd0b7747d1d577b",
+  "sql_sha256": "c662d1a9e07fdb54f79b739ee9ed467431abd533d95f05c151a00af20fe00c0f",
+  "compiler_sha256": "719f7326b462fba8cf46326ded9d1f3259f9011334b1c586664691f4b483e781",
+  "revision": "990f70efc2513e8eba55f280dc24df048221eae8e82106153db4899543339ed2",
+  "function_ids": {
+    "legacy_resources::identity": "943f4881b600aa3ff866faba8ddd0a78",
+    "legacy_resources::capture": "62f187f80e0c28b89cc9047b6ae3026b",
+    "legacy_resources::preserved_file": "c5a101274040352fd5c0d71fe21c2ee2",
+    "legacy_resources::reader": "0960164bb7b60bd29d44be89b1a6288e",
+    "legacy_resources::main": "36937518d88c530a7231750bdc959163",
+    "legacy_resources::preserved": "cd357434c751f271f25014eccc710968",
+    "legacy_resources::capture::$lambda_0": "6b4d4261330ae1b57de1c7bbcafb1ead",
+    "legacy_resources::identity<legacy_resources::Packet<bytes>>": "d0c36f7621ac52deb39f85fa003873f9"
+  },
+  "native_and_interpreter_test_passed": true,
+  "typescript_test_passed": true,
+  "stdout": "{\"data\":\"AP+AQQ==\",\"scale\":1.25e0}\nЯ\u0000🧠\n",
+  "future_builtin_name_conflict": false,
+  "future_conflicts": [],
+  "capture": "Genuine restored SDK 0.33 / language 0.13 store before a future resource extension. Candidate resource names are ordinary user code here; no resource feature or future reservation is claimed and no database language/version was rewritten."
+}

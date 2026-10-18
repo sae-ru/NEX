@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NEX SDK distribution verification v2",
+  "type": "object",
+  "required": ["schema", "ok", "sdk_input", "work_directory", "denied_read_roots", "live_debugger", "browser_build", "npm_offline", "external_network_blocked", "commands", "seconds"],
+  "properties": {
+    "schema": {"const": "nex.sdk-distribution/2"},
+    "ok": {"type": "boolean"},
+    "sdk_input": {"type": "string"},
+    "work_directory": {"type": "string"},
+    "denied_read_roots": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "live_debugger": {"type": "boolean"},
+    "browser_build": {"const": true},
+    "npm_offline": {"const": true},
+    "external_network_blocked": {"const": false},
+    "seconds": {"type": "number", "minimum": 0},
+    "input_compiler_sha256": {"$ref": "#/$defs/sha256"},
+    "assembler_sha256": {"$ref": "#/$defs/sha256"},
+    "archive_helper_sha256": {"$ref": "#/$defs/sha256"},
+    "toolchain": {"type": "string"},
+    "language": {"type": "string"},
+    "host": {"type": "string"},
+    "minimum_macos": {"type": "string"},
+    "external_prerequisites": {"type": "array", "items": {"type": "string"}},
+    "negative_control_inputs": {"type": "array", "items": {"type": "string"}},
+    "error": {"type": "string"},
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "arguments", "status", "expected_exit_code"],
+        "properties": {
+          "label": {"type": "string"},
+          "arguments": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["running", "passed", "failed"]},
+          "expected_exit_code": {"type": "integer"},
+          "exit_code": {"type": "integer"},
+          "stdout": {"type": "string"},
+          "stderr": {"type": "string"},
+          "error": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "archive": {
+      "type": "object",
+      "required": ["path", "sha256", "bytes", "files_in_inventory", "excluded_python_cache_files"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "files_in_inventory": {"type": "integer", "minimum": 1},
+        "excluded_python_cache_files": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "moved_sdk": {"$ref": "#/$defs/acceptance"},
+    "restored_sdk": {"$ref": "#/$defs/acceptance"}
+  },
+  "additionalProperties": false,
+  "allOf": [{"if": {"properties": {"ok": {"const": true}}}, "then": {"required": ["archive", "moved_sdk", "restored_sdk", "toolchain", "language", "host"]}}],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "acceptance": {
+      "type": "object",
+      "required": ["ok", "report", "working_report", "phases", "seconds", "live_debugger", "browser_build", "compiler_sha256", "configured_read_roots_denied", "sdk_write_denied", "negative_read_controls"],
+      "properties": {
+        "ok": {"const": true},
+        "report": {"type": "string"},
+        "working_report": {"type": "string"},
+        "phases": {"const": 12},
+        "seconds": {"type": "number", "minimum": 0},
+        "live_debugger": {"type": "boolean"},
+        "browser_build": {"const": true},
+        "compiler_sha256": {"$ref": "#/$defs/sha256"},
+        "configured_read_roots_denied": {"const": true},
+        "sdk_write_denied": {"const": true},
+        "negative_read_controls": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    }
+  }
+}
