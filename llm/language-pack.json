@@ -74,9 +74,11 @@
     "native_diagnostics_schema": "llm/native-diagnostics.schema.json",
     "operation_patch_workflow": "examples/operation-patches/README.md",
     "history": "docs/history.md",
-    "history_schema": "llm/history.schema.json"
+    "history_schema": "llm/history.schema.json",
+    "snapshots": "docs/snapshots.md",
+    "graph_snapshot_schema": "llm/graph-snapshot.schema.json"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -212,5 +214,9 @@
   "history_commands": [
     "nex changes --offset 0 --limit 100 --json",
     "nex restore --revision HASH --expected-revision HEAD_HASH --note TEXT --json"
+  ],
+  "snapshot_commands": [
+    "nex snapshot --directory NEW_SNAPSHOT --timeout 60 --json",
+    "nex recover SNAPSHOT --directory NEW_PROJECT --timeout 60 --json"
   ]
 }

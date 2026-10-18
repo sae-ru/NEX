@@ -10,6 +10,7 @@ import queue
 import re
 import shutil
 import signal
+import sqlite3
 import ssl
 import subprocess
 import threading
@@ -234,6 +235,9 @@ test fn examples() -> unit {
         require('optimistic_archived_restore' in descriptor.get('history_features', []) and
                 descriptor.get('graph_database_schema') == 4,
                 'SDK lacks checked change history and revision restore')
+        require('consistent_sqlite_backup' in descriptor.get('snapshot_features', []) and
+                descriptor.get('snapshot_external_artifacts_included') is False,
+                'SDK lacks identity-preserving graph snapshot/recovery')
         require('manifest_checked_trap_mapping' in descriptor.get('diagnostic_features', []),
                 'SDK lacks checked native runtime diagnostics')
         require({'native_checked_i64_ssa', 'cold_integer_failure_calls', 'cold_native_assertions'} <=
@@ -255,7 +259,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -570,6 +574,64 @@ test fn examples() -> unit {
             'native_interpreter_agreement': True, 'source_deleted': True,
             'standalone_without_sdk_lookup': str(standalone), 'new_store_local_ids': True,
             'manifest': built['debug_manifest']}
+
+    def graph_snapshot_recovery():
+        original = root / 'snapshot-original'
+        original.mkdir()
+        (original / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        source = original / 'main.nex'
+        source.write_text('module sdk_snapshot;fn value()->i64{return 41;}'
+            'fn main()->unit!{io}{print(value());}'
+            'test fn retains_value()->unit{assert(value()>=41);}')
+        first = cli('check', cwd=original)['revision']
+        patch = original / 'patch.json'
+        patch.write_text(json.dumps({'expected_revision': first, 'replacements': [
+            {'name': 'value', 'source': 'fn value()->i64{return 42;}'}]}))
+        second = cli('apply', '--patch', patch, cwd=original)['revision']
+        graph = cli('graph', cwd=original)
+        changes = cli('changes', cwd=original)
+        source.unlink()
+        def rows(project):
+            with sqlite3.connect(project / '.nex/graph.db') as database:
+                names = [name for name, in database.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
+                return {name: sorted(database.execute('SELECT * FROM "' + name.replace('"', '""') + '"').fetchall(), key=repr)
+                        for name in names}
+        before = rows(original)
+        archive = root / 'graph-snapshot'
+        captured = cli('snapshot', '--directory', archive, cwd=original)
+        require(rows(original) == before and captured['source_unchanged'], 'snapshot changed original graph rows')
+        require(not (archive / 'graph.db-wal').exists() and not (archive / 'graph.db-shm').exists(),
+                'snapshot depends on SQLite sidecar files')
+        manifest = json.loads((archive / 'snapshot.json').read_text())
+        digest = hashlib.sha256((archive / 'graph.db').read_bytes()).hexdigest()
+        require(manifest['database']['sha256'] == captured['database_sha256'] == digest,
+                'snapshot manifest differs from database bytes')
+        shutil.rmtree(original)
+        moved = root / 'moved-graph-snapshot'
+        archive.rename(moved)
+        recovered = root / 'snapshot-recovered'
+        result = cli('recover', moved, '--directory', recovered)
+        require(rows(recovered) == before and not result['materialized'] and
+                result['namespace'] == changes['namespace'], 'recovery changed database rows or namespace')
+        require(cli('recover', moved, '--directory', recovered, expected_success=False)['code'] == 'E_EXISTS' and
+                rows(recovered) == before, 'existing recovered project was overwritten')
+        require(cli('graph', cwd=recovered)['nodes'] == graph['nodes'] and
+                cli('changes', cwd=recovered) == changes, 'recovery lost local IDs or change journal')
+        require(cli('run', '--revision', first, cwd=recovered)['stdout'] == '41\n' and
+                cli('eval', '--revision', second, cwd=recovered)['stdout'] == '42\n' and
+                cli('run', '--revision', 'HEAD', cwd=recovered)['stdout'] == '42\n',
+                'recovered native/reference archives disagree')
+        cli('test', '--revision', 'HEAD', cwd=recovered)
+        cli('test', '--revision', 'HEAD', '--target', 'web', cwd=recovered)
+        require(not (recovered / 'main.nex').exists() and rows(recovered) == before,
+                'archived execution materialized sources or changed retained graph rows')
+        report['evidence']['graph_snapshot'] = {'before': first, 'head': second,
+            'namespace': changes['namespace'], 'database_sha256': digest,
+            'tables': len(before), 'all_rows_preserved': True, 'local_ids_preserved': True,
+            'change_journal_preserved': True, 'original_project_deleted': True,
+            'snapshot_moved': True, 'materialized': False, 'existing_target_rejected': True,
+            'native_reference_typescript': True, 'external_artifacts_included': False}
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'
@@ -1290,7 +1352,8 @@ server fn handle(request:http::Request) -> http::Response !{db} {
     try:
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
-                ('backend-agreement', backend_agreement), ('binary-values', binary_values),
+                ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
+                ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('authenticated-storage', authenticated_storage), ('browser', browser)]:

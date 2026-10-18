@@ -1,5 +1,10 @@
 # NEX implementation status
 
+## Isolated 0.50 graph snapshot/recovery prototype
+
+Language 0.15 and graph schema4 are unchanged. `nex snapshot` captures a consistent, self-contained SQLite database; `nex recover` preserves its rows, UUIDs, aliases and journal in an exclusively new project. Fifteen focused macOS ARM64 checks pass after discovery/schema/model-pack integration, including a capture during an open WAL write transaction. Six emitted manifest/result forms pass offline JSON Schema validation and seventeen malformed variants are rejected. Three related history/identity/module groups also pass; full current regression/platform checks and the fourteen-phase installed-SDK workflow remain pending. The 0.49 baseline full runs exposed two fixture/legacy-expectation mismatches; corrected checks are being rerun. External receipts/artifacts, application data and SDK/native dependencies require separate preservation.
+
+
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
 ## In progress: change provenance and archived restore

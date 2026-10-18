@@ -74,8 +74,9 @@ revision/source/identity/task data and captures the actual HEAD as
 `base_revision`. It creates an empty journal rather than fabricating authors or
 transition order for older data. Older compilers do not understand schema 4;
 retain their matching original database/compiler/resources for old SDK receipts.
-Exported source preserves program semantics; copy the complete database to
-preserve its local journal and UUID lineage.
+Exported source preserves program semantics. In toolchain 0.50 use
+[`nex snapshot` and `nex recover`](snapshots.md) to preserve the complete database,
+local journal and UUID lineage while accounting for committed WAL data.
 
 Page limits are 1–1000 records, default 100, and offsets are 0–10,000,000. Notes
 are at most 1024 UTF-8 bytes and actor labels at most 128, without NUL. A stored

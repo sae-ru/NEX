@@ -132,7 +132,7 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
-The current workflow has thirteen phases. Its foreign-boundary phase compiles a
+The current workflow has fourteen phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
 with NEX resources unavailable. This tests the experimental host transport. The
@@ -249,7 +249,7 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all thirteen maintained phases, including the three locked browser
+server. It runs all fourteen maintained phases, including the three locked browser
 builds and the text/binary-file application workflows.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
@@ -279,7 +279,7 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
-path, then runs all thirteen acceptance phases. `sandbox-exec` denies reads from
+path, then runs all fourteen acceptance phases. `sandbox-exec` denies reads from
 the explicitly supplied source/dependency roots and denies writes to the SDK.
 Each denied root needs a readable input/notice file for an actual negative
 control; a separate control verifies SDK write denial. Node/npm/Python must be
@@ -307,8 +307,8 @@ Toolchain 0.48 extends the backend-agreement phase with the indexed
 deletes the materialized source, applies a source/revision-guarded replacement,
 checks the retained local ID with a new site, runs native/reference/TypeScript
 validation and rejects the stale patch. Both the original 41 and revised 42
-outputs must remain runnable from archived sources. This remains part of the
-thirteen-phase workflow; consult current evidence for the compiler/source hashes
+outputs must remain runnable from archived sources. This was part of the original
+thirteen-phase workflow and remains in the current fourteen-phase workflow; consult current evidence for the compiler/source hashes
 and the platform scope actually tested.
 
 
@@ -319,3 +319,16 @@ does not infer unknown prior provenance. See [the history guide](history.md) for
 `nex changes`, `nex restore`, declared labels, bounds and older-SDK compatibility.
 The installed SDK backend-agreement scenario restores both source-deleted
 operation-edit revisions and verifies their four actual transitions.
+
+## Graph recovery acceptance (toolchain 0.50)
+
+The installed SDK acceptance workflow now has fourteen phases. Its new
+`graph-snapshot-recovery` phase deletes the original project, moves a complete
+graph snapshot and recovers into a new project. It checks every database row,
+local node IDs/namespace, the HEAD journal, both retained revisions and
+native/reference/TypeScript execution without physical source files. Existing
+output is rejected without changing the recovered database. The language pack
+indexes the snapshot guide and manifest/result schema. This phase preserves
+graph state; external receipt/artifact files, application data and SDK/native
+dependencies remain separate. An SDK report is evidence only when this phase
+and the other requested phases actually pass.

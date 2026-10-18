@@ -1,5 +1,8 @@
 # Model-independent NEX language pack
 
+Toolchain 0.50 adds consistent [graph snapshots and recovery](../docs/snapshots.md). Discover `snapshot_features`, `snapshot_limits` and `graph-snapshot.schema.json`; preserve the full database to retain local IDs/history. Source export and graph import have different identity semantics. External artifacts, application data and matching SDKs are separate.
+
+
 Toolchain 0.49 adds [local change history and guarded restore](../docs/history.md).
 Discover `history_features` and use `history.schema.json`. Declared author/note
 labels describe provenance without authenticating identity; earlier revisions

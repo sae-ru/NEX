@@ -370,3 +370,7 @@ does not infer unknown prior provenance. See [the history guide](history.md) for
 `nex changes`, `nex restore`, declared labels, bounds and older-SDK compatibility.
 The installed SDK backend-agreement scenario restores both source-deleted
 operation-edit revisions and verifies their four actual transitions.
+
+## Complete local graph snapshots (toolchain 0.50)
+
+Discover `snapshot_features` and read [the snapshot guide](snapshots.md). `nex snapshot --directory NEW_SNAPSHOT` uses a consistent SQLite backup and a SHA-256 database manifest. `nex recover SNAPSHOT --directory NEW_PROJECT` preserves all database rows and local UUID lineage without changing an existing project, materializing source or migrating schema. Use `--revision HEAD` to validate recovered source. These commands preserve local identity, unlike source/graph import; they do not include external receipt/artifact files, SDK dependencies or application data. `llm/graph-snapshot.schema.json` describes the manifest and results.
