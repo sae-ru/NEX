@@ -12,9 +12,16 @@ checks an expected HEAD and commits a complete page atomically without changing
 source or HEAD. A genuine 0.43 database fixture covers additive backfill.
 The [graph guide](docs/graph.md) defines limits, provenance and mapping scope.
 
-Build and focused tests are under validation. Full current regression,
-installed SDK and Linux checks remain pending. The verified 0.43 evidence below
-does not certify these working changes. This milestone does not complete NEX.
+The initial implementation passes all 51 macOS/Linux ARM64 groups (387 Python
+cases and ten C++ probes), both thirteen-phase SDK workflows and Linux live
+debugger checks. Additional coverage exposed duplicate visits of nested
+statement-match bodies in dependency collection: depth 25 took 0.067 s on 0.43
+but exceeded a 3-s timeout in the new implementation. Each arm is now visited
+once. The same corrected case passes in 0.0423 s; all 17 focused identity cases,
+including depth-30 native/TypeScript execution and arm-local type dependencies,
+pass in the isolated corrected build. Full corrected compiler/SDK validation
+remains pending; baseline results do not certify the correction. This milestone
+does not complete NEX.
 
 ## Verified development milestone: native foreign application packaging
 

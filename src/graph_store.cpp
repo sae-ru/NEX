@@ -56,7 +56,9 @@ Entities describeEntities(const Program &p){
     if(!f.templateName.empty())entity.dependencies.insert({"function",f.templateName});
     types(entity,f.result,types);for(const auto &parameter:f.params)types(entity,parameter.type,types);for(const auto &capture:f.captures)types(entity,capture.type,types);for(const auto &argument:f.typeArguments)types(entity,argument,types);
     std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
-    block=[&](const auto &body){for(const auto &statement:body){types(entity,statement->type,types);expression(statement->expr);childBlocks(statement,block);}};
+    // Match arm bodies belong to the expression and are visited there.
+    // childBlocks would visit them a second time, doubling each nesting level.
+    block=[&](const auto &body){for(const auto &statement:body){types(entity,statement->type,types);expression(statement->expr);block(statement->body);block(statement->alternative);}};
     expression=[&](E value){if(!value)return;types(entity,value->type,types);types(entity,value->annotation,types);for(const auto &argument:value->typeArguments)types(entity,argument,types);for(auto argument:value->args)expression(argument);
       if(value->lambda){types(entity,value->lambda->result,types);for(const auto &parameter:value->lambda->params)types(entity,parameter.type,types);block(value->lambda->body);}
       for(auto arm:value->arms){for(const auto &binding:arm->bindings)types(entity,binding.type,types);block(arm->body);}

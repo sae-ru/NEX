@@ -375,5 +375,32 @@ fn main()->unit{}
         self.assertEqual(restored, old_choice)
 
 
+    def test_deep_statement_matches_have_linear_dependency_traversal(self):
+        body = 'return 42;'
+        for _ in range(30):
+            body = 'match true{true=>{'+body+'}false=>{return 0;}}'
+        source = 'module deep;fn calculate()->i64{'+body+'}fn main()->i64{return calculate();}test fn exercise()->unit{assert(calculate()==42);}'
+        self.source(source)
+        self.cli('check', self.file, timeout=5)
+        packet = self.cli('identities', '--entity', 'function', '--symbol', 'calculate', timeout=5)
+        self.assertEqual(len(packet['nodes']), 1)
+        self.assertEqual(self.cli('eval', '--revision', 'HEAD')['value'], 42)
+        self.assertTrue(self.cli('test', '--revision', 'HEAD')['ok'])
+        self.assertTrue(self.cli('test', '--revision', 'HEAD', '--target', 'web')['ok'])
+
+    def test_statement_match_arm_local_types_participate_in_context(self):
+        source = '''module arm_types;enum Tag{One;Two;}
+fn calculate()->i64{match true{true=>{let local:Tag=Tag::One();return 42;}false=>{return 0;}}}
+fn main()->i64{return calculate();}
+'''
+        directory, _ = self.project('arm-types', source)
+        before = self.packet(directory, '--entity', 'function', '--symbol', 'calculate')['nodes'][0]
+        (directory / 'main.nex').write_text(source.replace('enum Tag{One;Two;}', 'enum Tag{One;Two;Three;}'))
+        self.cli('check', cwd=directory)
+        after = self.packet(directory, '--entity', 'function', '--symbol', 'calculate')['nodes'][0]
+        self.assertEqual(before['hash'], after['hash'])
+        self.assertNotEqual(before['context_hash'], after['context_hash'])
+
+
 if __name__ == '__main__':
     unittest.main()
