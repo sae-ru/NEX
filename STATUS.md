@@ -12,8 +12,20 @@ Appended ABI-1 table slots construct checked records/enums and expose scoped typ
 tokens. The original C table prefix is preserved and an unchanged installed-0.37
 header compiles the legacy producer. Language syntax/canonical formats remain
 unchanged. Source declarations, loading/authorization, source backend invocation,
-general resources and async remain pending. Current validation is in progress;
-the descriptor continues to report `source_support:false`.
+general resources and async remain pending. The descriptor continues to report
+`source_support:false`.
+
+The 25 legacy-prefix and 23 typed C/C++ cases pass ASan/UBSan/LSan on macOS ARM64
+and Linux ARM64/emulated x86-64; macOS also passes ThreadSanitizer. Full macOS
+Debug regression passes all 45 suites (336 Python cases and eight C++ probes) in
+715.24 s. Eight new source/schema/history cases include C/native/reference/
+TypeScript agreement on the same nested result, enum, generic record, binary and
+NUL-string scenario. The installed macOS SDK passes all thirteen workflow phases
+in 177.178 s with real LLDB/DAP and browser builds; its typed C host works after
+source deletion, using only the retained contract metadata. Compiler, runtime
+inputs and workflow match the checked sources. Broader current compiler and
+isolated SDK/distribution validation remain pending.
+[Evidence](docs/evidence/ffi-types-0.38.0.json) binds the inputs and scope.
 
 A genuine language-0.14 source/SQL fixture was captured using the accepted
 installed SDK 0.37 before future declarations. It keeps ordinary `ffi`, `extern`

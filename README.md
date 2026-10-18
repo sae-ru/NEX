@@ -56,9 +56,11 @@ foreign declarations and library loading are not implemented yet.
 Development 0.38 adds checked host signatures exported by `nex ffi FILE --symbol
 NAME --json`, typed input/result validation and C constructors for nominal values.
 It preserves the original ABI-1 table prefix and language 0.14. The
-[typed host example](examples/ffi/main.nex) agrees with an independent C producer;
-current validation is tracked in `STATUS.md`. Source external calls remain
-pending.
+[typed host example](examples/ffi/main.nex) agrees with an independent C producer.
+macOS Debug passes 45 suites and the installed SDK passes thirteen phases; the
+48 legacy/typed C cases pass sanitizers on the stated macOS/Linux scope.
+See [the evidence](docs/evidence/ffi-types-0.38.0.json) for remaining validation.
+Source external calls remain pending.
 
 ## Build
 
