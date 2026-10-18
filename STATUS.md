@@ -1,5 +1,9 @@
 # NEX implementation status
 
+## Isolated 0.51 physical-project version boundary
+
+The 0.50 compiler accepted an explicit language0.14 physical manifest as language0.15; baseline evidence is retained locally. The prototype rejects noncurrent root and reachable configured-library declarations, validates project metadata, and preflights root physical workflows before graph initialization. Archived queries/current-revision execution, explicit history-preserving migration and snapshot recovery remain independent of physical declarations. The repository's current example manifest now declares0.15. Language grammar/canonical forms and graph schema4 are unchanged. Current focused/full/SDK validation is pending.
+
 ## Isolated 0.50 graph snapshot/recovery prototype
 
 Language 0.15 and graph schema4 are unchanged. `nex snapshot` captures a consistent, self-contained SQLite database; `nex recover` preserves its rows, UUIDs, aliases and journal in an exclusively new project. Fifteen focused macOS ARM64 checks pass after discovery/schema/model-pack integration, including a capture during an open WAL write transaction. Six emitted manifest/result forms pass offline JSON Schema validation and seventeen malformed variants are rejected. Three related history/identity/module groups also pass; full current regression/platform checks and the fourteen-phase installed-SDK workflow remain pending. The 0.49 baseline full runs exposed two fixture/legacy-expectation mismatches; corrected checks are being rerun. External receipts/artifacts, application data and SDK/native dependencies require separate preservation.

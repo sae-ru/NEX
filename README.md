@@ -8,7 +8,12 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated working tree is toolchain **0.50.0 / language 0.15**, adding
+This isolated working tree is toolchain **0.51.0 / language 0.15**, adding
+[explicit project/library version checks](docs/compatibility.md). Its validation
+is pending. Declared old physical projects require explicit migration; archived
+queries and current-revision execution stay independent of stale source metadata.
+
+This preceding isolated working tree is toolchain **0.50.0 / language 0.15**, adding
 [consistent graph snapshots and recovery](docs/snapshots.md). The prototype
 passes fifteen focused checks; full regression/platform/SDK validation remains
 pending. External application data and task artifact files are not included.

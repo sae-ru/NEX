@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/project-1.json",
+  "title": "Current NEX project manifest",
+  "description": "Source language0.15 authoring schema. Omitted legacy metadata is interpreted under the current compiler. Entry is required by commands without a source file. Filesystem containment, reachability, actual library versions and graph compatibility are checked by the compiler.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "schema": {
+      "const": "nex.project/1"
+    },
+    "language": {
+      "const": "0.15"
+    },
+    "entry": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000]+(?![\\s\\S])"
+    },
+    "libraries": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z_0-9]*(?![\\s\\S])"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^\\u0000]+(?![\\s\\S])"
+      }
+    }
+  }
+}

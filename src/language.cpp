@@ -921,6 +921,8 @@ llvm::json::Value describe() {
     {"snapshot_features",llvm::json::Array{"consistent_sqlite_backup","committed_wal_capture","preserved_graph_rows_and_ids","no_source_schema_migration","new_directory_recovery","source_deleted_replay","sha256_database_manifest","cooperative_deadline"}},
     {"snapshot_limits",llvm::json::Object{{"manifest_bytes",65536},{"json_depth",16},{"tables",64},{"timeout_seconds_default",60},{"timeout_seconds_minimum",1},{"timeout_seconds_maximum",3600}}},
     {"snapshot_external_artifacts_included",false},{"snapshot_guide","docs/snapshots.md"},{"snapshot_schema","llm/graph-snapshot.schema.json"},
+    {"project_features",llvm::json::Array{"declared_source_language_guard","root_version_preflight_before_store","reachable_library_language_guard","declared_project_schema_guard","legacy_omitted_metadata","archived_manifest_independence"}},
+    {"project_manifest_schema","llm/project.schema.json"},{"compatibility_guide","docs/compatibility.md"},
     {"graph_identity_policy","nex.graph-identity/1"},{"graph_identity_schema",1},{"graph_guide","docs/graph.md"},{"graph_schema","llm/graph-identity.schema.json"},
     {"patch_entities",llvm::json::Array{"function","endpoint","type","operation"}},
     {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","persistent_declaration_ids","local_operation_replacements","exact_source_guard","single_syntax_fragment","overlap_rejection","isolated_comment_boundaries"}},

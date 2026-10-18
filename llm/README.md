@@ -1,5 +1,7 @@
 # Model-independent NEX language pack
 
+Toolchain 0.51 checks declared physical project and reachable configured-library languages. Read [compatibility](../docs/compatibility.md), query `project_features` and use `project.schema.json`. Archived migration/execution stays independent of stale physical metadata.
+
 Toolchain 0.50 adds consistent [graph snapshots and recovery](../docs/snapshots.md). Discover `snapshot_features`, `snapshot_limits` and `graph-snapshot.schema.json`; preserve the full database to retain local IDs/history. Source export and graph import have different identity semantics. External artifacts, application data and matching SDKs are separate.
 
 
