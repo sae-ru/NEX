@@ -13,6 +13,11 @@ module/type nodes, bounded declaration context and atomic, snapshot-scoped
 identity reconciliation between stores. Its current validation is recorded in
 `STATUS.md`; [the graph guide](docs/graph.md) describes the protocol.
 
+The corrected snapshot passes all 51 regression groups on macOS/Linux ARM64,
+both thirteen-phase installed SDK workflows and the Linux live debugger matrix.
+The [graph evidence](docs/evidence/graph-identities-0.44.0.json) records the exact
+scope, the nested-match traversal correction and pending broader validation.
+
 The preceding verified snapshot is toolchain **0.43.0 / language 0.15**. It adds
 matching-host native application packaging with explicit foreign-library grants,
 recursive dependency/notices collection and checked, history-preserving pin

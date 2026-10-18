@@ -2,7 +2,7 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: persistent declaration graph and cross-store references
+## Verified development milestone: declaration graph and cross-store references
 
 Toolchain **0.44.0 / language 0.15** adds persistent module/type nodes,
 dependency-context fingerprints, bounded declaration queries and explicit
@@ -19,9 +19,24 @@ statement-match bodies in dependency collection: depth 25 took 0.067 s on 0.43
 but exceeded a 3-s timeout in the new implementation. Each arm is now visited
 once. The same corrected case passes in 0.0423 s; all 17 focused identity cases,
 including depth-30 native/TypeScript execution and arm-local type dependencies,
-pass in the isolated corrected build. Full corrected compiler/SDK validation
-remains pending; baseline results do not certify the correction. This milestone
-does not complete NEX.
+pass in the isolated corrected build. The corrected root passes all 17 focused
+cases in 11.198 s. Its full macOS ARM64 regression passes all 51 groups (389
+Python cases and ten C++ probes) in 1165.35 s with two parallel workers. Linux
+ARM64 passes the same full 51 groups in 999.31 s, then all eleven live debugger
+suites and a source-free installed SDK. Both SDKs pass thirteen workflow phases,
+including 166 reconciled graph records with destination IDs preserved; macOS
+takes 289.973 s and source-free Linux takes 207.806 s with networking disabled.
+The five real current graph response artifacts validate offline against JSON
+Schema 4.25.1; seven malformed variants are rejected. A 56-record comparison
+confirms that the traversal fix preserves identity output.
+
+The [evidence](docs/evidence/graph-identities-0.44.0.json) separates baseline and
+corrected results and preserves exact compiler/source/report hashes. Broader
+current Release, sanitizer, x86-64 and SDK distribution checks remain pending.
+Source type replacement is being developed in an isolated 0.45 copy; it is not
+advertised by the 0.44 compiler. Remaining platform adapters, callbacks, async
+and the rest of the language/toolchain plan remain open. This milestone does
+not complete NEX.
 
 ## Verified development milestone: native foreign application packaging
 
