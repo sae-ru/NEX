@@ -98,6 +98,20 @@ int main(){
       error("E_RESOURCE_SCOPE",[&]{domain->make<Probe>([&](const auto &permit){domain.reset();permit.check();return std::make_unique<Probe>(stats);});});
       require(!stats.live,"destroyed factory domain leaked");
     });
+    run("retained access cannot extend domain authority",[]{
+      Stats stats;ResourceAccess access;
+      {ResourceDomain domain;access=domain.access();auto value=access.make<Probe>([&](const auto &permit){permit.check();return std::make_unique<Probe>(stats);});require(value.isOpen(),"retained access lost live authority");}
+      int entered=0;error("E_RESOURCE_SCOPE",[&]{access.make<Probe>([&](const auto &){++entered;return std::make_unique<Probe>(stats);});});
+      error("E_RESOURCE_SCOPE",[&]{access.check();});require(!entered&&!stats.live,"expired access ran factory");
+      error("E_RESOURCE_SCOPE",[]{ResourceAccess().check();});
+    });
+    run("retained access enforces joined quotas and survives wrapper deletion",[]{
+      Stats stats;ResourceDomain first(1),second(2);auto joined=std::make_unique<ResourceDomain>(first.combine(second));auto access=joined->access();
+      auto owner=access.make<Probe>([&](const auto &){return std::make_unique<Probe>(stats);});auto lease=owner.acquire();owner.close();
+      error("E_RESOURCE_LIMIT",[&]{access.make<Probe>([&](const auto &){return std::make_unique<Probe>(stats);});});
+      joined.reset();error("E_RESOURCE_SCOPE",[&]{access.check();});require(stats.live==1&&first.used()==1&&second.used()==1,"access lost physical lease quota");
+      lease={};require(!stats.live&&!first.used()&&!second.used(),"retained access leaked physical quota");
+    });
     run("payload cleanup re-enters domain without locks",[]{
       Stats stats;ResourceDomain domain(1);std::atomic<bool> callback=false;
       auto a=domain.make<Probe>([&](const auto &){return std::make_unique<Probe>(stats,[&]{

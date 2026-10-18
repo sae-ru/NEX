@@ -831,12 +831,13 @@ llvm::json::Value describe() {
     {"file_guide","docs/files.md"},
     {"resource_guide","docs/resources.md"},
     {"foreign_boundary",llvm::json::Object{
-      {"source_support",false},{"status","experimental_typed_c_transport"},{"abi_version",1},
+      {"source_support",false},{"status","experimental_typed_c_modules"},{"abi_version",1},
       {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
       {"signature_schema","nex.foreign-signature/1"},{"signature_command","nex ffi FILE --symbol NAME --json"},
+      {"module_loading",llvm::json::Object{{"source_support",false},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
       {"features",llvm::json::Array{"call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},
       {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
-      {"pending",llvm::json::Array{"source_declarations","checked_source_bindings","library_authorization_and_loading","platform_packaging","callbacks_into_nex","stable_abi_validation"}}}},
+      {"pending",llvm::json::Array{"source_declarations","checked_source_bindings","source_backend_invocation","dependency_closure_packaging","callbacks_into_nex","stable_abi_validation"}}}},
     {"resource_features",llvm::json::Array{"server_file_type","identity_aliases","owned_aggregate_and_capture_values","explicit_close","scope_revocation","bounded_streaming_io","opaque_pure_debug_identity","no_wire_or_browser_authority"}},
     {"host_resource_runtime",llvm::json::Object{
       {"source_support",true},{"status","development_source_files"},{"design","docs/resources-design.md"},

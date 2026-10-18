@@ -53,6 +53,11 @@ Multiple locks follow a consistent address order. Revocation marks a domain
 inactive under its lock, then closes registered controls outside domain locks,
 allowing cleanup to re-enter the host.
 
+`ResourceAccess` retains the authority states without owning revocation
+responsibility. It can safely span loader waits or callbacks that destroy the
+original domain wrapper. Every check/factory still verifies activity and all
+joined quotas; retaining access cannot extend a domain's lifetime or rights.
+
 Every factory reserves a physical slot in each domain before creating an
 external object. Limits are 1..4096 per domain, default 64. The slot covers
 pending factories and closed payloads retained by leases. Logical close does

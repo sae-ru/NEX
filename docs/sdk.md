@@ -20,6 +20,13 @@ executed with compiler resources unavailable. File access requires no SQLite or
 JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
 
+The foreign-boundary phase also builds an independent C11 shared module and a
+C++20 host against the installed runtime. It pins the exact bundle manifest and
+canonical compiler-exported signature, grants only the named export, deletes
+the C/C++ sources and compares loaded output with the native/reference/
+TypeScript NEX model. The host links the selected OpenSSL Crypto (and `dl` on
+Linux); this does not verify a distributable native dependency closure.
+
 ## Relocatable macOS development bundle (0.27, under validation)
 
 ```sh

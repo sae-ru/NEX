@@ -55,7 +55,10 @@
     "foreign_boundary": "docs/ffi-design.md",
     "foreign_c_header": "runtime/nex_ffi.h",
     "foreign_host_header": "runtime/nex_ffi_host.h",
-    "foreign_signature_schema": "llm/foreign-signature.schema.json"
+    "foreign_signature_schema": "llm/foreign-signature.schema.json",
+    "foreign_module_header": "runtime/nex_ffi_module.h",
+    "foreign_loader_header": "runtime/nex_ffi_loader.h",
+    "foreign_bundle_schema": "llm/foreign-bundle.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
@@ -94,7 +97,9 @@
     "file_resources": "examples/resources.nex",
     "foreign_contract": "examples/ffi/main.nex",
     "foreign_producer": "examples/ffi/producer.c",
-    "foreign_host": "examples/ffi/host.cpp"
+    "foreign_host": "examples/ffi/host.cpp",
+    "foreign_module": "examples/ffi/module.c",
+    "foreign_module_host": "examples/ffi/module_host.cpp"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

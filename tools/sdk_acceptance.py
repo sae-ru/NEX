@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import queue
 import re
@@ -479,6 +480,50 @@ int main() {
             'contract_sha256': hashlib.sha256(contract_file.read_bytes()).hexdigest(),
             'checked_record_enum_result': True, 'source_deleted': True,
             'native_reference_typescript_model_agreement': True, 'standalone': str(typed_host)}
+        loaded = directory / 'loaded'
+        loaded.mkdir()
+        bundle = loaded / 'bundle'
+        bundle.mkdir()
+        for name in ('producer.c', 'module.c', 'module_host.cpp', 'NOTICE'):
+            shutil.copyfile(resources / 'examples/ffi' / name, loaded / name)
+        canonical = json.dumps(contract, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+        signature_pin = hashlib.sha256(canonical.encode()).hexdigest()
+        module = bundle / 'module'
+        run([driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden',
+             '-I' + str(runtime), '-DNEX_EXAMPLE_SIGNATURE_SHA256="' + signature_pin + '"',
+             loaded / 'producer.c', loaded / 'module.c', '-o', module])
+        shutil.copyfile(loaded / 'NOTICE', bundle / 'NOTICE')
+        machine = {'aarch64': 'arm64', 'arm64': 'arm64', 'x86_64': 'x86_64', 'AMD64': 'x86_64'}[platform.machine()]
+        host_platform = ('macos' if platform.system() == 'Darwin' else 'linux') + '-' + machine
+        manifest = {'schema': 'nex.foreign-bundle/1', 'platform': host_platform, 'entry': 'module',
+            'files': [{'path': name, 'sha256': hashlib.sha256((bundle / name).read_bytes()).hexdigest()}
+                      for name in ('module', 'NOTICE')],
+            'exports': {'contract': signature_pin}, 'notices': ['NOTICE']}
+        (bundle / 'manifest.json').write_text(json.dumps(manifest))
+        manifest_pin = hashlib.sha256((bundle / 'manifest.json').read_bytes()).hexdigest()
+        module_host = loaded / 'host'
+        run([driver, '-std=c++20', '-pthread', '-I' + str(runtime),
+             '-I' + report['doctor']['native_openssl_include'], loaded / 'module_host.cpp',
+             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
+             runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
+             report['doctor']['native_openssl_crypto'],
+             *(['-ldl'] if platform.system() == 'Linux' else []), '-o', module_host])
+        for name in ('producer.c', 'module.c', 'module_host.cpp', 'NOTICE'):
+            (loaded / name).unlink()
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-module-resources')
+            require(run([module_host, bundle, manifest_pin, contract_file]) == expected_typed,
+                    'loaded module/NEX model output differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = original
+        report['evidence']['foreign_boundary']['loaded_module'] = {
+            'platform': host_platform, 'manifest_sha256': manifest_pin,
+            'signature_sha256': signature_pin, 'c11_shared_module': True,
+            'explicit_library_and_export_grant': True, 'source_deleted': True,
+            'native_reference_typescript_model_agreement': True,
+            'standalone': str(module_host), 'bundle': str(bundle),
+            'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
+                for name in ('nex_ffi_loader.cpp', 'nex_ffi_loader.h', 'nex_ffi_module.h', 'nex_resource.h')}}
 
     def binary_values():
         directory = root / 'binary-values'

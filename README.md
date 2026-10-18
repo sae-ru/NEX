@@ -62,6 +62,12 @@ macOS Debug passes 45 suites and the installed SDK passes thirteen phases; the
 See [the evidence](docs/evidence/ffi-types-0.38.0.json) for remaining validation.
 Source external calls remain pending.
 
+Development 0.39 adds explicit host grants and content-pinned native module
+loading with checked signatures, private verified snapshots and resource-scoped
+physical leases. It keeps language 0.14 unchanged. The
+[module contract](docs/ffi-design.md) records trust, dependency lookup and pending
+source/packaging work. Current validation is tracked in `STATUS.md`.
+
 ## Build
 
 Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.

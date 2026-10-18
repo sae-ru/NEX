@@ -2,7 +2,8 @@
 
 Development 0.37 adds an experimental C value boundary; 0.38 adds checked host
 signatures and nominal constructors. Language 0.14 and its canonical formats do
-not change. Source external declarations, library loading and binding checks,
+not change. Development 0.39 adds trusted host module loading, described below.
+Source external declarations and binding checks,
 packaging, generic external resources, callbacks into NEX
 and source async remain pending. This transport is a foundation for those
 features; it is not a published stable FFI or an implemented source feature.
@@ -133,6 +134,92 @@ contract export that exceeds this transport's limits fails explicitly.
 host consumes the exported JSON and constructs a typed generic record/enum/result
 through C. It is compiled from the SDK runtime as a C++20 host plus C11 producer.
 It does not turn the ordinary NEX model function into a source external call.
+
+## Authorized native modules (development 0.39)
+
+`nex_ffi_module.h` declares a separate ABI-1 module descriptor. A C11 shared
+library exports `nex_ffi_module_entry(host_value_abi, host_value_table_size)`.
+The getter returns a versioned table with export count, stride and entries.
+Each entry contains its bounded ASCII name, canonical signature SHA-256,
+callback and opaque module-owned user pointer. Reserved fields must be zero.
+The getter must belong to the entry image; callback code must belong to an
+inventoried image in the same bundle. These origin checks do not make native
+pointers or native code safe. The module and its dependencies are trusted.
+
+`ForeignLibraries` accepts an explicit map of logical library names to
+`ForeignLibraryGrant {directory, manifestSha256, exports}`. There is no ambient
+environment grant. `bind(library, export, signature, expectedManifestSha256)`
+requires both pins to agree and the requested export to be permitted. The
+catalogue may grant only a subset of the module's exports. Each catalogue has
+a physical authorization quota, default 64 and maximum 4096. Revocation and
+destruction invalidate bound functions; `isOpen()` reports logical authority.
+
+The bundle's `manifest.json` follows `nex.foreign-bundle/1` and
+[`foreign-bundle.schema.json`](../llm/foreign-bundle.schema.json). It contains
+the exact host platform, entry path, file path/SHA-256 inventory, export
+name/signature-SHA-256 map and at least one inventoried notice. The manifest
+pin hashes its exact UTF-8 bytes. Signature pins hash the validated contract's
+compact JSON with recursively sorted object keys, unescaped UTF-8 and original
+array order (`foreignSignatureDigest`); table indices and ordered fields remain
+significant. JSON whitespace and object key order do not alter a signature pin.
+The Python equivalent is `json.dumps(contract, sort_keys=True,
+separators=(',', ':'), ensure_ascii=False).encode('utf-8')` followed by SHA-256.
+
+Before any native initializer can run, the loader validates the manifest,
+requested signature and platform; reserves physical quota; opens only regular
+files through directory descriptors without following member/parent symlinks;
+copies and hashes every inventoried file into a private temporary directory;
+and seals that snapshot read-only. It then loads the absolute entry path with
+`RTLD_NOW | RTLD_LOCAL` and checks the module descriptor against the manifest.
+The manifest is limited to 1 MiB, inventory to 128 files, each file to 64 MiB,
+total copied bytes to 256 MiB, exports to 1024 and host grants to 128. Paths use
+at most 4096 UTF-8 bytes and 128 components. Each component is at most 255 bytes;
+absolute paths, empty/dot/dot-dot components, NUL, backslash, colon and file/parent
+prefix conflicts are rejected. The manifest itself cannot be an inventoried file.
+
+Concurrent binds share a content-addressed image cache. Once verified and
+loaded, an image may be reused under the same pin after its original bundle
+changes; its private bytes remain the executed bytes. The cache is weak and
+cannot keep an otherwise unowned library loaded. Module authorization is
+separate for each catalogue/request. Binds made inside a native request join
+its resource scope. Hosts that reuse a catalogue must bind inside each request
+and pass the request poll callback. Source adapters will enforce this rule.
+An active invocation retains a physical image lease through argument/result
+validation and all polls. Revocation prevents further operations while native
+code stays loaded until the invocation unwinds. Finalizers run before snapshot
+removal and physical quota release. No native initializer, callback or finalizer
+runs under loader/cache/resource locks. Same-thread recursive loading fails
+with `E_FFI_REENTRANT`; other threads wait with cooperative host polling.
+
+Errors distinguish `E_FFI_GRANT`, `E_FFI_HASH`, `E_FFI_MANIFEST`,
+`E_FFI_PLATFORM`, `E_FFI_IO`, `E_FFI_LOAD`, `E_FFI_ABI` and
+`E_FFI_SIGNATURE`; resource and sticky host cancellation errors retain their
+original codes. The host never exposes platform loader error text or addresses.
+Metadata pointers must be valid for the module's lifetime. Modules must obey
+the C ABI, use thread-safe callbacks, allow cleanup on the last-release thread
+and stop all escaped workers before unloading. Native blocking work must poll;
+there is no forced interruption or native-code sandbox. Exceptions/longjmp
+across C frames are prohibited. C++ exceptions accidentally thrown by the getter
+are translated to `E_FFI_EXCEPTION` as a diagnostic safeguard.
+
+Dynamic loader dependency lookup and symbol interposition still follow OS
+rules. `RTLD_LOCAL` does not create an isolated dependency namespace, and this
+inventory does not prove that every transitive loaded dependency is pinned.
+Copied dependent libraries must use appropriate loader-relative paths. The
+host must provide a trusted process environment. A general dependency-closure
+builder/auditor, platform signing, distributable packaging, Windows/mobile
+support and source integration remain pending. The present target list states
+implemented host branches; executed validation belongs in `STATUS.md`.
+Initializer timing and lookup behavior follow the
+[Linux loader contract](https://man7.org/linux/man-pages/man3/dlopen.3.html) and
+[Apple dynamic library guidance](https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryUsageGuidelines.html).
+
+`examples/ffi/module.c` wraps the same independent typed C producer used by the
+static host example. Compile it with `NEX_EXAMPLE_SIGNATURE_SHA256`, package its
+image and `NOTICE` in the inventory, and use `module_host.cpp` with the explicit
+bundle pin and exported signature. The installed SDK acceptance workflow builds
+and loads this actual C shared module after deleting its C/C++ sources and with
+NEX resources unavailable; it compares the nested result against the NEX model.
 
 ## Source integration gates
 

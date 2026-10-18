@@ -2,7 +2,25 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: checked C value signatures
+## In development: authorized native module loading
+
+Toolchain **0.39.0 / language 0.14** adds a separate C module descriptor and a
+trusted host loader. Explicit library/export grants, manifest/signature pins,
+pre-initialization file hashing, private snapshots, resource-bound authorization,
+physical call leases and a weak content-addressed image cache are implemented.
+The 22 loader cases, 48 legacy/typed transport cases and 31 resource cases pass
+ASan/UBSan/LSan on macOS ARM64 and Linux ARM64/emulated x86-64; macOS also passes
+ThreadSanitizer. The installed macOS SDK passes all thirteen phases in 223.865 s,
+including a real C shared module with nominal values, deleted C/C++ sources,
+real LLDB/DAP and browser builds. Separate source-free Linux ARM64/emulated
+x86-64 containers execute the loaded nominal module and match the NEX model.
+Private snapshot cleanup leaves no temporary files. The initial Linux run's
+Docker `noexec` denial and successful corrected run are retained separately.
+Full current macOS Debug regression is in progress. Source foreign
+declarations/invocation, general dependency-closure packaging, callbacks and
+async remain pending; `foreign_boundary.source_support` stays false.
+
+## Verified development milestone: checked C value signatures
 
 Toolchain **0.38.0 / language 0.14** adds compiler-derived
 `nex.foreign-signature/1` metadata, exported with `nex ffi --symbol NAME`, and a
