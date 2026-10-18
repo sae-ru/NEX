@@ -310,3 +310,12 @@ validation and rejects the stale patch. Both the original 41 and revised 42
 outputs must remain runnable from archived sources. This remains part of the
 thirteen-phase workflow; consult current evidence for the compiler/source hashes
 and the platform scope actually tested.
+
+
+Toolchain 0.49 adds graph schema 4 with a local HEAD-transition journal and
+expected-HEAD restoration of retained, rechecked current-language source. The
+upgrade retains old rows and starts an empty journal at the actual HEAD; it
+does not infer unknown prior provenance. See [the history guide](history.md) for
+`nex changes`, `nex restore`, declared labels, bounds and older-SDK compatibility.
+The installed SDK backend-agreement scenario restores both source-deleted
+operation-edit revisions and verifies their four actual transitions.

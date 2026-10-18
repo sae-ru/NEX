@@ -361,3 +361,12 @@ reads retained logs without compiling or executing them. Retrieve
 `mapped` records carry local graph IDs; preserve the reported revision and exact
 source hash when requesting context. `unmapped` records carry no verified local
 identity.
+
+
+Toolchain 0.49 adds graph schema 4 with a local HEAD-transition journal and
+expected-HEAD restoration of retained, rechecked current-language source. The
+upgrade retains old rows and starts an empty journal at the actual HEAD; it
+does not infer unknown prior provenance. See [the history guide](history.md) for
+`nex changes`, `nex restore`, declared labels, bounds and older-SDK compatibility.
+The installed SDK backend-agreement scenario restores both source-deleted
+operation-edit revisions and verifies their four actual transitions.

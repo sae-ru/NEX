@@ -8,13 +8,17 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.48.0 / language 0.15**, adding exact,
-revision/source-checked replacements of source expressions, statements and
-patterns by local operation ID. All 56 regression groups and both installed SDK
-workflows pass on macOS/Linux ARM64, including Linux live debugger checks.
-[The evidence](docs/evidence/operation-patches-0.48.0.json) records exact scope;
-[the operation guide](docs/operations.md) defines editability, guards and limits.
-Broader platform and release validation remains pending in `STATUS.md`.
+The working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
+HEAD-transition journal and checked, optimistic restoration of archived source.
+Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
+without inventing older provenance. Actor/note labels are declared data. Current
+full validation is pending; see [change history](docs/history.md) and `STATUS.md`.
+
+The preceding verified **0.48.0 / language 0.15** adds source-operation patches
+and parser tree-depth bounds. All 56 regression groups and both thirteen-phase
+installed SDK workflows pass on macOS/Linux ARM64, with eleven Linux live
+debugger suites. [The evidence](docs/evidence/operation-patches-0.48.0.json)
+records exact scope and remaining broader checks.
 
 The preceding verified **0.47.0 / language 0.15** keeps checked integer success
 paths in SSA and preserves cold native trap metadata. All 55 regression groups

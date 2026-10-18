@@ -244,3 +244,21 @@ Native checked integer lowering is discoverable through `build_features` and
 `nex guide --kind build --json`. Source-language arithmetic/evaluation semantics
 remain identical across native and TypeScript/reference execution. Keep runtime
 error and operation-identity checks in acceptance tests when optimizing a body.
+
+
+When `history_features` advertises optimistic archived restore, read
+`nex guide --kind history --json`. `nex changes` pages actual HEAD transitions
+with exact archived source hashes, request hashes and optional declared actor/
+note labels. These labels do not authenticate the author. Old revisions may
+predate the journal; do not infer events from revision creation timestamps.
+Use `--note TEXT --actor LABEL` on check/apply/import/migrate/restore when useful.
+A no-op or a saved non-HEAD task/package candidate does not create a transition.
+To return to a retained current-language revision, read the current HEAD and
+run `nex restore --revision TARGET --expected-revision CURRENT --json`.
+This rechecks archived source, changes HEAD atomically and retains all revisions
+and local identities; it does not execute the program or update physical files.
+On conflict, reread and reconcile rather than replacing the guard blindly.
+Validate with `--revision HEAD`; export explicitly to materialize. Older source
+languages still need explicit migration. Schema4 migration retains existing
+records but begins the change journal at its actual current HEAD. Preserve a
+matching old database/compiler when replaying receipts from older SDKs.
