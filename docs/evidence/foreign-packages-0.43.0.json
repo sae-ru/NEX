@@ -3,8 +3,8 @@
   "toolchain": "0.43.0",
   "language": "0.15",
   "module_abi": 1,
-  "recorded_at": "2026-10-18T15:23:52.677202+00:00",
-  "status": "corrected_catalogue_schema_and_image_identity_validation",
+  "recorded_at": "2026-10-18T15:56:51.950337+00:00",
+  "status": "corrected_macos_linux_arm64_full_and_sdk_passed",
   "accepted_release": false,
   "full_objective_complete": false,
   "source_sha256": {
@@ -152,7 +152,8 @@
         "first": "c0d0c67b5c248c14be15d47f13b31051dc8499d8e48eafda53eef04e11e2859d",
         "second": "8b8bff6647bcf239c3eab010e64fbd53946ff5f49210cdec307899ba2533981e"
       },
-      "requires_correction": true
+      "requires_correction": true,
+      "scope": "initial snapshot; corrected and covered by native/reference/package cases and both final full regressions"
     },
     "corrected_module_image_identity": {
       "ok": true,
@@ -160,6 +161,68 @@
       "seconds": 66.212,
       "log": "build/foreign-package-043-image-identity.log",
       "observable_semantics": "Aliases retain a shared counter; distinct original manifest pins retain independent counters. Native/reference and source-deleted packaged execution agree."
+    },
+    "corrected_macos_full": {
+      "ok": true,
+      "scope": "corrected regular host input, schema references, module image identity and catalogue notice capture",
+      "groups": 50,
+      "python_cases": 372,
+      "seconds": 1170.3,
+      "log": "/Users/sae/projects/NEX/build/ctest-043-corrected.log",
+      "LastTest": "/Users/sae/projects/NEX/build/foreign-package-043-corrected-LastTest.log",
+      "LastTest_sha256": "d6d7457977e1d468dc8c127ea21a53b36235becfa37c7e80dce6394b38a25fbe",
+      "binary": "/Users/sae/projects/NEX/build/nex-043-corrected-verified",
+      "binary_sha256": "6b2cd13abc6b39a29995ebd0ae267b585091d3aaab47df1644109e72c762db82"
+    },
+    "corrected_macos_sdk": {
+      "ok": true,
+      "scope": "current corrected catalogue/schema/image-identity implementation",
+      "phases": 13,
+      "seconds": 286.713,
+      "report": "/Users/sae/projects/NEX/build/sdk-043-corrected-acceptance/report.json",
+      "report_sha256": "8fe0922a270ed0359dc7adee70061c4ae02b1ffc8b8bd30e5da756f0c7a2d642",
+      "compiler_sha256": "6b2cd13abc6b39a29995ebd0ae267b585091d3aaab47df1644109e72c762db82",
+      "package_manifest": "/Users/sae/projects/NEX/build/sdk-043-corrected-acceptance/foreign-boundary/moved-package/application.json",
+      "package_manifest_sha256": "4b8adbc4005e2141d718f3aacf8005b81657bff4b81e98f95a69b0dbce5c6a5c",
+      "all_packaged_file_hashes_rechecked": true,
+      "source_identity_member_checked": true
+    },
+    "corrected_linux_full_and_sdk": {
+      "ok": true,
+      "scope": "current corrected catalogue/schema/image-identity implementation",
+      "groups": 50,
+      "python_cases": 372,
+      "ctest_seconds": 993.26,
+      "source_free_sdk_phases": 13,
+      "source_free_sdk_seconds": 205.069,
+      "report": "/Users/sae/projects/NEX/build/linux-043-corrected-arm64/verification.json",
+      "report_sha256": "48a31d3ecec2fa5301c069d2f6f64845547091a26ffa584b3bfb9b9cbb67a5f5",
+      "source_free_sdk_report": "/Users/sae/projects/NEX/build/linux-043-corrected-arm64/sdk-acceptance/471fe5f7efb548da984804270063f04a/workflow/report.json",
+      "live_debugger": true,
+      "source_checkout_mounted": false,
+      "network": "none",
+      "source": "build/source-checkpoint-20261018-152453-61b09b1a",
+      "compiler_sha256": "0a83f30b3ec4c3a3ed8be7434abfb5fd2feb9315470bc3c71ed2b665d73c5826"
+    },
+    "corrected_offline_schema_validation": {
+      "ok": true,
+      "jsonschema_version": "4.25.1",
+      "baseline_failure": {
+        "type": "_WrappedReferencingError",
+        "message": "Unresolvable: foreign-projection.schema.json"
+      },
+      "offline_resolved_positive_artifacts": 3,
+      "rejected_artifacts": [
+        "missing_source_revision",
+        "bad_manifest_pin",
+        "assembly_execution_claim",
+        "unsupported_platform",
+        "null_projection",
+        "wrong_notice_root",
+        "invalid_source_identity_path"
+      ],
+      "manifest": "/Users/sae/projects/NEX/build/sdk-043-corrected-acceptance/foreign-boundary/moved-package/application.json",
+      "scope": "corrected root schemas; exact new SDK application/projection/preparation with catalogue notices and source image identity"
     }
   },
   "implemented": [
@@ -182,9 +245,6 @@
     "offline_schema_registry"
   ],
   "pending": [
-    "current_full_macos_regression",
-    "current_installed_sdk_with_packaged_nominal_application",
-    "current_linux_matrix",
     "broader_platforms_and_release_sanitizer_distribution_checks",
     "cross_target_module_packaging",
     "arbitrary_dynamic_native_load_discovery",
@@ -222,5 +282,6 @@
     "canonical schema references resolved offline",
     "catalogue-scoped complete notices without changing module image identity",
     "inventoried original manifest identity prevents coalescing distinct source pins"
-  ]
+  ],
+  "historical_fixture_header_hashes_unchanged": 37
 }

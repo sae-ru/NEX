@@ -2,7 +2,7 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: native foreign application packaging
+## Verified development milestone: native foreign application packaging
 
 Toolchain **0.43.0 / language 0.15** connects explicit `nex package --foreign`
 to recursive Mach-O/ELF dependency collection and complete notices. Only
@@ -32,10 +32,20 @@ and an inventoried source-identity member preserves distinct original pins.
 Both shared-state and independent-state native/reference/package cases pass in
 66.212 s, including deleted original inputs and complete file/notice inventories.
 
-The corrected full regression, installed SDK and Linux matrix remain under
-validation; the [evidence](docs/evidence/foreign-packages-0.43.0.json) keeps their
-scope separate from the initial successful matrix. This is not a release
-acceptance claim. Cross-target native modules, arbitrary dynamic native loads,
+The corrected implementation passes all **50 groups** (372 Python cases and ten
+C++ probes) on macOS ARM64 in **1170.30 s** and Linux ARM64 in **993.26 s**.
+All twelve packaging cases pass on both hosts. The corrected macOS installed SDK
+passes thirteen phases in **286.713 s**; Linux passes the live debugger matrix
+and thirteen-phase SDK workflow in **205.069 s**, without a source mount or
+external networking. Its moved nominal C-module package runs after input/source
+deletion. The current schemas validate all three real SDK metadata artifacts
+offline and reject seven malformed variants. All 37 historical fixture/header
+hashes remain unchanged.
+
+The [evidence](docs/evidence/foreign-packages-0.43.0.json) keeps baseline and
+corrected scope separate. Broader compiler Release, x86-64, sanitizer and SDK
+distribution checks remain pending; this is not a stable release or completion
+of NEX. Cross-target native modules, arbitrary dynamic native loads,
 Windows/mobile installers, callbacks and the remaining language/toolchain work
 stay open.
 
