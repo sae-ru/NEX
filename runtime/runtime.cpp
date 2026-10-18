@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <vector>
+#include <map>
 
 namespace nexrt {
 namespace {
@@ -29,25 +30,39 @@ struct Handle {
 };
 struct RequestScope::Impl {
   std::unordered_set<Handle*> handles;
+  ResourceDomain resources;
+  std::map<const void*,std::unique_ptr<ResourceDomain>,std::less<>> resourceBindings;
   uint64_t steps=0,budget;
   std::chrono::steady_clock::time_point deadline;
   std::atomic<bool> cancelled{false};
+  std::atomic<bool> active{true};
   std::function<bool()> cancellation;
 };
-RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_unique<Impl>()){
+RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>()){
   if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
   impl->budget=budget;impl->deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs);currentRequest=this;
+  resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
-RequestScope::~RequestScope(){profileUnwind();while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;}
+RequestScope::~RequestScope(){impl->active=false;profileUnwind();impl->resources.revoke();while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;resource_detail::requestBinder=nullptr;}
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
-void RequestScope::cancel(){impl->cancelled=true;}
+void RequestScope::cancel(){impl->cancelled=true;impl->resources.revoke();}
+ResourceDomain &RequestScope::bindResources(const ResourceDomain &capability){
+  auto key=capability.scopeKey();auto found=impl->resourceBindings.find(key);
+  if(found==impl->resourceBindings.end())found=impl->resourceBindings.emplace(key,std::make_unique<ResourceDomain>(impl->resources.combine(capability))).first;
+  return *found->second;
+}
 void RequestScope::setCancellation(std::function<bool()> check){impl->cancellation=std::move(check);}
 void RequestScope::poll(int64_t line,bool forceCancellation){
-  if((forceCancellation||(impl->steps%64)==0)&&impl->cancellation&&impl->cancellation())impl->cancelled=true;
-  if(impl->cancelled)throw Trap("E_CANCELLED","request was cancelled",line);
-  if(++impl->steps>impl->budget)throw Trap("E_LIMIT","request execution budget exceeded",line);
-  if(std::chrono::steady_clock::now()>=impl->deadline)throw Trap("E_TIMEOUT","request deadline exceeded",line);
+  auto state=impl;
+  if(forceCancellation||(state->steps%64)==0){
+    auto cancellation=state->cancellation;
+    if(cancellation&&cancellation())state->cancelled=true;
+  }
+  if(!state->active){state->resources.revoke();throw Trap("E_CANCELLED","request scope has ended",line);}
+  if(state->cancelled){state->resources.revoke();throw Trap("E_CANCELLED","request was cancelled",line);}
+  if(++state->steps>state->budget){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
+  if(std::chrono::steady_clock::now()>=state->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
 }
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}

@@ -810,7 +810,7 @@ llvm::json::Value describe() {
     {"file_guide","docs/files.md"},
     {"host_resource_runtime",llvm::json::Object{
       {"source_support",false},{"status","development_internal_cpp"},{"design","docs/resources-design.md"},
-      {"features",llvm::json::Array{"typed_alias_owners","physical_operation_leases","ancestor_revocation","physical_quotas","streaming_regular_files"}},
+      {"features",llvm::json::Array{"typed_alias_owners","physical_operation_leases","ancestor_revocation","physical_quotas","streaming_regular_files","managed_file_values","profiled_owned_payloads","nested_json_resource_rejection","native_streaming_boundary","joined_request_capabilities"}},
       {"limits",llvm::json::Object{{"default_domain_resources",64},{"maximum_domain_resources",4096},{"domain_depth",8},{"file_call_bytes",1048576}}},
       {"pending",llvm::json::Array{"source_resource_types","source_streaming_intrinsics","stable_ffi_abi","async_tasks","full_platform_sdk_validation"}}}},
     {"realms",llvm::json::Array{"shared","client","server"}},

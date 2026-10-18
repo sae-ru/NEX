@@ -31,6 +31,7 @@ std::string encode(const Value &value,size_t depth,size_t &nodes){
   if(value.tag==Value::Floating)return formatFloat(value.floating());
   const auto &d=*value.object;
   if(d.kind==Data::Closure)reject("function values cannot cross the JSON boundary");
+  if(d.kind==Data::File)reject("file resources cannot cross the JSON boundary");
   if(d.kind==Data::String)return nexrt::quoted(d.text);
   if(d.kind==Data::Bytes){
     const auto &buffer=byteBuffer(value.object);

@@ -86,7 +86,7 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 
 There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function values have object identity; other values retain structural equality. User generics follow the rules below. Custom generic traits, higher-kinded types, mutable collections and custom destructors remain unimplemented.
 
-Toolchain 0.34 develops an internal [resource ownership runtime](resources-design.md).
+Toolchain 0.35 develops an internal [resource ownership runtime](resources-design.md).
 It adds no resource type or streaming intrinsic to language 0.13. General FFI
 and source async/await remain pending; resource-related user identifiers are
 unchanged by this host-only implementation.

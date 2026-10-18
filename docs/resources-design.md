@@ -1,6 +1,6 @@
 # External resource ownership
 
-Development toolchain 0.34 keeps source language 0.13 unchanged. This document
+Development toolchain 0.35 keeps source language 0.13 unchanged. This document
 defines the ownership foundation in `runtime/nex_resource.h` and trusted C++
 streaming files in `runtime/nex_files.h`. Source resource types, streaming
 intrinsics, general FFI and async/await remain pending. Source file functions
@@ -25,6 +25,16 @@ recycled underneath an in-flight operation. A lease retains storage, not
 continuing authority: it checks domain activity and close status before new IO.
 Raw payload references are trusted C++ borrows bounded by their lease; source
 code receives neither payloads nor pointers.
+
+Toolchain 0.35 adds the internal `FileData` subtype. Its immutable payload owns
+a `FileResource`; aliases inside lists, records, results and closure captures
+retain that resource. The shared-pointer control block invokes the complete
+subtype destructor. Ordinary `Data` keeps its previous layout; constructing or
+copying an owned payload as base `Data` is rejected. Managed wrapper allocations
+use the profiling hooks with their actual subtype size. Equality compares the
+resource identity, display is the opaque `<file>`, and application JSON rejects
+file values through nested aggregates. These runtime values are not yet source
+types, debugger input values or browser representations.
 
 `isOpen()` is a diagnostic snapshot, never an authority decision. Concurrent
 close/revocation can change it immediately. Controls synchronize const operations;
@@ -57,6 +67,24 @@ reference under a domain lock, where its destructor could re-enter that lock.
 an operation authorized before revocation may finish its current syscall.
 Regular filesystem calls are not guaranteed to stop immediately. A post-call
 check may report cancellation after observable IO.
+
+Independent capability and native request domains can be joined. Shared ancestor
+states are deduplicated, with the same depth bound and total lock order. Each
+native request owns one domain and retains its joined capability scopes. File
+opens are charged against both the host grant and that request, so multiple
+grants cannot bypass the request's physical resource limit. Request exit,
+explicit cancellation, budget exhaustion and deadline errors revoke escaped
+managed file values even if a trusted C++ host retains them. The native request
+installs a thread-local runtime binder; the reference interpreter leaves it
+empty and uses its own lexical file scope. Ordinary native programs therefore
+need no filesystem component merely to link the request runtime.
+
+Request cancellation may come from another thread while the wrapper remains
+alive; other request methods and scope lifetime changes belong to its owner
+thread. Polling retains request state and copies its callback before invocation,
+so a callback may replace itself or end its own scope. After scope destruction
+polling aborts with cancellation without dereferencing the released wrapper.
+Native streaming calls likewise retain file/byte arguments before polling.
 
 ## Streaming file contract
 
@@ -92,6 +120,13 @@ close/revoke a resource or re-enter operations. Polling occurs outside cursor
 locks, with authority checked again before each syscall and after success.
 EINTR retries poll again. Whole-file callbacks use the same input-lifetime rule.
 
+`nex_file_abi.h` declares the internal native handle boundary for future checked
+lowering: open/read/write/seek/size/flush return managed results; close and status
+return boolean scalars. Recoverable IO errors remain results; cancellation,
+budgets and deadlines preserve native traps and source lines. This boundary is
+tested directly, but no source intrinsic is advertised before frontend, backend,
+realm, debugger and migration integration is complete. It is not a stable FFI.
+
 Logical close reports a state transition, not durability. Physical cleanup calls
 `close` once after the last lease; it does not retry a possibly recycled
 descriptor after an error. This adapter targets macOS/Linux, not every POSIX
@@ -123,6 +158,8 @@ These requirements describe the next language extension, not supported syntax:
 - Build async task cancellation on physical leases. Do not close a descriptor
   under concurrent IO or count closed in-flight objects as free quota.
 
-`tests/resources_runtime.cpp` exercises lifecycle and real files. It does not
+`tests/resources_runtime.cpp` exercises lifecycle and real files;
+`tests/resource_values.cpp` exercises managed payloads, native calls, profiling,
+joined request scopes, cancellation, callbacks and cleanup. These do not
 prove source integration, other operating systems, a stable FFI or scheduling.
 Current verification is recorded in `STATUS.md`.

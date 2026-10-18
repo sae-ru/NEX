@@ -283,6 +283,8 @@ struct Access {
   FileResource open(const std::string &path,FileMode mode,const TextFiles::Poll &poll){
     auto &files=capability();
     if(!resources)resources=std::make_unique<ResourceDomain>(files.resourceScope());
+    if(auto bind=resource_detail::requestBinder)if(auto *request=bind(*resources))
+      return files.openIn(*request,path,mode,poll);
     return files.openIn(*resources,path,mode,poll);
   }
 };

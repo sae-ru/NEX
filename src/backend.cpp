@@ -606,11 +606,11 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   bool profiling=options.profile=="profile";
-  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_bytes.h","nex_error.h","nex_float.h","nex_host.h","nex_io.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
+  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_host.h","nex_io.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
-  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_resource.h"});}
+  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   std::map<std::string,std::string> runtimeFiles;
   for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
@@ -688,11 +688,11 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(size_t i=0;i<plan.units.size();++i){
     const auto &unit=plan.units[i];auto source=codeSnapshot.units.contains(unit.unit)?codeSnapshot.units.at(unit.unit).path:codeSnapshot.path;sourceUnits.insert(unit.unit);
     std::string runtimeABI;
-    for(const auto &file:{"runtime.cpp","nex_value.h","nex_bytes.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
+    for(const auto &file:{"runtime.cpp","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));
-    if(unit.files)for(const auto &file:{"files_runtime.cpp","nex_files.h","nex_resource.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
+    if(unit.files)for(const auto &file:{"files_runtime.cpp","nex_files.h","nex_file_abi.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     auto wrapper=!options.libraryEntry&&!server&&unit.functions.contains(p.function(options.entry).name)?p.function(options.entry).name:"";
     unitInputs.push_back(llvm::json::Object{{"schema","nex.native-unit/2"},{"toolchain_key",hash(nativeSeed)},{"semantic_key",hash(unit.contract)},
       {"source_hash",hash(unit.source)},{"debug_path",source},{"runtime_abi_key",hash(runtimeABI)},{"wrapper_entry",wrapper}});

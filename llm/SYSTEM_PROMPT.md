@@ -2,7 +2,7 @@
 
 Use the following text as a system/developer prompt, or include it in a model's task context. It is independent of model vendor and tokenizer.
 
-Toolchain 0.34's `host_resource_runtime` descriptor describes internal C++ work,
+Toolchain 0.35's `host_resource_runtime` descriptor describes internal C++ work,
 with `source_support: false`. Do not generate source handle types, streaming
 intrinsics, FFI or async syntax from it. See `docs/resources-design.md` for the
 ownership contract and pending integration gates.

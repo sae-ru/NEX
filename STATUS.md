@@ -2,7 +2,33 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: resource ownership foundation
+## Development: managed file resource values
+
+Toolchain **0.35.0 / language 0.13** adds immutable managed file wrappers and an
+internal native streaming boundary. Copies in aggregates/results/captures share
+resource identity and close state; JSON rejects resource values. Profile hooks
+observe complete owned payload sizes. Native request exit, cancellation, budget
+and deadline failures revoke resources across all its explicit host grants,
+including values retained by trusted C++ code. Poll callbacks retain their state
+and may release handles, replace themselves or end their request safely.
+
+The new managed-value probe passes 20 cases on macOS ARM64 and Linux ARM64/
+emulated x86-64 with ASan/UBSan/LSan; macOS also passes ThreadSanitizer. The prior
+29-case foundation probe passes again on both Linux architectures. The installed
+macOS SDK passes all twelve phases, including real LLDB/DAP and three browser
+builds; its runtime inputs and compiler match these sources. Full macOS Debug
+regression passes all 40 suites in 728.90 s: 309 Python cases and six C++ probes.
+Broader current compiler/distribution validation remains pending. Source resource
+types/intrinsics, debugger representation, language migration, FFI and async
+remain open; the capability descriptor explicitly keeps `source_support:false`.
+This extends the verified 0.34 runtime below; it does not publish source syntax.
+[Evidence](docs/evidence/resource-values-0.35.0.json) binds the retained runs.
+An additional genuine 0.13 SQL fixture captures future streaming names and a
+`file` generic parameter using accepted SDK 0.34. All three 0.13 fixtures replay
+through the current compiler with identical revisions and logical IDs; the 31
+previous fixture files remain unchanged.
+
+## Verified milestone: resource ownership foundation
 
 Toolchain **0.34.0 / language 0.13** adds a typed internal C++ resource runtime
 and streaming regular-file adapter. Physical leases retain payloads across

@@ -11,6 +11,7 @@
 #include "nex_profile.h"
 #include "nex_float.h"
 #include "nex_bytes.h"
+#include "nex_file_resource.h"
 
 namespace nexrt {
 struct Data;
@@ -31,7 +32,7 @@ struct Value {
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
-  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes } kind;
+  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File } kind;
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
@@ -39,14 +40,15 @@ struct Data {
   void *code=nullptr;
 private:
   friend struct ByteData;
+  friend struct FileData;
   Data(Kind kind,size_t allocatedSize):kind(kind){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
-    if(other.kind==Bytes)throw DataError("E_RUNTIME","binary values cannot be copied as base Data");
+    if(other.kind==Bytes||other.kind==File)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
   }
 public:
   explicit Data(Kind kind):Data(kind,sizeof(Data)){
-    if(kind==Bytes)throw DataError("E_RUNTIME","binary values require an owned byte payload");
+    if(kind==Bytes||kind==File)throw DataError("E_RUNTIME","value requires an owned payload");
   }
   Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code){profileAllocate(this,sizeof(Data),1);++liveObjects;}
   Data &operator=(const Data&)=delete;
@@ -71,6 +73,17 @@ inline const ByteBuffer &byteBuffer(const std::shared_ptr<Data> &data){
   return static_cast<const ByteData&>(*data).buffer;
 }
 inline std::shared_ptr<Data> bytes(ByteBuffer buffer){return std::make_shared<ByteData>(std::move(buffer));}
+// The shared-pointer control block retains the complete FileData destructor;
+// ordinary values keep the same base layout and never contain an unused owner.
+struct FileData final : Data {
+  const FileResource resource;
+  explicit FileData(FileResource resource):Data(File,sizeof(FileData)),resource(std::move(resource)){}
+};
+inline const FileResource &fileResource(const std::shared_ptr<Data> &data){
+  if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
+  return static_cast<const FileData&>(*data).resource;
+}
+inline std::shared_ptr<Data> fileValue(FileResource resource){return std::make_shared<FileData>(std::move(resource));}
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
   std::vector<size_t> offsets;
   for(size_t i=0;i<text.size();) {
@@ -176,6 +189,8 @@ inline bool equal(const Value &a,const Value &b) {
   if(a.tag!=Value::Object)return a.scalar==b.scalar;
   if(a.object==b.object)return true;
   const auto &x=*a.object,&y=*b.object;
+  if(x.kind==Data::File||y.kind==Data::File)
+    return x.kind==y.kind&&fileResource(a.object).identity()==fileResource(b.object).identity();
   if(x.kind==Data::Bytes||y.kind==Data::Bytes)
     return x.kind==y.kind&&byteBuffer(a.object)==byteBuffer(b.object);
   if(x.kind==Data::Closure||y.kind==Data::Closure)return false;
@@ -194,6 +209,7 @@ inline std::string representation(const Value &v) {
   if(v.tag==Value::Boolean)return v.scalar?"true":"false";
   const auto &d=*v.object;
   if(d.kind==Data::Closure)return quoted("<function>");
+  if(d.kind==Data::File)return quoted("<file>");
   if(d.kind==Data::String)return quoted(d.text);
   if(d.kind==Data::Bytes)return quoted(byteBuffer(v.object).base64());
   if(d.kind==Data::Success)return "{\"ok\":"+representation(d.values[0])+"}";
@@ -203,5 +219,5 @@ inline std::string representation(const Value &v) {
   for(size_t i=0;i<d.values.size();++i){if(i)text+=",";if(d.kind==Data::Record)text+=quoted(d.names[i])+":";text+=representation(d.values[i]);}
   return text+(d.kind==Data::List?"]":"}");
 }
-inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:v.tag==Value::Object&&v.object->kind==Data::Closure?"<function>":representation(v);}
+inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:v.tag==Value::Object&&v.object->kind==Data::Closure?"<function>":v.tag==Value::Object&&v.object->kind==Data::File?"<file>":representation(v);}
 }

@@ -1,0 +1,37 @@
+{
+  "language": "0.13",
+  "toolchain": "0.34.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_stream_names;\nfn identity<file>(value:file)->file{return value;}\nfn file_open_append(value:bytes)->bytes{return value;}\nfn file_size(value:bytes)->bytes{return value;}\nfn file_flush(value:bytes)->bytes{return value;}\nfn file_is_open(value:bytes)->bool{return len(value)>0;}\nfn main()->unit!{io}{\n let data:bytes=identity(file_flush(file_size(file_open_append(utf8_bytes(\"Я🧠\")))));\n print(encode_base64(data));print(file_is_open(data));\n}\ntest fn preserved_names()->unit{\n assert(identity(file_flush(file_size(file_open_append(utf8_bytes(\"text\")))))==utf8_bytes(\"text\"));\n assert(!file_is_open(utf8_bytes(\"\")));\n}\n",
+  "source_sha256": "e34ef6d27165b4e9e1eaf61bc4407dbc3ab4e582f407a9d883536c1fd076d19b",
+  "sql_sha256": "aba077e4dfc158686543ff9ed6042a513c25048f825fc81b674f775d3b0f7d7d",
+  "compiler_sha256": "b3e9cfd25c5c4ccb6ad9a648860eb15c31196edea8e9a54df81ec45afd90798b",
+  "revision": "a6542bb80741f264a6cbf393b2112f816be8d9b2cf0723f9a9d078ffc7dde346",
+  "native_and_interpreter_test_passed": true,
+  "typescript_test_passed": true,
+  "stdout": "0K/wn6eg\ntrue\n",
+  "future_builtin_name_conflict": true,
+  "future_conflicts": [
+    "file (generic parameter)",
+    "file_open_append",
+    "file_size",
+    "file_flush",
+    "file_is_open"
+  ],
+  "capture": "Genuine installed SDK 0.34 / language 0.13 compiler and SQL store before source resources; these names are ordinary pure user definitions. No database language/version or source history was rewritten.",
+  "function_ids": {
+    "legacy_stream_names::file_flush": "6dec85407d8a8183482deb4298f36056",
+    "legacy_stream_names::file_is_open": "06c20197b455e9ef9ca3a460ff1c9f7d",
+    "legacy_stream_names::file_open_append": "e6a45a81f2fbcb0a12c89d2f68dcb07c",
+    "legacy_stream_names::file_size": "0970ed2155ae8024cb5b6c8e6fc97cc3",
+    "legacy_stream_names::identity": "63b0f481ef119849b1c2999ab6297022",
+    "legacy_stream_names::identity<bytes>": "efd8b5607496bc4308ab36f5deb36a70",
+    "legacy_stream_names::main": "df6904b349f5ef135ef3c6784460ec01",
+    "legacy_stream_names::preserved_names": "6bd17e63123575e03ff7cbb808334d30"
+  },
+  "native_main_stdout_verified_profiles": [
+    "debug",
+    "release"
+  ]
+}

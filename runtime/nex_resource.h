@@ -179,6 +179,16 @@ public:
       if(std::find(bindings.begin(),bindings.end(),required)==bindings.end())return false;
     return true;
   }
+  // Trusted host key; states retained by a joined domain cannot reuse it.
+  const void *scopeKey() const noexcept {return own.get();}
+  ResourceDomain combine(const ResourceDomain &other,size_t limit=64) const {
+    auto retained=bindings;retained.insert(retained.end(),other.bindings.begin(),other.bindings.end());
+    std::sort(retained.begin(),retained.end(),[](const auto &a,const auto &b){return std::less<>{}(a.get(),b.get());});
+    retained.erase(std::unique(retained.begin(),retained.end()),retained.end());
+    if(retained.size()>=8)throw DataError("E_RESOURCE_LIMIT","combined resource domain exceeds eight");
+    {auto locks=resource_detail::lock(retained);resource_detail::check(bindings);resource_detail::check(other.bindings);}
+    return ResourceDomain(std::move(retained),limit);
+  }
   size_t used() const noexcept {return own?own->used.load():0;}
   void revoke() noexcept {
     auto retained=own;if(!retained)return;
@@ -220,4 +230,10 @@ public:
     return ResourceOwner<T>(std::move(control));
   }
 };
+namespace resource_detail {
+using RequestBinder = ResourceDomain *(*)(const ResourceDomain &);
+// The reference interpreter leaves this empty. A native request installs its
+// thread-local binder, avoiding a filesystem dependency in ordinary programs.
+inline thread_local RequestBinder requestBinder=nullptr;
+}
 }
