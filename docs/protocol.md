@@ -206,3 +206,13 @@ paths plus `sdk_manifest`. Native toolchain configurations accept optional
 `archiver` and `debug_packager`; read-only snapshot/2 fingerprints include their
 bytes. The SDK guide defines bundle assembly versus moved-directory acceptance
 and prerequisites. Source language and graph canonical formats are unchanged.
+
+Toolchain 0.29 adds native `package FILE --directory NEW --json`, with optional
+`--target server`, native toolchain/profile/entry/revision selection and explicit
+dependency notices. The `nex.package/1` response reports directory, executable,
+manifest, build key, revision and file count. `application.json` uses
+`nex.application-package/1` (indexed JSON schema), with exact artifact/component
+hashes and `execution_verified:false`. Assembly never executes the application.
+Separate `nex.application-execution/1` acceptance evidence verifies relocated
+fixture execution; preserve that distinction when reporting results. Query the
+descriptor's `application_package_*` fields and read `docs/packaging.md`.

@@ -70,7 +70,13 @@ and report unavailable captures. `computed:N` identities describe helper-created
 values and are not native capture inputs. Application JSON still rejects
 callables; query the actual compiler and matching guide before using these capabilities.
 
-Language 0.11 / toolchain 0.23 adds typed function values, immutable snapshot
-closures and the wire constraint. Retrieve `nex guide --kind function`; the
+Language 0.10 / toolchain 0.23 introduced typed function values, immutable snapshot
+closures and the wire constraint; language 0.11 retains them. Retrieve `nex guide --kind function`; the
 matching specification/grammar/prompt and debug-wire schema are in this pack.
 Actual platform/SDK verification remains recorded in STATUS.md.
+
+Toolchain 0.29 adds native application packaging without a source-language
+change. Query `application_package_*` capabilities and read the indexed
+`application_packaging` guide/schema and `application_package_acceptance` tool.
+Assembly manifests deliberately retain `execution_verified:false`; use separate
+deployed runtime evidence before reporting a package as execution-verified.

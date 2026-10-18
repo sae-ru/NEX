@@ -22,6 +22,27 @@ SDK validation is pending. These tests do not establish broader deployment
 compatibility, Windows/mobile packaging or completion of the requested toolchain.
 See [application packaging](docs/packaging.md) for prerequisites and limits.
 
+Actual numeric, SQLite and HTTPS fixture packages from a moved SDK passed on
+macOS ARM64 with kernel-denied access to the checkout/SDK, Homebrew and MacPorts;
+the forbidden-read negative control also failed as required. Both Linux ARM64
+and emulated x86-64 passed the same native probes in network-disabled runtime
+images with no NEX/Clang/GCC/CMake/Node/npm. Every packaged file and actual ELF
+library resolution was checked, including authentication, principal isolation,
+restart persistence and clean exits. Python is the probe driver rather than an
+application dependency. Additional direct container runs hid `/usr/bin` and used
+an unavailable PATH: the Python negative control failed, both architectures ran
+numeric/SQLite applications, and their HTTPS servers started and exited cleanly.
+The corrected installed macOS SDK separately passed all ten phases with actual
+LLDB/DAP and both browser builds in 108.719 s.
+
+The new deployment fixture initially used reserved `server` as its module name;
+its one-line correction is independently exercised by those native probes.
+Compiler/runtime/tests remain the frozen `8cf7621c` inputs. Linux ARM64 passed
+all 29 regression suites; its remaining live/installed-SDK checks, macOS
+Debug/Release and emulated Linux x86-64 regressions remain in progress.
+[Durable package evidence](docs/evidence/application-packages-0.29.0.json)
+records tested images, application manifest hashes and the fixture correction.
+
 The last accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and

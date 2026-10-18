@@ -47,7 +47,7 @@ def prepare(sdk, output, notices=None, dpkg=False):
 server fn main() -> unit !{db,io} {
   assert(is_ok(store_put("key", "Я🧠"))); print(unwrap(store_get("key")));
 }''',
-        'server': '''module server;
+        'server': '''module deployment_server;
 import "std/http.nex" as http;
 server fn handle(request:http::Request) -> http::Response !{db} {
   if request.method == "POST" { assert(is_ok(store_put("value", request.body))); }
