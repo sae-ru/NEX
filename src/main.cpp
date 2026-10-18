@@ -1,4 +1,5 @@
 #include "nex/backend.h"
+#include "nex/frontend_diagnostics.h"
 #include "nex/native_diagnostics.h"
 #include "nex/native_toolchain.h"
 #include "nex/project.h"
@@ -43,7 +44,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -105,6 +106,22 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  bool graphQuery=o.command=="search"||o.command=="subgraph";GraphQueryOptions queryOptions;
+  for(const auto &key:{"--query","--field","--depth","--direction","--edge-offset","--edge-limit"})
+    if(!graphQuery&&o.values.contains(key))throw Error("E_OPTION",std::string(key)+" requires search or subgraph");
+  if(graphQuery){
+    std::set<std::string> allowed={"--revision","--entity","--offset","--limit","--output"};
+    if(o.command=="search"){allowed.insert("--query");allowed.insert("--field");}
+    else for(const auto &key:{"--symbol","--direction","--depth","--edge-offset","--edge-limit"})allowed.insert(key);
+    if(!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","graph queries read saved revisions, without physical source or execution arguments");
+    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported graph query option: "+key);}
+    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported graph query flag: "+flag);
+    auto count=[&](const std::string &key,unsigned fallback,unsigned maximum){if(!o.values.contains(key))return fallback;auto text=o.get(key);uint64_t value=0;if(text.empty())throw Error("E_OPTION","empty graph query range: "+key);for(char c:text){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid graph query range: "+key);value=value*10+unsigned(c-'0');}return unsigned(value);};
+    queryOptions.query=o.get("--query");queryOptions.entity=o.get("--entity",o.command=="search"?"all":"function");queryOptions.field=o.get("--field","any");queryOptions.symbol=o.get("--symbol");queryOptions.direction=o.get("--direction","dependencies");
+    queryOptions.depth=count("--depth",1,8);queryOptions.offset=count("--offset",0,10000000);queryOptions.limit=count("--limit",100,1000);queryOptions.edgeOffset=count("--edge-offset",0,10000000);queryOptions.edgeLimit=count("--edge-limit",100,1000);
+    if(o.values.contains("--revision")){auto selected=o.get("--revision");if(selected!="HEAD"&&(selected.size()!=64||selected.find_first_not_of("0123456789abcdef")!=std::string::npos))throw Error("E_OPTION","graph queries require --revision HEAD or a lowercase 64-character digest");}
+    validateGraphQuery(queryOptions,o.command=="subgraph");
+  }
   if(o.values.contains("--note")||o.values.contains("--actor")){
     const std::set<std::string> supported={"check","apply","import","migrate","restore"};
     if(!supported.contains(o.command))throw Error("E_OPTION","--note and --actor annotate check/apply/import/migrate/restore");
@@ -121,7 +138,7 @@ int run(const Options &o) {
       if(!digest(target)||(!digest(expected)&&expected!="EMPTY"))throw Error("E_OPTION","restore requires --revision HASH and --expected-revision HEAD_HASH|EMPTY");
     }
   }
-  if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities")throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
+  if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities"&&!graphQuery)throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
   for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities"&&!(o.command=="restore"&&std::string(name)=="--expected-revision"))throw Error("E_OPTION",std::string(name)+" is for graph identities or guarded restore");
   if(o.command=="identities"){
     auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve")throw Error("E_OPTION","identities kind must be export, reconcile or resolve");
@@ -159,9 +176,9 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
+      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
@@ -237,9 +254,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"}};
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot or compatibility");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend or query");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -255,7 +272,7 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose","search","subgraph"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
@@ -356,7 +373,7 @@ int run(const Options &o) {
           else if(kind=="statement"){parseStatement(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
           else if(kind=="pattern"){parsePattern(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
           else throw Error("E_PATCH_TARGET","operation source kind is not replaceable");
-        }catch(const Error &error){if(error.code=="E_DEBUG_LIMIT")throw Error("E_PATCH_LIMIT","operation fragment exceeds 100000 tokens");throw;}
+        }catch(const Error &error){if(error.code=="E_DEBUG_LIMIT"){Error translated("E_PATCH_LIMIT","operation fragment exceeds 100000 tokens",error.span);translated.frontend=error.frontend;throw translated;}throw;}
         edits[function.unit].push_back({size_t(*range->getInteger("byte_begin")),size_t(*range->getInteger("byte_end")),std::move(fragment)});
         continue;
       }
@@ -396,7 +413,11 @@ int run(const Options &o) {
     auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected,true,changeInfo(o,"apply",hash(json(value,false))));
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
-  bool saved=o.command=="graph"||o.command=="context"||o.command=="operations"||((o.command=="declarations"||o.command=="identities")&&o.positional.empty());auto p=load(o,root,store,saved);
+  bool saved=graphQuery||o.command=="graph"||o.command=="context"||o.command=="operations"||((o.command=="declarations"||o.command=="identities")&&o.positional.empty());auto p=load(o,root,store,saved);
+  if(graphQuery){
+    auto result=o.command=="search"?store.search(p,queryOptions):store.subgraph(p,queryOptions);auto output=o.get("--output");
+    if(output.empty())print(std::move(result));else{auto object=result.getAsObject();auto selected=object->getString("revision")->str(),queryHash=object->getString("query_hash")->str();writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"revision",selected},{"query_hash",queryHash}});}return 0;
+  }
   if(o.command=="declarations"||o.command=="identities"){
     auto count=[&](const std::string &option,unsigned fallback,unsigned maximum){auto text=o.get(option);if(text.empty())return fallback;uint64_t value=0;for(char c:text){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid range for "+option);value=value*10+unsigned(c-'0');}return unsigned(value);};
     auto kind=o.get("--kind","export");llvm::json::Value result=nullptr;
@@ -614,7 +635,7 @@ int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
   try{return run(options(argc,argv));}
   catch(const nex::Error &e){
-    if(machine){llvm::json::Object diagnostic{{"schema","nex.diagnostic/1"},{"ok",false},{"code",e.code},{"message",e.what()},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"file",e.span.file},{"stdout",e.output}};if(!e.operationSite.empty()){diagnostic["operation_site"]=e.operationSite;diagnostic["revision"]=e.operationRevision;diagnostic["source_hash"]=e.operationSource;}if(!e.operationId.empty())diagnostic["operation_id"]=e.operationId;print(std::move(diagnostic));}
+    if(machine)print(nex::diagnosticJSON(e,NEX_VERSION,NEX_BUILD_ID));
     else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.what()<<'\n';}return 1;
-  }catch(const std::exception &e){if(machine)print(llvm::json::Object{{"ok",false},{"code","E_INTERNAL"},{"message",e.what()}});else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
+  }catch(const std::exception &e){if(machine)print(nex::diagnosticJSON(nex::Error("E_INTERNAL",e.what()),NEX_VERSION,NEX_BUILD_ID));else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
 }

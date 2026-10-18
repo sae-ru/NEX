@@ -132,7 +132,7 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
-The current workflow has fifteen phases. Its foreign-boundary phase compiles a
+The current workflow has seventeen phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
 with NEX resources unavailable. This tests the experimental host transport. The
@@ -249,7 +249,7 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all fifteen maintained phases, including the three locked browser
+server. It runs all seventeen maintained phases, including the three locked browser
 builds and the text/binary-file application workflows.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
@@ -279,7 +279,7 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
-path, then runs all fifteen acceptance phases. `sandbox-exec` denies reads from
+path, then runs all seventeen acceptance phases. `sandbox-exec` denies reads from
 the explicitly supplied source/dependency roots and denies writes to the SDK.
 Each denied root needs a readable input/notice file for an actual negative
 control; a separate control verifies SDK write denial. Node/npm/Python must be
@@ -308,7 +308,7 @@ deletes the materialized source, applies a source/revision-guarded replacement,
 checks the retained local ID with a new site, runs native/reference/TypeScript
 validation and rejects the stale patch. Both the original 41 and revised 42
 outputs must remain runnable from archived sources. This was part of the original
-thirteen-phase workflow and remains in the current fifteen-phase workflow; consult current evidence for the compiler/source hashes
+thirteen-phase workflow and remains in the current seventeen-phase workflow; consult current evidence for the compiler/source hashes
 and the platform scope actually tested.
 
 
@@ -335,9 +335,30 @@ and the other requested phases actually pass.
 
 ## Declared project version acceptance (toolchain 0.51)
 
-The current fifteen-phase workflow adds `project-version-boundaries`. It checks
+The toolchain 0.51 fifteen-phase workflow added `project-version-boundaries`. It checks
 that an older root declaration is rejected before creating a graph, a reachable
 old configured library is rejected, current library source is accepted, archived
 native/reference execution ignores stale physical metadata without moving HEAD,
 and current source export checks to the same semantic revision. The matching
 compatibility guide/project schema are included in discovery's resource inventory.
+
+## Captured frontend error acceptance (toolchain 0.52)
+
+The toolchain 0.52 sixteen-phase workflow added `frontend-diagnostics`. A rejected
+assembled candidate must expose its own source preview/hash, repeatable error
+identity and unchanged physical source/history. Invalid UTF-8 input is returned
+losslessly as base64, a static expression error carries supplied frame/build
+identity, and a corrected candidate executes from its retained archive. These
+are compiler-input references, not authenticated authors or committed operation
+UUIDs. Discovery includes the matching frontend guide/schema.
+
+## Archived graph-query acceptance (toolchain 0.53)
+
+The current seventeen-phase workflow adds `graph-queries`. It discovers a
+checked function, traverses dependencies and incoming references, pages a pinned
+selection without duplicate/missing IDs, and requests full context. The same
+queries work after source deletion and with stale physical language metadata,
+without moving HEAD/history. A discovered ID/name and exact whole-bundle guard
+then feed an atomic repair, verified by archived native/reference execution.
+This connects discovery to the existing development chain; a static subgraph
+does not prove dynamic test coverage or complete requirement satisfaction.

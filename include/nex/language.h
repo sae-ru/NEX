@@ -18,6 +18,7 @@ struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::str
 struct SourceRange {size_t begin=0,end=0;bool valid=false;};
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
+  llvm::json::Value frontend=nullptr;
   Error(std::string code, std::string message, Span span = {})
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };

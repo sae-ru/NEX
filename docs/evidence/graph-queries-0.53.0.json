@@ -1,0 +1,95 @@
+{
+  "schema": "nex.validation-evidence/1",
+  "toolchain": "0.53.0",
+  "language": "0.15",
+  "recorded_at": "2026-10-18T23:39:27.271776+00:00",
+  "status": "isolated_scoped_full_validation_pending",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "compiler_sha256": "9692e5f4b70666f4999c8ac624901f22d4bac47a3c0917b98550fdcba5911f85",
+  "baseline": {
+    "created": "2026-10-18T23:29:20.430213+00:00",
+    "compiler_sha256": "bfdcd7bb65472ecb34f671d841ad8a66d2a32f74956de70dd207b8afbfcaa4cb",
+    "revision": "a463be0686b410dff7c3865920a85ee0f25a98ade99402986949ba2ec53cd09d",
+    "error": {
+      "code": "E_OPTION",
+      "column": 1,
+      "file": "",
+      "line": 1,
+      "message": "unknown option --query",
+      "ok": false,
+      "schema": "nex.diagnostic/1",
+      "stdout": ""
+    },
+    "limitation": "Exact context and full graph export exist, but no bounded literal search or paged dependency-radius subgraph command. Model discovery requires reading larger graph exports or already knowing exact names."
+  },
+  "implemented": [
+    "Bounded literal checked declaration name/source discovery without physical source synchronization or program execution",
+    "Minimum-hop directed dependency/dependent/bidirectional radius over verified module/type/function/endpoint edges",
+    "Independent node/edge pagination, deterministic order, strict request/output limits, explicit depth/byte boundaries and progressing cursors",
+    "Revision/exact archived source/namespace/selection identity retained across queries and guarded repair",
+    "Model-independent matching guide/schema/prompt/capabilities and seventeen-phase installed SDK workflow integration"
+  ],
+  "checks": {
+    "focused_current": {
+      "ok": true,
+      "python_cases": 18,
+      "seconds": 4.32,
+      "log": "build/graph-queries-053-expanded-focused.log",
+      "last_test": "build/graph-queries-053-focused-LastTest.log",
+      "last_test_sha256": "c696d234df99af47a7b71e0ff3032497fe547f0bfb15acdb8fed63dfef963c87"
+    },
+    "compatibility": {
+      "ok": true,
+      "groups": 6,
+      "seconds": 50.73,
+      "log": "build/graph-queries-053-compatibility.log",
+      "scope": "Original16 query cases plus graph identities, changes, project versions, frontend diagnostics and operation patches; expanded18 query cases were rerun separately without compiler changes."
+    },
+    "schemas": {
+      "ok": true,
+      "created": "2026-10-18T23:37:16.273629+00:00",
+      "compiler_sha256": "9692e5f4b70666f4999c8ac624901f22d4bac47a3c0917b98550fdcba5911f85",
+      "valid_response_forms": 8,
+      "malformed_rejected": 18,
+      "schema_sha256": "9033e39ddc0e5b0a16c7c9df1d0c40dac0fab580051bbbd0246edc13f1d36eda",
+      "descriptor_guide_pack_match": true,
+      "work": "/Users/sae/projects/NEX/build/graph-queries-053-schema-corrected-work"
+    },
+    "installed_sdk_phase": {
+      "ok": true,
+      "created": "2026-10-18T23:36:58.274715+00:00",
+      "scope": "Exact SDK graph_queries function selected via AST, executed against installed compiler; not the complete SDK workflow",
+      "compiler_sha256": "9692e5f4b70666f4999c8ac624901f22d4bac47a3c0917b98550fdcba5911f85",
+      "commands": 16,
+      "evidence": {
+        "graph_queries": {
+          "before": "600f62eb910dc861b90d7ed78768aba1f6d5a6e5942240d72002fc81113d9e88",
+          "after": "3df4241a608d691185e863e5d7cef0493e3a38b981ed1810872d349dfb607209",
+          "namespace": "1d751a9efaf1cb5e589bcf04f3a13fb2",
+          "node_id": "105e8215f2d703baba478b0cce98ea37",
+          "search_query_hash": "61351c97475d0970c9ebfaa28f365317fdaea41b585ad4b86ebfe6bebfc394a0",
+          "subgraph_query_hash": "95cc9e4654ccca23a9726e96a3f5703372925a4d46593868b1048c2fb243e83a",
+          "exact_archived_source_hash": "a00396e5450cfb95667870a43431b0a654f929a3e4ae4a260ebce5b8749ac8d3",
+          "source_deleted_lookup": true,
+          "stale_physical_metadata_ignored": true,
+          "incoming_edges_checked": true,
+          "stable_complete_query_pages": true,
+          "queries_preserve_history": true,
+          "guarded_repair_from_discovery": true,
+          "native_reference_after_repair": true
+        }
+      }
+    }
+  },
+  "corrected_failures": [
+    "Initial C++ build required explicit llvm::json::Value ownership before serializing Object values; verification was not disabled",
+    "Review rejected explicit empty/invalid --revision before opening a query store, preventing physical-source synchronization through the common empty-revision path",
+    "Initial schema dollar-anchored digest regex admitted a terminal newline; explicit fixed lengths now reject it, with the initial failed validation retained"
+  ],
+  "remaining": [
+    "Full current62 regression groups and both installed SDK17 workflows",
+    "Linux live debugger suites, broader release/sanitizer/platform/device/distribution/ABI checks",
+    "All other remaining language/development-chain PLAN requirements; static queries are not dynamic coverage or requirement proofs"
+  ]
+}

@@ -138,3 +138,8 @@ digit         = "0" .. "9" ;
 (* Toolchain0.51 project/language/schema preflight changes no source grammar.
    Explicit nex.json root/reachable-library versions must match the compiler;
    archived source and explicit migration remain independent of live metadata. *)
+
+(* Toolchain0.52 captured frontend diagnostics add no source syntax. Reported
+   diagnostic spans are separate from editable source ranges and committed IDs. *)
+
+(* Toolchain0.53 adds archived graph-query commands; source grammar is unchanged. *)

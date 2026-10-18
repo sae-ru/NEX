@@ -1,36 +1,37 @@
 # NEX implementation status
 
-## Verified current 0.51 / language 0.15: snapshots and project versions
+## Isolated 0.53 graph search and dependency-radius queries
 
-The promoted root passes all 59 macOS ARM 64 regression groups (473 Python cases
-+ 11 C++ probes) in 1450.75 s. Its actual installed SDK 15 passes in 316.59 s with live
-LLDB/DAP/browser checks; all 120 indexed resources match the checked root. The
-exact frozen isolated implementation also passes 59 groups on macOS/Linux ARM 64,
-both SDK 15 workflows and eleven Linux live debugger suites. Isolated macOS full
-regression is 1381.17 s; Linux is 1149.56 s, with installed SDK times 323.406 s/247.838 s.
-The Linux SDK runs without source checkout or external network. These distinct
-compiler/source hashes and scopes are preserved in
-[the evidence](docs/evidence/project-versions-0.51.0.json).
+The prototype adds literal name/source discovery over module/type/function/
+endpoint declarations, bounded declaration previews and minimum-hop dependency/
+dependent/bidirectional subgraphs. Nodes/edges page independently with explicit
+byte and depth boundaries. Responses preserve revision, exact archived source,
+namespace and selection identity. Queries select archived source, preserve HEAD
+and its journal, and do not execute program/native-extension code. Existing
+identity/edge metadata is checked against source; old stores may lazily backfill
+indexes. Language0.15, canonical forms and graph schema 4 remain unchanged.
+Current implementation/focused/schema/SDK/platform validation remains pending.
+The full0.52 checks below are separate, on a frozen earlier source tree.
 
-Snapshots/recovery preserve complete graph rows/UUIDs/history. Explicit old
-physical project/reachable-library versions fail before source loading; root
-preflight preserves the store for its matching old SDK. Archived execution and
-explicit migration remain independent of physical metadata. The root example's
-stale 0.10 manifest label was reviewed against an already checked 0.15 archive;
-its source/history are unchanged and a complete pre-promotion snapshot is saved.
-Final evidence/overview documentation changed after root verification without
-changing implementation, runtime, grammar or indexed SDK guides.
+## Isolated 0.52 captured-source frontend context
 
-Captured-source frontend diagnostics 0.52 and archived graph queries 0.53 are
-separate isolated work with current gates running. User traits/associated and
-higher-kinded types, source async, further machine/debug mapping, unsupported
-platforms/device/GPU/Wasm work, broader release/ABI and cross-LLM measurements
-remain pending in the complete project plan. This verified development milestone
-is not the full requested language/development-chain completion.
+The prototype adds source-buffer hashes, phase/scope, bounded UTF-8 or lossless
+base64 previews and content-derived diagnostic identity for parser/binder/checker
+errors. Rejected assembled candidates remain distinct from physical source and
+committed graph identities. Static watch context is bound to supplied frame/stop
+hashes; runtime operation metadata remains separate. Language0.15 and graph
+schema 4 are unchanged. The 21 Python diagnostic cases (one macOS filesystem
+skip), 15 native API cases and seven related regression groups pass. Offline
+validation accepts 23 actual error forms and rejects 13 malformed variants. The
+exact installed SDK diagnostic phase passes 12 commands including rejected and
+repaired candidates, lossless malformed bytes and supplied-frame watch context.
+The actual macOS installed SDK16 passed all phases in434.171s with live
+LLDB/DAP/browser builds and all122 indexed resources matching frozen source.
+Full current regression/Linux live/source-free SDK workflows remain pending.
 
 ## Verified 0.49 / language 0.15: atomic change history and restore
 
-The preceding corrected0.49 compiler passes all 57 regression groups on macOS ARM64
+The preceding corrected 0.49 compiler passes all 57 regression groups on macOS ARM64
 (447 Python cases + 11 C++ probes, 1375.92 s) and Linux ARM64 (1166.28 s). Both
 thirteen-phase installed SDK workflows pass: macOS 412.565 s and Linux 263.748 s
 in a network-disabled container without the source checkout. Linux additionally
@@ -47,11 +48,14 @@ not materialize physical files. Schema 4 starts an explicit old HEAD base rather
 than inventing prior transitions. This is scoped development evidence, not
 proof of every platform, full-system safety or stable cross-SDK ABI.
 
-The intermediate 0.50 prototype passed its focused checks, macOS SDK 14 and
-Linux full 58/live/SDK 14 matrix. No full macOS regression was run for 0.50.
-Its graph snapshot/recovery capability and the 0.51 project/library version
-boundaries are included in the promoted current source above. Broader language,
-platform and development-chain work remains pending.
+The intermediate 0.50 passed its focused checks, macOS SDK14 and Linux58/live11/SDK14
+matrix; no full macOS regression was run for that intermediate compiler. The
+preceding isolated 0.51 source passes all59 groups on macOS/Linux ARM64, both
+SDK15 workflows and eleven Linux live suites. Its exact implementation is now
+promoted to the root, where the root build/SDK15 pass and full root regression
+remains running. [Evidence](docs/evidence/project-versions-0.51.0.json) preserves
+the pre-promotion scope. Current0.52 adds diagnostics above that implementation;
+its pending checks are not implied by earlier successful versions.
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 

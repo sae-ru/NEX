@@ -583,3 +583,16 @@ Diagnostic source points, canonical definitions, language 0.15 and operation
 identity policy 1 are retained. Parser recursion across statements/expressions
 and each expression tree/postfix/binary chain are bounded to 256 levels/operations, producing
 `E_PARSE_LIMIT`. These resource bounds also apply to standalone patch fragments.
+
+Toolchain 0.52 can attach captured-input context to parser/binder/checker errors.
+See [frontend diagnostics](frontend-diagnostics.md) for byte positions, partial
+source closures and fragment scope. Source grammar/canonical forms are unchanged.
+
+## Archived discovery tools (toolchain 0.53)
+
+Source semantics remain language 0.15. The development toolchain adds bounded
+literal declaration search and directed static dependency-radius queries over
+retained checked source. See [queries](queries.md), machine capability discovery
+and the matching model-independent schema. Derived instances remain distinct
+from editable source templates. These tools do not imply new syntax or source
+execution; static references do not prove dynamic coverage.

@@ -99,6 +99,12 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
 llvm::json::Value Store::declarations(const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
   if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return graphDeclarations(impl->db,p,kind,symbol,offset,limit);
 }
+llvm::json::Value Store::search(const Program &p,const GraphQueryOptions &options){
+  validateGraphQuery(options,false);if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return searchGraph(impl->db,p,options);
+}
+llvm::json::Value Store::subgraph(const Program &p,const GraphQueryOptions &options){
+  validateGraphQuery(options,true);if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return subgraphGraph(impl->db,p,options);
+}
 llvm::json::Value Store::identities(const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
   if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return graphIdentities(impl->db,p,kind,symbol,offset,limit);
 }

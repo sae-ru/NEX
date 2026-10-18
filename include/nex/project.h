@@ -1,6 +1,7 @@
 #pragma once
 #include "nex/language.h"
 #include "nex/change_store.h"
+#include "nex/graph_queries.h"
 #include <filesystem>
 namespace nex {
 class Store {
@@ -11,6 +12,8 @@ public:
   std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={});
   llvm::json::Value graph(const Program &program);
   llvm::json::Value declarations(const Program &program,const std::string &kind="",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
+  llvm::json::Value search(const Program &program,const GraphQueryOptions &options);
+  llvm::json::Value subgraph(const Program &program,const GraphQueryOptions &options);
   llvm::json::Value identities(const Program &program,const std::string &kind="all",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
   llvm::json::Value reconcileIdentities(const Program &program,const llvm::json::Value &manifest,const std::string &expectedHead);
   llvm::json::Value resolveIdentity(const Program &program,const std::string &origin,const std::string &sourceRevision,const std::string &id);

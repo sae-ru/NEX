@@ -1,0 +1,101 @@
+{
+  "schema": "nex.validation-evidence/1",
+  "toolchain": "0.52.0",
+  "language": "0.15",
+  "status": "isolated_scoped_full_validation_pending",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "recorded_at": "2026-10-18T23:26:24.880444+00:00",
+  "baseline": {
+    "created": "2026-10-18T22:41:15.247285+00:00",
+    "compiler_sha256": "18e1fe11a3df7ee9703467835e6d0f67ad1762809203f63a173add1fe9334628",
+    "diagnostic": {
+      "code": "E_TYPE",
+      "column": 17,
+      "file": "main.nex",
+      "line": 2,
+      "message": "expected i64, found str",
+      "ok": false,
+      "schema": "nex.diagnostic/1",
+      "stdout": ""
+    },
+    "patch": {
+      "expected_revision": "6e53a23316d1e8a9ba1622fb586b8797ee23bce58305218ac28e5299c7217048",
+      "replacements": [
+        {
+          "name": "value",
+          "source": "fn value()->i64{return \"bad\";}"
+        }
+      ]
+    },
+    "physical_source": "module frontend;\nfn value()->i64{return 42;}\nfn main()->unit!{io}{print(value());}\n",
+    "head_unchanged": true,
+    "limitation": "The error points into an uncommitted assembled candidate, but carries no candidate source hash, bounded preview or source-context identity. Reading physical main.nex returns different code."
+  },
+  "implemented": [
+    "Captured actual parser/binder/checker inputs and failed uncommitted candidates without rereading physical source",
+    "Explicit phase, input scope and source-closure completeness, source/input/diagnostic BLAKE3 identities distinct from committed graph IDs",
+    "Bounded UTF-8 scalar-aligned or lossless base64 previews and raw-label identity; unavailable source/position stays null",
+    "Static watch expression context bound to supplied frame/stop/build identity; runtime operation metadata preserved",
+    "Provider-independent prompt, guide, matching JSON schema/capability pack and installed SDK diagnostic acceptance phase"
+  ],
+  "checks": {
+    "focused": {
+      "ok": true,
+      "groups": 2,
+      "python_cases": 21,
+      "python_platform_skips": 1,
+      "cpp_api_cases": 15,
+      "seconds": 4.36,
+      "log": "build/frontend-diagnostics-052-corrected-focused.log",
+      "last_test": "build/frontend-diagnostics-052-focused-LastTest.log",
+      "last_test_sha256": "471eced3cf4e651bcb5e60149517814f37889fffbdd9ba50739cd6e71e7d88f3"
+    },
+    "compatibility": {
+      "session": "terminal:exit0",
+      "groups": 7,
+      "seconds": 195.11,
+      "log": "build/frontend-diagnostics-052-compatibility.log"
+    },
+    "schemas": {
+      "ok": true,
+      "created": "2026-10-18T23:24:48.112920+00:00",
+      "compiler_sha256": "bfdcd7bb65472ecb34f671d841ad8a66d2a32f74956de70dd207b8afbfcaa4cb",
+      "valid_error_forms": 23,
+      "api_cases": 15,
+      "malformed_rejected": 13,
+      "schema_sha256": "02de4210a0518a4424ce66467a4073bc9b3281db597217c007ac0b7eb5b24414",
+      "descriptor_guide_pack_match": true,
+      "work": "/Users/sae/projects/NEX/build/frontend-diagnostics-052-schema-work"
+    },
+    "installed_sdk_phase": {
+      "ok": true,
+      "created": "2026-10-18T23:25:34.429718+00:00",
+      "scope": "Exact SDK frontend_diagnostics function selected via AST, executed against installed compiler; not the complete SDK workflow",
+      "compiler_sha256": "bfdcd7bb65472ecb34f671d841ad8a66d2a32f74956de70dd207b8afbfcaa4cb",
+      "commands": 12,
+      "evidence": {
+        "frontend_diagnostics": {
+          "before": "28b054fe997c694c81ebaa6d66e66317b3b48cd5e21157b2429419061c58764a",
+          "after": "be8a4023aee76652619e5efead1fba93b8b1ac80727b8e6455f276c4dd66a327",
+          "diagnostic_id": "cc8572dfa38b09e2d25aa84d7e716abfc1ca8a4e8dd76a28c27524a1b21acf03",
+          "candidate_source_hash": "fc19c5478bedda99f153cdf1cec5dd0f175c0237d932cbc266a8af75614ec6e9",
+          "source_inputs_hash": "02e1177dcdb730a1a13c40abb4f84dd523a809af8b53afcb5ce91a65cc9a3345",
+          "captured_uncommitted_candidate": true,
+          "physical_source_preserved": true,
+          "failed_transition_absent": true,
+          "repeatable_error_identity": true,
+          "invalid_utf8_lossless": true,
+          "static_watch_supplied_frame": true,
+          "watch_frame_hash": "c56e8187661ca42357eb96ecf41a77255e960c0c9c2f82335ed8990f756f98a3",
+          "repaired_archived_native_execution": true
+        }
+      }
+    }
+  },
+  "remaining": [
+    "Full current macOS/Linux regression and sixteen-phase installed SDK workflows",
+    "Linux live debugger suites and invalid-byte filesystem label case",
+    "Broader current release/sanitizer/platform/device/distribution/ABI verification and all remaining language/development-chain PLAN requirements"
+  ]
+}
