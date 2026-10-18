@@ -2,7 +2,26 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: scoped foreign invocation adapter
+## Working snapshot: source foreign declarations
+
+Toolchain **0.41.0 / language 0.15** connects experimental server-only `extern`
+declarations and the `ffi` effect to the checker, reference interpreter and native
+backend. Source bindings pin a manifest; an explicit host catalogue supplies
+runtime authority. CLI execution, profiling/debug arguments, archived execution
+and browser reachability handling have initial integration coverage. Packaging
+of reachable external calls and trusted task catalogue capture remain pending
+and are explicitly rejected.
+
+The development build succeeds. The first source-FFI run passed nine of ten
+cases; its migration test used the wrong invocation after deleting the source.
+The corrected migration case passes on its own. The full corrected source suite,
+complete regression, installed SDK workflow and broader platform checks have
+not yet been run for this snapshot. Example acceptance metadata and the remaining
+guides still need review for language 0.15. This backup preserves unfinished work
+and does not designate an accepted release. The 0.40 evidence below applies to
+that earlier snapshot.
+
+## Earlier milestone: scoped foreign invocation adapter
 
 Toolchain **0.40.0 / language 0.14** adds explicit `nex.foreign-host/1` operator
 catalogues, `nex.foreign-binding/1` metadata, thread-local lexical contexts and a

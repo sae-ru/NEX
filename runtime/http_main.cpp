@@ -5,6 +5,9 @@
 #include "nex_io.h"
 #include "nex_json.h"
 #include "nex_auth.h"
+#ifdef NEX_FOREIGN_ENABLED
+#include "nex_foreign.h"
+#endif
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <array>
@@ -53,14 +56,14 @@ void error(httplib::Response &response,int status,const std::string &code,const 
 }
 bool inside(const fs::path &path,const fs::path &root){auto relative=path.lexically_relative(root);for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();}
 struct Config {
-  std::string host="127.0.0.1",auth,database,assets,cert,key;
+  std::string host="127.0.0.1",auth,database,assets,cert,key,foreign;
   int port=8080,workers=8,queue=64;uint64_t budget=1000000,timeout=5000;
 };
 Config config(int argc,char **argv){
   Config c;
   for(int i=1;i<argc;++i){
     std::string option=argv[i];if(i+1==argc)throw std::runtime_error("server option requires a value");std::string value=argv[++i];
-    if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;
+    if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;else if(option=="--foreign")c.foreign=value;
     else{
       uint64_t number=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),number);if(parsed.ec!=std::errc()||parsed.ptr!=value.data()+value.size())throw std::runtime_error("invalid numeric server option");
       if(option=="--port"&&number<=65535)c.port=int(number);
@@ -87,7 +90,14 @@ std::string mime(const fs::path &path){
 }
 int main(int argc,char **argv){
   try{
-    auto c=config(argc,argv);auto auth=credentials(c.auth);nexrt::Database::initialize(c.database);
+    auto c=config(argc,argv);
+#ifdef NEX_FOREIGN_ENABLED
+    auto foreign=c.foreign.empty()?std::shared_ptr<nexrt::ForeignLibraries>{}:nexrt::loadForeignLibraries(c.foreign);
+    if(foreign&&!c.assets.empty()){auto root=fs::weakly_canonical(c.assets);if(inside(fs::weakly_canonical(c.foreign),root))throw std::runtime_error("foreign catalogue must be outside the static root");for(const auto &directory:foreign->grantedDirectories())if(inside(fs::weakly_canonical(directory),root))throw std::runtime_error("foreign module directories must be outside the static root");}
+#else
+    if(!c.foreign.empty())throw std::runtime_error("server has no external calls");
+#endif
+    auto auth=credentials(c.auth);nexrt::Database::initialize(c.database);
     std::unique_ptr<httplib::Server> server;
     if(c.cert.empty())server=std::make_unique<httplib::Server>();else server=std::make_unique<httplib::SSLServer>(c.cert.c_str(),c.key.c_str());
     if(!server->is_valid())throw std::runtime_error("HTTP/TLS server configuration is invalid");
@@ -109,6 +119,9 @@ int main(int argc,char **argv){
       auto user=authenticate(request,auth);if(!user){error(response,401,"UNAUTHORIZED",id);return;}
       try{
         nexrt::RequestScope scope(c.budget,c.timeout);scope.setCancellation([&]{return interrupted||request.is_connection_closed();});scope.poll();
+#ifdef NEX_FOREIGN_ENABLED
+        std::unique_ptr<nexrt::ForeignScope> foreignScope;if(foreign)foreignScope=std::make_unique<nexrt::ForeignScope>(foreign);
+#endif
         bool writable=request.method!="GET"&&request.method!="HEAD"&&request.method!="OPTIONS";
         nexrt::Database db(c.database,*user,writable);nexrt::StorageScope capability(db);
         auto input=std::make_shared<nexrt::Data>(nexrt::Data::Record);input->text="std::http::Request";

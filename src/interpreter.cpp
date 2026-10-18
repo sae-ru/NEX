@@ -6,6 +6,7 @@
 #include "nex_json.h"
 #include "nex_io.h"
 #include "nex_files.h"
+#include "nex_foreign.h"
 #include "llvm/Support/Error.h"
 #include <limits>
 #include <functional>
@@ -188,6 +189,7 @@ class Interpreter {
   }
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
     if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
+    if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
     frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}

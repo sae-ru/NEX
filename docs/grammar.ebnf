@@ -1,4 +1,4 @@
-(* NEX 0.14. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.15. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
@@ -6,8 +6,9 @@ import        = "import", string, "as", identifier, ";" ;
 structure     = [ "pub" ], "struct", identifier, [ type_parameters ], "{", { parameter, ";" }, "}" ;
 enumeration   = [ "pub" ], "enum", identifier, [ type_parameters ], "{", variant, { variant }, "}" ;
 variant       = identifier, [ "(", [ parameters ], ")" ], ";" ;
-function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
-                "->", type, [ effects ], block ;
+function      = [ "pub" ], [ realm ], [ "extern" ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
+                "->", type, [ effects ], ( block | foreign_body ) ;
+foreign_body  = "=", "foreign", "(", string, ",", string, ",", string, ")", ";" ;
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
@@ -20,7 +21,7 @@ type_parameter = identifier, [ ":", constraint, { "+", constraint } ] ;
 constraint    = "add" | "ordered" | "integer" | "number" | "wire" ;
 type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
-effect        = "io" | "db" | "fs" ;
+effect        = "io" | "db" | "fs" | "ffi" ;
 block         = "{", { statement }, "}" ;
 statement     = declaration | assignment | return | if | while | match | expression, ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
@@ -122,3 +123,10 @@ digit         = "0" .. "9" ;
    require server realm and cannot enter JSON/API or browser code. Identity
    equality and immutable owner aliases add no pointer or constructor syntax.
    Explicit migration from 0.13 preserves history; see resources.md. *)
+
+(* Language 0.15 adds contextual extern/foreign declarations, not reserved names.
+   An external declaration requires server realm, declared ffi effect, a concrete
+   non-test signature and foreign_body instead of a block. Binding literals are
+   logical library/export identifiers and exact lowercase SHA-256 manifest pin.
+   A host grants access separately; declarations execute no native code at check
+   time. Language 0.14 snapshots require explicit history-preserving migration. *)

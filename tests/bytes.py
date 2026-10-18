@@ -76,7 +76,7 @@ class BinaryPrograms(ToolchainCase):
         if shutil.which('node'):
             self.cli('test', '--target', 'web')
         descriptor = self.cli('describe')
-        self.assertEqual(descriptor['version'], '0.14')
+        self.assertEqual(descriptor['version'], '0.15')
         self.assertIn('bytes', descriptor['types'])
         self.assertIn('bytes', descriptor['generic_constraints']['add'])
         self.assertNotIn('bytes', descriptor['generic_constraints']['ordered'])
@@ -248,14 +248,14 @@ fn main()->unit!{io}{
             identities = db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('graph', ok=False)['code'], 'E_LANGUAGE_VERSION')
         migrated = self.cli('migrate')
-        self.assertEqual(migrated['language'], '0.14')
+        self.assertEqual(migrated['language'], '0.15')
         self.assertNotEqual(migrated['revision'], old)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
         self.cli('test', '--revision', migrated['revision'], '--target', 'web')
         with sqlite3.connect(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(), identities)
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], source)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.12', '0.14'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.12', '0.15'})
 
     def test_real_nominal_codec_conflicts_reject_before_primitive_reinterpretation(self):
         fixture = json.loads((harness.REPO / 'tests/fixtures/language-0.12-byte-names.json').read_text())

@@ -4,7 +4,7 @@ pub struct Packet<T> { data:T; text:str; }
 pub enum Reply<T> { Ready(packet:Packet<T>); Error(code:str); }
 
 // This ordinary NEX function supplies a value contract for a trusted C adapter.
-// NEX source external declarations and native library loading remain pending.
+// source.nex.in calls the independent C implementation through source FFI.
 pub fn contract(data:bytes) -> result<Reply<bytes>> {
   return ok(Reply::Ready(Packet(data,"Я\u0000🧠")));
 }

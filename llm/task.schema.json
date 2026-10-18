@@ -8,7 +8,7 @@
       "const": "nex.task/1"
     },
     "language": {
-      "const": "0.14"
+      "const": "0.15"
     },
     "id": {
       "$ref": "#/$defs/id"
@@ -373,7 +373,8 @@
                   "enum": [
                     "io",
                     "db",
-                    "fs"
+                    "fs",
+                    "ffi"
                   ]
                 },
                 "minItems": 0,

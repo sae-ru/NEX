@@ -1,4 +1,4 @@
-"""Compiler-derived C value contracts and unchanged language-0.14 history."""
+"""Compiler-derived C value contracts and explicit language-0.14 migration."""
 import hashlib
 import json
 from pathlib import Path
@@ -86,27 +86,29 @@ test fn check_model()->unit{}
         self.cli('check')
         self.assertEqual(self.cli('ffi','--symbol','contract',ok=False)['code'],'E_FFI_SIGNATURE')
 
-    def test_genuine_014_snapshot_replays_without_retagging_or_new_revision(self):
+    def test_genuine_014_snapshot_migrates_without_retagging_history(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text())
         self.source(fixture['source']);old=self.historical_store('0.14')['revision'];self.file.unlink()
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
+        self.assertEqual(self.cli('ffi','--revision','HEAD','--symbol','legacy_foreign_names::resource_callback',ok=False)['code'],'E_LANGUAGE_VERSION')
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.15');self.assertNotEqual(current['revision'],old)
         contract=self.cli('ffi','--revision','HEAD','--symbol','legacy_foreign_names::resource_callback')
         self.assertEqual(contract['types'],[{'kind':'function','name':'server fn(file)->file'}])
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout'])
         self.cli('test','--revision','HEAD','--target','web')
-        self.assertEqual(self.cli('history')['head'],old)
+        self.assertEqual(self.cli('history')['head'],current['revision'])
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source)
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids)
         sql=(harness.REPO/'tests/fixtures/language-0.14.sql').read_bytes()
         self.assertEqual(hashlib.sha256(sql).hexdigest(),fixture['sql_sha256'])
 
-    def test_discovery_and_model_independent_pack_keep_source_ffi_pending(self):
+    def test_discovery_and_model_independent_pack_describe_source_ffi(self):
         self.source('module discovery;fn main()->unit{}')
         desc=self.cli('describe')['foreign_boundary']
-        self.assertFalse(desc['source_support'])
+        self.assertTrue(desc['source_support'])
         self.assertEqual(desc['signature_schema'],'nex.foreign-signature/1')
         self.assertIn('typed_return_validation',desc['features'])
         self.assertIn('nex ffi',self.cli('guide','--kind','ffi')['text'])

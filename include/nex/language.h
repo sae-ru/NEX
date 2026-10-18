@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -9,7 +10,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.14";
+inline constexpr const char *languageVersion = "0.15";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 struct Error : std::runtime_error {
@@ -76,6 +77,7 @@ struct Structure {
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
+struct ForeignBinding {std::string library,symbol,manifest;};
 struct Function {
   std::string name, realm = "shared"; std::vector<Param> params;
   Type result = Type::Unit; std::set<std::string> effects, dependencies;
@@ -84,6 +86,7 @@ struct Function {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
   TypeBounds typeBounds;
   bool closure=false;std::string closureOwner;std::vector<Param> captures;
+  std::optional<ForeignBinding> foreign;
 };
 struct Import { std::string path,alias,target; Span span; };
 struct Endpoint {
@@ -146,6 +149,7 @@ const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);
 llvm::json::Value foreignSignature(const Program &program,const Function &function);
+llvm::json::Value foreignBinding(const Program &program,const Function &function);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",
                     uint64_t stepLimit = 1000000);

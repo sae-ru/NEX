@@ -15,6 +15,7 @@
 #include "llvm/Support/SHA256.h"
 #include "nex_auth.h"
 #include "nex_json.h"
+#include "nex_foreign.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/TargetParser/Host.h"
 #include <filesystem>
@@ -34,7 +35,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -79,6 +80,7 @@ int run(const Options &o) {
     auto output=fs::absolute(o.get("--directory")).lexically_normal();
     if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   }
+  if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile")throw Error("E_OPTION","--foreign FILE is an execution capability for eval/run/test/debug/profile; task capture and package closure support are pending");
   if(o.values.contains("--toolchains")&&o.command!="task")throw Error("E_OPTION","--toolchains FILE is for task check/run/replay");
   if(o.values.contains("--toolchain")){
     const std::set<std::string> nativeCommands={"build","package","run","test","debug","profile","emit"};
@@ -319,7 +321,7 @@ int run(const Options &o) {
     llvm::json::Array imports;for(const auto &dependency:p.units.at(f.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"module",p.units.at(dependency.target).module},{"file",dependency.target}});
     llvm::json::Array parameters,arguments;for(const auto &parameter:f.typeParameters)parameters.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
     llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
-    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
+    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
   if(o.command=="ffi"){auto symbol=o.get("--symbol");if(symbol.empty())throw Error("E_OPTION","ffi requires --symbol for a concrete named function");print(foreignSignature(p,p.function(symbol)));return 0;}
   if(o.command=="check"){if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"revision",revision(p)},{"functions",int64_t(p.functions.size())}});else std::cout<<"Checked "<<p.functions.size()<<" functions; revision "<<revision(p)<<'\n';return 0;}
@@ -339,6 +341,7 @@ int run(const Options &o) {
     if(o.has("--json"))print(std::move(result));else std::cout<<"Web assets: "<<result.getAsObject()->getString("dist")->str()<<'\n';return 0;
   }
   if(o.command=="eval") {
+    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(nexrt::loadForeignLibraries(o.get("--foreign")));
     uint64_t limit=1000000;
     if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
     Evaluation result;
@@ -354,6 +357,8 @@ int run(const Options &o) {
   }
   if(o.get("--target")=="server"&&o.command=="test")throw Error("E_OPTION","use native test for server functions; --target server builds the HTTP entry");
   if(o.get("--target")=="server"&&o.command=="run"&&o.has("--json"))throw Error("E_OPTION","server is long-running; use build --json or run without --json");
+  std::vector<std::string> foreignArguments;if(!o.get("--foreign").empty()){foreignArguments={o.get("--target")=="server"?"--foreign":"--nex-foreign",fs::absolute(o.get("--foreign")).string()};}
+  auto executionArguments=[&](const std::string &executable){std::vector<std::string> result{executable};result.insert(result.end(),foreignArguments.begin(),foreignArguments.end());return result;};
   BuildOptions buildOptions{o.get("--profile",o.command=="package"?"release":"debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library"),o.get("--toolchain")};
   if((o.command=="run"||o.command=="test"||o.command=="debug"||o.command=="profile")&&o.get("--target")!="web"&&!o.has("--interpreter-only"))requireNativeHost(buildOptions);
   ProfileOptions profiling;
@@ -365,11 +370,12 @@ int run(const Options &o) {
       for(char c:text){if(c<'0'||c>'9'||number>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION",key+" is outside its supported integer range");number=number*10+unsigned(c-'0');}
       if(number<minimum||number>maximum)throw Error("E_OPTION",key+" is outside its supported integer range");return unsigned(number);
     };
-    profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600)};
+    profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600),foreignArguments};
     buildOptions.profile="profile";
   }
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
   if(o.command=="test") {
+    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(nexrt::loadForeignLibraries(o.get("--foreign")));
     int count=0;llvm::json::Array tests;
     auto selected=o.get("--symbol");if(!selected.empty()){const auto &f=p.function(selected);if(!f.test)throw Error("E_TEST","--symbol must select a test function");selected=f.name;}
     for(const auto &f:p.functions)if(f.test&&(selected.empty()||selected==f.name)){
@@ -384,7 +390,7 @@ int run(const Options &o) {
           writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
           writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
           const char *node=std::getenv("NEX_NODE");actual=capture({node?node:"node","--experimental-strip-types","--no-warnings",(folder/"test.ts").string()});
-        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture({result.executable});}
+        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable));}
         if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
       ++count;tests.push_back(llvm::json::Object{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}});
     }
@@ -397,6 +403,7 @@ int run(const Options &o) {
   if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm or typescript");
   auto result=build(p,directory,buildOptions);
   if(o.command=="package"){
+    if(result.foreignCalls)throw Error("E_FFI_PACKAGE","packaging external module dependency closures is pending; build and run with an explicit operator catalogue");
     print(packageApplication(p,result,{o.get("--directory"),o.get("--notices"),o.compiler,o.has("--dpkg-notices")}));return 0;
   }
   if(o.command=="run"||o.command=="debug"||o.command=="profile")requireNativeHost(result);
@@ -406,13 +413,14 @@ int run(const Options &o) {
   }
   if(o.command=="emit") {auto text=readFile(result.llvm);auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
   if(o.command=="run") {
-    if(!o.has("--json")){std::vector<std::string> arguments{result.executable};arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
-    auto child=capture({result.executable});print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
+    if(!o.has("--json")){std::vector<std::string> arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
+    auto child=capture(executionArguments(result.executable));print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key}});return child.code;
   }
   if(o.command=="debug") {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
     auto folder=fs::path(result.executable).parent_path();auto manifest=(folder/"debug.json").string();
     std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)+" --compiler "+json(o.compiler,false)};
+    if(!foreignArguments.empty()){std::string command="settings set target.run-args";for(const auto &argument:foreignArguments)command+=" "+json(argument,false);init.push_back(std::move(command));}
     if(o.has("--json")||kind=="dap"||kind=="nex-dap"){
       llvm::json::Array commands;for(const auto &command:init)commands.push_back(command);
       auto backend=std::getenv("NEX_LLDB_DAP");std::string dap=backend?backend:"lldb-dap";auto found=llvm::sys::findProgramByName(dap);bool available=bool(found);if(found)dap=*found;
@@ -424,6 +432,7 @@ int run(const Options &o) {
       auto debugManifest=llvm::json::parse(readFile(manifest));
       if(!debugManifest||!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
       if(auto mappings=debugManifest->getAsObject()->getArray("source_map"))launch["sourceMap"]=llvm::json::Array(*mappings);
+      if(!foreignArguments.empty()){llvm::json::Array arguments;for(const auto &argument:foreignArguments)arguments.push_back(argument);launch["args"]=std::move(arguments);}
       auto nexLaunch=launch;nexLaunch["type"]="nex";
       llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
         {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};

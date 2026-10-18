@@ -190,6 +190,7 @@ ForeignLibraries::ForeignLibraries(std::map<std::string,ForeignLibraryGrant> gra
 }
 ForeignLibraries::~ForeignLibraries(){revoke();}
 void ForeignLibraries::revoke()noexcept{auto retained=impl;if(retained)retained->resources.revoke();}
+std::vector<std::string> ForeignLibraries::grantedDirectories()const{auto retained=impl;std::vector<std::string> result;for(const auto &[name,grant]:retained->grants){(void)name;result.push_back(grant.directory);}return result;}
 ForeignFunction ForeignLibraries::bind(const std::string &library,const std::string &name,const ForeignSignature &signature,const std::string &expectedManifestSha256,Poll poll)const{
   auto retained=impl;auto libraryName=library,exportName=name,expectedPin=expectedManifestSha256;auto contract=signature;
   const auto &grant=retained->grants;auto it=grant.find(libraryName);

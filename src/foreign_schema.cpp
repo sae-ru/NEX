@@ -2,6 +2,10 @@
 #include "nex_ffi_host.h"
 #include <functional>
 namespace nex {
+llvm::json::Value foreignBinding(const Program &p,const Function &fn){
+  if(!fn.foreign)throw Error("E_FFI_BINDING","function has no external binding",fn.span);
+  return llvm::json::Object{{"schema","nex.foreign-binding/1"},{"library",fn.foreign->library},{"export",fn.foreign->symbol},{"manifest_sha256",fn.foreign->manifest},{"signature",foreignSignature(p,fn)}};
+}
 llvm::json::Value foreignSignature(const Program &p,const Function &fn){
   if(fn.test||fn.closure||!fn.typeParameters.empty())throw Error("E_FFI_SIGNATURE","select a concrete named function signature",fn.span);
   llvm::json::Array types;std::map<std::string,int64_t> indices;size_t members=0;

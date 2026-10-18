@@ -15,6 +15,7 @@ struct BuildResult {
   std::string target, compilerTarget;
   bool hostCompatible = true;
   unsigned compiledFunctions = 0, reusedFunctions = 0;
+  bool foreignCalls = false;
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);

@@ -8,6 +8,12 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
+The current working snapshot is toolchain **0.41.0 / language 0.15**, with
+experimental source `extern` declarations and explicit native-library grants.
+This snapshot preserves work in progress; the complete regression and installed
+SDK acceptance for 0.41 have not been completed. See `STATUS.md` for the current
+validation boundary and the earlier verified milestones below.
+
 Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
 
 Toolchain 0.24 / language 0.11 introduced finite binary64 arithmetic. Source programs, generic numeric functions, native/TypeScript/interpreter execution, typed JSON/API models and float watches passed the macOS ARM64 and Linux ARM64/x86-64 development matrix. Installed SDK acceptance includes numeric browser state and source-deleted replay; Linux x86-64 execution is emulated. Broader platforms remain pending; macOS/Linux development SDK bundles are verified in 0.30. The [numeric design and acceptance plan](docs/floats-design.md) records the scope and limits.

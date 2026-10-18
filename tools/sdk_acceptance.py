@@ -393,8 +393,8 @@ test fn examples() -> unit {
         directory = root / 'foreign-boundary'
         directory.mkdir()
         descriptor = cli('describe')['foreign_boundary']
-        require(descriptor['source_support'] is False and descriptor['abi_version'] == 1,
-                'C host transport must not advertise source FFI')
+        require(descriptor['source_support'] is True and descriptor['abi_version'] == 1,
+                'source FFI requires the current checked C transport')
         c = directory / 'producer.c'
         c.write_text(r'''#include "nex_ffi.h"
 #include <string.h>
@@ -438,7 +438,7 @@ int main() {
             require(run([executable]) == 'C ABI OK\n', 'independent installed C ABI example differs')
         finally:
             environment['NEX_RESOURCE_DIR'] = original
-        report['evidence']['foreign_boundary'] = {'abi_version': 1, 'source_support': False,
+        report['evidence']['foreign_boundary'] = {'abi_version': 1, 'source_support': True,
             'c11_producer': True, 'cpp20_host': True, 'copied_utf8_and_bytes': True,
             'sources_deleted': True, 'standalone': str(executable),
             'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
@@ -557,6 +557,37 @@ int main() {
             'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
                 for name in ('nex_foreign.cpp', 'nex_foreign.h', 'foreign_runtime.cpp',
                              'nex_foreign_abi.h', 'runtime.cpp', 'nex_host.h')}}
+        source = directory / 'source'
+        source.mkdir()
+        source_file = source / 'main.nex'
+        source_file.write_text((resources / 'examples/ffi/source.nex.in').read_text().replace('@MANIFEST_SHA256@', manifest_pin))
+        (source / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        source_revision = cli('check', cwd=source)['revision']
+        require(cli('ffi', '--symbol', 'ffi_example::contract', cwd=source) == contract,
+                'source declaration changed the value signature')
+        require(cli('eval', '--foreign', host_file, cwd=source)['stdout'] == expected_typed,
+                'source external interpreter output differs')
+        for profile in ('debug', 'release'):
+            require(cli('run', '--foreign', host_file, '--profile', profile, cwd=source)['stdout'] == expected_typed,
+                    'source external native output differs')
+        cli('test', '--foreign', host_file, cwd=source)
+        cli('test', '--target', 'web', cwd=source)
+        external = cli('build', '--profile', 'release', cwd=source)
+        source_file.unlink()
+        require(cli('eval', '--revision', source_revision, '--foreign', host_file, cwd=source)['stdout'] == expected_typed,
+                'source-deleted external interpreter replay differs')
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-source-foreign-resources')
+            require(run([external['executable'], '--nex-foreign', host_file]) == expected_typed,
+                    'standalone source external binary output differs')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = original
+        report['evidence']['foreign_boundary']['source_external'] = {
+            'source_support': True, 'language': report['doctor']['language'],
+            'revision': source_revision, 'interpreter_debug_release_agreement': True,
+            'server_tests': True, 'portable_web_test': True, 'sources_deleted': True,
+            'standalone': external['executable'], 'host_file': str(host_file)}
 
     def binary_values():
         directory = root / 'binary-values'

@@ -32,6 +32,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
   for(const auto &name:reachable){
     const auto &f=p.function(name);const auto &key=f.unit;
     NativeUnit unit;unit.identity=name;unit.unit=key;unit.module=f.owner;unit.functions={name};
+    unit.foreign=f.foreign.has_value();if(unit.foreign){unit.wire=true;unit.files=true;}
     if(unit.module.empty())unit.module=p.module;
     std::set<std::string> types,externalCalls;llvm::json::Array definitions,interfaces,layouts;
     std::function<void(Type)> type=[&](Type t){

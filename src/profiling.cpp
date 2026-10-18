@@ -17,7 +17,7 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
     // env is launched directly, with no shell expansion. Override a parent's
     // Tracy setting: local reports never start a profiler listener implicitly.
     auto started=std::chrono::system_clock::now();
-    auto process=capture({"env","NEX_TRACY=0","NEX_PROFILE_OUTPUT="+raw.string(),"NEX_PROFILE_EVENTS="+std::to_string(options.events),built.executable},options.timeout);
+    std::vector<std::string> arguments{"env","NEX_TRACY=0","NEX_PROFILE_OUTPUT="+raw.string(),"NEX_PROFILE_EVENTS="+std::to_string(options.events),built.executable};arguments.insert(arguments.end(),options.arguments.begin(),options.arguments.end());auto process=capture(arguments,options.timeout);
     if(!std::filesystem::is_regular_file(raw)||std::filesystem::file_size(raw)>256*1024*1024)throw Error("E_PROFILE","profile runtime did not produce a bounded report; process stderr: "+process.errors);
     auto parsed=llvm::json::parse(readFile(raw.string()));
     if(!parsed)throw Error("E_PROFILE","profile runtime produced invalid JSON");

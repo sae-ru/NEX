@@ -1,6 +1,27 @@
 #include "nex_foreign_abi.h"
 #include "nex_foreign.h"
 #include "nex_host.h"
+#include <cstring>
+namespace {
+thread_local std::unique_ptr<nexrt::ForeignScope> standaloneForeign;
+void resetStandaloneForeign()noexcept{standaloneForeign.reset();nexrt::resetForeignScopes();}
+}
+extern "C" void nex_foreign_configure(int64_t argc,const char *const *argv){
+  nexrt::hostOperation(0,[&]{
+    if(argc<0||argc>65536||(!argv&&argc))throw nexrt::DataError("E_FFI_GRANT","invalid native argument vector");
+    std::string path;
+    for(int64_t i=1;i<argc;++i){if(!argv[i])throw nexrt::DataError("E_FFI_GRANT","invalid native argument vector");
+      if(std::strcmp(argv[i],"--nex-foreign")!=0)continue;
+      if(!path.empty()||i+1>=argc||!argv[i+1])throw nexrt::DataError("E_FFI_GRANT","--nex-foreign requires one operator catalogue");
+      auto size=::strnlen(argv[++i],4097);if(!size||size>4096)throw nexrt::DataError("E_FFI_GRANT","invalid operator catalogue path");path.assign(argv[i],size);
+    }
+    if(!path.empty()){
+      nexrt::registerRuntimeCleanup(resetStandaloneForeign);
+      if(standaloneForeign)throw nexrt::DataError("E_FFI_SCOPE","native foreign configuration is already initialized");
+      standaloneForeign=std::make_unique<nexrt::ForeignScope>(nexrt::loadForeignLibraries(path));
+    }
+  });
+}
 extern "C" nexrt::Handle *nex_foreign_invoke(const char *binding,int64_t size,
                                             nexrt::Handle *arguments,int64_t line){
   return nexrt::hostValue(line,[&]{

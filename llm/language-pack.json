@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.14",
+  "language_version": "0.15",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -104,7 +104,8 @@
     "foreign_host": "examples/ffi/host.cpp",
     "foreign_module": "examples/ffi/module.c",
     "foreign_module_host": "examples/ffi/module_host.cpp",
-    "foreign_scoped_host": "examples/ffi/scoped_host.cpp"
+    "foreign_scoped_host": "examples/ffi/scoped_host.cpp",
+    "foreign_source_template": "examples/ffi/source.nex.in"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

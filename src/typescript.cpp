@@ -42,6 +42,7 @@ class Generator {
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }
   void visit(const Function &f){
+    if(f.foreign)throw Error("E_REALM","external functions cannot enter a browser module",f.span);
     if(!f.typeParameters.empty()||std::any_of(f.typeArguments.begin(),f.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","browser entry/closure must be concrete",f.span);
     if(f.realm=="server")throw Error("E_REALM","server function cannot be emitted to the browser: "+f.name,f.span);
     if(!functions.insert(f.name).second)return;

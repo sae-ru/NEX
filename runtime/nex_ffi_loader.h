@@ -28,6 +28,7 @@ public:
   ForeignLibraries(const ForeignLibraries&)=delete;
   ForeignLibraries &operator=(const ForeignLibraries&)=delete;
   void revoke()noexcept;
+  std::vector<std::string> grantedDirectories()const;
   ForeignFunction bind(const std::string &library,const std::string &name,
                        const ForeignSignature &signature,const std::string &expectedManifestSha256,
                        std::function<void()> poll={})const;
