@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "at": "2026-10-18T18:09:12.778472+00:00",
+  "scope": "final current macOS installed SDK, matching root resources",
+  "compiler_sha256": "0a3ce63cccf78e3ba00a9b2879895276bddd27c0b85f9498e2166a20146f21aa",
+  "report_sha256": "e8d847f5225121863a4d32691609bbdbfd1279fb2fdb4c171347145a873c1b40",
+  "phases": 13,
+  "seconds": 301.94,
+  "all_resource_hashes_match_root": true,
+  "atomic_type_patches": {
+    "before_revision": "c71c53869f361e0f3b08b0130b649db7acf1ce1a9e6e8426d665ba36ad94ca66",
+    "after_revision": "2bceeb5c3c8fd6b20f1a7891967cd12f720e81cd7440c3666a6411942e7468b4",
+    "persistent_type_ids": 2,
+    "invalid_partial_edit_rejected": true,
+    "source_deleted": true,
+    "native_reference_typescript": true
+  },
+  "graph_mappings": 166
+}

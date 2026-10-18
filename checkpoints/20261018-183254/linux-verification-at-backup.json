@@ -1,0 +1,655 @@
+{
+  "ok": false,
+  "source": "/src",
+  "network": "none",
+  "phases": [
+    {
+      "name": "configure",
+      "command": [
+        "cmake",
+        "-S",
+        "/src",
+        "-B",
+        "/build",
+        "-DCMAKE_CXX_COMPILER=clang++",
+        "-DCMAKE_C_COMPILER=clang",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld",
+        "-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm",
+        "-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir",
+        "-DNEX_Z3_ROOT=/opt/z3"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "build",
+      "command": [
+        "cmake",
+        "--build",
+        "/build",
+        "-j",
+        "2"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "ctest",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/build",
+        "--output-on-failure",
+        "-j",
+        "2"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "install",
+      "command": [
+        "cmake",
+        "--install",
+        "/build",
+        "--prefix",
+        "/build/sdk"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "sdk",
+      "command": [
+        "python3",
+        "/src/tools/linux/sdk_smoke.py",
+        "/build/sdk"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-debugging",
+      "command": [
+        "python3",
+        "/src/tests/debugging.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-expressions",
+      "command": [
+        "python3",
+        "/src/tests/expressions.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-generics",
+      "command": [
+        "python3",
+        "/src/tests/generics.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-constraints",
+      "command": [
+        "python3",
+        "/src/tests/constraints.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-matching",
+      "command": [
+        "python3",
+        "/src/tests/matching.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-function_debug",
+      "command": [
+        "python3",
+        "/src/tests/function_debug.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-bytes_debug",
+      "command": [
+        "python3",
+        "/src/tests/bytes_debug.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-resource_debug",
+      "command": [
+        "python3",
+        "/src/tests/resource_debug.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-numbers",
+      "command": [
+        "python3",
+        "/src/tests/numbers.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-incremental",
+      "command": [
+        "python3",
+        "/src/tests/incremental.py",
+        "/build/sdk/bin/nex",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "live-source-ffi",
+      "command": [
+        "python3",
+        "/src/tests/source_ffi.py",
+        "/build/sdk/bin/nex",
+        "--live",
+        "SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "source-free-sdk",
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/arm64",
+        "--network",
+        "none",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/linux-045-type-patches-arm64/sdk,dst=/sdk,readonly",
+        "--mount",
+        "type=bind,src=/Users/sae/projects/NEX/build/linux-045-type-patches-arm64/sdk-acceptance/900586085205459989cc3da3af889f32,dst=/evidence",
+        "--workdir",
+        "/tmp",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "python3",
+        "/sdk/share/nex/tools/sdk_acceptance.py",
+        "/sdk",
+        "--output",
+        "/evidence/workflow",
+        "--forbid-source",
+        "/src",
+        "--browser",
+        "--live"
+      ],
+      "status": "running"
+    }
+  ],
+  "case_counts": [
+    12,
+    10,
+    14,
+    5,
+    8,
+    5,
+    8,
+    13,
+    14,
+    13,
+    19,
+    7,
+    7,
+    2,
+    3,
+    17,
+    12,
+    17,
+    14,
+    3,
+    11,
+    10,
+    3,
+    12,
+    10,
+    6,
+    8,
+    3,
+    3,
+    5,
+    7,
+    2,
+    14,
+    8,
+    14,
+    11,
+    13,
+    16,
+    10,
+    7,
+    12,
+    12
+  ],
+  "skips": [
+    "macOS SDK cross-build",
+    "macOS SDK cross-build",
+    "Mach-O run-path selection",
+    "macOS SDK cross-build",
+    "macOS SDK cross-build",
+    "macOS cross SDK",
+    "macOS cross SDK"
+  ],
+  "sdk": {
+    "ok": true,
+    "constrained_backends": "native/interpreter/TypeScript passed",
+    "matching_backends": "native/interpreter/TypeScript passed",
+    "task_document": {
+      "checks": [
+        {
+          "id": "test-0",
+          "kind": "test",
+          "program": "app",
+          "target": "native",
+          "tests": [
+            {
+              "content_hash": "ade4c0c788b53724f21d718a1b51184210fa5cf872a12f38bfee4006e071764d",
+              "symbol": "generics::generic_values"
+            }
+          ],
+          "toolchain": "linux",
+          "toolchain_hash": "362fc11177be8cc98113d57e312feea47745430c8e196ed5f59c8abfe4e66c3f"
+        },
+        {
+          "entry": "generics::main",
+          "id": "build-native",
+          "kind": "build",
+          "profile": "release",
+          "program": "app",
+          "target": "native",
+          "toolchain": "linux",
+          "toolchain_hash": "362fc11177be8cc98113d57e312feea47745430c8e196ed5f59c8abfe4e66c3f"
+        }
+      ],
+      "goal": "Replace this scaffold with the required behavior, edge cases and acceptance criteria",
+      "id": "task-001",
+      "language": "0.15",
+      "programs": [
+        {
+          "baseline_revision": "69196c9b1b7d57f228c8b718650f253bcf4ab3c5cbb7a171c30ed86c500cc5bc",
+          "entry": "main.nex",
+          "id": "app"
+        }
+      ],
+      "requirements": [
+        {
+          "bindings": [
+            {
+              "kind": "function",
+              "program": "app",
+              "symbol": "generics::generic_values"
+            }
+          ],
+          "checks": [
+            "test-0"
+          ],
+          "id": "test-0",
+          "targets": [
+            "native"
+          ],
+          "text": "Review this scaffold requirement and its acceptance checks"
+        },
+        {
+          "bindings": [
+            {
+              "kind": "function",
+              "program": "app",
+              "symbol": "generics::main"
+            }
+          ],
+          "checks": [
+            "build-native"
+          ],
+          "id": "build-native",
+          "targets": [
+            "native"
+          ],
+          "text": "Review this scaffold requirement and its acceptance checks"
+        }
+      ],
+      "schema": "nex.task/1",
+      "title": "Review and name this task"
+    },
+    "toolchain_manifest": {
+      "archiver": "/usr/lib/llvm-22/bin/llvm-ar",
+      "compiler": "/usr/lib/llvm-22/bin/clang++",
+      "linker": "/usr/lib/llvm-22/bin/ld.lld",
+      "openssl": {
+        "crypto": "/usr/lib/aarch64-linux-gnu/libcrypto.so.3",
+        "include": "/usr/include",
+        "ssl": "/usr/lib/aarch64-linux-gnu/libssl.so.3"
+      },
+      "schema": "nex.toolchain/1",
+      "sqlite": {
+        "include": "/usr/include",
+        "library": "/usr/lib/aarch64-linux-gnu/libsqlite3.so.0.8.6"
+      },
+      "target": "aarch64-unknown-linux-gnu"
+    },
+    "toolchain_catalog": {
+      "linux": "native.json"
+    },
+    "receipts": [
+      "/build/sdk-evidence/run-3413060425-2331067790/receipt.json",
+      "/build/sdk-evidence/run-3639063812-688264445/receipt.json"
+    ],
+    "host": "aarch64-unknown-linux-gnu",
+    "llvm": "22.1.8",
+    "verifier": "5.3.1.0 ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+    "resources": 108,
+    "native_stdout": "\ud83e\udde0\n42\n[2,40]\n",
+    "standalone_dependencies": [
+      "\tlinux-vdso.so.1 (0x0000ffff9c95c000)",
+      "\tlibstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff9c600000)",
+      "\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9c550000)",
+      "\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff9c510000)",
+      "\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9c350000)",
+      "\t/lib/ld-linux-aarch64.so.1 (0x0000ffff9c910000)"
+    ],
+    "linker": "/usr/lib/llvm-22/bin/ld.lld",
+    "task_hash": "eb1b89e25ba88e1cc6dd378d7809118b020db00ebcab9c79cb7c1a4461f8f6f0",
+    "archived_replay": true,
+    "scalar_proof": "proven",
+    "authenticated_storage": "isolated and persistent across restart"
+  },
+  "doctor": {
+    "host": "aarch64-unknown-linux-gnu",
+    "language": "0.15",
+    "llvm": "22.1.8",
+    "native_archiver": "/usr/lib/llvm-22/bin/llvm-ar",
+    "native_compiler": "/usr/lib/llvm-22/bin/clang++",
+    "native_debug_packager": "",
+    "native_linker": "/usr/lib/llvm-22/bin/ld.lld",
+    "native_openssl_crypto": "/usr/lib/aarch64-linux-gnu/libcrypto.so.3",
+    "native_openssl_include": "/usr/include",
+    "native_openssl_ssl": "/usr/lib/aarch64-linux-gnu/libssl.so.3",
+    "native_sqlite_include": "/usr/include",
+    "native_sqlite_library": "/usr/lib/aarch64-linux-gnu/libsqlite3.so.0.8.6",
+    "runtime": "/build/sdk/share/nex/runtime/runtime.cpp",
+    "runtime_available": true,
+    "schema": "nex.doctor/1",
+    "sdk_manifest": "",
+    "verifier": "Z3",
+    "verifier_version": "5.3.1.0 ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+    "version": "0.45.0"
+  },
+  "compiler_sha256": "afde623f4b22c3c49f2dadb67dad136bdb26325ba80ad344b5e4ac0ef7d456cb",
+  "sdk_compiler_sha256": "908d9f40814caf66e22d4d1656b95464647dc1421eb4e8e2d74d633eb4b2a562",
+  "packages": [
+    "adduser\t3.137ubuntu1",
+    "apt\t2.8.3",
+    "base-files\t13ubuntu10.5",
+    "base-passwd\t3.6.3build1",
+    "bash\t5.2.21-2ubuntu4",
+    "binutils\t2.42-4ubuntu2.10",
+    "binutils-aarch64-linux-gnu\t2.42-4ubuntu2.10",
+    "binutils-common\t2.42-4ubuntu2.10",
+    "bsdutils\t1:2.39.3-9ubuntu6.6",
+    "ca-certificates\t20260601~24.04.1",
+    "clang-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "cmake\t3.28.3-1build7",
+    "cmake-data\t3.28.3-1build7",
+    "coreutils\t9.4-3ubuntu6.3",
+    "cpp\t4:13.2.0-7ubuntu1",
+    "cpp-13\t13.3.0-6ubuntu2~24.04.1",
+    "cpp-13-aarch64-linux-gnu\t13.3.0-6ubuntu2~24.04.1",
+    "cpp-aarch64-linux-gnu\t4:13.2.0-7ubuntu1",
+    "curl\t8.5.0-2ubuntu10.16",
+    "dash\t0.5.12-6ubuntu5",
+    "debconf\t1.5.86ubuntu1",
+    "debianutils\t5.17build1",
+    "diffutils\t1:3.10-1ubuntu0.1",
+    "dirmngr\t2.4.4-2ubuntu17.6",
+    "dpkg\t1.22.6ubuntu6.6",
+    "e2fsprogs\t1.47.0-2.4~exp1ubuntu4.1",
+    "findutils\t4.9.0-5build1",
+    "g++\t4:13.2.0-7ubuntu1",
+    "g++-13\t13.3.0-6ubuntu2~24.04.1",
+    "g++-13-aarch64-linux-gnu\t13.3.0-6ubuntu2~24.04.1",
+    "g++-aarch64-linux-gnu\t4:13.2.0-7ubuntu1",
+    "gcc\t4:13.2.0-7ubuntu1",
+    "gcc-13\t13.3.0-6ubuntu2~24.04.1",
+    "gcc-13-aarch64-linux-gnu\t13.3.0-6ubuntu2~24.04.1",
+    "gcc-13-base\t13.3.0-6ubuntu2~24.04.1",
+    "gcc-14-base\t14.2.0-4ubuntu2~24.04.1",
+    "gcc-aarch64-linux-gnu\t4:13.2.0-7ubuntu1",
+    "gnupg\t2.4.4-2ubuntu17.6",
+    "gnupg-utils\t2.4.4-2ubuntu17.6",
+    "gpg\t2.4.4-2ubuntu17.6",
+    "gpg-agent\t2.4.4-2ubuntu17.6",
+    "gpgconf\t2.4.4-2ubuntu17.6",
+    "gpgsm\t2.4.4-2ubuntu17.6",
+    "gpgv\t2.4.4-2ubuntu17.6",
+    "grep\t3.11-4build1",
+    "gzip\t1.12-1ubuntu3.2",
+    "hostname\t3.23+nmu2ubuntu2",
+    "icu-devtools\t74.2-1ubuntu3.1",
+    "init-system-helpers\t1.66ubuntu1",
+    "keyboxd\t2.4.4-2ubuntu17.6",
+    "libacl1\t2.3.2-1build1.1",
+    "libapt-pkg6.0t64\t2.8.3",
+    "libarchive13t64\t3.7.2-2ubuntu0.9",
+    "libasan8\t14.2.0-4ubuntu2~24.04.1",
+    "libassuan0\t2.5.6-1build1",
+    "libatomic1\t14.2.0-4ubuntu2~24.04.1",
+    "libattr1\t1:2.5.2-1ubuntu0.1",
+    "libaudit-common\t1:3.1.2-2.1ubuntu0.1",
+    "libaudit1\t1:3.1.2-2.1ubuntu0.1",
+    "libbinutils\t2.42-4ubuntu2.10",
+    "libblkid1\t2.39.3-9ubuntu6.6",
+    "libbrotli1\t1.1.0-2build2",
+    "libbsd0\t0.12.1-1build1.1",
+    "libbz2-1.0\t1.0.8-5.1ubuntu0.1",
+    "libc-bin\t2.39-0ubuntu8.9",
+    "libc-dev-bin\t2.39-0ubuntu8.9",
+    "libc6\t2.39-0ubuntu8.9",
+    "libc6-dev\t2.39-0ubuntu8.9",
+    "libcap-ng0\t0.8.4-2build2",
+    "libcap2\t1:2.66-5ubuntu2.4",
+    "libcc1-0\t14.2.0-4ubuntu2~24.04.1",
+    "libclang-common-22-dev\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libclang-cpp22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libclang1-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libcom-err2\t1.47.0-2.4~exp1ubuntu4.1",
+    "libcrypt-dev\t1:4.4.36-4build1",
+    "libcrypt1\t1:4.4.36-4build1",
+    "libctf-nobfd0\t2.42-4ubuntu2.10",
+    "libctf0\t2.42-4ubuntu2.10",
+    "libcurl4t64\t8.5.0-2ubuntu10.16",
+    "libdb5.3t64\t5.3.28+dfsg2-7",
+    "libdebconfclient0\t0.271ubuntu3",
+    "libedit2\t3.1-20230828-1build1",
+    "libexpat1\t2.6.1-2ubuntu0.6",
+    "libext2fs2t64\t1.47.0-2.4~exp1ubuntu4.1",
+    "libffi-dev\t3.4.6-1build1",
+    "libffi8\t3.4.6-1build1",
+    "libgc1\t1:8.2.6-1build1",
+    "libgcc-13-dev\t13.3.0-6ubuntu2~24.04.1",
+    "libgcc-s1\t14.2.0-4ubuntu2~24.04.1",
+    "libgcrypt20\t1.10.3-2ubuntu0.2",
+    "libgmp10\t2:6.3.0+dfsg-2ubuntu6.1",
+    "libgnutls30t64\t3.8.3-1.1ubuntu3.6",
+    "libgomp1\t14.2.0-4ubuntu2~24.04.1",
+    "libgpg-error0\t1.47-3build2.1",
+    "libgprofng0\t2.42-4ubuntu2.10",
+    "libgssapi-krb5-2\t1.20.1-6ubuntu2.10",
+    "libhogweed6t64\t3.9.1-2.2build1.1",
+    "libhwasan0\t14.2.0-4ubuntu2~24.04.1",
+    "libicu-dev\t74.2-1ubuntu3.1",
+    "libicu74\t74.2-1ubuntu3.1",
+    "libidn2-0\t2.3.7-2build1.1",
+    "libisl23\t0.26-3build1.1",
+    "libitm1\t14.2.0-4ubuntu2~24.04.1",
+    "libjansson4\t2.14-2build2",
+    "libjsoncpp25\t1.9.5-6build1",
+    "libk5crypto3\t1.20.1-6ubuntu2.10",
+    "libkeyutils1\t1.6.3-3build1",
+    "libkrb5-3\t1.20.1-6ubuntu2.10",
+    "libkrb5support0\t1.20.1-6ubuntu2.10",
+    "libksba8\t1.6.6-1build1",
+    "libldap2\t2.6.10+dfsg-0ubuntu0.24.04.1",
+    "liblldb-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libllvm22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "liblsan0\t14.2.0-4ubuntu2~24.04.1",
+    "liblz4-1\t1.9.4-1build1.1",
+    "liblzma5\t5.6.1+really5.4.5-1ubuntu0.3",
+    "libmd0\t1.1.0-2build1.1",
+    "libmlir-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libmlir-22-dev\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "libmount1\t2.39.3-9ubuntu6.6",
+    "libmpc3\t1.3.1-1build1.1",
+    "libmpfr6\t4.2.1-1build1.1",
+    "libncurses-dev\t6.4+20240113-1ubuntu2.2",
+    "libncurses6\t6.4+20240113-1ubuntu2.2",
+    "libncursesw6\t6.4+20240113-1ubuntu2.2",
+    "libnettle8t64\t3.9.1-2.2build1.1",
+    "libnghttp2-14\t1.59.0-1ubuntu0.4",
+    "libnpth0t64\t1.6-3.1build1",
+    "libobjc-13-dev\t13.3.0-6ubuntu2~24.04.1",
+    "libobjc4\t14.2.0-4ubuntu2~24.04.1",
+    "libp11-kit0\t0.25.3-4ubuntu2.2",
+    "libpam-modules\t1.5.3-5ubuntu5.7",
+    "libpam-modules-bin\t1.5.3-5ubuntu5.7",
+    "libpam-runtime\t1.5.3-5ubuntu5.7",
+    "libpam0g\t1.5.3-5ubuntu5.7",
+    "libpcre2-8-0\t10.42-4ubuntu2.1",
+    "libpfm4\t4.13.0+git32-g0d4ed0e-1ubuntu0.1",
+    "libproc2-0\t2:4.0.4-4ubuntu3.3",
+    "libpsl5t64\t0.21.2-1.1build1",
+    "libpython3-stdlib\t3.12.3-0ubuntu2.1",
+    "libpython3.12-minimal\t3.12.3-1ubuntu0.17",
+    "libpython3.12-stdlib\t3.12.3-1ubuntu0.17",
+    "libpython3.12t64\t3.12.3-1ubuntu0.17",
+    "libreadline8t64\t8.2-4build1",
+    "librhash0\t1.4.3-3build1",
+    "librtmp1\t2.4+20151223.gitfa8646d.1-2build7",
+    "libsasl2-2\t2.1.28+dfsg1-5ubuntu3.1",
+    "libsasl2-modules-db\t2.1.28+dfsg1-5ubuntu3.1",
+    "libseccomp2\t2.5.5-1ubuntu3.1",
+    "libselinux1\t3.5-2ubuntu2.1",
+    "libsemanage-common\t3.5-1build5",
+    "libsemanage2\t3.5-1build5",
+    "libsepol2\t3.5-2build1",
+    "libsframe1\t2.42-4ubuntu2.10",
+    "libsmartcols1\t2.39.3-9ubuntu6.6",
+    "libsqlite3-0\t3.45.1-1ubuntu2.8",
+    "libsqlite3-dev\t3.45.1-1ubuntu2.8",
+    "libss2\t1.47.0-2.4~exp1ubuntu4.1",
+    "libssh-4\t0.10.6-2ubuntu0.5",
+    "libssl-dev\t3.0.13-0ubuntu3.16",
+    "libssl3t64\t3.0.13-0ubuntu3.16",
+    "libstdc++-13-dev\t13.3.0-6ubuntu2~24.04.1",
+    "libstdc++6\t14.2.0-4ubuntu2~24.04.1",
+    "libsystemd0\t255.4-1ubuntu8.17",
+    "libtasn1-6\t4.19.0-3ubuntu0.24.04.2",
+    "libtinfo6\t6.4+20240113-1ubuntu2.2",
+    "libtsan2\t14.2.0-4ubuntu2~24.04.1",
+    "libubsan1\t14.2.0-4ubuntu2~24.04.1",
+    "libudev1\t255.4-1ubuntu8.17",
+    "libunistring5\t1.1-2build1.1",
+    "libuuid1\t2.39.3-9ubuntu6.6",
+    "libuv1t64\t1.48.0-1.1build1",
+    "libxml2\t2.9.14+dfsg-1.3ubuntu3.10",
+    "libxml2-dev\t2.9.14+dfsg-1.3ubuntu3.10",
+    "libxxhash0\t0.8.2-2build1",
+    "libyaml-0-2\t0.2.5-1build1",
+    "libz3-4\t4.8.12-3.1build1",
+    "libz3-dev\t4.8.12-3.1build1",
+    "libzstd-dev\t1.5.5+dfsg2-2build1.1",
+    "libzstd1\t1.5.5+dfsg2-2build1.1",
+    "linux-libc-dev\t6.8.0-147.147",
+    "lld-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "lldb-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "llvm-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "llvm-22-dev\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "llvm-22-linker-tools\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "llvm-22-runtime\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "llvm-22-tools\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "login\t1:4.13+dfsg1-4ubuntu3.2",
+    "logsave\t1.47.0-2.4~exp1ubuntu4.1",
+    "make\t4.3-4.1build2",
+    "mawk\t1.3.4.20240123-1build1",
+    "media-types\t10.1.0",
+    "mlir-22-tools\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "mount\t2.39.3-9ubuntu6.6",
+    "ncurses-base\t6.4+20240113-1ubuntu2.2",
+    "ncurses-bin\t6.4+20240113-1ubuntu2.2",
+    "netbase\t6.4",
+    "openssl\t3.0.13-0ubuntu3.16",
+    "passwd\t1:4.13+dfsg1-4ubuntu3.2",
+    "patchelf\t0.18.0-1.1build1",
+    "perl-base\t5.38.2-3.2ubuntu0.6",
+    "pinentry-curses\t1.2.1-3ubuntu5",
+    "procps\t2:4.0.4-4ubuntu3.3",
+    "python3\t3.12.3-0ubuntu2.1",
+    "python3-lldb-22\t1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80",
+    "python3-minimal\t3.12.3-0ubuntu2.1",
+    "python3-pkg-resources\t68.1.2-2ubuntu1.2",
+    "python3-pygments\t2.17.2+dfsg-1",
+    "python3-yaml\t6.0.1-2build2",
+    "python3.12\t3.12.3-1ubuntu0.17",
+    "python3.12-minimal\t3.12.3-1ubuntu0.17",
+    "readline-common\t8.2-4build1",
+    "rpcsvc-proto\t1.4.2-0ubuntu7",
+    "sed\t4.9-2ubuntu0.24.04.1",
+    "sensible-utils\t0.0.22",
+    "sysvinit-utils\t3.08-6ubuntu3",
+    "tar\t1.35+dfsg-3ubuntu0.4",
+    "tzdata\t2026e-0ubuntu0.24.04.1",
+    "ubuntu-keyring\t2023.11.28.1",
+    "unminimize\t0.2.1",
+    "unzip\t6.0-28ubuntu4.1",
+    "util-linux\t2.39.3-9ubuntu6.6",
+    "xz-utils\t5.6.1+really5.4.5-1ubuntu0.3",
+    "zlib1g\t1:1.3.dfsg-3.1ubuntu2.2",
+    "zlib1g-dev\t1:1.3.dfsg-3.1ubuntu2.2"
+  ],
+  "seconds": 1578.989
+}

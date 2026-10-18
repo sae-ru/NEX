@@ -1,0 +1,132 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.25)
+-project(NEX VERSION 0.45.0 LANGUAGES C CXX)
++project(NEX VERSION 0.46.0 LANGUAGES C CXX)
+ set(CMAKE_CXX_STANDARD 20)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+--- a/runtime/nex_host.h
++++ b/runtime/nex_host.h
+@@ -9,6 +9,19 @@
+   std::string code; int64_t line;
+   Trap(std::string code,std::string message,int64_t line):std::runtime_error(std::move(message)),code(std::move(code)),line(line){}
+ };
++// Rich locations are an additive internal runtime ABI. Legacy exported helpers
++// and the original Trap layout remain available to trusted C/C++ hosts.
++struct SourceLocation {
++  int64_t line=0;const char *site=nullptr;
++  SourceLocation(int64_t line=0,const char *site=nullptr):line(line),site(site){}
++  operator int64_t()const{return line;}
++};
++struct LocatedTrap : Trap {
++  std::string source;
++  LocatedTrap(const Trap &trap,const char *site);
++};
++[[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location);
++void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
+ // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
+ class RequestScope {
+   struct Impl;std::shared_ptr<Impl> impl;
+@@ -27,18 +40,19 @@
+ Handle *makeHandle(const Value &value);
+ Value readHandle(const Handle *handle);
+ [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
++[[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location);
+ bool inRequestScope();
+ void pollHostOperation(int64_t line);
+ void registerRuntimeCleanup(void (*cleanup)() noexcept);
+ void cleanupRuntimeResources();
+-template<class F> auto hostOperation(int64_t line,F operation)->decltype(operation()){
++template<class F> auto hostOperation(SourceLocation line,F operation)->decltype(operation()){
+   try{return operation();}
+-  catch(const Trap &){throw;}
++  catch(const Trap &trap){propagateTrap(trap,line);}
+   catch(const DataError &e){runtimeFail(e.code.c_str(),e.what(),line);}
+   catch(const std::bad_alloc &){runtimeFail("E_MEMORY","allocation failed",line);}
+   catch(const std::exception &){runtimeFail("E_RUNTIME","host value operation failed",line);}
+ }
+-template<class F> Handle *hostValue(int64_t line,F operation){
++template<class F> Handle *hostValue(SourceLocation line,F operation){
+   return hostOperation(line,[&]{return makeHandle(operation());});
+ }
+ }
+--- a/runtime/runtime.cpp
++++ b/runtime/runtime.cpp
+@@ -9,6 +9,11 @@
+ #include <algorithm>
+ #include <vector>
+ #include <map>
++#include <cstring>
++
++// A link-specific strong definition is emitted for executables/servers. Static
++// NEX libraries retain the weak null fallback and do not collide at host link.
++extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{return nullptr;}
+ 
+ namespace nexrt {
+ namespace {
+@@ -66,21 +71,57 @@
+ }
+ Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
+ Value readHandle(const Handle *handle){return Value(handle->data);}
+-[[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){
++namespace {
++std::string sourceRecord(const char *text){
++  if(!text)return {};auto size=::strnlen(text,16385);return size<=16384?std::string(text,size):std::string();
++}
++std::pair<std::string,bool> diagnosticText(const char *text,size_t maximum){
++  if(!text)return {{},false};size_t size=::strnlen(text,maximum+1);bool truncated=size>maximum;size=std::min(size,maximum);std::string result;
++  for(size_t i=0;i<size;){auto first=static_cast<unsigned char>(text[i]);if(first<0x80){result+=char(first);++i;continue;}
++    size_t count=first>=0xc2&&first<=0xdf?2:first>=0xe0&&first<=0xef?3:first>=0xf0&&first<=0xf4?4:0;
++    bool valid=count&&count<=size-i;uint32_t scalar=count?first&((1u<<(7-count))-1):0;
++    if(count&&count>size-i&&truncated)break;
++    if(valid)for(size_t n=1;n<count;++n){auto byte=static_cast<unsigned char>(text[i+n]);if((byte&0xc0)!=0x80){valid=false;break;}scalar=(scalar<<6)|(byte&0x3f);}
++    valid=valid&&!(count==2&&scalar<0x80)&&!(count==3&&scalar<0x800)&&!(count==4&&scalar<0x10000)&&scalar<=0x10ffff&&!(scalar>=0xd800&&scalar<=0xdfff);
++    if(valid){result.append(text+i,count);i+=count;}else{result+="\xef\xbf\xbd";++i;}
++  }
++  return {std::move(result),truncated};
++}
++}
++LocatedTrap::LocatedTrap(const Trap &trap,const char *site):Trap(trap.code,trap.what(),trap.line),source(sourceRecord(site)){}
++[[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location){
++  if(dynamic_cast<const LocatedTrap*>(&trap)||!location.site)throw;
++  throw LocatedTrap(trap,location.site);
++}
++void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request)noexcept{
++  if(source.empty())return;
++  try{
++    auto [safeCode,codeTruncated]=diagnosticText(code,128);auto [safeMessage,messageTruncated]=diagnosticText(message,4096);
++    auto application=sourceRecord(nex_application_identity());
++    std::string record="{\"schema\":\"nex.native-trap/1\",\"code\":"+quoted(safeCode)+",\"message\":"+quoted(safeMessage)+",\"reported_line\":"+std::to_string(line)+",\"message_truncated\":"+(messageTruncated?"true":"false")+",\"code_truncated\":"+(codeTruncated?"true":"false")+",\"source\":"+source+",\"application\":"+(application.empty()?"null":application);
++    if(request)record+=",\"request_id\":"+quoted(diagnosticText(request,256).first);record+="}";
++    std::fprintf(stderr,"NEX_NATIVE_TRAP %s\n",record.c_str());
++  }catch(...){/* Error reporting must not replace the original failure. */}
++}
++[[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){runtimeFail(code,message,SourceLocation{line});}
++[[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location){
++  // Copy while the producing module is leased. Cleanup may unload its image.
++  auto source=sourceRecord(location.site);auto line=location.line;
+   profileUnwind();
+-  if(currentRequest)throw Trap(code,message,line);
++  if(currentRequest){Trap trap(code,message,line);if(source.empty())throw trap;throw LocatedTrap(trap,source.c_str());}
+   cleanupRuntimeResources();
+-  std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));std::exit(70);
++  std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));printNativeTrap(code,message,line,source);std::exit(70);
+ }
+ }
+ using nexrt::Handle;
++using nexrt::SourceLocation;
+ namespace {
+-[[noreturn]] void fail(const char *code,const char *message,int64_t line) {
++[[noreturn]] void fail(const char *code,const char *message,SourceLocation line) {
+   nexrt::runtimeFail(code,message,line);
+ }
+-template<class F> auto guarded(int64_t line,F operation)->decltype(operation()) {
++template<class F> auto guarded(SourceLocation line,F operation)->decltype(operation()) {
+   try{return operation();}
+-  catch(const nexrt::Trap &){throw;}
++  catch(const nexrt::Trap &trap){nexrt::propagateTrap(trap,line);}
+   catch(const nexrt::DataError &e){fail(e.code.c_str(),e.what(),line);}
+   catch(const std::bad_alloc &){fail("E_MEMORY","allocation failed",line);}
+   catch(const std::exception &e){fail("E_RUNTIME",e.what(),line);}

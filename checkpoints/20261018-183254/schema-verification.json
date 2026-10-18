@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "validator": "jsonschema 4.25.1",
+  "compiler_sha256": "0a3ce63cccf78e3ba00a9b2879895276bddd27c0b85f9498e2166a20146f21aa",
+  "schema_sha256": {
+    "patch.schema.json": "c41947ffee9349504255ea254e4274aa711a5d0de9a80ac70110fb6b79afee17",
+    "graph-identity.schema.json": "059d38e80f7116f12ca880cb8507d62204100a8d13b9ba9bf816ba09f89b6007"
+  },
+  "previous_044_artifacts_accepted": 5,
+  "legacy_function_patch_accepted": true,
+  "current_artifact_sha256": {
+    "source_type": "3d9e1a422dc5047354a5f7ecf40a22c982b5309a5e9ada6ebb64e5b84a6c2e49",
+    "derived_type": "c0f02e7e850361398f4a4e174f8af7575214b74f59878ca84182b1431d593e83",
+    "module": "84e4e9a6c0e3cf9d8f73e1af1687391d5b9dabeaa86824023f9d0b2d44fa25ec",
+    "declarations": "782cd28b9958183dd5db7a2a847abed5ae2d08949f46b98bd31fdb9c585c79a9",
+    "identities": "bd4acd146503754371622fc9f3fe126e475809df04ee70dc8c34eca7181cc952"
+  },
+  "rejected_malformed": [
+    "kind:enum",
+    "kind:None",
+    "extra:True",
+    "name:app::f\n",
+    "derived_type:editable",
+    "module:editable"
+  ],
+  "remote_schema_access": false
+}
