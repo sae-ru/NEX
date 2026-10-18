@@ -2,6 +2,29 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: checked native integer fast paths
+
+Toolchain **0.47.0 / language 0.15** emits signed checked arithmetic intrinsics
+and guarded division/remainder directly in SSA. Only arithmetic failure branches pass
+their operation metadata to the existing integer runtime helpers. Assertions also
+branch directly on their evaluated boolean and retain the same failure helper. `MIN % -1` is explicitly defined
+without an LLVM undefined operation. Argument order, overflow/division codes,
+source identities, floating rules and C value ABI 1 remain unchanged.
+
+The initial isolated compiler passes three acceptance cases in **54.643 s**:
+more than a thousand valid boundary/random operations agree across native
+Debug/Release/Profile, interpreter and TypeScript execution; every integer fault
+matches the reference error and operation ID; loops and effectful nested operands
+retain order. Final isolated arithmetic/diagnostic/runtime groups pass in **97.66 s**, including
+fifteen Python cases and the eight-case C++ runtime probe. Full current validation
+remains pending. Initial interleaved
+local observations show 71.9 ms vs 105.9 ms for a 20-million-iteration loop in
+0.47 vs 0.46, and 259,040 vs 391,168 bytes for a constant-expression workload.
+The [build guide](docs/incremental.md) states measurement scope. These are limited
+shared-host observations, not general speed guarantees. Full current compiler,
+platform, installed SDK and distribution checks remain pending. This does not
+complete the requested NEX language/development chain.
+
 ## Verified development milestone: native runtime trap attribution
 
 Toolchain **0.46.0 / language 0.15** adds compact constant operation descriptors,

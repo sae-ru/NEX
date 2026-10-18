@@ -230,6 +230,8 @@ test fn examples() -> unit {
         require('type' in descriptor.get('patch_entities', []), 'SDK lacks atomic source-type replacements')
         require('manifest_checked_trap_mapping' in descriptor.get('diagnostic_features', []),
                 'SDK lacks checked native runtime diagnostics')
+        require({'native_checked_i64_ssa', 'cold_integer_failure_calls', 'cold_native_assertions'} <=
+                set(descriptor.get('build_features', [])), 'SDK lacks checked native scalar fast paths')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
         require('bytes' in descriptor['types'] and
                 'immutable_contiguous_octets' in descriptor['binary_features'],
@@ -454,6 +456,23 @@ test fn examples() -> unit {
         report['evidence']['function_cache'] = {'before_revision': before['revision'],
             'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
             'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
+
+        integer_project = root / 'native-integers'
+        integer_project.mkdir()
+        (integer_project / 'nex.json').write_text(json.dumps({'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        integer_source = integer_project / 'main.nex'
+        shutil.copy2(resources / 'examples/native-arithmetic.nex', integer_source)
+        integer_revision = cli('check', cwd=integer_project)['revision']
+        cli('test', cwd=integer_project)
+        cli('test', '--target', 'web', cwd=integer_project)
+        cli('test', '--profile', 'release', cwd=integer_project)
+        integer_source.unlink()
+        cli('test', '--revision', integer_revision, cwd=integer_project)
+        cli('test', '--revision', integer_revision, '--target', 'web', cwd=integer_project)
+        report['evidence']['native_integer_lowering'] = {'revision': integer_revision,
+            'source_example': 'examples/native-arithmetic.nex', 'sample_loop_iterations': 1000,
+            'checked_boundaries': True, 'native_and_reference': True, 'typescript': True,
+            'native_profiles': ['debug', 'release'], 'source_deleted': True}
 
         diagnostic_project = root / 'native-diagnostics'
         diagnostic_project.mkdir()

@@ -8,14 +8,17 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The verified development checkpoint is toolchain **0.46.0 / language 0.15**,
-adding bounded native runtime trap reports, checked graph mapping and archived
-log diagnosis. All 54 regression groups pass on macOS/Linux ARM64, alongside both
-thirteen-phase installed SDK workflows and Linux live debugger checks.
-[The evidence](docs/evidence/native-diagnostics-0.46.0.json) records exact scope.
-`nex run --json` reports local operation IDs after checking build/source metadata;
-`nex diagnose` maps retained standalone/server logs. The [guide](docs/native-diagnostics.md)
-defines trust and limits. Native integer hot paths are in isolated 0.47 development.
+The working tree is toolchain **0.47.0 / language 0.15**, adding checked native
+integer fast paths. Signed overflow checks and guarded division/remainder stay
+in SSA; failure branches retain native operation diagnostics. Source syntax,
+evaluation order, C value ABI 1 and canonical identities are unchanged. Current
+validation is tracked in `STATUS.md` and the [build guide](docs/incremental.md).
+
+The preceding verified **0.46.0 / language 0.15** snapshot adds bounded native
+runtime trap reports, checked graph mapping and archived log diagnosis. All 54
+groups pass on macOS/Linux ARM64, alongside both thirteen-phase installed SDK
+workflows and Linux live debugger checks. [The evidence](docs/evidence/native-diagnostics-0.46.0.json)
+records exact scope; the [guide](docs/native-diagnostics.md) defines trust and limits.
 
 The preceding verified **0.45.0 / language 0.15** snapshot adds atomic source
 type replacements together with affected functions/endpoints. All 52 groups pass

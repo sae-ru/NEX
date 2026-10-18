@@ -566,3 +566,10 @@ Toolchain 0.46 adds [native failure metadata](native-diagnostics.md) without
 changing these language semantics. Mapped native traps identify the checked
 operation and exact source/build snapshot; metadata does not authenticate
 arbitrary native code or identify an instruction inside an external module.
+
+Toolchain 0.47 lowers checked `i64` arithmetic directly into MLIR/LLVM scalar
+operations, with the same runtime failure behavior and operation identities.
+Signed overflow and division faults remain checked; `MIN % -1` remains zero.
+Assertions evaluate their argument once and retain the same failure behavior.
+Evaluation order and floating-point environment rules are unchanged. This
+changes code generation, not language 0.15 or its canonical source formats.

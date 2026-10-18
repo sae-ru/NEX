@@ -239,3 +239,8 @@ mapping verifies metadata agreement, not authenticity of trusted native code.
 Never guess IDs for stale/unmapped reports or infer a C-module source instruction
 from the external wrapper body site. Parser/checker graph identities and signal/
 core instruction recovery remain pending.
+
+Native checked integer lowering is discoverable through `build_features` and
+`nex guide --kind build --json`. Source-language arithmetic/evaluation semantics
+remain identical across native and TypeScript/reference execution. Keep runtime
+error and operation-identity checks in acceptance tests when optimizing a body.

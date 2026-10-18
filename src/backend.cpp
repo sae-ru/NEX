@@ -36,6 +36,7 @@
 #include <functional>
 #include <random>
 #include <tuple>
+#include <limits>
 
 namespace nex {
 namespace {
@@ -180,6 +181,42 @@ class Emitter {
     for(const auto &a:operandsWithSite){if(!operands.empty()){operands+=", ";types+=", ";}operands+=a.name;types+=ty(a.type);}
     auto n=result==Type::Unit?"":fresh();
     line((n.empty()?"":n+" = ")+"func.call @"+target+"("+operands+") : ("+types+") -> "+ty(result),span);return {n,result};
+  }
+  Value checkedInteger(const std::string &operation,Value a,Value b,Span span){
+    // Successful integer arithmetic stays in SSA. Only the failure edge passes
+    // diagnostic metadata to the unchanged checked runtime helper.
+    auto bad=label(),good=label();Value result,invalid;
+    bool negate=operation=="neg";
+    if(operation=="add"||operation=="sub"||operation=="mul"||negate){
+      auto intrinsic=negate?"sub":operation;auto pair=fresh(),value=fresh(),overflow=fresh();
+      std::string structure="!llvm.struct<(i64, i1)>";
+      line(pair+" = \"llvm.intr.s"+intrinsic+".with.overflow\"("+a.name+", "+b.name+") : (i64, i64) -> "+structure,span);
+      line(value+" = llvm.extractvalue "+pair+"[0] : "+structure,span);
+      line(overflow+" = llvm.extractvalue "+pair+"[1] : "+structure,span);
+      result={value,Type::I64};invalid={overflow,Type::Bool};
+    }else{
+      auto zero=equalScalar(b,constant(0,Type::I64,span),span);
+      auto minimum=equalScalar(a,constant(std::numeric_limits<int64_t>::min(),Type::I64,span),span);
+      auto minusOne=equalScalar(b,constant(-1,Type::I64,span),span);auto corner=fresh();
+      line(corner+" = arith.andi "+minimum.name+", "+minusOne.name+" : i1",span);
+      if(operation=="div"){
+        auto error=fresh();line(error+" = arith.ori "+zero.name+", "+corner+" : i1",span);invalid={error,Type::Bool};
+      }else{
+        // LLVM srem is undefined for MIN/-1. Language remainder is exactly zero;
+        // selecting divisor one makes that case defined before optimization.
+        auto one=constant(1,Type::I64,span);auto divisor=fresh();line(divisor+" = arith.select "+corner+", "+one.name+", "+b.name+" : i64",span);
+        b={divisor,Type::I64};invalid=zero;
+      }
+    }
+    line("cf.cond_br "+invalid.name+", ^"+bad+", ^"+good,span);
+    blockLabel(bad);
+    if(negate)call("nex_neg",{b,constant(span.line,Type::I64,span)},Type::I64,span);
+    else call("nex_"+operation,{a,b,constant(span.line,Type::I64,span)},Type::I64,span);
+    line("llvm.unreachable",span);blockLabel(good);
+    if(operation=="div"||operation=="mod"){
+      auto value=fresh();line(value+(operation=="div"?" = arith.divsi ":" = arith.remsi ")+a.name+", "+b.name+" : i64",span);result={value,Type::I64};
+    }
+    return result;
   }
   Value asI64(Value v,Span span){if(v.type==Type::I64)return v;auto n=fresh();line(n+(v.type==Type::F64?" = arith.bitcast ":" = arith.extui ")+v.name+" : "+ty(v.type)+" to i64",span);return {n,Type::I64};}
   Value asBool(Value v,Span span){auto n=fresh();line(n+" = arith.trunci "+v.name+" : i64 to i1",span);return {n,Type::Bool};}
@@ -333,7 +370,11 @@ class Emitter {
         }
       }else if(e->text=="print"){
         result=args[0].type.heap()?call("nex_print_heap",{args[0]},Type::Unit,e->span):args[0].type==Type::F64?call("nex_print_f64",{args[0]},Type::Unit,e->span):call(args[0].type==Type::Bool?"nex_print_bool":"nex_print_i64",{asI64(args[0],e->span)},Type::Unit,e->span);
-      }else if(e->text=="assert")result=call("nex_assert",{asI64(args[0],e->span),c(e->span.line)},Type::Unit,e->span);
+      }else if(e->text=="assert"){
+        auto failure=label(),success=label();line("cf.cond_br "+args[0].name+", ^"+success+", ^"+failure,e->span);
+        blockLabel(failure);call("nex_assert",{c(0),c(e->span.line)},Type::Unit,e->span);line("llvm.unreachable",e->span);
+        blockLabel(success);result={"",Type::Unit};
+      }
       else if(e->text=="len")result=call("nex_length",args,Type::I64,e->span);
       else if(e->text=="str")result=args[0].type.heap()?call("nex_format_heap",args,Type::Str,e->span):call("nex_format_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},Type::Str,e->span);
       else if(e->text=="ok")result=args[0].type.heap()?call("nex_ok_heap",args,e->type,e->span):call("nex_ok_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},e->type,e->span);
@@ -369,7 +410,7 @@ class Emitter {
     }
     Value a=expression(e->args[0]);
     if(e->kind==Expr::Unary){
-      if(e->text=="-")return call(a.type==Type::F64?"nex_f64_neg":"nex_neg",{a,constant(e->span.line,Type::I64,e->span)},a.type,e->span);
+      if(e->text=="-")return a.type==Type::F64?call("nex_f64_neg",{a,constant(e->span.line,Type::I64,e->span)},a.type,e->span):checkedInteger("neg",constant(0,Type::I64,e->span),a,e->span);
       auto one=constant(1,Type::Bool,e->span);auto n=fresh();line(n+" = arith.xori "+a.name+", "+one.name+" : i1",e->span);return {n,Type::Bool};
     }
     const auto &op=e->text;
@@ -396,7 +437,7 @@ class Emitter {
       const std::map<std::string,int64_t> comparisons={{"==",0},{"!=",1},{"<",2},{"<=",3},{">",4},{">=",5}};
       return asBool(call("nex_f64_compare",{a,b,constant(comparisons.at(op),Type::I64,e->span),constant(e->span.line,Type::I64,e->span)},Type::I64,e->span),e->span);
     }
-    if(arithmetic.contains(op))return call("nex_"+arithmetic.at(op),{a,b,constant(e->span.line,Type::I64,e->span)},Type::I64,e->span);
+    if(arithmetic.contains(op))return checkedInteger(arithmetic.at(op),a,b,e->span);
     static const std::map<std::string,std::string> predicates={{"==","eq"},{"!=","ne"},{"<","slt"},{"<=","sle"},{">","sgt"},{">=","sge"}};
     auto n=fresh();line(n+" = arith.cmpi "+predicates.at(op)+", "+a.name+", "+b.name+" : "+ty(a.type),e->span);return {n,Type::Bool};
   }

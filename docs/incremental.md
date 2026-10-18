@@ -240,3 +240,39 @@ search paths. The integration test executes SQLite storage and checks the actual
 loader resolution in a comma/Unicode/percent directory. ELF search-list colons
 are rejected explicitly. Linux SDK assembly and clean archive acceptance are
 described in the SDK and Linux guides.
+
+## Checked integer lowering (0.47)
+
+The native backend emits signed overflow intrinsics for `i64` addition,
+subtraction, multiplication and negation. Division checks zero and `MIN / -1`
+before executing signed division. Remainder checks zero and selects a defined
+divisor for `MIN % -1`, which returns zero. Successful arithmetic stays in SSA;
+only the failure edge calls the existing checked runtime helper with its static
+operation descriptor. Assertions also branch directly on their already evaluated
+boolean, calling the existing failure helper only when false. Arguments still evaluate once, left to right. Floating
+arithmetic keeps its existing finite-value and caller-environment handling.
+
+Source syntax, canonical hashes, language 0.15, graph identity policy and C value
+ABI 1 are unchanged. Compiler/build identities invalidate old function objects.
+The public native diagnostic format remains the 0.46 format; archived reports
+still require a matching compiler/build manifest.
+
+```sh
+nex test examples/native-arithmetic.nex --json
+nex test examples/native-arithmetic.nex --target web --json
+nex build examples/native-arithmetic.nex --profile release --json
+```
+
+The isolated acceptance cases compare more than a thousand valid boundary and
+seeded random operations across native/interpreter/TypeScript execution. Every
+integer failure kind checks both error code and operation ID in debug/release;
+loops and nested effectful operands check remainder and evaluation order.
+Current full platform/SDK scope is recorded in `STATUS.md`.
+
+An initial local ARM64 experiment interleaved eleven warm process runs of the
+same 20-million-iteration program and exact 0.45/0.46/0.47 runtime snapshots.
+Median times were 91.6/105.9/71.9 ms. A separate 300-expression constant workload
+produced 223,808/391,168/259,040-byte executables with equal output. These are
+observations on a shared development host during validation, not general
+performance guarantees. Compiler/source hashes and raw observations are retained
+in the development evidence; broader benchmarks remain pending.

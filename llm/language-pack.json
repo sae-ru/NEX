@@ -118,7 +118,8 @@
     "atomic_type_patch_source": "examples/type-patches/main.nex",
     "atomic_type_patch_models": "examples/type-patches/model.nex",
     "atomic_type_patch": "examples/type-patches/patch.json",
-    "native_diagnostics": "examples/native-diagnostics.nex"
+    "native_diagnostics": "examples/native-diagnostics.nex",
+    "native_arithmetic": "examples/native-arithmetic.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -197,5 +198,9 @@
     "endpoint",
     "type"
   ],
-  "type_patch_example": "examples/type-patches/patch.json"
+  "type_patch_example": "examples/type-patches/patch.json",
+  "native_diagnostic_commands": [
+    "nex run FILE --json",
+    "nex diagnose --revision HASH --manifest DEBUG.json --log STDERR.log --json"
+  ]
 }
