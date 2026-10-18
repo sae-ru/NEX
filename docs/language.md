@@ -1,10 +1,10 @@
-# NEX language specification 0.12
+# NEX language specification 0.13
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
 ## Source and program structure
 
-Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum` and `match` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
+Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match` and `bytes` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
 
 ```nex
 module arithmetic;
@@ -59,7 +59,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.12",
+  "language": "0.13",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -77,6 +77,7 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | `bool` | `true`, `false` |
 | `unit` | No result; only as a function result or expression result |
 | `str` | Immutable valid UTF-8 text |
+| `bytes` | Immutable contiguous octets, each from 0 through 255 |
 | `list<T>` | Immutable homogeneous sequence of non-unit values |
 | `result<T>` | Immutable success containing T, or an error with code/message |
 | Named structure | Immutable value with declared, typed fields |
@@ -379,13 +380,13 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 ## Graph and revision semantics
 
-Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.12 uses `nex.function/9`, `nex.structure/4`, `nex.enum/3` and `nex.program/10`. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
+Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.13 uses `nex.function/10`, `nex.structure/4`, `nex.enum/3` and `nex.program/11`. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
 SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.12, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 3. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11/0.12 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.13, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 
@@ -427,3 +428,73 @@ exported candidate explicitly and retain the original archive. Keep SDK 0.29 for
 0.11 receipts/frames. Function/9 and program/10 shapes remain, but language 0.12
 changes program revision identity. Preserve unchanged logical node IDs and review
 new task/proof pins without changing their acceptance properties.
+
+## Immutable binary values (0.13)
+
+`bytes` is distinct from Unicode `str` and `list<i64>`. It can occur in generic
+models, lists, results, callbacks and immutable snapshot captures in every realm.
+Copies and slices retain immutable owners; no pointer or descriptor is a source
+value. `bytes` is contextual in type positions. Definitions and generic parameters
+cannot use that name; ordinary locals/fields and qualified import aliases can.
+The codec and file intrinsic names below are reserved for definitions like other
+builtins. Intrinsics cannot be taken as function references; wrap them in checked
+ordinary functions/lambdas.
+
+| Operation | Result and failures |
+|---|---|
+| `bytes(list<i64>) -> result<bytes>` | Copies values; returns `E_RANGE` for an octet outside 0..255 |
+| `utf8_bytes(str) -> bytes` | Exact UTF-8 encoding, preserving NUL, BOM and normalization |
+| `decode_utf8(bytes) -> result<str>` | Strict scalar decoding; returns `E_UTF8` for malformed input |
+| `encode_base64(bytes) -> str` | Canonical padded base64 with ordinary `A..Z a..z 0..9 + /` alphabet |
+| `decode_base64(str) -> result<bytes>` | Returns `E_BASE64` for noncanonical input |
+| `len(bytes) -> i64` | Number of octets |
+| `value[index] -> i64` | Octet 0..255; traps `E_BOUNDS` for an invalid index |
+| `slice(bytes,start,count) -> bytes` | Checked octet range; traps `E_BOUNDS` |
+| `push(bytes,octet) -> bytes` | Immutable append; traps `E_RANGE` for an invalid octet |
+| `set(bytes,index,octet) -> bytes` | Immutable replacement; checks index before octet range |
+| `bytes + bytes -> bytes` | Immutable concatenation with checked size |
+
+Operands and arguments still evaluate once, left to right. Invalid sizes fail
+with `E_LIMIT`; allocation failure is not a recoverable codec/range error.
+Equality is structural; bytes satisfy `add` and `wire`, without `ordered`,
+`number` or `integer`. There is no implicit conversion to/from text or lists.
+There are no byte literals or byte patterns; use construction/codecs, a binding
+and guards. Existing string indexing/slicing still counts Unicode scalars.
+
+Strict UTF-8 rejects overlong encodings, surrogate code points, truncation and
+values above U+10FFFF. A leading BOM is preserved. Base64 rejects whitespace,
+URL-safe alphabet, missing/excess/interior padding and nonzero unused bits.
+`str`/`print` of a byte value uses its quoted base64 representation; the explicit
+encoder returns the unquoted string.
+
+Typed JSON maps bytes to a base64 JSON string and returns `E_JSON` for invalid
+wire encodings. The `nex.wire/2` primitive descriptor is `"bytes"`; nominal types
+remain object descriptors such as `{"record":"bytes"}`, preserving historical
+schema meanings. Existing JSON byte/node/depth limits still apply, including
+quotes and padding. At most 786429 raw octets fit as a standalone 1 MiB JSON
+value; wrappers can reduce that bound. API generation preserves bytes in checked
+models and describes `contentEncoding: base64` in OpenAPI; runtime validation is
+strict. Codecs do not introduce OpenSSL or Node-only dependencies.
+
+`file_read_bytes(str) -> result<bytes>` and
+`file_write_bytes(str,bytes) -> result<bool>` require server realm and `fs`.
+They use the same explicit directory capability, 1 MiB data limit, path checks,
+read-only defaults, pinned roots, atomic replacement, cancellation cleanup and
+HTTP isolation as text files. Binary reads accept arbitrary octets. Text reads
+retain strict UTF-8. See [files.md](files.md).
+
+Debuggers expose bounded byte previews and paged i64 octets. Pure watches can
+request a byte length, selected index or small slice without reading siblings.
+Partial slices select at most 255 octets and share the frame's 256-capture budget;
+a bounded whole-value capture can support larger slices. Whole-value operations
+and formatting still require a complete bounded capture. Snapshot codecs reject
+malformed base64 and inconsistent aliased byte captures. Integer/boolean proofs
+explicitly reject binary operations; they do not certify bytes/codecs/files.
+
+Language 0.12 archives require explicit `nex migrate`. New reserved function,
+nominal and generic parameter conflicts reject without moving HEAD. Repair an
+exported candidate explicitly; preserve old sources/SQL/history and unchanged
+logical IDs. Keep SDK 0.30/0.32 for their original frames/receipts. Language 0.13
+uses function/10 and program/11; regenerate snapshot metadata while retaining
+reviewed task tests and formal properties. Platform/matrix validation status is
+separate from this specification and remains recorded in `STATUS.md`.

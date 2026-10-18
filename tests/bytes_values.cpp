@@ -167,6 +167,15 @@ void selfTest(){
     auto sliced=input.slice(127,3);require(nexrt::isSuccess(files.writeBytes("slice",sliced)),"slice write failed");require(hex(buffer(files.readBytes("slice")))=="7f8081","slice file differs");
     require(nexrt::isSuccess(files.writeBytes("empty",{}))&&buffer(files.readBytes("empty")).length()==0,"empty binary file differs");
   });
+  run("binary writes retain their owner across host polls",[]{
+    Fixture f;nexrt::TextFiles files(f.path.string(),true);std::vector<uint8_t> expected(150000);
+    for(size_t i=0;i<expected.size();++i)expected[i]=uint8_t(i*31);
+    auto input=ByteBuffer::copy(expected);unsigned polls=0;
+    auto saved=files.writeBytes("retained",input,[&]{++polls;input={};});
+    require(nexrt::isSuccess(saved)&&polls>1&&input.length()==0,"host poll did not release input");
+    require(buffer(files.readBytes("retained")).toVector()==expected,"poll invalidated borrowed binary storage");
+    noTemporary(f.path);
+  });
   run("binary file limits and text interoperability",[]{
     Fixture f;nexrt::TextFiles files(f.path.string(),true);
     std::vector<uint8_t> raw(nexrt::TextFiles::byteLimit,255);auto maximum=ByteBuffer::copy(raw);

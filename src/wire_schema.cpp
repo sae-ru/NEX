@@ -14,7 +14,7 @@ llvm::json::Value wireSchema(const Program &p,const Type &type){
       }
       return llvm::json::Object{{nominal.enumeration?"enum":"record",t.name}};
     }
-    if(t==Type::I64||t==Type::F64||t==Type::Bool||t==Type::Str)return typeName(t);
+    if(t==Type::I64||t==Type::F64||t==Type::Bool||t==Type::Str||t==Type::Bytes)return typeName(t);
     throw Error("E_TYPE","type cannot cross the JSON boundary: "+typeName(t));
   };
   auto root=describe(type);return llvm::json::Object{{"schema","nex.wire/2"},{"root",std::move(root)},{"records",std::move(records)},{"enums",std::move(enums)}};

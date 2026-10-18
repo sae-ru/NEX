@@ -20,7 +20,7 @@ namespace nex {
 std::string floatLiteral(int64_t bits){return nexrt::formatFloat(nexrt::floatValue(bits));}
 std::string typeName(Type t) {
   switch (t.kind) { case Type::I64: return "i64"; case Type::Bool: return "bool";
-    case Type::F64:return "f64";
+    case Type::F64:return "f64";case Type::Bytes:return "bytes";
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
@@ -29,7 +29,7 @@ std::string typeName(Type t) {
     case Type::Parameter:return "$"+t.name;default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(){
-  static const std::set<std::string> names={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text"};
+  static const std::set<std::string> names={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes"};
   return names;
 }
 std::string readFile(const std::string &path) {
@@ -175,7 +175,7 @@ class Parser {
   void typeEnd(){if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");}
   std::vector<std::string> templateParameters(TypeBounds &bounds){
     parameters.clear();bounds.clear();std::vector<std::string> result;if(!accept("<"))return result;
-    do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
+    do{auto parameter=name();if(parameter.text=="bytes"||!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
       if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer"&&bound.text!="number"&&bound.text!="wire")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
     }while(accept(","));typeEnd();return result;
   }
@@ -191,6 +191,7 @@ class Parser {
     }
     if (t.text=="i64") return Type::I64; if (t.text=="bool") return Type::Bool; if(t.text=="unit")return Type::Unit;if(t.text=="str")return Type::Str;
     if(t.text=="f64")return Type::F64;
+    if(t.text=="bytes"&&peek().text!="::")return Type::Bytes;
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       expect("<");auto item=type();
       typeEnd();
@@ -506,8 +507,8 @@ class Checker {
     }
     case Expr::Index: {
       auto base=expr(e->args[0]);same(expr(e->args[1],Type::I64),Type::I64,e->span);
-      if(base.kind!=Type::List&&base!=Type::Str)throw Error("E_TYPE","indexing requires a list or string",e->span);
-      e->type=base==Type::Str?Type(Type::Str):*base.element;break;
+      if(base.kind!=Type::List&&base!=Type::Str&&base!=Type::Bytes)throw Error("E_TYPE","indexing requires a list, string or bytes",e->span);
+      e->type=base==Type::Str?Type(Type::Str):base==Type::Bytes?Type(Type::I64):*base.element;break;
     }
     case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
     case Expr::Unary: {
@@ -544,11 +545,17 @@ class Checker {
         arity(1);auto input=e->text=="as_f64"?Type(Type::I64):Type(Type::F64);
         same(expr(e->args[0],input),input,e->span);e->type=e->text=="as_f64"?Type(Type::F64):Type::result(Type::I64);break;
       }
-      if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"||e->text=="file_read_text"||e->text=="file_write_text"){
-        arity(e->text=="store_put"||e->text=="file_write_text"?2:1);for(auto a:e->args)same(expr(a,Type::Str),Type::Str,a->span);
+      if(e->text=="bytes"||e->text=="utf8_bytes"||e->text=="decode_utf8"||e->text=="encode_base64"||e->text=="decode_base64"){
+        arity(1);auto input=e->text=="bytes"?Type::list(Type::I64):e->text=="decode_utf8"||e->text=="encode_base64"?Type(Type::Bytes):Type(Type::Str);
+        same(expr(e->args[0],input),input,e->span);
+        e->type=e->text=="bytes"||e->text=="decode_base64"?Type::result(Type::Bytes):e->text=="decode_utf8"?Type::result(Type::Str):e->text=="utf8_bytes"?Type(Type::Bytes):Type(Type::Str);break;
+      }
+      if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"||e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"){
+        arity(e->text=="store_put"||e->text=="file_write_text"||e->text=="file_write_bytes"?2:1);
+        for(size_t i=0;i<e->args.size();++i){auto type=i==1&&e->text=="file_write_bytes"?Type(Type::Bytes):Type(Type::Str);same(expr(e->args[i],type),type,e->args[i]->span);}
         if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
         std::string effect=e->text=="read_env"?"io":e->text.starts_with("file_")?"fs":"db";if(!f->effects.contains(effect))throw Error("E_EFFECT",e->text+" requires declared effect "+effect,e->span);
-        e->type=Type::result(e->text=="store_keys"?Type::list(Type::Str):e->text=="store_put"||e->text=="store_remove"||e->text=="file_write_text"?Type(Type::Bool):Type(Type::Str));break;
+        e->type=Type::result(e->text=="store_keys"?Type::list(Type::Str):e->text=="store_put"||e->text=="store_remove"||e->text=="file_write_text"||e->text=="file_write_bytes"?Type(Type::Bool):e->text=="file_read_bytes"?Type(Type::Bytes):Type(Type::Str));break;
       }
       if(e->text=="ok"){
         arity(1);auto item=expr(e->args[0],expected.kind==Type::Result?*expected.element:Type());validType(item,e->span);e->type=Type::result(item);break;
@@ -593,14 +600,15 @@ class Checker {
       }
       if(e->text=="len"||e->text=="str") {
         arity(1);auto t=expr(e->args[0]);
-        if(e->text=="len"&&t!=Type::Str&&t.kind!=Type::List)throw Error("E_TYPE","len requires str or list",e->span);
+        if(e->text=="len"&&t!=Type::Str&&t!=Type::Bytes&&t.kind!=Type::List)throw Error("E_TYPE","len requires str, bytes or list",e->span);
         if(t==Type::Unit)throw Error("E_TYPE","cannot format unit",e->span);
         e->type=e->text=="len"?Type::I64:Type::Str;break;
       }
       if(e->text=="push"||e->text=="set") {
         arity(e->text=="push"?2:3);auto item=e->args.back();
         Type list,itemType;bool listTyped=false;
-        try{list=expr(e->args[0],expected.kind==Type::List?expected:Type());listTyped=true;}catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+        try{list=expr(e->args[0],expected.kind==Type::List||expected==Type::Bytes?expected:Type());listTyped=true;}catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+        if(listTyped&&list==Type::Bytes){same(expr(item,Type::I64),Type::I64,e->span);if(e->text=="set")same(expr(e->args[1],Type::I64),Type::I64,e->span);e->type=list;break;}
         if(listTyped&&list.kind!=Type::List)throw Error("E_TYPE",e->text+" requires a list",e->span);
         itemType=expr(item,listTyped?*list.element:expected.kind==Type::List?*expected.element:Type());
         if(!listTyped)list=expr(e->args[0],Type::list(itemType));
@@ -608,9 +616,10 @@ class Checker {
         same(itemType,*list.element,e->span);if(e->text=="set")same(expr(e->args[1],Type::I64),Type::I64,e->span);e->type=list;break;
       }
       if(e->text=="slice"||e->text=="contains") {
-        arity(e->text=="slice"?3:2);same(expr(e->args[0],Type::Str),Type::Str,e->span);
+        arity(e->text=="slice"?3:2);auto base=expr(e->args[0],e->text=="slice"&&expected==Type::Bytes?Type(Type::Bytes):Type(Type::Str));
+        if(base!=Type::Str&&(e->text!="slice"||base!=Type::Bytes))throw Error("E_TYPE",e->text+" requires "+(e->text=="slice"?"str or bytes":"str"),e->span);
         for(size_t i=1;i<e->args.size();++i)same(expr(e->args[i],e->text=="slice"?Type::I64:Type::Str),e->text=="slice"?Type::I64:Type::Str,e->span);
-        e->type=e->text=="slice"?Type::Str:Type::Bool;break;
+        e->type=e->text=="slice"?base:Type(Type::Bool);break;
       }
       if(e->text=="print"||e->text=="assert") {
         if(e->args.size()!=1)throw Error("E_ARITY",e->text+" expects one argument",e->span);
@@ -767,7 +776,7 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format","nex.function/9"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  llvm::json::Object result{{"format","nex.function/10"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
   if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
 }
 llvm::json::Value canonical(const Structure &s) {
@@ -787,21 +796,25 @@ std::string revision(const Program &p) {
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/10"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/11"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"types",llvm::json::Array{"i64","f64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
+    {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
     {"effects",llvm::json::Array{"io","db","fs"}},
-    {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
-    {"file_limits",llvm::json::Object{{"text_bytes",1048576},{"path_bytes",4096},{"path_components",128}}},
+    {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","immutable_binary_files","atomic_binary_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
+    {"file_limits",llvm::json::Object{{"text_bytes",1048576},{"binary_bytes",1048576},{"path_bytes",4096},{"path_components",128}}},
     {"file_platforms",llvm::json::Array{"macos","linux"}},
     {"file_environment",llvm::json::Object{{"root","NEX_FILES_ROOT"},{"write","NEX_FILES_WRITE=1"},{"http_inherits_environment",false}}},
     {"file_guide","docs/files.md"},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
-    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]"}},
+    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]"}},
+    {"binary_features",llvm::json::Array{"immutable_contiguous_octets","retained_slice_owners","copied_mutable_host_boundaries","checked_byte_updates","strict_utf8_codecs","canonical_padded_base64","typed_json_base64","binary_files","generic_add_and_wire","bounded_binary_watches"}},
+    {"binary_limits",llvm::json::Object{{"octet_min",0},{"octet_max",255},{"standalone_json_raw_bytes",786429},{"partial_watch_slice_octets",255}}},
+    {"binary_guide","docs/bytes.md"},
+    {"binary_integration_pending",llvm::json::Array{"full_source_regression_and_migration_validation","full_platform_and_installed_sdk_validation"}},
     {"numeric_features",llvm::json::Array{"finite_binary64","decimal_exponent_literals","checked_f64","explicit_numeric_conversions","numeric_wire_numbers","generic_number_bound"}},
     {"numeric_limits",llvm::json::Object{{"literal_bytes",4096}}},
     {"numeric_integration_pending",llvm::json::Array{"full_platform_and_installed_sdk_validation"}},
@@ -809,7 +822,7 @@ llvm::json::Value describe() {
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
     {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
-    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
+    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},
     {"function_value_guide","docs/functions.md"},

@@ -1,4 +1,4 @@
-(* NEX 0.12. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.13. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
@@ -11,7 +11,7 @@ function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, [ type_param
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
-type          = "i64" | "f64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" |
+type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | ( "list" | "result" ), "<", type, ">" |
                 qualified_name, [ type_arguments ] | function_type | "(", type, ")" ;
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
@@ -108,3 +108,9 @@ digit         = "0" .. "9" ;
 
 (* Language 0.12 adds server-only fs text-file intrinsics and explicit migration
    from 0.11. No resource descriptor is a source value. See files.md. *)
+
+(* Language 0.13 adds contextual primitive bytes and checked codecs/binary file
+   intrinsics. bytes remains an identifier in ordinary local/field/module names
+   and qualified import aliases, but cannot name a nominal declaration or generic
+   parameter. Intrinsic definitions are reserved. Binary values have no literals
+   or pattern syntax; see language.md for exact signatures, bounds and migration. *)

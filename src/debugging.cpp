@@ -52,7 +52,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
     for(const auto &capture:*captures){const auto &c=object(capture);fields(c,{"binding","path","kind","value","unavailable"});auto binding=required(c,"binding"),kind=required(c,"kind");auto path=c.getArray("path");
       if(!types.contains(binding)||values.get(binding)||!path||path->size()>56||(kind!="value"&&kind!="shape")||!seen.insert(binding+":"+json(Array(*path),false)+":"+kind).second)throw Error("E_DEBUG_FRAME","invalid, duplicate or conflicting partial capture");
       Type type=types.at(binding);Array prefix;for(const auto &part:*path){
-        if(type.kind==Type::List){auto i=part.getAsInteger();if(!i||*i<0)throw Error("E_DEBUG_FRAME","list paths require nonnegative integer indices");type=*type.element;}
+        if(type.kind==Type::List||type==Type::Bytes){auto i=part.getAsInteger();if(!i||*i<0)throw Error("E_DEBUG_FRAME","collection paths require nonnegative integer indices");type=type==Type::Bytes?Type(Type::I64):*type.element;}
         else if(type.kind==Type::Record){auto field=part.getAsString();bool found=false;const auto &nominal=p.structure(type.name);if(field){if(nominal.enumeration){auto segment=field->str();auto separator=segment.find("::");if(separator!=std::string::npos)for(const auto &variant:nominal.variants)if(variant.name==segment.substr(0,separator))for(const auto &member:variant.fields)if(member.name==segment.substr(separator+2)){type=member.type;found=true;break;}}else for(const auto &member:nominal.fields)if(member.name==*field){type=member.type;found=true;break;}}if(!found)throw Error("E_DEBUG_FRAME","path field is not in its checked nominal type");}
         else if(type.kind==Type::Result){auto field=part.getAsString();if(field=="ok")type=*type.element;else if(field=="code"||field=="message")type=Type::Str;else throw Error("E_DEBUG_FRAME","invalid result path");}
         else if(type.kind==Type::Function){
@@ -62,7 +62,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
         else throw Error("E_DEBUG_FRAME","partial path descends through a scalar/string");
         prefix.push_back(part);
       }
-      if(kind=="shape"&&type.kind!=Type::List&&type.kind!=Type::Record&&type.kind!=Type::Result&&type.kind!=Type::Function)throw Error("E_DEBUG_FRAME","shape capture requires list, record, result or function type");
+      if(kind=="shape"&&type.kind!=Type::List&&type!=Type::Bytes&&type.kind!=Type::Record&&type.kind!=Type::Result&&type.kind!=Type::Function)throw Error("E_DEBUG_FRAME","shape capture requires bytes, list, record, result or function type");
       if(bool(c.get("value"))==bool(c.get("unavailable")))throw Error("E_DEBUG_FRAME","capture requires exactly one value or unavailable reason");if(c.get("unavailable"))required(c,"unavailable");
     }
   }

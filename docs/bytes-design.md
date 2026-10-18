@@ -1,8 +1,11 @@
-# Immutable binary buffers — next language milestone
+# Immutable binary buffers — design history and acceptance
 
-This is an implementation plan, not current syntax. Toolchain 0.30 / language
-0.12 exposes UTF-8 text files; `bytes` and binary file operations are not yet
-available. Query the actual compiler before generating source.
+Development toolchain 0.33 / language 0.13 now integrates the source type,
+operations, native/TypeScript emission, wire/API models and bounded debugger
+paths. Validation and explicit migration acceptance are in progress. Use
+[bytes.md](bytes.md) and [language.md](language.md) as the current source contract.
+The following sections preserve how the 0.31/0.32 internal prototypes were built;
+their test evidence does not establish completion of language 0.13.
 
 Toolchain 0.31 now contains internal C++/TypeScript `ByteBuffer` primitives with
 copied host boundaries, immutable slices/updates and a strict codec. Eight native
@@ -73,14 +76,14 @@ compiler/installed-SDK validation is still pending. Reproduce the optional brows
 checks with `python3 tests/bytes_browser.py PROJECT --managed --output NEW_DIRECTORY
 --browsers-path PATH`, using existing locked TypeScript/Playwright dependencies.
 
-## Remaining source-language integration
+## Source-language acceptance scope
 
-Proposed operations are checked byte construction from `list<i64>`, explicit
+The source contract includes checked byte construction from `list<i64>`, explicit
 UTF-8 encode/decode, indexing/length/slicing, immutable concatenation and updates,
 and server-only `file_read_bytes` / `file_write_bytes` under the existing `fs`
 capability. Byte values are 0..255; indices and sizes retain checked i64 rules.
-Exact signatures and recoverable versus trapping range errors must be fixed in
-the normative specification before source exposure. Text operations must retain
+The normative specification fixes recoverable construction/codec errors and
+trapping update/index errors; source integration must pass its acceptance cases. Text operations must retain
 Unicode scalar indexing and strict UTF-8 without normalization.
 
 Typed JSON/API needs an unambiguous bytes mapping before claiming full
@@ -121,3 +124,9 @@ roundtrips, bounded debugger demand, native cleanup on every exit, archived-sour
 migration, installed and restored SDKs, and deployment without the SDK. Check
 native Debug/Release, interpreter and TypeScript agreement; preserve the full
 macOS/Linux matrix and explicit unsupported-platform status.
+
+The 0.33 host-poll review reproduced an ASan use-after-free in the 0.32 binary
+writer when a trusted callback reset its caller buffer. The writer now retains a
+local immutable owner across every poll and write. The reproducer and 19-case
+managed probe pass ASan/UBSan. Preserve 0.32 hashes as historical prototype
+evidence; current 0.33 acceptance must bind the corrected source independently.

@@ -150,7 +150,10 @@ Value TextFiles::readBytes(const std::string &relative,const Poll &poll) const {
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 Value TextFiles::writeBytes(const std::string &relative,const ByteBuffer &bytes,const Poll &poll) const {
-  try{impl->write(relative,bytes.view(),poll,[]{});return success(Value(1,true));}
+  // Poll may release the caller's last value. Retain immutable storage until
+  // every borrowed write view has finished, including exceptional exits.
+  auto retained=bytes;
+  try{impl->write(relative,retained.view(),poll,[]{});return success(Value(1,true));}
   catch(const DataError &error){return failure(error.code,error.what());}
 }
 

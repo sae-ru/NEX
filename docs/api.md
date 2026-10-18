@@ -96,3 +96,10 @@ Language 0.7 concrete generic models retain full nominal argument identities in 
 Language 0.8 model extraction retains builtin parameter bounds in each original public struct/enum declaration; generated projects recheck those bounds. A generated bounded model cannot be instantiated with a disallowed type. Wire encoding of concrete values is unchanged.
 
 Language 0.11 numeric models use f64 as a finite JSON number with OpenAPI type number / format double and x-nex-type f64. The checked wire codec enforces binary64 rounding/finite-value rules at the native/browser boundary; OpenAPI format annotations do not replace runtime validation. i64 retains its exact canonical string encoding.
+
+Language 0.13 bytes models use canonical padded base64 JSON strings. OpenAPI
+marks them with `contentEncoding: base64`, `contentMediaType:
+application/octet-stream` and `x-nex-type: bytes`; the runtime enforces alphabet,
+padding and unused-bit rules. Encoding and result wrappers count against the
+JSON/body limits. Generated models retain the primitive type; they do not expose
+mutable typed arrays. Nominal wire descriptor objects keep their existing meaning.

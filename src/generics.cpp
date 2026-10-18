@@ -31,7 +31,7 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
 bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint){
   if(constraint=="wire"){
     std::set<std::string> seen;std::function<bool(const Type&)> visit=[&](const Type &value){
-      if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str)return true;
+      if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes)return true;
       if(value.kind==Type::Parameter){auto found=program.parameterBounds.find(value.name);return found!=program.parameterBounds.end()&&(found->second.contains("wire")||found->second.contains("integer")||found->second.contains("number")||found->second.contains("ordered"));}
       if(value.kind==Type::List||value.kind==Type::Result)return visit(*value.element);
       if(value.kind==Type::Record){if(!seen.insert(value.name).second)return true;const auto &record=program.structure(value.name);for(auto field:record.members())if(!visit(field->type))return false;return true;}
@@ -39,7 +39,7 @@ bool satisfiesConstraint(const Program &program,const Type &type,const std::stri
     };return visit(type);
   }
   if(type.kind==Type::Parameter){auto found=program.parameterBounds.find(type.name);return found!=program.parameterBounds.end()&&(found->second.contains(constraint)||((constraint=="add"||constraint=="ordered")&&(found->second.contains("integer")||found->second.contains("number")))||(constraint=="number"&&found->second.contains("integer")));}
-  if(constraint=="add")return type==Type::I64||type==Type::F64||type==Type::Str||type.kind==Type::List;
+  if(constraint=="add")return type==Type::I64||type==Type::F64||type==Type::Str||type==Type::Bytes||type.kind==Type::List;
   if(constraint=="ordered"||constraint=="number")return type==Type::I64||type==Type::F64;
   if(constraint=="integer")return type==Type::I64;
   return false;

@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.12",
+  "language_version": "0.13",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -45,9 +45,10 @@
     "application_packager": "tools/app_bundle.py",
     "application_package_schema": "llm/application-package.schema.json",
     "application_package_acceptance": "tools/application_acceptance.py",
-    "files": "docs/files.md"
+    "files": "docs/files.md",
+    "bytes": "docs/bytes.md"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "core": "examples/arithmetic.nex",
@@ -78,7 +79,8 @@
     "function_browser": "examples/functions/web.nex",
     "numbers": "examples/numbers.nex",
     "numeric_browser": "examples/numbers-web.nex",
-    "text_files": "examples/files.nex"
+    "text_files": "examples/files.nex",
+    "bytes": "examples/bytes.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

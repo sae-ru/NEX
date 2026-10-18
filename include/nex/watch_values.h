@@ -35,6 +35,7 @@ public:
   V local(const std::string &name);
   V field(const V &base,int64_t index);
   V index(const V &base,int64_t index);
+  V slice(const V &base,int64_t start,int64_t count);
   int64_t length(const V &base);
   bool isSuccess(const V &base);
   V unwrap(const V &base);

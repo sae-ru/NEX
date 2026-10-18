@@ -1,4 +1,4 @@
-# Text files — language 0.12
+# Text and binary files — language 0.13
 
 ```nex
 module example;
@@ -70,6 +70,16 @@ the original archive. Keep SDK 0.29 for old receipts/debug frames and review new
 task/proof pins without weakening their acceptance intent. Function/9, program/10,
 structure/4 and enum/3 formats remain; the language version changes revision identity.
 
-Binary buffers, streaming, exposed resources, general FFI/async, HTTP file policy
+Streaming, exposed resources, general FFI/async, HTTP file policy
 and other platforms remain pending. The underlying adapter design and direct
 native probes are recorded in [files-design.md](files-design.md).
+
+Language 0.13 also exposes `file_read_bytes(str)->result<bytes>` and
+`file_write_bytes(str,bytes)->result<bool>`. They require server/fs and share all
+capability, path, size, publication and cancellation rules above. Binary payloads
+accept arbitrary octets; only text operations validate UTF-8. The binary writer
+retains its immutable owner across host polling. JSON encoding is separate and
+can exceed its own 1 MiB limit even when a raw file fits. See [bytes.md](bytes.md).
+Explicitly migrate 0.12 archives and repair new intrinsic/nominal name conflicts,
+keeping old SQL and SDKs; source `bytes` support does not expose a descriptor or
+grant HTTP file access.

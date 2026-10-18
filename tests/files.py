@@ -179,7 +179,7 @@ server fn main()->unit!{fs,io}{print(observe());}
         (self.data / 'private').write_text('kept')
         session = self.cli('debug')
         manifest = Path(session['manifest']);identity = json.loads(manifest.read_text())
-        frame = {'schema': 'nex.debug-frame/1', 'language': '0.12', 'revision': identity['revision'],
+        frame = {'schema': 'nex.debug-frame/1', 'language': '0.13', 'revision': identity['revision'],
             'build_key': identity['build_key'], 'function': 'watched_files::observe',
             'stop': {'process_id': '100', 'thread_id': '101', 'frame_id': 0, 'stop_id': '1'},
             'bindings': [{'name': 'value', 'type': 'str', 'value': 'snapshot'}], 'truncated': False}
@@ -199,12 +199,12 @@ server fn main()->unit!{fs,io}{print(observe());}
             source_before = db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0]
         self.assertEqual(self.cli('graph', ok=False)['code'], 'E_LANGUAGE_VERSION')
         migrated = self.cli('migrate')
-        self.assertEqual(migrated['language'], '0.12');self.assertNotEqual(migrated['revision'], old)
+        self.assertEqual(migrated['language'], '0.13');self.assertNotEqual(migrated['revision'], old)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
         with sqlite3.connect(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(), ids_before)
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], source_before)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.11', '0.12'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.11', '0.13'})
 
     def test_reserved_name_migration_fails_without_rewriting_old_history(self):
         fixture = json.loads((harness.REPO / 'tests/fixtures/language-0.11-intrinsic.json').read_text())

@@ -97,6 +97,10 @@ def _preview(value, depth=0, budget=None):
         return _string(_member(data, "text"))
     if kind == 6:
         return "<function " + _string(_member(data, "text")) + ">"
+    if kind == 7:
+        binary = _ExactBytes(data)
+        prefix = binary.read(0, min(binary.size, MAX_ITEMS))
+        return "bytes[%d] " % binary.size + json.dumps(base64.b64encode(prefix).decode('ascii')) + ("…" if len(prefix) < binary.size else "")
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -146,9 +150,9 @@ class Children:
             if data is None:
                 return False
             self.kind = _member(data, "kind").GetValueAsUnsigned()
-            if self.kind in (1, 2, 3, 4, 5, 6):
+            if self.kind in (1, 2, 3, 4, 5, 6, 7):
                 self.data = data
-                self.items = _vector(data)
+                self.items = _ExactBytes(data) if self.kind == 7 else _vector(data)
                 self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5, 6))
         except Exception:
             self.count = 0
@@ -336,7 +340,7 @@ def _raw_string(value, budget):
 
 class _ExactVector:
     def __init__(self, data, name="values"):
-        self.value = _member(data, name)
+        self.value = _member(data, name) if name is not None else data.GetNonSyntheticValue()
         begin = _find_member(self.value, "__begin_")
         end = _find_member(self.value, "__end_")
         if begin is None or end is None:
@@ -364,6 +368,43 @@ class _ExactVector:
             raise ValueError("stopped vector index is outside bounds")
         return self.value.CreateValueFromAddress("[%d]" % index,
             self.address + index * self.stride, self.element)
+
+
+class _ExactBytes:
+    def __init__(self, data):
+        if _integer(_member(data, "kind")) != 7:
+            raise ValueError("runtime byte kind differs from checked NEX type")
+        layout = data.GetTarget().FindFirstType("nexrt::ByteData")
+        if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
+            raise ValueError("unavailable owned byte layout for this build")
+        self.value = data.CreateValueFromAddress("binary", data.GetLoadAddress(), layout)
+        buffer = _member(self.value, "buffer")
+        offset, self.size = _integer(_member(buffer, "offset")), _integer(_member(buffer, "count"))
+        if self.size > 9223372036854775807 or offset > 9223372036854775807 - self.size:
+            raise ValueError("invalid stopped byte range")
+        self.address = 0
+        if not self.size:
+            if offset:
+                raise ValueError("invalid empty stopped byte range")
+            return
+        storage = _ExactVector(_shared(_member(buffer, "storage")), None)
+        if storage.stride != 1 or offset + self.size > storage.size:
+            raise ValueError("stopped byte view exceeds owned storage")
+        self.address = storage.address + offset
+
+    def read(self, start, count):
+        if start < 0 or count < 0 or start > self.size or count > self.size - start:
+            raise ValueError("stopped byte read is outside bounds")
+        return _string_bytes(self.value, self.address + start if count else 0, count)
+
+    def GetNumChildren(self):
+        return self.size
+
+    def GetChildAtIndex(self, index):
+        value = self.read(index, 1)[0]
+        target = self.value.GetTarget()
+        data = lldb.SBData.CreateDataFromUInt64Array(target.GetByteOrder(), target.GetAddressByteSize(), [value])
+        return target.CreateValueFromData("[%d]" % index, data, target.GetBasicType(lldb.eBasicTypeLongLong))
 
 
 def _enum_case(data, descriptor, records, budget):
@@ -454,6 +495,13 @@ def _wire(value, descriptor, records, budget, depth=0):
         if kind != 0:
             raise ValueError("runtime string kind differs from checked NEX type")
         return _raw_string(_member(data, "text"), budget)
+    if descriptor == "bytes":
+        binary = _ExactBytes(data)
+        encoded_size = (binary.size + 2) // 3 * 4
+        if encoded_size > budget["bytes"]:
+            raise ValueError("exact bytes exceed encoded byte budget")
+        budget["bytes"] -= encoded_size
+        return base64.b64encode(binary.read(0, binary.size)).decode('ascii')
     if not isinstance(descriptor, dict):
         raise ValueError("invalid wire type descriptor")
     items = _ExactVector(data)
@@ -503,6 +551,9 @@ def _header(value, descriptor, records, budget):
         raise ValueError("runtime object tag differs from checked NEX type")
     data = _data(value)
     kind = _integer(_member(data, "kind"))
+    if descriptor == "bytes":
+        binary = _ExactBytes(data)
+        return data, binary, binary.size
     items = _ExactVector(data)
     size = items.GetNumChildren()
     if "function" in descriptor:
@@ -537,7 +588,11 @@ def _read_path(value, schema, request, budget):
             raise ValueError("partial capture exceeds its node budget")
         budget["nodes"] -= 1
         data, items, size = _header(value, descriptor, records, budget)
-        if "list" in descriptor:
+        if descriptor == "bytes":
+            if not isinstance(segment, int) or isinstance(segment, bool) or not 0 <= segment < size:
+                raise ValueError("partial path is outside stopped byte bounds")
+            value, descriptor = items.GetChildAtIndex(segment), "i64"
+        elif "list" in descriptor:
             if not isinstance(segment, int) or isinstance(segment, bool) or not 0 <= segment < size:
                 raise ValueError("partial path is outside stopped list bounds")
             value, descriptor = items.GetChildAtIndex(segment), descriptor["list"]
@@ -580,7 +635,7 @@ def _read_path(value, schema, request, budget):
         raise ValueError("partial capture exceeds its node budget")
     budget["nodes"] -= 1
     data, items, size = _header(value, descriptor, records, budget)
-    if "list" in descriptor:
+    if descriptor == "bytes" or "list" in descriptor:
         return {"length": str(size)}
     if "record" in descriptor:
         return {"record": descriptor["record"]}

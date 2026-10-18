@@ -47,7 +47,7 @@ NativePlan planNative(const Program &p,const std::string &entry){
       if(e->kind==Expr::Call){
         if(e->text=="encode_json"||e->text=="decode_json")unit.wire=true;
         if(e->text.starts_with("store_"))unit.storage=true;
-        if(e->text=="file_read_text"||e->text=="file_write_text")unit.files=true;
+        if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes")unit.files=true;
       }
       for(auto child:e->args)expr(child);
     };

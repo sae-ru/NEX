@@ -289,3 +289,12 @@ python3 tests/function_debug.py build/nex --live LiveFunctionDebug
 Language 0.8 watches enforce builtin generic bounds before pure helper specialization, including helpers absent from the stopped binary. Inside a concrete generic frame, source T resolves to its captured concrete type argument; constraint failures remain E_GENERIC_BOUND. Retain the matching source language/compiler/resources for historical snapshots.
 
 Language 0.9 watches support value matches and pure helpers with nested/guarded patterns. Pattern bindings are local; expression planning reports free frame bindings only. Enum/result/list selectors read required shapes and selected fields, while discarded payloads remain unread.
+
+Language 0.13 binary watches use canonical base64 whole values, length shapes
+and selected i64 octets in 0..255. `len(data)` and `data[index]` can read bounded
+headers/one octet without siblings. A partial byte slice selects at most 255
+octets and shares the frame capture budget; a bounded whole capture supports
+larger slices. Full equality/formatting/codecs need complete values. Byte ranges
+retain immutable owners, and aliased callable capture observations must agree.
+Keep SDK 0.30/0.32 for their original language-0.12 frames; migrate source
+explicitly and regenerate a matching debug build.

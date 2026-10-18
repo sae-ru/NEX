@@ -29,6 +29,7 @@ struct Schemas {
   Value failure(){return object(Object{{"error",object(Object{{"code",Object{{"type","string"}}},{"message",Object{{"type","string"}}}},Array{"code","message"})}},Array{"error"});}
   Value type(const Type &t){
     if(t==Type::Str)return Object{{"type","string"}};
+    if(t==Type::Bytes)return Object{{"type","string"},{"contentEncoding","base64"},{"contentMediaType","application/octet-stream"},{"x-nex-type","bytes"},{"description","Immutable octets encoded as canonical padded base64 with the ordinary alphabet; whitespace and nonzero unused bits are rejected by the runtime."}};
     if(t==Type::Bool)return Object{{"type","boolean"}};
     if(t==Type::F64)return Object{{"type","number"},{"format","double"},{"x-nex-type","f64"},{"description","Finite binary64 JSON number, rounded to nearest with ties to even; zero is normalized."}};
     if(t==Type::I64)return Object{{"type","string"},{"pattern","^(?:0|"+boundedDigits("9223372036854775807")+"|-"+boundedDigits("9223372036854775808")+")(?![\\s\\S])"},{"maxLength",20},{"x-nex-type","i64"},{"description","Canonical decimal string in the signed 64-bit range; JSON numbers are rejected."}};

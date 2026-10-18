@@ -84,7 +84,7 @@ def display(value, descriptor, records, budget=None):
         return clipped(('-' if value < 0 else '') + digits[0] + ('.' + digits[1:] if len(digits) > 1 else '') + 'e' + str(power))
     if descriptor == 'bool':
         return clipped('true' if value else 'false')
-    if descriptor == 'str':
+    if descriptor in ('str', 'bytes'):
         return clipped(json.dumps(value, ensure_ascii=False))
     if 'function' in descriptor:
         return clipped('<function ' + value['function'] + '>')
@@ -181,7 +181,13 @@ class Bridge:
     def variable(self, name, value, descriptor, records):
         result = {'name': name, 'value': display(value, descriptor, records), 'type': type_name(descriptor),
                   'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
-        if isinstance(descriptor, dict):
+        if descriptor == 'bytes':
+            binary = base64.b64decode(value, validate=True)
+            if base64.b64encode(binary).decode('ascii') != value:
+                raise ValueError('computed bytes require canonical padded base64')
+            result['variablesReference'] = self.allocate({'value': value, 'descriptor': descriptor, 'records': records, 'binary': binary})
+            result['indexedVariables'] = len(binary)
+        elif isinstance(descriptor, dict):
             result['variablesReference'] = self.allocate({'value': value, 'descriptor': descriptor, 'records': records})
             if 'list' in descriptor:
                 result['indexedVariables'] = len(value)
@@ -200,10 +206,14 @@ class Bridge:
             raise ValueError('invalid variables page')
         value, descriptor, records = stored['value'], stored['descriptor'], stored['records']
         children = []
-        indexed = 'list' in descriptor
+        indexed = descriptor == 'bytes' or 'list' in descriptor
         if args.get('filter') in ('named', 'indexed') and (args['filter'] == 'indexed') != indexed:
             return self.response(request, {'variables': []})
-        if indexed:
+        if descriptor == 'bytes':
+            binary = stored['binary']
+            total = len(binary)
+            get = lambda i: ('[' + str(i) + ']', str(binary[i]), 'i64')
+        elif indexed:
             total = len(value)
             get = lambda i: ('[' + str(i) + ']', value[i], descriptor['list'])
         elif 'record' in descriptor:

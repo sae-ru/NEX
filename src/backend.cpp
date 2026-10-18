@@ -293,6 +293,7 @@ class Emitter {
       else if(e->text=="str")result=args[0].type.heap()?call("nex_format_heap",args,Type::Str,e->span):call("nex_format_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},Type::Str,e->span);
       else if(e->text=="ok")result=args[0].type.heap()?call("nex_ok_heap",args,e->type,e->span):call("nex_ok_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type))},e->type,e->span);
       else if(e->text=="as_f64"||e->text=="as_i64")result=call("nex_"+e->text,{args[0],c(e->span.line)},e->type,e->span);
+      else if(e->text=="bytes"||e->text=="utf8_bytes"||e->text=="decode_utf8"||e->text=="encode_base64"||e->text=="decode_base64")result=call(e->text=="bytes"?"nex_bytes_from_integers":"nex_"+e->text,{args[0],c(e->span.line)},e->type,e->span);
       else if(e->text=="err")result=call("nex_err",args,e->type,e->span);
       else if(e->text=="is_ok")result=asBool(call("nex_is_ok",args,Type::I64,e->span),e->span);
       else if(e->text=="unwrap"){
@@ -305,13 +306,13 @@ class Emitter {
         auto schema=json(wireSchema(p,e->annotation),false);auto bytes=rawBytes(schema,e->span);result=call("nex_decode_json",{args[0],bytes,c(schema.size()),c(e->span.line)},e->type,e->span);
       }
       else if(e->text=="read_env")result=call("nex_read_env",args,e->type,e->span);
-      else if(e->text=="file_read_text"||e->text=="file_write_text"){
+      else if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"){
         auto operands=args;operands.push_back(c(e->span.line));result=call("nex_"+e->text,operands,e->type,e->span);
       }
       else if(e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
         auto operands=args;operands.push_back(c(e->span.line));result=call("nex_"+e->text,operands,e->type,e->span);
       }
-      else if(e->text=="slice")result=call("nex_string_slice",{args[0],args[1],args[2],c(e->span.line)},Type::Str,e->span);
+      else if(e->text=="slice")result=call("nex_string_slice",{args[0],args[1],args[2],c(e->span.line)},e->type,e->span);
       else if(e->text=="contains")result=asBool(call("nex_string_contains",args,Type::I64,e->span),e->span);
       else if(e->text=="push"||e->text=="set"){
         bool set=e->text=="set";auto value=args.back(),index=set?args[1]:c(0);
@@ -419,6 +420,8 @@ public:
     declaration("nex_encode_json_i64","i64, i64, i64","!llvm.ptr");declaration("nex_encode_json_heap","!llvm.ptr, i64","!llvm.ptr");declaration("nex_decode_json","!llvm.ptr, !llvm.ptr, i64, i64","!llvm.ptr");
     declaration("nex_read_env","!llvm.ptr","!llvm.ptr");declaration("nex_store_get","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_put","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");declaration("nex_store_remove","!llvm.ptr, i64","!llvm.ptr");declaration("nex_store_keys","!llvm.ptr, i64","!llvm.ptr");
     declaration("nex_file_read_text","!llvm.ptr, i64","!llvm.ptr");declaration("nex_file_write_text","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_file_read_bytes","!llvm.ptr, i64","!llvm.ptr");declaration("nex_file_write_bytes","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
     auto names=reachable(p,entry);
     auto bridges=nativeFunctionBridges(p,names);
     if(selected){
@@ -597,7 +600,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
   bool wire=server,storage=server,files=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
-  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text")files=true;}for(auto arg:e->args)inspect(arg);}};
+  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes")files=true;}for(auto arg:e->args)inspect(arg);}};
   std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");

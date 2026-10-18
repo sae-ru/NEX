@@ -18,10 +18,11 @@ HTTP scopes deny implicit environment grants. The [file guide](docs/files.md)
 describes syntax and limits; full validation of this new language version is
 tracked in `STATUS.md`.
 
-Development 0.32 adds internal managed byte values, strict binary codecs and
-capability-scoped binary file adapters. Source language remains 0.12; the
-`bytes` source type and binary intrinsics are pending. See the [binary design
-and current boundary](docs/bytes-design.md).
+Development 0.33 / language 0.13 connects immutable `bytes` to the checker,
+interpreter, native/TypeScript backends, typed JSON/API and bounded debugger
+values, with server-only binary files. Source/migration/platform/SDK acceptance
+is in progress; consult `STATUS.md`. The [binary guide](docs/bytes.md) gives exact
+interfaces; the [design history](docs/bytes-design.md) preserves prototype scope.
 
 ## Build
 

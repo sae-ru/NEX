@@ -79,6 +79,11 @@ class Interpreter {
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
       }
       if(e->text=="ok")return nexrt::success(args[0]);
+      if(e->text=="bytes")return nexrt::bytesFromIntegers(full(args[0]));
+      if(e->text=="utf8_bytes")return V(nexrt::utf8Bytes(full(args[0]).object->text));
+      if(e->text=="decode_utf8")return nexrt::decodeUTF8(nexrt::byteBuffer(full(args[0]).object));
+      if(e->text=="encode_base64")return V(nexrt::string(nexrt::byteBuffer(full(args[0]).object).base64()));
+      if(e->text=="decode_base64")return nexrt::decodeBase64(full(args[0]).object->text);
       if(e->text=="as_f64")return V::floating(nexrt::integerToFloat(full(args[0]).scalar));
       if(e->text=="as_i64"){int64_t value=0;return nexrt::floatToInteger(full(args[0]).floating(),value)?nexrt::success(V(value)):nexrt::failure("E_RANGE","f64 value is outside i64 range");}
       if(e->text=="err"){auto code=full(args[0]);auto message=full(args[1]);return nexrt::failure(code.object->text,message.object->text);}
@@ -91,6 +96,8 @@ class Interpreter {
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
       if(e->text=="file_read_text")return nexrt::fileReadText(args[0].object->text,true,[&]{step(e->span);});
       if(e->text=="file_write_text")return nexrt::fileWriteText(args[0].object->text,args[1].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_read_bytes")return nexrt::fileReadBytes(args[0].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_write_bytes")return nexrt::fileWriteBytes(args[0].object->text,nexrt::byteBuffer(args[1].object),true,[&]{step(e->span);});
       if(e->text=="store_get")return nexrt::storageGet(args[0].object->text);
       if(e->text=="store_put")return nexrt::storagePut(args[0].object->text,args[1].object->text);
       if(e->text=="store_remove")return nexrt::storageRemove(args[0].object->text);
@@ -99,10 +106,12 @@ class Interpreter {
       if(e->text=="assert"){if(!args[0].scalar)throw Error("E_ASSERT","assertion failed",e->span);return {};}
       if(e->text=="len")return V(watch?watch->length(args[0]):nexrt::length(args[0].object));
       if(e->text=="str")return V(nexrt::string(nexrt::printable(full(args[0]))));
-      if(e->text=="slice")return V(nexrt::slice(full(args[0]).object,args[1].scalar,args[2].scalar));
+      if(e->text=="slice")return watch?watch->slice(args[0],args[1].scalar,args[2].scalar):V(nexrt::slice(args[0].object,args[1].scalar,args[2].scalar));
       if(e->text=="contains"){auto haystack=full(args[0]);auto needle=full(args[1]);return V(haystack.object->text.find(needle.object->text)!=std::string::npos,true);}
       if(e->text=="push"||e->text=="set"){
-        auto base=full(args[0]);auto d=std::make_shared<nexrt::Data>(*base.object);
+        auto base=full(args[0]);
+        if(base.object->kind==nexrt::Data::Bytes){const auto &buffer=nexrt::byteBuffer(base.object);return V(nexrt::bytes(e->text=="push"?buffer.append(full(args[1]).scalar):buffer.set(full(args[1]).scalar,full(args[2]).scalar)));}
+        auto d=std::make_shared<nexrt::Data>(*base.object);
         if(e->text=="push")d->values.push_back(args[1]);
         else{nexrt::bounds(args[1].scalar,d->values.size());d->values[args[1].scalar]=args[2];}return V(d);
       }
@@ -127,6 +136,7 @@ class Interpreter {
     if(op=="+"&&left.object){
       left=full(left);right=full(right);
       if(left.object->kind==nexrt::Data::String)return V(nexrt::string(left.object->text+right.object->text));
+      if(left.object->kind==nexrt::Data::Bytes)return V(nexrt::bytes(nexrt::byteBuffer(left.object).concat(nexrt::byteBuffer(right.object))));
       auto d=std::make_shared<nexrt::Data>(*left.object);d->values.insert(d->values.end(),right.object->values.begin(),right.object->values.end());return V(d);
     }
     if(op=="+"){if(__builtin_add_overflow(a,b,&out))overflow();return V(out);}

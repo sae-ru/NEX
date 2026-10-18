@@ -16,6 +16,7 @@ std::string type(const Type &t){
   case Type::F64:return "number";
   case Type::Bool:return "boolean";
   case Type::Str:return "string";
+  case Type::Bytes:return "nex.ByteBuffer";
   case Type::Unit:return "void";
   case Type::List:return "ReadonlyArray<"+type(*t.element)+">";
   case Type::Result:return "nex.Result<"+type(*t.element)+">";
@@ -97,19 +98,26 @@ class Generator {
     case Expr::Name:return local(e->text);
     case Expr::List:{std::string text="nex.list<"+type(*e->type.element)+">([";for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}return text+"])";}
     case Expr::Field:return "("+expr(e->args[0])+")["+quote(e->text)+"]";
-    case Expr::Index:return "nex."+std::string(e->args[0]->type==Type::Str?"character":"index")+"("+expr(e->args[0])+", "+expr(e->args[1])+", "+site(e)+")";
+    case Expr::Index:return "nex."+std::string(e->args[0]->type==Type::Str?"character":e->args[0]->type==Type::Bytes?"bytesIndex":"index")+"("+expr(e->args[0])+", "+expr(e->args[1])+", "+site(e)+")";
     case Expr::Unary:return e->text=="!"?"(!"+expr(e->args[0])+")":"nex."+std::string(e->type==Type::F64?"floatNeg":"neg")+"("+expr(e->args[0])+", "+site(e)+")";
     case Expr::Binary:{
       auto a=expr(e->args[0]),b=expr(e->args[1]);const auto &op=e->text;
       if(op=="=="||op=="!=")return (op=="!="?"!":"")+std::string("nex.equal(")+a+", "+b+")";
       if(op=="+"&&e->type==Type::Str)return "("+a+" + "+b+")";
       if(op=="+"&&e->type.kind==Type::List)return "nex.concat("+a+", "+b+")";
+      if(op=="+"&&e->type==Type::Bytes)return "nex.bytesConcat("+a+", "+b+", "+site(e)+")";
       const std::map<std::string,std::string> arithmetic={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","rem"}};
       if(e->type==Type::F64){const std::map<std::string,std::string> floats={{"+","floatAdd"},{"-","floatSub"},{"*","floatMul"},{"/","floatDiv"},{"%","floatRem"}};return "nex."+floats.at(op)+"("+a+", "+b+", "+site(e)+")";}
       if(arithmetic.contains(op))return "nex."+arithmetic.at(op)+"("+a+", "+b+", "+site(e)+")";
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
+      const std::map<std::string,std::string> binary={{"bytes","bytesFromIntegers"},{"utf8_bytes","utf8Bytes"},{"decode_utf8","decodeUTF8"},{"encode_base64","encodeBase64"},{"decode_base64","decodeBase64"}};
+      if(binary.contains(e->text))return "nex."+binary.at(e->text)+"("+expr(e->args[0])+(e->text=="utf8_bytes"?", "+site(e):"")+")";
+      if((e->text=="push"||e->text=="set"||e->text=="slice")&&e->args[0]->type==Type::Bytes){
+        std::string text="nex."+std::string(e->text=="push"?"bytesPush":e->text=="set"?"bytesSet":"bytesSlice")+"(";
+        for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}return text+", "+site(e)+")";
+      }
       if(e->text=="as_f64"||e->text=="as_i64")return "nex."+std::string(e->text=="as_f64"?"asFloat":"asInteger")+"("+expr(e->args[0])+")";
       if(e->text=="err")return "nex.err<"+type(*e->type.element)+">("+expr(e->args[0])+", "+expr(e->args[1])+")";
       if(e->text=="decode_json")return "nex.decodeJSON<"+type(e->annotation)+">("+expr(e->args[0])+", "+json(wireSchema(p,e->annotation),false)+")";

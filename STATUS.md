@@ -2,6 +2,23 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: source binary integration
+
+Development **0.33.0 / language 0.13** connects `bytes` to checked source types,
+explicit UTF-8/base64 codecs, immutable operations, generic add/wire, native and
+TypeScript emission, typed JSON/API models and bounded debugger demand. Binary
+file calls share the server/fs capability policy. The matching specification,
+grammar, model-independent prompt and schemas are being validated with genuine
+0.12 migration fixtures; the full requested objective remains open.
+
+Host-poll ownership review reproduced a 0.32 adapter use-after-free under ASan
+when a trusted callback dropped the last input ByteBuffer. The 0.33 writer retains
+its owner until all borrowed views finish. The reproduction now exits cleanly
+under ASan/UBSan, and the extended 19-case managed-value probe passes. The 0.32
+compiler/SDK cohorts below use their preserved sources; they do not validate this
+new source-language version. Current 0.33 source, debugger, migration and full
+platform/SDK acceptance remain in progress. See [bytes.md](docs/bytes.md).
+
 ## In progress: managed binary values
 
 Development toolchain **0.32.0** retains source language **0.12**. Internal C++
