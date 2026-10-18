@@ -11,17 +11,23 @@ NEX is a language and development toolchain built around a checked semantic grap
 This isolated working tree is toolchain **0.52.0 / language 0.15**, adding
 [captured-source frontend diagnostics](docs/frontend-diagnostics.md) on top of
 [graph snapshots](docs/snapshots.md) and [declared project versions](docs/compatibility.md).
-Current validation is pending; the verified root baseline is recorded below.
+Focused diagnostics, seven compatibility groups, offline schemas and the installed
+SDK diagnostic phase pass. Full regression/platform/SDK validation is pending.
 
-The working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
+The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux
+ARM64, both fifteen-phase installed SDK workflows and eleven Linux live debugger
+suites. It is promoted to the root, where relocation checks remain separate.
+[The evidence](docs/evidence/project-versions-0.51.0.json) records exact scope.
+
+The preceding verified tree is toolchain **0.49.0 / language 0.15**, adding an atomic
 HEAD-transition journal and checked, optimistic restoration of archived source.
 Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
 without inventing older provenance. Actor/note labels are declared data. All
 57 regression groups pass on macOS/Linux ARM64, alongside both thirteen-phase
 installed SDK workflows and eleven Linux live debugger suites.
 [The evidence](docs/evidence/change-history-0.49.0.json) records exact scope,
-corrected fixtures and remaining work. Physical project-version enforcement
-is still an isolated 0.51 fix; see `STATUS.md`.
+corrected fixtures and remaining work. Physical project-version enforcement is included in the current tree; see
+`STATUS.md`.
 
 The preceding verified **0.48.0 / language 0.15** adds source-operation patches
 and parser tree-depth bounds. All 56 regression groups and both thirteen-phase

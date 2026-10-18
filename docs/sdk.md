@@ -335,7 +335,7 @@ and the other requested phases actually pass.
 
 ## Declared project version acceptance (toolchain 0.51)
 
-The current sixteen-phase workflow adds `project-version-boundaries`. It checks
+The toolchain 0.51 fifteen-phase workflow added `project-version-boundaries`. It checks
 that an older root declaration is rejected before creating a graph, a reachable
 old configured library is rejected, current library source is accepted, archived
 native/reference execution ignores stale physical metadata without moving HEAD,

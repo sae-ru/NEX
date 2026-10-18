@@ -7,11 +7,16 @@ base64 previews and content-derived diagnostic identity for parser/binder/checke
 errors. Rejected assembled candidates remain distinct from physical source and
 committed graph identities. Static watch context is bound to supplied frame/stop
 hashes; runtime operation metadata remains separate. Language0.15 and graph
-schema4 are unchanged. Current focused/full/SDK validation is pending.
+schema4 are unchanged. The 21 Python diagnostic cases (one macOS filesystem
+skip), 15 native API cases and seven related regression groups pass. Offline
+validation accepts 23 actual error forms and rejects 13 malformed variants. The
+exact installed SDK diagnostic phase passes 12 commands including rejected and
+repaired candidates, lossless malformed bytes and supplied-frame watch context.
+Full current regression/platform/SDK workflows remain pending.
 
 ## Verified 0.49 / language 0.15: atomic change history and restore
 
-The corrected current compiler passes all 57 regression groups on macOS ARM64
+The preceding corrected 0.49 compiler passes all 57 regression groups on macOS ARM64
 (447 Python cases + 11 C++ probes, 1375.92 s) and Linux ARM64 (1166.28 s). Both
 thirteen-phase installed SDK workflows pass: macOS 412.565 s and Linux 263.748 s
 in a network-disabled container without the source checkout. Linux additionally
@@ -28,13 +33,14 @@ not materialize physical files. Schema 4 starts an explicit old HEAD base rather
 than inventing prior transitions. This is scoped development evidence, not
 proof of every platform, full-system safety or stable cross-SDK ABI.
 
-Isolated 0.50 adds consistent complete graph snapshots/recovery; fifteen focused
-cases, offline schema checks and the macOS installed SDK 14 passes, while its
-Linux full/live/SDK matrix is still running. Isolated 0.51 corrects the observed
-physical project/library version-declaration gap, including preflight before
-store creation/upgrade, and has its own current full/SDK checks running. Those
-capabilities are not part of the root 0.49 compiler. Broader language/platform
-and development-chain work remains pending.
+The intermediate 0.50 passed its focused checks, macOS SDK14 and Linux58/live11/SDK14
+matrix; no full macOS regression was run for that intermediate compiler. The
+preceding isolated 0.51 source passes all59 groups on macOS/Linux ARM64, both
+SDK15 workflows and eleven Linux live suites. Its exact implementation is now
+promoted to the root, where the root build/SDK15 pass and full root regression
+remains running. [Evidence](docs/evidence/project-versions-0.51.0.json) preserves
+the pre-promotion scope. Current0.52 adds diagnostics above that implementation;
+its pending checks are not implied by earlier successful versions.
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
