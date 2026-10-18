@@ -1,10 +1,5 @@
 # Model-independent NEX language pack
 
-Toolchain 0.49 adds [local change history and guarded restore](../docs/history.md).
-Discover `history_features` and use `history.schema.json`. Declared author/note
-labels describe provenance without authenticating identity; earlier revisions
-are retained without fabricated transition records.
-
 Toolchain 0.48 adds source-operation replacements by local ID. Read the actual
 descriptor, `operations.schema.json`, `patch.schema.json` and the
 [operation-edit walkthrough](../examples/operation-patches/README.md). Exact

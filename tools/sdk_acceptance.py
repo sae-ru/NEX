@@ -231,9 +231,6 @@ test fn examples() -> unit {
         require('operation' in descriptor.get('patch_entities', []) and
                 'exact_source_guard' in descriptor.get('patch_features', []),
                 'SDK lacks exact source-operation replacements')
-        require('optimistic_archived_restore' in descriptor.get('history_features', []) and
-                descriptor.get('graph_database_schema') == 4,
-                'SDK lacks checked change history and revision restore')
         require('manifest_checked_trap_mapping' in descriptor.get('diagnostic_features', []),
                 'SDK lacks checked native runtime diagnostics')
         require({'native_checked_i64_ssa', 'cold_integer_failure_calls', 'cold_native_assertions'} <=
@@ -255,7 +252,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -461,25 +458,6 @@ test fn examples() -> unit {
         cli('test', '--revision', operation_after, '--target', 'web', cwd=operation_project)
         require(cli('apply', '--patch', operation_file, cwd=operation_project,
                     expected_success=False)['code'] == 'E_CONFLICT', 'SDK accepted stale operation patch')
-        restored = cli('restore', '--revision', operation_before, '--expected-revision', operation_after,
-                       '--note', 'Return to retained original', '--actor', 'SDK scenario', cwd=operation_project)
-        require(restored['changed'] and not restored['materialized'] and
-                cli('run', '--revision', 'HEAD', cwd=operation_project)['stdout'] == '41\n',
-                'SDK source-deleted restore did not recover the original')
-        cli('restore', '--revision', operation_after, '--expected-revision', operation_before,
-            '--note', 'Return to revised implementation', cwd=operation_project)
-        require(cli('run', '--revision', 'HEAD', cwd=operation_project)['stdout'] == '42\n',
-                'SDK restore lost the revised source')
-        transitions = cli('changes', cwd=operation_project)
-        require(transitions['total'] == 4 and transitions['changes'][0]['action'] == 'restore' and
-                transitions['changes'][0]['previous_revision'] == operation_before and
-                transitions['changes'][1]['previous_revision'] == operation_after and
-                transitions['author_trust'] == 'declared', 'SDK change provenance differs')
-        report['evidence']['change_history'] = {'transitions': 4,
-            'namespace': transitions['namespace'], 'tip_hash': transitions['changes'][0]['hash'],
-            'before': operation_before, 'after': operation_after, 'source_deleted_restore': True,
-            'physical_sources_absent': not (operation_project / 'main.nex').exists(),
-            'both_archives_preserved': True, 'declared_author_labels': True}
         report['evidence']['source_operation_patches'] = {'before': operation_before,
             'after': operation_after, 'local_operation_id': selected['id'],
             'source_deleted': True, 'native_reference_typescript': True,

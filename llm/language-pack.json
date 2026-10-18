@@ -72,11 +72,9 @@
     "graph_identity_schema": "llm/graph-identity.schema.json",
     "native_diagnostics": "docs/native-diagnostics.md",
     "native_diagnostics_schema": "llm/native-diagnostics.schema.json",
-    "operation_patch_workflow": "examples/operation-patches/README.md",
-    "history": "docs/history.md",
-    "history_schema": "llm/history.schema.json"
+    "operation_patch_workflow": "examples/operation-patches/README.md"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -208,9 +206,5 @@
     "nex run FILE --json",
     "nex diagnose --revision HASH --manifest DEBUG.json --log STDERR.log --json"
   ],
-  "operation_patch_example": "examples/operation-patches/README.md",
-  "history_commands": [
-    "nex changes --offset 0 --limit 100 --json",
-    "nex restore --revision HASH --expected-revision HEAD_HASH --note TEXT --json"
-  ]
+  "operation_patch_example": "examples/operation-patches/README.md"
 }

@@ -188,7 +188,7 @@ class GraphIdentities(harness.ToolchainCase):
         graph = self.cli('graph', cwd=directory)
         self.assertEqual(graph['revision'], metadata['revision'])
         with sqlite3.connect(directory / '.nex/graph.db') as db:
-            self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0], '4')
+            self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0], '3')
             self.assertEqual(db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall(), source_rows)
             self.assertEqual([list(r) for r in db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name')], metadata['node_ids'])
             self.assertEqual([list(r) for r in db.execute('SELECT revision,function,path,id,hash,site FROM operation_versions ORDER BY revision,function,path')], metadata['operations'])

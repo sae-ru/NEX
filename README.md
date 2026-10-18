@@ -8,16 +8,13 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
-HEAD-transition journal and checked, optimistic restoration of archived source.
-Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
-without inventing older provenance. Actor/note labels are declared data. Current
-full validation is pending; see [change history](docs/history.md) and `STATUS.md`.
-
-The preceding development **0.48.0 / language 0.15** adds source-operation
-patches and parser tree-depth bounds. Eighteen isolated cases and schema checks
-pass; its full macOS/Linux ARM64 checks are running. Its installed macOS SDK
-passes all thirteen phases. This is not yet a fully validated milestone.
+The working tree is toolchain **0.48.0 / language 0.15**, adding exact,
+revision/source-checked replacements of source expressions, statements and
+patterns by local operation ID. All 56 regression groups and both installed SDK
+workflows pass on macOS/Linux ARM64, including Linux live debugger checks.
+[The evidence](docs/evidence/operation-patches-0.48.0.json) records exact scope;
+[the operation guide](docs/operations.md) defines editability, guards and limits.
+Broader platform and release validation remains pending in `STATUS.md`.
 
 The preceding verified **0.47.0 / language 0.15** keeps checked integer success
 paths in SSA and preserves cold native trap metadata. All 55 regression groups
@@ -341,4 +338,4 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The current verified development checkpoint is **0.47.0 / language 0.15**, with 55 regression groups passing on macOS/Linux ARM64, installed SDK workflows and Linux live debugger checks. Broader current Release, sanitizer, x86-64 and SDK distribution checks remain pending; consult `STATUS.md` for exact coverage. Language 0.5/0.6/0.7/0.8/0.9/0.10/0.11 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and broader SDK/platform distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The current verified development checkpoint is **0.48.0 / language 0.15**, with 56 regression groups passing on macOS/Linux ARM64, installed SDK workflows and Linux live debugger checks. Broader current Release, sanitizer, x86-64 and SDK distribution checks remain pending; consult `STATUS.md` for exact coverage. Language 0.5/0.6/0.7/0.8/0.9/0.10/0.11 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and broader SDK/platform distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.

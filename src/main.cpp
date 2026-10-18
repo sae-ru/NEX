@@ -42,7 +42,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor"};
+  const std::set<std::string> valueNames={"--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -91,12 +91,11 @@ llvm::json::Value graphSources(const llvm::json::Object &object){
   auto source=required(object,"source");
   return llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",source}}}};
 }
-ChangeInfo changeInfo(const Options &o,const std::string &action,const std::string &request=""){return {action,o.command,o.get("--actor"),o.get("--note"),request};}
 Program load(const Options &o,const fs::path &root,Store &store,bool saved=false) {
   auto rev=o.get("--revision",saved?"HEAD":"");
   if(rev.empty()){
     auto path=fs::absolute(o.positional.empty()?defaultSource(root):o.positional[0]).string();
-    auto p=loadProgram(path,root.string(),o.command!="lock");store.save(p,"",true,changeInfo(o,"synchronize"));return p;
+    auto p=loadProgram(path,root.string(),o.command!="lock");store.save(p);return p;
   }
   auto selected=rev=="HEAD"?store.headRevision():rev;
   if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
@@ -104,24 +103,8 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
-  if(o.values.contains("--note")||o.values.contains("--actor")){
-    const std::set<std::string> supported={"check","apply","import","migrate","restore"};
-    if(!supported.contains(o.command))throw Error("E_OPTION","--note and --actor annotate check/apply/import/migrate/restore");
-    validateChangeInfo(changeInfo(o,"save"));
-  }
-  if(o.command=="changes"||o.command=="restore"){
-    std::set<std::string> allowed=o.command=="changes"?std::set<std::string>{"--offset","--limit","--output"}:std::set<std::string>{"--revision","--expected-revision","--note","--actor"};
-    if(!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","changes/restore select the current project store, without source files or execution arguments");
-    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported option for "+o.command+": "+key);}
-    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported flag for "+o.command+": "+flag);
-    if(o.command=="restore"){
-      auto target=o.get("--revision"),expected=o.get("--expected-revision");
-      auto digest=[](const std::string &v){return v.size()==64&&v.find_first_not_of("0123456789abcdef")==std::string::npos;};
-      if(!digest(target)||(!digest(expected)&&expected!="EMPTY"))throw Error("E_OPTION","restore requires --revision HASH and --expected-revision HEAD_HASH|EMPTY");
-    }
-  }
   if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities")throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
-  for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities"&&!(o.command=="restore"&&std::string(name)=="--expected-revision"))throw Error("E_OPTION",std::string(name)+" is for graph identities or guarded restore");
+  for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities")throw Error("E_OPTION",std::string(name)+" is for graph identities");
   if(o.command=="identities"){
     auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve")throw Error("E_OPTION","identities kind must be export, reconcile or resolve");
     if(kind!="export"&&!o.positional.empty())throw Error("E_OPTION","identity mutation/lookup selects an archived graph, without source-file synchronization");
@@ -149,12 +132,12 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex graph|history [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
-      "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
+      "  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
@@ -227,9 +210,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"}};
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic or history");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi or diagnostic");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -245,27 +228,13 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
   const std::set<std::string> sourceCommands={"check","eval","build","package","run","test","emit","debug","lock","web","api","profile","contract","verify","ffi","declarations","identities"};
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
-  if(o.command=="changes"){
-    auto count=[&](const std::string &key,unsigned fallback,unsigned maximum){if(!o.values.contains(key))return fallback;auto text=o.get(key);uint64_t value=0;if(text.empty())throw Error("E_OPTION","empty page option");for(char c:text){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid page option "+key);value=value*10+unsigned(c-'0');}return unsigned(value);};
-    auto result=store.changes(count("--offset",0,10000000),count("--limit",100,1000));auto output=o.get("--output");
-    if(output.empty())print(std::move(result));else{auto selected=result.getAsObject()->getString("head")->str();writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"head",selected}});}return 0;
-  }
-  if(o.command=="restore"){
-    auto target=o.get("--revision"),expected=o.get("--expected-revision"),previous=store.headRevision();
-    if(previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
-    if(store.revisionLanguage(target)!=languageVersion)throw Error("E_LANGUAGE_VERSION","restore requires a current-language revision; migrate older source explicitly");
-    auto archived=store.bundle(target);auto candidate=loadBundle(archived,root.string());if(revision(candidate)!=target)throw Error("E_REVISION","stored source does not match the selected restore revision");
-    auto request=llvm::json::Object{{"revision",target},{"expected_revision",expected}};
-    auto rev=store.save(candidate,expected,true,changeInfo(o,"restore",hash(json(std::move(request),false))));
-    print(llvm::json::Object{{"schema","nex.restore/1"},{"ok",true},{"previous_revision",previous},{"revision",rev},{"source_hash",hash(json(archived,false))},{"changed",previous!=rev},{"materialized",false}});return 0;
-  }
   if(o.command=="migrate"){
     auto previous=store.headRevision();std::string original;llvm::json::Value bundle=nullptr;
     if(o.positional.empty()){original=o.get("--revision","HEAD");if(original=="HEAD")original=previous;bundle=store.bundle(original);}
@@ -274,7 +243,7 @@ int run(const Options &o) {
       if(!obj||(required(*obj,"schema")!="nex.graph/1"&&required(*obj,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
       bundle=graphSources(*obj);original=required(*obj,"revision");
     }
-    auto p=loadBundle(bundle,root.string());auto rev=store.save(p,previous.empty()?"EMPTY":previous,true,changeInfo(o,"migrate",hash(json(bundle,false))));
+    auto p=loadBundle(bundle,root.string());auto rev=store.save(p,previous.empty()?"EMPTY":previous);
     print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},{"revision",rev},{"language",languageVersion},{"materialized",false}});return 0;
   }
   if(o.command=="export") {
@@ -301,7 +270,7 @@ int run(const Options &o) {
     auto p=loadBundle(*obj->get("bundle"),root.string());
     if(required(*obj,"source")!=p.source)throw Error("E_BUNDLE","root source and source bundle disagree");
     if(revision(p)!=required(*obj,"revision"))throw Error("E_REVISION","graph revision does not match checked source");
-    auto rev=store.save(p,"",true,changeInfo(o,"import",hash(json(value,false))));print(llvm::json::Object{{"ok",true},{"revision",rev}});return 0;
+    auto rev=store.save(p);print(llvm::json::Object{{"ok",true},{"revision",rev}});return 0;
   }
   if(o.command=="apply") {
     auto patchFile=o.get("--patch");if(patchFile.empty())throw Error("E_OPTION","apply requires --patch FILE");
@@ -379,7 +348,7 @@ int run(const Options &o) {
       for(const auto &e:changes){if(e.begin>e.end||e.end>source.size()||e.end>previous)throw Error("E_PATCH_OVERLAP","replacement intervals overlap or exceed the source snapshot");previous=e.begin;}
       for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
     }
-    auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected,true,changeInfo(o,"apply",hash(json(value,false))));
+    auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
   bool saved=o.command=="graph"||o.command=="context"||o.command=="operations"||((o.command=="declarations"||o.command=="identities")&&o.positional.empty());auto p=load(o,root,store,saved);

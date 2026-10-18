@@ -2,50 +2,36 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: change provenance and archived restore
-
-Toolchain **0.49.0 / language 0.15** adds an atomic local HEAD-transition
-journal, bounded paging and optimistic restoration of retained checked sources.
-Graph schema 4 preserves existing revision/source/identity/task rows and begins
-an empty journal at the prior HEAD. Notes/actors are bounded declared labels;
-record hashes and selected adjacent links are checked without authenticating
-identity or fabricating historical events. Restore retains all revisions and
-IDs, accepts an expected-HEAD guard and does not materialize or execute source.
-
-The initial ten cases pass in 8.860 s, including genuine 0.48 database upgrade,
-explicit older-language migration, source-deleted native/TypeScript execution,
-competing patch/restore writers, rejected requests and integrity-failure rollback.
-Further concurrent-read, empty-HEAD and UTF-8 checks, discovery/schema/model-pack
-and installed-SDK coverage are being completed. Full 0.49 platform validation and
-the requested complete NEX language/development chain remain pending.
-
-## In progress: exact source-operation replacements
+## Verified development milestone: exact source-operation replacements
 
 Toolchain **0.48.0 / language 0.15** adds complete nonsemantic syntax ranges,
 bounded UTF-8 context previews and revision/source-checked patches by local
-operation ID. Single fragments preserve expression precedence and isolate line
-comments. Non-overlapping edits can span declarations, modules, statements,
-patterns and expressions; the whole candidate is checked before the final
-expected-HEAD transaction. Synthetic nodes, derived generic instances and lifted
-closures remain explicit noneditable targets. Source language, canonical
-formats, database schema and identity policy are retained.
+operation ID. Single expression/statement/pattern fragments preserve precedence
+and line-comment boundaries. Non-overlapping edits can span modules and existing
+declarations; the whole candidate is checked before a final expected-HEAD
+transaction. Derived owners and synthetic intervals remain explicit noneditable
+targets. Canonical definitions, database schema 3, operation identity policy 1 and
+the runtime tree are retained.
 
-The final isolated compiler passes seventeen operation-patch cases in 30.93 s,
-plus a separate exact-source/formatting guard check. Coverage includes restored
-actual 0.47 IDs/sites/locations, generic/closure restrictions, complete enum and
-nested binding patterns, cross-module type/operation edits, effect/realm
-rejections, input limits and evaluation order. A composed-parenthesis/left-chain
-input originally crashed the initial0.48 compiler; the resulting expression-tree
-bound now rejects it with `E_PARSE_LIMIT` without changing any graph rows.
+All **56 regression groups** pass on macOS ARM64 in **1334.39 s** and Linux
+ARM64 in **1152.04 s**, including **433 Python cases and eleven C++ probes**;
+Linux reports its platform-specific skips separately. Eighteen operation-patch
+cases cover exact source guards, precedence/comments, nested and complete enum
+patterns, generic/closure restrictions, cross-module type edits, effect/realm
+rejections, limits and unchanged rejected-candidate rows. Genuine 0.47 archives
+retain original revisions, IDs, sites, hashes and diagnostic locations.
 
-Offline JSON Schema 4.25.1 validation accepts four actual current/historical
-operation reports and three patch forms, rejects eleven malformed variants and
-executes the installed example with native/TypeScript tests. Before the final
-tree-depth/pattern-root changes, nine compatibility groups passed in 244.02 s
-and the installed SDK passed all thirteen phases in 298.703 s, including a
-source-deleted operation edit. Those earlier checks have explicit initial scope;
-full current root/platform/installed-SDK checks remain pending. The feature and
-full requested NEX project are not yet claimed complete.
+Both installed SDKs pass thirteen phases, including source-deleted operation
+edits, stable local IDs with changed sites and native/reference/TypeScript
+agreement. macOS takes **314.901 s** and source-free Linux **278.590 s** with
+networking disabled and all eleven live debugger suites passing. Resource hashes
+match the frozen 498-file source. Offline schema validation accepts four actual
+current/historical reports and three patch forms and rejects eleven malformed
+variants. The [evidence](docs/evidence/operation-patches-0.48.0.json) records exact
+scope and the initial composed-expression crash corrected by a resulting-tree
+bound. Broader current Release, sanitizer, x86-64, distribution and remaining
+language/development-chain work stay pending; this milestone is not project
+completion.
 
 ## Verified development milestone: checked native integer fast paths
 

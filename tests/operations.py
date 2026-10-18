@@ -94,7 +94,7 @@ class Operations(harness.ToolchainCase):
         self.file.unlink();after=self.cli('graph')
         self.assertEqual([(n['id'],n['hash']) for n in before['nodes']],[(n['id'],n['hash']) for n in after['nodes']])
         with sqlite3.connect(database) as db:
-            self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0],'4')
+            self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0],'3')
             self.assertEqual(db.execute('SELECT hash,source,language FROM revisions').fetchall(),sources)
             counts=[db.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['operation_ids','operation_versions']]
         patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':'0'*64,'replacements':[{'name':'ops::pick','source':'fn pick(a: i64, b: i64) -> i64 { return 0; }'}]}))

@@ -40,11 +40,11 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
     try{
       {Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");q.row();version=q.text(0);}
       if(version=="1")sql(impl->db,"ALTER TABLE revisions ADD COLUMN language TEXT NOT NULL DEFAULT '0.1'; UPDATE metadata SET value='2' WHERE key='schema'");
-      else if(version!="2"&&version!="3"&&version!="4")throw Error("E_SCHEMA","unsupported graph database schema");
+      else if(version!="2"&&version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
       sql(impl->db,"COMMIT");
     }
     catch(...){sql(impl->db,"ROLLBACK");throw;}
-  }else if(version!="2"&&version!="3"&&version!="4")throw Error("E_SCHEMA","unsupported graph database schema");
+  }else if(version!="2"&&version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
   sql(impl->db,"BEGIN IMMEDIATE");
   try{
     {Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");q.row();version=q.text(0);}
@@ -53,22 +53,18 @@ Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>
       "CREATE TABLE operation_versions(revision TEXT NOT NULL REFERENCES revisions(hash),function TEXT NOT NULL REFERENCES node_ids(id),path TEXT NOT NULL,parent TEXT NOT NULL,role TEXT NOT NULL,ordinal INTEGER NOT NULL,id TEXT NOT NULL REFERENCES operation_ids(id),kind TEXT NOT NULL,anchor TEXT NOT NULL,hash TEXT NOT NULL,site TEXT NOT NULL,PRIMARY KEY(revision,function,path),UNIQUE(revision,id),UNIQUE(revision,site));"
       "CREATE TABLE operation_functions(revision TEXT NOT NULL REFERENCES revisions(hash),function TEXT NOT NULL REFERENCES node_ids(id),content_hash TEXT NOT NULL,basis TEXT NOT NULL,PRIMARY KEY(revision,function));"
       "UPDATE metadata SET value='3' WHERE key='schema'");
-    else if(version!="3"&&version!="4")throw Error("E_SCHEMA","unsupported graph database schema");
-    initializeChanges(impl->db);
-    sql(impl->db,"UPDATE metadata SET value='4' WHERE key='schema'");
+    else if(version!="3")throw Error("E_SCHEMA","unsupported graph database schema");
     sql(impl->db,"COMMIT");
   }catch(...){sql(impl->db,"ROLLBACK");throw;}
   initializeGraphIdentities(impl->db);
 }
 Store::~Store()=default;
-std::string Store::save(const Program &p,const std::string &expected,bool makeHead,const ChangeInfo &change) {
-  validateChangeInfo(change);
+std::string Store::save(const Program &p,const std::string &expected,bool makeHead) {
   if(p.units.empty())throw Error("E_STORE","cannot save a program without its source snapshot");
   auto db=impl->db;auto rev=revision(p);bool outer=sqlite3_get_autocommit(db)!=0;
   sql(db,outer?"BEGIN IMMEDIATE":"SAVEPOINT nex_save_program");
   try{
-    auto previous=head(db);
-    if(!expected.empty()&&previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+    if(!expected.empty()&&head(db)!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
     {Statement q(db,"INSERT INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?) ON CONFLICT(hash) DO UPDATE SET language=excluded.language");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,languageVersion);q.row();}
     for(const auto &f:p.functions){
       auto id=nodeId(db,f.owner,f.localName);
@@ -91,7 +87,6 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
       const auto &handler=p.function(endpoint.target);Statement edge(db,"INSERT OR IGNORE INTO edges(revision,caller,callee) VALUES(?,?,?)");edge.bind(1,rev);edge.bind(2,id);edge.bind(3,nodeId(db,handler.owner,handler.localName));edge.row();
     }
     saveGraphDeclarations(db,p);
-    if(makeHead)recordHeadChange(db,previous,rev,hash(json(bundle(rev),false)),change);
     if(makeHead){Statement q(db,"INSERT INTO head(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision");q.bind(1,rev);q.row();}
     sql(db,outer?"COMMIT":"RELEASE nex_save_program");return rev;
   }catch(...){sql(db,outer?"ROLLBACK":"ROLLBACK TO nex_save_program; RELEASE nex_save_program");throw;}
@@ -139,11 +134,6 @@ llvm::json::Value Store::history() {
   llvm::json::Array rows;Statement q(impl->db,"SELECT hash,module,created,language FROM revisions ORDER BY created DESC,hash");
   while(q.row())rows.push_back(llvm::json::Object{{"revision",q.text(0)},{"module",q.text(1)},{"created",q.text(2)},{"language",q.text(3)}});
   return llvm::json::Object{{"schema","nex.history/1"},{"head",head(impl->db)},{"revisions",std::move(rows)}};
-}
-llvm::json::Value Store::changes(unsigned offset,unsigned limit){
-  bool outer=sqlite3_get_autocommit(impl->db)!=0;if(outer)sql(impl->db,"BEGIN");
-  try{auto result=graphChanges(impl->db,offset,limit);if(outer)sql(impl->db,"COMMIT");return result;}
-  catch(...){if(outer)sql(impl->db,"ROLLBACK");throw;}
 }
 std::string Store::source(const std::string &rev) {
   auto value=bundle(rev);auto obj=value.getAsObject();auto entry=obj?obj->getString("entry"):std::nullopt;auto files=obj?obj->getObject("files"):nullptr;
