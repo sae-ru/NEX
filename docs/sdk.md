@@ -12,8 +12,12 @@ The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
-seventeen installed guides. Python 3.9+, the SDK's development dependencies
+eighteen installed guides. Python 3.9+, the SDK's development dependencies
 (LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI.
+The text-file phase checks explicit capability/read-only denial, native/reference
+Unicode/NUL agreement, source-deleted replay and a packaged file application
+executed with compiler resources unavailable. File access requires no SQLite or
+JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
 
 ## Relocatable macOS development bundle (0.27, under validation)
@@ -209,7 +213,7 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all ten maintained phases including both locked browser builds.
+server. It runs all eleven maintained phases including both locked browser builds and the text-file application workflow.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
 `verification.json` retains commands, image IDs, logs and both acceptance reports.

@@ -102,7 +102,7 @@ For a one-file revision, `nex export --revision HEAD -o PATH` writes just that s
 
 ## Language/database migration
 
-The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.9. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
+The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.12. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
 
 `nex migrate --json` reparses and checks the archived HEAD under the current language, atomically adopts its new revision if HEAD is unchanged, and preserves the old revision. `--revision HASH` selects another retained snapshot. `nex migrate GRAPH.json --json` accepts legacy `nex.graph/1` single-file source or a `nex.graph/2` bundle and explicitly adopts its checked source. That operation treats the old hash as declared metadata, not as a verified current hash. Ordinary `import` rejects a language mismatch or an incorrect recomputed revision. Migration does not overwrite source files; materialize the chosen result with `export`.
 
@@ -216,3 +216,22 @@ hashes and `execution_verified:false`. Assembly never executes the application.
 Separate `nex.application-execution/1` acceptance evidence verifies relocated
 fixture execution; preserve that distinction when reporting results. Query the
 descriptor's `application_package_*` fields and read `docs/packaging.md`.
+
+## Text files (language 0.12)
+
+Discovery advertises `fs`, exact server builtin signatures, `file_features`,
+`file_limits`, `file_platforms`, `file_environment` and `file_guide`. Retrieve
+`nex guide --kind files --json` before generating file code. `eval` owns a scoped
+capability; native standalone entries use a session capability. An absolute
+`NEX_FILES_ROOT` is required and writes require exactly `NEX_FILES_WRITE=1`.
+HTTP request scopes ignore these environment grants unless a trusted host
+explicitly supplies `FileScope`. Task effects checks accept `fs` only when
+reviewed `allowed_effects` includes it; pure watches reject filesystem calls.
+File mutations are not SQLite transaction mutations.
+
+Language 0.11 stores require explicit history-preserving migration. Genuine
+SDK 0.29 fixtures cover ordinary migration and new builtin-name collisions.
+Rejected candidates leave HEAD and old sources untouched; an explicitly repaired
+exported bundle can be migrated without replacing the original revision. Keep
+the matching old SDK for receipts/frames. Function/9, program/10, structure/4
+and enum/3 remain current; the language version changes program revision identity.

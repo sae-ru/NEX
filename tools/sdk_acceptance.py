@@ -224,6 +224,10 @@ test fn examples() -> unit {
         require('typed_nested_patterns' in descriptor['match_features'], 'SDK lacks checked nested patterns')
         require('snapshot_closures' in descriptor['function_value_features'], 'SDK lacks snapshot closures')
         require('wire' in descriptor['generic_constraints'], 'SDK lacks checked wire constraints')
+        require('fs' in descriptor['effects'] and
+                'no_implicit_http_capability' in descriptor['file_features'] and
+                descriptor['file_environment']['http_inherits_environment'] is False,
+                'SDK lacks explicit filesystem capability policy')
         pack = json.loads((resources / 'llm/language-pack.json').read_text())
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
         inventory = {}
@@ -380,6 +384,79 @@ test fn examples() -> unit {
         report['evidence']['function_cache'] = {'before_revision': before['revision'],
             'after_revision': after['revision'], 'compiled_after_edit': after['compiled_functions'],
             'reused_after_edit': after['reused_functions'], 'source_deleted_replay': True}
+
+    def text_files():
+        directory = root / 'text-files'
+        directory.mkdir()
+        data = root / 'file data % 🧠'
+        data.mkdir()
+        shutil.copyfile(resources / 'examples/files.nex', directory / 'main.nex')
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        keys = ('NEX_FILES_ROOT', 'NEX_FILES_WRITE', 'NEX_RESOURCE_DIR')
+        saved = {key: environment.get(key) for key in keys}
+        try:
+            environment.update(NEX_FILES_ROOT=str(data), NEX_FILES_WRITE='1')
+            revision = cli('check', cwd=directory)['revision']
+            expected_text = 'Я🧠\0text\n'
+            require(cli('eval', cwd=directory)['stdout'] == expected_text,
+                    'installed text-file interpreter output differs')
+            for profile in ('debug', 'release'):
+                cli('test', '--profile', profile, cwd=directory)
+                require(cli('run', '--profile', profile, cwd=directory)['stdout'] == expected_text,
+                        'installed text-file native/reference output differs')
+            built = cli('build', '--profile', 'release', cwd=directory)
+            metadata = json.loads((Path(built['executable']).parent / 'build.json').read_text())
+            require('nex_files.cpp' in metadata['runtime_components'] and
+                    'nex_store.cpp' not in metadata['runtime_components'] and
+                    'nex_json.cpp' not in metadata['runtime_components'],
+                    'file-only program selected unrelated runtime components')
+            package = root / 'file-application'
+            cli('package', '--directory', package, cwd=directory)
+            manifest = json.loads((package / 'application.json').read_text())
+            require(not manifest['execution_verified'], 'assembly falsely certified execution')
+            (directory / 'main.nex').unlink()
+            require(cli('run', '--revision', revision, cwd=directory)['stdout'] == expected_text,
+                    'text-file revision did not survive source deletion')
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+            executable = package / 'bin/app'
+            require(run([executable]) == expected_text and
+                    (data / 'nex-message.txt').read_bytes() == expected_text[:-1].encode(),
+                    'packaged file program needs compiler resources or changed text bytes')
+            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files']['bin/app']['sha256'],
+                    'executed file application differs from package inventory')
+            environment['NEX_RESOURCE_DIR'] = saved['NEX_RESOURCE_DIR']
+            denied = root / 'file-denial'
+            denied.mkdir()
+            (denied / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': 'main.nex'}))
+            (denied / 'main.nex').write_text('''module file_denial;
+server fn main()->unit!{fs,io}{
+ print(error_code(file_read_text("nex-message.txt")));
+ print(error_code(file_write_text("nex-message.txt","must not replace")));
+}
+''')
+            environment.pop('NEX_FILES_ROOT', None)
+            for command in ('eval', 'run'):
+                require(cli(command, cwd=denied)['stdout'] == 'CAPABILITY\nCAPABILITY\n',
+                        'missing file capability unexpectedly permitted access')
+            environment.update(NEX_FILES_ROOT=str(data), NEX_FILES_WRITE='0')
+            for command in ('eval', 'run'):
+                require(cli(command, cwd=denied)['stdout'] == '\nCAPABILITY\n',
+                        'read-only file capability unexpectedly permitted writes')
+            require((data / 'nex-message.txt').read_bytes() == expected_text[:-1].encode(),
+                    'denied write changed the existing file')
+            report['evidence']['text_files'] = {'revision': revision,
+                'native_profiles': ['debug', 'release'], 'source_deleted_replay': True,
+                'strict_unicode_nul_roundtrip': True, 'missing_capability_denied': True,
+                'read_only_write_denied': True, 'standalone_without_resources': str(executable),
+                'application_manifest_sha256': hashlib.sha256((package / 'application.json').read_bytes()).hexdigest()}
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    environment.pop(key, None)
+                else:
+                    environment[key] = value
 
     def measured():
         measured = cli('profile', '--revision', state['after'], '--scenario', 'installed SDK handoff', cwd=project)
@@ -594,7 +671,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
     try:
         for name, action in [('discovery', discover), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
-                ('backend-agreement', backend_agreement), ('profile', measured),
+                ('backend-agreement', backend_agreement), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('authenticated-storage', authenticated_storage), ('browser', browser)]:
             phase(name, action)

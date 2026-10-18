@@ -1,4 +1,4 @@
-# Function values — language 0.11 (introduced in 0.10)
+# Function values — language 0.12 (introduced in 0.10)
 
 NEX function values carry an exact checked parameter/result signature, realm
 and effect set. They run in the interpreter, native MLIR/LLVM output and
@@ -124,7 +124,7 @@ identities, budgets, pages and stop expiry. Scalar proofs explicitly report
 callable operations unsupported; a passing scalar proof does not prove a
 higher-order program or compiler correctness.
 
-Language 0.11 uses `nex.function/9` and `nex.program/10`; nominal formats remain
+Language 0.12 uses `nex.function/9` and `nex.program/10`; nominal formats remain
 `nex.structure/4` and `nex.enum/3`. Program identities include source owners and
 exclude derived instances/lifted bodies, while owner canonical expressions
 include lambda signatures/bodies. Use `nex migrate` to recheck an older

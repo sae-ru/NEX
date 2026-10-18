@@ -1,9 +1,10 @@
 # Filesystem adapter and language integration plan
 
-This is development work after toolchain 0.29, not an advertised source-language
-feature. The POSIX `TextFiles` adapter is being implemented/tested independently.
-The current language is still 0.11; no file builtin or `fs` effect is available
-until the checker, interpreter, native backend and explicit migration are ready.
+Development toolchain 0.30 integrates the POSIX `TextFiles` adapter into language
+0.12 through server-only `file_read_text` / `file_write_text` and the `fs` effect.
+The checker, interpreter, native backend, migration and model-independent pack
+now describe the same operations. [files.md](files.md) is the normative guide;
+STATUS.md separates targeted checks from the pending full compiler/SDK matrix.
 
 The host owns a directory capability and an explicit writable bit. NEX values
 will contain immutable text/results, never descriptors. A capability pins its
@@ -29,17 +30,16 @@ synced. OS interruption/termination and arbitrary filesystem drivers are outside
 the cooperative poll mechanism. Existing open readers are not immutable snapshots
 of files modified in-place by other software.
 
-Next source integration must add a distinct server-only `fs` effect and checked
-`file_read_text`/`file_write_text` intrinsics, while maintaining left-to-right evaluation, immutable
-owned results and cleanup on traps/cancellation. The interpreter and native code
-must call the same adapter. Reachable client code must reject these operations;
-unreachable server definitions must remain absent from TypeScript/browser output.
-HTTP file access needs an explicit host/request capability policy; inheriting a
-process environment must not silently grant handlers file access. File mutations
-must not be described as part of SQLite rollback.
+Source integration maintains left-to-right evaluation, immutable owned results
+and cleanup on traps/cancellation. Interpreter and native code call the same
+adapter. Reachable client code rejects these operations and unreachable server
+definitions remain absent from TypeScript/browser output. HTTP request scopes
+do not inherit the CLI environment capability; a trusted C++ host must explicitly
+grant `FileScope`. The standard server exposes no file-grant option. File
+mutations are not part of SQLite rollback.
 
 New builtin names/effects require language 0.12 with an explicit history-preserving
-0.11 migration. Capture a genuine SDK 0.29 store/export fixture first. Old sources,
+0.11 migration. Genuine SDK 0.29 store/export fixtures were captured first. Old sources,
 revisions, local IDs, task/proof acceptance intent and their matching SDK must be
 preserved. Advertise the new syntax only after specification, EBNF, capability
 descriptor, language pack, schemas, examples and differential/rejection tests agree.
@@ -55,5 +55,7 @@ resources, FFI, general async and other platforms remain separate open work.
 The internal adapter passed all 13 direct C++ cases on macOS ARM64, Linux ARM64
 and emulated Linux x86-64. Actual ELF machine tags were checked for both Linux
 probes. [Prototype evidence](evidence/files-adapter-0.30.0.json) records source
-hashes and genuine SDK-0.29/language-0.11 historical fixtures. This does not
-establish source-language file I/O, HTTP file access or completed migration.
+hashes and genuine SDK-0.29/language-0.11 historical fixtures. Its macOS full
+30-suite prototype regression passed in 921.16 s. These are historical adapter
+results from before source exposure; language 0.12 requires its own complete
+compiler and installed-SDK verification.

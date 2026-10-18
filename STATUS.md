@@ -4,17 +4,30 @@ The full requested objective remains open: build the NEX language and complete d
 
 ## In progress: filesystem adapter
 
-Development toolchain **0.30.0** starts a POSIX directory-capability adapter for
-strict UTF-8 text and atomic replacement. This is an internal prototype; the
-source language remains **0.11** and does not yet expose file builtins or a
-`fs` effect. Frontend/interpreter/native integration and explicit 0.11 migration
-remain required before advertising language 0.12. The independent C++ probe
-covers path rejection, symlinks, limits, cancellation, descriptor cleanup,
-concurrent replacement and pinned roots. All 13 cases passed on macOS ARM64,
-Linux ARM64 and emulated Linux x86-64. A genuine SDK 0.29 store/export fixture
-for language 0.11, including future builtin-name conflicts, is retained before
-starting migration. The full 0.30 prototype regression is running.
-See [the design](docs/files-design.md).
+Development toolchain **0.30.0 / language 0.12** exposes server-only
+`file_read_text` / `file_write_text` through the distinct `fs` effect. The
+interpreter and native runtime share a POSIX directory-capability adapter with
+strict UTF-8, immutable results, bounded paths/text and atomic file replacement.
+Standalone access requires an explicit absolute root; writes additionally require
+exactly `NEX_FILES_WRITE=1`. Native HTTP scopes deny inherited environment grants;
+a trusted C++ host can explicitly grant `FileScope`. File writes are not part of
+SQLite rollback. Source-level resources, binary buffers, streaming and general
+FFI/async remain open.
+
+The rebuilt compiler passed all 13 source integration cases in 59.358 s:
+native Debug/Release/reference agreement, Unicode/NUL/BOM, limits and denial,
+evaluation order, snapshot closures, TypeScript exclusion, genuine 0.11 migration,
+reserved-name repair, HTTP denial, trusted-host cancellation cleanup, reviewed
+task effects and pure-watch rejection. The installed SDK adds a dedicated file
+phase covering capability denial and independent packaging; its complete workflow
+and the full language-0.12 compiler/platform matrix are still under validation.
+
+The earlier internal adapter passed 13 direct C++ cases on macOS ARM64, Linux
+ARM64 and emulated Linux x86-64; its source-0.11 prototype passed all 30 macOS
+suites in 921.16 s. Genuine SDK 0.29 / language 0.11 store/export fixtures retain
+old sources/history before migration. These historical results do not substitute
+for the new language-version matrix. See [the file guide](docs/files.md) and
+[the design](docs/files-design.md).
 
 ## Development milestone: native application packages
 
@@ -68,8 +81,7 @@ records tested images, application manifest hashes and the fixture correction.
 
 The most recent fully verified development checkpoint is therefore toolchain
 **0.29 / language 0.11** (function/9, program/10), using compiler tree `8cf7621c`
-and corrected resource tree `ca357378`. Windows/mobile/UI/GPU/Wasm, source
-filesystem/FFI/async and the other open plan items remain required work.
+and corrected resource tree `ca357378`. Windows/mobile/UI/GPU/Wasm, broader filesystem/resources/FFI/async and the other open plan items remain required work.
 
 The historical accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
@@ -396,7 +408,7 @@ task/proof acceptance intent or archived fixture was rewritten.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64 and Linux ARM64/x86-64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.
-- NEX 0.11 lexer/parser, explicit i64/f64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
+- NEX 0.12 lexer/parser, explicit i64/f64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
 - Multi-file modules, logical qualified identities, import aliases, private/public functions and structures, public API visibility checks and cross-module type/effect/realm checks.
 - Local library roots, ordinary NEX `std/math` and `std/text` libraries, dependency source-content locks and explicit lock updates. Cyclic imports and remote retrieval are not supported.
 - Validated UTF-8 strings with strict escapes, Unicode scalar indexing/slicing, immutable nested lists and nominal structures with typed fields/constructors.

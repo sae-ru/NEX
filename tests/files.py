@@ -1,11 +1,9 @@
 """Text-file source semantics, native/reference agreement and preserved 0.11 history."""
-import copy
 import json
 import os
 from pathlib import Path
 import queue
 import re
-import shutil
 import signal
 import sqlite3
 import subprocess
@@ -152,6 +150,45 @@ test fn client_test()->unit{assert(40+2==42);}
         for value in ('FILES_SERVER_SENTINEL', 'file_read_text', 'private_data'):
             self.assertNotIn(value, generated)
         self.assertEqual(self.cli('emit', '--kind', 'typescript', '--entry', 'private_data', ok=False)['code'], 'E_REALM')
+
+    def test_task_effect_acceptance_requires_explicit_fs_permission(self):
+        self.source('''module reviewed_files;
+server fn load()->result<str>!{fs}{return file_read_text("private");}
+fn main()->unit{}
+''')
+        task = self.cli('task', self.file, '--kind', 'init')
+        task['checks'] = [{'id': 'effects', 'kind': 'effects', 'program': 'app', 'target': 'source',
+            'symbols': ['reviewed_files::load'], 'allowed_effects': ['fs'], 'allowed_realms': ['server']}]
+        task['requirements'] = [{'id': 'file-policy', 'text': 'Allow only the reviewed server filesystem effect.',
+            'bindings': [{'program': 'app', 'kind': 'function', 'symbol': 'reviewed_files::load'}],
+            'targets': ['source'], 'checks': ['effects']}]
+        path = self.root / 'task.json';path.write_text(json.dumps(task))
+        self.assertEqual(self.cli('task', path, '--kind', 'run')['status'], 'passed')
+        task['checks'][0]['allowed_effects'] = []
+        path.write_text(json.dumps(task))
+        failed = self.cli('task', path, '--kind', 'run', ok=False)
+        self.assertEqual(failed['status'], 'not_satisfied')
+        self.assertEqual(failed['checks'][0]['violations'], [{'symbol': 'reviewed_files::load', 'effect': 'fs'}])
+        self.assertEqual(list(self.data.iterdir()), [self.data / 'nested'])
+
+    def test_server_watch_cannot_execute_file_effects(self):
+        self.source('''module watched_files;
+server fn observe()->str!{fs}{let value:str="snapshot";return value;}
+server fn main()->unit!{fs,io}{print(observe());}
+''')
+        (self.data / 'private').write_text('kept')
+        session = self.cli('debug')
+        manifest = Path(session['manifest']);identity = json.loads(manifest.read_text())
+        frame = {'schema': 'nex.debug-frame/1', 'language': '0.12', 'revision': identity['revision'],
+            'build_key': identity['build_key'], 'function': 'watched_files::observe',
+            'stop': {'process_id': '100', 'thread_id': '101', 'frame_id': 0, 'stop_id': '1'},
+            'bindings': [{'name': 'value', 'type': 'str', 'value': 'snapshot'}], 'truncated': False}
+        path = self.root / 'frame.json';path.write_text(json.dumps(frame))
+        for expression in ('file_read_text("private")', 'file_write_text("private","changed")'):
+            with self.subTest(expression=expression):
+                self.assertEqual(self.cli('inspect', path, '--manifest', manifest, '--expression', expression,
+                    env=self.env, ok=False)['code'], 'E_EFFECT')
+        self.assertEqual((self.data / 'private').read_text(), 'kept')
 
     def test_genuine_011_migration_preserves_history_and_ids(self):
         fixture = json.loads((harness.REPO / 'tests/fixtures/language-0.11.json').read_text())

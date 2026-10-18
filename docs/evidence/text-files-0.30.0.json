@@ -1,0 +1,52 @@
+{
+  "schema": "nex.text-files-integration/1",
+  "toolchain": "0.30.0",
+  "language": "0.12",
+  "full_objective_complete": false,
+  "accepted_release": false,
+  "files": {
+    "runtime/nex_files.cpp": "fe3ebfd619b16277962fd165cfe98c41b0960724f84ae4fbfd0bee143b6d211e",
+    "runtime/nex_files.h": "6e52b86794f37f0bee5b41de8860c16ac0dbedf45ed1e609c79bef81d18f36df",
+    "runtime/files_runtime.cpp": "f911c674b3da408bb56e6041afba1e9492ce19baba6710e9ccaa31e047d44f91",
+    "runtime/nex_host.h": "74e0314f1a3984fd1963365912cdd7cc17826ed40a91c324ff120940e73758a7",
+    "runtime/runtime.cpp": "ae432750f8094d63c82a241f240b43a07054a9d8c593302103dae5507160961c",
+    "src/language.cpp": "0d25c99a078bc12baa060c71385f44c97c93bea326443fbfd498347bfdd2353c",
+    "src/generics.cpp": "5e5460fd15208f7a455f78bbe554ae89669e8ff5d846feb1730e3ddc3bba1adc",
+    "src/interpreter.cpp": "9993e3b344498c5909d72e4502e7520390d85722019c86fe055cfff9d41a6710",
+    "src/backend.cpp": "8e19938cad4e668a217d62949e631372bfc169c87effb4b5aecb6c9b00e10672",
+    "src/incremental.cpp": "d09f7fe7b5beafeb19ef805fd1932451bf02517b72f29c0c46e8076de902091a",
+    "src/tasks.cpp": "8182c4b4bab2460312a25b684c0740d962f8fa1a042773b3f1cd7568ae949ef1",
+    "tests/files.py": "35c602ec6acf87bad1fcf95ae07af8e6981fd4e80f11178089c21e00ab9e42b1",
+    "tests/files_runtime.cpp": "175889e1a18960a35f7ee70fecd2a2230139fe92b31d7c23ccd41b76401469eb",
+    "tools/sdk_acceptance.py": "399b4bd19d23c5b347243c01350adf12846b1f0d5febb4c98c25d7ea9f0261ff",
+    "tools/linux/bundle.py": "9254dfaea50eb123e7e949dbb107ae7af1ef60699eda68a3d0796b89b5b42609"
+  },
+  "macos_arm64": {
+    "targeted_source_cases": 13,
+    "seconds": 59.358,
+    "ok": true,
+    "log": "build/files-language012-complete.log",
+    "log_sha256": "020e9d770501d11f974a905bf68182b1b0e58ef2f8106f96dc85607b9adfb183",
+    "direct_runtime_probe": {
+      "ok": true,
+      "cases": 13,
+      "log": "build/files-runtime-language012-macos.log"
+    }
+  },
+  "acceptance_pin_migration": {
+    "ok": true,
+    "old_language": "0.11",
+    "new_language": "0.12",
+    "acceptance_intent_preserved": true,
+    "source_hashes_preserved": true,
+    "historical_fixture_hashes_preserved": true
+  },
+  "installed_sdk_validation": "pending",
+  "full_compiler_matrix": "pending",
+  "limits": {
+    "text_bytes": 1048576,
+    "path_bytes": 4096,
+    "path_components": 128
+  },
+  "http_policy": "No inherited environment capability; trusted C++ FileScope only. Standard server has no file-grant option."
+}

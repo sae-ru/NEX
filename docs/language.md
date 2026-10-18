@@ -194,8 +194,7 @@ Language 0.10 requires explicit migration. Keep SDK 0.23 for its original
 receipts/frames. New reserved `f64` and builtin `as_f64`/`as_i64` names may require
 an explicit archived-source repair before migration; a rejected migration leaves
 HEAD/history unchanged. Regenerate reviewed task/proof pins without changing
-their acceptance intent. Live debugger and platform/SDK acceptance for this new
-milestone remain under validation in `STATUS.md`.
+their acceptance intent. The numeric milestone passed the stated macOS/Linux debugger and SDK matrix in toolchain 0.29; current language-version validation is tracked in `STATUS.md`.
 
 ### Strings and Unicode
 
@@ -340,7 +339,7 @@ and migration are normative in [functions.md](functions.md).
 
 ## Effects and execution realms
 
-A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitting the declaration means an empty effect set. Current effects are `io`, database access `db` and text-file access `fs`; declaring `db` or `fs` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment and storage builtins require a server realm as well as their effect.
+A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitting the declaration means an empty effect set. Current effects are `io`, database access `db` and text-file access `fs`; declaring `db` or `fs` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment, storage and filesystem builtins require a server realm as well as their effect.
 
 Optional `shared`, `server`, or `client` precedes `fn` (and precedes `test` for a test definition); `pub`, when present, precedes the realm. The default is `shared`. A function may directly call shared functions or functions in its own realm. These checks apply across imports. Direct client/server calls and shared/platform-specific calls are rejected with `E_REALM`. This is a static boundary, not a network-call implementation. Client-entry native builds and server-entry TypeScript emission are rejected. Browser applications use the checked state/update/view contract in `docs/web.md`; the browser emitter includes only reachable client/shared functions.
 
@@ -365,6 +364,7 @@ Endpoints participate in program identity, graph nodes/edges, context, archived 
 - `ok(T) -> result<T>`, `err<T>(str, str) -> result<T>`, `is_ok(result<T>) -> bool`, `unwrap(result<T>) -> T`, `error_code(result<T>) -> str`, `error_message(result<T>) -> str` implement recoverable outcomes.
 - `encode_json(T:wire) -> str`, `decode_json<T:wire>(str) -> result<T>` implement the strict wire rules above.
 - `read_env(str) -> result<str> !{io}` is server-only. Missing names return `NOT_FOUND`; invalid names return `VALIDATION` and invalid value encoding returns `E_UTF8`.
+- `file_read_text(str) -> result<str>` and `file_write_text(str, str) -> result<bool>` are server-only and require `fs`. Their capability, path, byte-limit and HTTP boundaries are specified in [files.md](files.md).
 - `store_get(str) -> result<str>`, `store_put(str, str) -> result<bool>`, `store_remove(str) -> result<bool>`, and `store_keys(str) -> result<list<str>>` are server-only and require `db`. Their resource/transaction boundaries are specified in `docs/server.md`.
 
 Builtin names cannot be redefined. Named calls use a callable local when present; non-callable locals preserve the separate global-call namespace.

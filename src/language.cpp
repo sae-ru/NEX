@@ -796,6 +796,8 @@ llvm::json::Value describe() {
     {"effects",llvm::json::Array{"io","db","fs"}},
     {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
     {"file_limits",llvm::json::Object{{"text_bytes",1048576},{"path_bytes",4096},{"path_components",128}}},
+    {"file_platforms",llvm::json::Array{"macos","linux"}},
+    {"file_environment",llvm::json::Object{{"root","NEX_FILES_ROOT"},{"write","NEX_FILES_WRITE=1"},{"http_inherits_environment",false}}},
     {"file_guide","docs/files.md"},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
