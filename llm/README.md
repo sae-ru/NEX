@@ -80,6 +80,10 @@ change. Query `application_package_*` capabilities and read the indexed
 `application_packaging` guide/schema and `application_package_acceptance` tool.
 Assembly manifests deliberately retain `execution_verified:false`; use separate
 deployed runtime evidence before reporting a package as execution-verified.
+Register indexed schema documents by `$id` for offline resolution of package
+schema references. New captures use `notices_root:"catalogue"` for component
+license paths. Original module pins govern shared versus independent image state;
+`source_identity_file` records that source identity in the relocated inventory.
 
 Toolchain 0.30 / language 0.12 adds server-only `fs` text-file operations.
 Retrieve `nex guide --kind files` and inspect `file_features`, `file_limits`,

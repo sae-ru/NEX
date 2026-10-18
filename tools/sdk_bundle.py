@@ -288,7 +288,8 @@ class Bundle:
                 if not dependency.startswith('@loader_path/') or self.output not in resolved.parents or not resolved.is_file():
                     raise ValueError('external dependency remains: ' + dependency)
 
-    def copy_notices(self, directory="share/nex/licenses/sdk"):
+    def copy_notices(self, directory="share/nex/licenses/sdk", *, output=None):
+        output = self.output if output is None else output
         installed_components = []
         used = {item['component'] for item in self.origins.values()}
         for component in self.components['components']:
@@ -299,12 +300,12 @@ class Bundle:
             for index, filename in enumerate(component['license_files']):
                 source = Path(filename)
                 source.read_text()  # Require complete UTF-8 notice text.
-                target = self.output / directory / component['name'] / (str(index) + '-' + source.name)
+                target = output / directory / component['name'] / (str(index) + '-' + source.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if target.is_symlink() or (target.exists() and (not target.is_file() or sha256(target) != sha256(source))):
-                    raise ValueError('bundle notice destination collision: ' + str(target.relative_to(self.output)))
+                    raise ValueError('bundle notice destination collision: ' + str(target.relative_to(output)))
                 shutil.copy2(source, target)
-                notice['license_files'].append({'path': str(target.relative_to(self.output)), 'sha256': sha256(target)})
+                notice['license_files'].append({'path': str(target.relative_to(output)), 'sha256': sha256(target)})
             installed_components.append(notice)
         return installed_components
 

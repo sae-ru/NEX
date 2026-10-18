@@ -312,3 +312,10 @@ flags retain their meanings and source pins/signatures remain exact. Matching
 host-target preparation is supported; cross-target module closure assembly and
 arbitrary native dynamic loads remain pending. See the packaging guide for the
 complete trust, dependency and deployment boundary.
+
+Relocation preserves module image identity as well as binding types: original
+aliases share state and distinct source pins remain independent. Preparation
+records `source_identity_file` within the code inventory. Additional component
+notices use catalogue-relative paths when `notices_root` is `"catalogue"`;
+absence retains the older bundle-relative convention. Package schema references
+resolve through canonical `$id` URIs registered from the indexed local files.

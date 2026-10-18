@@ -9,6 +9,7 @@ import subprocess
 import sqlite3
 import sys
 import unittest
+from urllib.parse import urljoin, urldefrag
 
 import support as harness
 import source_ffi
@@ -37,7 +38,7 @@ class ForeignPackaging(harness.ToolchainCase):
         self.marker = self.root / 'events'
         self.env = {'NEX_SOURCE_FFI_MARKER': str(self.marker)}
 
-    def closure(self, inventoried=False):
+    def closure(self, inventoried=False, counter=False):
         bundle = self.program(SOURCE, {'echo': 'echo', 'unused': 'echo'})
         driver = self.cli('doctor')['native_compiler']
         dependencies = bundle / 'deps' if inventoried else self.root / 'original dependencies'
@@ -61,6 +62,8 @@ class ForeignPackaging(harness.ToolchainCase):
         producer = self.root / 'producer.c'
         c = producer.read_text().replace('static nex_ffi_status echo(', 'extern long dependency_value(void);\nstatic nex_ffi_status echo(')
         c = c.replace("mark('C');", "if(dependency_value()!=42)return NEX_FFI_ARGUMENT;mark('C');")
+        if counter:
+            c = c.replace('*o=v[0];return NEX_FFI_OK;', 'static int64_t counter=0;return a->make_i64(c,++counter,o);')
         producer.write_text(c)
         arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden', '-I' + str(harness.REPO / 'runtime'), str(producer), '-x', 'none', str(helper), '-o', str(bundle / 'module')]
         if platform.system() != 'Darwin':
@@ -331,6 +334,111 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertEqual(native.read_text(), definition)
         executed = subprocess.run([str(output / 'bin/app')], capture_output=True, text=True, timeout=20)
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
+
+    def test_operator_catalogue_matches_native_regular_file_and_size_limits(self):
+        self.closure()
+        regular = self.host.with_name('regular-host.json')
+        self.host.rename(regular)
+        self.host.symlink_to(regular)
+        with self.assertRaisesRegex(RuntimeError, 'symbolic link|Too many levels'):
+            self.prepare(self.root / 'symlink-denied')
+        self.host.unlink()
+        os.mkfifo(self.host, 0o600)
+        with self.assertRaisesRegex(RuntimeError, 'regular file'):
+            self.prepare(self.root / 'fifo-denied')
+        self.host.unlink()
+        data = regular.read_bytes()
+        self.host.write_bytes(data + b' ' * (1048576 - len(data)))
+        self.assertTrue(self.prepare(self.root / 'exact-limit')['assembly_passed'])
+        with self.host.open('ab') as stream:
+            stream.write(b' ')
+        with self.assertRaisesRegex(RuntimeError, 'byte limit'):
+            self.prepare(self.root / 'oversized-denied')
+        self.assertEqual(self.events(), '')
+
+    def test_indexed_package_schemas_resolve_from_an_offline_registry(self):
+        names = ('application-package.schema.json', 'foreign-projection.schema.json', 'foreign-package.schema.json')
+        documents = {name: json.loads((harness.REPO / 'llm' / name).read_text()) for name in names}
+        registry = {document['$id']: document for document in documents.values()}
+        self.assertEqual(len(registry), 3)
+        references = []
+        def visit(value, base=''):
+            if isinstance(value, dict):
+                base = urljoin(base, value.get('$id', ''))
+                if '$ref' in value:
+                    identifier, fragment = urldefrag(urljoin(base, value['$ref']))
+                    self.assertIn(identifier, registry, 'unresolved offline schema reference')
+                    self.assertEqual(fragment, '', 'packaging references name complete schema resources')
+                    references.append(identifier)
+                for child in value.values():
+                    visit(child, base)
+            elif isinstance(value, list):
+                for child in value:
+                    visit(child, base)
+        for document in documents.values():
+            visit(document)
+        self.assertEqual(len(references), 2)
+        pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
+        descriptor = self.cli('describe')['application_package_foreign']
+        self.assertEqual(pack['documents']['foreign_projection_schema'], descriptor['projection_schema'])
+        self.assertEqual(pack['documents']['foreign_package_schema'], descriptor['preparation_schema'])
+
+    def module_identity(self, distinct):
+        first, dependencies = self.closure(counter=True)
+        second = self.root / 'second-bundle'
+        shutil.copytree(first, second)
+        first_pin = self.pin
+        if distinct:
+            with (second / 'manifest.json').open('ab') as stream:
+                stream.write(b'\n')
+        second_pin = foreign_bundle.sha256(second / 'manifest.json')
+        self.host.write_text(json.dumps({'schema': 'nex.foreign-host/1', 'module_limit': 64, 'libraries': {
+            name: {'directory': str(directory), 'manifest_sha256': pin, 'exports': ['echo']}
+            for name, directory, pin in [('first', first, first_pin), ('second', second, second_pin)]}}))
+        self.source('module identities;server extern fn first(x:i64)->i64!{ffi}=foreign("first","echo","' + first_pin + '");'
+                    'server extern fn second(x:i64)->i64!{ffi}=foreign("second","echo","' + second_pin + '");'
+                    'server fn main()->unit!{ffi,io}{print(first(0));print(second(0));}')
+        components = []
+        for name, directory in [('first', first), ('second', second)]:
+            notice = self.root / (name + '-LICENSE')
+            notice.write_text('Complete ' + name + ' fixture notice.\n')
+            components.append({'name': name, 'version': 'fixture', 'url': 'https://example.invalid/' + name,
+                               'roots': [str(directory)], 'license_files': [str(notice)]})
+        components[0]['roots'].append(str(dependencies))
+        if distinct:
+            # Identical relocated code/notices must retain distinct source pins.
+            components = [{**components[0], 'roots': [str(first), str(second), str(dependencies)]}]
+        self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}))
+        self.application_notices()
+        expected = '1\n1\n' if distinct else '1\n2\n'
+        self.assertEqual(self.cli('eval', '--foreign', self.host)['stdout'], expected)
+        self.assertEqual(self.cli('run', '--foreign', self.host, timeout=120)['stdout'], expected)
+        output = self.root / 'identity-package'
+        self.cli('package', '--foreign', self.host, '--notices', self.notices, '--directory', output,
+                 env=self.env, timeout=180)
+        self.assertEqual(self.events(), '')
+        report = packaging_harness.Packaging.validate_inventory(self, output)
+        preparation = report['foreign_projection']['preparation']
+        self.assertEqual(preparation['notices_root'], 'catalogue')
+        libraries = preparation['libraries']
+        self.assertEqual(libraries['first']['manifest_sha256'] == libraries['second']['manifest_sha256'], not distinct)
+        for library in libraries.values():
+            bundle = output / 'foreign/bundles' / library['manifest_sha256']
+            self.assertEqual((bundle / library['source_identity_file']).read_text(), library['source_manifest_sha256'] + '\n')
+        shutil.rmtree(first)
+        shutil.rmtree(second)
+        shutil.rmtree(dependencies)
+        self.file.unlink()
+        shutil.rmtree(self.root / '.nex')
+        result = subprocess.run([str(output / 'bin/app')], cwd='/', capture_output=True, text=True, timeout=20,
+                                env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'})
+        self.assertEqual((result.returncode, result.stdout), (0, expected), result.stderr)
+
+    def test_aliases_keep_shared_module_state_despite_different_component_notices(self):
+        self.module_identity(False)
+
+    def test_distinct_original_pins_keep_independent_module_state(self):
+        self.module_identity(True)
 
 
 if __name__ == '__main__':

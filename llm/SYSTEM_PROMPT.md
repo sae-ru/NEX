@@ -178,6 +178,11 @@ executable resolves its packaged catalogue relative to its actual location.
 Source pins/signatures remain enforced. Arbitrary native file opens, dynamic
 `dlopen` names, remote services and runtime credentials cannot be inferred from
 loader dependencies. Cross-target foreign-module packaging remains pending.
+Module image identity follows original manifest pins: aliases keep shared native
+state, and distinct original pins stay independent. Capture includes complete
+component notices at catalogue scope; `notices_root:"catalogue"` identifies that
+path base. Query the descriptor's capture limits. Resolve the indexed package
+schemas from an offline registry of their `$id` URIs using the current SDK files.
 
 For text files (language 0.12), query file_features/file_limits and read
 `nex guide --kind files`. file_read_text(str)->result<str> and

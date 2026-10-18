@@ -3,15 +3,15 @@
   "toolchain": "0.43.0",
   "language": "0.15",
   "module_abi": 1,
-  "recorded_at": "2026-10-18T14:43:33.403026+00:00",
-  "status": "integrated_validation_in_progress",
+  "recorded_at": "2026-10-18T15:23:52.677202+00:00",
+  "status": "corrected_catalogue_schema_and_image_identity_validation",
   "accepted_release": false,
   "full_objective_complete": false,
   "source_sha256": {
     "CMakeLists.txt": "15dabb7db22dd5ddc448584ef50000f2652abd46c529a60ed148c4a8c7bf6c7a",
-    "src/packaging.cpp": "894cc058da19c966caa481037fab9b74b4d637ae0adc8d257e307847b537c7c4",
+    "src/packaging.cpp": "7688ace8dc6d6dec69ea653ba7a58f3cd52c4148f992ea49fdaee8c44d18232f",
     "src/main.cpp": "2766efee7c12d25fa15a876ed1e99ac187623437af256bce5f902b1d5b09051d",
-    "src/language.cpp": "20fd889f8666451843456bd7cfbbd523450e7cfb433def3742d268d6648bd032",
+    "src/language.cpp": "1e6f85c9e4d847ccd7df6bca0ce9ca214ac713cf74ebd3aaeb02f60610c960c3",
     "src/backend.cpp": "c01c0daaeca659168467ae4a5c4eb231467ff96626b60f4df7bc854b066b8210",
     "include/nex/packaging.h": "d9e8dc5f9040ae76cabdff0d081687f9913bf486e7a5c81fe7fff2a5333fc91d",
     "include/nex/backend.h": "532131fe3a7e3bed4e182073eaea1cf242b7dae726490d60532a69ab93b83c12",
@@ -20,18 +20,18 @@
     "runtime/nex_foreign.h": "9a48cd0310f9125c6638750b1a4eb5e3ad3c3e4cee73dd40d084f25cb815121e",
     "runtime/foreign_runtime.cpp": "24d1ff52e7e4db80eb3a6bf1f433342c6ab211e7c1e3c347415f04099a768013",
     "runtime/http_main.cpp": "bc5d79ee215aab1558ffc5defa282d55af8929eedd0e7fab81cafa7d685e0036",
-    "tools/sdk_bundle.py": "ab7e6a85b12d5f4822482ed209b53436bf6fb91b9086ff5365e47f2f06549bfb",
-    "tools/app_bundle.py": "0e89ec833ee3dfcd27f603f09484d88630c4d6b1a876506392f5814f22ff6ade",
-    "tools/foreign_bundle.py": "2c8e9ce806733c1b588d674e90a9a58749a9e8457db4e3c3f55035217203b806",
+    "tools/sdk_bundle.py": "f93b1a537ba85d5a35a24f5e99f3e13fe6d7fdca2f53aa0e7c2f83a3bb0fe680",
+    "tools/app_bundle.py": "b52f0edba7ee5b3155221a3c9faaf10fff69b29c274e6a383a33444bc433059a",
+    "tools/foreign_bundle.py": "11634ae80dbece628f49d48e1b002ac4c200f3cec0bc1c39c65651c7f7c6d715",
     "tools/sdk_acceptance.py": "0ba90cd7adc4ea0184746fb388c78cf03c41f255a3b8fff1bf457fa5950d032d",
-    "tests/foreign_packaging.py": "e78e6a8335a38a2694d7362bd6abcbcfc8a13926ea2deeb8e9774206a83906fa",
+    "tests/foreign_packaging.py": "acdbd88e891b0d8df7c49ecf2888e0f6e494ab62c3e7e629d6bf228b3c5478f5",
     "tests/source_ffi.py": "4402ca887254f527f2d601724c2d11e50da93c9f125f5e0dcebfd04853128a0f",
-    "docs/packaging.md": "4232011ced146b231a0982bc947bf19c71f1e52589969ddf2e65383c70c0d12d",
+    "docs/packaging.md": "9c06da199e4964566397a30f50af688168393e58c509893cbebb1ce18c0150d8",
     "docs/language.md": "168f86985cde9c7b8af3623fc9d77ce63289582fc94bce43f691228460fab978",
-    "llm/SYSTEM_PROMPT.md": "6da65921ef6131e661e291c35664c0aae54c274472b2d0360ef3df8249274c2c",
+    "llm/SYSTEM_PROMPT.md": "79e67ae9ebd9e9b4b936708e159a5fdc23cbed2812e496de87451c49d9e3e390",
     "llm/language-pack.json": "b71b52bde4b59433c7dfb844afc35a477dbe67320de304c70ea862b4526dec42",
-    "llm/foreign-package.schema.json": "aafe638a5f8b6f8b32c0cf2453648386ffae5c06692f7d8d5d904e94fb16ec87",
-    "llm/foreign-projection.schema.json": "a7492a68316ef83e91f261852d92b931d95438f58f71b45e740f5575fd6a3ee2"
+    "llm/foreign-package.schema.json": "b3adcb5ca2d937da801ae3c5bf7b26689b5da2bf7abb959df8b57649e386c793",
+    "llm/foreign-projection.schema.json": "ed4e7b5745a149a836f6e717b0ee7cfe1d6466e540a4766e853d3f49227909d5"
   },
   "checks": {
     "initial_preparation": {
@@ -61,6 +61,105 @@
       "seconds": 31.405,
       "log": "build/foreign-package-043-http.log",
       "scope": "local loopback server, three authorized calls, denied anonymous/invalid credentials, package static-root rejection; approved local test execution"
+    },
+    "baseline_macos_full": {
+      "ok": true,
+      "scope": "baseline before bounded regular host input and schema-reference corrections",
+      "groups": 50,
+      "python_cases": 368,
+      "seconds": 1107.74,
+      "log": "/Users/sae/projects/NEX/build/ctest-043-package.log",
+      "LastTest": "/Users/sae/projects/NEX/build/foreign-package-043-baseline-LastTest.log",
+      "LastTest_sha256": "8d7817a53f0736289f0102cce1abf6e87f5fe75a6d15c4a68648a72ddd8c98ee",
+      "binary_sha256": "da6b5e35671c0ab9eff373e1c437e14e24ace09793668eb9815f8663af17e49f"
+    },
+    "baseline_linux_full_and_sdk": {
+      "ok": true,
+      "scope": "baseline 0.43 before catalogue/schema/image identity corrections",
+      "groups": 50,
+      "python_cases": 368,
+      "ctest_seconds": 940.65,
+      "source_free_sdk_phases": 13,
+      "source_free_sdk_seconds": 201.888,
+      "report": "/Users/sae/projects/NEX/build/linux-043-package-arm64/verification.json",
+      "report_sha256": "d754d9657c58c50b708b603bd2b6b296f059b220e74b73a867d36816285f15cd",
+      "source_free_sdk_report": "/Users/sae/projects/NEX/build/linux-043-package-arm64/sdk-acceptance/031e434297fb42ccad1ed222f8f364e8/workflow/report.json",
+      "live_debugger": true,
+      "network": "none",
+      "source_checkout_mounted": false,
+      "source": "build/source-checkpoint-20261018-144357-3b2ccfe6"
+    },
+    "baseline_macos_sdk": {
+      "ok": true,
+      "recorded_at": "2026-10-18T14:53:12.146089+00:00",
+      "phases": 13,
+      "seconds": 285.702,
+      "report": "/Users/sae/projects/NEX/build/sdk-043-package-acceptance/report.json",
+      "sha256": "7161ca186aa328ccd6d9ec8be1c3de7a9782b151e676a4436da4165a31a24d61",
+      "compiler_sha256": "da6b5e35671c0ab9eff373e1c437e14e24ace09793668eb9815f8663af17e49f",
+      "packaged_nominal_application": {
+        "source_revision": "be0f5ffb18a57511e7debf2871b8e9f59b8c967d936131a130d97e23eff1862d",
+        "packaged_revision": "d9491541725d85cd59425fd67ecd7066a3cf21cea543dba49b6d6e5433de85d3",
+        "source_deleted": true,
+        "module_inputs_deleted": true,
+        "moved": true,
+        "environment_without_sdk": true,
+        "exact_file_inventory": true,
+        "nominal_contract_agreement": true,
+        "manifest": "/Users/sae/projects/NEX/build/sdk-043-package-acceptance/foreign-boundary/moved-package/application.json"
+      },
+      "packaged_file_hashes_rechecked": true,
+      "scope": "baseline 0.43 before staged regular/bounded host input correction"
+    },
+    "corrected_root_catalogue_and_schema_cases": {
+      "ok": true,
+      "cases": 2,
+      "seconds": 0.839,
+      "log": "build/foreign-package-043-promoted-guards.log"
+    },
+    "staged_bounded_host_inputs": {
+      "ok": true,
+      "cases": 5,
+      "seconds": 46.493,
+      "log": "build/foreign-package-043-host-input-check.log"
+    },
+    "offline_json_schema": {
+      "ok": true,
+      "jsonschema_version": "4.25.1",
+      "baseline_failure": {
+        "type": "_WrappedReferencingError",
+        "message": "Unresolvable: foreign-projection.schema.json"
+      },
+      "offline_resolved_positive_artifacts": 3,
+      "rejected_artifacts": [
+        "missing_source_revision",
+        "bad_manifest_pin",
+        "assembly_execution_claim",
+        "unsupported_platform",
+        "null_projection"
+      ],
+      "manifest": "/Users/sae/projects/NEX/build/sdk-043-package-acceptance/foreign-boundary/moved-package/application.json",
+      "scope": "staged canonical-ID reference correction; exact real SDK application/projection/preparation"
+    },
+    "shared_image_identity_probe": {
+      "schema": "nex.foreign-package-identity-probe/1",
+      "original_stdout": "1\n2\n",
+      "packaged_exit_code": 0,
+      "packaged_stdout": "1\n1\n",
+      "packaged_stderr": "",
+      "original_shared_pin": "122b7726c05fa35a9946a68ac9780c3e2471997b3f9bb96f8e7c1e0104b38216",
+      "prepared_pins": {
+        "first": "c0d0c67b5c248c14be15d47f13b31051dc8499d8e48eafda53eef04e11e2859d",
+        "second": "8b8bff6647bcf239c3eab010e64fbd53946ff5f49210cdec307899ba2533981e"
+      },
+      "requires_correction": true
+    },
+    "corrected_module_image_identity": {
+      "ok": true,
+      "cases": 2,
+      "seconds": 66.212,
+      "log": "build/foreign-package-043-image-identity.log",
+      "observable_semantics": "Aliases retain a shared counter; distinct original manifest pins retain independent counters. Native/reference and source-deleted packaged execution agree."
     }
   },
   "implemented": [
@@ -76,7 +175,11 @@
     "executable_relative_default_catalogue",
     "ordinary_builds_explicit_only",
     "captured_input_hashes",
-    "CLI_and_HTTP_native_output"
+    "CLI_and_HTTP_native_output",
+    "preserved_shared_and_distinct_module_image_state",
+    "catalogue_scoped_notices",
+    "bounded_regular_operator_inputs",
+    "offline_schema_registry"
   ],
   "pending": [
     "current_full_macos_regression",
@@ -87,5 +190,37 @@
     "arbitrary_dynamic_native_load_discovery",
     "callbacks_into_NEX",
     "remaining_language_and_development_chain"
+  ],
+  "baseline_source_sha256": {
+    "CMakeLists.txt": "15dabb7db22dd5ddc448584ef50000f2652abd46c529a60ed148c4a8c7bf6c7a",
+    "src/packaging.cpp": "894cc058da19c966caa481037fab9b74b4d637ae0adc8d257e307847b537c7c4",
+    "src/main.cpp": "2766efee7c12d25fa15a876ed1e99ac187623437af256bce5f902b1d5b09051d",
+    "src/language.cpp": "20fd889f8666451843456bd7cfbbd523450e7cfb433def3742d268d6648bd032",
+    "src/backend.cpp": "c01c0daaeca659168467ae4a5c4eb231467ff96626b60f4df7bc854b066b8210",
+    "include/nex/packaging.h": "d9e8dc5f9040ae76cabdff0d081687f9913bf486e7a5c81fe7fff2a5333fc91d",
+    "include/nex/backend.h": "532131fe3a7e3bed4e182073eaea1cf242b7dae726490d60532a69ab93b83c12",
+    "include/nex/language.h": "0de48a136734a17dd67e1e6d110c392cb6168870f26d0f669ea0ab2a50d6e30f",
+    "runtime/nex_foreign.cpp": "77062cbdf0ac65fd9408bd2acfbce579286823101f21d111432449cad1442e28",
+    "runtime/nex_foreign.h": "9a48cd0310f9125c6638750b1a4eb5e3ad3c3e4cee73dd40d084f25cb815121e",
+    "runtime/foreign_runtime.cpp": "24d1ff52e7e4db80eb3a6bf1f433342c6ab211e7c1e3c347415f04099a768013",
+    "runtime/http_main.cpp": "bc5d79ee215aab1558ffc5defa282d55af8929eedd0e7fab81cafa7d685e0036",
+    "tools/sdk_bundle.py": "ab7e6a85b12d5f4822482ed209b53436bf6fb91b9086ff5365e47f2f06549bfb",
+    "tools/app_bundle.py": "0e89ec833ee3dfcd27f603f09484d88630c4d6b1a876506392f5814f22ff6ade",
+    "tools/foreign_bundle.py": "2c8e9ce806733c1b588d674e90a9a58749a9e8457db4e3c3f55035217203b806",
+    "tools/sdk_acceptance.py": "0ba90cd7adc4ea0184746fb388c78cf03c41f255a3b8fff1bf457fa5950d032d",
+    "tests/foreign_packaging.py": "e78e6a8335a38a2694d7362bd6abcbcfc8a13926ea2deeb8e9774206a83906fa",
+    "tests/source_ffi.py": "4402ca887254f527f2d601724c2d11e50da93c9f125f5e0dcebfd04853128a0f",
+    "docs/packaging.md": "4232011ced146b231a0982bc947bf19c71f1e52589969ddf2e65383c70c0d12d",
+    "docs/language.md": "168f86985cde9c7b8af3623fc9d77ce63289582fc94bce43f691228460fab978",
+    "llm/SYSTEM_PROMPT.md": "6da65921ef6131e661e291c35664c0aae54c274472b2d0360ef3df8249274c2c",
+    "llm/language-pack.json": "b71b52bde4b59433c7dfb844afc35a477dbe67320de304c70ea862b4526dec42",
+    "llm/foreign-package.schema.json": "aafe638a5f8b6f8b32c0cf2453648386ffae5c06692f7d8d5d904e94fb16ec87",
+    "llm/foreign-projection.schema.json": "a7492a68316ef83e91f261852d92b931d95438f58f71b45e740f5575fd6a3ee2"
+  },
+  "corrections": [
+    "regular non-symlink bounded operator input before Python normalization",
+    "canonical schema references resolved offline",
+    "catalogue-scoped complete notices without changing module image identity",
+    "inventoried original manifest identity prevents coalescing distinct source pins"
   ]
 }

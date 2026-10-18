@@ -93,7 +93,7 @@ def copy_foreign(request, stage):
     components, system = [], set()
     for library in projection['preparation']['libraries'].values():
         system.update(library['system_libraries'])
-        prefix = Path('foreign/bundles') / library['manifest_sha256']
+        prefix = Path('foreign') if projection['preparation'].get('notices_root') == 'catalogue' else Path('foreign/bundles') / library['manifest_sha256']
         for item in library['components']:
             component = {**item, 'license_files': [
                 {**record, 'path': str(prefix / record['path'])} for record in item['license_files']]}

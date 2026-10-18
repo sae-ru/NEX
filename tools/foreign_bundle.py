@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -20,7 +21,7 @@ from app_bundle import LinuxApplication, MacApplication, notices_for_sdk
 from sdk_bundle import elf_image, macho, run, sha256
 
 
-def document(path):
+def document(path, maximum=None):
     def unique(pairs):
         result = {}
         for key, value in pairs:
@@ -28,7 +29,30 @@ def document(path):
                 raise ValueError('duplicate JSON key: ' + key)
             result[key] = value
         return result
-    return json.loads(path.read_text(encoding='utf-8'), object_pairs_hook=unique)
+    if maximum is None:
+        text = path.read_text(encoding='utf-8')
+    else:
+        # Operator catalogues obey the native host's regular-file, no-follow
+        # and 1 MiB input contract before Python parses or normalizes anything.
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+        try:
+            info = os.fstat(descriptor)
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError('operator catalogue must be a regular file')
+            if info.st_size > maximum:
+                raise ValueError('operator catalogue exceeds its byte limit')
+            data = bytearray()
+            while True:
+                part = os.read(descriptor, min(65536, maximum - len(data) + 1))
+                if not part:
+                    break
+                data.extend(part)
+                if len(data) > maximum:
+                    raise ValueError('operator catalogue exceeds its byte limit')
+            text = data.decode('utf-8')
+        finally:
+            os.close(descriptor)
+    return json.loads(text, object_pairs_hook=unique)
 
 
 def inspect(nex, host):
@@ -91,7 +115,7 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
     for preparation probes; production packaging must pass its reachable set.
     """
     nex = Path(nex).resolve(strict=True)
-    host = Path(host).resolve(strict=True)
+    host = Path(os.path.abspath(host))
     sdk = Path(sdk).resolve(strict=True)
     output = Path(os.path.abspath(output))
     if os.path.lexists(output):
@@ -101,7 +125,7 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.' + output.name + '.foreign-', dir=output.parent)).resolve(strict=True)
     try:
-        original = document(host)
+        original = document(host, maximum=1048576)
         libraries = original['libraries']
         if selection is not None:
             if not isinstance(selection, dict) or not selection:
@@ -187,7 +211,10 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                 else:
                     glibc, glibcxx = collector.relocate_elf(patchelf)
                     details = {'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx)}
-                used = collector.copy_notices('licenses')
+                # Distribution notices are captured at catalogue scope. Their
+                # component names/paths must not split one original image into
+                # separate instances when several logical aliases use it.
+                used = collector.copy_notices('licenses/' + name, output=stage)
                 # ABI 1 snapshots contain regular files only. A SONAME alias
                 # therefore owns a copy of the same relocated image bytes.
                 for path in sorted(target.rglob('*')):
@@ -199,10 +226,19 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                         shutil.copy2(resolved, path)
                 for origin in collector.origins.values():
                     origin.pop('source', None)
+                # Conversely, canonical relocation must not coalesce distinct
+                # original pins (even two differently formatted manifests).
+                # Preserve that image identity in a verified ordinary member.
+                identity_file = 'SOURCE_MANIFEST_SHA256'
+                index = 0
+                while (target / identity_file).exists():
+                    index += 1
+                    identity_file = 'SOURCE_MANIFEST_SHA256.' + str(index)
+                (target / identity_file).write_text(old_pin + '\n', encoding='ascii')
                 inventory = collector.inventory()
                 if not 1 <= len(inventory) <= 128 or any(record['bytes'] > 64 * 1048576 for record in inventory.values()) or sum(record['bytes'] for record in inventory.values()) > 256 * 1048576:
                     raise ValueError('relocated closure exceeds ABI 1 inventory limits')
-                notice_paths = list(dict.fromkeys(manifest['notices'] + [record['path'] for component in used for record in component['license_files']]))
+                notice_paths = manifest['notices']
                 final_manifest = {**manifest, 'files': [{'path': path, 'sha256': record['sha256']} for path, record in inventory.items()], 'notices': notice_paths}
                 final_bytes = (json.dumps(final_manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode()
                 new_pin = hashlib.sha256(final_bytes).hexdigest()
@@ -217,6 +253,7 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                 else:
                     target.rename(final_target)
                 prepared[identity] = {'manifest_sha256': new_pin, 'source_manifest_sha256': old_pin,
+                                     'source_identity_file': identity_file,
                                      'components': used, 'system_libraries': sorted(collector.system_libraries),
                                      'files': inventory, **details}
             result_libraries[name] = {**prepared[identity], 'exports': sorted(grant['exports'])}
@@ -234,6 +271,7 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
         report = {'schema': 'nex.foreign-package/1', 'assembly_passed': True, 'execution_verified': False,
                   'module_initialization': False, 'source_catalogue_hash': reviewed['hash'],
                   'catalogue_hash': checked['hash'], 'platform': checked['platform'],
+                  'notices_root': 'catalogue',
                   'libraries': result_libraries}
         (stage / 'foreign-package.json').write_text(json.dumps(report, indent=2) + '\n')
         output.mkdir()

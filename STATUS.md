@@ -13,14 +13,31 @@ revisions without changing HEAD or materialized sources. The binary resolves its
 packaged catalogue relative to its actual executable location. Captured bytes
 are rehashed before publication. C ABI 1 remains unchanged.
 
-The initial four preparation cases pass on macOS ARM64 in 42.264 s, including
-recursive native dependencies, already inventoried images, independent execution
-after removing originals, tampering, missing provenance/dependencies and grant
-selection. Compiler integration, CLI/HTTP package execution, full regression,
-installed SDK and current Linux checks are being validated. This is not a
-release acceptance claim. Cross-target native modules, arbitrary dynamic native
-loads, Windows/mobile installers, callbacks and the remaining language/toolchain
-work stay open.
+The initial integrated snapshot passes all **50 groups** (368 Python cases and
+ten C++ probes) on macOS ARM64 in **1107.74 s** and Linux ARM64 in **940.65 s**.
+Both installed SDKs pass all thirteen workflow phases, including a moved,
+source-deleted nominal C-module application package. The macOS workflow takes
+285.702 s; the Linux workflow takes 201.888 s in a source-free container with
+networking disabled. The Linux live debugger matrix also passes. These results
+describe the initial snapshot before the corrections below.
+
+Additional checks found three defects. Python initially followed a host symlink
+and omitted the native regular-file/1-MiB limit; the two new root checks pass in
+0.839 s. Relative schema references were unresolved; canonical URIs now resolve
+through an offline registry. JSON Schema 4.25.1 accepts three real SDK metadata
+artifacts and rejects five malformed variants. Finally, component notice paths
+split one shared native image: an observable counter changed from `1,2` to
+`1,1` after packaging. Distribution notices are now captured at catalogue scope,
+and an inventoried source-identity member preserves distinct original pins.
+Both shared-state and independent-state native/reference/package cases pass in
+66.212 s, including deleted original inputs and complete file/notice inventories.
+
+The corrected full regression, installed SDK and Linux matrix remain under
+validation; the [evidence](docs/evidence/foreign-packages-0.43.0.json) keeps their
+scope separate from the initial successful matrix. This is not a release
+acceptance claim. Cross-target native modules, arbitrary dynamic native loads,
+Windows/mobile installers, callbacks and the remaining language/toolchain work
+stay open.
 
 ## Earlier milestone: reviewed foreign inputs for tasks
 

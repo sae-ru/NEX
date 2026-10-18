@@ -85,6 +85,32 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
       try{checkForeignBinding(snapshot,derived,derived.function(function->name));}
       catch(const Error &error){throw Error("E_FFI_PACKAGE",error.what(),error.span);}
     }
+    if(report->getString("notices_root")=="catalogue"){
+      size_t bytes=0;for(const auto &[name,data]:snapshot.files){(void)name;bytes+=data.size();}
+      for(const auto &[name,value]:*libraries){
+        (void)name;auto library=value.getAsObject();auto components=library?library->getArray("components"):nullptr;
+        if(!components)throw Error("E_PACKAGE","foreign preparation has no component notices");
+        for(const auto &componentValue:*components){auto component=componentValue.getAsObject();auto notices=component?component->getArray("license_files"):nullptr;
+          if(!notices)throw Error("E_PACKAGE","foreign component has no notice inventory");
+          for(const auto &noticeValue:*notices){auto notice=noticeValue.getAsObject();auto path=notice?notice->getString("path"):std::nullopt;auto digest=notice?notice->getString("sha256"):std::nullopt;
+            if(!path||!digest||!path->starts_with("licenses/")||path->contains('\0')||path->contains('\\')||path->contains(':'))throw Error("E_PACKAGE","invalid captured notice path");
+            auto source=prepared;for(const auto &part:fs::path(path->str())){
+              if(part.empty()||part=="."||part==".."||part.is_absolute())throw Error("E_PACKAGE","invalid captured notice path");source/=part;
+              if(fs::is_symlink(source))throw Error("E_PACKAGE","symlink in captured notice input");
+            }
+            if(auto existing=snapshot.files.find(path->str());existing!=snapshot.files.end()){
+              if(sha256(existing->second)!=*digest)throw Error("E_PACKAGE","conflicting captured component notice hashes");continue;
+            }
+            if(!fs::is_regular_file(source)||fs::file_size(source)>64*1048576||fs::file_size(source)>128*1048576-bytes||snapshot.files.size()>=8190)
+              throw Error("E_PACKAGE","foreign capture exceeds package input limits");
+            auto data=readFile(source.string());
+            if(data.size()>64*1048576||data.size()>128*1048576-bytes)throw Error("E_PACKAGE","foreign capture exceeds package input limits");
+            if(sha256(data)!=*digest)throw Error("E_PACKAGE","foreign component notice changed after preparation");
+            bytes+=data.size();snapshot.files.emplace(path->str(),std::move(data));
+          }
+        }
+      }
+    }
     auto foreign=folder/"foreign";saveForeignCatalogue(snapshot,foreign);
     writeFile((foreign/"foreign-package.json").string(),json(preparedReport)+"\n");
     for(const auto &entry:fs::recursive_directory_iterator(foreign)){

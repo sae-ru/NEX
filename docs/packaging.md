@@ -71,8 +71,9 @@ nex package main.nex --foreign host.json --notices notices.json \
 Toolchain 0.43 accepts explicit operator grants for reachable external calls on
 a matching macOS/Linux host target. Only reachable logical libraries and exports
 enter the deployed catalogue; unused catalogue entries are not deployment inputs.
-The original module inventory, recursively discovered native loader dependencies
-and complete component notices are copied into self-contained module bundles.
+The original inventory and recursively discovered native loader dependencies
+form self-contained code bundles. Complete component notices are captured beside
+them and covered by the application inventory.
 Already inventoried native images keep their relative paths. System libraries
 remain host prerequisites. Provenance is required for every copied external
 file, including the original module. Assembly never calls a module entry point.
@@ -87,6 +88,22 @@ package's `revision` is the derived revision actually compiled; its
 The projection records both source hashes, each changed binding, original/new
 bundle pins, dependency inventories and component notices. Language 0.15 and
 C ABI 1 remain unchanged.
+
+Module image identity is preserved: aliases of one original pin share native
+state, while distinct original pins remain separate even when relocation makes
+their code bytes identical. Each code bundle has an inventoried
+`source_identity_file` containing its original manifest SHA-256 and a newline.
+Additional distribution notices are stored at catalogue scope, so differing
+component labels or license paths do not split a shared module image. A
+preparation report with `notices_root:"catalogue"` uses catalogue-relative
+component notice paths; older reports without that field retain bundle-relative
+paths. Original notice members stay in their original module inventory.
+
+Binary/notice capture is bounded to 128 MiB and 8190 files, including discovered
+dependencies and generated source identity members. Each notice member is at
+most 64 MiB. Module ABI 1 still limits each code bundle to 128 members and
+256 MiB, including its identity member. Generated catalogue/report metadata is
+additional to the capture file count.
 
 `foreign/host.json` grants only selected exports and preserves the operator's
 module quota. The native executable resolves it relative to its actual executable
@@ -109,6 +126,9 @@ file accesses, external services or credentials used by native code. These must
 be supplied and tested explicitly. Cross-target foreign-module assembly,
 Windows/mobile packaging, stable ABI validation and general callbacks remain
 pending. Current execution evidence is recorded in `STATUS.md`.
+
+The indexed package schemas use canonical URI references. Register their local
+SDK documents by `$id` in an offline schema registry before validation.
 
 ## Deployment acceptance fixtures
 
