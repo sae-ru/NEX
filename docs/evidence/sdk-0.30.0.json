@@ -68,10 +68,37 @@
       "live_suites": 8
     },
     "linux_amd64": {
-      "state": "running",
+      "ok": true,
+      "suites": 31,
+      "seconds": 1812.18,
+      "log": "build/linux-amd64-030/ctest.log",
+      "log_sha256": "b5d24b9a2f85f17845fe200d723ce359f3a342c68a5bcb7a783f7e2dd0df03d9",
+      "python_cases_declared": 275,
+      "skips": [
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
       "emulated": true,
       "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
-      "report": "build/linux-amd64-030/verification.json"
+      "full_driver_ok": true,
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-amd64-030/sdk-acceptance/4f1e752a563741d7b715d56e76acaae9/workflow/report.json",
+        "compiler_sha256": "8c956ef814093edc1acc0d3a33d8d749812290e2f0170c88e464145065f3a864",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": false,
+        "browser_build": true,
+        "seconds": 271.612
+      },
+      "build_compiler_sha256": "fb6065c7029963c0cf385fcaf4bbb5d9bd515134900c40624ddfbd4acc729cca",
+      "installed_sdk_compiler_sha256": "8c956ef814093edc1acc0d3a33d8d749812290e2f0170c88e464145065f3a864",
+      "live_suites": 0
     }
   },
   "artifacts": [
@@ -125,6 +152,44 @@
         "nex-linux-toolchain:arm64": "sha256:d8cc8012fd6b07d7bba21eabe87cfc0b0d28b11ea8efba8d0130d0aecfefabb8",
         "nex-sdk-packager:arm64": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
         "nex-sdk-runtime:arm64": "sha256:b8567b9108fd7236e1c09d7fb1686ca33ba3841e2c51ae94009b6401cf3aa3f0"
+      },
+      "metadata_boundaries": {
+        "ok": true,
+        "unsafe_absolute_soname_rejected": true,
+        "no_outside_write": true,
+        "parent_component_names_rejected": true
+      },
+      "resource_overlay": {
+        "tools/linux/BundleRuntime.Dockerfile": {
+          "before_sha256": "eaebe3dbda748f0b1f8068eadf531cd0b20a0ab252b1330829cd9bff6f1872ff",
+          "after_sha256": "0f047a9b068d6ab2e2a58904ef0c8bded7e729b8c8cac47591b8aee9fa44c269"
+        },
+        "docs/sdk.md": {
+          "before_sha256": "8a9d3713ec0f774b2a11d83aae9140c727b7bfcdb43a2c2871bdf1cebd9e9ecb",
+          "after_sha256": "a74629877b7abb66b0d763a10620aec25ba2cffa7a8ee8c3d18cd9c4fe83346f"
+        }
+      }
+    },
+    {
+      "platform": "linux-amd64",
+      "ok": true,
+      "emulated": true,
+      "archive": "build/linux-amd64-030-bundle/nex-sdk-0.30.0-linux-amd64-development.tar.gz",
+      "archive_sha256": "6555651c7e1e108b53ffc1febd860a63599b3e41c5d8a3da10b05b80918ff1a1",
+      "archive_bytes": 144370152,
+      "compiler_sha256": "279f85a0862b7ab1ab1b364d056162c783053964d92e9f379a8c9fc438f91880",
+      "files_verified": 743,
+      "clean_sdk_phases": 11,
+      "restored_archive_phases": 11,
+      "clean_sdk_seconds": 292.81,
+      "restored_archive_seconds": 271.62,
+      "external_network": "none",
+      "source_checkout_mounted": false,
+      "host_llvm_mlir_z3_clang_present": false,
+      "images": {
+        "nex-linux-toolchain:amd64": "sha256:b8bc0c6cbf81440a5fa0646815409974ca2993d552347a56ff72aa75bae58be8",
+        "nex-sdk-packager:amd64": "sha256:28ebb20df892de8e5b9bf09c0063ee68b587a564556c07112c352a2974f15af4",
+        "nex-sdk-runtime:amd64": "sha256:2f93fd4da7355574edf453f5d48d52f97b97a3d59b5a9ed1b94895624e33a5a4"
       },
       "metadata_boundaries": {
         "ok": true,
@@ -235,10 +300,7 @@
     },
     "packaging_tools_are_not_application_runtime_dependencies": true
   },
-  "remaining_validation": [
-    "full_linux_amd64_driver_and_source_free_sdk",
-    "linux_amd64_sdk_bundle_and_archive_restore"
-  ],
+  "remaining_validation": [],
   "platform_limits": [
     "Linux x86-64 execution is emulated; live x86-64 debugging remains unverified.",
     "macOS Intel execution, broader OS/distribution baselines, Windows/mobile/UI/GPU/Wasm and the remaining full-goal plan items are not established by this evidence."

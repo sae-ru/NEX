@@ -4,6 +4,17 @@ This is an implementation plan, not current syntax. Toolchain 0.30 / language
 0.12 exposes UTF-8 text files; `bytes` and binary file operations are not yet
 available. Query the actual compiler before generating source.
 
+Toolchain 0.31 now contains internal C++/TypeScript `ByteBuffer` primitives with
+copied host boundaries, immutable slices/updates and a strict codec. Eight native
+cases and three cross-runtime/oracle checks passed on macOS ARM64, Linux ARM64
+and emulated Linux x86-64. Sanitizer and strict TypeScript checks also passed;
+all 33 macOS Debug compiler suites passed. The emitted ES2020 module also passed
+68 assertions in each installed Chromium, Firefox and WebKit engine. The opt-in
+`tests/bytes_browser.py PROJECT --output NEW_DIRECTORY --browsers-path PATH`
+uses existing locked TypeScript/Playwright dependencies and retains its evidence.
+These primitives are not yet NEX values or file operations. The source language
+remains 0.12.
+
 The next runtime step is a distinct immutable `bytes` value, so arbitrary file
 data never masquerades as valid UTF-8. Native storage should be contiguous octets
 behind the existing owned handle; copying a NEX value shares immutable storage.
@@ -11,6 +22,14 @@ Updates allocate a new value. No descriptor, mutable pointer or host lifetime
 becomes a source value. A host adapter must copy imported mutable data or retain
 an explicitly immutable owner; borrowed views cannot outlive that owner. General
 source FFI/resources/async remain separate required work.
+
+Source integration should avoid enlarging every existing string/list/record for
+an unused binary payload. A separately owned binary `Data` subtype is a candidate:
+the shared-pointer control block must retain its real destructor, generic copies
+must not slice it, and shallow profiling must account for the actual object size.
+Preserve existing native field locations where possible and validate debugger
+layout through the matching compiler build. This representation still needs
+implementation and tests before introducing a binary `Data` kind.
 
 Proposed operations are checked byte construction from `list<i64>`, explicit
 UTF-8 encode/decode, indexing/length/slicing, immutable concatenation and updates,

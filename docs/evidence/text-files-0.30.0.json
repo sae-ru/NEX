@@ -42,25 +42,7 @@
     "historical_fixture_hashes_preserved": true
   },
   "installed_sdk_validation": {
-    "macos_debug": {
-      "ok": true,
-      "phases": 11,
-      "seconds": 96.317
-    },
-    "macos_release": {
-      "ok": true,
-      "phases": 11,
-      "seconds": 106.313
-    },
-    "linux_arm64": {
-      "ok": true,
-      "source_free_phases": 11,
-      "seconds": 83.069,
-      "live_debugger": true
-    },
-    "linux_amd64": {
-      "state": "pending"
-    }
+    "see": "docs/evidence/sdk-0.30.0.json"
   },
   "full_compiler_matrix": {
     "macos_debug": {
@@ -124,10 +106,37 @@
       "live_suites": 8
     },
     "linux_amd64": {
-      "state": "running",
+      "ok": true,
+      "suites": 31,
+      "seconds": 1812.18,
+      "log": "build/linux-amd64-030/ctest.log",
+      "log_sha256": "b5d24b9a2f85f17845fe200d723ce359f3a342c68a5bcb7a783f7e2dd0df03d9",
+      "python_cases_declared": 275,
+      "skips": [
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
       "emulated": true,
       "source_snapshot": "c93c47863a2a907c6a501501847ef9f80c8f38c6",
-      "report": "build/linux-amd64-030/verification.json"
+      "full_driver_ok": true,
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-amd64-030/sdk-acceptance/4f1e752a563741d7b715d56e76acaae9/workflow/report.json",
+        "compiler_sha256": "8c956ef814093edc1acc0d3a33d8d749812290e2f0170c88e464145065f3a864",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": false,
+        "browser_build": true,
+        "seconds": 271.612
+      },
+      "build_compiler_sha256": "fb6065c7029963c0cf385fcaf4bbb5d9bd515134900c40624ddfbd4acc729cca",
+      "installed_sdk_compiler_sha256": "8c956ef814093edc1acc0d3a33d8d749812290e2f0170c88e464145065f3a864",
+      "live_suites": 0
     }
   },
   "limits": {

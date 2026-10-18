@@ -4,7 +4,7 @@ Development toolchain 0.30 integrates the POSIX `TextFiles` adapter into languag
 0.12 through server-only `file_read_text` / `file_write_text` and the `fs` effect.
 The checker, interpreter, native backend, migration and model-independent pack
 now describe the same operations. [files.md](files.md) is the normative guide;
-STATUS.md separates targeted checks from the pending full compiler/SDK matrix.
+STATUS.md records the completed 0.30 compiler/SDK matrix and remaining platform limits.
 
 The host owns a directory capability and an explicit writable bit. NEX values
 will contain immutable text/results, never descriptors. A capability pins its
@@ -59,3 +59,10 @@ hashes and genuine SDK-0.29/language-0.11 historical fixtures. Its macOS full
 30-suite prototype regression passed in 921.16 s. These are historical adapter
 results from before source exposure; language 0.12 requires its own complete
 compiler and installed-SDK verification.
+
+Language 0.12 subsequently passed all 31 suites in macOS Debug/Release and
+Linux ARM64/emulated x86-64, plus installed SDKs and three archive restores.
+Runtime-only file packages also passed on both Linux architectures with no SDK
+or accessible Python. [Current evidence](evidence/sdk-0.30.0.json) records the
+exact binaries, images, prerequisite correction and execution scope. This does
+not establish binary buffers or the other remaining language/platform work.

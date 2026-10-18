@@ -2,7 +2,29 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: filesystem adapter
+## In progress: immutable binary primitives
+
+Development toolchain **0.31.0** retains source language **0.12** while building
+the internal buffer representation and strict base64 codec. Native buffers own
+immutable contiguous octets, copy mutable host imports/exports, retain slice
+owners and allocate new values for updates. The TypeScript primitive uses
+private storage with checked constructors and copied host boundaries. Eight native ownership/bounds cases and three cross-runtime codec-oracle checks
+passed on macOS ARM64, Linux ARM64 and emulated Linux x86-64. Strict ES2020
+TypeScript checking passed; macOS ASan/UBSan and native Linux ARM64
+ASan/UBSan/LSan passed. The final JS boundary also rejects constructor/prototype
+mutation. All 33 current macOS Debug suites passed in 1013.88 s (278 declared
+Python cases and three C++ probes, including one Linux-only skip). The emitted
+ES2020 primitive passed 68 assertions each in actual Chromium 156.0.8078.4,
+Firefox 157.0 and WebKit 27.2, with no page errors. These are primitive checks;
+full source-language binary integration remains pending. [Durable prototype
+evidence](docs/evidence/bytes-runtime-0.31.0.json) binds the tested source/binaries.
+
+This is not yet a source `bytes` type. Frontend/interpreter/MLIR/TypeScript,
+JSON/API, debugger, file-operation and explicit 0.12 migration integration remain
+required before exposing the next language version. [The buffer design](docs/bytes-design.md)
+records scope; the verified 0.30 SDKs and genuine 0.12 fixtures remain preserved.
+
+## Development milestone: scoped text files
 
 Development toolchain **0.30.0 / language 0.12** exposes server-only
 `file_read_text` / `file_write_text` through the distinct `fs` effect. The
@@ -23,8 +45,9 @@ phase covering capability denial and independent packaging. All 31 suites passed
 on macOS Debug/Release (1231.14/1073.95 s) and Linux ARM64 (496.79 s), with
 275 declared Python cases plus the two C++ probes. macOS records one Linux-only
 skip; Linux records seven macOS-only skips. Linux ARM64 also passed eight live
-suites and its source-free 11-phase SDK in 83.069 s. The emulated Linux x86-64
-full regression and its installed/archive SDK workflow are still running.
+suites and its source-free 11-phase SDK in 83.069 s. Emulated Linux x86-64 also passed all 31 suites in 1812.18 s and its
+source-free 11-phase SDK in 271.612 s, without claiming live debugger
+coverage. This completes the stated 0.30 compiler/installed-SDK matrix.
 
 The moved macOS Release SDK passed all 11 phases with actual LLDB/DAP and both
 locked browser builds in 106.313 s. Its restored archive verified 2411 files and
@@ -42,7 +65,9 @@ unchanged content in runtime-only Linux ARM64/emulated x86-64 images without SDK
 or development tools. Direct runs hid `/usr/bin` and used an unavailable PATH;
 the Python negative controls failed and native file execution succeeded.
 [Durable 0.30 evidence](docs/evidence/sdk-0.30.0.json) records hashes, exact scopes
-and pending x86-64 checks. This does not complete the broader requested project.
+and explicit platform limits. The x86-64 bundle verified all 743 files and
+passed 11 clean phases in 292.810 s, then repeated 11 after extraction in
+271.620 s. This does not complete the broader requested project.
 
 The earlier internal adapter passed 13 direct C++ cases on macOS ARM64, Linux
 ARM64 and emulated Linux x86-64; its source-0.11 prototype passed all 30 macOS
@@ -107,9 +132,10 @@ tested prerequisites and exact validation scope.
 [Durable package evidence](docs/evidence/application-packages-0.29.0.json)
 records tested images, application manifest hashes and the fixture correction.
 
-The most recent fully verified development checkpoint is therefore toolchain
-**0.29 / language 0.11** (function/9, program/10), using compiler tree `8cf7621c`
-and corrected resource tree `ca357378`. Windows/mobile/UI/GPU/Wasm, broader filesystem/resources/FFI/async and the other open plan items remain required work.
+The most recent fully verified development checkpoint is toolchain
+**0.30 / language 0.12** (function/9, program/10), using compiler/runtime/test tree
+`c93c4786` with the recorded Linux recipe/guide resource corrections. Current
+0.31 binary-primitive work is separate and retains source language 0.12. Windows/mobile/UI/GPU/Wasm, broader filesystem/resources/FFI/async and the other open plan items remain required work.
 
 The historical accepted checkpoint is toolchain **0.23 / language 0.10**, commit
 `e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed

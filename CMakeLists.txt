@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.30.0 LANGUAGES C CXX)
+project(NEX VERSION 0.31.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -70,6 +70,10 @@ enable_testing()
 add_test(NAME packaging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/packaging.py $<TARGET_FILE:nex>)
 find_package(Threads REQUIRED)
+add_executable(nex_bytes_runtime_probe tests/bytes_runtime.cpp)
+target_include_directories(nex_bytes_runtime_probe PRIVATE runtime)
+target_compile_options(nex_bytes_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME bytes_runtime_native COMMAND nex_bytes_runtime_probe)
 add_executable(nex_files_runtime_probe tests/files_runtime.cpp runtime/nex_files.cpp)
 target_include_directories(nex_files_runtime_probe PRIVATE runtime)
 target_compile_options(nex_files_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
@@ -120,6 +124,8 @@ if(NEX_Z3_EXECUTABLE)
 endif()
 find_program(NEX_NODE_EXECUTABLE node)
 if(NEX_NODE_EXECUTABLE)
+  add_test(NAME bytes_runtime COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes_runtime.py $<TARGET_FILE:nex_bytes_runtime_probe> ${NEX_NODE_EXECUTABLE})
   add_test(NAME float_runtime COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/float_runtime.py $<TARGET_FILE:nex_float_runtime_probe> ${NEX_NODE_EXECUTABLE})
   add_test(NAME web COMMAND ${Python3_EXECUTABLE}
