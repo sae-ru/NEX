@@ -235,6 +235,8 @@ class OperationPatches(harness.ToolchainCase):
         self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
         self.source(metadata['source']);(self.root/'.nex').mkdir()
         with sqlite3.connect(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
+        # Schema4 adds an empty journal without inventing past transitions.
+        self.assertEqual(self.cli('changes')['total'],0)
         before=self.rows();current=self.cli('graph')
         old=metadata['graph'];self.assertEqual(current['revision'],old['revision'])
         self.assertEqual(current['nodes'],old['nodes'])

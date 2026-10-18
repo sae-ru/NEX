@@ -1,5 +1,6 @@
 #pragma once
 #include "nex/language.h"
+#include "nex/change_store.h"
 #include <filesystem>
 namespace nex {
 class Store {
@@ -7,7 +8,7 @@ class Store {
 public:
   explicit Store(const std::filesystem::path &directory);
   ~Store();
-  std::string save(const Program &program, const std::string &expected = "",bool makeHead=true);
+  std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={});
   llvm::json::Value graph(const Program &program);
   llvm::json::Value declarations(const Program &program,const std::string &kind="",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
   llvm::json::Value identities(const Program &program,const std::string &kind="all",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
@@ -15,6 +16,7 @@ public:
   llvm::json::Value resolveIdentity(const Program &program,const std::string &origin,const std::string &sourceRevision,const std::string &id);
   llvm::json::Value operations(const Program &program,const std::string &symbol="",const std::string &selector="",unsigned offset=0,unsigned limit=100,bool context=false);
   llvm::json::Value history();
+  llvm::json::Value changes(unsigned offset=0,unsigned limit=100);
   std::string source(const std::string &revision);
   std::string headRevision();
   std::string revisionLanguage(const std::string &revision);

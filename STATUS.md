@@ -2,6 +2,23 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: change provenance and archived restore
+
+Toolchain **0.49.0 / language 0.15** adds an atomic local HEAD-transition
+journal, bounded paging and optimistic restoration of retained checked sources.
+Graph schema 4 preserves existing revision/source/identity/task rows and begins
+an empty journal at the prior HEAD. Notes/actors are bounded declared labels;
+record hashes and selected adjacent links are checked without authenticating
+identity or fabricating historical events. Restore retains all revisions and
+IDs, accepts an expected-HEAD guard and does not materialize or execute source.
+
+The initial ten cases pass in 8.860 s, including genuine 0.48 database upgrade,
+explicit older-language migration, source-deleted native/TypeScript execution,
+competing patch/restore writers, rejected requests and integrity-failure rollback.
+Further concurrent-read, empty-HEAD and UTF-8 checks, discovery/schema/model-pack
+and installed-SDK coverage are being completed. Full 0.49 platform validation and
+the requested complete NEX language/development chain remain pending.
+
 ## In progress: exact source-operation replacements
 
 Toolchain **0.48.0 / language 0.15** adds complete nonsemantic syntax ranges,

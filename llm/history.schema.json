@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/history-1.json",
+  "title": "NEX local change history and guarded restore",
+  "$defs": {
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "nex.change/1"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}(?![\\s\\S])"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "previous_change": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "previous_revision": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "action": {
+          "enum": [
+            "save",
+            "synchronize",
+            "apply",
+            "import",
+            "migrate",
+            "restore"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "actor": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "request_hash": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "toolchain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "compiler_build": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "created": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "namespace",
+        "sequence",
+        "previous_change",
+        "previous_revision",
+        "revision",
+        "source_hash",
+        "language",
+        "action",
+        "command",
+        "actor",
+        "note",
+        "request_hash",
+        "toolchain",
+        "compiler_build",
+        "created",
+        "hash"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "nex.changes/1"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}(?![\\s\\S])"
+        },
+        "head": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "base_revision": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "integrity_scope": {
+          "const": "selected_records_and_adjacent_links"
+        },
+        "author_trust": {
+          "const": "declared"
+        },
+        "changes": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/change"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "namespace",
+        "head",
+        "base_revision",
+        "total",
+        "offset",
+        "limit",
+        "truncated",
+        "integrity_scope",
+        "author_trust",
+        "changes"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "nex.restore/1"
+        },
+        "ok": {
+          "const": true
+        },
+        "previous_revision": {
+          "type": "string",
+          "pattern": "^(?:[a-f0-9]{64})?(?![\\s\\S])"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "materialized": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "ok",
+        "previous_revision",
+        "revision",
+        "source_hash",
+        "changed",
+        "materialized"
+      ]
+    }
+  ]
+}
