@@ -1,28 +1,13 @@
 # NEX implementation status
 
-## Promoted 0.51 / language 0.15: current root validation pending
+## Isolated 0.52 captured-source frontend context
 
-The exact implementation from the frozen isolated 0.51 source has been promoted.
-It passes all 59 regression groups (473 Python cases + 11 C++ probes) on macOS
-ARM64 and Linux ARM64, both installed SDK 15 workflows and eleven Linux live
-suites. macOS regression time is 1381.17 s; Linux is 1149.56 s. The installed SDK
-workflows take 323.406 s on macOS and 247.838 s in a network-disabled Linux
-container without the source checkout. Indexed resources match the frozen source.
-[Evidence](docs/evidence/project-versions-0.51.0.json) preserves exact scope.
-
-The current root compiler is being rebuilt and must pass its own required
-regression/installed SDK checks before those results are reported as root
-verification. New features preserve complete graph rows/UUIDs/journal through
-consistent snapshots/recovery, reject declared old physical project/library
-versions, and keep explicit archived migration/execution independent of physical
-metadata. The root example's stale 0.10 manifest label was reviewed against its
-already checked 0.15 archive; source/history are unchanged and a complete local
-graph snapshot was saved before promotion.
-
-Captured-source frontend diagnostics are separate isolated 0.52 work. User
-traits/associated/higher-kinded types, source async, further diagnostics/machine
-mapping, unsupported platforms/device/GPU/Wasm work and broader release/ABI and
-LLM measurement remain pending in the full project plan.
+The prototype adds source-buffer hashes, phase/scope, bounded UTF-8 or lossless
+base64 previews and content-derived diagnostic identity for parser/binder/checker
+errors. Rejected assembled candidates remain distinct from physical source and
+committed graph identities. Static watch context is bound to supplied frame/stop
+hashes; runtime operation metadata remains separate. Language0.15 and graph
+schema4 are unchanged. Current focused/full/SDK validation is pending.
 
 ## Verified 0.49 / language 0.15: atomic change history and restore
 
@@ -43,11 +28,13 @@ not materialize physical files. Schema 4 starts an explicit old HEAD base rather
 than inventing prior transitions. This is scoped development evidence, not
 proof of every platform, full-system safety or stable cross-SDK ABI.
 
-The intermediate 0.50 prototype passed its focused checks, macOS SDK 14 and
-Linux full 58/live/SDK 14 matrix. No full macOS regression was run for 0.50.
-Its graph snapshot/recovery capability and the 0.51 project/library version
-boundaries are included in the promoted current source above. Broader language,
-platform and development-chain work remains pending.
+Isolated 0.50 adds consistent complete graph snapshots/recovery; fifteen focused
+cases, offline schema checks and the macOS installed SDK 14 passes, while its
+Linux full/live/SDK matrix is still running. Isolated 0.51 corrects the observed
+physical project/library version-declaration gap, including preflight before
+store creation/upgrade, and has its own current full/SDK checks running. Those
+capabilities are not part of the root 0.49 compiler. Broader language/platform
+and development-chain work remains pending.
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 

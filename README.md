@@ -8,16 +8,12 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.51.0 / language 0.15**, adding
-[consistent graph snapshots/recovery](docs/snapshots.md) and
-[explicit physical project/library versions](docs/compatibility.md). The frozen
-isolated source passes all 59 groups on macOS/Linux ARM64, both fifteen-phase
-installed SDK workflows and eleven Linux live debugger suites.
-[The evidence](docs/evidence/project-versions-0.51.0.json) distinguishes those
-results from the current root build/regression/SDK checks, now pending after
-promotion. Broader language/platform/distribution work remains in `PLAN.md`.
+This isolated working tree is toolchain **0.52.0 / language 0.15**, adding
+[captured-source frontend diagnostics](docs/frontend-diagnostics.md) on top of
+[graph snapshots](docs/snapshots.md) and [declared project versions](docs/compatibility.md).
+Current validation is pending; the verified root baseline is recorded below.
 
-The preceding verified tree is toolchain **0.49.0 / language 0.15**, adding an atomic
+The working tree is toolchain **0.49.0 / language 0.15**, adding an atomic
 HEAD-transition journal and checked, optimistic restoration of archived source.
 Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
 without inventing older provenance. Actor/note labels are declared data. All
@@ -163,7 +159,7 @@ native loader scope, trust and pending platforms.
 
 ## Build
 
-Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite **3.37+**, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
+Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
