@@ -10,19 +10,19 @@ const char *stmtKinds[]={"let","var","assign","expression","return","if","while"
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
   std::vector<std::map<std::string,std::string>> scopes;
-  size_t add(std::string path,std::string parent,std::string role,unsigned ordinal,std::string kind,std::string anchor,Span span,JSON definition,const void *ast=nullptr){
+  size_t add(std::string path,std::string parent,std::string role,unsigned ordinal,std::string kind,std::string anchor,Span span,JSON definition,const void *ast=nullptr,SourceRange sourceRange={},std::string fragment={}){
     if(nodes.size()>=100000||std::count(path.begin(),path.end(),'/')>512)throw Error("E_GRAPH_LIMIT","function operation graph exceeds its node/depth budget",span);
-    Operation op;op.path=std::move(path);op.parent=std::move(parent);op.role=std::move(role);op.ordinal=ordinal;op.kind=std::move(kind);op.anchor=std::move(anchor);op.span=std::move(span);op.definition=std::move(definition);op.ast=ast;nodes.push_back(std::move(op));return nodes.size()-1;
+    Operation op;op.path=std::move(path);op.parent=std::move(parent);op.role=std::move(role);op.ordinal=ordinal;op.kind=std::move(kind);op.anchor=std::move(anchor);op.span=std::move(span);op.definition=std::move(definition);op.ast=ast;op.sourceRange=sourceRange;op.fragment=std::move(fragment);nodes.push_back(std::move(op));return nodes.size()-1;
   }
   std::string binding(const std::string &name){for(auto i=scopes.rbegin();i!=scopes.rend();++i)if(i->contains(name))return i->at(name);throw Error("E_INTERNAL","checked operation binding is missing: "+name);}
   void arms(E e,const std::string &key){
     for(size_t i=0;i<e->arms.size();++i){auto arm=e->arms[i];bool legacy=arm->pattern->kind==Pattern::Constructor&&arm->pattern->type.kind==Type::Record&&p.structure(arm->pattern->type.name).enumeration&&!arm->guard&&std::all_of(arm->pattern->args.begin(),arm->pattern->args.end(),[](P p){return p->kind==Pattern::Binding||p->kind==Pattern::Wildcard;})&&std::count_if(e->arms.begin(),e->arms.end(),[&](auto other){return other->variant==arm->variant;})==1;
       auto parent=key+"/case/"+(legacy?arm->variant:"arm-"+std::to_string(i));
-      add(parent,key,"case",legacy?arm->ordinal:i,"pattern.case",arm->variant,arm->span,legacy?JSON(Object{{"kind","pattern.case"},{"variant",arm->variant},{"number",std::to_string(arm->ordinal)}}):JSON(Object{{"kind","pattern.case"},{"pattern",canonicalPattern(arm->pattern)}}),arm.get());
+      add(parent,key,"case",legacy?arm->ordinal:i,"pattern.case",arm->variant,arm->span,legacy?JSON(Object{{"kind","pattern.case"},{"variant",arm->variant},{"number",std::to_string(arm->ordinal)}}):JSON(Object{{"kind","pattern.case"},{"pattern",canonicalPattern(arm->pattern)}}),arm.get(),legacy?arm->pattern->sourceRange:SourceRange{},legacy?"pattern":"");
       scopes.emplace_back();
-      auto binding=[&](P pattern,const std::string &path,const std::string &owner,unsigned ordinal){const auto &b=arm->bindings.at(pattern->binding);auto kind=b.name=="_"?"pattern.discard":"pattern.binding";add(path,owner,"parameter",ordinal,kind,b.name,b.span,Object{{"kind",kind},{"name",b.name},{"type",typeName(b.type)}},&b);if(b.name!="_")scopes.back()[b.name]=path;};
+      auto binding=[&](P pattern,const std::string &path,const std::string &owner,unsigned ordinal){const auto &b=arm->bindings.at(pattern->binding);auto kind=b.name=="_"?"pattern.discard":"pattern.binding";add(path,owner,"parameter",ordinal,kind,b.name,b.span,Object{{"kind",kind},{"name",b.name},{"type",typeName(b.type)}},&b,pattern->sourceRange,"pattern");if(b.name!="_")scopes.back()[b.name]=path;};
       if(legacy){for(unsigned j=0;j<arm->pattern->args.size();++j)binding(arm->pattern->args[j],parent+"/parameter/"+std::to_string(j),parent,j);}
-      else {std::function<void(P,const std::string&,unsigned)> visit=[&](P pattern,const std::string &owner,unsigned ordinal){auto path=owner+"/pattern/"+std::to_string(ordinal);if(pattern->kind==Pattern::Binding||pattern->kind==Pattern::Wildcard)binding(pattern,path,owner,ordinal);else{add(path,owner,"pattern",ordinal,"pattern.test",pattern->text,pattern->span,canonicalPattern(pattern),pattern.get());for(unsigned j=0;j<pattern->args.size();++j)visit(pattern->args[j],path,j);}};visit(arm->pattern,parent,0);}
+      else {std::function<void(P,const std::string&,unsigned)> visit=[&](P pattern,const std::string &owner,unsigned ordinal){auto path=owner+"/pattern/"+std::to_string(ordinal);if(pattern->kind==Pattern::Binding||pattern->kind==Pattern::Wildcard)binding(pattern,path,owner,ordinal);else{add(path,owner,"pattern",ordinal,"pattern.test",pattern->text,pattern->span,canonicalPattern(pattern),pattern.get(),pattern->sourceRange,"pattern");for(unsigned j=0;j<pattern->args.size();++j)visit(pattern->args[j],path,j);}};visit(arm->pattern,parent,0);}
       if(arm->guard)expression(e->args[arm->guard],parent,"guard",0);
       if(e->statementMatch)block(arm->body,parent,"body",arm->span,false);else expression(e->args[arm->value],parent,"value",0);
       scopes.pop_back();
@@ -32,7 +32,7 @@ class Tree {
     if(!e)return;auto path=parent+"/"+role+"/"+std::to_string(ordinal),kind=std::string("expression.")+exprKinds[e->kind];
     Object definition{{"kind",kind},{"type",typeName(e->type)},{"text",e->text},{"number",std::to_string(e->number)}};
     if(e->kind==Expr::Floating)definition["literal"]=floatLiteral(e->number);
-    auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get());
+    auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get(),e->sourceRange,"expression");
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
     if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
@@ -46,7 +46,7 @@ class Tree {
     for(unsigned i=0;i<body.size();++i){
       auto s=body[i];auto key=path+"/statement/"+std::to_string(i),kind=std::string("statement.")+stmtKinds[s->kind];
       auto anchor=kind+":"+s->name;if(s->kind==Stmt::Expression&&s->expr&&s->expr->kind==Expr::Call)anchor+=":"+s->expr->text;
-      auto index=add(key,path,"statement",i,kind,anchor,s->span,Object{{"kind",kind},{"name",s->name},{"type",typeName(s->type)}},s.get());
+      auto index=add(key,path,"statement",i,kind,anchor,s->span,Object{{"kind",kind},{"name",s->name},{"type",typeName(s->type)}},s.get(),s->sourceRange,"statement");
       if(s->kind==Stmt::Assign)nodes[index].binding=binding(s->name);
       expression(s->kind==Stmt::Match?s->expr->args[0]:s->expr,key,"expression",0);
       if(s->kind==Stmt::Let||s->kind==Stmt::Var)scopes.back()[s->name]=key;

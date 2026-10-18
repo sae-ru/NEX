@@ -13,6 +13,9 @@ namespace nex {
 inline constexpr const char *languageVersion = "0.15";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
+// Exact lexical interval, separate from the diagnostic token in Span.
+// Generated semantic nodes leave valid=false; ranges never affect identities.
+struct SourceRange {size_t begin=0,end=0;bool valid=false;};
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
   Error(std::string code, std::string message, Span span = {})
@@ -41,7 +44,7 @@ struct Pattern;
 using P = std::shared_ptr<Pattern>;
 struct Pattern {
   enum Kind { Binding, Wildcard, Constructor, Integer, Boolean, String, List } kind=Wildcard;
-  Span span;std::string text;int64_t number=0,ordinal=0;Type type;
+  Span span;SourceRange sourceRange;std::string text;int64_t number=0,ordinal=0;Type type;
   size_t binding=0;std::vector<P> args;
 };
 template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto child:pattern->args)visitPattern(child,visit);}
@@ -49,7 +52,7 @@ struct MatchArm;
 struct Function;
 struct Expr {
   enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda, Floating } kind;
-  Span span; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
+  Span span;SourceRange sourceRange;unsigned syntaxHeight=1; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;
   std::vector<Type> typeArguments;
@@ -58,7 +61,7 @@ struct Expr {
 using E = std::shared_ptr<Expr>;
 struct Stmt {
   enum Kind { Let, Var, Assign, Expression, Return, If, While, Match } kind;
-  Span span; std::string name; Type type = Type::Unknown; E expr;
+  Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
   std::vector<std::shared_ptr<Stmt>> body, alternative;
   std::vector<std::shared_ptr<MatchArm>> arms;
 };
@@ -121,6 +124,8 @@ struct Program {
 };
 Program parse(std::string source, std::string path);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
+S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
+P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
 Type parseType(std::string source);
 void bindExpression(const Program &program,const std::string &function,E expression);
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);

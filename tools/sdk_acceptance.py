@@ -228,6 +228,9 @@ test fn examples() -> unit {
                 descriptor['graph_identity_policy'] == 'nex.graph-identity/1',
                 'SDK lacks checked graph references')
         require('type' in descriptor.get('patch_entities', []), 'SDK lacks atomic source-type replacements')
+        require('operation' in descriptor.get('patch_entities', []) and
+                'exact_source_guard' in descriptor.get('patch_features', []),
+                'SDK lacks exact source-operation replacements')
         require('manifest_checked_trap_mapping' in descriptor.get('diagnostic_features', []),
                 'SDK lacks checked native runtime diagnostics')
         require({'native_checked_i64_ssa', 'cold_integer_failure_calls', 'cold_native_assertions'} <=
@@ -428,6 +431,37 @@ test fn examples() -> unit {
         report['evidence']['numeric_language'] = {'revision': number_revision,
             'native_profiles': ['debug', 'release'], 'typescript': True,
             'source_deleted_replay': True, 'standalone_without_resources': str(number_standalone)}
+        operation_project = root / 'operation-patches'
+        operation_project.mkdir()
+        for name in ('main.nex', 'nex.json'):
+            shutil.copy2(resources / 'examples/operation-patches' / name, operation_project / name)
+        operation_before = cli('check', cwd=operation_project)['revision']
+        page = cli('operations', '--symbol', 'operation_patch::adjust', cwd=operation_project)
+        selected, = [n for n in page['nodes'] if n['kind'] == 'expression.integer'
+                     and n['definition']['number'] == '1']
+        context = cli('context', '--operation', selected['id'], cwd=operation_project)
+        require(context['nodes'][0]['source_range']['editable'] and
+                context['nodes'][0]['source_preview'] == '1', 'SDK operation context differs')
+        operation_file = root / 'operation-edit.json'
+        operation_file.write_text(json.dumps({'expected_revision': operation_before,
+            'expected_source_hash': page['source_hash'],
+            'replacements': [{'operation_id': selected['id'], 'source': '2 // isolated comment'}]}))
+        (operation_project / 'main.nex').unlink()
+        operation_after = cli('apply', '--patch', operation_file, cwd=operation_project)['revision']
+        require(cli('context', '--operation', selected['id'], cwd=operation_project)['nodes'][0]['site'] != selected['site'],
+                'SDK source-operation edit lost its local ID or retained its old site')
+        require(cli('run', '--revision', operation_before, cwd=operation_project)['stdout'] == '41\n' and
+                cli('eval', '--revision', operation_after, cwd=operation_project)['stdout'] == '42\n' and
+                cli('run', '--revision', operation_after, cwd=operation_project)['stdout'] == '42\n',
+                'SDK source-deleted operation patch disagrees across native/reference/history')
+        cli('test', '--revision', operation_after, cwd=operation_project)
+        cli('test', '--revision', operation_after, '--target', 'web', cwd=operation_project)
+        require(cli('apply', '--patch', operation_file, cwd=operation_project,
+                    expected_success=False)['code'] == 'E_CONFLICT', 'SDK accepted stale operation patch')
+        report['evidence']['source_operation_patches'] = {'before': operation_before,
+            'after': operation_after, 'local_operation_id': selected['id'],
+            'source_deleted': True, 'native_reference_typescript': True,
+            'stale_rejected': True, 'same_local_id_new_site': True}
         cached_project = root / 'function-cache'
         cached_project.mkdir()
         cached_source = cached_project / 'main.nex'

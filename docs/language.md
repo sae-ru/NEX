@@ -573,3 +573,11 @@ Signed overflow and division faults remain checked; `MIN % -1` remains zero.
 Assertions evaluate their argument once and retain the same failure behavior.
 Evaluation order and floating-point environment rules are unchanged. This
 changes code generation, not language 0.15 or its canonical source formats.
+
+
+Toolchain 0.48 adds nonsemantic expression/statement/pattern syntax ranges and
+revision/source-checked operation edits; see [the operation guide](operations.md).
+Diagnostic source points, canonical definitions, language 0.15 and operation
+identity policy 1 are retained. Parser recursion across statements/expressions
+and each expression tree/postfix/binary chain are bounded to 256 levels/operations, producing
+`E_PARSE_LIMIT`. These resource bounds also apply to standalone patch fragments.

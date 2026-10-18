@@ -71,7 +71,8 @@
     "graph": "docs/graph.md",
     "graph_identity_schema": "llm/graph-identity.schema.json",
     "native_diagnostics": "docs/native-diagnostics.md",
-    "native_diagnostics_schema": "llm/native-diagnostics.schema.json"
+    "native_diagnostics_schema": "llm/native-diagnostics.schema.json",
+    "operation_patch_workflow": "examples/operation-patches/README.md"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
@@ -119,7 +120,8 @@
     "atomic_type_patch_models": "examples/type-patches/model.nex",
     "atomic_type_patch": "examples/type-patches/patch.json",
     "native_diagnostics": "examples/native-diagnostics.nex",
-    "native_arithmetic": "examples/native-arithmetic.nex"
+    "native_arithmetic": "examples/native-arithmetic.nex",
+    "operation_patch_source": "examples/operation-patches/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -196,11 +198,13 @@
   "patch_entities": [
     "function",
     "endpoint",
-    "type"
+    "type",
+    "operation"
   ],
   "type_patch_example": "examples/type-patches/patch.json",
   "native_diagnostic_commands": [
     "nex run FILE --json",
     "nex diagnose --revision HASH --manifest DEBUG.json --log STDERR.log --json"
-  ]
+  ],
+  "operation_patch_example": "examples/operation-patches/README.md"
 }

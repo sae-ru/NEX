@@ -130,3 +130,7 @@ digit         = "0" .. "9" ;
    logical library/export identifiers and exact lowercase SHA-256 manifest pin.
    A host grants access separately; declarations execute no native code at check
    time. Language 0.14 snapshots require explicit history-preserving migration. *)
+
+(* Toolchain 0.48 syntax intervals and graph operation patches add no syntax.
+   Statement/expression parser recursion, resulting expression trees and each postfix/binary chain are bounded
+   to 256; type, pattern and lambda bounds remain as documented. *)

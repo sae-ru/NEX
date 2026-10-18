@@ -4,7 +4,7 @@ namespace nex {
 struct Operation {
   std::string path,parent,role,kind,anchor,content,site,binding,callee;
   unsigned ordinal=0;
-  Span span;
+  Span span;SourceRange sourceRange;std::string fragment;
   llvm::json::Value definition=nullptr;
   const void *ast=nullptr;
 };

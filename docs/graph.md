@@ -148,3 +148,10 @@ Archived revisions keep their original layouts and execution. Optional `kind`
 can also be `function` or `endpoint` and must match the selected declaration.
 Unknown patch fields are rejected. See `examples/type-patches` and
 `llm/patch.schema.json`.
+
+
+Toolchain 0.48 also permits exact-source-guarded operation replacements alongside
+these declarations. Operations carry nonsemantic syntax intervals separately
+from diagnostic positions. See [the operation guide](operations.md) for
+editable expression/statement/pattern nodes, bounded previews and restrictions.
+Overlapping declaration and operation ranges are rejected atomically.

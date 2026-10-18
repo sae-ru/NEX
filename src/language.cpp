@@ -163,9 +163,22 @@ public:
   }
 };
 class Parser {
-  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0;std::set<std::string> parameters;
+  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::set<std::string> parameters;
+  struct SyntaxDepth {
+    unsigned &depth;
+    SyntaxDepth(unsigned &value,const Span &span):depth(value){if(depth>=256)throw Error("E_PARSE_LIMIT","syntax recursion exceeds 256 levels",span);++depth;}
+    ~SyntaxDepth(){--depth;}
+  };
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
+  SourceRange syntaxRange(size_t begin)const{return {begin,tokens.at(i-1).span.end,true};}
+  void boundExpression(const E &value){
+    value->syntaxHeight=1;
+    for(const auto &child:value->args){
+      if(child->syntaxHeight>=256)throw Error("E_PARSE_LIMIT","expression tree exceeds 256 levels",value->span);
+      value->syntaxHeight=std::max(value->syntaxHeight,child->syntaxHeight+1);
+    }
+  }
   bool accept(const std::string &s) { if (peek().text == s) { take(); return true; } return false; }
   Token expect(const std::string &s) {
     if (peek().text != s) throw Error("E_PARSE", "expected '"+s+"', found '"+peek().text+"'", peek().span);
@@ -225,7 +238,7 @@ class Parser {
     if(depth>64||++nodes>10000)throw Error("E_MATCH_LIMIT","pattern exceeds its node/depth budget",peek().span);
     auto token=take();auto value=std::make_shared<Pattern>();value->span=token.span;
     if(token.text=="["||token.kind==Token::Id){
-      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";return value;}
+      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";value->sourceRange=syntaxRange(token.span.begin);return value;}
       bool list=token.text=="[";if(!list){--i;token=name();value->text=token.text;while(accept("::"))value->text+="::"+name().text;}
       if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
       else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
@@ -233,7 +246,7 @@ class Parser {
     else if(token.kind==Token::Num||token.text=="-"){
       auto text=token.text;if(token.text=="-"){auto number=take();if(number.kind!=Token::Num)throw Error("E_PARSE","negative pattern requires an integer literal",number.span);text+=number.text;}
       value->kind=Pattern::Integer;auto result=std::from_chars(text.data(),text.data()+text.size(),value->number);if(result.ec!=std::errc())throw Error("E_RANGE","integer pattern is outside i64",token.span);
-    }else throw Error("E_PARSE","expected a pattern",token.span);return value;
+    }else throw Error("E_PARSE","expected a pattern",token.span);value->sourceRange=syntaxRange(token.span.begin);return value;
   }
   E matchValue(Span span){
     auto value=std::make_shared<Expr>();value->kind=Expr::Match;value->span=span;value->args.push_back(expression(1,true));expect("{");unsigned nodes=0;bool first=true;
@@ -249,6 +262,7 @@ class Parser {
     value->span.end=tokens.at(i-1).span.end;return value;
   }
   E expression(int minimum=1,bool subject=false) {
+    SyntaxDepth depth(syntaxDepth,peek().span);unsigned chain=0;
     bool matching=matchAhead()&&peek(1).text!="::"&&!(subject&&peek(1).kind==Token::Symbol&&peek(1).text!="!");E e; auto token=take();
     if(matching)e=matchValue(token.span);
     else if(token.text=="fn"||((token.text=="shared"||token.text=="client"||token.text=="server")&&peek().text=="fn")){
@@ -294,16 +308,19 @@ class Parser {
         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
       }
     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
+    e->sourceRange=syntaxRange(token.span.begin);boundExpression(e);
     while(peek().text=="."||peek().text=="["||peek().text=="(") {
+      if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
       if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
       else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
-      e=b;
+      b->sourceRange=syntaxRange(e->sourceRange.begin);boundExpression(b);e=b;
     }
     while(precedence(peek().text)>=minimum) {
+      if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take(); auto rhs=expression(precedence(op.text)+1);
-      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs}; e=b;
+      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs};b->sourceRange={e->sourceRange.begin,rhs->sourceRange.end,true};boundExpression(b);e=b;
     }
     return e;
   }
@@ -320,6 +337,7 @@ class Parser {
     for(size_t n=1;i+n<tokens.size();++n){const auto &text=peek(n).text;if(!depth&&!braces&&(text==";"||text=="="||text=="}"))return false;if(!depth&&text=="{")++braces;else if(!depth&&text=="}"&&braces){if(!--braces)return false;}if(braces==1&&text=="=>")return true;if(text=="("||text=="[")++depth;if(text==")"||text=="]")--depth;if(depth<0)return false;}return false;
   }
   S statement() {
+    SyntaxDepth depth(syntaxDepth,peek().span);
     auto s=std::make_shared<Stmt>(); s->span=peek().span;
     if(peek().text=="let" || peek().text=="var") {
       s->kind=take().text=="let" ? Stmt::Let : Stmt::Var; s->name=name().text;
@@ -334,7 +352,7 @@ class Parser {
     } else if(peek().kind==Token::Id && peek(1).text=="=") {
       s->kind=Stmt::Assign; s->name=take().text; take(); s->expr=expression();expect(";");
     } else {s->kind=Stmt::Expression;s->expr=expression();if(s->expr->kind==Expr::Match&&s->expr->statementMatch){s->kind=Stmt::Match;s->arms=s->expr->arms;}else expect(";");}
-    return s;
+    s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
   Parser(std::string source,std::string path,unsigned maxTokens=0) {
@@ -342,6 +360,8 @@ public:
     do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
   }
   E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
+  S statementOnly(){auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}
+  P patternOnly(){unsigned nodes=0;auto value=pattern(0,nodes);if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after pattern",peek().span);return value;}
   Type typeOnly(){auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}
   Program run() {
     expect("module");p.module=qualified();expect(";");
@@ -806,6 +826,14 @@ E parseExpression(std::string source,std::string path,unsigned maxTokens){
   try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
   return Parser(std::move(source),std::move(path),maxTokens).expressionOnly();
 }
+S parseStatement(std::string source,std::string path,unsigned maxTokens){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path),maxTokens).statementOnly();
+}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
+  return Parser(std::move(source),std::move(path),maxTokens).patternOnly();
+}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
@@ -888,8 +916,11 @@ llvm::json::Value describe() {
     {"native_diagnostic_limits",llvm::json::Object{{"record_bytes",65536},{"records",32},{"source_descriptor_bytes",16384},{"message_input_bytes",4096},{"code_input_bytes",128},{"log_bytes",4194304},{"manifest_bytes",67108864},{"json_depth",64}}},
     {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
     {"graph_identity_policy","nex.graph-identity/1"},{"graph_identity_schema",1},{"graph_guide","docs/graph.md"},{"graph_schema","llm/graph-identity.schema.json"},
-    {"patch_entities",llvm::json::Array{"function","endpoint","type"}},
-    {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","persistent_declaration_ids"}},
+    {"patch_entities",llvm::json::Array{"function","endpoint","type","operation"}},
+    {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","persistent_declaration_ids","local_operation_replacements","exact_source_guard","single_syntax_fragment","overlap_rejection","isolated_comment_boundaries"}},
+    {"operation_source_kinds",llvm::json::Array{"expression","statement","pattern"}},
+    {"patch_limits",llvm::json::Object{{"file_bytes",4194304},{"json_depth",64},{"replacements",1000},{"fragment_tokens",100000},{"source_preview_bytes",4096}}},
+    {"parser_limits",llvm::json::Object{{"syntax_recursion",256},{"expression_chain",256},{"expression_tree_depth",256}}},
     {"graph_identity_limits",llvm::json::Object{{"declaration_nodes",100000},{"dependency_edges",2000000},{"page_nodes",1000},{"manifest_bytes",4194304},{"context_source_bytes",4096},{"context_definition_bytes",8192},{"context_references",100},{"symbol_bytes",8192},{"operation_path_bytes",8192},{"id_bytes",128}}},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},

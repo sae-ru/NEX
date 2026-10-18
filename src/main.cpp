@@ -66,6 +66,16 @@ std::string readBoundedText(const std::string &path,size_t limit,const std::stri
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
   return text;
 }
+llvm::json::Value readPatch(const std::string &path){
+  auto text=readBoundedText(path,4*1048576,"patch","E_PATCH_LIMIT");
+  unsigned depth=0;bool quoted=false,escape=false;
+  for(char c:text){
+    if(quoted){if(escape)escape=false;else if(c=='\\')escape=true;else if(c=='"')quoted=false;continue;}
+    if(c=='"')quoted=true;else if(c=='{'||c=='['){if(++depth>64)throw Error("E_PATCH_LIMIT","patch JSON exceeds depth 64");}
+    else if((c=='}'||c==']')&&depth)--depth;
+  }
+  return parseJSON(text);
+}
 llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON(readBoundedText(path,4*1048576,"identity manifest","E_IDENTITY_LIMIT"));}
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
@@ -264,20 +274,47 @@ int run(const Options &o) {
   }
   if(o.command=="apply") {
     auto patchFile=o.get("--patch");if(patchFile.empty())throw Error("E_OPTION","apply requires --patch FILE");
-    auto value=parseJSON(readFile(patchFile));auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
+    auto value=readPatch(patchFile);auto obj=value.getAsObject();if(!obj)throw Error("E_JSON","patch must be an object");
     auto fields=[](const llvm::json::Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))throw Error("E_JSON","unknown patch field '"+key.str()+"'");}};
-    fields(*obj,{"expected_revision","replacements"});
+    fields(*obj,{"expected_revision","expected_source_hash","replacements"});
     auto expected=required(*obj,"expected_revision");if(expected.size()!=64||expected.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_JSON","expected_revision must be a lowercase 64-character digest");
     auto replacements=obj->getArray("replacements");if(!replacements||replacements->empty())throw Error("E_JSON","replacements must be a nonempty array");
+    if(replacements->size()>1000)throw Error("E_PATCH_LIMIT","patch exceeds 1000 replacements");
+    std::string expectedSource;if(auto value=obj->get("expected_source_hash")){auto digest=value->getAsString();if(!digest||digest->size()!=64||digest->find_first_not_of("0123456789abcdef")!=llvm::StringRef::npos)throw Error("E_JSON","expected_source_hash must be a lowercase 64-character digest");expectedSource=digest->str();}
+
     auto selected=store.headRevision();
     if(selected!=expected)throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
     if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to an older graph");
     auto p=loadBundle(store.bundle(selected),root.string());
     if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");
+    auto selectedSource=hash(json(sourceBundle(p),false));if(!expectedSource.empty()&&expectedSource!=selectedSource)throw Error("E_SOURCE_CONFLICT","exact archived source changed; request operation context for the selected revision");
     struct Replacement{size_t begin,end;std::string source;};
     std::map<std::string,std::vector<Replacement>> edits;std::set<std::string> names;
     for(const auto &item:*replacements){
       auto entry=item.getAsObject();if(!entry)throw Error("E_JSON","replacement must be an object");
+      bool operation=entry->get("operation_id")||entry->getString("kind")=="operation";
+      if(operation){
+        fields(*entry,{"operation_id","source","kind"});
+        if(auto kind=entry->get("kind");kind&&kind->getAsString()!="operation")throw Error("E_JSON","operation replacement kind must be operation");
+        auto id=required(*entry,"operation_id"),source=required(*entry,"source");
+        if(id.size()!=32||id.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_JSON","operation_id must be a lowercase local 32-character ID");
+        if(expectedSource.empty())throw Error("E_PATCH_SOURCE","operation replacement requires expected_source_hash from exact archived context");
+        if(!names.insert("operation:"+id).second)throw Error("E_JSON","duplicate operation replacement");
+        auto context=store.operations(p,"",id,0,1,true);const auto &node=*(*context.getAsObject()->getArray("nodes"))[0].getAsObject();
+        const auto &function=p.function(node.getString("function")->str());
+        if(!function.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace source operations of template '"+function.templateName+"'; specializations are derived",function.span);
+        if(function.closure)throw Error("E_PATCH_CLOSURE","replace source operations of owner '"+function.closureOwner+"'; closures are derived",function.span);
+        auto range=node.getObject("source_range");if(!range||range->getBoolean("editable")!=true)throw Error("E_PATCH_TARGET","selected operation has no editable source interval");
+        auto kind=range->getString("kind");std::string fragment;
+        try{
+          if(kind=="expression"){fragment="(\n"+source+"\n)";parseExpression(fragment,"<operation-patch>",100000);}
+          else if(kind=="statement"){parseStatement(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
+          else if(kind=="pattern"){parsePattern(source,"<operation-patch>",100000);fragment="\n"+source+"\n";}
+          else throw Error("E_PATCH_TARGET","operation source kind is not replaceable");
+        }catch(const Error &error){if(error.code=="E_DEBUG_LIMIT")throw Error("E_PATCH_LIMIT","operation fragment exceeds 100000 tokens");throw;}
+        edits[function.unit].push_back({size_t(*range->getInteger("byte_begin")),size_t(*range->getInteger("byte_end")),std::move(fragment)});
+        continue;
+      }
       fields(*entry,{"name","source","kind"});
       auto name=required(*entry,"name"),source=required(*entry,"source");
       std::string requestedKind;if(auto value=entry->get("kind")){auto label=value->getAsString();if(!label||(label!="function"&&label!="endpoint"&&label!="type"))throw Error("E_JSON","replacement kind must be function, endpoint or type");requestedKind=label->str();}
@@ -292,22 +329,24 @@ int run(const Options &o) {
       auto fragment=parse("module fragment;\n"+source,"<patch>");
       if(endpoint){
         if(fragment.endpoints.size()!=1||fragment.endpoints[0].name!=endpoint->localName||!fragment.functions.empty()||!fragment.structures.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local endpoint");
-        edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source});
+        edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source+"\n"});
       }else if(type){
         if(fragment.structures.size()!=1||fragment.structures[0].name!=type->localName||!fragment.functions.empty()||!fragment.endpoints.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local structure or enum");
-        edits[type->unit].push_back({type->span.begin,type->span.end,source});
+        edits[type->unit].push_back({type->span.begin,type->span.end,source+"\n"});
       }else{
         const auto &f=*function;
         if(!f.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+f.templateName+"'; specializations are derived",f.span);
         if(f.closure)throw Error("E_PATCH_CLOSURE","replace the source owner '"+f.closureOwner+"'; closures are derived",f.span);
         if(fragment.functions.size()!=1||fragment.functions[0].name!=f.localName||!fragment.structures.empty()||!fragment.imports.empty()||!fragment.endpoints.empty())throw Error("E_PATCH","replacement must define exactly the named local function");
-        edits[f.unit].push_back({f.span.begin,f.span.end,source});
+        edits[f.unit].push_back({f.span.begin,f.span.end,source+"\n"});
       }
     }
     auto bundle=sourceBundle(p);auto files=bundle.getAsObject()->getObject("files");
     for(auto &[key,changes]:edits){
       std::sort(changes.begin(),changes.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
-      auto source=p.units.at(key).source;for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
+      auto source=p.units.at(key).source;size_t previous=source.size();
+      for(const auto &e:changes){if(e.begin>e.end||e.end>source.size()||e.end>previous)throw Error("E_PATCH_OVERLAP","replacement intervals overlap or exceed the source snapshot");previous=e.begin;}
+      for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
     }
     auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected);
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;

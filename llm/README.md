@@ -1,5 +1,10 @@
 # Model-independent NEX language pack
 
+Toolchain 0.48 adds source-operation replacements by local ID. Read the actual
+descriptor, `operations.schema.json`, `patch.schema.json` and the
+[operation-edit walkthrough](../examples/operation-patches/README.md). Exact
+source guards, fragment/range limits and whole-candidate checking apply.
+
 Toolchain 0.45 adds atomic replacements of existing source structs/enums and
 their affected functions/endpoints. Discover `patch_entities` first; use
 `patch.schema.json`, typed context editability and `examples/type-patches`.

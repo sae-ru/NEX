@@ -300,3 +300,13 @@ remain unchanged. Failed attempts retain their output and working directory;
 new attempts require a new output directory. The helper keeps npm offline;
 it does not claim blocking all external network traffic on macOS. Temporary
 working evidence stays available at the path recorded in the report.
+
+
+Toolchain 0.48 extends the backend-agreement phase with the indexed
+`examples/operation-patches` project. It queries an exact editable operation,
+deletes the materialized source, applies a source/revision-guarded replacement,
+checks the retained local ID with a new site, runs native/reference/TypeScript
+validation and rejects the stale patch. Both the original 41 and revised 42
+outputs must remain runnable from archived sources. This remains part of the
+thirteen-phase workflow; consult current evidence for the compiler/source hashes
+and the platform scope actually tested.

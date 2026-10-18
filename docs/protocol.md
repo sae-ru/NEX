@@ -10,7 +10,7 @@ Commands are local and model-independent. The compiler handles parsing, checking
 
 Language 0.4 supports multi-file programs and structured values in `eval --json`: strings, lists, records and tagged result objects are returned as JSON values. Ordinary native application entries return i64/unit; HTTP and native library entries use their explicit contracts. `nex.graph/2` and `nex.context/2` identify definitions by qualified logical module/name. Other response schemas retain their individual versions. Typed wire JSON is separate from eval/display JSON: i64 wire values are decimal strings.
 
-With `--json`, frontend errors return a nonzero process status and an object containing `schema: nex.diagnostic/1`, `ok: false`, `code`, `message`, `file`, `line`, and `column`. File keys identify imported sources; columns count bytes. Runtime process failure from `run --json` is reported as `exit_code`, `stdout`, and `stderr`; native arithmetic/assertion errors currently use a textual diagnostic in stderr. LLVM's own compilation diagnostics also go to stderr. Successful JSON output is written to stdout.
+With `--json`, frontend errors return a nonzero process status and an object containing `schema: nex.diagnostic/1`, `ok: false`, `code`, `message`, `file`, `line`, and `column`. File keys identify imported sources; columns count bytes. Runtime process failure from `run --json` is reported as `exit_code`, `stdout`, and `stderr`; native arithmetic/assertion failures retain a textual line and bounded operation records as described below. LLVM's own compilation diagnostics also go to stderr. Successful JSON output is written to stdout.
 
 ## Source workflow
 
@@ -176,6 +176,34 @@ Wire i64 values and shape lengths are canonical decimal strings; previews never 
 `nex operations --symbol NAME [--offset N] [--limit N] --json` returns `nex.operations/1`. `nex context --operation ID` or `--site KEY` returns `nex.operation-context/1`, with explicit revision/source identity and ancestors. Both use saved HEAD unless `--revision` selects an archive; they do not advance HEAD. `nex.graph/2` includes an additive complete `operation_graph`. Matching is local to the store; imports derive new IDs from checked sources and ignore foreign identities. The operation guide/schema define paging, omitted data and conservative identity rules.
 
 Interpreter `eval` failures from checked operations add `operation_id`, `operation_site`, `revision` and `source_hash` to `nex.diagnostic/1`. Source-only frontend errors retain their existing fields. TypeScript trap sites add an optional fourth deterministic key. Native manifests/MLIR carry source-site metadata, and stopped LLDB/DAP REPL `nex-operation` returns `nex.debug-operation/1` candidates. Native textual runtime failures and optimized-PC attribution remain limited as described in the operation guide.
+
+## Source-operation patches (toolchain 0.48)
+
+`patch_entities` includes `operation`. Use the same `nex apply --patch FILE`
+command with an additional root `expected_source_hash` from the selected
+archived context. An operation replacement has `operation_id` and `source`,
+with optional `kind:"operation"`; it cannot contain declaration `name` or byte
+coordinates. See `llm/patch.schema.json` for the two strict replacement variants.
+Existing declaration-only patches remain compatible without the new source
+hash. If supplied, that hash is always checked. Both digests are exact lowercase
+64-character values and local operation IDs have 32 characters.
+
+`source_range` is additive operation metadata, independent of `location`.
+Nonnull ranges identify `expression`, `statement` or `pattern`, complete UTF-8
+byte intervals in the archived unit, and editability. Context adds a bounded
+preview, total source bytes and a truncation flag. Old responses may omit ranges;
+never treat diagnostic source points or an omitted/truncated preview as edit
+coordinates/source. Null ranges and derived owners cannot be edited.
+
+Mixed declaration/operation patches reject duplicate or overlapping targets,
+parse exactly one fragment, isolate precedence/comments and recheck the entire
+bundle before a final expected-HEAD write transaction. `E_PATCH_SOURCE` means a
+missing exact-source guard, `E_SOURCE_CONFLICT` a changed source bundle,
+`E_PATCH_TARGET` a synthetic/noneditable interval, `E_PATCH_OVERLAP` overlapping
+edits, and `E_PATCH_SPECIALIZATION`/`E_PATCH_CLOSURE` a derived owner. Physical
+files are not materialized. `patch_limits` and `parser_limits` report file,
+JSON, replacement, token, preview and recursion limits. See the operation guide
+and its installed example. Language/canonical formats and protocol 2 are retained.
 
 ## Generic source and derived instances (language 0.7)
 

@@ -2,6 +2,34 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
+## In progress: exact source-operation replacements
+
+Toolchain **0.48.0 / language 0.15** adds complete nonsemantic syntax ranges,
+bounded UTF-8 context previews and revision/source-checked patches by local
+operation ID. Single fragments preserve expression precedence and isolate line
+comments. Non-overlapping edits can span declarations, modules, statements,
+patterns and expressions; the whole candidate is checked before the final
+expected-HEAD transaction. Synthetic nodes, derived generic instances and lifted
+closures remain explicit noneditable targets. Source language, canonical
+formats, database schema and identity policy are retained.
+
+The final isolated compiler passes seventeen operation-patch cases in 30.93 s,
+plus a separate exact-source/formatting guard check. Coverage includes restored
+actual 0.47 IDs/sites/locations, generic/closure restrictions, complete enum and
+nested binding patterns, cross-module type/operation edits, effect/realm
+rejections, input limits and evaluation order. A composed-parenthesis/left-chain
+input originally crashed the initial0.48 compiler; the resulting expression-tree
+bound now rejects it with `E_PARSE_LIMIT` without changing any graph rows.
+
+Offline JSON Schema 4.25.1 validation accepts four actual current/historical
+operation reports and three patch forms, rejects eleven malformed variants and
+executes the installed example with native/TypeScript tests. Before the final
+tree-depth/pattern-root changes, nine compatibility groups passed in 244.02 s
+and the installed SDK passed all thirteen phases in 298.703 s, including a
+source-deleted operation edit. Those earlier checks have explicit initial scope;
+full current root/platform/installed-SDK checks remain pending. The feature and
+full requested NEX project are not yet claimed complete.
+
 ## Verified development milestone: checked native integer fast paths
 
 Toolchain **0.47.0 / language 0.15** keeps signed overflow checks and guarded

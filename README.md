@@ -8,12 +8,17 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.47.0 / language 0.15**, adding checked native
-integer fast paths. Signed overflow checks and guarded division/remainder stay
-in SSA; failure branches retain native operation diagnostics. Source syntax,
-evaluation order, C value ABI 1 and canonical identities are unchanged. All 55 groups and both installed SDK workflows pass on macOS/Linux ARM64;
-[the evidence](docs/evidence/native-arithmetic-0.47.0.json) records exact scope.
-Broader validation remains pending in `STATUS.md`.
+The working tree is toolchain **0.48.0 / language 0.15**, adding exact,
+revision/source-checked replacements of source expressions, statements and
+patterns by local operation ID. Schemas, discovery and the model-independent
+prompt describe the edit contract. Full current validation remains pending;
+see `STATUS.md` and [the operation guide](docs/operations.md).
+
+The preceding verified **0.47.0 / language 0.15** keeps checked integer success
+paths in SSA and preserves cold native trap metadata. All 55 regression groups
+and both thirteen-phase installed SDK workflows pass on macOS/Linux ARM64,
+with eleven Linux live debugger suites. [The evidence](docs/evidence/native-arithmetic-0.47.0.json)
+records exact scope and remaining broader validation.
 
 The preceding verified **0.46.0 / language 0.15** snapshot adds bounded native
 runtime trap reports, checked graph mapping and archived log diagnosis. All 54
