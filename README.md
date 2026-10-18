@@ -40,9 +40,15 @@ syntax and debugger identities. Validation is tracked in `STATUS.md`.
 
 Current 0.36 checks pass all 42 suites on macOS ARM64 Debug/Release and Linux
 ARM64, installed macOS/Linux ARM64 SDK workflows, real LLDB/DAP and managed-file
-sanitizers. Corrected Linux x86-64 compiler/SDK checks are running under emulation;
+sanitizers. Corrected Linux x86-64 compiler/SDK checks pass under emulation;
 other platforms, current SDK archives, general FFI and source async remain
 pending. See [the evidence](docs/evidence/source-resources-0.36.0.json).
+
+Development 0.37 keeps language 0.14 unchanged and adds an experimental C value
+transport for trusted hosts. Its [contract](docs/ffi-design.md) covers copied
+payloads, call-local owners, quotas, thread checks and sticky host traps. The
+first C/C++ probe passes 25 cases; broader current checks remain pending. Source
+foreign declarations and library loading are not implemented yet.
 
 ## Build
 

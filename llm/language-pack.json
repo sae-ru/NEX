@@ -51,9 +51,12 @@
     "files": "docs/files.md",
     "bytes": "docs/bytes.md",
     "resource_design": "docs/resources-design.md",
-    "resources": "docs/resources.md"
+    "resources": "docs/resources.md",
+    "foreign_boundary": "docs/ffi-design.md",
+    "foreign_c_header": "runtime/nex_ffi.h",
+    "foreign_host_header": "runtime/nex_ffi_host.h"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|linux|match|function|files|bytes|resources|ffi --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",

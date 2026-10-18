@@ -2,7 +2,22 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## Development: source file resources
+## Development: versioned C value transport
+
+Toolchain **0.37.0 / language 0.14** adds an experimental C11 value table and a
+trusted C++ invocation wrapper. Call-local, non-reused tokens retain immutable
+values without exposing C++ layouts, pointers into NEX storage or raw file
+descriptors. The boundary copies UTF-8/binary payloads, checks thread/reference
+ownership and quotas, and preserves sticky host traps across cooperative polls.
+The independently compiled C producer and 25 lifecycle/value cases pass the
+initial macOS probe. Full regression, sanitizer and Linux validation are pending.
+Language/canonical formats are unchanged. Source extern declarations, checked
+signatures, library loading/authorization, packaging, general resource kinds,
+callbacks into NEX and async remain pending. The descriptor keeps
+`foreign_boundary.source_support:false`; [the design](docs/ffi-design.md)
+defines the integration gates. This is not a stable published FFI.
+
+## Verified development milestone: source file resources
 
 Toolchain **0.36.0 / language 0.14** adds the `file` source type, ten server/`fs`
 operations, immutable aggregate/capture owners and identity equality. The
@@ -28,8 +43,10 @@ emulated Linux x86-64; macOS also passes ThreadSanitizer. All 33 genuine histori
 fixture files and 34 previous source examples remain unchanged. Task/proof
 acceptance intent and the new version's revision/content pins are checked.
 The initial regression caught an inaccurate generic-add descriptor; the checker
-correctly rejected file addition. Corrected macOS/Linux ARM64 runs pass that
-descriptor check. The corrected Linux x86-64 compiler/SDK matrix is still running.
+correctly rejected file addition. Corrected macOS/Linux ARM64 and emulated Linux
+x86-64 runs pass all 42 suites. Linux x86-64 also passes all twelve installed-SDK
+workflow phases without the source checkout mounted; live x86-64 debugging and
+physical x86-64 execution remain unverified.
 Current moved/restored SDK archives, general FFI, source async and broader
 platform validation remain pending. This is a development checkpoint, not an
 accepted release. [Evidence](docs/evidence/source-resources-0.36.0.json) binds

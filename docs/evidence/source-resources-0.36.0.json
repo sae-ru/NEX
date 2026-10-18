@@ -3,13 +3,12 @@
   "toolchain": "0.36.0",
   "language": "0.14",
   "created_at": "2026-10-18T07:56:18.963894+00:00",
-  "verification_status": "linux_x86_64_corrected_matrix_running",
+  "verification_status": "stated_compiler_and_installed_sdk_matrix_passed",
   "accepted_release": false,
   "full_objective_complete": false,
   "scope": "first source file resource, not general FFI/async or broad platform support",
   "verified_source": "/Users/sae/projects/NEX/build/source-checkpoint-20261018-073250-fdd966e3",
   "source_backup_commit": "ca2d96c07868a8e4fe0dd5cdfc33830bcbc7a706",
-  "compiler_and_runtime_match_current": true,
   "compiler_source_inputs": {
     "CMakeLists.txt": "a5934a8941e403e82c8310d7bd65d9fbdc8fa5d85d69a700eb43eb7d5aa46fb2",
     "src/api.cpp": "97228ef9c80f0a44c5bd3b67996c217558c4185d3015b0d5609e4cecd8583e40",
@@ -272,10 +271,31 @@
     }
   },
   "linux_x86_64": {
-    "status": "running",
+    "ok": true,
+    "compiler_ctest_suites": 42,
+    "python_cases": 328,
     "execution": "Docker emulation, not physical x86-64",
-    "session": 10688,
-    "output": "/Users/sae/projects/NEX/build/linux-amd64-036-corrected"
+    "live_debugger": false,
+    "source_free_sdk": {
+      "ok": true,
+      "report": "/Users/sae/projects/NEX/build/linux-amd64-036-corrected/sdk-acceptance/f0fd7210c9f9426ab6c5f9591df63a3c/workflow/report.json",
+      "compiler_sha256": "573795c5d457dac0d993c7d7e329a8909446acedf254c0cb27c959818eb7580d",
+      "source_checkout_mounted": false,
+      "network": "none",
+      "live_debugger": false,
+      "browser_build": true,
+      "seconds": 419.818
+    },
+    "report": "/Users/sae/projects/NEX/build/linux-amd64-036-corrected/verification.json",
+    "report_sha256": "553d02c4fa596dd82bb383927cb7d763337943ec259e21736ad104c2fe9000f7",
+    "sdk_report_sha256": "8e3d133281abdadf7aadcd61b90b782183b90e15a7a818fd8edaa9d95b804532",
+    "environment": {
+      "image": "sha256:28ebb20df892de8e5b9bf09c0063ee68b587a564556c07112c352a2974f15af4",
+      "image_id": "sha256:28ebb20df892de8e5b9bf09c0063ee68b587a564556c07112c352a2974f15af4",
+      "target_arch": "amd64",
+      "docker_server_arch": "arm64",
+      "emulated": true
+    }
   },
   "managed_value_sanitizers": {
     "macos-asan": {
@@ -373,14 +393,15 @@
     "linux_arm64_passed": 41,
     "linux_x86_64_passed": 41,
     "suite_count": 42,
-    "only_failure": "constraints: capability descriptor incorrectly advertised file addition. Checker rejects it. Corrected current descriptors pass on macOS Debug/Release and Linux ARM64."
+    "only_failure": "constraints: capability descriptor incorrectly advertised file addition. Checker rejects it. Corrected macOS Debug/Release and Linux ARM64/emulated x86-64 cohorts pass all 42 suites."
   },
   "pending": [
-    "corrected Linux x86-64 compiler/source-free SDK matrix",
     "current moved/restored development SDK archive matrix",
     "general resource kinds and stable FFI",
     "source async/await and further libraries",
     "remaining target platforms and SDK integrations",
     "full language/development-chain objective"
-  ]
+  ],
+  "completed_at": "2026-10-18T08:32:31.204512+00:00",
+  "compiler_and_runtime_matched_verified_checkpoint": true
 }

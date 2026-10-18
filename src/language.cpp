@@ -830,6 +830,12 @@ llvm::json::Value describe() {
     {"file_environment",llvm::json::Object{{"root","NEX_FILES_ROOT"},{"write","NEX_FILES_WRITE=1"},{"http_inherits_environment",false}}},
     {"file_guide","docs/files.md"},
     {"resource_guide","docs/resources.md"},
+    {"foreign_boundary",llvm::json::Object{
+      {"source_support",false},{"status","experimental_c_transport"},{"abi_version",1},
+      {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
+      {"features",llvm::json::Array{"call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts"}},
+      {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
+      {"pending",llvm::json::Array{"source_declarations","checked_signatures","library_authorization_and_loading","platform_packaging","callbacks_into_nex","stable_abi_validation"}}}},
     {"resource_features",llvm::json::Array{"server_file_type","identity_aliases","owned_aggregate_and_capture_values","explicit_close","scope_revocation","bounded_streaming_io","opaque_pure_debug_identity","no_wire_or_browser_authority"}},
     {"host_resource_runtime",llvm::json::Object{
       {"source_support",true},{"status","development_source_files"},{"design","docs/resources-design.md"},
