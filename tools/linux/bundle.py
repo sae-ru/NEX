@@ -92,6 +92,10 @@ def verify(sdk, output):
 
 def package(arguments, output):
     source, sdk = arguments.source.resolve(), arguments.sdk.resolve()
+    if not (sdk / 'bin/nex').is_file():
+        raise RuntimeError('input must contain bin/nex')
+    if any(path.is_symlink() for path in sdk.rglob('*')):
+        raise RuntimeError('unbundled SDK input cannot contain symlinks')
     report = {'ok': False, 'sdk_input': str(sdk), 'arch': arguments.arch, 'phases': []}
     started = time.monotonic()
     def save():
@@ -122,7 +126,7 @@ def package(arguments, output):
         if inspect(toolchain) != original_image:
             raise RuntimeError('original compiler image changed')
         frozen = output / 'input-sdk'
-        shutil.copytree(sdk, frozen)
+        shutil.copytree(sdk, frozen, symlinks=True)
         report['input_compiler_sha256'] = digest(frozen / 'bin/nex')
         shutil.copyfile(source / 'tools/sdk_bundle.py', output / 'assembler.py')
         report['assembler_sha256'] = digest(output / 'assembler.py')
@@ -130,6 +134,12 @@ def package(arguments, output):
             'url': 'https://github.com/Z3Prover/z3/releases/tag/z3-5.3.1', 'roots': ['/opt/z3'],
             'license_files': ['/opt/z3/LICENSE.txt']}]}
         (output / 'notices.json').write_text(json.dumps(notices, indent=2) + '\n')
+        shutil.copyfile(source / 'tools/linux/bundle_boundaries.py', output / 'boundary-check.py')
+        run('metadata-boundaries', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
+            *mount(frozen, '/sdk'), *mount(output, '/work', False), packager,
+            'python3', '/work/boundary-check.py', '--sdk', '/sdk', '--assembler', '/work/assembler.py',
+            '--output', '/work/boundaries'])
+        report['metadata_boundaries'] = json.loads((output / 'boundaries/report.json').read_text())
         run('assemble', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
             *mount(frozen, '/sdk'), *mount(output, '/work', False), packager,
             'python3', '/work/assembler.py', '--sdk', '/sdk', '--output', '/work/stage',

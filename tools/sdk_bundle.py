@@ -94,7 +94,7 @@ class Bundle:
         names = set()
         for component in self.components['components']:
             name = component['name']
-            if not re.fullmatch('[a-zA-Z0-9_.-]{1,80}', name) or name in names:
+            if not re.fullmatch('[a-zA-Z0-9_.-]{1,80}', name) or name in ('.', '..') or name in names:
                 raise ValueError('invalid/duplicate notice component name')
             names.add(name)
             if not component.get('version') or not component.get('url') or not component.get('roots') or not component.get('license_files'):
@@ -410,6 +410,8 @@ class LinuxBundle(Bundle):
             dynamic = run(['readelf', '-d', original])
             soname = re.search(r'\(SONAME\).*?\[([^]]+)\]', dynamic)
             if soname and soname[1] != target.name:
+                if '/' in soname[1] or soname[1] in ('.', '..'):
+                    raise ValueError('ELF SONAME must be a filename inside the bundle: ' + soname[1])
                 alias = target.parent / soname[1]
                 if not alias.exists():
                     alias.symlink_to(target.name)

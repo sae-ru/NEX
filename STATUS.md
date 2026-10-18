@@ -40,8 +40,26 @@ require the current 0.28 compiler.
 `tools/linux/bundle.py` freezes an installed SDK/assembler, uses a separate
 patchelf image, moves the assembled SDK, runs all ten maintained phases in a
 source-free/network-disabled image with no LLVM/MLIR/Z3/Clang, creates an archive
-and repeats validation after extracting it elsewhere. Actual 0.28 bundle and
-archive validation remains pending. The original compiler images are unchanged.
+and repeats validation after extracting it elsewhere. The first ARM64 bundle passed all ten phases in 103.287 s in the minimal
+runtime and repeated them after archive extraction in 110.364 s. All 726
+inventoried files and 23 components were checked; actual compiler/server library
+resolutions stayed inside the relocated SDK except the declared GNU platform
+runtime. Its 140,555,121-byte archive SHA256 is
+`41f3f838ec2438c35ba674b17963ced8a70373e23e9198a17e5a4aa3edf01d8b`
+(`build/linux-arm64-028-bundle/verification.json`). It used glibc 2.39/GCC SDK;
+observed symbol requirements include GLIBC_2.38 and GLIBCXX_3.4.32, without
+claiming untested host compatibility. Linux ARM64 also passed the full 28-suite
+regression in 496.89 s, including the selected-SQLite test; live suites continue.
+
+A later metadata review found unchecked SONAME/component path components.
+The packager now rejects absolute/escaping SONAME aliases and `.`/`..` component
+names. A real ELF fixture with an outside-output SONAME was rejected without
+writing that link (`build/boundary-test/report.json`). That check is now a
+maintained packaging phase in `tools/linux/bundle_boundaries.py`. A fresh bundle
+with the corrected helper resources is being verified. The compiler/runtime/
+existing language-test inputs remain the frozen `a979829a` set; these later
+changes affect packaging resources/documentation only. The original compiler
+images are unchanged.
 All broader language, resource/async/FFI, compiler-cache/LTO and platform work
 remains in scope; this step does not complete the requested toolchain.
 

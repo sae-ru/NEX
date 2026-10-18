@@ -219,3 +219,8 @@ Live LLDB is a separate verified host prerequisite; these minimal containers rep
 Native Linux executable builds now record configured SQLite/OpenSSL directories
 as ELF runtime search paths, preserving literal commas, Unicode and percent signs.
 A colon in such a directory is rejected because it separates ELF search entries.
+
+Linux packaging also performs a real malformed-ELF metadata check before normal
+assembly. An absolute SONAME must be rejected without creating a link outside
+the output SDK; component names `.` and `..` are rejected. The validator builds
+an owned metadata-only ELF fixture and does not count it as compiler evidence.
