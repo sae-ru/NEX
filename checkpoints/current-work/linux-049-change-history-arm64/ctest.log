@@ -1,0 +1,163 @@
+Test project /build
+      Start  7: task_foreign
+      Start 12: foreign_packaging
+ 1/57 Test #12: foreign_packaging ................   Passed  276.76 sec
+      Start  3: native_arithmetic
+ 2/57 Test  #3: native_arithmetic ................   Passed   46.83 sec
+      Start  1: change_history
+ 3/57 Test  #1: change_history ...................   Passed    7.79 sec
+      Start  2: operation_patches
+ 4/57 Test  #7: task_foreign .....................   Passed  346.28 sec
+      Start  5: native_diagnostics
+ 5/57 Test  #2: operation_patches ................   Passed   22.06 sec
+      Start  4: native_sites_runtime
+ 6/57 Test  #4: native_sites_runtime .............   Passed    0.00 sec
+      Start  6: source_ffi
+ 7/57 Test  #5: native_diagnostics ...............   Passed   64.86 sec
+      Start  8: resources
+ 8/57 Test  #8: resources ........................   Passed   63.58 sec
+      Start  9: resource_debug
+ 9/57 Test  #9: resource_debug ...................   Passed   14.09 sec
+      Start 10: sdk_archives
+10/57 Test #10: sdk_archives .....................   Passed    0.06 sec
+      Start 11: packaging
+11/57 Test #11: packaging ........................   Passed   30.89 sec
+      Start 13: foreign_scope_native
+12/57 Test #13: foreign_scope_native .............   Passed    0.10 sec
+      Start 14: ffi_loader_native
+13/57 Test #14: ffi_loader_native ................   Passed    0.11 sec
+      Start 15: ffi_runtime_native
+14/57 Test #15: ffi_runtime_native ...............   Passed    0.01 sec
+      Start 16: ffi_typed_native
+15/57 Test #16: ffi_typed_native .................   Passed    0.02 sec
+      Start 17: ffi_types
+16/57 Test #17: ffi_types ........................   Passed   11.21 sec
+      Start 18: resource_values_native
+17/57 Test #18: resource_values_native ...........   Passed    0.02 sec
+      Start 19: resources_runtime_native
+18/57 Test #19: resources_runtime_native .........   Passed    0.02 sec
+      Start 20: bytes_runtime_native
+19/57 Test #20: bytes_runtime_native .............   Passed    0.00 sec
+      Start 21: bytes_values_native
+20/57 Test #21: bytes_values_native ..............   Passed    0.07 sec
+      Start 22: files_runtime_native
+21/57 Test #22: files_runtime_native .............   Passed    0.16 sec
+      Start 23: files
+22/57 Test #23: files ............................   Passed   75.74 sec
+      Start 24: float_runtime_native
+23/57 Test #24: float_runtime_native .............   Passed    0.00 sec
+      Start 25: integration
+24/57 Test  #6: source_ffi .......................   Passed  263.10 sec
+      Start 26: modules
+25/57 Test #26: modules ..........................***Failed   24.77 sec
+test_atomic_cross_module_patches_and_fragment_boundaries (__main__.Modules.test_atomic_cross_module_patches_and_fragment_boundaries) ... ok
+test_export_avoids_collisions_with_project_source_directories (__main__.Modules.test_export_avoids_collisions_with_project_source_directories) ... ok
+test_exported_project_is_self_contained_and_relocatable (__main__.Modules.test_exported_project_is_self_contained_and_relocatable) ... ok
+test_import_failures_and_file_diagnostics (__main__.Modules.test_import_failures_and_file_diagnostics) ... ok
+test_imported_bundle_integrity_and_unreachable_files (__main__.Modules.test_imported_bundle_integrity_and_unreachable_files) ... ok
+test_language_03_bundle_migration_preserves_all_sources_and_history (__main__.Modules.test_language_03_bundle_migration_preserves_all_sources_and_history) ... ok
+test_language_04_result_bundle_migrates_explicitly_with_history (__main__.Modules.test_language_04_result_bundle_migrates_explicitly_with_history) ... FAIL
+test_module_identity_aliases_and_nominal_types (__main__.Modules.test_module_identity_aliases_and_nominal_types) ... ok
+test_modules_standard_libraries_and_debug_origins (__main__.Modules.test_modules_standard_libraries_and_debug_origins) ... ok
+test_package_pinning_and_explicit_dependency_update (__main__.Modules.test_package_pinning_and_explicit_dependency_update) ... ok
+test_saved_revision_does_not_reload_modified_or_missing_files (__main__.Modules.test_saved_revision_does_not_reload_modified_or_missing_files) ... ok
+test_unicode_module_paths_and_stable_library_nodes (__main__.Modules.test_unicode_module_paths_and_stable_library_nodes) ... ok
+test_visibility_types_effects_and_realms_across_files (__main__.Modules.test_visibility_types_effects_and_realms_across_files) ... ok
+
+======================================================================
+FAIL: test_language_04_result_bundle_migrates_explicitly_with_history (__main__.Modules.test_language_04_result_bundle_migrates_explicitly_with_history)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/src/tests/modules.py", line 22, in test_language_04_result_bundle_migrates_explicitly_with_history
+    self.assertEqual(self.cli('migrate')['language'],'0.15')
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/src/tests/support.py", line 34, in cli
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : {
+  "code": "E_CHANGE_INTEGRITY",
+  "column": 1,
+  "file": "",
+  "line": 1,
+  "message": "stored change record or adjacent journal link is invalid",
+  "ok": false,
+  "schema": "nex.diagnostic/1",
+  "stdout": ""
+}
+
+
+----------------------------------------------------------------------
+Ran 13 tests in 24.736s
+
+FAILED (failures=1)
+
+      Start 27: results
+26/57 Test #25: integration ......................   Passed   58.66 sec
+      Start 28: storage
+27/57 Test #27: results ..........................   Passed   38.04 sec
+      Start 29: http
+28/57 Test #28: storage ..........................   Passed   22.55 sec
+      Start 30: api
+29/57 Test #29: http .............................   Passed   15.52 sec
+      Start 31: debugging
+30/57 Test #31: debugging ........................   Passed   17.37 sec
+      Start 32: expressions
+31/57 Test #32: expressions ......................   Passed   33.96 sec
+      Start 33: operations
+32/57 Test #33: operations .......................   Passed    6.11 sec
+      Start 34: graph_identities
+33/57 Test #34: graph_identities .................   Passed    7.29 sec
+      Start 35: type_patches
+34/57 Test #30: api ..............................   Passed   90.52 sec
+      Start 36: dap_transport
+35/57 Test #36: dap_transport ....................   Passed    0.07 sec
+      Start 37: incremental
+36/57 Test #35: type_patches .....................   Passed   20.49 sec
+      Start 38: native_targets
+37/57 Test #38: native_targets ...................   Passed   22.00 sec
+      Start 39: sdk_host
+38/57 Test #39: sdk_host .........................   Passed    5.36 sec
+      Start 40: profiling
+39/57 Test #37: incremental ......................   Passed   49.53 sec
+      Start 41: verification
+40/57 Test #41: verification .....................   Passed   14.98 sec
+      Start 42: tasks
+41/57 Test #40: profiling ........................   Passed   48.29 sec
+      Start 43: task_toolchains
+42/57 Test #43: task_toolchains ..................   Passed   63.57 sec
+      Start 44: bytes_values
+43/57 Test #44: bytes_values .....................   Passed    1.13 sec
+      Start 45: bytes_runtime
+44/57 Test #45: bytes_runtime ....................   Passed    0.19 sec
+      Start 46: float_runtime
+45/57 Test #46: float_runtime ....................   Passed    0.67 sec
+      Start 47: web
+46/57 Test #47: web ..............................   Passed    6.93 sec
+      Start 48: web_commands
+47/57 Test #48: web_commands .....................   Passed    9.58 sec
+      Start 49: enums
+48/57 Test #42: tasks ............................   Passed  105.00 sec
+      Start 50: generics
+49/57 Test #49: enums ............................   Passed   34.43 sec
+      Start 51: constraints
+50/57 Test #50: generics .........................   Passed   75.75 sec
+      Start 52: matching
+51/57 Test #51: constraints ......................   Passed   76.62 sec
+      Start 53: function_values
+52/57 Test #52: matching .........................   Passed   64.31 sec
+      Start 54: function_debug
+53/57 Test #53: function_values ..................   Passed   67.70 sec
+      Start 55: bytes
+54/57 Test #54: function_debug ...................   Passed   40.45 sec
+      Start 56: bytes_debug
+55/57 Test #56: bytes_debug ......................   Passed   12.03 sec
+      Start 57: numbers
+56/57 Test #55: bytes ............................   Passed   68.27 sec
+57/57 Test #57: numbers ..........................   Passed   72.78 sec
+
+98% tests passed, 1 tests failed out of 57
+
+Total Test time (real) = 1213.87 sec
+
+The following tests FAILED:
+	 26 - modules (Failed)
+Errors while running CTest

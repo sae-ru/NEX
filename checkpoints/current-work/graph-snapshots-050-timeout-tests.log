@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /Users/sae/projects/NEX/build/working-050-graph-snapshots/build
+Test project /Users/sae/projects/NEX/build/working-050-graph-snapshots/build
+    Start 1: graph_snapshots
+1/1 Test #1: graph_snapshots ..................   Passed   10.88 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  10.88 sec

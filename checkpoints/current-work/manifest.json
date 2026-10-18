@@ -1,0 +1,26 @@
+{
+  "created_at": "2026-10-18T21:47:38.576654+00:00",
+  "purpose": "User-requested backup of all current source work, including unfinished isolated changes",
+  "root_049_commit": "3deb19ce21d3c5fe4ce94ae86112a6021c359ff4",
+  "preceding_verified_048_commit": "486000046a8ecb0d5f6b5afac7f1fce3e9e19924",
+  "root_source_matches_049_backup": true,
+  "source_files": 509,
+  "changed_from_049": [
+    "CMakeLists.txt",
+    "include/nex/graph_snapshot.h",
+    "src/graph_snapshot.cpp",
+    "src/main.cpp",
+    "tests/graph_identities.py",
+    "tests/graph_snapshots.py"
+  ],
+  "prototype_050_build": "Latest durable build log ends with [100%] Built target nex",
+  "prototype_tests": "10 earlier focused snapshot cases passed. Later durability/metadata edits and two added cases have not yet been tested.",
+  "root_049_tests": {
+    "macos": "Full run remains active when checkpoint captured; known graph_identities optional legacy-probe failure; corrected test exists in isolated source.",
+    "linux_arm64": "Full run exited 1: 56/57 groups passed, modules failed; installed SDK/live stages did not run.",
+    "installed_macos_sdk": "13 phases passed; exact verification report included."
+  },
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "excluded": "Build outputs, downloaded dependencies and application data; reproducible source, tests, documentation and fixtures are included."
+}

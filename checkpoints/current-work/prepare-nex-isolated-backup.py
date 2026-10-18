@@ -1,0 +1,13 @@
+import os,pathlib,subprocess
+r=pathlib.Path.cwd()
+source=pathlib.Path(os.environ['NEX_BACKUP_SOURCE']).resolve()
+assert source.is_relative_to(r/'build') and source.is_dir()
+script=(r/'build/prepare-nex-checkpoint-backup.py').read_text()
+script=script.replace("root=pathlib.Path.cwd();stamp=", "root=pathlib.Path.cwd();source_root=pathlib.Path(os.environ['NEX_BACKUP_SOURCE']).resolve();stamp=")
+script=script.replace("env=dict(os.environ,GIT_INDEX_FILE=", "env=dict(os.environ,GIT_DIR=str(root/'.git'),GIT_WORK_TREE=str(source_root),GIT_INDEX_FILE=")
+script=script.replace("subprocess.check_output(['git',*args],env=env)", "subprocess.check_output(['git',*args],env=env,cwd=source_root)")
+script=script.replace("(root/'CMakeLists.txt').read_text()", "(source_root/'CMakeLists.txt').read_text()")
+script=script.replace("(root/'include/nex/language.h').read_text()", "(source_root/'include/nex/language.h').read_text()")
+script=script.replace("'files_manifest':files,", "'files_manifest':files,'worktree_source':str(source_root),")
+helper=r/'build/prepare-isolated-backup-expanded.py';helper.write_text(script)
+subprocess.run(['python3',str(helper)],check=True)

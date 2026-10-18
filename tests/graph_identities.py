@@ -185,6 +185,17 @@ class GraphIdentities(harness.ToolchainCase):
         with sqlite3.connect(directory / '.nex/graph.db') as db:
             db.executescript(sql.decode())
             source_rows = db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall()
+        old = Path(os.environ.get('NEX_LEGACY_043_COMPILER', str(harness.REPO / 'build/nex-043-corrected-verified')))
+        if old.exists():
+            # Preserve a genuine schema3 database for the original SDK. The
+            # schema4 journal deliberately prevents legacy unrecorded writers.
+            legacy = self.root / 'legacy'
+            (legacy / '.nex').mkdir(parents=True)
+            (legacy / 'nex.json').write_text((directory / 'nex.json').read_text())
+            with sqlite3.connect(legacy / '.nex/graph.db') as db:db.executescript(sql.decode())
+            process = subprocess.run([str(old), 'eval', '--revision', 'HEAD', '--json'], cwd=legacy, capture_output=True, text=True, timeout=30)
+            self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+            self.assertEqual(json.loads(process.stdout)['stdout'], metadata['stdout'])
         graph = self.cli('graph', cwd=directory)
         self.assertEqual(graph['revision'], metadata['revision'])
         with sqlite3.connect(directory / '.nex/graph.db') as db:
@@ -194,11 +205,12 @@ class GraphIdentities(harness.ToolchainCase):
             self.assertEqual([list(r) for r in db.execute('SELECT revision,function,path,id,hash,site FROM operation_versions ORDER BY revision,function,path')], metadata['operations'])
         self.assertEqual(self.cli('eval', '--revision', 'HEAD', cwd=directory)['stdout'], metadata['stdout'])
         self.assertTrue(graph['declaration_graph']['nodes'])
-        old = harness.REPO / 'build/nex-043-corrected-verified'
         if old.exists():
+            before_refusal = self.rows(directory)
             process = subprocess.run([str(old), 'eval', '--revision', 'HEAD', '--json'], cwd=directory, capture_output=True, text=True, timeout=30)
-            self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
-            self.assertEqual(json.loads(process.stdout)['stdout'], metadata['stdout'])
+            self.assertNotEqual(process.returncode, 0)
+            self.assertEqual(json.loads(process.stdout)['code'], 'E_SCHEMA')
+            self.assertEqual(self.rows(directory), before_refusal)
 
     def test_malformed_page_metadata_and_out_of_scope_records_are_atomic(self):
         first, _ = self.project('source')

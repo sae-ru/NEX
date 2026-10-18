@@ -1,0 +1,28 @@
+{
+  "toolchain": "0.50.0",
+  "language": "0.15",
+  "stage": "/Users/sae/projects/NEX/build/working-050-graph-snapshots",
+  "root": "frozen0.49 full checks live; do not edit root",
+  "status": "isolated graph snapshot/recovery development",
+  "previous_goal_turn": "progress: full0.48 verified,0.49 change journal/restore implemented and full gates started",
+  "scope": "consistent complete graph database, archived source revisions, IDs/aliases/journal/task index; external receipt/artifact files and application data require separate packaging",
+  "plan": [
+    "SQLite online backup from a pinned read transaction",
+    "no source migration or writes during capture",
+    "self-contained normalized database with streaming SHA256 manifest",
+    "recover only into an exclusively new directory",
+    "preserve graph schema/namespace/all rows without adopting foreign IDs",
+    "strict metadata, regular files, bounded manifest and timeout",
+    "concurrent writer, source-deleted, stale/corrupt/malformed and installed-SDK coverage"
+  ],
+  "full_objective_complete": false,
+  "updated": "2026-10-18T21:31:31.180083+00:00",
+  "initial_build": "terminal:exit0",
+  "initial_test_failures": {
+    "first": "SQLite NOFOLLOW refused system parent aliases for macOS temporary paths; resolved parent canonically while retaining final-component nofollow",
+    "second": "prepare-time SQLite BUSY bypassed retry/deadline; retried prepare as well as step"
+  },
+  "current_compiler_sha256": "ce0f28f6fe829fa20939769d7a7a155b492cc94717b379dc94105a49f4b96454",
+  "test_session": "pending target run",
+  "next_action": "Finish10 focused snapshot checks, then durability/manifest/schema/model-pack/SDK coverage. Root0.49 is frozen during full baseline checks; one optional legacy SDK probe needs the documented schema4 refusal expectation, corrected in both isolated049/050. Do not edit root before its frozen checks end."
+}

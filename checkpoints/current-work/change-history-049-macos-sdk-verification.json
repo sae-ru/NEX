@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "at": "2026-10-18T21:41:19.758534+00:00",
+  "compiler_sha256": "ddb97b808bf3e8157f49ca4a0c9872bc90cc267819283d2207f8a1803420036d",
+  "phases": 13,
+  "seconds": 412.565,
+  "report_sha256": "deac40eb1aabc666cf7399af4f4dab567a74f6112aa63833d148f8b14222599b",
+  "all_resource_hashes_match_root": true,
+  "change_history": {
+    "transitions": 4,
+    "namespace": "b710805a3b55961f4c5b8fe69898549a",
+    "tip_hash": "6d818456d3d1f0df57711407a3ff2da3440a7c3138961e66c2461fb9b1f4b9eb",
+    "before": "6668184aab4edfb2a558c41266305ddeef169e48893c43c673d772320fae767b",
+    "after": "a26ff9b5d88cd83bcb11d8b704b15a211a3160537fde36ddfce5a34309c42a39",
+    "source_deleted_restore": true,
+    "physical_sources_absent": true,
+    "both_archives_preserved": true,
+    "declared_author_labels": true
+  },
+  "source_operation_patches": {
+    "before": "6668184aab4edfb2a558c41266305ddeef169e48893c43c673d772320fae767b",
+    "after": "a26ff9b5d88cd83bcb11d8b704b15a211a3160537fde36ddfce5a34309c42a39",
+    "local_operation_id": "bc662d65a6c2743ea4548b358a7bf489",
+    "source_deleted": true,
+    "native_reference_typescript": true,
+    "stale_rejected": true,
+    "same_local_id_new_site": true
+  }
+}

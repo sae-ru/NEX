@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "validator": "jsonschema 4.25.1",
+  "compiler_sha256": "145ff06836100aed7897a005bdaad513f0c69d95d9968432e8af6d653d1de0bc",
+  "schema_sha256": "f5c21ea90b346140dbd11c4fefd5bf3dbac063787f6aa460a59a9bf2d92b37b3",
+  "actual_cli_artifacts": [
+    "page",
+    "empty",
+    "restore",
+    "noop",
+    "import"
+  ],
+  "rejected_variants": [
+    "missing_predecessor",
+    "invalid_source_digest",
+    "invalid_sequence",
+    "unknown_action",
+    "oversized_note",
+    "oversized_actor",
+    "authenticated_claim",
+    "page_limit",
+    "unverified_operation_id",
+    "materialized_restore"
+  ],
+  "source_deleted_restore": true,
+  "foreign_journal_not_imported": true,
+  "guide_pack_discovery_consistent": true,
+  "remote_schema_access": false
+}
