@@ -2,7 +2,7 @@
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-## In progress: atomic source-type replacements
+## Verified development milestone: atomic source-type replacements
 
 Toolchain **0.45.0 / language 0.15** adds replacement of existing source
 structs/enums with their constructors, signatures, matches and handlers in one
@@ -12,16 +12,19 @@ are editable, generic instances remain derived, and retained revisions keep
 their original layouts. Module/import/new-top-level-declaration edits still use
 export/edit/check. Runtime semantics and graph identity policy remain unchanged.
 
-The isolated implementation passes ten type-patch cases in 20.235 s, all 17
-graph cases in 10.708 s and the integration/module/generic compatibility groups.
-Its initial installed SDK passes all thirteen phases in 264.679 s, including
-a partial-type-edit rejection, a complete type/factory/caller patch, preserved
-type IDs and source-deleted native/reference/TypeScript execution. The final
-schema also accepts five actual 0.44 artifacts and a legacy function patch;
-six malformed variants are rejected offline. Source docs/schema were clarified
-after that initial SDK install, so its recorded resource snapshot is retained
-separately. Full current root/SDK/Linux validation remains pending. This does
-not complete the requested language and development chain.
+All **52 regression groups** pass on macOS ARM64 in **1196.45 s** and Linux
+ARM64 in **1007.88 s**, including 400 Python cases and ten C++ probes.
+Both installed SDKs pass thirteen phases, including a partial-type-edit rejection,
+a complete type/factory/caller patch, preserved type IDs and source-deleted
+native/reference/TypeScript execution. The macOS workflow takes **301.940 s**;
+source-free Linux takes **210.147 s**, with networking disabled and all eleven
+live debugger suites passing. The final SDK resource hashes match the frozen
+source snapshot. Offline schema validation accepts current and five actual 0.44
+artifacts plus a legacy function patch, and rejects six malformed variants.
+The [evidence](docs/evidence/type-patches-0.45.0.json) binds exact source, compiler
+and report hashes. Broader current Release, sanitizer, x86-64 and SDK distribution
+checks remain pending. This milestone does not complete the requested language
+and development chain.
 
 ## Verified development milestone: declaration graph and cross-store references
 
