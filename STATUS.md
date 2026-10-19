@@ -1,5 +1,29 @@
 # NEX implementation status
 
+## Candidate 0.55: constructor-kind core, source extension pending
+
+The internal matcher validates value/constructor kinds and application arity,
+performs occurs-checked structural unification, keeps function effects/realms
+distinct, and checks head overlap with independently renamed binders. Repeated
+constructor variables cannot select different constructors. Work/depth budgets
+bound normalization and unification. Twenty native invariant groups include
+symmetry and exact reconstruction checks; four related existing Python suites
+(62 cases) pass with native/TypeScript/reference coverage.
+
+A genuine installed SDK 0.54 fixture preserves ordinary `trait`, `impl`, `type`,
+`for` and `Self` names, generics, callables and Unicode/NUL strings. Native,
+reference and TypeScript tests pass under its producer. The internal-core
+candidate reads the archive without physical source, preserving its original
+revision and every SQL row. This proves compatibility within language 0.15;
+it does not prove the future explicit 0.16 migration.
+
+Source traits/impls/custom bounds, structured associated projections, `F<_>`
+syntax, parametric method checking, static dispatch and graph/canonical/model
+pack integration remain to implement. The full 65-group candidate regression
+is pending; there is no candidate SDK or platform acceptance claim. The root
+0.54 full regression remains a separate gate and its installed SDK18 passes.
+
+
 ## Promoted0.54: current root checks pending
 
 The exact verified isolated0.54 implementation is now in the root checkout.
