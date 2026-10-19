@@ -596,3 +596,11 @@ retained checked source. See [queries](queries.md), machine capability discovery
 and the matching model-independent schema. Derived instances remain distinct
 from editable source templates. These tools do not imply new syntax or source
 execution; static references do not prove dynamic coverage.
+
+## Stopped-string range tools (toolchain0.54)
+
+Source semantics, canonical forms and language0.15 remain unchanged. Debugger
+string shapes count Unicode scalars; bounded text_range captures let the isolated
+watch interpreter index/slice held strings without materializing their whole
+value. These captures are debugger data, not source string constructors or
+execution authority. See [the string debugger guide](string-debug.md).

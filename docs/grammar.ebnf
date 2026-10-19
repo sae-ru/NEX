@@ -143,3 +143,5 @@ digit         = "0" .. "9" ;
    diagnostic spans are separate from editable source ranges and committed IDs. *)
 
 (* Toolchain0.53 adds archived graph-query commands; source grammar is unchanged. *)
+
+(* Toolchain0.54 adds stopped-string capture ranges; source grammar is unchanged. *)
