@@ -8,11 +8,15 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated working tree is toolchain **0.53.0 / language 0.15**, adding
-[bounded graph search/subgraphs](docs/queries.md) above the captured-source
-frontend diagnostics0.52 implementation. Validation is pending. The frozen0.52
-compiler passes the macOS installed SDK16; its full regression/platform/Linux
-SDK checks are separate and still running.
+This verified isolated tree is toolchain **0.52.0 / language 0.15**, adding
+[captured-source frontend diagnostics](docs/frontend-diagnostics.md). All61
+regression groups pass on macOS/Linux ARM64 (494 Python cases +12 C++ probes),
+both installed SDK16 workflows pass, and Linux passes eleven live debugger
+suites. [The evidence](docs/evidence/frontend-diagnostics-0.52.0.json) records
+exact source/compiler scope, UTF-8 filename coverage and remaining work.
+The root remains separately verified0.51; the current0.53 graph-query prototype
+contains this implementation and has its own current checks. Broader language,
+platform and development-chain work remains pending in `PLAN.md`.
 
 The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux
 ARM64, both fifteen-phase installed SDK workflows and eleven Linux live debugger

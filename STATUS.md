@@ -1,33 +1,31 @@
 # NEX implementation status
 
-## Isolated 0.53 graph search and dependency-radius queries
+## Verified isolated0.52 / language0.15: captured frontend inputs
 
-The prototype adds literal name/source discovery over module/type/function/
-endpoint declarations, bounded declaration previews and minimum-hop dependency/
-dependent/bidirectional subgraphs. Nodes/edges page independently with explicit
-byte and depth boundaries. Responses preserve revision, exact archived source,
-namespace and selection identity. Queries select archived source, preserve HEAD
-and its journal, and do not execute program/native-extension code. Existing
-identity/edge metadata is checked against source; old stores may lazily backfill
-indexes. Language0.15, canonical forms and graph schema 4 remain unchanged.
-Current implementation/focused/schema/SDK/platform validation remains pending.
-The full0.52 checks below are separate, on a frozen earlier source tree.
+The exact frozen523-file source passes all61 macOS ARM64 regression groups
+(494 Python cases +12 C++ probes) in1667.97s and Linux ARM64 in786.84s.
+Actual installed SDK16 workflows pass on macOS in434.171s and Linux in360.074s;
+Linux is network-disabled and has no source checkout mounted. All122 indexed
+resources match the frozen source. Linux additionally passes eleven live
+debugger suites. The non-UTF8 source-key case passes in Linux, with a separate
+verbose installed-SDK check; macOS skips that filesystem case explicitly.
+[Evidence](docs/evidence/frontend-diagnostics-0.52.0.json) retains distinct
+source/compiler/SDK hashes and exact verification scope.
 
-## Isolated 0.52 captured-source frontend context
+Parser/resolver/binder/checker errors can retain actual input-buffer hashes,
+phase/scope, a diagnostic byte span and bounded UTF-8/base64 context. Failed
+candidates remain distinct from physical source and committed graph IDs.
+Static watch context is bound to supplied frame/stop/build hashes, without
+claiming authenticated live provenance. Runtime operation metadata is preserved;
+language0.15/canonical forms/graph schema4 remain unchanged. Ledger input scope
+and preview omissions remain explicit; manifests/SDK/environment are not a full
+input capture and diagnostic IDs are not graph revisions or execution authority.
 
-The prototype adds source-buffer hashes, phase/scope, bounded UTF-8 or lossless
-base64 previews and content-derived diagnostic identity for parser/binder/checker
-errors. Rejected assembled candidates remain distinct from physical source and
-committed graph identities. Static watch context is bound to supplied frame/stop
-hashes; runtime operation metadata remains separate. Language0.15 and graph
-schema 4 are unchanged. The 21 Python diagnostic cases (one macOS filesystem
-skip), 15 native API cases and seven related regression groups pass. Offline
-validation accepts 23 actual error forms and rejects 13 malformed variants. The
-exact installed SDK diagnostic phase passes 12 commands including rejected and
-repaired candidates, lossless malformed bytes and supplied-frame watch context.
-The actual macOS installed SDK16 passed all phases in434.171s with live
-LLDB/DAP/browser builds and all122 indexed resources matching frozen source.
-Full current regression/Linux live/source-free SDK workflows remain pending.
+Current root0.51 remains separately verified. Prefer the pending full0.53
+promotion, which includes this same implementation plus bounded graph queries,
+after its own current62/platform/SDK17 gates pass. Stopped-string windows are
+separate0.54 work. The full language/development chain, unsupported platforms,
+release/ABI/LLM measurements and remaining PLAN requirements stay open.
 
 ## Verified 0.49 / language 0.15: atomic change history and restore
 
