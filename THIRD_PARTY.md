@@ -37,3 +37,15 @@ The verified Z3 ARM64 macOS 5.3.1 release was obtained from https://github.com/Z
 ## Binary64 runtime foundation (in progress)
 
 Dragonbox 1.1.3 is pinned to commit `3053a74ac81099591a12a55341a203d9688fbb92`. Its single `dragonbox.h` header is copied byte-for-byte from that revision, with no transitive third-party dependency. `runtime/third_party/dragonbox/manifest.json` records upstream paths, byte sizes and SHA-256 hashes for the header and both original licenses. NEX selects the Boost Software License 1.0 option. Native runtime source projections preserve the header, inventory and licenses; native output notices include the selected license. The JavaScript implementation uses the engine’s built-in conversion, and this dependency is absent from browser assets. This foundation does not yet enable `f64` source programs in language 0.10.
+
+## Editor development tooling
+
+The editor/vscode package pins @vscode/vsce4.0.0 and @vscode/test-electron3.1.0
+as development-only npm tools. Its separate package-lock.json retains exact
+versions, integrity hashes and package license metadata. npm ci --ignore-scripts
+installs development tools; the VSIX contains only NEX's own manifest/configuration,
+JavaScript and README, with no third-party runtime npm tree. Dependency licenses
+remain in development node_modules. The official separate VS Code1.142.0 ARM64
+test application (commit b224f6bf5a4fcad5fa4c640ed10f179c3b613e48) stays in a local
+build cache and is not redistributed by NEX. Its test profile is separate from
+the user's editor profile. Project licensing/Marketplace publication are pending.

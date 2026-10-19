@@ -1,0 +1,137 @@
+{
+  "name": "nex-language-tools",
+  "displayName": "NEX Language Tools",
+  "description": "Launch the installed NEX compiler's native debugger and pure NEX watches.",
+  "publisher": "sae-ru",
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Programming Languages"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onDebug:nex"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "NEX debugging compiles and executes the selected project with local development tools."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "NEX requires physical files and a native development SDK on the extension host."
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "nex",
+        "aliases": [
+          "NEX",
+          "nex"
+        ],
+        "extensions": [
+          ".nex"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "nex"
+      }
+    ],
+    "configuration": {
+      "title": "NEX",
+      "properties": {
+        "nex.compilerPath": {
+          "type": "string",
+          "default": "nex",
+          "scope": "machine-overridable",
+          "description": "Installed NEX executable on the extension host. A path is one executable, never a shell command."
+        }
+      }
+    },
+    "debuggers": [
+      {
+        "type": "nex",
+        "label": "NEX",
+        "languages": [
+          "nex"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "source"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "NEX entry source file to compile with its matching frozen sources."
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Project directory on the extension host."
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "default": false
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "Program arguments, passed as individual values."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "nex",
+            "request": "launch",
+            "name": "Debug NEX",
+            "source": "${file}",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "NEX: native launch",
+            "body": {
+              "type": "nex",
+              "request": "launch",
+              "name": "Debug NEX",
+              "source": "${file}",
+              "cwd": "${workspaceFolder}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "devDependencies": {
+    "@vscode/vsce": "4.0.0",
+    "@vscode/test-electron": "3.1.0"
+  },
+  "files": [
+    "extension.js",
+    "session.js",
+    "language-configuration.json",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test ../../tests/editor.test.js",
+    "package": "vsce package --no-dependencies --allow-missing-repository --skip-license"
+  }
+}

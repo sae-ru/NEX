@@ -100,5 +100,49 @@
     "Linux/full debugger/source-free SDK matrix",
     "Release/sanitizer and broader platform/distribution acceptance",
     "All remaining language and development-chain PLAN requirements"
-  ]
+  ],
+  "installed_macos_sdk": {
+    "ok": true,
+    "created": "2026-10-19T09:56:18.802474+00:00",
+    "terminal_exit_code": 0,
+    "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+    "phases": 19,
+    "commands": 307,
+    "seconds": 395.722,
+    "indexed_resources": 138,
+    "all_indexed_resources_match_frozen_source": true,
+    "live_debugger": true,
+    "browser_build": true,
+    "source_checkout_hidden": false,
+    "scope": "Actual complete installed SDK on macOS ARM64. Documented NEX_NPM_CACHE selects existing populated cache; npm offline. Initial orchestration cache failure retained separately. Source/compiler match the frozen trait/library API projection stage.",
+    "report": "build/sdk-055-trait-library-api-cache-corrected-acceptance/report.json",
+    "report_sha256": "0db93fa1f9c70c0f88c9ca0f97d36378732c08783252d098320cbde9b51ff6af",
+    "source_manifest": "build/traits-055-library-api-validation-snapshot.json",
+    "initial_failure": "build/traits-055-library-api-sdk-initial-failure.json",
+    "full_objective_complete": false
+  },
+  "initial_full_sdk_orchestration_failure": {
+    "ok": false,
+    "created": "2026-10-19T09:48:53.506913+00:00",
+    "terminal_exit_code": 1,
+    "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+    "phases_started": 19,
+    "phases_passed": 18,
+    "commands": 299,
+    "report": "build/sdk-055-trait-library-api-full-acceptance/report.json",
+    "report_sha256": "ecef68568406c953787608deb0f4f7b8243a0277a984bfa1bc2c48cc6cd11d0e",
+    "failure": "Browser npm ci offline ENOTCACHED: orchestration used npm_config_cache, but NEX explicitly selects NEX_NPM_CACHE or a per-workspace cache. Existing populated cache was not selected. No product/assertion/timeout change.",
+    "correction": "Use documented NEX_NPM_CACHE=/Users/sae/projects/NEX/.nex/build/npm-cache; repeat complete workflow in a fresh output directory."
+  },
+  "current_macos_interruption": {
+    "ok": false,
+    "status": "interrupted_by_user_turn_abort",
+    "created": "2026-10-19T10:00:00.476031+00:00",
+    "terminal_exit_code": null,
+    "completed_passed_groups": 42,
+    "scope": "First current macOS full66 attempt interrupted externally. No live host CTest/child process remains; tool handle51401 missing. Not a complete test result. Linux Docker process remains independently live.",
+    "log": "build/ctest-055-library-api-full.log",
+    "log_sha256": "8d6827d599bc9d61251b15dd8ccc632488fbc45647fbf694082ded1e0d5f7683",
+    "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073"
+  }
 }

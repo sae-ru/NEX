@@ -8,6 +8,14 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
+This separate editor-integration prototype adds a VS Code extension0.1.0 to
+the0.55/source0.16 compiler base. Its installed VSIX passes a real macOS ARM64
+VS Code1.142.0 breakpoint/stack/scopes/pure-trait-watch/resume scenario. Nine
+focused Node cases and official VSIX packaging also pass. Full toolchain/source
+and SDK packaging integration remain pending; this does not promote a new
+compiler release. [Editor evidence](docs/evidence/editor-extension-prototype.json)
+retains the initial original-file breakpoint failure and its checked correction.
+
 This isolated development tree is **toolchain 0.55.0 / language 0.16**.
 It includes source traits, associated types, constructor parameters and coherent
 static dispatch, plus client API projection for trait-bearing libraries/models.

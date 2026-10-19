@@ -1,5 +1,25 @@
 # NEX implementation status
 
+## Editor extension prototype: actual installed VSIX check passed
+
+The extension registers NEX debugging in VS Code and uses a fresh compiler
+descriptor for the matching frozen executable, formatter, source map and stdio
+adapter. Original-file mappings require equality with frozen bytes; changed
+library files keep their frozen fallback, while a changed entry requires a
+fresh launch. Compiler-provided foreign execution arguments remain intact.
+
+All9 focused Node cases pass. The official VSIX packager creates an archive with
+the exact five extension sources and no runtime npm dependencies. A separate
+VS Code1.142.0/macOS ARM64 profile installs that archive, activates it, stops at
+the physical source breakpoint, reads stack/scopes, evaluates scalar and generic
+trait NEX watches to42, resumes and observes clean native output/termination.
+The initial missing source mapping and its failed real IDE run are retained.
+
+This prototype uses the independently checked0.55/source0.16 compiler. SDK/source
+installation integration, current full regression and wider IDE/platform checks
+remain pending. No NEX Studio/LSP/Marketplace or stable release is claimed.
+See [editor evidence](docs/evidence/editor-extension-prototype.json).
+
 ## Isolated trait/library API projection: scoped regression passed
 
 The new source tree retains real client/shared trait contracts, method targets
