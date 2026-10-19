@@ -42,6 +42,19 @@ def lldb_script_import(script):
     return 'command script import ' + json.dumps(str(script), ensure_ascii=False)
 
 
+def standalone_crypto_link(doctor):
+    # Bundled Darwin libraries use @rpath install names; ELF bundles also need
+    # their selected SDK directory at runtime. Pass linker operands separately
+    # so commas, quotes, backslashes and UTF-8 stay literal.
+    library = doctor['native_openssl_crypto']
+    flags = [library]
+    if platform.system() in ('Darwin', 'Linux'):
+        flags += ['-Xlinker', '-rpath', '-Xlinker', str(Path(library).parent)]
+    if platform.system() == 'Linux':
+        flags.append('-ldl')
+    return flags
+
+
 def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -1170,8 +1183,7 @@ int main() {
              '-I' + report['doctor']['native_openssl_include'], loaded / 'module_host.cpp',
              runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
-             report['doctor']['native_openssl_crypto'],
-             *(['-ldl'] if platform.system() == 'Linux' else []), '-o', module_host])
+             *standalone_crypto_link(report['doctor']), '-o', module_host])
         for name in ('producer.c', 'module.c', 'module_host.cpp', 'NOTICE'):
             (loaded / name).unlink()
         try:
@@ -1203,8 +1215,7 @@ int main() {
              runtime / 'runtime.cpp', runtime / 'foreign_runtime.cpp', runtime / 'nex_foreign.cpp',
              runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
-             report['doctor']['native_openssl_crypto'],
-             *(['-ldl'] if platform.system() == 'Linux' else []), '-o', scoped_host])
+             *standalone_crypto_link(report['doctor']), '-o', scoped_host])
         scoped_source.unlink()
         try:
             environment['NEX_RESOURCE_DIR'] = str(root / 'absent-scoped-foreign-resources')

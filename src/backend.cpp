@@ -966,6 +966,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::set<std::string> libraryPaths;
       if(storage)libraryPaths.insert(std::filesystem::path(toolchain.sqliteLibrary).parent_path().string());
       if(server)for(const auto &library:{toolchain.opensslSSL,toolchain.opensslCrypto})libraryPaths.insert(std::filesystem::path(library).parent_path().string());
+      if(foreign)libraryPaths.insert(std::filesystem::path(toolchain.opensslCrypto).parent_path().string());
       for(const auto &path:libraryPaths){
         if(driverABI.isOSLinux()&&path.find(':')!=std::string::npos)throw Error("E_TARGET_LIBRARY","ELF library directories cannot contain ':' (runtime search-path separator): "+path);
         link.insert(link.end(),{"-Xlinker","-rpath","-Xlinker",path});

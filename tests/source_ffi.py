@@ -82,6 +82,35 @@ server test fn checks()->unit!{ffi}{assert(echo(42)==42);done();}
         self.both('41\n42\n')
         context=self.cli('context','--symbol','echo');self.assertEqual(context['foreign'],{'library':'test','export':'echo','manifest_sha256':self.pin})
 
+    @unittest.skipUnless(platform.system()=='Darwin','Darwin @rpath install-name regression')
+    def test_external_native_program_finds_explicit_rpath_crypto_library(self):
+        self.program('''module interop;
+server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");
+server fn main()->unit!{ffi,io}{print(echo(42));}
+''',{'echo':'echo'})
+        doctor=self.cli('doctor')
+        folder=self.root/'crypto "quoted" \\ % 🧠';folder.mkdir()
+        crypto=folder/'nex_test_crypto.dylib'
+        shutil.copyfile(Path(doctor['native_openssl_crypto']).resolve(),crypto)
+        for command in [['/usr/bin/install_name_tool','-id','@rpath/nex_test_crypto.dylib',str(crypto)],
+                        ['/usr/bin/codesign','--force','--sign','-',str(crypto)]]:
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        config=self.root/'toolchain.json'
+        config.write_text(json.dumps({'schema':'nex.toolchain/1','target':doctor['host'],
+            'openssl':{'include':doctor['native_openssl_include'],'ssl':doctor['native_openssl_ssl'],'crypto':str(crypto)}}))
+        for profile in ('debug','release'):
+            native=self.cli('run','--foreign',self.host,'--toolchain',config,'--profile',profile,env=self.env,timeout=120)
+            self.assertEqual((native['exit_code'],native['stdout']),(0,'42\n'))
+        build=self.cli('build','--toolchain',config,'--profile','release')
+        dependencies=subprocess.run(['/usr/bin/otool','-L',build['executable']],capture_output=True,text=True,timeout=30)
+        self.assertEqual(dependencies.returncode,0,dependencies.stderr)
+        self.assertIn('@rpath/nex_test_crypto.dylib',dependencies.stdout)
+        self.file.unlink()
+        result=subprocess.run([build['executable'],'--nex-foreign',str(self.host)],cwd=self.root,
+            env={**os.environ,**self.env,'NEX_RESOURCE_DIR':str(self.root/'absent-resources')},capture_output=True,text=True,timeout=30)
+        self.assertEqual((result.returncode,result.stdout),(0,'42\n'),result.stderr)
+
     def test_all_value_kinds_and_nominal_result_owners(self):
         source='''module interop;
 struct Packet{value:i64;}enum Maybe{None;Some(value:Packet);}

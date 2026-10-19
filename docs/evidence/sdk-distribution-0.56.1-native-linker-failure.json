@@ -1,0 +1,89 @@
+{
+  "schema": "nex.sdk-distribution-attempt/1",
+  "created": "2026-10-19T13:27:23.515717+00:00",
+  "ok": false,
+  "attempt": "build/sdk-0561-macos-distribution-host-linker",
+  "compiler_sha256": "93c5b3b1a22c63d580cef3d461dfa4d2a1e1c17925554a27f5ef615a3d990ac5",
+  "phases": [
+    {
+      "name": "discovery",
+      "status": "passed"
+    },
+    {
+      "name": "editor-tools",
+      "status": "passed"
+    },
+    {
+      "name": "new-project",
+      "status": "passed"
+    },
+    {
+      "name": "reviewed-failure",
+      "status": "passed"
+    },
+    {
+      "name": "graph-repair-import",
+      "status": "passed"
+    },
+    {
+      "name": "backend-agreement",
+      "status": "passed"
+    },
+    {
+      "name": "graph-snapshot-recovery",
+      "status": "passed"
+    },
+    {
+      "name": "project-version-boundaries",
+      "status": "passed"
+    },
+    {
+      "name": "frontend-diagnostics",
+      "status": "passed"
+    },
+    {
+      "name": "graph-queries",
+      "status": "passed"
+    },
+    {
+      "name": "string-ranges",
+      "status": "passed"
+    },
+    {
+      "name": "binary-values",
+      "status": "passed"
+    },
+    {
+      "name": "foreign-boundary",
+      "status": "failed"
+    }
+  ],
+  "failed_command": {
+    "command": [
+      "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 qsed14jd/moved SDK, % \ud83e\udde0/bin/nex",
+      "run",
+      "--foreign",
+      "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 qsed14jd/moved-workflow/foreign-boundary/loaded/host.json",
+      "--profile",
+      "debug",
+      "--json"
+    ],
+    "cwd": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 qsed14jd/moved-workflow/foreign-boundary/source",
+    "stdout": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 qsed14jd/moved-workflow/logs/225.stdout",
+    "stderr": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 qsed14jd/moved-workflow/logs/225.stderr",
+    "status": "failed",
+    "exit_code": 1
+  },
+  "diagnostic": "{\n  \"code\": \"E_PROCESS\",\n  \"column\": 1,\n  \"file\": \"\",\n  \"line\": 1,\n  \"message\": \"Abort trap: 6\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n",
+  "independent_cpp_host_rpath_fix": "Both actual standalone hosts passed; subsequent source-extern native program has same missing Crypto search directory in compiler link.",
+  "native_image_dependencies": [
+    "@rpath/libcrypto.3.dylib",
+    "/usr/lib/libc++.1.dylib",
+    "/usr/lib/libSystem.B.dylib"
+  ],
+  "native_image_lc_rpath": [],
+  "correction": "Insert the selected crypto parent into libraryPaths when foreign runtime is linked. Retain separate linker operands. Add actual copied Crypto @rpath regression under quoted/backslash/percent/Unicode path.",
+  "compiler_full594": "continues unchanged; this subsequent correction is separate",
+  "accepted_release": false,
+  "full_objective_complete": false
+}

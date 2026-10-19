@@ -1,0 +1,84 @@
+{
+  "schema": "nex.sdk-distribution-attempt/1",
+  "created": "2026-10-19T13:21:28.049449+00:00",
+  "ok": false,
+  "source_files": 594,
+  "source_tree": "25b14e656e0b32bae0166115d83564baa4983a49",
+  "compiler_sha256": "93c5b3b1a22c63d580cef3d461dfa4d2a1e1c17925554a27f5ef615a3d990ac5",
+  "attempt": "build/sdk-0561-macos-distribution-debug-cache",
+  "seconds": 179.869,
+  "phases": [
+    {
+      "name": "discovery",
+      "status": "passed"
+    },
+    {
+      "name": "editor-tools",
+      "status": "passed"
+    },
+    {
+      "name": "new-project",
+      "status": "passed"
+    },
+    {
+      "name": "reviewed-failure",
+      "status": "passed"
+    },
+    {
+      "name": "graph-repair-import",
+      "status": "passed"
+    },
+    {
+      "name": "backend-agreement",
+      "status": "passed"
+    },
+    {
+      "name": "graph-snapshot-recovery",
+      "status": "passed"
+    },
+    {
+      "name": "project-version-boundaries",
+      "status": "passed"
+    },
+    {
+      "name": "frontend-diagnostics",
+      "status": "passed"
+    },
+    {
+      "name": "graph-queries",
+      "status": "passed"
+    },
+    {
+      "name": "string-ranges",
+      "status": "passed"
+    },
+    {
+      "name": "binary-values",
+      "status": "passed"
+    },
+    {
+      "name": "foreign-boundary",
+      "status": "failed"
+    }
+  ],
+  "failed_command": {
+    "command": [
+      "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/foreign-boundary/loaded/host",
+      "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/foreign-boundary/loaded/bundle",
+      "bb8d1776c179aa40337202929fd0c7fd8a7f9c5e2b93fb7b6079fe172d8416d3",
+      "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/foreign-boundary/typed/signature.json"
+    ],
+    "cwd": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow",
+    "stdout": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/logs/219.stdout",
+    "stderr": "/private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/logs/219.stderr",
+    "status": "failed",
+    "exit_code": -6
+  },
+  "stderr": "dyld[60718]: Library not loaded: @rpath/libcrypto.3.dylib\n  Referenced from: <04C56121-E605-3649-AB38-D2E2F45A8E32> /private/tmp/NEX SDK work \"quoted\" \\ \ud83e\udde0/NEX SDK distribution, % \ud83e\udde0 j4nv_ch5/moved-workflow/foreign-boundary/loaded/host\n  Reason: no LC_RPATH's found\n",
+  "diagnosis": "Independent SDK C++ FFI hosts linked bundled @rpath/libcrypto.3.dylib without an LC_RPATH. Compiler native builds already supply selected dependency search directories. Correct the two standalone acceptance host links using separate literal linker arguments.",
+  "preceding_debug_cache_string_ranges": "passed",
+  "full_compiler_regression": "still running frozen594; not interrupted",
+  "assertions_and_timeouts_unchanged": true,
+  "accepted_release": false,
+  "full_objective_complete": false
+}

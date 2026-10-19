@@ -1,0 +1,37 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T13:29:06.812560+00:00",
+  "status": "actual_regression_passed_broader_checks_running",
+  "toolchain": "0.56.1",
+  "language": "0.16",
+  "compiler_sha256": "f5d6b688cc4b13e3eaeaa1e471e6b4586f87736fcfa3d552008f9c1b7090381b",
+  "build_exit_code": 0,
+  "old_compiler_sha256": "93c5b3b1a22c63d580cef3d461dfa4d2a1e1c17925554a27f5ef615a3d990ac5",
+  "before_fix": {
+    "exit_code": 1,
+    "cases": 1,
+    "seconds": 16.332,
+    "diagnostic": "E_PROCESS Abort trap:6",
+    "log_sha256": "9c2df0b176ed53ac057843dfa24199ca1b03f23db5cc7ea142f500bfb827e2b1"
+  },
+  "after_fix": {
+    "exit_code": 0,
+    "cases": 1,
+    "seconds": 40.38,
+    "debug_release_stdout": "42\n",
+    "dylib_install_name": "@rpath/nex_test_crypto.dylib",
+    "library_parent_contains": [
+      "space",
+      "double quote",
+      "backslash",
+      "percent",
+      "Unicode"
+    ],
+    "standalone_after_source_deletion": true,
+    "resources_unavailable": true,
+    "log_sha256": "0829ac8e7aca6f0fe611e014278203f00c2f84bdfb12d74767c5ad7dfdb6aa8e"
+  },
+  "scope": "One actual copied/signed Crypto library regression. Full source-FFI/SDK focused, macOS portable SDK and current Linux are still required.",
+  "accepted_release": false,
+  "full_objective_complete": false
+}
