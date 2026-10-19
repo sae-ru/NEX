@@ -85,7 +85,27 @@ JSON inspectCore(const CoreOptions &options){
   bool elf=headerSize>=64&&std::memcmp(header.data(),"\x7f" "ELF",4)==0&&header[4]==2&&(header[5]==1||header[5]==2)&&
     (header[5]==1?(header[16]==4&&header[17]==0):(header[16]==0&&header[17]==4));
   bool macho=headerSize>=32&&((word(0,true)==0xfeedfacf&&word(12,true)==4)||(word(0,false)==0xfeedfacf&&word(12,false)==4));
-  if(!elf&&!macho)throw Error("E_CORE_INPUT","core reader requires a64-bit ELF or Mach-O core file");auto before=input.sha();
+  bool minidump=headerSize>=32&&word(0,true)==0x504d444d&&(word(4,true)&0xffff)==0xa793;
+  if(minidump){
+    uint64_t count=word(8,true),directory=word(12,true);bool system64=false;
+    if(!count||count>4096||directory<32||directory+count*12>uint64_t(input.initial.st_size))minidump=false;
+    else for(uint64_t i=0;i<count;++i){
+      std::array<unsigned char,12> entry{};
+      if(::pread(input.fd,entry.data(),entry.size(),off_t(directory+i*12))!=ssize_t(entry.size())){minidump=false;break;}
+      auto number=[&](unsigned offset){uint32_t n=0;for(unsigned j=0;j<4;++j)n|=uint32_t(entry[offset+j])<<(8*j);return n;};
+      uint64_t size=number(4),offset=number(8);
+      if(offset+size>uint64_t(input.initial.st_size)){minidump=false;break;}
+      if(number(0)==7){
+        std::array<unsigned char,2> arch{};
+        if(size<56||::pread(input.fd,arch.data(),arch.size(),off_t(offset))!=ssize_t(arch.size())){minidump=false;break;}
+        auto architecture=uint16_t(arch[0])|(uint16_t(arch[1])<<8);
+        if(system64||(architecture!=9&&architecture!=12)){minidump=false;break;}
+        system64=true;
+      }
+    }
+    minidump=minidump&&system64;
+  }
+  if(!elf&&!macho&&!minidump)throw Error("E_CORE_INPUT","core reader requires a64-bit ELF, Mach-O or LLDB minidump core file");auto before=input.sha();
   Temporary temporary{createTemporaryDirectory("nex-core")};auto request=temporary.path/"request.json";
   writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
   auto driver=std::getenv("NEX_LLDB");std::string lldb=driver?driver:"lldb";

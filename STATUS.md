@@ -1,3 +1,25 @@
+# Development0.58.1: Linux core image correction
+
+The frozen0.57.1 Linux ARM64 full69 regression passes, but its additional
+live-debug_image negative control fails: LLDB minidump resolves a PC through
+another supplied executable and SBModule equality alone accepts wrong-source
+attribution. Frozen0.58 is not promoted. Its macOS SDK22/317 commands pass;
+its macOS full70 remains a separate running gate.
+
+The isolated correction checks the core-recorded mapping and rejects ambiguous
+same-path images. The original failing Linux test and an additional executable
+replacement at the same path pass against a formatter overlay. This is a
+prototype, not a matching installed-SDK result. Linux LLDB saves an MDMP
+minidump here; the earlier ELF-only input check is extended with bounded
+minidump header/directory/64-bit system-information validation. Matching build,
+full regression, installed SDK22 and platform gates are pending.
+
+An actual controlled macOS SIGABRT core restores caller-frame Unicode/list
+values after source deletion with unchanged graph/core bytes. Its raw Mach-O
+stop metadata does not retain a signal cause; none is inferred. Portable core
+capsules and unique optimized-PC attribution remain pending. No release or
+full language/development-chain completion is claimed.
+
 # Development0.58: retained-build read-only native core reports
 
 An isolated source extension adds `nex core`, matching compiler/build/source/image

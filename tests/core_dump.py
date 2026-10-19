@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import struct
 import sys
 import unittest
 
@@ -58,6 +59,14 @@ class CoreDump(harness.ToolchainCase):
         bad.unlink()
         self.core.write_bytes(b'x')
         self.assertEqual(self.core_read(ok=False)['code'], 'E_CORE_INPUT')
+        # LLDB on Linux emits minidumps. Reject malformed headers, stream
+        # ranges and unsupported processor kinds before invoking LLDB.
+        header = lambda version, count, offset: struct.pack('<IIIIIIQ', 0x504d444d, version, count, offset, 0, 0, 0)
+        for content in [b'MDMP', header(0, 1, 32), header(0xa793, 0, 32),
+                        header(0xa793, 4097, 32), header(0xa793, 1, 4096),
+                        header(0xa793, 1, 32) + struct.pack('<III', 7, 56, 44) + bytes(56)]:
+            self.core.write_bytes(content)
+            self.assertEqual(self.core_read(ok=False, env={'NEX_LLDB': str(self.root/'not-a-debugger')})['code'], 'E_CORE_INPUT')
 
     def test_changed_build_source_symbols_and_operations_are_rejected_before_lldb(self):
         self.prepared()

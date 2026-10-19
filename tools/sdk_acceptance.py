@@ -306,7 +306,7 @@ test fn examples() -> unit {
                 descriptor['file_environment']['http_inherits_environment'] is False,
                 'SDK lacks explicit filesystem capability policy')
         pack = json.loads((resources / 'llm/language-pack.json').read_text())
-        require('frame_module_identity_guard' in descriptor['debug_features'] and
+        require({'frame_module_identity_guard', 'core_recorded_mapping_image_guard'} <= set(descriptor['debug_features']) and
                 descriptor['native_debug_image_binding'] == pack['native_debug_image_binding'],
                 'SDK lacks frame-to-loaded-image identity binding')
         require(descriptor['native_core'] == pack['native_core'] and descriptor['native_core']['readonly'], 'SDK lacks checked read-only core reports')

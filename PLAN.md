@@ -450,3 +450,11 @@ macOS SDK21 и оба переносимых macOS SDK21. Проверка чу�
 ### Разбор native core: изолированный шаг0.58
 
 - [ ] Проверить `nex core` на macOS/Linux: сохранённая сборка и её исходники, реальный core, bounded stack/PC metadata, точные чистые выражения, запрет чужого image, изменённых артефактов и запуска процесса. Новая команда не закрывает переносимый формат core и точное optimized-PC сопоставление.
+
+### Linux core image correction: isolated0.58.1
+
+- [ ] Validate the core-recorded mapping in addition to SBModule identity,
+  including different executables at the same path. Linux LLDB minidump input
+  needs bounded format/64-bit stream checks. The preceding Linux negative
+  control failed; prototype formatter checks pass. Current full/SDK/platform
+  gates remain required before root promotion.

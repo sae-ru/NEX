@@ -1,6 +1,7 @@
 """Opt-in genuine core frames must belong to the loaded NEX manifest image."""
 import json
 from pathlib import Path
+import shutil
 import sys
 import unittest
 
@@ -81,6 +82,33 @@ def __lldb_init_module(debugger, context):
             self.assertFalse(record['success'], 'accepted a frame from another image: ' + str(record))
             self.assertIn('image', record['error'])
             self.assertFalse(record['output'])
+
+        # A filename is not an image identity either. Supply the second
+        # executable at the path recorded by the first core, keeping both
+        # function names and addresses plausible for symbol resolution.
+        image = Path(original['launch']['program'])
+        saved = image.read_bytes()
+        relocated = json.loads(Path(other['manifest']).read_text())
+        relocated['program'] = str(image)
+        manifest = self.root / 'different-image-at-original-path.json'
+        manifest.write_text(json.dumps(relocated))
+        quote = lambda p: json.dumps(str(p), ensure_ascii=False)
+        try:
+            shutil.copyfile(other['launch']['program'], image)
+            process = self.cli('debug', '--', '--no-lldbinit', '--batch',
+                '-o', 'target create --core ' + quote(core) + ' ' + quote(image),
+                '-o', 'nex-load-debug ' + quote(manifest) + ' --compiler ' + quote(harness.NEX),
+                '-o', 'command script import ' + quote(probe), machine=False, timeout=90)
+            lines = [json.loads(line[len('NEX_IMAGE_PROBE '):])
+                     for line in process.stdout.splitlines() if line.startswith('NEX_IMAGE_PROBE ')]
+            self.assertEqual(len(lines), 1, process.stdout + process.stderr)
+            self.assertEqual(lines[0]['before'], lines[0]['after'])
+            for record in lines[0]['records']:
+                self.assertFalse(record['success'], record)
+                self.assertIn('image', record['error'])
+                self.assertFalse(record['output'])
+        finally:
+            image.write_bytes(saved)
 
 
 if __name__ == '__main__':

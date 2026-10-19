@@ -282,7 +282,9 @@
   "native_debug_image_binding": {
     "selected_frame": "same_loaded_module_as_executable",
     "function_names_are_not_image_identity": true,
-    "requires_matching_manifest": true
+    "requires_matching_manifest": true,
+    "linux_core_requires_recorded_mapping": true,
+    "ambiguous_same_path_image_rejected": true
   },
   "native_core": {
     "schema": "nex.core-report/1",
@@ -299,6 +301,11 @@
       "frames": 64,
       "timeout_seconds_default": 60,
       "timeout_seconds_maximum": 300
-    }
+    },
+    "formats": [
+      "elf64",
+      "macho64",
+      "minidump64"
+    ]
   }
 }

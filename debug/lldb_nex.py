@@ -796,6 +796,24 @@ def _require_frame_image(target, frame, program):
     if (not actual.IsValid() or not expected.IsValid() or actual != expected or
             str(Path(str(actual.GetFileSpec())).resolve()) != program):
         raise ValueError("selected frame image does not match the loaded NEX manifest")
+    process = target.GetProcess()
+    if process.GetPluginName() in ("minidump", "elf-core"):
+        # LLDB can resolve a core PC through a different supplied executable
+        # at the same address. In that case GetModule() names the supplied
+        # image, while the core's recorded mapping still names the real one.
+        region = lldb.SBMemoryRegionInfo()
+        error = process.GetMemoryRegionInfo(frame.GetPC(), region)
+        name = region.GetName()
+        if (error.Fail() or not name or
+                str(Path(name).resolve()) != program):
+            raise ValueError("core recorded frame image does not match the loaded NEX manifest")
+        if target.GetNumModules() > 10000:
+            raise ValueError("core image module list exceeds limit")
+        candidates = [target.GetModuleAtIndex(i) for i in range(target.GetNumModules())
+                      if str(Path(str(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == program]
+        if (not candidates or not expected.GetUUIDString() or
+                any(m != expected or m.GetUUIDString() != expected.GetUUIDString() for m in candidates)):
+            raise ValueError("core recorded image identity is ambiguous or differs from the executable")
 
 
 def _stopped(debugger, compiler=True):
