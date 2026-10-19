@@ -269,11 +269,48 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
                       resource_hashes=inventory)
+
+    def editor_tools():
+        node = os.environ.get('NEX_NODE') or shutil.which('node')
+        require(node, 'editor acceptance requires the SDK Node development prerequisite')
+        directory = resources / 'editor/vscode'
+        names = ['package.json', 'package-lock.json', 'extension.js', 'session.js',
+                 'language-configuration.json', 'README.md', 'test.js']
+        hashes = {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in names}
+        package = json.loads((directory / 'package.json').read_text())
+        require(package['name'] == 'nex-language-tools' and not package.get('dependencies'),
+                'installed editor extension runtime dependencies differ')
+        require(package['capabilities']['untrustedWorkspaces']['supported'] is False,
+                'installed editor extension lost its workspace trust gate')
+        run([node, '--test', directory / 'test.js'])
+        evidence = {'extension_version': package['version'], 'installed_sources': hashes,
+                    'focused_node_contracts': True, 'actual_ide_run': False,
+                    'native_session_preparation': False}
+        if args.live:
+            project = root / 'editor-session'; project.mkdir()
+            source = project / 'main with spaces.nex'
+            source.write_text('module editor_sdk; fn main()->unit!{io} {print(42);}')
+            (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': source.name}))
+            code = ('const {prepareSession}=require(process.argv[1]);'
+                'prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]})'
+                '.then(value=>process.stdout.write(JSON.stringify(value)))'
+                '.catch(error=>{console.error(error.message);process.exitCode=1;});')
+            prepared = json.loads(run([node, '-e', code, directory / 'session.js',
+                json.dumps({'type': 'nex', 'request': 'launch', 'source': str(source), 'cwd': str(project)}),
+                compiler], cwd=project))
+            require(any(pair[1] == str(source) for pair in prepared['originalSourceMappings']),
+                    'installed editor lost the exact original-file mapping')
+            require(not prepared['frozenSourceFallbacks'] and Path(prepared['launch']['program']).is_file(),
+                    'installed editor did not prepare its exact native build')
+            evidence.update(native_session_preparation=True, revision=prepared['revision'],
+                            build_key=prepared['buildKey'])
+        report['evidence']['editor'] = evidence
 
     def new_project():
         directory = root / 'created'
@@ -1699,7 +1736,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         report['evidence']['browser_build'] = args.browser
 
     try:
-        for name, action in [('discovery', discover), ('new-project', new_project),
+        for name, action in [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),

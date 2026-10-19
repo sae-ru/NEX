@@ -372,3 +372,14 @@ string is streamed without inferior calls, a bounded window is recorded at an
 unchanged stop/handle, and its last character is replayed after source deletion.
 Supplied data and live recordings stay distinct in the report; these checks
 preserve graph history and do not claim direct DAP root paging or all layouts.
+
+## Editor sources and acceptance in0.56
+
+The installed development SDK contains share/nex/editor/vscode, its separate
+pinned npm development lock, focused Node contract cases and the editor guide.
+The twentieth installed acceptance phase runs those cases without installing
+npm packages. With --live it also uses the installed compiler to prepare a
+frozen native debug session and verify byte-checked original-file mapping.
+This is not a VS Code extension-host run. Actual installed VSIX/IDE acceptance
+is recorded separately. See editor.md for explicit packaging and installation;
+NEX never publishes or installs the extension automatically.

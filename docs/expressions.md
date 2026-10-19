@@ -68,8 +68,9 @@ nex debug examples/debugging/main.nex --kind nex-dap --json
 The descriptor's `adapter_command` is a stdio DAP adapter command; `launch` is its
 launch request. Configure a DAP client that supports an external adapter command
 with these fields. A launch `type` of `nex` requires that client-side adapter
-registration; copying it into an editor without registering the command is not
-an installed NEX editor extension. NEX Studio/editor packaging remains pending.
+registration. The installed extension sources and VSIX workflow in [editor.md](editor.md)
+provide that registration for VS Code. NEX Studio and broader IDE/platform
+acceptance remain pending.
 
 The bridge delegates launch, breakpoints, native scopes, stepping and lifecycle
 to the configured `lldb-dap`. It routes watch/hover/ordinary REPL evaluations

@@ -23,6 +23,15 @@ async function prepareSession(configuration, options = {}) {
   const args = configuration.args === undefined ? [] : configuration.args;
   if (!Array.isArray(args) || args.some(arg => typeof arg !== 'string' || arg.includes('\0'))) throw new Error('Program args must be strings.');
   if (configuration.stopOnEntry !== undefined && typeof configuration.stopOnEntry !== 'boolean') throw new Error('stopOnEntry must be a boolean.');
+  // The compiler records physical paths. Keep the editor's selected spelling
+  // for breakpoints, while matching its identity before compilation (including
+  // macOS /var aliases and symlinked workspace entries).
+  let physicalSource;
+  try { physicalSource = await (options.realpath || fs.realpath)(source); }
+  catch (error) {
+    if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+    physicalSource = source; // Let the compiler diagnose a missing entry.
+  }
   let output;
   try {
     const result = await (options.execute || execute)(compiler, ['debug', source, '--kind', 'nex-dap', '--json'],
@@ -60,12 +69,16 @@ async function prepareSession(configuration, options = {}) {
     if (!['original', 'projection', 'debug_path'].every(key => typeof row[key] === 'string' && path.isAbsolute(row[key]))) {
       throw new Error('NEX debug manifest contains an invalid source mapping.');
     }
+    const selected = row.original === physicalSource;
+    const destination = selected ? source : row.original;
     let same = false;
-    try {same = (await readFile(row.original)).equals(await readFile(row.projection));} catch (_) {}
-    if (same) originals.push([row.debug_path, row.original]);
+    // Read through the selected spelling again: a symlink may have changed
+    // while the compiler was preparing its frozen source.
+    try {same = (await readFile(destination)).equals(await readFile(row.projection));} catch (_) {}
+    if (same) originals.push([row.debug_path, destination]);
     else {
       frozenFallbacks.push(row.original);
-      if (row.original === source) throw new Error('The selected source changed after compilation. Save it and start a fresh NEX launch.');
+      if (selected) throw new Error('The selected source changed after compilation. Save it and start a fresh NEX launch.');
     }
   }
   if (launch.sourceMap !== undefined && (!Array.isArray(launch.sourceMap) || launch.sourceMap.some(row => !Array.isArray(row) || row.length !== 2 || row.some(item => typeof item !== 'string')))) {

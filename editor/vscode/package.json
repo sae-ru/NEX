@@ -131,7 +131,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test ../../tests/editor.test.js",
+    "test": "node --test test.js",
     "package": "vsce package --no-dependencies --allow-missing-repository --skip-license"
   }
 }

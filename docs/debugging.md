@@ -76,6 +76,9 @@ each stop; do not reuse a previous frame's locations.
 
 ## Editor / Debug Adapter Protocol
 
+For the NEX VS Code extension and original-file breakpoint mapping, see
+[editor.md](editor.md). Its package and current compiler acceptance are separate.
+
 ```sh
 nex debug examples/debugging/main.nex --kind dap --json
 ```

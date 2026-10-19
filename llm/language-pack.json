@@ -88,9 +88,10 @@
     "traits": "docs/traits.md",
     "legacy_traits_015": "examples/traits/legacy-0.15.json",
     "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql",
-    "trait_api_workflow": "examples/traits/api/README.md"
+    "trait_api_workflow": "examples/traits/api/README.md",
+    "editor": "docs/editor.md"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",

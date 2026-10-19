@@ -32,7 +32,7 @@ async function run() {
   vscode.debug.addBreakpoints([new vscode.SourceBreakpoint(new vscode.Location(source, new vscode.Position(line, 0)))]);
   const stopped = deferred('native breakpoint'), terminated = deferred('native termination');
   const output = [], breakpointResponses = [];
-  let current;
+  let current, exitCode;
   const tracker = vscode.debug.registerDebugAdapterTrackerFactory('nex', {
     createDebugAdapterTracker(session) {
       current = session;
@@ -43,6 +43,7 @@ async function run() {
           stopped.reject(new Error('Native program terminated before the requested breakpoint.'));
         }
         if (message.type === 'event' && message.event === 'output') output.push(message.body);
+        if (message.type === 'event' && message.event === 'exited') exitCode = message.body.exitCode;
         if (message.type === 'response' && message.command === 'setBreakpoints') breakpointResponses.push(message);
       }};
     }
@@ -60,16 +61,21 @@ async function run() {
     assert.equal(value.nex.value, '42'); assert.equal(value.nex.type, 'i64');
     const trait = await current.customRequest('evaluate', {expression: 'Readable<Box<i64>>::get(Box<i64>(40)) + 2', frameId: frame.id, context: 'watch'});
     assert.equal(trait.nex.value, '42');
+    assert.deepEqual(trait.nex.stop, value.nex.stop);
+    assert.equal(trait.nex.build_key, value.nex.build_key);
+    assert.equal(trait.nex.revision, value.nex.revision);
     const scopes = await current.customRequest('scopes', {frameId: frame.id});
     assert.ok(scopes.scopes.length > 0);
     await current.customRequest('continue', {threadId: stop.threadId});
     await terminated.promise;
-    assert.ok(output.some(row => row.category === 'stdout' && row.output.includes('42')));
+    const stdout = output.filter(row => row.category === 'stdout').map(row => row.output).join('');
+    assert.equal(stdout.replace(/\r\n/g, '\n'), '42\n');
+    assert.equal(exitCode, 0);
     fs.writeFileSync(process.env.NEX_EDITOR_REPORT, JSON.stringify({ok: true, editor_version: vscode.version,
       editor_architecture: process.arch, installed_extension_path: extension.extensionPath,
       installed_extension_version: extension.packageJSON.version, physical_source_breakpoint: true,
       native_stack_scopes: true, pure_watch: value.nex, trait_watch: trait.nex,
-      native_output: output.filter(row => row.category === 'stdout').map(row => row.output).join(''),
+      native_output: stdout, native_exit_code: exitCode, unchanged_watch_stop: true,
       native_resume_and_termination: true, controlled_test_profile: true, user_profile_modified: false}, null, 2) + '\n');
   } finally {
     stopped.cancel(); terminated.cancel(); tracker.dispose();

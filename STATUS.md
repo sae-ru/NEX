@@ -1,5 +1,31 @@
 # NEX implementation status
 
+## Isolated0.56 editor installation integration: acceptance pending
+
+Toolchain0.56 keeps source0.16 and its canonical forms unchanged. CMake installs
+editor sources and their separate pinned development lock; the descriptor and
+language pack expose an editor guide. The compiler regression adds an editor
+suite, giving67 groups. The installed SDK workflow adds an editor-tools phase,
+giving20. The Node contract cases run from installed SDK resources; live mode
+also prepares a native session and checks its original-file mapping. Actual IDE
+execution is explicitly a separate check.
+
+The current compiler passes the editor suite (two Python cases and ten Node
+contract cases). Its installed SDK VSIX also passes an actual separate-profile
+VS Code 1.142.0/macOS ARM64 run: original-file breakpoint, stack/scopes, scalar
+and trait watches at the same native stop, exact output42 and exit0. The first
+focused run exposed a /var physical-alias mismatch; the corrected implementation
+preserves the selected path and rejects a symlink retarget during preparation.
+The initial failure is retained in [current evidence](docs/evidence/editor-integration-0.56.0.json).
+Full67, complete SDK20 and current Linux acceptance remain pending.
+
+The preceding 0.55 trait/library API source separately passes Linux66, twelve
+live suites and all19 source-free SDK phases/307 commands. Its host controller
+was interrupted; the already running source container completed successfully,
+then the unchanged source-free helper completed. The
+[Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records compiler
+hashes, platform skips and resource equality. macOS full66 is still running.
+
 ## Editor extension prototype: actual installed VSIX check passed
 
 The extension registers NEX debugging in VS Code and uses a fresh compiler

@@ -299,3 +299,13 @@ local implementation for a server method. Preserve generic constructor kinds,
 associated types, exact effects/realms and the generated dependency lock. Both
 input and projected projects are checked; scoped success does not prove full
 SDK/platform acceptance.
+
+For editor setup, query editor_features and retrieve nex guide --kind editor --json.
+The installed VS Code extension sources register the nex debug type. A launch
+configuration's source is a physical .nex entry, not an executable or arbitrary
+adapter command. Use the installed matching compiler through nex.compilerPath;
+save files before launch and relaunch after edits. Original-file breakpoint
+mappings require equality with the frozen projection. Changed library files
+keep frozen mappings; a changed entry rejects preparation. Watches use the
+same bounded pure NEX evaluator. IDE/platform acceptance and NEX Studio are
+separate from a descriptor or a successfully packaged VSIX.

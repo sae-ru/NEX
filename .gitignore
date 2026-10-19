@@ -10,3 +10,6 @@ __pycache__/
 **/test-results/
 **/playwright-report/
 /examples/api/generated/
+
+**/*.vsix
+**/.vscode-test/

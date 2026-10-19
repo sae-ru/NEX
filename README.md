@@ -8,30 +8,28 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This separate editor-integration prototype adds a VS Code extension0.1.0 to
-the0.55/source0.16 compiler base. Its installed VSIX passes a real macOS ARM64
-VS Code1.142.0 breakpoint/stack/scopes/pure-trait-watch/resume scenario. Nine
-focused Node cases and official VSIX packaging also pass. Full toolchain/source
-and SDK packaging integration remain pending; this does not promote a new
-compiler release. [Editor evidence](docs/evidence/editor-extension-prototype.json)
-retains the initial original-file breakpoint failure and its checked correction.
+This isolated development tree is **toolchain 0.56.0 / language 0.16**.
+It installs VS Code extension sources, an editor guide and capability metadata.
+The current compiler passes the editor suite, including ten Node contract cases.
+An installed VSIX in a separate VS Code 1.142.0/macOS ARM64 profile passes the
+original-file breakpoint, stack/scopes, scalar/trait watches at an unchanged
+stop, exact output and native exit 0. Physical aliases and changed symlinks are
+covered. [Editor evidence](docs/evidence/editor-integration-0.56.0.json) records
+the initial alias failure and correction. Full 67-group regression, the new
+20-phase SDK workflow and current Linux checks remain pending.
 
-This isolated development tree is **toolchain 0.55.0 / language 0.16**.
-It includes source traits, associated types, constructor parameters and coherent
-static dispatch, plus client API projection for trait-bearing libraries/models.
-Needed client/shared method contracts and real function bodies are retained;
-server members/bindings/functions and unused private declarations are excluded.
-Both complete captured input and the final projected projects are checked.
+[Setup and packaging](docs/editor.md) describes the current workflow. The prior
+extension prototype and its source-map correction retain separate
+[evidence](docs/evidence/editor-extension-prototype.json). NEX Studio, LSP and
+wider IDE/platform targets remain pending.
 
-The current compiler passes20 trait cases,14 API cases,21 frontend diagnostic
-cases (one platform skip) and two native probes,102.09s. The installed SDK's
-exact traits/API phase also passes24 commands,22.057s, including native and
-TypeScript consumers, excluded server bodies, actual LLDB watches and
-source-deleted migration/replay. The shipped trait/API example uses generated
-clients and builds its native server. [Evidence](docs/evidence/trait-library-api-0.55.0.json)
-separates these current checks from the preceding baseline's full66/SDK19 pass.
-Full current66, complete SDK19, Linux and Release/platform validation are pending.
-The complete language and development-chain PLAN remains open.
+The preceding 0.55/source 0.16 trait/library API source passes all 66 Linux ARM64
+groups, twelve live debugger suites and its 19-phase source-free SDK workflow
+(307 commands, no source checkout or network). Its installed macOS SDK19 also
+passes307 commands; the interrupted macOS full regression is being repeated.
+[Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records exact
+scope. These results do not verify changed 0.56 sources. The complete language
+and development-chain PLAN remains open.
 
 The earlier internal 0.55 constructor core still uses language 0.15 and separately
 passes all65 macOS ARM64 groups. Its evidence does not verify this source extension.

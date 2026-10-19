@@ -1,0 +1,156 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T10:19:00.473652+00:00",
+  "milestone": "installed_editor_sdk_integration",
+  "toolchain": "0.56.0",
+  "source_language": "0.16",
+  "status": "focused_and_actual_installed_ide_pass_full_acceptance_pending",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "compiler_sha256": "1362a9676e842ec96cd403336fcff4a05df4b06800865700f0e1ee30cd87bd3a",
+  "focused": {
+    "compiler_groups": 1,
+    "python_cases": 2,
+    "node_contract_cases": 10,
+    "terminal_exit_code": 0,
+    "log": "build/editor-056-alias-focused.log",
+    "log_sha256": "418e47a7da714b6dee81d64d68b8e3bc7f9f5d57b32045066c1675c11300c221",
+    "last_test_sha256": "c7514afd305041575ab86ddcf4a1f5230349a2412a7471118925dd6ce0c819e6"
+  },
+  "retained_initial_focused_failure": {
+    "groups": 3,
+    "failed_group": "editor",
+    "passed_groups": [
+      "traits",
+      "api"
+    ],
+    "log": "build/editor-056-initial-focused.log",
+    "sha256": "dc61140d564132e5a5b11f5f7763999e4699941bad4a07364f73a76a2878abf1",
+    "reason": "The compiler canonicalized /var to /private/var, but the editor compared lexical entry paths. Physical identity is now resolved before compilation; byte checks and breakpoint mappings use the selected editor path. A real symlink retarget test verifies rejection."
+  },
+  "package": {
+    "archive": "build/nex-language-tools-0.1.0-sdk056-alias.vsix",
+    "sha256": "35cb00ad821b169fb2fed9a9084b4f6f1c51e69d7ffc622e360402c2b09ad2cb",
+    "bytes": 7438,
+    "all_five_packaged_sources_equal_current": true,
+    "runtime_npm_dependencies": 0
+  },
+  "installed_host": {
+    "ok": true,
+    "editor_version": "1.142.0",
+    "editor_architecture": "arm64",
+    "installed_extension_path": "/Users/sae/projects/NEX/build/editor-056-alias-sdk-installed-host-acceptance/extensions/sae-ru.nex-language-tools-0.1.0",
+    "installed_extension_version": "0.1.0",
+    "physical_source_breakpoint": true,
+    "native_stack_scopes": true,
+    "pure_watch": {
+      "build_key": "ec496901ea0681ad6c35acca723cdd6ad114e42c72bf967f3cdca3854f8f4308",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "total + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [
+        "total"
+      ],
+      "read_paths": [
+        {
+          "binding": "total",
+          "kind": "value",
+          "path": []
+        }
+      ],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 3,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "84813",
+        "stop_id": "13",
+        "thread_id": "87353888"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "trait_watch": {
+      "build_key": "ec496901ea0681ad6c35acca723cdd6ad114e42c72bf967f3cdca3854f8f4308",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "Readable<Box<i64>>::get(Box<i64>(40)) + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [],
+      "read_paths": [],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 8,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "84813",
+        "stop_id": "13",
+        "thread_id": "87353888"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "native_output": "42\r\n",
+    "native_exit_code": 0,
+    "unchanged_watch_stop": true,
+    "native_resume_and_termination": true,
+    "controlled_test_profile": true,
+    "user_profile_modified": false
+  },
+  "installed_host_terminal_exit_code": 0,
+  "installed_host_report_sha256": "e6b34ea444a5a18d6fbc4dc2d920624801024af47950d2c8a894f171268ee320",
+  "scope": [
+    "macOS ARM64 / VS Code1.142.0; isolated profile with the installed SDK VSIX",
+    "Exact stdout42 and exit0, original-file breakpoint, stack/scopes and two pure watches at the same native stop",
+    "Actual /var alias and physical symlink handling also checked outside the IDE",
+    "No user editor profile modification or public publication"
+  ],
+  "remaining": [
+    "Full67 compiler regression and complete20-phase installed SDK workflow",
+    "Current Linux/native debugger/source-free SDK matrix",
+    "Wider IDE platforms, LSP, NEX Studio and full PLAN acceptance"
+  ]
+}
