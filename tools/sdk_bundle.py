@@ -352,10 +352,14 @@ class LinuxBundle(Bundle):
 
     def collect_elf(self, source, destination):
         source = source.resolve(strict=True)
-        if source in self.images:
-            if self.images[source]['destination'] != destination:
-                raise ValueError('duplicate ELF image destination: ' + str(source))
+        # LLVM installs multicall tools such as ld.lld and wasm-ld as
+        # aliases of one ELF file. Each copied destination needs its own
+        # origin-relative dependency rewrite while preserving its argv[0].
+        key = (source, destination)
+        if key in self.images:
             return
+        if any(image['destination'] == destination for image in self.images.values()):
+            raise ValueError('duplicate ELF image destination: ' + str(destination))
         dynamic = run(['readelf', '-d', source])
         needed = re.findall(r'\(NEEDED\).*?\[([^]]+)\]', dynamic)
         resolved = {}
@@ -364,7 +368,7 @@ class LinuxBundle(Bundle):
             if match:
                 resolved[match.group(1)] = Path(match.group(2)).resolve()
         image = {'destination': destination, 'dependencies': {}, 'dependency_targets': {}}
-        self.images[source] = image
+        self.images[key] = image
         for name in needed:
             if Path(name).name in self.HOST_LIBRARIES:
                 self.system_libraries.add(name)
@@ -459,7 +463,7 @@ class LinuxBundle(Bundle):
 
     def relocate_elf(self, patchelf):
         required_glibc, required_glibcxx = set(), set()
-        for source, image in self.images.items():
+        for image in self.images.values():
             target = image['destination']
             for old, new in image['dependencies'].items():
                 if old != new:
