@@ -11,6 +11,7 @@
 #include "nex/tasks.h"
 #include "nex/foreign_catalogue.h"
 #include "nex/debugging.h"
+#include "nex/core_dump.h"
 #include "nex/packaging.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Program.h"
@@ -49,6 +50,7 @@ Options options(int argc,char **argv) {
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
     if(flagNames.contains(a))o.flags.insert(a);
+    else if(a=="--thread"||a=="--frame"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--thread/--frame require core and an index");o.values[a]=argv[++i];}
     else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);o.values[a]=argv[++i];}
     else if(a.starts_with("-"))throw Error("E_OPTION","unknown option "+a);
     else o.positional.push_back(a);
@@ -137,6 +139,15 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  if(o.command=="core"){
+    const std::set<std::string> allowed={"--manifest","--expression","--timeout","--thread","--frame"};
+    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported core option: "+key);}
+    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported core flag: "+flag);
+    if(o.positional.size()!=1||o.get("--manifest").empty()||!o.extra.empty())throw Error("E_OPTION","core requires CORE_FILE --manifest DEBUG.json");
+    auto number=[&](const char *key,int fallback,unsigned maximum){if(!o.values.contains(key))return fallback;auto value=o.get(key);unsigned result=0;if(value.empty())throw Error("E_OPTION","empty core range");for(char c:value){if(c<'0'||c>'9'||result>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid core range");result=result*10+unsigned(c-'0');}if(result>maximum)throw Error("E_OPTION","invalid core range");return int(result);};
+    CoreOptions core{o.positional[0],o.get("--manifest"),o.compiler,o.get("--expression"),number("--thread",-1,63),number("--frame",-1,63),unsigned(number("--timeout",60,300))};
+    print(inspectCore(core));return 0;
+  }
   bool graphQuery=o.command=="search"||o.command=="subgraph";GraphQueryOptions queryOptions;
   for(const auto &key:{"--query","--field","--depth","--direction","--edge-offset","--edge-limit"})
     if(!graphQuery&&o.values.contains(key))throw Error("E_OPTION",std::string(key)+" requires search or subgraph");
@@ -214,6 +225,7 @@ int run(const Options &o) {
       "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
+      "  nex core CORE_FILE --manifest DEBUG.json [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n"
       "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
@@ -285,7 +297,7 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
     if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait or editor");
     auto text=readFile(resourceFile(files.at(kind)));

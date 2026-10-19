@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain 0.57.1 / language 0.16**, under development.
+The current source is **toolchain 0.58.0 / language 0.16**, under development.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -20,7 +20,7 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has 21 phases. The new debugger supports native list/byte pages of at most 1000
+has 22 phases. The new debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
@@ -243,3 +243,5 @@ Older language archives require explicit history-preserving migration with
 `nex migrate`. Keep their matching SDKs for old debug sessions and receipts.
 The project is the language and its development tools; application products
 will be built afterwards using NEX.
+
+Development0.58 adds `nex core CORE --manifest BUILD/debug.json --json` for read-only retained-build core inspection. See [core reports](docs/core-debugging.md); full validation remains pending.

@@ -34,7 +34,7 @@ def main():
         run('sdk',['python3','/src/tools/linux/sdk_smoke.py','/build/sdk'])
         report['sdk']=json.loads((root/'sdk-smoke.json').read_text())
         if args.live:
-            for suite in ('debugging','expressions','generics','constraints','matching','function_debug','bytes_debug','resource_debug','numbers','incremental','native_pages','debug_image'):
+            for suite in ('debugging','expressions','generics','constraints','matching','function_debug','bytes_debug','resource_debug','numbers','incremental','native_pages','debug_image','core_dump'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
             run('live-string-debug',['python3','/src/tests/string_debug.py','/build/sdk/bin/nex','--live',
                 'LiveStringDebug.test_lldb_dap_large_utf8_ranges_snapshots_and_unchanged_stop'])

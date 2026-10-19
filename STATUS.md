@@ -1,3 +1,19 @@
+# Development0.58: retained-build read-only native core reports
+
+An isolated source extension adds `nex core`, matching compiler/build/source/image
+checks, bounded LLDB stacks and pure exact watches, and a22-phase installed SDK
+workflow. Three normal tests pass. The initial direct SBCommandReturnObject
+status bug was retained and corrected; a live source-deleted Unicode/list watch
+and wrong-image negative control then pass. Subsequent header/image-report
+changes need their current focused/live/full/SDK checks. No release is claimed.
+
+The preceding615-file0.57 baseline now also passes the optimized macOS compiler
+full68 and installedSDK21. That baseline does not include0.57.1's frame-image
+guard. Its CTest wall time includes host sleep and is not a performance result.
+Current622-source0.57.1 initial macOS full/SDK attempts retain original-deadline
+task failures alongside host sleep observations; their rechecks remain pending.
+Full language/platform/development-chain acceptance is still open.
+
 # NEX implementation status
 
 ## Toolchain 0.57.1: loaded-frame image binding under development

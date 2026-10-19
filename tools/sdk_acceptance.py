@@ -26,7 +26,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'native-indexed-pages', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'foreign-boundary', 'text-files', 'profile',
     'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser')
 
@@ -309,6 +309,7 @@ test fn examples() -> unit {
         require('frame_module_identity_guard' in descriptor['debug_features'] and
                 descriptor['native_debug_image_binding'] == pack['native_debug_image_binding'],
                 'SDK lacks frame-to-loaded-image identity binding')
+        require(descriptor['native_core'] == pack['native_core'] and descriptor['native_core']['readonly'], 'SDK lacks checked read-only core reports')
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
         inventory = {}
         for name in [*pack['documents'].values(), *pack['examples'].values()]:
@@ -317,7 +318,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'core'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -1068,6 +1069,55 @@ def __lldb_init_module(debugger,_):
             'native_utf8_bytes': 4194304 if live else None,
             'native_snapshot': str(replay_file) if live else None,
             'supplied_frame': str(framefile), 'replayed_stop': replay['stop']}
+
+    def core_reports():
+        directory = root / 'core-reports'
+        directory.mkdir()
+        source = directory / 'main.nex'
+        source.write_text('''module sdk_core;
+fn observe(value:i64,text:str,items:list<i64>)->unit !{io}{
+ let answer:i64=value+items[1];
+ print(answer);
+}
+fn main()->unit !{io}{observe(40,"Я🧠",[1,2,3]);}
+''')
+        (directory / 'nex.json').write_text(json.dumps({'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        session = cli('debug', '--kind', 'nex-dap', cwd=directory)
+        core = directory / 'process.core'
+        core.write_bytes(b'x')
+        rejected = cli('core', core, '--manifest', session['manifest'],
+                       cwd=directory, expected_success=False)
+        require(rejected['code'] == 'E_CORE_INPUT', 'core reader accepted a truncated core')
+        evidence = {'retained_build': session['manifest'], 'truncated_core_rejected': True,
+                    'actual_core_read': False}
+        if args.live:
+            core.unlink()
+            captured = run([compiler, 'debug', '--', '--no-lldbinit', '--batch',
+                '-o', 'settings set target.disable-aslr false',
+                '-o', 'breakpoint set --file source.nex --line 4', '-o', 'run',
+                '-o', 'process save-core --style modified-memory ' + json.dumps(str(core), ensure_ascii=False),
+                '-o', 'continue'], cwd=directory, timeout=90)
+            require('exited with status = 0' in captured and core.is_file() and core.stat().st_size < 16*1024*1024,
+                    'native core fixture did not stop/save/complete')
+            digest = hashlib.sha256(core.read_bytes()).hexdigest()
+            source.unlink()
+            graph = directory / '.nex/graph.db'
+            graph_before = graph.read_bytes()
+            observed = cli('core', core, '--manifest', session['manifest'],
+                           '--expression', 'text + str(items[1])', cwd=directory, timeout=120)
+            require(observed['schema'] == 'nex.core-report/1' and observed['ok'] and
+                    observed['watch']['value'] == 'Я🧠2' and observed['core']['sha256'] == digest and
+                    observed['core']['unchanged'] and observed['stop_unchanged'] and
+                    observed['build_completion_checked'] and not observed['inferior_execution'] and
+                    observed['revision'] == session['revision'] and
+                    observed['executable']['uuid'] == observed['frames'][observed['selected_frame']]['module_uuid'],
+                    'read-only core report differs from the retained program')
+            require(graph.read_bytes() == graph_before and not source.exists() and
+                    hashlib.sha256(core.read_bytes()).hexdigest() == digest,
+                    'core inspection changed source/graph/core bytes')
+            evidence.update(actual_core_read=True, source_deleted=True, graph_unchanged=True,
+                            exact_watch=observed['watch']['value'], report=observed)
+        report['evidence']['core_reports'] = evidence
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'
@@ -1850,7 +1900,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
-                ('binary-values', binary_values), ('native-indexed-pages', native_pages),
+                ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]

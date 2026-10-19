@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "created": "2026-10-19T16:58:17.461350+00:00",
+  "scope": "Isolated macOS ARM64 Debug prototype core command, current seven focused groups and actual source-deleted core test; full/SDK/Linux gates pending",
+  "compiler_sha256": "128b0436df3b151612d4355871825788718316ff7505d2cbfa03075a29effce8",
+  "groups": 7,
+  "python_cases": 53,
+  "skips": 3,
+  "live_cases": 1,
+  "live_log": "build/core-report-058-final-live.log",
+  "live_log_sha256": "b1b3a22707bd2450e9930220c72b43e53d887854398e824e8b65ca4ca1db5a99",
+  "unchanged_graph_core_and_stop": true,
+  "wrong_image_rejected": true,
+  "backtick_watch_is_literal_data": true,
+  "initial_failure_log": "build/core-report-058-actual-live.log",
+  "initial_failure_retained": true,
+  "log": "build/core-report-058-final-focused.log",
+  "log_sha256": "65fd7582461f9475ff8cb69f21a9e1edbb829bfd1b529fad853f074bdff5bb8d",
+  "last_test_sha256": "b7402f40c836cf794819905c71f79d51cf7aba886f237b45b051371461453db1",
+  "accepted_release": false,
+  "full_objective_complete": false
+}

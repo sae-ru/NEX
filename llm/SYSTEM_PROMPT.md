@@ -328,3 +328,5 @@ Native frame inspection requires a matching loaded executable image. Function
 names and paths alone do not identify an image. Treat a frame-image mismatch
 as unavailable; select matching artifacts rather than rewriting manifest or
 revision identities. Core archives remain an independently validated workflow.
+
+For native core reports, discover `native_core` and use `nex core CORE --manifest BUILD/debug.json --json`. Keep the matching compiler/build workspace; inspect explicit operation candidates. Core reads do not resume or repair a process. A portable core capsule and unique optimized-PC attribution remain pending.

@@ -90,7 +90,10 @@
     "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql",
     "trait_api_workflow": "examples/traits/api/README.md",
     "editor": "docs/editor.md",
-    "native_dap_page_schema": "llm/dap-native-page.schema.json"
+    "native_dap_page_schema": "llm/dap-native-page.schema.json",
+    "core": "docs/core-debugging.md",
+    "core_reader": "debug/core_report.py",
+    "core_report_schema": "llm/core-report.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -280,5 +283,22 @@
     "selected_frame": "same_loaded_module_as_executable",
     "function_names_are_not_image_identity": true,
     "requires_matching_manifest": true
+  },
+  "native_core": {
+    "schema": "nex.core-report/1",
+    "guide": "docs/core-debugging.md",
+    "reader": "debug/core_report.py",
+    "readonly": true,
+    "requires_retained_build": true,
+    "requires_matching_compiler": true,
+    "portable_capsule": false,
+    "operation_precision": "explicit_source_candidates",
+    "limits": {
+      "core_bytes": 34359738368,
+      "threads": 64,
+      "frames": 64,
+      "timeout_seconds_default": 60,
+      "timeout_seconds_maximum": 300
+    }
   }
 }
