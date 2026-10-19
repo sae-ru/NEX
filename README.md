@@ -8,29 +8,17 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The working tree is toolchain **0.53.0 / language 0.15**, adding
-[bounded archived graph search/subgraphs](docs/queries.md) and
-[captured-source frontend diagnostics](docs/frontend-diagnostics.md). The frozen
-isolated implementation passes all 62 groups on macOS/Linux ARM64 (512 Python
-cases + 12 C++ probes), both installed SDK 17 workflows and eleven Linux live
-debugger suites. [Evidence](docs/evidence/graph-queries-0.53.0.json) records exact
-scope; the promoted root now needs its own build/regression/installed-SDK checks.
-[The preceding diagnostics milestone](docs/evidence/frontend-diagnostics-0.52.0.json)
-also passed its full 61-group/SDK 16 matrix. Stopped-string windows remain isolated
-0.54 work. The complete language/development chain and broader platform/release
-requirements remain open in `PLAN.md`.
+This isolated working tree is toolchain **0.54.0 / language 0.15**, adding
+[bounded stopped-string Unicode windows](docs/string-debug.md). Focused snapshot/provider, nine compatibility groups, actual LLDB/DAP,
+structural schemas and the corrected installed SDK string phase pass. Full
+current regression/platform/SDK validation remains pending. The preceding frozen0.53 source has passed18 query cases, offline
+schemas and the macOS installed SDK17; its full62 macOS/Linux regression/live/
+source-free SDK checks are separate and still running.
 
-The preceding verified root is toolchain **0.51.0 / language 0.15**, adding
-[consistent graph snapshots/recovery](docs/snapshots.md) and
-[explicit physical project/library versions](docs/compatibility.md). All 59
-regression groups pass on the promoted macOS ARM 64 root (473 Python cases + 11
-C++ probes, 1450.75 s), and its fifteen-phase installed SDK passes in 316.59 s with
-live debugger/browser checks. The frozen isolated source also passes all 59
-macOS/Linux ARM 64 groups, both SDK 15 workflows and eleven Linux live suites.
-[The evidence](docs/evidence/project-versions-0.51.0.json) records the distinct
-compiler/source scopes. Diagnostics 0.52 and graph queries 0.53 remain isolated
-work with their own gates; broader language/platform/distribution work remains
-in `PLAN.md`.
+The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux
+ARM64, both fifteen-phase installed SDK workflows and eleven Linux live debugger
+suites. It is promoted to the root, where relocation checks remain separate.
+[The evidence](docs/evidence/project-versions-0.51.0.json) records exact scope.
 
 The preceding verified tree is toolchain **0.49.0 / language 0.15**, adding an atomic
 HEAD-transition journal and checked, optimistic restoration of archived source.
@@ -39,7 +27,7 @@ without inventing older provenance. Actor/note labels are declared data. All
 57 regression groups pass on macOS/Linux ARM64, alongside both thirteen-phase
 installed SDK workflows and eleven Linux live debugger suites.
 [The evidence](docs/evidence/change-history-0.49.0.json) records exact scope,
-corrected fixtures and remaining work. Physical project-version enforcement is included in the current compiler; see
+corrected fixtures and remaining work. Physical project-version enforcement is included in the current tree; see
 `STATUS.md`.
 
 The preceding verified **0.48.0 / language 0.15** adds source-operation patches
@@ -178,7 +166,7 @@ native loader scope, trust and pending platforms.
 
 ## Build
 
-Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite **3.37+**, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
+Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug

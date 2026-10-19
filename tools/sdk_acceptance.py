@@ -236,6 +236,8 @@ test fn examples() -> unit {
         require('optimistic_archived_restore' in descriptor.get('history_features', []) and
                 descriptor.get('graph_database_schema') == 4,
                 'SDK lacks checked change history and revision restore')
+        require({'unicode_scalar_shape', 'bounded_text_range_captures', 'readonly_utf8_streaming_provider'} <=
+                set(descriptor.get('string_debug_features', [])), 'SDK lacks bounded stopped-string ranges')
         require({'literal_source_search', 'paged_dependency_radius', 'independent_node_edge_pages'} <=
                 set(descriptor.get('graph_query_features', [])), 'SDK lacks bounded archived graph queries')
         require({'captured_source_inputs', 'uncommitted_candidate_context', 'watch_frame_bound_context'} <=
@@ -267,7 +269,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -799,6 +801,88 @@ test fn examples() -> unit {
             'stale_physical_metadata_ignored': True, 'incoming_edges_checked': True,
             'stable_complete_query_pages': True, 'queries_preserve_history': True,
             'guarded_repair_from_discovery': True, 'native_reference_after_repair': True}
+
+    def string_ranges():
+        project = root / 'string-range-workflow'
+        project.mkdir()
+        (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        source = project / 'main.nex'
+        source.write_text((resources / 'examples/debugging/strings.nex').read_text())
+        revision = cli('check', cwd=project)['revision']
+        changes = cli('changes', cwd=project)
+        session = cli('debug', cwd=project)
+        identity = json.loads(Path(session['manifest']).read_text())
+        frame = {'schema': 'nex.debug-frame/2', 'language': report['doctor']['language'],
+            'revision': revision, 'build_key': identity['build_key'], 'function': 'string_debug::observe',
+            'stop': {'process_id': '1', 'thread_id': '2', 'frame_id': 0, 'stop_id': '1'},
+            'bindings': [{'name': 'text', 'type': 'str', 'unavailable': 'whole string not captured'}],
+            'truncated': False, 'captures': [
+                {'binding': 'text', 'path': [], 'kind': 'shape', 'value': {'length': '2097152'}},
+                {'binding': 'text', 'path': [], 'kind': 'text_range', 'start': '2097148', 'count': '4',
+                 'value': 'A🌍\u0000λ'}]}
+        # The first frame is supplied data; an optional live recording below has
+        # separately verified process/stop identity and actual memory reads.
+        frame['captures'][-1]['value'] = 'A🌍' + chr(0) + 'λ'
+        framefile = project / 'supplied-frame.json'
+        framefile.write_text(json.dumps(frame))
+        length = cli('inspect', framefile, '--manifest', session['manifest'], '--expression', 'len(text)', cwd=project)
+        window = cli('inspect', framefile, '--manifest', session['manifest'], '--expression', 'slice(text,len(text)-4,4)', cwd=project)
+        last = cli('inspect', framefile, '--manifest', session['manifest'], '--expression', 'text[len(text)-1]', cwd=project)
+        require(length['value'] == '2097152' and window['value'] == 'A🌍' + chr(0) + 'λ' and last['value'] == 'λ',
+                'supplied string windows lost Unicode scalar semantics or contained-range reuse')
+        demand = cli('inspect', framefile, '--manifest', session['manifest'], '--expression', 'text[0]', '--kind', 'demand', cwd=project)
+        require(demand['request']['kind'] == 'text_range' and demand['request']['start'] == '0' and
+                demand['request']['count'] == '1', 'missing string range became a fabricated whole/empty value')
+        live = None
+        if args.live:
+            projected = identity['sources'][0]['projection']
+            line = next(i+1 for i, text in enumerate(source.read_text().splitlines()) if '// STRING_STOP' in text)
+            script, recording = project / 'record_string_range.py', project / 'native-recording.json'
+            script.write_text('''import json,lldb
+
+def __lldb_init_module(debugger,_):
+ debugger.SetAsync(False);debugger.HandleCommand('settings set target.disable-aslr false')
+ target=debugger.GetSelectedTarget();target.BreakpointCreateByLocation(SOURCE,LINE)
+ process=target.LaunchSimple(None,None,None)
+ def command(text):
+  result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,result)
+  assert result.Succeeded(),(text,result.GetOutput(),result.GetError())
+  return json.loads(result.GetOutput())
+ try:
+  assert process.GetState()==lldb.eStateStopped
+  stop=process.GetStopID();handle=process.GetSelectedThread().GetSelectedFrame().FindVariable('text').GetValueAsUnsigned()
+  values={'length':command('nex-eval len(text)'), 'range':command('nex-eval slice(text,len(text)-4,4)'),
+   'snapshot':command('nex-frame slice(text,len(text)-4,4)')}
+  assert process.GetState()==lldb.eStateStopped and process.GetStopID()==stop
+  assert process.GetSelectedThread().GetSelectedFrame().FindVariable('text').GetValueAsUnsigned()==handle
+  values['unchanged_stop_and_handle']=True
+  with open(RECORDING,'w') as output:json.dump(values,output)
+  process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+ finally:
+  if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('SOURCE', repr(projected)).replace('LINE', str(line)).replace('RECORDING', repr(str(recording))))
+            run([compiler, 'debug', '--revision', revision, '--', '--no-lldbinit', '--batch', '-o',
+                 'command script import ' + json.dumps(str(script))], cwd=project, timeout=180)
+            require(recording.is_file(), 'live string provider did not retain a recording')
+            live = json.loads(recording.read_text())
+            require(live['length']['value'] == '2097152' and live['range']['value'] == 'A🌍' + chr(0) + 'λ' and
+                    live['unchanged_stop_and_handle'] is True and
+                    any(c['kind'] == 'text_range' for c in live['snapshot']['captures']),
+                    'live string scan/range changed the stop or returned another payload')
+            (project / 'native-frame.json').write_text(json.dumps(live['snapshot']))
+        source.unlink()
+        replay_file = project / 'native-frame.json' if live else framefile
+        replay = cli('inspect', replay_file, '--manifest', session['manifest'], '--expression', 'text[len(text)-1]', cwd=project)
+        require(replay['value'] == 'λ' and cli('changes', cwd=project) == changes,
+                'string snapshot replay depended on physical source or changed graph history')
+        report['evidence']['string_ranges'] = {'revision': revision, 'build_key': identity['build_key'],
+            'supplied_frame_scalar_length': length['value'], 'contained_range_replay': True,
+            'missing_range_is_explicit_demand': True, 'physical_source_deleted': True, 'history_preserved': True,
+            'live_native_streaming': bool(live), 'live_unchanged_stop_and_handle': bool(live),
+            'native_utf8_bytes': 4194304 if live else None,
+            'native_snapshot': str(replay_file) if live else None,
+            'supplied_frame': str(framefile), 'replayed_stop': replay['stop']}
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'
@@ -1521,7 +1605,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
-                ('graph-queries', graph_queries),
+                ('graph-queries', graph_queries), ('string-ranges', string_ranges),
                 ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
