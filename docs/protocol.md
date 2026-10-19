@@ -425,3 +425,15 @@ non-signed32 page arguments are rejected. The advertised count is bounded to
 Native pages retain ordinary preview semantics, not exact wire/frame values.
 Execution or a new stop expires references; a late response cannot revive them.
 The debug guide describes direct-LLDB and remaining named/string boundaries.
+
+## Native core capsule data (development0.59)
+
+`nex core CORE --manifest DEBUG.json --export NEW_DIRECTORY --json` publishes a
+checked `nex.core-capsule/1` directory and returns `nex.core-capsule-export/1`.
+`nex core --capsule DIRECTORY --json` returns `nex.core-report/1` with a checked
+`capsule` binding. The receipt/export schema is `llm/core-capsule.schema.json`;
+read reports retain `llm/core-report.schema.json`. Relative inventory paths,
+bytes, SHA256 and original build/compiler/runtime identities are checked before
+LLDB. The matching installed SDK supplies executable tooling. Unsupported
+capsule formats/hosts/inputs use `E_CORE_CAPSULE`; build/core mismatches retain
+their existing diagnostics. See `docs/core-debugging.md` for exact limits.

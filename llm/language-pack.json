@@ -93,7 +93,9 @@
     "native_dap_page_schema": "llm/dap-native-page.schema.json",
     "core": "docs/core-debugging.md",
     "core_reader": "debug/core_report.py",
-    "core_report_schema": "llm/core-report.schema.json"
+    "core_report_schema": "llm/core-report.schema.json",
+    "core_capsule_helper": "tools/core_capsule.py",
+    "core_capsule_schema": "llm/core-capsule.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -298,7 +300,7 @@
     "readonly": true,
     "requires_retained_build": true,
     "requires_matching_compiler": true,
-    "portable_capsule": false,
+    "portable_capsule": true,
     "operation_precision": "explicit_source_candidates",
     "limits": {
       "core_bytes": 34359738368,
@@ -311,6 +313,18 @@
       "elf64",
       "macho64",
       "minidump64"
-    ]
+    ],
+    "capsule": {
+      "schema": "nex.core-capsule/1",
+      "schema_document": "llm/core-capsule.schema.json",
+      "helper": "tools/core_capsule.py",
+      "matching_host_only": true,
+      "original_paths_required": false,
+      "source_foreign_declarations": false,
+      "non_system_dependencies": false,
+      "file_limit": 4096,
+      "total_bytes_limit": 35433480192,
+      "copy_timeout_seconds": 900
+    }
   }
 }

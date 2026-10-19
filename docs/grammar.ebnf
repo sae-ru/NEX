@@ -158,3 +158,5 @@ implementation = [ "pub" ], "impl", identifier, [ type_parameters ], ":", qualif
                  "{", { associated_binding | method_binding }, "}" ;
 associated_binding = "type", identifier, "=", type, ";" ;
 method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
+
+(* Toolchain0.59 core capsule commands add no source syntax or language migration. *)

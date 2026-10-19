@@ -1,3 +1,19 @@
+# Development0.59: native core capsule draft
+
+The isolated implementation adds explicit export/read directories, bounded
+file inventories, original/physical image identities and trusted SDK readers.
+An earlier Python copying/projection prototype passes against a retained0.58.2
+build. The later historical-alias binding is not part of that prototype proof;
+matching0.59 compiler/live acceptance remains pending. Twelve SDK archive/workflow contract checks
+pass. Matching C++ build, actual moved-core/source-deleted tests and complete
+platform/SDK gates remain pending. No language or graph migration is introduced.
+
+The preceding0.58.2 frozen638 files pass Linux full70 (577 Python cases),
+all15 live suites and source-free SDK22/317; macOS focused/live/SDK22 and both
+moved/restored portable workflows pass. Linux portable moved/restored22/310 also passes. The exact638 source is
+promoted to the root, whose clean build passes and full70/SDK22/graph-preservation
+gates are running separately. These scopes do not validate the new capsule code.
+
 # Development0.58.2: bounded kernel ELF mapping
 
 A real Linux kernel SIGABRT ELF core was correctly refused by0.58.1 because

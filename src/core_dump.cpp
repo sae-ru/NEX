@@ -9,10 +9,15 @@
 #include <array>
 #include <cerrno>
 #include <cstring>
+#include <cstdio>
 #include <fcntl.h>
 #include <filesystem>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#include <linux/fs.h>
+#endif
 
 namespace nex {
 namespace {
@@ -45,15 +50,34 @@ std::string text(const fs::path &path,uint64_t limit){return Input(path,limit).t
 JSON read(const fs::path &path,uint64_t limit){return parseNativeManifest(text(path,limit));}
 const Object &object(const JSON &value){auto result=value.getAsObject();if(!result)throw Error("E_CORE_BUILD","expected a debug build object");return *result;}
 std::string required(const Object &value,const char *key){auto result=value.getString(key);if(!result||result->empty()||result->size()>16384||result->contains('\0'))throw Error("E_CORE_BUILD",std::string("missing/invalid debug field: ")+key);return result->str();}
-struct Temporary{fs::path path;~Temporary(){std::error_code ignored;fs::remove_all(path,ignored);}};
+struct Temporary{fs::path path;~Temporary(){if(!path.empty()){std::error_code ignored;fs::remove_all(path,ignored);}}};
+void validateCoreOptions(const CoreOptions &options){
+  if(options.timeout<1||options.timeout>300||options.thread<-1||options.thread>63||options.frame<-1||options.frame>63||options.expression.size()>8192)throw Error("E_CORE_LIMIT","core inspection requires timeout1..300, thread/frame0..63 and expression at most8192 bytes");
+}
+Object capsuleIdentity(){return Object{{"compiler_build",NEX_BUILD_ID},{"toolchain",NEX_VERSION},{"language",languageVersion}};}
+JSON capsuleWork(Object request){
+  Temporary temporary{createTemporaryDirectory("nex-core-files")};
+  auto file=temporary.path/"request.json";writeFile(file.string(),json(std::move(request)));
+  const char *python=std::getenv("NEX_PYTHON");
+  auto child=runTaskProcess({python?python:"python3",resourceFile("tools/core_capsule.py"),file.string()},temporary.path.string(),{},900,(temporary.path/"logs").string());
+  if(child.timedOut||child.outputLimit||child.interrupted)throw Error("E_CORE_CAPSULE","core capsule helper exceeded its execution/output limit");
+  if(child.process.output.empty())throw Error("E_CORE_CAPSULE","core capsule helper returned no report: "+child.process.errors.substr(0,4096));
+  auto result=parseNativeManifest(child.process.output);const auto &o=object(result);
+  if(child.process.code!=0||!o.getBoolean("ok").value_or(false))throw Error("E_CORE_CAPSULE",o.getString("error").value_or("core capsule helper failed").str());
+  return result;
+}
+void requireCapsuleProgram(const Program &program){
+  for(const auto &function:program.functions)if(function.foreign)throw Error("E_CORE_CAPSULE","core capsules with source foreign declarations are not yet supported");
+}
 }
 JSON inspectCore(const CoreOptions &options){
-  if(options.timeout<1||options.timeout>300||options.thread<-1||options.thread>63||options.frame<-1||options.frame>63||options.expression.size()>8192)throw Error("E_CORE_LIMIT","core inspection requires timeout1..300, thread/frame0..63 and expression at most8192 bytes");
+  validateCoreOptions(options);
   auto path=fs::absolute(options.manifest).lexically_normal(),folder=path.parent_path();
   auto manifest=read(path,8*1048576);const auto &m=object(manifest);
   if(m.getString("schema")!="nex.debug/1"||m.getString("compiler_build")!=NEX_BUILD_ID||m.getString("toolchain")!=NEX_VERSION||m.getString("language")!=languageVersion||m.getString("runtime_view")!="nex.runtime-view/3"||m.getString("expression_protocol")!="nex.debug-expression/3")throw Error("E_CORE_BUILD","core inspection requires its matching compiler/debug manifest");
   if(!m.getBoolean("host_compatible").value_or(false))throw Error("E_CORE_BUILD","core inspection currently requires a matching-host build");
   auto bundle=read(folder/"source-bundle.json",16*1048576);auto program=loadBundle(bundle,folder.string());
+  if(!options.recordedProgram.empty())requireCapsuleProgram(program);
   if(required(m,"source_hash")!=hash(json(bundle,false))||required(m,"revision")!=revision(program))throw Error("E_CORE_BUILD","core source bundle/revision differs from the debug manifest");
   auto formatter=resourceFile("debug/lldb_nex.py");
   if(required(m,"formatter_hash")!=hash(text(formatter,1048576)))throw Error("E_CORE_BUILD","core inspection requires the matching trusted formatter");
@@ -62,6 +86,10 @@ JSON inspectCore(const CoreOptions &options){
   for(const auto &entry:*sources){const auto &source=object(entry);auto digest=hash(text(required(source,"projection"),16*1048576));auto found=expectedSources.find(digest);if(found==expectedSources.end()||digest!=required(source,"hash"))throw Error("E_CORE_BUILD","core frozen source projection differs");expectedSources.erase(found);}
   auto image=fs::absolute(required(m,"program")).lexically_normal();
   if(image.parent_path()!=folder||image.filename()!="app"||folder.filename().string()!=required(m,"build_key"))throw Error("E_CORE_BUILD","core inspection requires its content-addressed retained executable build workspace");
+  if(!options.recordedProgram.empty()){
+    fs::path recorded(options.recordedProgram);
+    if(!recorded.is_absolute()||recorded.lexically_normal()!=recorded||recorded.filename()!="app"||recorded.parent_path().filename()!=folder.filename())throw Error("E_CORE_CAPSULE","relocated core requires its original executable build key");
+  }
   auto build=read(folder/"build.json",8*1048576);const auto &b=object(build);
   for(const auto *key:{"revision","compiler_build","profile","target"})if(required(b,key)!=required(m,key))throw Error("E_CORE_BUILD",std::string("debug/build identity differs: ")+key);
   if(required(b,"key")!=required(m,"build_key")||b.getString("kind")=="static_library")throw Error("E_CORE_BUILD","core build key/kind differs");
@@ -107,7 +135,7 @@ JSON inspectCore(const CoreOptions &options){
   }
   if(!elf&&!macho&&!minidump)throw Error("E_CORE_INPUT","core reader requires a64-bit ELF, Mach-O or LLDB minidump core file");auto before=input.sha();
   Temporary temporary{createTemporaryDirectory("nex-core")};auto request=temporary.path/"request.json";
-  writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
+  writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"recorded_program",options.recordedProgram},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
   auto driver=std::getenv("NEX_LLDB");std::string lldb=driver?driver:"lldb";
   auto script=resourceFile("debug/core_report.py");
   auto child=runTaskProcess({lldb,"--no-lldbinit","--batch","--no-use-colors","-o","settings set target.load-script-from-symbol-file false","-o","settings set symbols.enable-external-lookup false","-o","command script import "+json(script,false)},temporary.path.string(),{{"NEX_CORE_REQUEST",request.string()}},options.timeout,(temporary.path/"logs").string());
@@ -121,5 +149,44 @@ JSON inspectCore(const CoreOptions &options){
   result["core"]=Object{{"path",core.string()},{"bytes",int64_t(input.initial.st_size)},{"sha256",before},{"unchanged",true}};result["build_completion_checked"]=true;
   auto executable=result.getObject("executable");if(!executable)throw Error("E_CORE_READ","native core report lacks executable identity");(*executable)["blake3"]=imageHash;(*executable)["bytes"]=int64_t(imageBytes);
   return report;
+}
+JSON inspectCoreCapsule(const std::string &directory,const CoreOptions &options){
+  validateCoreOptions(options);
+  auto capsule=fs::absolute(directory).lexically_normal();
+  Temporary temporary{createTemporaryDirectory("nex-core-capsule-read")};
+  auto prepared=capsuleWork(Object{{"mode","prepare"},{"capsule",capsule.string()},{"work",temporary.path.string()},{"identity",capsuleIdentity()}});
+  const auto &p=object(prepared);CoreOptions projected=options;
+  projected.core=required(p,"core");projected.manifest=required(p,"manifest");projected.recordedProgram=required(p,"recorded_program");
+  auto report=inspectCore(projected);auto &result=*report.getAsObject();
+  auto core=result.getObject("core");
+  if(!core||core->getString("sha256")!=required(p,"core_sha256")||Input(capsule/"capsule.json",8*1048576).sha()!=required(p,"manifest_sha256"))throw Error("E_CORE_CHANGED","capsule core or manifest changed during inspection");
+  result["capsule"]=Object{{"directory",capsule.string()},{"manifest_sha256",required(p,"manifest_sha256")},{"recorded_program",projected.recordedProgram},{"files_verified",p.getInteger("files").value_or(0)},{"inventory_checked",true},{"inspection_workspace_ephemeral",true},{"dependency_scope","matching_host_system_only"}};
+  return report;
+}
+JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){
+  validateCoreOptions(options);
+  auto destination=fs::absolute(directory).lexically_normal();std::error_code error;
+  if(fs::exists(fs::symlink_status(destination,error)))throw Error("E_CORE_CAPSULE","core capsule destination already exists");
+  auto parent=fs::canonical(destination.parent_path(),error);
+  if(error||!fs::is_directory(parent))throw Error("E_CORE_CAPSULE","core capsule destination requires an existing parent directory");
+  destination=parent/destination.filename();
+  auto original=fs::absolute(options.manifest).lexically_normal();
+  requireCapsuleProgram(loadBundle(read(original.parent_path()/"source-bundle.json",16*1048576),original.parent_path().string()));
+  auto inspected=inspectCore(options);const auto &initial=object(inspected);const auto *core=initial.getObject("core");
+  if(!core)throw Error("E_CORE_CAPSULE","core export lacks checked input identity");
+  Temporary staging{createTemporaryDirectory("nex-core-capsule",parent.string())};
+  auto copied=capsuleWork(Object{{"mode","export"},{"work",staging.path.string()},{"manifest",original.string()},{"core",fs::absolute(options.core).lexically_normal().string()},{"core_sha256",required(*core,"sha256")},{"identity",capsuleIdentity()}});
+  auto verified=inspectCoreCapsule(staging.path.string(),options);const auto &v=object(verified);const auto *binding=v.getObject("capsule");
+  if(!binding)throw Error("E_CORE_CAPSULE","core export lacks verified capsule inventory");
+#ifdef __APPLE__
+  int status=::renameatx_np(AT_FDCWD,staging.path.c_str(),AT_FDCWD,destination.c_str(),RENAME_EXCL);
+#elif defined(__linux__) && defined(SYS_renameat2)
+  int status=int(::syscall(SYS_renameat2,AT_FDCWD,staging.path.c_str(),AT_FDCWD,destination.c_str(),RENAME_NOREPLACE));
+#else
+  int status=-1;
+#endif
+  if(status!=0)throw Error("E_CORE_CAPSULE","cannot publish capsule without replacing an existing destination");
+  staging.path.clear();
+  return Object{{"schema","nex.core-capsule-export/1"},{"ok",true},{"directory",destination.string()},{"manifest",(destination/"capsule.json").string()},{"manifest_sha256",required(*binding,"manifest_sha256")},{"build_key",required(v,"build_key")},{"revision",required(v,"revision")},{"files",object(copied).getInteger("files").value_or(0)},{"bytes",object(copied).getInteger("bytes").value_or(0)},{"read_after_export",true},{"inferior_execution",false}};
 }
 }

@@ -50,6 +50,7 @@ Options options(int argc,char **argv) {
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
     if(flagNames.contains(a))o.flags.insert(a);
+    else if(a=="--capsule"||a=="--export"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--capsule/--export require core and a directory");o.values[a]=argv[++i];}
     else if(a=="--thread"||a=="--frame"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--thread/--frame require core and an index");o.values[a]=argv[++i];}
     else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);o.values[a]=argv[++i];}
     else if(a.starts_with("-"))throw Error("E_OPTION","unknown option "+a);
@@ -140,13 +141,16 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 }
 int run(const Options &o) {
   if(o.command=="core"){
-    const std::set<std::string> allowed={"--manifest","--expression","--timeout","--thread","--frame"};
+    const std::set<std::string> allowed={"--manifest","--expression","--timeout","--thread","--frame","--capsule","--export"};
     for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported core option: "+key);}
     for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported core flag: "+flag);
-    if(o.positional.size()!=1||o.get("--manifest").empty()||!o.extra.empty())throw Error("E_OPTION","core requires CORE_FILE --manifest DEBUG.json");
+    bool capsule=o.values.contains("--capsule"),exporting=o.values.contains("--export");
+    if(!o.extra.empty()||(capsule?(!o.positional.empty()||o.values.contains("--manifest")||exporting||o.get("--capsule").empty()):(o.positional.size()!=1||o.get("--manifest").empty()))||(exporting&&o.get("--export").empty()))throw Error("E_OPTION","core requires CORE_FILE --manifest DEBUG.json [--export NEW_DIRECTORY], or --capsule DIRECTORY");
     auto number=[&](const char *key,int fallback,unsigned maximum){if(!o.values.contains(key))return fallback;auto value=o.get(key);unsigned result=0;if(value.empty())throw Error("E_OPTION","empty core range");for(char c:value){if(c<'0'||c>'9'||result>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION","invalid core range");result=result*10+unsigned(c-'0');}if(result>maximum)throw Error("E_OPTION","invalid core range");return int(result);};
-    CoreOptions core{o.positional[0],o.get("--manifest"),o.compiler,o.get("--expression"),number("--thread",-1,63),number("--frame",-1,63),unsigned(number("--timeout",60,300))};
-    print(inspectCore(core));return 0;
+    CoreOptions core;core.core=capsule?"":o.positional[0];core.manifest=o.get("--manifest");core.compiler=o.compiler;core.expression=o.get("--expression");core.thread=number("--thread",-1,63);core.frame=number("--frame",-1,63);core.timeout=unsigned(number("--timeout",60,300));
+    if(capsule)print(inspectCoreCapsule(o.get("--capsule"),core));
+    else if(exporting)print(exportCoreCapsule(o.get("--export"),core));
+    else print(inspectCore(core));return 0;
   }
   bool graphQuery=o.command=="search"||o.command=="subgraph";GraphQueryOptions queryOptions;
   for(const auto &key:{"--query","--field","--depth","--direction","--edge-offset","--edge-limit"})
@@ -225,7 +229,7 @@ int run(const Options &o) {
       "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
-      "  nex core CORE_FILE --manifest DEBUG.json [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n"
+      "  nex core CORE_FILE --manifest DEBUG.json [--export NEW_DIRECTORY] [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n  nex core --capsule DIRECTORY [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n"
       "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"

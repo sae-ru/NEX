@@ -465,3 +465,13 @@ macOS SDK21 и оба переносимых macOS SDK21. Проверка чу�
   binding using a matching installed SDK, actual kernel ELF/minidump/Mach-O cores
   and wrong-image controls. The reader prototype and11 provider cases pass;
   complete current compiler and platform gates remain pending.
+
+### Текущий шаг0.59: перенос native core
+
+В отдельной копии разрабатываются экспорт и чтение капсулы core с исполняемым
+образом, символами и замороженными исходниками. Копирование/проверка инвентаря
+проверены прототипом, C++-интеграция и фактические moved-core проверки ожидаются.
+Оригинальные пути могут отсутствовать; Linux сохраняет проверку записанной
+PC-карты, а loaded-module/UUID проверки остаются обязательными. Первое сечение
+ограничено совместимым macOS/Linux host и системными зависимостями без source
+foreign declarations. Это не закрывает optimized-PC, GPU, async и весь PLAN.

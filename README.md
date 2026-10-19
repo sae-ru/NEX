@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain 0.58.2 / language 0.16**, under development.
+The current source is **toolchain 0.59.0 / language 0.16**, under development.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -24,6 +24,9 @@ has 22 phases. The new debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
+The isolated0.59 draft adds core capsule export/read with an exact file inventory,
+original-to-copied image binding and source projections. Its matching C++ build,
+actual moved-core tests, full regressions and SDK/platform gates are pending.
 
 Validation results are recorded with their exact source, compiler, platform
 and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).

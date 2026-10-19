@@ -55,6 +55,22 @@ class DistributionWorkflow(unittest.TestCase):
         for changed in cases:
             with self.subTest(report=changed), self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
 
+    def test_current_capsule_sdk_requires_installed_helper_and_actual_live_relocation(self):
+        current = self.report();current['doctor'] = {'version': '0.59.0'}
+        with self.assertRaisesRegex(RuntimeError, 'capsule helper'):acceptance.validate_completed_report(current)
+        current['evidence'] = {'core_reports': {'capsule_helper_input_rejected': True}}
+        acceptance.validate_completed_report(current)
+        current['evidence']['live_debugger'] = True
+        with self.assertRaisesRegex(RuntimeError, 'moved core capsule'):acceptance.validate_completed_report(current)
+        core = current['evidence']['core_reports']
+        core.update(actual_capsule_read=True, original_executable_absent=True,
+                    capsule_report={'capsule': {'inventory_checked': True},
+                                    'watch': {'value': 'Я🧠2'}, 'inferior_execution': False})
+        acceptance.validate_completed_report(current)
+        for key in ('actual_capsule_read', 'original_executable_absent'):
+            changed = copy.deepcopy(current);changed['evidence']['core_reports'][key] = False
+            with self.subTest(field=key), self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
+
 
 class Archives(unittest.TestCase):
     def setUp(self):

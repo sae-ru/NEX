@@ -294,6 +294,48 @@
     },
     "build_completion_checked": {
       "const": true
+    },
+    "capsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "directory",
+        "manifest_sha256",
+        "recorded_program",
+        "files_verified",
+        "inventory_checked",
+        "inspection_workspace_ephemeral",
+        "dependency_scope"
+      ],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "recorded_program": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "files_verified": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "inventory_checked": {
+          "const": true
+        },
+        "inspection_workspace_ephemeral": {
+          "const": true
+        },
+        "dependency_scope": {
+          "const": "matching_host_system_only"
+        }
+      }
     }
   },
   "$defs": {

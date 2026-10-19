@@ -41,6 +41,13 @@ def inspect(debugger, request):
     expected = target.FindModule(target.GetExecutable())
     if not expected.IsValid() or not expected.GetUUIDString():
         raise ValueError("retained executable has no native image identity")
+    recorded = request.get('recorded_program', '')
+    if recorded:
+        error = lldb.SBError()
+        target.AppendImageSearchPath(str(Path(recorded).parent),
+                                    str(Path(request['program']).parent), error)
+        if error.Fail():
+            raise ValueError('cannot map the retained capsule executable: ' + _text(error))
     error = lldb.SBError()
     process = target.LoadCore(request["core"], error)
     if error.Fail() or not process.IsValid() or process.GetState() != lldb.eStateStopped:
@@ -88,6 +95,8 @@ def inspect(debugger, request):
                    " --compiler " + json.dumps(request["compiler"], ensure_ascii=False), loaded, {})
     if not loaded.Succeeded():
         raise ValueError(_text(loaded.GetError()))
+    if recorded:
+        formatter._contexts[str(Path(request['program']).resolve())]['_capsule_recorded_program'] = recorded
     values = _command(formatter.values, debugger)
     operation = _command(formatter.operation, debugger)
     watch = _command(formatter.evaluate, debugger, request["expression"]) if request["expression"] else None

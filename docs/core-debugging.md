@@ -1,10 +1,11 @@
-# Native core reports (development 0.58.2)
+# Native core reports and capsules (development 0.59)
 
 This development command reads a native core with its matching retained build:
 `nex core PROCESS.core --manifest BUILD/debug.json --json`.
 An optional `--expression TEXT` uses the existing pure, bounded watch evaluator.
 It does not run, attach to or resume an application. This draft is implemented
-in an isolated source tree. macOS focused/live checks pass; wider validation is pending.
+in an isolated source tree. The preceding0.58.2 retained-build pipeline has
+separate platform evidence. Current capsule C++/live/full/SDK validation is pending.
 
 The report records core bytes/SHA-256, executable bytes/hash, actual module UUID,
 stop reason, bounded thread/stack summaries and the selected NEX frame. A frame
@@ -44,12 +45,53 @@ reported as available, without inferring a cause absent from the core.
 Successful reports follow [the schema](../llm/core-report.schema.json). Rejections
 use the normal `nex.diagnostic/1` protocol and a nonzero process exit status.
 
-This first command requires the retained build workspace. It does not package
-or relocate native dependencies and does not make a core portable between OS
-versions, CPU architectures or runtime layouts. LLDB raw-core probes have shown
-matching image relocation with copied symbols/sources, but a reviewed portable
-core capsule is a subsequent integration. Original failure reports and the
-wrong-image negative control are retained separately.
+The ordinary `--manifest` command requires its retained build workspace.
+Use the following explicit workflow to keep the core with its build inputs:
+
+```sh
+nex core process.core --manifest BUILD/debug.json --export NEW_DIRECTORY --json
+nex core --capsule MOVED_DIRECTORY --expression 'text + str(items[1])' --json
+```
+
+Export requires an absent destination under an existing parent. It first checks
+the original core/build, copies the executable, symbols, source projections and
+unchanged completion/build/IR records, then reads the new capsule before an
+exclusive publication. Existing destinations are preserved. An interrupted or
+failed export cannot publish a partial capsule.
+
+`capsule.json` follows `nex.core-capsule/1`; successful export returns
+`nex.core-capsule-export/1`. Both are described by
+[the capsule schema](../llm/core-capsule.schema.json). Read reports use the
+ordinary core-report schema with an additional checked `capsule` binding.
+The inventory records every file's bytes and SHA256, compiler/language/runtime
+identities, original executable path, resolved historical image path, build key
+and host. The recorded mapping survives removal or retargeting of an original
+directory alias. Missing/extra files,
+symlinks, special files, duplicate JSON fields, escaping paths and mismatching
+identities are rejected. Limits are4096 files/directories,32 path components,
+4096 UTF-8 bytes per relative path,512MiB per build file,32GiB per core and33GiB
+total file bytes. Copy/hash work has a900-second deadline; native dependency
+inspection has a30-second deadline and1MiB output limit. These are separate
+from the selected LLDB timeout. Source/debug metadata keeps the limits above.
+
+The capsule may move and its original source/executable paths may disappear.
+Read-only verification copies the build inputs into a private temporary
+workspace. The content-addressed directory name and original build key remain
+unchanged. Linux keeps checking the original core-recorded PC mapping; the
+loaded module/UUID must identify the copied executable. Mach-O retains its
+loaded-module/UUID check. Reports identify the actual inspection workspace,
+which is removed afterward. Core bytes and the capsule remain unchanged.
+
+The matching installed SDK supplies the compiler, formatter, Python helper and
+LLDB reader. Paths naming scripts or compilers inside capsule data never select
+executable tooling. Hashes establish agreement with the receipt, not publisher
+authentication. The current slice requires a matching macOS/Linux ARM64 or
+x86-64 host, debugger and system runtime. It rejects source foreign declarations
+and non-system native dependencies; this excludes current TLS/SQLite application
+packages. `otool` on macOS or `readelf` on Linux reads dependency headers without
+launching the application. Cross-OS/architecture/runtime relocation and native
+dependency packaging remain pending. Exact optimized operation attribution
+retains explicit candidates.
 
 Validation must include actual macOS/Linux cores, source deletion, Unicode/list
 exact watches, unchanged stops and bytes, malformed/oversized inputs, wrong

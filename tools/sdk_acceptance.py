@@ -67,6 +67,17 @@ def validate_completed_report(report):
     # recorded status comes from the acceptance action's expected outcome.
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
+    version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 59, 0):
+        core = report.get('evidence', {}).get('core_reports', {})
+        require(core.get('capsule_helper_input_rejected') is True,
+                'SDK acceptance lacks the installed core capsule helper control')
+        if report.get('evidence', {}).get('live_debugger'):
+            capsule = core.get('capsule_report', {})
+            require(core.get('actual_capsule_read') is True and core.get('original_executable_absent') is True and
+                    capsule.get('capsule', {}).get('inventory_checked') is True and
+                    capsule.get('watch', {}).get('value') == 'Я🧠2' and not capsule.get('inferior_execution', True),
+                    'SDK acceptance lacks actual source-deleted moved core capsule evidence')
 
 
 class DAP:
@@ -1089,7 +1100,13 @@ fn main()->unit !{io}{observe(40,"Я🧠",[1,2,3]);}
                        cwd=directory, expected_success=False)
         require(rejected['code'] == 'E_CORE_INPUT', 'core reader accepted a truncated core')
         evidence = {'retained_build': session['manifest'], 'truncated_core_rejected': True,
-                    'actual_core_read': False}
+                    'actual_core_read': False, 'actual_capsule_read': False}
+        malformed = directory / 'invalid-capsule'
+        malformed.mkdir()
+        (malformed / 'capsule.json').write_text('{}')
+        rejected = cli('core', '--capsule', malformed, cwd=directory, expected_success=False)
+        require(rejected['code'] == 'E_CORE_CAPSULE', 'installed capsule helper accepted an invalid receipt')
+        evidence['capsule_helper_input_rejected'] = True
         if args.live:
             core.unlink()
             captured = run([compiler, 'debug', '--', '--no-lldbinit', '--batch',
@@ -1117,6 +1134,25 @@ fn main()->unit !{io}{observe(40,"Я🧠",[1,2,3]);}
                     'core inspection changed source/graph/core bytes')
             evidence.update(actual_core_read=True, source_deleted=True, graph_unchanged=True,
                             exact_watch=observed['watch']['value'], report=observed)
+            capsule = directory / 'capsule'
+            exported = cli('core', core, '--manifest', session['manifest'], '--export', capsule,
+                           '--expression', 'text + str(items[1])', cwd=directory, timeout=180)
+            require(exported['schema'] == 'nex.core-capsule-export/1' and exported['read_after_export'],
+                    'installed SDK did not validate a newly exported core capsule')
+            original_program = Path(session['launch']['program'])
+            original_program.parent.rename(directory / 'retained-original-build')
+            moved = directory / 'moved capsule "quoted" \\ % `data` 🧠'
+            capsule.rename(moved)
+            require(not original_program.exists(), 'original core executable path still exists')
+            capsule_report = cli('core', '--capsule', moved, '--expression', 'text + str(items[1])',
+                                 cwd=directory, timeout=120)
+            require(capsule_report['capsule']['inventory_checked'] and capsule_report['watch']['value'] == 'Я🧠2' and
+                    capsule_report['revision'] == session['revision'] and capsule_report['core']['sha256'] == digest and
+                    capsule_report['stop_unchanged'] and not capsule_report['inferior_execution'] and
+                    graph.read_bytes() == graph_before and not source.exists(),
+                    'moved core capsule lost its original values/build/graph identity')
+            evidence.update(actual_capsule_read=True, original_executable_absent=True,
+                            capsule_export=exported, capsule_report=capsule_report)
         report['evidence']['core_reports'] = evidence
 
     def foreign_boundary():

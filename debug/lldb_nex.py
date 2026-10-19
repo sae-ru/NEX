@@ -218,6 +218,9 @@ def load(debugger, command, result, internal_dict):
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
         manifest = json.loads(path.read_text())
+        # Relocation authority comes only from the trusted core reader after
+        # capsule inventory/build validation, never a persisted debug field.
+        manifest.pop('_capsule_recorded_program', None)
         if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
         mappings = manifest.get("source_map", [])
@@ -882,8 +885,10 @@ def _require_frame_image(target, frame, program):
     if process.GetPluginName() in ("minidump", "elf-core"):
         context = _contexts.get(program, {})
         key = context.get('build_key', '')
+        recorded = context.get('_capsule_recorded_program', program)
         if (len(key) != 64 or any(c not in '0123456789abcdef' for c in key) or
-                Path(program).parent.name != key):
+                Path(program).parent.name != key or not Path(recorded).is_absolute() or
+                Path(recorded).parent.name != key or Path(recorded).name != 'app'):
             raise ValueError("core image requires its content-addressed retained build directory")
         # LLDB can resolve a core PC through a different supplied executable
         # at the same address. In that case GetModule() names the supplied
@@ -896,7 +901,11 @@ def _require_frame_image(target, frame, program):
             region = lldb.SBMemoryRegionInfo()
             error = process.GetMemoryRegionInfo(frame.GetPC(), region)
             name = region.GetName() if error.Success() else None
-        if not name or str(Path(name).resolve()) != program:
+        # Capsule paths describe the historical mapping. Resolving a now changed
+        # filesystem alias would rewrite that evidence during a later read.
+        named = os.path.normpath(name) if name and '_capsule_recorded_program' in context else str(Path(name).resolve()) if name else None
+        expected_name = os.path.normpath(recorded) if '_capsule_recorded_program' in context else program
+        if not named or named != expected_name:
             raise ValueError("core recorded frame image does not match the loaded NEX manifest")
         if target.GetNumModules() > 10000:
             raise ValueError("core image module list exceeds limit")
