@@ -323,3 +323,8 @@ children, including requests with omitted/zero count. Read body.nex.native_page
 for the actual returned count and requested offset. Handles expire on execution
 or new stops. Native preview pages are not whole values or exact frame captures;
 use the checked inspect/evaluate demand protocol for semantic reasoning or replay.
+
+Native frame inspection requires a matching loaded executable image. Function
+names and paths alone do not identify an image. Treat a frame-image mismatch
+as unavailable; select matching artifacts rather than rewriting manifest or
+revision identities. Core archives remain an independently validated workflow.

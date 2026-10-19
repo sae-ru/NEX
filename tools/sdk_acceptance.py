@@ -306,6 +306,9 @@ test fn examples() -> unit {
                 descriptor['file_environment']['http_inherits_environment'] is False,
                 'SDK lacks explicit filesystem capability policy')
         pack = json.loads((resources / 'llm/language-pack.json').read_text())
+        require('frame_module_identity_guard' in descriptor['debug_features'] and
+                descriptor['native_debug_image_binding'] == pack['native_debug_image_binding'],
+                'SDK lacks frame-to-loaded-image identity binding')
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
         inventory = {}
         for name in [*pack['documents'].values(), *pack['examples'].values()]:

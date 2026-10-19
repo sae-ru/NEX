@@ -1,0 +1,88 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T14:49:19.410307+00:00",
+  "ok": true,
+  "terminal_exit_code": 0,
+  "toolchain": "0.57.0",
+  "source_language": "0.16",
+  "compiler_sha256": "60843de6ec7a4ce473317feac046bc0f5d77ba2d56d14feb4a5cb9c1b4e3e8b3",
+  "phases": 21,
+  "commands": 312,
+  "seconds": 355.126,
+  "indexed_resources": 141,
+  "all_indexed_resources_match_frozen_source": true,
+  "editor_assets": {
+    "extension_version": "0.1.0",
+    "installed_sources": {
+      "package.json": "235c4e25b2ddc25b2578d4d3dbb534b3ee15c39caa2d862382c528da7a1b3ebc",
+      "package-lock.json": "b6ff6eb172aeb711dae99debad2f3c86bb31c94ca3dab8b78f66ce7d78960f31",
+      "extension.js": "fbcda94b2be244dbdd11e166fb704546bc79b0f757127f6e0acbe892b5e4de40",
+      "session.js": "421272431ec6a8543320da159e53900a4816c29f9815d8b6ff2f87378c72070d",
+      "language-configuration.json": "0620c4464523da727427550991f2eeefe4cdf704d865081ee78bdf000352b5d9",
+      "README.md": "d6caf34cbafd03e5c225b4e50f199db1baec596f5126d40d3f21bccdc2af79a5",
+      "test.js": "e33b51d25418079cb6e1e440c19f27d92565086ec57155be927f0c727a8445ab"
+    },
+    "focused_node_contracts": true,
+    "actual_ide_run": false,
+    "native_session_preparation": true,
+    "revision": "d40cfb83e9771e5cb30bbd23a3be0775b7140eb484e6e8b02b10b3a6d3745fea",
+    "build_key": "592ff1fca37e0b745c38de1513bdd7dc0c6114cc0c6d8287fc8e3c09468de4bf"
+  },
+  "all_editor_assets_match_frozen_source": true,
+  "live_debugger": true,
+  "browser_build": true,
+  "source_checkout_hidden": false,
+  "report": "build/sdk-057-native-pages-acceptance/report.json",
+  "report_sha256": "14b898dd3b47adffc270c50a2241eb37a3ed7f7236353071d265edef0d094cb7",
+  "source_manifest": "build/native-pages-057-validation-snapshot.json",
+  "source_tree": "6d04719cb45740d6bc398e1ce03055fddce2eccb",
+  "source_commit": "a47a22a551331a7080df4e04756e1957dd4447a9",
+  "scope": "Complete installed SDK on macOS ARM64, npm offline using populated NEX_NPM_CACHE. Actual installed IDE is a separate scoped report; editor phase does not claim a GUI run.",
+  "native_indexed_pages": {
+    "native_descriptor": true,
+    "live_dap_pages": true,
+    "page_limit": 1000,
+    "pages": {
+      "items": {
+        "indexed_children": 32768,
+        "tail": [
+          [
+            "[32766]",
+            "40"
+          ],
+          [
+            "[32767]",
+            "42"
+          ]
+        ],
+        "default_count": 1000,
+        "large_request_count": 1000
+      },
+      "data": {
+        "indexed_children": 4194304,
+        "tail": [
+          [
+            "[4194302]",
+            "120"
+          ],
+          [
+            "[4194303]",
+            "255"
+          ]
+        ],
+        "default_count": 1000,
+        "large_request_count": 1000
+      }
+    },
+    "unchanged_watch_stop": {
+      "frame_id": 0,
+      "process_id": "34574",
+      "stop_id": "13",
+      "thread_id": "88551360"
+    },
+    "native_exit_code": 0,
+    "stale_handles_rejected": true
+  },
+  "accepted_release": false,
+  "full_objective_complete": false
+}

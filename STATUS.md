@@ -1,5 +1,30 @@
 # NEX implementation status
 
+## Toolchain 0.57.1: loaded-frame image binding under development
+
+A negative core control exposed incorrect attribution when LLDB loads the
+core's executable beside another selected NEX image with identical function
+names. The candidate checks actual loaded SBModule identity and physical path
+before frame values, operation candidates or exact watches receive the selected
+manifest's revision. Source language0.16, runtime ABI and canonical forms remain
+unchanged. Current focused/live, full69, SDK21 and platform validation are
+separate required gates; no accepted release is claimed.
+
+The preceding frozen615-file 0.57.0 passes all68 macOS ARM64 groups (566 Python
+cases, four explicit skips;1658.87s) and all68 Linux ARM64 groups (1335.62s).
+Its installed macOS SDK21/312 commands and actual installed VSIX page checks
+pass. Both moved/restored macOS SDK21 workflows pass312 commands each with
+source/dependency reads and SDK writes denied by the kernel (915.134s total).
+Linux live13, source-free SDK21, portable SDK and optimized host checks are
+recorded separately. Emulated Linux x86-64 currently retains three task-FFI
+timeout failures; no passing current x86-64 matrix is claimed.
+
+Core feasibility probes on macOS/Linux ARM64 read small modified-memory dumps,
+including native frames and watches. macOS source-deleted replay retains exact
+Unicode/list values. These probes do not implement a core archive format or
+complete optimized-PC attribution. A full macOS core also replays but grows to
+7.115GB; its size and the failed image-control result remain recorded.
+
 ## Toolchain 0.57: native indexed pages under development
 
 An isolated build adds lazy native list/byte children beyond the 32-element

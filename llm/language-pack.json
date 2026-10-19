@@ -275,5 +275,10 @@
     "metadata_field": "body.nex.native_page",
     "requires_matching_nex_dap_bridge": true,
     "native_preview_not_exact_wire_value": true
+  },
+  "native_debug_image_binding": {
+    "selected_frame": "same_loaded_module_as_executable",
+    "function_names_are_not_image_identity": true,
+    "requires_matching_manifest": true
   }
 }

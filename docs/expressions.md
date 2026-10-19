@@ -1,6 +1,6 @@
-# NEX expressions in stopped frames — toolchain 0.14
+# NEX expressions in stopped frames — language 0.16
 
-NEX expressions use the language 0.13 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.16 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -310,3 +310,8 @@ budgets, aliased captures and source-deleted replay. Its optional `--live
 LiveBinaryDebug` check uses real LLDB/DAP: a four-MiB buffer remains stopped while
 only its length/selected octets are read; whole capture explicitly exceeds its
 budget. Byte children are read-only paged NEX integers.
+
+Frame reports and watches reject a selected frame from a different loaded
+executable module before capturing values. This includes a core loaded beside
+another image with the same function names. Preserve the matching manifest,
+executable, symbols and SDK; do not relabel a frame to bypass this check.

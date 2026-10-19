@@ -785,6 +785,19 @@ def _read_path(value, schema, request, budget):
     return {"ok": _integer(_member(data, "kind")) == 3}
 
 
+def _require_frame_image(target, frame, program):
+    # A core may load its actual image alongside the executable selected by
+    # the user. Names and even file paths alone cannot bind a frame to the
+    # manifest: two loaded modules can have different UUIDs at the same path.
+    # SBModule equality identifies the actual loaded module, without reading
+    # inferior expressions or treating its source names as proof of identity.
+    actual = frame.GetModule()
+    expected = target.FindModule(target.GetExecutable())
+    if (not actual.IsValid() or not expected.IsValid() or actual != expected or
+            str(Path(str(actual.GetFileSpec())).resolve()) != program):
+        raise ValueError("selected frame image does not match the loaded NEX manifest")
+
+
 def _stopped(debugger, compiler=True):
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
@@ -798,6 +811,7 @@ def _stopped(debugger, compiler=True):
     context = _contexts.get(program)
     if not context or (compiler and not context.get("_compiler")):
         raise ValueError("load matching debug views with an explicit trusted --compiler path")
+    _require_frame_image(target, frame, program)
     native = frame.GetSymbol().GetName()
     function = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
     if function is None:
@@ -982,6 +996,10 @@ def values(debugger, command, result, internal_dict):
         frame = process.GetSelectedThread().GetSelectedFrame()
         if not frame.IsValid():
             raise ValueError("no selected frame")
+        program = str(Path(str(target.GetExecutable())).resolve())
+        context = _contexts.get(program, {})
+        if context:
+            _require_frame_image(target, frame, program)
         variables = frame.GetVariables(True, True, False, True)
         entries = []
         for index in range(min(variables.GetSize(), 256)):
@@ -989,8 +1007,6 @@ def values(debugger, command, result, internal_dict):
             entries.append({"name": value.GetName(), "type": value.GetTypeName(),
                             "value": (value.GetSummary() or value.GetValue() or "<unavailable>")[:MAX_TEXT]})
         location = frame.GetLineEntry()
-        program = str(Path(str(target.GetExecutable())).resolve())
-        context = _contexts.get(program, {})
         native = frame.GetSymbol().GetName()
         logical = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
         result.PutCString(json.dumps({"schema": "nex.debug-values/1", "revision": context.get("revision"),

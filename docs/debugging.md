@@ -1,6 +1,6 @@
-# Native debugging — NEX toolchain 0.15
+# Native debugging — NEX language 0.16
 
-Current source language is 0.15. Debug information describes real native parameters,
+Current source language is 0.16. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.
@@ -137,6 +137,15 @@ their selected build directory.
 For source-operation candidates at a stop, use `nex-operation` and resolve its deterministic site through `nex context --site KEY --revision HASH`. Co-located candidates are explicit; see [operations.md](operations.md) for local persistent identities, exact source hashes and optimized-PC limits.
 
 ## Integrity and validation
+
+NEX frame reports, operation candidates and exact watches require the selected
+frame to belong to the same loaded executable module as the manifest context.
+A matching function name or pathname is insufficient: LLDB can load a core's
+actual executable alongside another selected image. A different loaded module
+is rejected before variables are captured or graph identities are assigned.
+This guard does not authenticate process data or add a portable core archive
+format. Core use through raw LLDB options still requires matching artifacts and
+its own platform validation.
 
 The native build key includes the formatter content. Cache hits verify the
 captured formatter/stdio adapter, exact debug manifest, all projected source contents and,

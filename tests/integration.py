@@ -220,6 +220,8 @@ test fn branches() -> unit {
         self.assertIn("generated_client_helpers", descriptor["api_features"])
         self.assertIn("lldb_dap_launch", descriptor["debug_features"])
         self.assertIn("paged_native_indexed_roots", descriptor["debug_features"])
+        self.assertIn("frame_module_identity_guard", descriptor["debug_features"])
+        self.assertEqual(descriptor["native_debug_image_binding"],pack["native_debug_image_binding"])
         self.assertEqual(descriptor["native_debug_pages"],pack["native_debug_pages"])
         self.assertEqual(descriptor["native_debug_pages"]["page_items"],1000)
         self.assertIn("native_module_compilation", descriptor["build_features"])

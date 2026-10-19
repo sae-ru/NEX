@@ -4,232 +4,32 @@
 
 **Главная идея:** минимальное количество токенов для передачи максимального количества точного смысла при максимальной производительности и безопасности исполняемой системы.
 
-People and LLMs work with a checked semantic graph. The model helps create and change programs; compiled applications run without an LLM.
+NEX is a language and development toolchain built around a checked semantic
+graph. People and different LLMs can inspect and change that graph through the
+same versioned tools. Compiled applications run independently of an LLM.
 
-NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
+The current source is **toolchain 0.57.1 / language 0.16**, under development.
+The implemented language includes checked integers and finite floats, Unicode
+strings, immutable aggregates, algebraic enums and exhaustive matching,
+generics, traits with associated types and constructor parameters, typed
+function values and snapshot closures. Types, effects, client/server realms and
+owned-resource boundaries are checked before execution. Native code uses
+MLIR/LLVM; browser applications use generated TypeScript with React/Vite.
 
-The source is **toolchain 0.57.0 / language 0.16**, under development. It adds
-bounded native DAP pages for list/byte roots: the debugger can open late indices
-in a 32,768-item list or 4 MiB buffer, returning at most 1,000 children per
-request. Native previews stay separate from exact watch captures. The isolated
-build passes; full compiler, SDK21 and cross-platform checks are still pending.
-The default grammar and source semantics remain language 0.16.
+The development chain includes a reference interpreter, SQLite/BLAKE3 revision
+store, dependency locks, incremental native builds, transactional graph patches,
+task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
+debugging, a VS Code extension and native profiling. The installed SDK workflow
+has 21 phases. The new debugger supports native list/byte pages of at most 1000
+children, including late indices, without capturing the entire root. Frame
+inspection also checks that the selected frame belongs to the loaded image
+associated with its manifest.
 
-The preceding source is **toolchain 0.56.1 / language 0.16**. It includes traits and
-constructor parameters, the installed VS Code extension workflow and a
-twenty-phase development SDK. Portable SDKs pass all twenty phases after moving
-and restoring their archives on macOS/Linux ARM64. macOS includes real LLDB/DAP
-and browser checks with source/dependency roots denied by the kernel; Linux
-uses a separate runtime container without the source, LLVM, MLIR, Z3 or network.
-
-The exact597-file implementation passes Linux full67, twelve live debugger
-suites and source-free SDK20. macOS base594 passes full67; the subsequent
-Crypto linker correction passes29 focused cases, an actual debug/release and
-source-deleted regression, and both portable workflows. Root promotion needs
-its own current build/full67/installed SDK20. The current generated web example
-also passes18 production and3 development Playwright checks across Chromium,
-Firefox and WebKit. [Evidence](docs/evidence/sdk-distribution-0.56.1.json)
-keeps these scopes, compiler hashes and retained failed attempts separate.
-Complete language/platform/development-chain requirements remain in `PLAN.md`.
-
-The root0.56.1 build and installed SDK20/310-command workflow pass. Its first
-full67 regression is still running. A separate editor correction fixes original
-breakpoints when a source path contains a double quote: the same native test
-fails before the change and passes afterward on macOS/Linux ARM64. The corrected
-installed VSIX also passes the original-file breakpoint, scalar/trait watches,
-stack/scopes, exact output42 and exit0 in VS Code1.142.0. Nine path controls and
-the initial failure are retained in [editor path evidence](docs/evidence/editor-paths-0.56.1.json).
-This resource correction still needs its final root installation/SDK checks.
-
-The preceding frozen editor tree is **toolchain 0.56.0 / language 0.16**.
-It installs VS Code extension sources, an editor guide and capability metadata.
-The current compiler passes the editor suite, including ten Node contract cases.
-An installed VSIX in a separate VS Code 1.142.0/macOS ARM64 profile passes the
-original-file breakpoint, stack/scopes, scalar/trait watches at an unchanged
-stop, exact output and native exit 0. Physical aliases and changed symlinks are
-covered. [Editor evidence](docs/evidence/editor-integration-0.56.0.json) records
-the initial alias failure and correction. Its frozen576 files pass all67 groups
-on macOS/Linux ARM64, both installed SDK20 workflows (310 commands each),
-and twelve Linux live debugger suites. Linux acceptance runs without the source
-checkout or network. The subsequent portable SDK correction remains separate.
-
-[Setup and packaging](docs/editor.md) describes the current workflow. The prior
-extension prototype and its source-map correction retain separate
-[evidence](docs/evidence/editor-extension-prototype.json). NEX Studio, LSP and
-wider IDE/platform targets remain pending.
-
-The preceding 0.55/source 0.16 trait/library API source passes all 66 Linux ARM64
-groups, twelve live debugger suites and its 19-phase source-free SDK workflow
-(307 commands, no source checkout or network). Its installed macOS SDK19 also
-passes307 commands; the resumed macOS full66 also passes (1621.33s).
-[Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records exact
-scope. These results do not verify changed 0.56 sources. The complete language
-and development-chain PLAN remains open.
-
-The earlier internal 0.55 constructor core still uses language 0.15 and separately
-passes all65 macOS ARM64 groups. Its evidence does not verify this source extension.
-
-The preceding frozen source is toolchain **0.54.0 / language 0.15**, adding
-[bounded stopped-string Unicode windows](docs/string-debug.md). Its frozen534
-files pass all64 groups on macOS ARM64 (1496.29s) and Linux ARM64 (780.41s):
-534 Python cases and12 C++ probes. Both installed SDK18 workflows pass, along
-with twelve Linux live debugger suites. The Linux SDK runs without the source
-checkout or network. Native LLDB/DAP checks capture a4MiB Unicode string and
-replay retained windows after source deletion.
-[Evidence](docs/evidence/string-ranges-0.54.0.json) records source/compiler hashes
-and exact scopes. The previous root0.53 diagnostic failure was traced to stale objects after
-preserving older source timestamps; a clean rebuild passes the same21 cases.
-The promoted0.54 root separately passes its clean build, all64 macOS groups (1318.30s) and installed SDK18 (322.356s). Complete language,
-platform and development-chain requirements remain open in `PLAN.md`.
-
-The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux
-ARM64, both fifteen-phase installed SDK workflows and eleven Linux live debugger
-suites. It is promoted to the root, where relocation checks remain separate.
-[The evidence](docs/evidence/project-versions-0.51.0.json) records exact scope.
-
-The preceding verified tree is toolchain **0.49.0 / language 0.15**, adding an atomic
-HEAD-transition journal and checked, optimistic restoration of archived source.
-Graph schema 4 retains existing revisions/IDs and starts an explicit new journal
-without inventing older provenance. Actor/note labels are declared data. All
-57 regression groups pass on macOS/Linux ARM64, alongside both thirteen-phase
-installed SDK workflows and eleven Linux live debugger suites.
-[The evidence](docs/evidence/change-history-0.49.0.json) records exact scope,
-corrected fixtures and remaining work. Physical project-version enforcement is included in the current tree; see
-`STATUS.md`.
-
-The preceding verified **0.48.0 / language 0.15** adds source-operation patches
-and parser tree-depth bounds. All 56 regression groups and both thirteen-phase
-installed SDK workflows pass on macOS/Linux ARM64, with eleven Linux live
-debugger suites. [The evidence](docs/evidence/operation-patches-0.48.0.json)
-records exact scope and remaining broader checks.
-
-The preceding verified **0.47.0 / language 0.15** keeps checked integer success
-paths in SSA and preserves cold native trap metadata. All 55 regression groups
-and both thirteen-phase installed SDK workflows pass on macOS/Linux ARM64,
-with eleven Linux live debugger suites. [The evidence](docs/evidence/native-arithmetic-0.47.0.json)
-records exact scope and remaining broader validation.
-
-The preceding verified **0.46.0 / language 0.15** snapshot adds bounded native
-runtime trap reports, checked graph mapping and archived log diagnosis. All 54
-groups pass on macOS/Linux ARM64, alongside both thirteen-phase installed SDK
-workflows and Linux live debugger checks. [The evidence](docs/evidence/native-diagnostics-0.46.0.json)
-records exact scope; the [guide](docs/native-diagnostics.md) defines trust and limits.
-
-The preceding verified **0.45.0 / language 0.15** snapshot adds atomic source
-type replacements together with affected functions/endpoints. All 52 groups pass
-on macOS/Linux ARM64, with both installed SDK workflows and Linux live checks.
-[The evidence](docs/evidence/type-patches-0.45.0.json) records exact scope.
-
-The preceding verified **0.44.0 / language 0.15** snapshot adds persistent
-module/type nodes, bounded declaration context and atomic, snapshot-scoped
-identity reconciliation between stores. Its current validation is recorded in
-`STATUS.md`; [the graph guide](docs/graph.md) describes the protocol.
-
-The corrected snapshot passes all 51 regression groups on macOS/Linux ARM64,
-both thirteen-phase installed SDK workflows and the Linux live debugger matrix.
-The [graph evidence](docs/evidence/graph-identities-0.44.0.json) records the exact
-scope, the nested-match traversal correction and pending broader validation.
-
-The preceding verified snapshot is toolchain **0.43.0 / language 0.15**. It adds
-matching-host native application packaging with explicit foreign-library grants,
-recursive dependency/notices collection and checked, history-preserving pin
-projections. The corrected implementation passes all 50 macOS/Linux ARM64 suites,
-both thirteen-phase installed SDK workflows and Linux live debugger checks.
-Catalogue input bounds, offline schema references and native image identity are
-covered by the checks. Broader platform/release/distribution work remains pending;
-see `STATUS.md` for exact evidence and remaining work.
-
-Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
-
-Toolchain 0.24 / language 0.11 introduced finite binary64 arithmetic. Source programs, generic numeric functions, native/TypeScript/interpreter execution, typed JSON/API models and float watches passed the macOS ARM64 and Linux ARM64/x86-64 development matrix. Installed SDK acceptance includes numeric browser state and source-deleted replay; Linux x86-64 execution is emulated. Broader platforms remain pending; macOS/Linux development SDK bundles are verified in 0.30. The [numeric design and acceptance plan](docs/floats-design.md) records the scope and limits.
-
-Toolchain 0.30 / language 0.12 adds server-only text-file operations with a
-separate `fs` effect, explicit directory access and read-only defaults. Native
-HTTP scopes deny implicit environment grants. The [file guide](docs/files.md)
-describes syntax and limits; full validation of this new language version is
-tracked in `STATUS.md`.
-
-Development 0.33 / language 0.13 connects immutable `bytes` to the checker,
-interpreter, native/TypeScript backends, typed JSON/API and bounded debugger
-values, with server-only binary files. Current compiler and installed-SDK checks
-passed on macOS ARM64 and Linux ARM64/emulated x86-64. The maintained SDK
-distribution workflow verifies moved/restored archives; current artifact status
-is in `STATUS.md`. The [binary guide](docs/bytes.md) gives exact
-interfaces; the [design history](docs/bytes-design.md) preserves prototype scope.
-
-Development 0.35 keeps language 0.13 unchanged and extends the internal resource
-runtime with managed file values, native streaming calls, request revocation and
-JSON exclusion. [The ownership design](docs/resources-design.md) defines cleanup,
-physical leases/quotas and cancellation. Source handles, FFI and async remain
-pending; current checks are tracked in `STATUS.md`.
-
-Development 0.36 / language 0.14 adds the opaque server-only `file` type and ten
-streaming operations, with `fs`, owner aliases, native/reference agreement and
-explicit history-preserving migration from 0.13. Files cannot cross JSON/API or
-browser boundaries. [The resource guide](docs/resources.md) documents source
-syntax and debugger identities. Validation is tracked in `STATUS.md`.
-
-Current 0.36 checks pass all 42 suites on macOS ARM64 Debug/Release and Linux
-ARM64, installed macOS/Linux ARM64 SDK workflows, real LLDB/DAP and managed-file
-sanitizers. Corrected Linux x86-64 compiler/SDK checks pass under emulation;
-other platforms, current SDK archives, general FFI and source async remain
-pending. See [the evidence](docs/evidence/source-resources-0.36.0.json).
-
-Development 0.37 keeps language 0.14 unchanged and adds an experimental C value
-transport for trusted hosts. Its [contract](docs/ffi-design.md) covers copied
-payloads, call-local owners, quotas, thread checks and sticky host traps. The
-25 C/C++ cases pass with sanitizers on macOS ARM64 and Linux ARM64/emulated
-x86-64. macOS Debug passes 43 suites and the installed SDK passes thirteen
-workflow phases, including an independent C/C++ host. Broader current compiler
-and SDK/distribution checks remain pending. Source
-foreign declarations and library loading are not implemented yet.
-
-Development 0.38 adds checked host signatures exported by `nex ffi FILE --symbol
-NAME --json`, typed input/result validation and C constructors for nominal values.
-It preserves the original ABI-1 table prefix and language 0.14. The
-[typed host example](examples/ffi/main.nex) agrees with an independent C producer.
-macOS Debug passes 45 suites and the installed SDK passes thirteen phases; the
-48 legacy/typed C cases pass sanitizers on the stated macOS/Linux scope.
-See [the evidence](docs/evidence/ffi-types-0.38.0.json) for remaining validation.
-Source external calls remain pending.
-
-Development 0.39 adds explicit host grants and content-pinned native module
-loading with checked signatures, private verified snapshots and resource-scoped
-physical leases. It keeps language 0.14 unchanged. The
-[module contract](docs/ffi-design.md) records trust, dependency lookup and pending
-source/packaging work. macOS Debug passes 46 suites and the installed SDK passes
-thirteen workflow phases; component sanitizers pass on macOS ARM64 and Linux
-ARM64/emulated x86-64. See [the evidence](docs/evidence/ffi-modules-0.39.0.json)
-and `STATUS.md` for the exact scope and remaining checks.
-
-Development 0.40 adds explicit operator catalogues, lexical invocation contexts
-and the shared managed-value adapter required by source FFI. It preserves
-language 0.14; source external declarations and backend lowering remain pending.
-The [host contract](docs/ffi-design.md) records the implemented adapter. macOS
-Debug passes 47 suites and the installed SDK passes thirteen phases; component
-sanitizers and source-free Linux bridge hosts pass on the stated scope.
-See [the evidence](docs/evidence/ffi-contexts-0.40.0.json) and `STATUS.md`.
-
-Development 0.41 / language 0.15 connects concrete server `extern` declarations
-and `ffi` to the checker, interpreter/native backend, CLI, profiler, debugger
-and browser reachability rules. Its [evidence](docs/evidence/source-ffi-0.41.0.json)
-records full macOS/Linux ARM64 regressions and installed SDK scenarios, including
-source-deleted execution. Broader current platforms and stable ABI validation
-remain pending.
-
-Development 0.42 keeps language 0.15 and adds `nex foreign HOST.json` read-only
-inventory discovery. Native task execution checks pin `foreign_hash`; task
-check/run/replay requires current `--foreign HOST.json`, captures exact module
-bytes and rejects changed/unauthorized inputs. See [tasks](docs/tasks.md) for
-trust, input limits and replay. Matching-host native dependency-closure packaging
-is added in 0.43; current validation is recorded in `STATUS.md`.
-
-Development 0.43 retains language 0.15 and C ABI 1. `nex package --foreign`
-copies reachable native module closures, preserves complete notices, derives
-new checked source pins and retains both graph revisions without editing source
-files or moving HEAD. Standalone applications resolve their deployed catalogue
-from the actual executable location. See [packaging](docs/packaging.md) for
-native loader scope, trust and pending platforms.
+Validation results are recorded with their exact source, compiler, platform
+and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).
+The [plan](PLAN.md) tracks the remaining language and development-chain work.
+Performance and token savings require comparable measurements; they are goals,
+not established advantages over other languages.
 
 ## Build
 
@@ -295,7 +95,7 @@ and copies only its required non-platform libraries and notices. Native servers
 use `--target server`. The directory can run without NEX SDK; platform runtime
 compatibility and actual deployment execution must be verified separately.
 See [application packaging](docs/packaging.md) for provenance, SDK inventory
-reuse, Linux tools and runtime configuration. Toolchain 0.29 passed the stated macOS/Linux compiler, SDK and deployment matrix.
+reuse, Linux tools and runtime configuration. Current compiler, SDK and deployment evidence have separate scopes recorded in STATUS.md.
 
 ## Native target selection
 
@@ -329,7 +129,7 @@ Run the reported executable with `--auth FILE --database FILE` and optional `--c
 
 ## Typed API generation
 
-Language 0.5 adds explicit endpoints referencing checked server handlers. The compiler generates a frozen native dispatcher, a client SDK with extracted models and typed request/response helpers, exact wire schemas and OpenAPI 3.1.1 documentation. Successful response data is validated before reaching browser update events.
+Explicit endpoint declarations reference checked server handlers. The compiler generates a frozen native dispatcher, a client SDK with extracted models and typed request/response helpers, exact wire schemas and OpenAPI 3.1.1 documentation. Successful response data is validated before reaching browser update events.
 
 ```sh
 ./build/nex api examples/api/service.nex --json
@@ -342,7 +142,7 @@ Generate into a new/empty directory before using this client example. Build the 
 
 ## Generic libraries
 
-`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances; custom traits and higher-kinded types remain pending.
+`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances. User traits, associated types and fixed constructor parameters are implemented in language 0.16; see [traits](docs/traits.md). General type lambdas and broader higher-kinded inference remain pending.
 
 ## Function values
 
@@ -370,7 +170,7 @@ Parameters, blocks, statements and expressions have local persistent identities 
 
 ## Incremental native builds
 
-Toolchain 0.25 introduced a separate native object for each reachable concrete function, closure and generic specialization. Development 0.26 removes redundant entry-only IR generation and shares checked operation-site indexing; its performance/full matrix validation is in progress. Body edits can reuse siblings in the same file; call contracts, source coordinates and transitive record layouts invalidate affected consumers. `nex build FILE --json` reports compiled/reused function and module counts and the `compilation` report path. Stable DWARF paths map to each session's complete frozen sources. The [build guide](docs/incremental.md) covers keys, dependencies, artifact integrity and remaining frontend/LTO/test-cache work. Programs are checked before cached code is selected; the new full platform/SDK matrix remains in progress.
+The native backend emits a separate object for each reachable concrete function, closure and generic specialization, avoids redundant entry-only IR generation and shares checked operation-site indexing. Body edits can reuse siblings in the same file; call contracts, source coordinates and transitive record layouts invalidate affected consumers. `nex build FILE --json` reports compiled/reused function and module counts and the `compilation` report path. Stable DWARF paths map to each session's complete frozen sources. The [build guide](docs/incremental.md) covers keys, dependencies, artifact integrity and remaining frontend/LTO/test-cache work. Programs are checked before cached code is selected; exact platform/SDK validation is recorded in STATUS.md.
 
 ## Debugging and editor integration
 
@@ -379,7 +179,7 @@ Toolchain 0.25 introduced a separate native object for each reachable concrete f
 ./build/nex debug examples/debugging/main.nex --kind nex-dap --json
 ```
 
-Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies a stdio adapter command and launch configuration for a compatible client using an installed `lldb-dap`. Pure NEX watch expressions use exact captured values and a separate interpreter. Demand-driven reads select list lengths, record fields, result tags and dynamic indices without serializing unrelated payloads; computed aggregates support paged children. [The expression guide](docs/expressions.md) covers LLDB commands, offline snapshots, adapter registration and operational limits. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work.
+Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies a stdio adapter command and launch configuration for a compatible client using an installed `lldb-dap`. Pure NEX watch expressions use exact captured values and a separate interpreter. Demand-driven reads select list lengths, record fields, result tags and dynamic indices without serializing unrelated payloads; computed aggregates support paged children. Native list/byte roots also support bounded pages through the matching NEX DAP bridge; textual previews retain their separate limits. [The expression guide](docs/expressions.md) covers LLDB commands, offline snapshots, adapter registration and operational limits. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work.
 
 ## Profiling
 
@@ -425,4 +225,21 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The current verified development checkpoint is **0.48.0 / language 0.15**, with 56 regression groups passing on macOS/Linux ARM64, installed SDK workflows and Linux live debugger checks. Broader current Release, sanitizer, x86-64 and SDK distribution checks remain pending; consult `STATUS.md` for exact coverage. Language 0.5/0.6/0.7/0.8/0.9/0.10/0.11 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and broader SDK/platform distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The complete language and development chain remain under development.
+macOS ARM64 and Linux ARM64 are the primary exercised hosts. Linux x86-64
+execution uses Docker emulation; it does not verify physical x86-64 hardware or
+live ptrace. macOS Intel binaries can be cross-built, but their execution is
+unverified. Windows, Android, iOS, native UI/GPU and WebAssembly integration
+remain pending.
+
+Source-level async, general external-resource kinds and callbacks, full
+pre/post-contract execution, optimized-PC/core attribution, browser profiling,
+remote package retrieval and cross-model quality/token benchmarks remain open.
+The native debugger's indexed previews are separate from exact captured NEX
+values; named roots and native string-root paging retain their stated limits.
+See the relevant guides and PLAN.md for precise scope.
+
+Older language archives require explicit history-preserving migration with
+`nex migrate`. Keep their matching SDKs for old debug sessions and receipts.
+The project is the language and its development tools; application products
+will be built afterwards using NEX.
