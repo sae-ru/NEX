@@ -3,7 +3,7 @@
   "toolchain": "0.54.0",
   "language": "0.15",
   "recorded_at": "2026-10-19T02:40:13.600517+00:00",
-  "status": "verified_isolated_scoped",
+  "status": "verified_isolated_scoped_root_validation_pending",
   "accepted_release": false,
   "full_objective_complete": false,
   "compiler_sha256": "10b5dce899de3f67cb1f9c10915b9247fc98b651d6109b54a73efd02826abc0e",
@@ -231,7 +231,7 @@
     }
   ],
   "remaining": [
-    "Root0.53 frontend_diagnostics regression failure remains unresolved;0.54 is not promoted to root.",
+    "Promoted root054 clean build/full64/installed SDK18 validation is pending. Root053 failing full62 and clean diagnostic rerun remain separate historical evidence.",
     "Direct uncaptured large-root DAP paging/editor installation/additional layouts and optimized-PC/core mapping.",
     "Broader release/sanitizer/platform/device/distribution/ABI, traits/associated/higher-kinded types/async, LLM measurements and all remaining full PLAN requirements."
   ],
@@ -2402,5 +2402,33 @@
     ],
     "cause": "Not yet diagnosed; isolated passes do not supersede this root failure.",
     "full_objective_complete": false
+  },
+  "root053_stale_object_resolution": {
+    "ok": true,
+    "created": "2026-10-19T02:44:33.589952+00:00",
+    "cause": "Promotion used copy2, retaining source/header mtimes older than root pre052 object files. modules.cpp.o dependency file lacked frontend_diagnostics.h despite the current source including it.",
+    "fix": "Clean rebuild from unchanged root053 source; promotion054 copies changed content without retaining old mtimes and performs a complete clean build.",
+    "baseline": {
+      "created": "2026-10-19T02:43:05.534732+00:00",
+      "observation": "Promoted sources retained old timestamps using shutil.copy2. modules.cpp.o was not recompiled in the promotion log; its dependency file lacks a header directly included by the current source.",
+      "current_source_includes_diagnostics": true,
+      "object_dependency_lists_diagnostics": false,
+      "source_mtime": 1792363664.2871997,
+      "object_mtime": 1792365244.9213684,
+      "source_sha256": "6a425379ccc6c8b8eba2358df03302f084625f0ba4e2c9aaa60e387da6b11a11",
+      "object_sha256": "11f8f9f70154ce644d781a435bf10253f01bfb5a0de09ca8d035284404cf7e81",
+      "compiler_sha256": "9d6ffd6b46269607e58b565bab1902a0ab385c4c34f0c8b60c3af745951e18cf",
+      "hypothesis": "Stale pre052 modules object linked into053 root compiler; confirm with clean rebuild and same diagnostic tests."
+    },
+    "compiler_sha256": "6580cc36227c0a8a04a36c87ea2543e44d31343edf5a6aa781e50db297bd4822",
+    "source_snapshot": "build/graph-queries-053-root-validation-snapshot.json",
+    "log": "build/graph-queries-053-root-clean-frontend-focused.log",
+    "log_sha256": "cc28602a1dcbd6d85fa0ee38ec9b1c6c227574e67536d60dd084aec71e7bc61d",
+    "last_test": "build/graph-queries-053-root-clean-frontend-LastTest.log",
+    "last_test_sha256": "9827f318823036ab05a22b0cf41b2581de91fb059c00ae0529026b23014d3c34",
+    "python_cases": 21,
+    "skipped": 1,
+    "seconds": 4.85,
+    "scope": "Same previously failing frontend_diagnostics group passes after clean rebuild; not a new full62 or installed SDK053 acceptance claim."
   }
 }

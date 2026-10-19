@@ -1,5 +1,18 @@
 # NEX implementation status
 
+## Promoted0.54: current root checks pending
+
+The exact verified isolated0.54 implementation is now in the root checkout.
+The root gets a complete clean build, full64 regressions and installed SDK18
+acceptance; isolated results below do not substitute for these checks.
+
+The preceding root0.53 frontend diagnostic failure was a stale-build error:
+copying sources with their older timestamps left a pre052 modules.cpp object.
+Its dependency file lacked the new directly included diagnostics header.
+A clean rebuild of unchanged source passes the same21 diagnostic cases (4.85s,
+one macOS filename skip). The failed full62 and focused correction remain in
+the graph-query evidence; no replacement full053 pass is claimed.
+
 ## Verified isolated0.54: stopped-string Unicode scalar windows
 
 The frozen534-file source passes all64 groups on macOS ARM64 (1496.29s) and
@@ -17,10 +30,9 @@ and installed SDK checks capture a4MiB string at an unchanged stop and replay
 the retained window after source deletion. Complete strings, language0.15,
 native ABI, canonical forms and graph format remain unchanged.
 
-This version is backed up separately and is not promoted to root. Root0.53
-build/SDK17 pass, but full62 fails `frontend_diagnostics` (61 groups passed;
-4 assertion failures and3 missing-context errors). Isolated passes do not
-supersede that unresolved failure. Direct large-root DAP paging, editor/core/PC
+The frozen source is backed up separately. The new root has independent gates
+as stated above; the prior failed full053 run is retained alongside its
+clean-rebuild diagnosis. Direct large-root DAP paging, editor/core/PC
 mapping, traits/associated/higher-kinded types/async and the remaining full
 platform/release/ABI/LLM plan remain open.
 
