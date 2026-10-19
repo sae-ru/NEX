@@ -13,7 +13,10 @@ acceptance: macOS/Linux distribution validators now use the matching SDK's
 complete twenty-phase contract. Old twelve-phase reports, missing editor/trait
 checks, duplicate/reordered phases and failed commands are rejected. All eleven
 archive/distribution contract tests pass. Current compiler, installed SDK and
-actual moved/restored bundle acceptance remain pending; the following 0.56.0
+actual moved/restored bundle acceptance remain pending. Compiler-managed
+TypeScript/Vite execution also handles literal-backslash project paths through
+owned temporary directories, with LLVM percent-TMPDIR staging corrected.
+See [the web guide](docs/web.md) and retained failure evidence; the following 0.56.0
 results are separately scoped.
 
 The preceding frozen editor tree is **toolchain 0.56.0 / language 0.16**.
@@ -23,8 +26,10 @@ An installed VSIX in a separate VS Code 1.142.0/macOS ARM64 profile passes the
 original-file breakpoint, stack/scopes, scalar/trait watches at an unchanged
 stop, exact output and native exit 0. Physical aliases and changed symlinks are
 covered. [Editor evidence](docs/evidence/editor-integration-0.56.0.json) records
-the initial alias failure and correction. Full 67-group regression, the new
-20-phase SDK workflow and current Linux checks remain pending.
+the initial alias failure and correction. Its frozen576 files pass all67 groups
+on macOS/Linux ARM64, both installed SDK20 workflows (310 commands each),
+and twelve Linux live debugger suites. Linux acceptance runs without the source
+checkout or network. The subsequent portable SDK correction remains separate.
 
 [Setup and packaging](docs/editor.md) describes the current workflow. The prior
 extension prototype and its source-map correction retain separate

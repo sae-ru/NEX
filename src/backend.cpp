@@ -646,12 +646,30 @@ int execute(const std::vector<std::string> &args) {
   int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,{},0,0,&error,&failed);
   if(failed||status<0)throw Error("E_PROCESS",error.empty()?"process failed":error);return status;
 }
+namespace {
+int executeBuildTool(const std::vector<std::string> &arguments){
+  // LLVM tools create their own temporary files too (notably dsymutil).
+  // Scope the workaround to build tools; application environments stay intact.
+  auto base=std::filesystem::canonical(std::filesystem::temp_directory_path());
+  if(base.string().find('%')==std::string::npos)return execute(arguments);
+  std::vector<std::string> command{"/usr/bin/env","TMPDIR=/tmp","TMP=/tmp","TEMP=/tmp","TEMPDIR=/tmp"};
+  command.insert(command.end(),arguments.begin(),arguments.end());return execute(command);
+}
+}
+std::string createTemporaryDirectory(const std::string &prefix,const std::string &directory){
+  namespace fs=std::filesystem;
+  auto base=fs::canonical(directory.empty()?fs::temp_directory_path():fs::path(directory));
+  // LLVM expands '%' throughout temporary filename models, including parents.
+  // Its object/archive writers also need a physical staging path without '%'.
+  if(base.string().find('%')!=std::string::npos)base=fs::canonical("/tmp");
+  llvm::SmallString<128> temporary;
+  if(auto error=llvm::sys::fs::createUniqueDirectory((base/prefix).string(),temporary))throw Error("E_FILE",error.message());
+  return temporary.str().str();
+}
 ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSeconds) {
   if(args.empty())throw Error("E_PROCESS","empty command");
   auto program=llvm::sys::findProgramByName(args[0]);if(!program)throw Error("E_TOOL","cannot find executable "+args[0]);
-  llvm::SmallString<128> temporary;
-  if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-process",temporary))throw Error("E_FILE",ec.message());
-  std::filesystem::path folder(temporary.str().str());
+  std::filesystem::path folder(createTemporaryDirectory("nex-process"));
   try {
     auto stdoutPath=(folder/"stdout").string(),stderrPath=(folder/"stderr").string();
     std::vector<llvm::StringRef> refs;for(const auto &a:args)refs.push_back(a);
@@ -859,16 +877,14 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(size_t i=0;i<plan.units.size();++i){
     const auto &unit=plan.units[i];auto &artifact=unitArtifacts[i];
     if(!artifact.reused){
-      llvm::SmallString<128> temporary;
-      if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-native-unit",temporary))throw Error("E_FILE",ec.message());
-      std::filesystem::path stage(temporary.str().str());
+      std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
         artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
-        if(execute(compile)!=0)throw Error("E_LINK","native unit compiler failed");
+        if(executeBuildTool(compile)!=0)throw Error("E_LINK","native unit compiler failed");
         artifact.object=readFile((stage/"program.o").string());saveArtifact(buildRoot,unitKeys[i],artifact);std::filesystem::remove_all(stage);
       }catch(const Error &error){throw Error(error.code,std::string(error.what())+"; intermediate files retained at "+stage.string(),error.span);}
       ++result.compiledFunctions;compiledSourceUnits.insert(unit.unit);
@@ -899,7 +915,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(profiling){
         arguments.insert(arguments.end(),{"-DNEX_PROFILE_ENABLED","-DTRACY_ENABLE","-DTRACY_ON_DEMAND","-DTRACY_DELAYED_INIT","-DTRACY_MANUAL_LIFETIME","-DTRACY_ONLY_LOCALHOST","-DTRACY_NO_BROADCAST","-DTRACY_NO_CODE_TRANSFER","-DTRACY_NO_CALLSTACK","-DTRACY_NO_SYSTEM_TRACING","-DTRACY_NO_SAMPLING","-DTRACY_NO_CRASH_HANDLER","-DTRACY_NO_FRAME_IMAGE","-pthread"});
       }
-      if(execute(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
+      if(executeBuildTool(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
       auto digest=hash(readFile(temporary.string()));std::filesystem::rename(temporary,cached);writeFile(marker.string(),digest+"\n");
     }
     auto destination=folder/std::filesystem::path(component).replace_extension(".o");
@@ -911,7 +927,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){ return "+name+"(value); }\n");
     auto bridgeCompile=command({"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization});
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
-    if(execute(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
+    if(executeBuildTool(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
     link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
   }
   if(!options.libraryEntry){
@@ -920,7 +936,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"build_key",key},{"compiler_build",NEX_BUILD_ID}},false);
     auto source=(folder/"application-identity.cpp").string(),object=(folder/"application-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_application_identity()noexcept{return "+json(identity,false)+";}\n");
-    if(execute(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","application identity compilation failed");link.push_back(object);
+    if(executeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","application identity compilation failed");link.push_back(object);
   }
   if(profiling){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX
@@ -928,7 +944,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name}},false);
     auto source=(folder/"profile-identity.cpp").string(),object=(folder/"profile-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_profile_build_info(){return "+json(identity,false)+";}\n");
-    if(execute(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
+    if(executeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
   }
   if(foreign){link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
   if(profiling&&!options.libraryEntry){link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
@@ -937,9 +953,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // (including percent signs) are never interpreted as that template.
   std::filesystem::path linkStage;auto linkOutput=result.executable;
   if(driverABI.isOSLinux()||options.libraryEntry){
-    llvm::SmallString<128> temporary;
-    if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-link",temporary))throw Error("E_FILE",ec.message());
-    linkStage=temporary.str().str();linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
+    linkStage=createTemporaryDirectory("nex-link");linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
   }
   if(options.libraryEntry){
     std::vector<std::string> archive={toolchain.archiver,"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
@@ -959,14 +973,14 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
     link.insert(link.end(),{"-o",linkOutput,"-g"});
   }
-  if(execute(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
+  if(executeBuildTool(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
   if(!linkStage.empty()){
     try{copyFile(linkOutput,result.executable,true);std::filesystem::remove_all(linkStage);}
     catch(const Error &e){throw Error(e.code,std::string(e.what())+"; link output retained at "+linkStage.string(),e.span);}
   }
   if(!options.libraryEntry&&driverABI.isOSDarwin()) {
     auto dsym=toolchain.debugPackager;
-    if(execute({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
+    if(executeBuildTool({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
     writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }
   if(!result.notices.empty())writeFile(result.notices,notices);

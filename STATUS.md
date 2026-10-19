@@ -9,6 +9,14 @@ terminal reports. The workflow also checks its action registration, preventing
 an omitted action from appearing complete. Failed commands remain rejected;
 expected rejected programs/traps retain their nonzero exit codes.
 
+The literal-directory Node test launcher and UTF-8 LLDB import commands are
+corrected. Actual relocation exposed a further Node ESM failure on literal
+backslashes. Compiler-managed TypeScript/Vite execution now uses identical files
+in an owned temporary directory for those physical paths, retaining generated
+sources and results. LLVM temporary staging also avoids percent-template parents.
+The initial relocation and focused TMPDIR failures are retained in evidence;
+current full and portable acceptance remain pending.
+
 All eleven archive/distribution contract cases pass, including actual historical
 phase names, missing current phases, duplicate/order errors and incomplete
 commands. Source language 0.16, runtime ABI and canonical forms are unchanged.
@@ -16,7 +24,7 @@ The current compiler/full regression, installed SDK and relocated/restored
 portable bundles still need their own checks. Earlier evidence below does not
 verify this patch. Complete PLAN work remains open.
 
-## Isolated0.56 editor installation integration: acceptance pending
+## Isolated0.56 editor installation integration: scoped acceptance passed
 
 Toolchain0.56 keeps source0.16 and its canonical forms unchanged. CMake installs
 editor sources and their separate pinned development lock; the descriptor and
@@ -33,7 +41,13 @@ and trait watches at the same native stop, exact output42 and exit0. The first
 focused run exposed a /var physical-alias mismatch; the corrected implementation
 preserves the selected path and rejects a symlink retarget during preparation.
 The initial failure is retained in [current evidence](docs/evidence/editor-integration-0.56.0.json).
-Full67, complete SDK20 and current Linux acceptance remain pending.
+The frozen576-file editor integration passes all67 macOS/Linux ARM64 groups,
+both complete SDK20 workflows/310 commands, twelve Linux live debugger suites
+and the separate actual installed IDE check. The Linux SDK runs without source
+or network. See the exact [macOS full](docs/evidence/editor-integration-0.56.0-macos-full.json),
+[Linux](docs/evidence/editor-integration-0.56.0-linux.json) and
+[macOS SDK](docs/evidence/editor-integration-0.56.0-sdk.json) evidence. Subsequent
+0.56.1 portable workflow corrections remain separately pending.
 
 The preceding 0.55 trait/library API source separately passes Linux66, twelve
 live suites and all19 source-free SDK phases/307 commands. Its host controller

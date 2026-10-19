@@ -10,9 +10,7 @@
 
 namespace nex {
 llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::json::Value graph,const ProfileOptions &options){
-  llvm::SmallString<128> temporary;
-  if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-profile",temporary))throw Error("E_FILE",ec.message());
-  auto directory=std::filesystem::path(temporary.str().str()),raw=directory/"runtime.json";
+  auto directory=std::filesystem::path(createTemporaryDirectory("nex-profile")),raw=directory/"runtime.json";
   try{
     // env is launched directly, with no shell expansion. Override a parent's
     // Tracy setting: local reports never start a profiler listener implicitly.

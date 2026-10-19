@@ -28,9 +28,7 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
   namespace fs=std::filesystem;
   auto output=fs::absolute(options.directory).lexically_normal();
   if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
-  llvm::SmallString<128> temporary;
-  if(auto error=llvm::sys::fs::createUniqueDirectory("nex-package",temporary))throw Error("E_FILE",error.message());
-  auto folder=fs::path(temporary.str().str()),request=folder/"request.json";
+  auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";
   const char *python=std::getenv("NEX_PYTHON");
   auto candidate=program;llvm::json::Value projection=nullptr;llvm::json::Object foreignFiles;
   std::set<std::string> reachable;std::function<void(const Function&)> visit=[&](const Function &function){

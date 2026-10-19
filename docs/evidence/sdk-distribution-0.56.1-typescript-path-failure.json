@@ -1,0 +1,52 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T10:48:37.519111+00:00",
+  "status": "retained_typescript_esm_path_relocation_failure",
+  "terminal_exit_code": 1,
+  "source_tree": "99fbdd18f3d66a1e57a5444177110a1247f92876",
+  "source_commit": "065c3f0dfbbaa9e25d2806e11b82fbca7e2cb286",
+  "verification_sha256": "256c6119ad3d80fc019ac6c915f8edc0c93cf6c8a38c2a68b838c569fafb25ff",
+  "workflow_sha256": "9863539d35a3c4578ac67008c61d202c89da1ea9fef403e1cdb4937528a93f78",
+  "phases": [
+    {
+      "name": "discovery",
+      "status": "passed"
+    },
+    {
+      "name": "editor-tools",
+      "status": "passed"
+    },
+    {
+      "name": "new-project",
+      "status": "passed"
+    },
+    {
+      "name": "reviewed-failure",
+      "status": "passed"
+    },
+    {
+      "name": "graph-repair-import",
+      "status": "failed"
+    }
+  ],
+  "failed_command": {
+    "command": [
+      "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 z9a9jykg/moved SDK, % 🧠/bin/nex",
+      "test",
+      "--revision",
+      "HEAD",
+      "--target",
+      "web",
+      "--json"
+    ],
+    "cwd": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 z9a9jykg/moved-workflow/atomic-type-patch",
+    "stdout": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 z9a9jykg/moved-workflow/logs/067.stdout",
+    "stderr": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 z9a9jykg/moved-workflow/logs/067.stderr",
+    "status": "failed",
+    "exit_code": 1
+  },
+  "stdout": "{\n  \"code\": \"E_DIFFERENTIAL\",\n  \"column\": 1,\n  \"file\": \"main.nex\",\n  \"line\": 7,\n  \"message\": \"TypeScript test disagrees with interpreter: type_patch::app::value_test\\nnode:internal/modules/esm/resolve:237\\n    throw new ERR_INVALID_MODULE_SPECIFIER(\\n          ^\\n\\nTypeError [ERR_INVALID_MODULE_SPECIFIER]: Invalid module \\\"/private/tmp/NEX%20SDK%20work%20%22quoted%22%20%5C%20%F0%9F%A7%A0/NEX%20SDK%20distribution,%20%25%20%F0%9F%A7%A0%20z9a9jykg/moved-workflow/atomic-type-patch/.nex/build/2a298fb19b749c588f7369c4e9a993c3881fbf7044095f37d7cbb00dca5c5b29/typescript/test.ts\\\" must not include encoded \\\"/\\\" or \\\"\\\\\\\" characters imported from /private/tmp/NEX SDK work \\\"quoted\\\" \\\\ 🧠/NEX SDK distribution, % 🧠 z9a9jykg/moved-workflow/atomic-type-patch/\\n    at finalizeResolution (node:internal/modules/esm/resolve:237:11)\\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\\n    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:680:36)\\n    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)\\n    at ModuleLoader.import (node:internal/modules/esm/loader:679:21)\\n    at node:internal/modules/run_main:179:35 {\\n  code: 'ERR_INVALID_MODULE_SPECIFIER'\\n}\\n\\nNode.js v22.22.3\\n\",\n  \"ok\": false,\n  \"schema\": \"nex.diagnostic/1\",\n  \"stdout\": \"\"\n}\n",
+  "stderr": "",
+  "reason": "Node ESM rejects encoded backslash in a POSIX filename. The compiler currently launches generated TypeScript directly in the project cache path. This is a tool-launch failure, not established disagreement of language semantics.",
+  "full_objective_complete": false
+}

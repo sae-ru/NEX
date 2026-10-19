@@ -22,6 +22,8 @@ struct BuildResult {
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);
 int execute(const std::vector<std::string> &arguments);
+// The caller owns cleanup (or retains failed native intermediates).
+std::string createTemporaryDirectory(const std::string &prefix,const std::string &base="");
 struct ProcessResult { int code; std::string output, errors; };
 ProcessResult capture(const std::vector<std::string> &arguments,unsigned timeoutSeconds=30);
 }

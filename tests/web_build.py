@@ -15,7 +15,7 @@ repo = Path(__file__).resolve().parents[1]
 env = dict(os.environ)
 if args.npm_cache:
     env["NEX_NPM_CACHE"] = str(args.npm_cache.resolve())
-with tempfile.TemporaryDirectory(prefix="nex real web build ") as temporary:
+with tempfile.TemporaryDirectory(prefix='nex real web build "quoted" \\ % 🧠 ') as temporary:
     root = Path(temporary)
     (root / "nex.json").write_text(json.dumps({"entry": "main.nex", "language": "0.16"}))
     source = root / "main.nex"

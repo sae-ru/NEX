@@ -9,6 +9,31 @@ import support as harness
 
 
 class Web(harness.ToolchainCase):
+    def test_cli_typescript_tests_in_literal_and_physical_backslash_paths(self):
+        root = self.root / 'project "quoted" \\ % 🧠'
+        root.mkdir()
+        source = root / 'main.nex'
+        source.write_text('''module path_semantics;
+fn main() -> unit !{io} { print("A🧠\\u0000"); print(9007199254740993 + 1); }
+test fn value_test() -> unit !{io} { main(); assert(slice("A🧠B", 1, 1) == "🧠"); }
+server fn secret() -> str { return "SERVER_PATH_SECRET"; }
+''')
+        revision = self.cli("check", cwd=root)["revision"]
+        self.assertEqual(self.cli("run", cwd=root)["stdout"], self.cli("eval", cwd=root)["stdout"])
+        self.assertEqual(self.cli("run", "--build-directory", root / 'native-temp-case', cwd=root,
+                                  env={"TMPDIR": str(root)})["stdout"], self.cli("eval", cwd=root)["stdout"])
+        alias = self.root / 'physical-alias'
+        alias.symlink_to(root, target_is_directory=True)
+        for directory in (root, alias):
+            result = self.cli("test", "--target", "web", cwd=directory, env={"TMPDIR": str(root)})
+            self.assertTrue(result["tests"][0]["web"])
+        generated = list((root / '.nex/build').glob('*/typescript/program.ts'))
+        self.assertEqual(len(generated), 1)
+        self.assertNotIn("SERVER_PATH_SECRET", generated[0].read_text())
+        self.assertTrue((generated[0].parent / 'nex-map.json').is_file())
+        source.unlink()
+        self.assertTrue(self.cli("test", "--revision", revision, "--target", "web", cwd=root)["tests"][0]["web"])
+
     def run_web(self, *, entry="main", revision=None):
         destination = self.root / "typescript"
         options = ["emit", "--kind", "typescript", "--entry", entry, "--directory", destination]

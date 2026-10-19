@@ -27,6 +27,18 @@ Generation requires a new or empty directory. Make program changes in NEX and re
 
 The compiler's build cache checks every produced asset's hash, including source maps; modified or missing assets trigger a rebuild. Stored-revision builds use the archived NEX source bundle. Browser builds additionally need the matching installed web adapter, Node/npm and locked development packages. `NEX_NODE` selects the Node tool used for TypeScript tests, `NEX_NPM` selects npm, and `NEX_NPM_CACHE` selects its package cache. Browser runtime needs none of those development tools. `debug` disables Vite minification; `profile` and `release` retain the default production minification. All three emit source maps for generated TypeScript; the profile mode does not add a profiler.
 
+On POSIX, Node's module loader and Vite cannot use a project path containing a
+literal backslash. Compiler-managed tests and builds execute identical generated
+files in an owned temporary directory for those paths, including physical paths
+reached through aliases. Generated sources, maps, dependencies and completed
+assets remain in the reported project/cache directory; temporary execution files
+are removed on success or failure. For direct npm development/preview of an
+editable generated project, choose a directory without a literal backslash.
+Compiler temporary staging also falls back to the system `/tmp` when the
+physical `TMPDIR` contains `%`, which LLVM treats as a filename template marker.
+Compiler-launched native build tools receive the same safe temporary base in
+that case; application execution keeps the caller's environment.
+
 ## Application functions
 
 The entry module defines four ordinary functions:

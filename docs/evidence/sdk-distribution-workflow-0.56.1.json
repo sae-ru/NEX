@@ -1,25 +1,35 @@
 {
   "schema": "nex.development-evidence/1",
-  "created": "2026-10-19T10:41:44.409341+00:00",
+  "created": "2026-10-19T10:56:58.270419+00:00",
   "milestone": "portable_sdk_phase_contract_correction",
-  "status": "focused_lldb_and_literal_node_paths_pass_full_acceptance_pending",
+  "status": "focused_literal_and_physical_web_paths_pass_full_distribution_pending",
   "toolchain": "0.56.1",
   "source_language": "0.16",
-  "compiler_sha256": "694c0abfec583f008e17a3bc21588dbd09ee3ca015a01da94de37ab1a45accf6",
+  "compiler_sha256": "6f0f4e487c156b4e0561f32766202fdc40bd86704048b34665c64f1538bcdeb1",
   "focused": {
-    "groups": 3,
-    "python_cases": 16,
+    "groups": 5,
+    "python_cases": 26,
     "node_contract_cases": 10,
-    "seconds": 11.42,
     "terminal_exit_code": 0,
-    "log": "build/sdk-distribution-0561-node-path-focused.log",
-    "log_sha256": "db1bed3f5c337d814055ca34b397d3c96edae7132595d2e712c0b936d040748d",
-    "last_test_sha256": "d04712ab2916f67d1f89b92b5d49bd0c87a4825726ca6a6a33e95ca83a514fc4"
+    "seconds": 22.12,
+    "log": "build/sdk-distribution-0561-final-path-focused.log",
+    "log_sha256": "cfe0dfaf93f14a4cef734d0b343a85ec531c67b870cd20a84cc5ae238d270777",
+    "last_test_sha256": "f2fc107410d571c5a8afa90023a4aa78b6442e7480ad507b5d3c47f7ab293014"
   },
   "corrected_files": [
     "tools/sdk_acceptance.py",
     "tools/macos/bundle.py",
-    "tools/linux/bundle.py"
+    "tools/linux/bundle.py",
+    "include/nex/backend.h",
+    "include/nex/web.h",
+    "src/backend.cpp",
+    "src/main.cpp",
+    "src/web.cpp",
+    "src/profiling.cpp",
+    "src/packaging.cpp",
+    "tests/web.py",
+    "tests/web_build.py",
+    "tests/editor.py"
   ],
   "previous_distribution_contract_phases": 12,
   "current_contract_phases": 20,
@@ -62,5 +72,43 @@
   "retained_initial_relocation_failure": "sdk-distribution-0.56.1-initial-failure.json",
   "literal_node_path_probe": "build/sdk-distribution-0561-node-path-probe.json",
   "retained_node_relocation_failure": "sdk-distribution-0.56.1-node-path-failure.json",
-  "interrupted_full": "build/sdk-distribution-0561-interrupted-full.json"
+  "interrupted_full": "build/sdk-distribution-0561-interrupted-full.json",
+  "preceding_node_helper_focused": {
+    "groups": 3,
+    "python_cases": 16,
+    "node_contract_cases": 10,
+    "seconds": 11.42,
+    "terminal_exit_code": 0,
+    "log": "build/sdk-distribution-0561-node-path-focused.log",
+    "log_sha256": "db1bed3f5c337d814055ca34b397d3c96edae7132595d2e712c0b936d040748d",
+    "last_test_sha256": "d04712ab2916f67d1f89b92b5d49bd0c87a4825726ca6a6a33e95ca83a514fc4"
+  },
+  "real_web_build": {
+    "real_build": true,
+    "secret_excluded_from_assets_and_source_maps": true,
+    "cache_hit_and_corruption_repair": true,
+    "standalone_asset_copy": true,
+    "archived_source_build": true,
+    "revision": "c56c60e1dd7bea8c27b08286506dc18bb56f6a7d23edc018ecb07ef8a0793019",
+    "terminal_exit_code": 0,
+    "log_sha256": "c2a10580bbb551199a06ba0cee3676bf0a0c22bd5de226dc356b2175a01a9237",
+    "npm_offline": true
+  },
+  "build": {
+    "terminal_exit_code": 0,
+    "jobs": 4,
+    "log": "build/sdk-distribution-0561-native-temp-build.log",
+    "log_sha256": "2568c813170c0589ea5bd1db1861a570e054e7af52cbf868bf78696bd074a007"
+  },
+  "current_path_cases": [
+    "literal backslash/percent/quotes/Unicode project path",
+    "physical alias to that path",
+    "same project as TMPDIR",
+    "native debug build including dsymutil",
+    "TypeScript agreement and archived source after deletion",
+    "locked real TypeScript/Vite build and repaired asset cache"
+  ],
+  "retained_typescript_relocation_failure": "sdk-distribution-0.56.1-typescript-path-failure.json",
+  "retained_first_web_focus": "sdk-distribution-0.56.1-web-path-initial-focus.json",
+  "retained_native_tmpdir_focus": "sdk-distribution-0.56.1-native-temp-initial-focus.json"
 }

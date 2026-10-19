@@ -4,7 +4,7 @@
   "milestone": "installed_editor_sdk_integration",
   "toolchain": "0.56.0",
   "source_language": "0.16",
-  "status": "focused_and_actual_installed_ide_pass_full_acceptance_pending",
+  "status": "verified_scoped_macos_and_linux_arm64",
   "accepted_release": false,
   "full_objective_complete": false,
   "compiler_sha256": "1362a9676e842ec96cd403336fcff4a05df4b06800865700f0e1ee30cd87bd3a",
@@ -152,5 +152,10 @@
     "Full67 compiler regression and complete20-phase installed SDK workflow",
     "Current Linux/native debugger/source-free SDK matrix",
     "Wider IDE platforms, LSP, NEX Studio and full PLAN acceptance"
-  ]
+  ],
+  "macos_full": "editor-integration-0.56.0-macos-full.json",
+  "linux": "editor-integration-0.56.0-linux.json",
+  "macos_sdk": "editor-integration-0.56.0-sdk.json",
+  "verified_source_commit": "26bdb5e084516f0d67b4f6099dcfbad820ae56db",
+  "source_files": 576
 }

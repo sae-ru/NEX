@@ -575,10 +575,7 @@ int run(const Options &o) {
         ProcessResult actual;
         if(web){
           auto module=emitTypeScript(p,{{"entry",f.name}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+NEX_BUILD_ID);
-          auto folder=fs::path(directory)/key/"typescript";writeWebModule(module,folder.string());
-          writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
-          writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
-          const char *node=std::getenv("NEX_NODE");actual=capture({node?node:"node","--experimental-strip-types","--no-warnings",(folder/"test.ts").string()});
+          actual=runTypeScriptTest(module,(fs::path(directory)/key/"typescript").string());
         }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable));}
         if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
       ++count;tests.push_back(llvm::json::Object{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}});
