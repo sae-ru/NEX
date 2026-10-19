@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Package a Linux SDK and verify it in a separate environment without LLVM/Z3."""
 import argparse
-import csv
 import hashlib
-import io
 import json
 import os
 from pathlib import Path
@@ -14,6 +12,8 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from nex_docker_mount import mount
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import sdk_archive
 import sdk_acceptance
@@ -25,13 +25,6 @@ def digest(path):
         for block in iter(lambda: source.read(1048576), b''):
             value.update(block)
     return value.hexdigest()
-
-
-def mount(source, destination, readonly=True):
-    text = io.StringIO()
-    csv.writer(text, lineterminator='').writerow(['type=bind', 'src=' + str(source),
-        'dst=' + str(destination), *(['readonly'] if readonly else [])])
-    return ['--mount', text.getvalue()]
 
 
 def verify(sdk, output):

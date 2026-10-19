@@ -1,3 +1,27 @@
+# Development0.60.1: Docker path correction
+
+The public Linux launcher fails before compilation when a physical source path
+contains a quote or comma. The failure is reproduced against all664 exact frozen
+0.60 files; it is independent of compiler semantics. A separate candidate shares
+CSV bind-mount encoding between check/bundle workflows, including newline fields,
+and retains readonly source/SDK versus writable build/evidence flags. Two actual Docker path cases pass with exact payloads,
+kernel-enforced readonly inputs, writable evidence and no outbound route. Old raw
+mount strings fail with their original quote/newline errors. Thirteen SDK archive
+contracts pass. The initial sysfs-only network assumption and an overly narrow
+negative-error assertion remain retained; corrected observations do not change
+mount or isolation criteria. Matching build and full regression/SDK gates remain
+pending.
+Language0.16 and graph canonical forms remain unchanged.
+
+The preceding0.59 passes macOS/Linux full71, all16 Linux live suites and both
+installed SDK22/320 workflows. macOS moved/restored SDK22 also passes320 commands
+each. A genuine core capsule reads exact Я🧠2 in a fresh container with neither
+source nor original build mounted. Linux portable and quiet AMD64 diagnosis remain
+separate running checks. Frozen0.60 passes focused tests, macOS SDK23/329, three
+actual browsers and a source-deleted cold Wasm rebuild with byte-identical output;
+its full72/current platform matrix remains in progress. No release or full
+language/development-chain completion is claimed.
+
 # Development0.60: bounded scalar WebAssembly draft
 
 The isolated implementation adds a real wasm32 MLIR/LLVM backend, pinned

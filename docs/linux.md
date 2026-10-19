@@ -1,4 +1,4 @@
-# Linux compiler and development chain — development toolchain 0.29
+# Linux compiler and development chain
 
 Native application packaging uses `readelf`, `ldd` and patchelf 0.18.0; the
 development recipe now installs the pinned patchelf package. Older retained
@@ -55,6 +55,27 @@ image already exists. The default of two workers accommodates an 8 GiB Docker
 VM. `--source PATH` selects a source checkout when invoking the script from an
 installed resource pack. Build files and caches remain separate from the
 read-only source. No image is published by these commands.
+
+The 0.60.1 correction encodes bind-mount fields as Docker CSV for source,
+build, installed-SDK and evidence paths. Quoting an entire shell argument does
+not escape Docker's comma/quote parser. The same helper is used by the bundle
+workflow and preserves read-only source/SDK mounts and writable evidence.
+Current actual-path regression and full source/SDK checks are recorded separately
+in STATUS.md; this correction introduces no source-language change.
+
+The source checkout also contains an explicit real-container regression:
+
+```sh
+python3 tests/linux_mounts.py --image nex-sdk-packager:arm64 --output /new/mount-evidence
+```
+
+It pins the selected local image ID, exercises quote/comma/Unicode and newline
+paths, compares exact binary payloads, requires kernel readonly rejection and
+writable evidence, and tests the absent outbound route. The prior raw mount
+strings must still fail. This focused regression does not replace compiler,
+live-debugger or complete installed-SDK acceptance.
+
+
 
 For actual LLDB/DAP checks on a Linux CPU with native ptrace support:
 
