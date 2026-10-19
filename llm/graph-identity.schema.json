@@ -22,7 +22,9 @@
             "type",
             "function",
             "endpoint",
-            "operation"
+            "operation",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -134,7 +136,9 @@
         "kind": {
           "enum": [
             "module",
-            "type"
+            "type",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -268,7 +272,9 @@
             "type",
             "function",
             "endpoint",
-            "operation"
+            "operation",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -314,7 +320,7 @@
           "const": "nex.identities/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "identity_policy": {
           "const": "nex.graph-identity/1"
@@ -346,7 +352,9 @@
                 "type",
                 "function",
                 "endpoint",
-                "operation"
+                "operation",
+                "trait",
+                "impl"
               ]
             },
             "symbol": {
@@ -397,7 +405,7 @@
           "const": "nex.declarations/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "revision": {
           "type": "string",
@@ -445,7 +453,7 @@
           "const": "nex.declaration-context/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "revision": {
           "type": "string",
@@ -484,7 +492,7 @@
           "const": true
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "revision": {
           "type": "string",
@@ -537,7 +545,7 @@
           "const": "nex.identity-resolution/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "source": {
           "$ref": "#/$defs/snapshot"

@@ -1,5 +1,5 @@
-(* NEX 0.15. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
-program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
+(* NEX 0.16. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint | trait | implementation } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
 import        = "import", string, "as", identifier, ";" ;
@@ -13,12 +13,13 @@ realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
 type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | "file" | ( "list" | "result" ), "<", type, ">" |
-                qualified_name, [ type_arguments ] | function_type | "(", type, ")" ;
+                qualified_name, [ type_arguments ] | "list" | function_type | "(", type, ")" ;
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
 type_parameters = "<", type_parameter, { ",", type_parameter }, ">" ;
-type_parameter = identifier, [ ":", constraint, { "+", constraint } ] ;
-constraint    = "add" | "ordered" | "integer" | "number" | "wire" ;
+type_parameter = identifier, [ constructor_parameters ], [ ":", constraint, { "+", constraint } ] ;
+constructor_parameters = "<", "_", { ",", "_" }, ">" ;
+constraint    = "add" | "ordered" | "integer" | "number" | "wire" | qualified_name ;
 type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" | "fs" | "ffi" ;
@@ -46,7 +47,7 @@ product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" | "(", [ arguments ], ")" } ;
 primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
-                [ type_arguments, [ "::", identifier ] ] | "str", "(", [ arguments ], ")" |
+                [ type_arguments, [ "::", identifier, [ type_arguments ] ] ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
 lambda        = [ realm ], "fn", "(", [ parameters ], ")", "->", type, [ effects ], block ;
 list_literal  = "[", [ arguments ], "]" ;
@@ -93,8 +94,8 @@ digit         = "0" .. "9" ;
    function. Free lexical values are immutable snapshots captured on creation.
    Generic named references infer from an expected function type or use explicit
    type arguments. Builtin/nominal constructors and tests are not function values.
-   Custom traits, defaults and higher-kinded
-   parameters are pending. Bounds are checked also for unused declarations.
+   User traits, associated projections and fixed constructor kinds follow
+   traits.md; type defaults and type lambdas remain pending. Bounds are checked also for unused declarations.
    Generic test declarations and unspecialized executable entries are rejected. *)
 
 (* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
@@ -145,3 +146,15 @@ digit         = "0" .. "9" ;
 (* Toolchain0.53 adds archived graph-query commands; source grammar is unchanged. *)
 
 (* Toolchain0.54 adds stopped-string capture ranges; source grammar is unchanged. *)
+
+(* Language0.16 declarations. Self is contextual inside trait signatures.
+   Bare list/result/eligible nominal constructors are permitted as kinded
+   generic arguments; value positions require full application. *)
+trait = [ "pub" ], "trait", identifier, [ "<", "Self", [ constructor_parameters ], ">" ],
+        "{", { associated_type | trait_method }, "}" ;
+associated_type = "type", identifier, [ ":", constraint, { "+", constraint } ], ";" ;
+trait_method = [ realm ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")", "->", type, [ effects ], ";" ;
+implementation = [ "pub" ], "impl", identifier, [ type_parameters ], ":", qualified_name, "for", type,
+                 "{", { associated_binding | method_binding }, "}" ;
+associated_binding = "type", identifier, "=", type, ";" ;
+method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;

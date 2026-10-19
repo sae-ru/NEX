@@ -1,12 +1,20 @@
-# NEX language specification 0.15
+# NEX language specification 0.16
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
-Physical projects can declare `nex.project/1` and language `0.15` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. Source syntax and canonical forms are unchanged.
+Physical projects can declare `nex.project/1` and language `0.16` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+
+Language0.16 adds [traits, associated value types and constructor parameters](traits.md).
+Its canonical formats are function/13, structure/5, enum/4 and program/14.
+Explicit migration from0.15 preserves historical revisions/IDs; keep SDK0.54 for
+old artifacts. Current source integration and remaining validation scopes are
+advertised by `trait_integration_pending`; the earlier language0.15 constructor
+core is separate evidence. The declarations use contextual names and do not
+reserve ordinary old `trait`, `impl`, `type`, `for` or `Self` identifiers.
 
 ## Source and program structure
 
-Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
+Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
 
 ```nex
 module arithmetic;
@@ -61,7 +69,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.15",
+  "language": "0.16",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -87,7 +95,7 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | Named enum | One declared case with its immutable typed payload |
 | `fn(T)->U` | A checked callable with explicit realm/effects and immutable captures |
 
-There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function and file values have object identity; other values retain structural equality. User generics follow the rules below. Custom generic traits, higher-kinded types, mutable collections and custom destructors remain unimplemented.
+There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function and file values have object identity; other values retain structural equality. User generics follow the rules below. Traits and fixed constructor parameters are described in traits.md. Mutable collections and custom destructors remain unimplemented.
 
 Language 0.14 introduces [file resources](resources.md) with server/`fs`
 operations, shared identity, explicit/automatic close and scoped revocation.
@@ -170,7 +178,7 @@ fn example() -> i64 {
 }
 ```
 
-Functions, structures and enums declare ordered, distinct type parameters with `<T, U>`. Generic nominal declarations cannot use the builtin type-constructor name `result`; ordinary existing local/function names remain valid. A parameter denotes an arbitrary non-unit value type. Its scope is the declaration, including function locals and explicit call annotations. A generic body is checked parametrically even when unused: `fn bad<T>(x:T) -> T { return 1; }` is rejected even if all current callers use i64. Operations must be valid for the declared shape. For example, `first<T>(list<T>)` can index the list, and any T supports equality and formatting under current value semantics; typed JSON requires a sufficient `wire` bound; arithmetic on unconstrained T is rejected. Builtin capability constraints are described below; custom traits, type defaults, higher-kinded parameters remain pending.
+Functions, structures and enums declare ordered, distinct type parameters with `<T, U>`. Generic nominal declarations cannot use the builtin type-constructor name `result`; ordinary existing local/function names remain valid. A parameter denotes an arbitrary non-unit value type. Its scope is the declaration, including function locals and explicit call annotations. A generic body is checked parametrically even when unused: `fn bad<T>(x:T) -> T { return 1; }` is rejected even if all current callers use i64. Operations must be valid for the declared shape. For example, `first<T>(list<T>)` can index the list, and any T supports equality and formatting under current value semantics; typed JSON requires a sufficient `wire` bound; arithmetic on unconstrained T is rejected. Builtin capabilities are described below; user traits and constructor parameters follow traits.md. Type defaults remain pending.
 
 Use `identity<i64>(42)`, `Box<str>("text")`, `Maybe<i64>::Some(42)` or `model::Maybe<i64>::None()` for explicit arguments. `Maybe::Some<i64>(42)` is also accepted. Otherwise the checker unifies declared parameter/result types with value arguments and the expected result type. This handles nested lists/results/nominal generics, expected enum cases with no payload, and empty lists whose element type becomes known from another argument. A parameter with no evidence needs explicit arguments: `Tag<T> { id:i64; }` cannot infer T from `Tag(1)` without context. Context flows through declarations/returns, unwrap, fixed-signature intrinsic arguments, conditions, indices and operator operand constraints. Equality does not use its boolean result type as an operand type; either operand can provide inference evidence for the other. Argument typing may use several inference passes; runtime argument evaluation still occurs exactly once, left to right.
 

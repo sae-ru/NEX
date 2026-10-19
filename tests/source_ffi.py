@@ -165,7 +165,7 @@ server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
     def test_migration_preserves_genuine_014_history_and_ordinary_identifier_names(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text());self.source(fixture['source']);old=self.historical_store('0.14')['revision'];self.file.unlink()
         with sqlite3.connect(self.root/'.nex/graph.db') as db:ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall();source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
-        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.15');self.assertNotEqual(current['revision'],old)
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.16');self.assertNotEqual(current['revision'],old)
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],fixture['stdout']);self.assertEqual(self.cli('run','--revision','HEAD',timeout=120)['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids);self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source);self.assertEqual(db.execute('SELECT language FROM revisions WHERE hash=?',(old,)).fetchone()[0],'0.14')

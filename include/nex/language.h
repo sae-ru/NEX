@@ -10,7 +10,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.15";
+inline constexpr const char *languageVersion = "0.16";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -23,7 +23,7 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor, Projection } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   unsigned constructorArity=0;
   std::string realm="shared";std::set<std::string> effects;
@@ -59,6 +59,9 @@ struct Expr {
   std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;
   std::vector<Type> typeArguments;
+  std::vector<Type> methodArguments;
+  std::vector<Type> traitArguments;
+  std::string traitContract,implementation;
   std::vector<std::shared_ptr<MatchArm>> arms;bool statementMatch=false;
 };
 using E = std::shared_ptr<Expr>;
@@ -80,6 +83,7 @@ struct Structure {
   bool enumeration=false; std::vector<Variant> variants;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
+  std::vector<unsigned> typeArities;
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
@@ -96,6 +100,9 @@ struct Function {
   bool exported=false; std::string owner,localName,unit;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
   TypeBounds typeBounds;
+  std::vector<unsigned> typeArities;
+  std::string traitOwner;
+  bool traitSignature=false;
   bool closure=false;std::string closureOwner;std::vector<Param> captures;
   std::optional<ForeignBinding> foreign;
 };
@@ -105,17 +112,35 @@ struct Endpoint {
   int64_t successStatus=200; Span span;
 };
 struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; };
+struct Trait {
+  std::string name,localName,owner,unit;Span span;bool exported=false;
+  unsigned selfArity=0;
+  std::map<std::string,std::set<std::string>> associated;
+  std::vector<Function> methods;
+};
+struct ImplementationMethod {std::string target;std::vector<Type> typeArguments;Span span;};
+struct Implementation {
+  std::string name,localName,owner,unit,trait;Span span;bool exported=false;
+  Type self;
+  std::vector<std::string> typeParameters;TypeBounds typeBounds;std::vector<unsigned> typeArities;
+  std::map<std::string,Type> associated;
+  std::map<std::string,ImplementationMethod> methods;
+};
 struct Program {
   std::string module, source, path;
   std::vector<Function> functions;
   std::vector<Structure> structures;
   std::vector<Import> imports;
   std::vector<Endpoint> endpoints;
+  std::vector<Trait> traits;
+  std::vector<Implementation> implementations;
+  bool traitsPrepared=false;
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
   std::map<std::string,Function> functionTemplates;
   std::map<std::string,Structure> structureTemplates;
   std::map<std::string,std::set<std::string>> parameterBounds;
+  std::map<std::string,unsigned> parameterKinds;
   const Function &function(const std::string &name,Span span={}) const;
   const Structure &structure(const std::string &name) const;
   bool hasStructure(const std::string &name) const;
@@ -123,6 +148,8 @@ struct Program {
   std::string definition(const Function &function) const;
   std::string definition(const Structure &structure) const;
   std::string definition(const Endpoint &endpoint) const;
+  std::string definition(const Trait &trait) const;
+  std::string definition(const Implementation &implementation) const;
   std::string location(const Span &span) const;
 };
 Program parse(std::string source, std::string path);
@@ -155,6 +182,8 @@ void check(Program &program);
 llvm::json::Value canonical(const Function &function);
 llvm::json::Value canonical(const Structure &structure);
 llvm::json::Value canonical(const Endpoint &endpoint);
+llvm::json::Value canonical(const Trait &trait);
+llvm::json::Value canonical(const Implementation &implementation);
 std::string json(const llvm::json::Value &value, bool pretty = true);
 std::string hash(const std::string &text);
 std::string revision(const Program &program);

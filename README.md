@@ -8,15 +8,24 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated **0.55.0 candidate still accepts language 0.15 only**. It adds
-an internal type-constructor kind/application/substitution and implementation-head
-matching/coherence core. Twenty native invariant groups and62 Python cases in four related suites pass;
-the frozen internal-core candidate also passes all65 macOS ARM64 regression
-groups (534 Python cases and13 C++ probes,1347.82s). Source traits, associated types, `F<_>`
-syntax, source dispatch and language 0.16 migration are not implemented or
-advertised. [The design](docs/traits-design.md) specifies those remaining steps;
-[the evidence](docs/evidence/constructor-core-0.55.0.json) gives the current scope.
-The complete language/development-chain objective remains open.
+This isolated development tree is **toolchain 0.55.0 / language 0.16**.
+It implements source traits/impls, associated value types, fixed constructor
+parameters, generic trait methods, coherent static dispatch and graph edits.
+An earlier prototype passes 14 focused Python cases plus 20 constructor invariant
+groups, including pure generic-frame watches and source-deleted migration.
+Five current projects and both proof contracts migrated through genuine 0.15
+archives with source, old rows/IDs and acceptance conditions preserved.
+
+Later constructor/associated API model extraction and the SDK19 traits/live phase
+are built or prepared, with execution still pending. The current 17-case trait
+suite, full66 regression, SDK19/platform workflows and trait-bearing dependency
+library projection are not yet accepted. Automatic permission review is currently
+unavailable because its review model is at capacity; rejected test requests did
+not execute. See STATUS.md and docs/traits.md. The complete language/development
+chain objective remains open in PLAN.md.
+
+The earlier internal 0.55 constructor core still uses language 0.15 and separately
+passes all65 macOS ARM64 groups. Its evidence does not verify this source extension.
 
 The preceding frozen source is toolchain **0.54.0 / language 0.15**, adding
 [bounded stopped-string Unicode windows](docs/string-debug.md). Its frozen534
@@ -28,7 +37,7 @@ replay retained windows after source deletion.
 [Evidence](docs/evidence/string-ranges-0.54.0.json) records source/compiler hashes
 and exact scopes. The previous root0.53 diagnostic failure was traced to stale objects after
 preserving older source timestamps; a clean rebuild passes the same21 cases.
-The promoted0.54 root now requires its own clean build/full64/installed SDK18 checks. Complete language,
+The promoted0.54 root separately passes its clean build, all64 macOS groups (1318.30s) and installed SDK18 (322.356s). Complete language,
 platform and development-chain requirements remain open in `PLAN.md`.
 
 The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux

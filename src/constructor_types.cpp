@@ -1,4 +1,5 @@
 #include "nex/constructor_types.h"
+#include <algorithm>
 #include <functional>
 
 namespace nex {
@@ -22,6 +23,8 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
     if(found==c.constructors.end()||!t.constructorArity||t.constructorArity>maxArity||
        found->second!=t.constructorArity||!t.arguments.empty()||t.element)
       return fail("invalid or unknown type constructor '"+t.name+"'");
+    auto slots=c.constructorParameters.find(t.name);
+    if(slots!=c.constructorParameters.end()&&std::any_of(slots->second.begin(),slots->second.end(),[](auto n){return n!=0;}))return maxArity+1;
     return t.constructorArity;
   }
   if(t.kind==Type::Parameter) {
@@ -37,7 +40,8 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
     auto found=c.constructors.find(t.name);
     if(found==c.constructors.end()||found->second!=t.arguments.size())
       return fail("unknown nominal type or incorrect nominal arity for '"+t.name+"'");
-    for(const auto &a:t.arguments)if(kind(a,c,work,depth+1)!=0)return fail("nominal applications require value-type arguments");
+    auto slots=c.constructorParameters.find(t.name);
+    for(size_t i=0;i<t.arguments.size();++i){auto expected=slots==c.constructorParameters.end()?0:slots->second.at(i);if(kind(t.arguments[i],c,work,depth+1)!=expected)return fail("nominal argument has the wrong constructor kind");}
     return 0;
   }
   if(t.kind==Type::List||t.kind==Type::Result) {
@@ -50,15 +54,20 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
     for(const auto &a:t.arguments)if(kind(a,c,work,depth+1)!=0)return fail("function parameters must be value types");
     return 0;
   }
+  if(t.kind==Type::Projection){
+    if(t.name.empty()||t.arguments.size()!=1)return fail("malformed associated type projection");
+    kind(t.arguments.front(),c,work,depth+1);return 0;
+  }
   if(t.element||!t.arguments.empty())return fail("scalar type has unexpected type arguments");
   return 0;
 }
 Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Work &work,unsigned depth) {
   work.enter(depth);
-  if(kind(constructor,context,work,depth+1)!=args.size()||args.empty())
+  auto constructorKind=kind(constructor,context,work,depth+1);
+  if((constructor.kind==Type::Constructor?constructor.constructorArity:constructorKind)!=args.size()||args.empty())
     throw Error("E_GENERIC_KIND","incorrect number of type constructor arguments",work.span);
-  for(const auto &a:args)if(kind(a,context,work,depth+1)!=0)
-    throw Error("E_GENERIC_KIND","constructor arguments must be value types",work.span);
+  auto slots=constructor.kind==Type::Constructor?context.constructorParameters.find(constructor.name):context.constructorParameters.end();
+  for(size_t i=0;i<args.size();++i){auto expected=slots==context.constructorParameters.end()?0:slots->second.at(i);if(kind(args[i],context,work,depth+1)!=expected)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",work.span);}
   if(constructor.kind==Type::Parameter){constructor.arguments=std::move(args);return constructor;}
   if(constructor.kind!=Type::Constructor)
     throw Error("E_GENERIC_KIND","expected an unapplied type constructor",work.span);
@@ -135,6 +144,7 @@ void mergeConstructors(KindContext &to,const KindContext &from,Span span) {
     auto [it,inserted]=to.constructors.emplace(name,arity);
     if(!inserted&&it->second!=arity)throw Error("E_GENERIC_KIND","inconsistent nominal constructor arity",span);
   }
+  for(const auto &[name,slots]:from.constructorParameters){auto [it,inserted]=to.constructorParameters.emplace(name,slots);if(!inserted&&it->second!=slots)throw Error("E_GENERIC_KIND","inconsistent nominal parameter kinds",span);}
 }
 }
 unsigned typeKind(const Type &t,const KindContext &c,Span span){Work w{span};return kind(t,c,w,0);}
@@ -156,5 +166,10 @@ bool implementationTypesOverlap(const Type &left,const KindContext &a,const Type
   for(const auto &[name,arity]:b.parameters)context.parameters["$right::"+name]=arity;
   Unifier matcher{context,{}, {},Work{span}};for(const auto &[name,arity]:context.parameters)matcher.variables.insert(name);
   return matcher.unify(rename(left,"$left::"),rename(right,"$right::"));
+}
+std::optional<TypeSubstitution> matchRigidImplementationType(const Type &pattern,const Type &actual,const KindContext &context,const std::set<std::string> &variables,Span span) {
+  Work validation{span};if(kind(pattern,context,validation,0)!=kind(actual,context,validation,0))return std::nullopt;
+  Unifier matcher{context,variables,{},Work{span}};if(!matcher.unify(pattern,actual))return std::nullopt;
+  TypeSubstitution result;for(const auto &[name,value]:matcher.bindings)result[name]=substitute(value,matcher.bindings,context,matcher.work);return result;
 }
 }

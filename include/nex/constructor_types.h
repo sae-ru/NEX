@@ -7,6 +7,7 @@ namespace nex {
 struct KindContext {
   std::map<std::string,unsigned> parameters;
   std::map<std::string,unsigned> constructors{{"list",1},{"result",1}};
+  std::map<std::string,std::vector<unsigned>> constructorParameters;
 };
 using TypeSubstitution = std::map<std::string,Type>;
 
@@ -20,6 +21,9 @@ Type substituteConstructorTypes(const Type &,const TypeSubstitution &,const Kind
 // malformed/kind-invalid terms and resource exhaustion remain diagnostics.
 std::optional<TypeSubstitution> matchImplementationType(
   const Type &pattern,const Type &concrete,const KindContext &,Span={});
+std::optional<TypeSubstitution> matchRigidImplementationType(
+  const Type &pattern,const Type &actual,const KindContext &,
+  const std::set<std::string> &variables,Span={});
 
 // Both sides have independent binders. Bounds cannot make overlapping heads
 // coherent, so this check operates only on kinds and head structure.

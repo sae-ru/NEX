@@ -66,3 +66,10 @@ The compiler needs Z3 development headers/library; generated native/browser appl
 Language 0.9 match expressions/statements are reported unsupported by the scalar verifier. This status does not weaken runtime checks or count as a proof; test their behavior across backends.
 
 Language 0.11 f64 expressions, parameters and results are outside this integer/boolean proof subset and return an explicit unsupported status. A numerical runtime test or successful floating compilation does not constitute a Z3 proof.
+
+The current verification report also includes `intent_hash`, computed by the
+same normalized acceptance-property function used by task checks. It identifies
+requires/ensures/return intent under the stated source language; it is not proof
+success. An explicit language migration must review and preserve all properties
+and loop annotations before issuing new snapshot/content/intent pins. Historical
+contracts and receipts retain their matching SDK.

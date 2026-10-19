@@ -4,33 +4,91 @@
   "title": "NEX snapshot-bound scalar verification contracts",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "language", "expected_revision", "source_hash", "functions"],
+  "required": [
+    "schema",
+    "language",
+    "expected_revision",
+    "source_hash",
+    "functions"
+  ],
   "properties": {
-    "schema": {"const": "nex.verification-contracts/1"},
-    "language": {"const": "0.15"},
-    "expected_revision": {"$ref": "#/$defs/hash"},
-    "source_hash": {"$ref": "#/$defs/hash"},
+    "schema": {
+      "const": "nex.verification-contracts/1"
+    },
+    "language": {
+      "const": "0.16"
+    },
+    "expected_revision": {
+      "$ref": "#/$defs/hash"
+    },
+    "source_hash": {
+      "$ref": "#/$defs/hash"
+    },
     "functions": {
-      "type": "array", "minItems": 1, "maxItems": 64,
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
       "items": {
-        "type": "object", "additionalProperties": false,
-        "required": ["symbol", "content_hash", "returns", "requires", "ensures", "loops"],
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "content_hash",
+          "returns",
+          "requires",
+          "ensures",
+          "loops"
+        ],
         "properties": {
-          "symbol": {"type": "string", "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*::)+[A-Za-z_][A-Za-z0-9_]*$"},
-          "content_hash": {"$ref": "#/$defs/hash"},
-          "returns": {"type": "string", "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*)?$", "description": "Empty for unit; otherwise fresh, distinct from parameters."},
-          "requires": {"$ref": "#/$defs/clauses"},
-          "ensures": {"$ref": "#/$defs/clauses"},
+          "symbol": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*::)+[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "content_hash": {
+            "$ref": "#/$defs/hash"
+          },
+          "returns": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*)?$",
+            "description": "Empty for unit; otherwise fresh, distinct from parameters."
+          },
+          "requires": {
+            "$ref": "#/$defs/clauses"
+          },
+          "ensures": {
+            "$ref": "#/$defs/clauses"
+          },
           "loops": {
-            "type": "array", "maxItems": 64,
+            "type": "array",
+            "maxItems": 64,
             "items": {
-              "type": "object", "additionalProperties": false,
-              "required": ["line", "column", "invariants", "decreases"],
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "line",
+                "column",
+                "invariants",
+                "decreases"
+              ],
               "properties": {
-                "line": {"type": "integer", "minimum": 1, "maximum": 4294967295},
-                "column": {"type": "integer", "minimum": 1, "maximum": 4294967295},
-                "invariants": {"$ref": "#/$defs/clauses"},
-                "decreases": {"type": "string", "maxLength": 4096, "description": "Checked i64 expression; empty scaffold is unsupported. Maximum 4096 UTF-8 bytes."}
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4294967295
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4294967295
+                },
+                "invariants": {
+                  "$ref": "#/$defs/clauses"
+                },
+                "decreases": {
+                  "type": "string",
+                  "maxLength": 4096,
+                  "description": "Checked i64 expression; empty scaffold is unsupported. Maximum 4096 UTF-8 bytes."
+                }
               }
             }
           }
@@ -39,7 +97,19 @@
     }
   },
   "$defs": {
-    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "clauses": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 4096, "description": "Scalar NEX predicate; maximum 4096 UTF-8 bytes."}}
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "clauses": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "description": "Scalar NEX predicate; maximum 4096 UTF-8 bytes."
+      }
+    }
   }
 }

@@ -28,7 +28,9 @@
             "module",
             "type",
             "function",
-            "endpoint"
+            "endpoint",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -210,7 +212,9 @@
             "module",
             "type",
             "function",
-            "endpoint"
+            "endpoint",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -307,7 +311,9 @@
             "module",
             "type",
             "function",
-            "endpoint"
+            "endpoint",
+            "trait",
+            "impl"
           ]
         },
         "symbol": {
@@ -408,7 +414,7 @@
           "const": "nex.graph-query/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "namespace": {
           "type": "string",
@@ -458,7 +464,9 @@
                 "module",
                 "type",
                 "function",
-                "endpoint"
+                "endpoint",
+                "trait",
+                "impl"
               ]
             },
             "field": {
@@ -507,7 +515,7 @@
           "const": "nex.graph-query/1"
         },
         "language": {
-          "const": "0.15"
+          "const": "0.16"
         },
         "namespace": {
           "type": "string",
@@ -551,7 +559,9 @@
                 "module",
                 "type",
                 "function",
-                "endpoint"
+                "endpoint",
+                "trait",
+                "impl"
               ]
             },
             "symbol": {

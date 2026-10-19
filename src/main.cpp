@@ -176,11 +176,11 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
-      "  nex declarations [file] [--entity module|type] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|function|endpoint --symbol NAME\n"
-      "  nex identities [file] [--entity all|module|type|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
+      "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
+      "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
       "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
       "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
       "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
@@ -254,9 +254,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"}};
+    const std::map<std::string,std::string> files={{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query or string-debug");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug or trait");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -365,6 +365,7 @@ int run(const Options &o) {
         auto context=store.operations(p,"",id,0,1,true);const auto &node=*(*context.getAsObject()->getArray("nodes"))[0].getAsObject();
         const auto &function=p.function(node.getString("function")->str());
         if(!function.templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace source operations of template '"+function.templateName+"'; specializations are derived",function.span);
+        if(function.traitSignature)throw Error("E_PATCH_TRAIT","replace the source trait declaration",function.span);
         if(function.closure)throw Error("E_PATCH_CLOSURE","replace source operations of owner '"+function.closureOwner+"'; closures are derived",function.span);
         auto range=node.getObject("source_range");if(!range||range->getBoolean("editable")!=true)throw Error("E_PATCH_TARGET","selected operation has no editable source interval");
         auto kind=range->getString("kind");std::string fragment;
@@ -379,17 +380,23 @@ int run(const Options &o) {
       }
       fields(*entry,{"name","source","kind"});
       auto name=required(*entry,"name"),source=required(*entry,"source");
-      std::string requestedKind;if(auto value=entry->get("kind")){auto label=value->getAsString();if(!label||(label!="function"&&label!="endpoint"&&label!="type"))throw Error("E_JSON","replacement kind must be function, endpoint or type");requestedKind=label->str();}
+      std::string requestedKind;if(auto value=entry->get("kind")){auto label=value->getAsString();if(!label||(label!="function"&&label!="endpoint"&&label!="type"&&label!="trait"&&label!="impl"))throw Error("E_JSON","replacement kind must be function, endpoint, type, trait or impl");requestedKind=label->str();}
+      const Trait *trait=nullptr;for(const auto &candidate:p.traits)if(candidate.name==name||(candidate.owner==p.module&&candidate.localName==name))trait=&candidate;
+      const Implementation *implementation=nullptr;for(const auto &candidate:p.implementations)if(candidate.name==name||(candidate.owner==p.module&&candidate.localName==name))implementation=&candidate;
       const Endpoint *endpoint=nullptr;for(const auto &candidate:p.endpoints)if(candidate.name==name||(candidate.owner==p.module&&candidate.localName==name))endpoint=&candidate;
       const Structure *type=!endpoint&&p.hasStructure(name)?&p.structure(name):nullptr;
-      const Function *function=!endpoint&&!type?&p.function(name):nullptr;
-      auto kind=endpoint?"endpoint":type?"type":"function";
+      const Function *function=!trait&&!implementation&&!endpoint&&!type?&p.function(name):nullptr;
+      auto kind=trait?"trait":implementation?"impl":endpoint?"endpoint":type?"type":"function";
       if(!requestedKind.empty()&&requestedKind!=kind)throw Error("E_PATCH_TARGET","replacement kind differs from the checked declaration");
-      auto symbol=endpoint?endpoint->name:type?type->name:function->name;
+      auto symbol=trait?trait->name:implementation?implementation->name:endpoint?endpoint->name:type?type->name:function->name;
       if(!names.insert(symbol).second)throw Error("E_JSON","duplicate replacement");
       if(type&&!type->templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+type->templateName+"'; specializations are derived",type->span);
+      if(function&&function->traitSignature)throw Error("E_PATCH_TRAIT","replace source trait '"+function->traitOwner+"'",function->span);
       auto fragment=parse("module fragment;\n"+source,"<patch>");
-      if(endpoint){
+      if(fragment.functions.size()+fragment.structures.size()+fragment.endpoints.size()+fragment.traits.size()+fragment.implementations.size()!=1||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly one existing declaration");
+      if(trait){if(fragment.traits.size()!=1||fragment.traits[0].name!=trait->localName)throw Error("E_PATCH","replacement must define the named source trait");edits[trait->unit].push_back({trait->span.begin,trait->span.end,source+"\n"});}
+      else if(implementation){if(fragment.implementations.size()!=1||fragment.implementations[0].name!=implementation->localName)throw Error("E_PATCH","replacement must define the named source implementation");edits[implementation->unit].push_back({implementation->span.begin,implementation->span.end,source+"\n"});}
+      else if(endpoint){
         if(fragment.endpoints.size()!=1||fragment.endpoints[0].name!=endpoint->localName||!fragment.functions.empty()||!fragment.structures.empty()||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly the named local endpoint");
         edits[endpoint->unit].push_back({endpoint->span.begin,endpoint->span.end,source+"\n"});
       }else if(type){
@@ -423,7 +430,7 @@ int run(const Options &o) {
     auto kind=o.get("--kind","export");llvm::json::Value result=nullptr;
     if(o.command=="declarations"||kind=="export"){
       auto offset=count("--offset",0,10000000),limit=count("--limit",100,1000);if(!limit)throw Error("E_OPTION","graph page limit must be 1..1000");
-      if(o.command=="declarations"){auto entity=o.get("--entity");if(!entity.empty()&&entity!="module"&&entity!="type")throw Error("E_OPTION","declarations entity must be module or type");result=store.declarations(p,entity,o.get("--symbol"),offset,limit);}
+      if(o.command=="declarations"){auto entity=o.get("--entity");if(!entity.empty()&&entity!="module"&&entity!="type"&&entity!="trait"&&entity!="impl")throw Error("E_OPTION","declarations entity must be module or type");result=store.declarations(p,entity,o.get("--symbol"),offset,limit);}
       else result=store.identities(p,o.get("--entity","all"),o.get("--symbol"),offset,limit);
     }else if(kind=="reconcile"){
       result=store.reconcileIdentities(p,readIdentityManifest(o.get("--manifest")),o.get("--expected-revision"));
@@ -468,7 +475,7 @@ int run(const Options &o) {
   if(o.command=="context") {
     auto name=o.get("--symbol");if(name.empty())throw Error("E_OPTION","context requires --symbol NAME");
     auto entity=o.get("--entity");
-    if(entity=="module"||entity=="type"){
+    if(entity=="module"||entity=="type"||entity=="trait"||entity=="impl"){
       auto value=store.declarations(p,entity,name,0,1);auto object=value.getAsObject();auto nodes=object->getArray("nodes");if(nodes->empty())throw Error("E_IDENTITY_SYMBOL","declaration is not in the selected graph");
       print(llvm::json::Object{{"schema","nex.declaration-context/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",object->getString("namespace")->str()},{"node",(*nodes)[0]}});return 0;
     }
@@ -497,7 +504,7 @@ int run(const Options &o) {
     llvm::json::Array imports;for(const auto &dependency:p.units.at(f.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"module",p.units.at(dependency.target).module},{"file",dependency.target}});
     llvm::json::Array parameters,arguments;for(const auto &parameter:f.typeParameters)parameters.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
     llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
-    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
+    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure&&!f.traitSignature},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
   if(o.command=="diagnose"){
     if(o.get("--manifest").empty()||o.get("--log").empty())throw Error("E_OPTION","diagnose requires --manifest and --log");

@@ -37,7 +37,9 @@
                 "enum": [
                   "function",
                   "endpoint",
-                  "type"
+                  "type",
+                  "trait",
+                  "impl"
                 ]
               }
             }

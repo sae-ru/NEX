@@ -802,6 +802,85 @@ test fn examples() -> unit {
             'stable_complete_query_pages': True, 'queries_preserve_history': True,
             'guarded_repair_from_discovery': True, 'native_reference_after_repair': True}
 
+    def traits():
+        require({'associated_value_types','constructor_kinds','static_dispatch'} <= set(cli('describe').get('trait_features',[])),'SDK lacks source trait capabilities')
+        project = root / 'trait-workflow'; project.mkdir()
+        (project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':'main.nex'}))
+        for filename, expected in [('main.nex','🧠\n'),('mapping.nex','[2,3]\n')]:
+            source = project / filename
+            source.write_text((resources / 'examples/traits' / filename).read_text())
+            require(cli('eval',source,cwd=project)['stdout']==expected,'trait reference result differs')
+            require(cli('run',source,cwd=project)['stdout']==expected,'trait native result differs')
+            cli('test',source,cwd=project);cli('test',source,'--target','web',cwd=project)
+        source = project / 'main.nex'
+        source.write_text((resources / 'examples/traits/watch.nex').read_text())
+        revision = cli('check',cwd=project)['revision'];changes=cli('changes',cwd=project)
+        session = cli('debug',cwd=project);identity=json.loads(Path(session['manifest']).read_text())
+        frame={'schema':'nex.debug-frame/1','language':report['doctor']['language'],
+            'revision':revision,'build_key':identity['build_key'],'function':'trait_watch::observe<list>',
+            'stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
+            'bindings':[{'name':'value','type':'list<i64>','value':['41']}],'truncated':False}
+        framefile=project/'supplied-frame.json';framefile.write_text(json.dumps(frame))
+        expression='Mapper<F>::map<i64,i64>(value,increase)'
+        require(cli('inspect',framefile,'--manifest',session['manifest'],'--expression',expression,cwd=project)['value']==['42'],'trait constructor watch failed')
+        live=None
+        if args.live:
+            projected=identity['sources'][0]['projection']
+            line=next(i+1 for i,text in enumerate(source.read_text().splitlines()) if '// TRAIT_STOP' in text)
+            script,recording=project/'record_trait_frame.py',project/'native-recording.json'
+            script.write_text('''import json,lldb
+def __lldb_init_module(debugger,_):
+ debugger.SetAsync(False);debugger.HandleCommand('settings set target.disable-aslr false')
+ target=debugger.GetSelectedTarget();target.BreakpointCreateByLocation(SOURCE,LINE)
+ process=target.LaunchSimple(None,None,None)
+ def command(text):
+  result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,result)
+  assert result.Succeeded(),(text,result.GetOutput(),result.GetError())
+  return json.loads(result.GetOutput())
+ try:
+  assert process.GetState()==lldb.eStateStopped
+  frame=process.GetSelectedThread().GetSelectedFrame();stop=process.GetStopID();handle=frame.FindVariable('value').GetValueAsUnsigned()
+  values={'value':command('nex-eval Mapper<F>::map<i64,i64>(value,increase)'),
+   'identity':command('nex-eval identity<F<i64>>(value)'),
+   'snapshot':command('nex-frame Mapper<F>::map<i64,i64>(value,increase)')}
+  assert process.GetState()==lldb.eStateStopped and process.GetStopID()==stop
+  assert frame.FindVariable('value').GetValueAsUnsigned()==handle
+  values['unchanged_stop_and_handle']=True
+  with open(RECORDING,'w') as output:json.dump(values,output)
+  process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+ finally:
+  if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('RECORDING',repr(str(recording))))
+            run([compiler,'debug','--revision',revision,'--','--no-lldbinit','--batch','-o',
+                 'command script import '+json.dumps(str(script))],cwd=project,timeout=180)
+            require(recording.is_file(),'live constructor trait frame was not recorded')
+            live=json.loads(recording.read_text());require(live['value']['value']==['42'] and live['identity']['value']==['41'] and live['unchanged_stop_and_handle'],'live constructor trait watch differs or changed stop')
+            framefile=project/'native-frame.json';framefile.write_text(json.dumps(live['snapshot']))
+        source.unlink()
+        require(cli('inspect',framefile,'--manifest',session['manifest'],'--expression',expression,cwd=project)['value']==['42'],'source-deleted trait frame replay failed')
+        require(cli('changes',cwd=project)==changes,'trait watch changed graph history')
+        legacy=project/'legacy';legacy.mkdir();(legacy/'.nex').mkdir()
+        (legacy/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.15','entry':'main.nex'}))
+        metadata=json.loads((resources/'examples/traits/legacy-0.15.json').read_text());sql=(resources/'examples/traits/legacy-0.15.sql').read_bytes()
+        require(hashlib.sha256(sql).hexdigest()==metadata['sql_sha256'],'historical trait fixture hash differs')
+        database=legacy/'.nex/graph.db'
+        with sqlite3.connect(database) as db:db.executescript(sql.decode())
+        def rows():
+            with sqlite3.connect(database) as db:
+                names=[name for name, in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
+                return {name:set(db.execute('SELECT * FROM "'+name.replace('"','""')+'"').fetchall()) for name in names}
+        before=rows();migrated=cli('migrate','--revision',metadata['revision'],cwd=legacy)
+        require(migrated['revision']!=metadata['revision'],'migration reused the old language identity')
+        after=rows()
+        require(all(old<=after[name] for name,old in before.items() if name!='head'),'migration rewrote historical rows')
+        require(cli('eval','--revision','HEAD',cwd=legacy)['stdout']==metadata['stdout'],'migrated contextual names changed meaning')
+        report['evidence']['traits']={'revision':revision,'build_key':identity['build_key'],
+            'native_typescript_reference':True,'source_deleted_watch_replay':True,
+            'live_constructor_trait_frame':bool(live),'unchanged_stop_and_handle':bool(live),
+            'genuine015_fixture':True,'old_revision':metadata['revision'],'migrated_revision':migrated['revision'],
+            'old_non_head_rows_retained':True}
+
     def string_ranges():
         project = root / 'string-range-workflow'
         project.mkdir()
@@ -1609,7 +1688,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
-                ('authenticated-storage', authenticated_storage), ('browser', browser)]:
+                ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]:
             phase(name, action)
         report['ok'] = True
     except BaseException as error:

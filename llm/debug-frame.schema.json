@@ -8,7 +8,7 @@
       "const": "nex.debug-frame/1"
     },
     "language": {
-      "const": "0.15"
+      "const": "0.16"
     },
     "revision": {
       "type": "string",
@@ -68,7 +68,9 @@
             "minLength": 1,
             "maxLength": 4096
           },
-          "value": {"description": "Exact typed application wire value, or debug wire value for types containing callables. Resolve callable layouts using nex.debug-wire/1; the compiler validates the selected target and recursive captures."},
+          "value": {
+            "description": "Exact typed application wire value, or debug wire value for types containing callables. Resolve callable layouts using nex.debug-wire/1; the compiler validates the selected target and recursive captures."
+          },
           "unavailable": {
             "type": "string",
             "maxLength": 4096,

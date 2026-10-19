@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.15",
+  "language_version": "0.16",
   "protocol_version": 2,
   "discovery": "nex describe --json",
   "documents": {
@@ -84,9 +84,12 @@
     "graph_query_guide": "docs/queries.md",
     "graph_query_schema": "llm/graph-query.schema.json",
     "string_debug": "docs/string-debug.md",
-    "text_range_schema": "llm/text-range.schema.json"
+    "text_range_schema": "llm/text-range.schema.json",
+    "traits": "docs/traits.md",
+    "legacy_traits_015": "examples/traits/legacy-0.15.json",
+    "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql"
   },
-  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend --json",
+  "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -134,7 +137,10 @@
     "native_diagnostics": "examples/native-diagnostics.nex",
     "native_arithmetic": "examples/native-arithmetic.nex",
     "operation_patch_source": "examples/operation-patches/main.nex",
-    "large_string_debug": "examples/debugging/strings.nex"
+    "large_string_debug": "examples/debugging/strings.nex",
+    "traits": "examples/traits/main.nex",
+    "trait_mapping": "examples/traits/mapping.nex",
+    "trait_watch": "examples/traits/watch.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -206,13 +212,17 @@
     "nex context --entity module --symbol MODULE --json",
     "nex identities --entity module --symbol MODULE --offset 0 --limit 100 -o PAGE.json",
     "nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH --json",
-    "nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID --json"
+    "nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID --json",
+    "nex context --entity trait --symbol MODULE::TRAIT --json",
+    "nex context --entity impl --symbol MODULE::IMPLEMENTATION --json"
   ],
   "patch_entities": [
     "function",
     "endpoint",
     "type",
-    "operation"
+    "operation",
+    "trait",
+    "impl"
   ],
   "type_patch_example": "examples/type-patches/patch.json",
   "native_diagnostic_commands": [
@@ -235,5 +245,14 @@
     "nex migrate --json",
     "nex test --revision HEAD --json",
     "nex export --revision HEAD --directory NEW_CURRENT_PROJECT --json"
-  ]
+  ],
+  "historical_fixtures": {
+    "language_015": {
+      "language": "0.15",
+      "producer_sdk": "0.54.0",
+      "metadata": "examples/traits/legacy-0.15.json",
+      "database_sql": "examples/traits/legacy-0.15.sql",
+      "purpose": "Genuine historical input for explicit migration; do not use as a current source project or relabel its version."
+    }
+  }
 }

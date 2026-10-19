@@ -1,5 +1,6 @@
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
+#include "nex/traits.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <functional>
@@ -71,22 +72,29 @@ bool inside(const fs::path &path,const fs::path &base){
   auto relative=path.lexically_relative(base);if(relative.empty())return path==base;
   for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();
 }
-struct Symbols{std::map<std::string,bool> functions,structures,variants;std::set<std::string> enumerations;};
+struct Symbols{std::map<std::string,bool> functions,structures,variants,traits,projections;std::set<std::string> enumerations,traitMethods;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
   if(!type&&builtinNames().contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
-  if(external&&symbols.at(key).enumerations.contains(name.substr(0,separator))){external=false;}
+  if(external&&(symbols.at(key).enumerations.contains(name.substr(0,separator))||symbols.at(key).traits.contains(name.substr(0,separator)))){external=false;}
   else if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
-    if(type&&local.find("::")!=std::string::npos)throw Error("E_IMPORT_SYMBOL","type names use an import alias followed by one exported name",span);
     for(const auto &dependency:units.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}
     if(!found)throw Error("E_IMPORT_ALIAS","unknown import alias '"+alias+"'",span);
   }
   const auto &table=symbols.at(target);bool exported=false,found=false;
   if(table.structures.contains(local)){found=true;exported=table.structures.at(local);}
+  if(type&&table.projections.contains(local)){found=true;exported=table.projections.at(local);}
   if(!type&&table.variants.contains(local)){found=true;exported=table.variants.at(local);}
   if(!type&&table.functions.contains(local)){found=true;exported=table.functions.at(local);}
   if(!found)throw Error(type?"E_TYPE":"E_NAME","unknown "+std::string(type?"type '":"function '")+name+"'",span);
   if(external&&!exported)throw Error("E_VISIBILITY","'"+name+"' is private to module "+units.at(target).module,span);
+  return units.at(target).module+"::"+local;
+}
+template<class Units> std::string resolveTraitSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,Span span){
+  auto target=key,local=name;auto sep=name.find("::");bool external=sep!=std::string::npos;
+  if(external){auto alias=name.substr(0,sep);local=name.substr(sep+2);bool found=false;for(const auto &dependency:units.at(key).imports)if(dependency.alias==alias){target=dependency.target;found=true;break;}if(!found)throw Error("E_IMPORT_ALIAS","unknown trait import alias",span);}
+  const auto &table=symbols.at(target).traits;auto found=table.find(local);if(found==table.end())throw Error("E_GENERIC_BOUND","unknown trait '"+name+"'",span);
+  if(external&&!found->second)throw Error("E_VISIBILITY","trait is private: "+name,span);
   return units.at(target).module+"::"+local;
 }
 template<class Units> void bindValueName(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,E expression){
@@ -148,6 +156,8 @@ class Loader {
     block=[&](const auto &body){for(auto s:body){s->span.file=key;for(auto arm:s->arms){arm->span.file=key;for(auto &binding:arm->bindings)binding.span.file=key;}expr(s->expr);childBlocks(s,block);}};
     for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
     for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
+    for(auto &value:unit.traits){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &method:value.methods){method.span.file=key;method.owner=unit.module;method.unit=key;method.localName=value.localName+"::"+method.name;for(auto &parameter:method.params)parameter.span.file=key;}}
+    for(auto &value:unit.implementations){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &[name,method]:value.methods)method.span.file=key;}
     for(auto &endpoint:unit.endpoints){endpoint.span.file=key;endpoint.owner=unit.module;endpoint.localName=endpoint.name;endpoint.unit=key;}
     std::set<std::string> aliases;
     for(auto &dependency:unit.imports){dependency.span.file=key;if(!aliases.insert(dependency.alias).second)throw Error("E_IMPORT_ALIAS","duplicate import alias '"+dependency.alias+"'",dependency.span);dependency.target=importTarget(key,dependency.path,dependency.span);}
@@ -162,20 +172,43 @@ class Loader {
     for(const auto &[key,unit]:parsed){
       auto &table=symbols[key];std::set<std::string> names;
       for(const auto &f:unit.functions){if(!names.insert(f.localName).second||builtins.contains(f.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+f.localName+"'",f.span);table.functions[f.localName]=f.exported;}
+      for(const auto &value:unit.traits){
+        if(!names.insert(value.localName).second||builtins.contains(value.localName))throw Error("E_DUPLICATE","duplicate or reserved trait name",value.span);
+        table.traits[value.localName]=value.exported;
+        for(const auto &[name,bounds]:value.associated)table.projections[value.localName+"::"+name]=value.exported;
+        for(const auto &method:value.methods){auto symbol=value.localName+"::"+method.name;if(table.functions.contains(symbol))throw Error("E_DUPLICATE","duplicate trait method",method.span);table.functions[symbol]=value.exported;table.traitMethods.insert(symbol);}
+        for(const auto &dependency:unit.imports)if(dependency.alias==value.localName)throw Error("E_IMPORT_ALIAS","trait name conflicts with import alias",value.span);
+      }
+      for(const auto &value:unit.implementations)if(!names.insert(value.localName).second||builtins.contains(value.localName))throw Error("E_DUPLICATE","duplicate or reserved implementation name",value.span);
       for(const auto &s:unit.structures){if(!names.insert(s.localName).second||builtins.contains(s.localName))throw Error("E_DUPLICATE","duplicate or reserved name '"+s.localName+"'",s.span);table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;for(const auto &dependency:unit.imports)if(dependency.alias==s.localName)throw Error("E_IMPORT_ALIAS","enum name conflicts with an import alias",s.span);}}
     }
     for(auto &[key,unit]:parsed){
       std::map<std::string,std::string> parameters;
-      auto parameterScope=[&](auto &declaration){parameters.clear();for(auto &name:declaration.typeParameters){auto original=name;name=unit.module+"::"+declaration.localName+"::"+name;parameters[original]=name;}};
+      auto bounds=[&](TypeBounds &values,Span span){for(auto &items:values){std::set<std::string> bound;for(const auto &name:items)bound.insert(std::set<std::string>{"add","ordered","integer","number","wire"}.contains(name)?name:resolveTraitSymbol(parsed,symbols,key,name,span));items=std::move(bound);}};
+      auto parameterScope=[&](auto &declaration){parameters.clear();for(auto &name:declaration.typeParameters){auto original=name;name=unit.module+"::"+declaration.localName+"::"+name;parameters[original]=name;}bounds(declaration.typeBounds,declaration.span);};
       std::function<void(Type&,Span)> type=[&](Type &t,Span span){
         if(t.kind==Type::Parameter){if(!parameters.contains(t.name))throw Error("E_GENERIC_SCOPE","type parameter is outside its declaration",span);t.name=parameters.at(t.name);}
-        if(t.kind==Type::Record)t.name=resolve(key,t.name,true,span);
+        if(t.kind==Type::Record){
+          if(t.name=="result"&&!symbols.at(key).structures.contains("result")&&t.arguments.empty()){t=Type::constructor("result",1);return;}
+          t.name=resolve(key,t.name,true,span);
+          bool projection=false;
+          for(const auto &[source,decls]:symbols)for(const auto &[name,exported]:decls.projections)if(parsed.at(source).module+"::"+name==t.name)projection=true;
+          if(projection)t.kind=Type::Projection;
+          else if(t.arguments.empty())for(const auto &[source,unitValue]:parsed)for(const auto &nominal:unitValue.structures)if(unitValue.module+"::"+nominal.localName==t.name&&!nominal.typeParameters.empty())t=Type::constructor(t.name,nominal.typeParameters.size());
+        }
         if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}
         for(auto &argument:t.arguments)type(argument,span);
       };
       std::function<void(E)> expr;std::function<void(const std::vector<S>&)> block;
-      expr=[&](E e){if(e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);bindValueName(parsed,symbols,key,e);if(e->lambda){auto &fn=*e->lambda;type(fn.result,fn.span);for(auto &param:fn.params)type(param.type,param.span);block(fn.body);}for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolve(key,pattern->text,false,pattern->span);});for(auto a:e->args)expr(a);}};
+      expr=[&](E e){if(e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);for(auto &argument:e->methodArguments)type(argument,e->span);bindValueName(parsed,symbols,key,e);
+        if(!e->methodArguments.empty()){bool method=false;for(const auto &[file,table]:symbols)for(const auto &name:table.traitMethods)if(parsed.at(file).module+"::"+name==e->text)method=true;if(!method)throw Error("E_GENERIC_ARITY","second type argument list requires a trait method",e->span);e->typeArguments.insert(e->typeArguments.end(),e->methodArguments.begin(),e->methodArguments.end());e->methodArguments.clear();}if(e->lambda){auto &fn=*e->lambda;type(fn.result,fn.span);for(auto &param:fn.params)type(param.type,param.span);block(fn.body);}for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolve(key,pattern->text,false,pattern->span);});for(auto a:e->args)expr(a);}};
       block=[&](const auto &body){for(auto s:body){type(s->type,s->span);expr(s->expr);childBlocks(s,block);}};
+      for(auto &value:unit.traits){
+        value.name=unit.module+"::"+value.localName;
+        for(auto &[name,items]:value.associated){TypeBounds temp{items};bounds(temp,value.span);items=temp.front();}
+        for(auto &method:value.methods){auto local=method.name;method.name=value.name+"::"+local;parameterScope(method);parameters["Self"]=value.name+"::Self";type(method.result,method.span);for(auto &parameter:method.params)type(parameter.type,parameter.span);method.traitOwner=value.name;method.traitSignature=true;method.exported=value.exported;}
+      }
+      for(auto &value:unit.implementations){value.name=unit.module+"::"+value.localName;parameterScope(value);value.trait=resolveTraitSymbol(parsed,symbols,key,value.trait,value.span);type(value.self,value.span);for(auto &[name,alias]:value.associated)type(alias,value.span);for(auto &[name,method]:value.methods){method.target=resolve(key,method.target,false,method.span);for(auto &argument:method.typeArguments)type(argument,method.span);}}
       for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
       for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
@@ -200,7 +233,7 @@ public:
     complete=true;phase="bind";bind();
     Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
-    for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));}
+    for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
     p.imports=p.units.at(entry).imports;phase="check";check(p);return p;
     }catch(Error &error){
       if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
@@ -247,10 +280,11 @@ void bindExpression(const Program &p,const std::string &function,E expression){
   for(const auto &[key,_]:p.units)symbols[key];
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
   for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}
-  std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record&&t.arguments.empty()&&parameters.contains(t.name)){t=parameters.at(t.name);return;}if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}for(auto &argument:t.arguments)type(argument,span);};
+  for(const auto &value:p.traits){auto &table=symbols[value.unit];table.traits[value.localName]=value.exported;for(const auto &[name,bounds]:value.associated)table.projections[value.localName+"::"+name]=value.exported;for(const auto &method:value.methods)table.traitMethods.insert(value.localName+"::"+method.name.substr(method.name.rfind("::")+2));}
+  std::function<void(Type&,Span)> type=[&](Type &t,Span span){if(t.kind==Type::Record&&parameters.contains(t.name)){auto base=parameters.at(t.name);auto args=t.arguments;for(auto &a:args)type(a,span);t=args.empty()?base:applyTypeConstructor(base,std::move(args),programKinds(p),span);return;}if(t.kind==Type::Record)t.name=resolveSymbol(p.units,symbols,f.unit,t.name,true,span);if(t.element){t.element=std::make_shared<Type>(*t.element);type(*t.element,span);}for(auto &argument:t.arguments)type(argument,span);};
   std::function<void(E)> visit;std::function<void(const std::vector<S>&)> block;
   block=[&](const auto &body){for(auto statement:body){type(statement->type,statement->span);if(statement->expr)visit(statement->expr);childBlocks(statement,block);}};
-  visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);bindValueName(p.units,symbols,f.unit,e);if(e->lambda){type(e->lambda->result,e->span);for(auto &param:e->lambda->params)type(param.type,param.span);block(e->lambda->body);}for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolveSymbol(p.units,symbols,f.unit,pattern->text,false,pattern->span);});for(auto a:e->args)visit(a);};visit(expression);
+  visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);for(auto &argument:e->methodArguments)type(argument,e->span);bindValueName(p.units,symbols,f.unit,e);if(!e->methodArguments.empty()){const auto &method=p.function(e->text,e->span);if(!method.traitSignature)throw Error("E_GENERIC_ARITY","second argument list requires a trait method",e->span);e->typeArguments.insert(e->typeArguments.end(),e->methodArguments.begin(),e->methodArguments.end());e->methodArguments.clear();}if(e->lambda){type(e->lambda->result,e->span);for(auto &param:e->lambda->params)type(param.type,param.span);block(e->lambda->body);}for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolveSymbol(p.units,symbols,f.unit,pattern->text,false,pattern->span);});for(auto a:e->args)visit(a);};visit(expression);
 }
 llvm::json::Value sourceBundle(const Program &p){
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;

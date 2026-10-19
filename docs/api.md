@@ -103,3 +103,17 @@ application/octet-stream` and `x-nex-type: bytes`; the runtime enforces alphabet
 padding and unused-bit rules. Encoding and result wrappers count against the
 JSON/body limits. Generated models retain the primitive type; they do not expose
 mutable typed arrays. Nominal wire descriptor objects keep their existing meaning.
+
+Language 0.16 model extraction retains constructor parameter arities, custom
+bounds and associated type projections. Application model modules carry the
+required type-only traits and selected implementation heads/associated aliases,
+including transitive bound witnesses. They preserve nominal module/type argument
+identities and recheck model bounds. Method signatures, method bindings and their
+function bodies are omitted from this model-only projection; importing an
+extracted model does not provide the original trait's callable API. Import a
+reviewed client/shared library for that API. No server method is replaced by a
+stub. Concrete wire layouts continue to come from the original checked graph.
+
+This source-0.16 adapter is under validation. Full current regression, installed
+SDK/platform checks and trait-bearing captured library projection remain pending;
+the descriptor and `STATUS.md` retain that scope.

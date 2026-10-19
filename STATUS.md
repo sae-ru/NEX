@@ -1,34 +1,52 @@
 # NEX implementation status
 
-## Candidate 0.55: constructor-kind core, source extension pending
+## Source 0.16 prototype: traits, constructors and associated types
 
-The internal matcher validates value/constructor kinds and application arity,
-performs occurs-checked structural unification, keeps function effects/realms
-distinct, and checks head overlap with independently renamed binders. Repeated
-constructor variables cannot select different constructors. Work/depth budgets
-bound normalization and unification. Twenty native invariant groups include
-symmetry and exact reconstruction checks; four related existing Python suites
-(62 cases) pass with native/TypeScript/reference coverage.
+The isolated 0.55 source implements contextual trait/impl declarations, custom
+bounds, associated projections, fixed constructor kinds, generic method contracts,
+coherent named implementations and static lowering. All unused declarations are
+checked. Graph declarations/edges/context/guarded edits, language-pack schemas,
+source grammar and canonical migration are connected.
 
-A genuine installed SDK 0.54 fixture preserves ordinary `trait`, `impl`, `type`,
-`for` and `Self` names, generics, callables and Unicode/NUL strings. Native,
-reference and TypeScript tests pass under its producer. The internal-core
-candidate reads the archive without physical source, preserving its original
-revision and every SQL row. This proves compatibility within language 0.15;
-it does not prove the future explicit 0.16 migration.
+The earlier prototype compiler d99662eb1c6d60212fe69d63ebb7656654b0d98e88d87ce19cc62e1a7a83e5aa
+passes 14 focused Python cases and20 native constructor invariant groups (35.24s).
+Those scopes include supplied-frame generic watches, rejection/visibility checks,
+client emission excluding unreachable server implementations, concrete-associated
+API models and genuine source-deleted 0.15 migration with historical rows/IDs kept.
+Five current projects and two Z3 proof contracts migrated separately; original
+source, old database rows and reviewed task/proof acceptance conditions remain.
 
-Source traits/impls/custom bounds, structured associated projections, `F<_>`
-syntax, parametric method checking, static dispatch and graph/canonical/model
-pack integration remain to implement. The frozen internal-core candidate passes all65 macOS ARM64 groups (534 Python
-cases and13 C++ probes,1347.82s). This proves no source0.16 feature. Linux/core
-SDK acceptance is not claimed. Root0.54 separately passes full64 and SDK18.
+Later constructor and associated-model API changes build; their new cases have
+not executed. Application model projection retains only needed trait-associated
+contracts/witnesses, without methods or server bodies. Trait-bearing captured
+library projection remains pending. The current trait suite has17 Python cases.
+The installed SDK19 phase includes actual generic trait LLDB watches and genuine
+legacy migration; its script/resources are prepared and must still execute.
 
+Expanded regression requests were not executed: automatic permission review was
+unavailable because its selected review model was at capacity. No current full66,
+SDK19, Linux, Release/sanitizer or source-trait live-debugger success is claimed.
+The complete PLAN, including async and remaining platforms/development tools,
+remains open. Earlier root/core/platform evidence below is separate.
 
-## Promoted0.54: current root checks pending
+## Verified internal 0.55 core: language 0.15
+
+The frozen constructor-kind/application/substitution/coherence core passes all65
+macOS ARM64 groups:534 Python cases and13 C++ probes,1347.82s. Twenty native
+invariant groups include symmetry and exact reconstruction. A genuine SDK0.54
+fixture remains readable without source, with its exact old revision/SQL rows.
+This core adds no source trait syntax and proves no language0.16 feature.
+Linux/core SDK acceptance is not claimed. See
+[the scoped evidence](docs/evidence/constructor-core-0.55.0.json).
+
+## Verified root0.54: full64 and installed SDK18
 
 The exact verified isolated0.54 implementation is now in the root checkout.
-The root gets a complete clean build, full64 regressions and installed SDK18
-acceptance; isolated results below do not substitute for these checks.
+The root clean build passes, followed by all64 macOS ARM64 groups (534 Python
+cases and12 C++ probes,1318.30s) and its actual installed SDK18 (322.356s).
+All127 indexed resources match the root; live debugger/browser and native string
+capture/source-deleted replay pass. Exact compiler/source scopes remain in
+the string-range evidence. Isolated Linux/macOS results below remain separate.
 
 The preceding root0.53 frontend diagnostic failure was a stale-build error:
 copying sources with their older timestamps left a pre052 modules.cpp object.

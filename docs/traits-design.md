@@ -1,10 +1,12 @@
 # User traits, associated types and constructor parameters
 
-This is the implementation contract for the next source-language extension.
-It is not the specification of an advertised compiler capability. The checked
-root remains toolchain 0.54 / language 0.15 while its independent gates run.
-Source integration, canonical migration and complete acceptance are required
-before this document can become implemented language documentation.
+This design records the source-language extension now implemented in the
+isolated 0.55 / language 0.16 prototype. The current source guide is traits.md;
+the compiler descriptor is authoritative. Scoped source, graph, watch and genuine
+history-preserving migration checks pass on an earlier prototype binary. Later
+API-model/SDK-phase changes build but still require execution and the complete
+current acceptance matrix. The root remains separately verified 0.54 / language
+0.15; constructor-core evidence does not establish source-0.16 validation.
 
 ## Source contract
 

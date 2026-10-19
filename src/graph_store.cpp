@@ -26,6 +26,7 @@ struct Entity {
   Value definition=nullptr;bool derived=false;std::set<Key> dependencies;
 };
 using Entities=std::map<Key,Entity>;
+bool declarationKind(const std::string &kind){return kind=="module"||kind=="type"||kind=="trait"||kind=="impl";}
 bool digest(const std::string &value){return value.size()==64&&value.find_first_not_of("0123456789abcdef")==std::string::npos;}
 std::string token(const Object &object,const std::string &key,size_t maximum=8192){auto text=object.getString(key);if(!text||text->empty()||text->size()>maximum||text->contains('\0'))throw Error("E_IDENTITY_SCHEMA","invalid identity field: "+key);return text->str();}
 void keys(const Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))throw Error("E_IDENTITY_SCHEMA","unknown identity field: "+key.str());}}
@@ -37,8 +38,10 @@ Key add(Entities &entities,std::string kind,std::string symbol,std::string modul
 }
 Entities describeEntities(const Program &p){
   Entities result;
-  for(const auto &f:p.functions)add(result,"function",f.name,f.owner,f.unit,canonical(f),p.definition(f),!f.templateName.empty()||f.closure);
+  for(const auto &f:p.functions)add(result,"function",f.name,f.owner,f.unit,canonical(f),p.definition(f),!f.templateName.empty()||f.closure||f.traitSignature);
   for(const auto &s:p.structures)add(result,"type",s.name,s.owner,s.unit,canonical(s),p.definition(s),!s.templateName.empty());
+  for(const auto &value:p.traits)add(result,"trait",value.name,value.owner,value.unit,canonical(value),p.definition(value));
+  for(const auto &value:p.implementations)add(result,"impl",value.name,value.owner,value.unit,canonical(value),p.definition(value));
   for(const auto &e:p.endpoints)add(result,"endpoint",e.name,e.owner,e.unit,canonical(e),p.definition(e));
   for(const auto &[file,unit]:p.units){
     std::set<std::string> imported;for(const auto &dependency:unit.imports)imported.insert(p.units.at(dependency.target).module);
@@ -47,19 +50,24 @@ Entities describeEntities(const Program &p){
     add(result,"module",unit.module,unit.module,file,Object{{"format","nex.module/1"},{"name",unit.module},{"imports",std::move(imports)},{"members",std::move(members)}});
   }
   auto types=[&](Entity &entity,const Type &type,auto &&self)->void{
-    if(type.kind==Type::Record){Key key{"type",type.name};if(result.contains(key))entity.dependencies.insert(key);}
+    if(type.kind==Type::Projection){auto name=type.name.substr(0,type.name.rfind("::"));entity.dependencies.insert({"trait",name});}
+    if(type.kind==Type::Record||type.kind==Type::Constructor){Key key{"type",type.name};if(result.contains(key))entity.dependencies.insert(key);}
     if(type.element)self(entity,*type.element,self);for(const auto &argument:type.arguments)self(entity,argument,self);
   };
   for(const auto &s:p.structures){auto &entity=result.at({"type",s.name});for(auto field:s.members())types(entity,field->type,types);for(const auto &argument:s.typeArguments)types(entity,argument,types);if(!s.templateName.empty())entity.dependencies.insert({"type",s.templateName});}
+  for(const auto &value:p.traits){auto &entity=result.at({"trait",value.name});for(const auto &method:value.methods)entity.dependencies.insert({"function",method.name});for(const auto &[name,bounds]:value.associated)for(const auto &bound:bounds)if(result.contains({"trait",bound}))entity.dependencies.insert({"trait",bound});}
+  for(const auto &value:p.implementations){auto &entity=result.at({"impl",value.name});entity.dependencies.insert({"trait",value.trait});types(entity,value.self,types);for(const auto &[name,type]:value.associated)types(entity,type,types);for(const auto &[name,method]:value.methods){entity.dependencies.insert({"function",method.target});for(const auto &type:method.typeArguments)types(entity,type,types);}for(const auto &bounds:value.typeBounds)for(const auto &bound:bounds)if(result.contains({"trait",bound}))entity.dependencies.insert({"trait",bound});}
   for(const auto &f:p.functions){
     auto &entity=result.at({"function",f.name});for(const auto &name:f.dependencies)entity.dependencies.insert({"function",p.function(name).name});
     if(!f.templateName.empty())entity.dependencies.insert({"function",f.templateName});
+    if(!f.traitOwner.empty())entity.dependencies.insert({"trait",f.traitOwner});
+    for(const auto &bounds:f.typeBounds)for(const auto &bound:bounds)if(result.contains({"trait",bound}))entity.dependencies.insert({"trait",bound});
     types(entity,f.result,types);for(const auto &parameter:f.params)types(entity,parameter.type,types);for(const auto &capture:f.captures)types(entity,capture.type,types);for(const auto &argument:f.typeArguments)types(entity,argument,types);
     std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
     // Match arm bodies belong to the expression and are visited there.
     // childBlocks would visit them a second time, doubling each nesting level.
     block=[&](const auto &body){for(const auto &statement:body){types(entity,statement->type,types);expression(statement->expr);block(statement->body);block(statement->alternative);}};
-    expression=[&](E value){if(!value)return;types(entity,value->type,types);types(entity,value->annotation,types);for(const auto &argument:value->typeArguments)types(entity,argument,types);for(auto argument:value->args)expression(argument);
+    expression=[&](E value){if(!value)return;if(!value->traitContract.empty())entity.dependencies.insert({"function",value->traitContract});if(!value->implementation.empty())entity.dependencies.insert({"impl",value->implementation});for(const auto &type:value->traitArguments)types(entity,type,types);types(entity,value->type,types);types(entity,value->annotation,types);for(const auto &argument:value->typeArguments)types(entity,argument,types);for(auto argument:value->args)expression(argument);
       if(value->lambda){types(entity,value->lambda->result,types);for(const auto &parameter:value->lambda->params)types(entity,parameter.type,types);block(value->lambda->body);}
       for(auto arm:value->arms){for(const auto &binding:arm->bindings)types(entity,binding.type,types);block(arm->body);}
     };block(f.body);
@@ -74,7 +82,7 @@ Entities describeEntities(const Program &p){
 }
 void identify(sqlite3 *db,Entities &entities){
   for(auto &[key,entity]:entities){
-    if(entity.kind=="module"||entity.kind=="type"){
+    if(declarationKind(entity.kind)){
       Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,key.first);q.bind(2,key.second);if(q.row())entity.id=q.text(0);
     }else{
       auto local=entity.kind=="endpoint"?"@endpoint/"+entity.symbol.substr(entity.symbol.rfind("::")+2):entity.symbol.substr(entity.module.size()+2);
@@ -116,7 +124,7 @@ Entities checkedEntities(sqlite3 *db,const Program &p){
   for(const auto &[key,entity]:entities){
     if(!ids.insert(entity.id).second)throw Error("E_STORE","duplicate persistent graph identity");
     auto expected=std::tuple{entity.id,entity.content,json(entity.definition,false)};
-    if(key.first=="module"||key.first=="type"){
+    if(declarationKind(key.first)){
       ++declarations;auto found=stored.find(key);if(found==stored.end()||found->second!=expected)throw Error("E_STORE","declaration metadata differs from checked source: "+key.second);
     }else{
       Query q(db,"SELECT hash,canonical FROM nodes WHERE revision=? AND id=?");q.bind(1,rev);q.bind(2,entity.id);
@@ -145,7 +153,7 @@ std::string selectedSymbol(const Program &p,const Entities &entities,const std::
 }
 struct Selection {std::string kind,symbol;bool module=false;};
 Selection select(const Program &p,const Entities &entities,const std::string &kind,const std::string &symbol){
-  if(!std::set<std::string>{"all","module","type","function","endpoint","operation"}.contains(kind))throw Error("E_OPTION","entity must be all, module, type, function, endpoint or operation");
+  if(!std::set<std::string>{"all","module","type","trait","impl","function","endpoint","operation"}.contains(kind))throw Error("E_OPTION","entity must be all, module, type, function, endpoint or operation");
   auto name=selectedSymbol(p,entities,kind,symbol);return {kind,name,!name.empty()&&(kind=="module"||(kind=="all"&&entities.contains({"module",name})))};
 }
 bool includes(const Selection &selection,const Entity &entity,bool operation=false){
@@ -250,7 +258,7 @@ bool graphDeclarationsReady(sqlite3 *db,const Program &p){Query q(db,"SELECT pol
 void saveGraphDeclarations(sqlite3 *db,const Program &p){
   (void)graphDeclarationsReady(db,p);
   auto entities=describeEntities(p);auto rev=revision(p);
-  for(auto &[key,entity]:entities)if(key.first=="module"||key.first=="type"){
+  for(auto &[key,entity]:entities)if(declarationKind(key.first)){
     std::string id;{Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,key.first);q.bind(2,key.second);if(q.row())id=q.text(0);}
     if(id.empty()){id=fresh();Query q(db,"INSERT INTO declaration_ids(kind,symbol,id) VALUES(?,?,?)");q.bind(1,key.first);q.bind(2,key.second);q.bind(3,id);q.row();}
     auto canonical=json(entity.definition,false);
@@ -267,13 +275,13 @@ void saveGraphDeclarations(sqlite3 *db,const Program &p){
 Value graphDeclarations(sqlite3 *db,const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
   if(limit>maximumPage)throw Error("E_IDENTITY_LIMIT","declaration page exceeds 1000 nodes");
   auto entities=checkedEntities(db,p);auto selection=select(p,entities,kind.empty()?"all":kind,symbol);Array rows;uint64_t total=0;
-  for(const auto &[key,entity]:entities){if((key.first!="module"&&key.first!="type")||(!kind.empty()&&key.first!=kind)||(!selection.symbol.empty()&&key.second!=selection.symbol))continue;
+  for(const auto &[key,entity]:entities){if(!declarationKind(key.first)||(!kind.empty()&&key.first!=kind)||(!selection.symbol.empty()&&key.second!=selection.symbol))continue;
     if(total++<offset||(limit&&rows.size()>=limit))continue;
     Array dependencies;for(const auto &dependency:entity.dependencies){if(limit&&dependencies.size()>=100)break;const auto &node=entities.at(dependency);dependencies.push_back(reference(node));}
     auto definition=entity.definition;auto definitionBytes=json(definition,false).size();bool omitted=limit&&definitionBytes>8192;if(omitted)definition=nullptr;
     auto source=limit?clipped(entity.source,4096):entity.source;
     auto value=reference(entity);value["module"]=entity.module;value["file"]=entity.file;value["source"]=std::move(source);value["source_bytes"]=int64_t(entity.source.size());value["source_truncated"]=limit&&entity.source.size()>4096;
-    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=entity.kind=="type"&&!entity.derived;value["derived"]=entity.derived;
+    value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=entity.kind!="module"&&!entity.derived;value["derived"]=entity.derived;
     value["references"]=std::move(dependencies);value["reference_count"]=int64_t(entity.dependencies.size());value["references_truncated"]=limit&&entity.dependencies.size()>100;rows.push_back(std::move(value));
   }
   return Object{{"schema","nex.declarations/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},
@@ -293,7 +301,7 @@ Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const
     {"offset",int64_t(offset)},{"total",int64_t(total)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
 }
 void validateGraphQuery(const GraphQueryOptions &o,bool subgraph){
-  const std::set<std::string> kinds={"module","type","function","endpoint"};
+  const std::set<std::string> kinds={"module","type","trait","impl","function","endpoint"};
   if((!subgraph&&o.entity!="all"&&!kinds.contains(o.entity))||(subgraph&&!kinds.contains(o.entity)))throw Error("E_QUERY_OPTION","graph query entity must be module, type, function or endpoint; search also accepts all");
   if(o.offset>10000000||!o.limit||o.limit>1000||o.edgeOffset>10000000||!o.edgeLimit||o.edgeLimit>1000||o.depth>8)throw Error("E_QUERY_OPTION","graph query page/depth limit exceeded");
   if(subgraph){queryText(o.symbol,8192,false,"symbol");if(!std::set<std::string>{"dependencies","dependents","both"}.contains(o.direction))throw Error("E_QUERY_OPTION","subgraph direction must be dependencies, dependents or both");}
@@ -362,7 +370,7 @@ Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifes
   struct Link{std::string remote,local,kind,symbol,path,content,context;};std::vector<Link> links;
   for(const auto &value:*nodes){auto node=value.getAsObject();if(!node)throw Error("E_IDENTITY_SCHEMA","identity record must be an object");keys(*node,{"kind","symbol","path","id","hash","context_hash"});
     auto kind=token(*node,"kind",16),symbol=token(*node,"symbol"),remote=token(*node,"id",128),content=token(*node,"hash",64),context=token(*node,"context_hash",64);auto path=node->getString("path");
-    if(!path||path->size()>8192||path->contains('\0')||!std::set<std::string>{"module","type","function","endpoint","operation"}.contains(kind)||((kind=="operation")!=!path->empty())||!digest(content)||!digest(context))throw Error("E_IDENTITY_SCHEMA","invalid checked identity record");
+    if(!path||path->size()>8192||path->contains('\0')||!std::set<std::string>{"module","type","trait","impl","function","endpoint","operation"}.contains(kind)||((kind=="operation")!=!path->empty())||!digest(content)||!digest(context))throw Error("E_IDENTITY_SCHEMA","invalid checked identity record");
     if(!remoteIds.insert(remote).second||!selected.emplace(kind,symbol,path->str()).second)throw Error("E_IDENTITY_SCHEMA","duplicate identity record or remote ID");
     auto local=localRecord(operations,entities,kind,symbol,path->str());auto target=local.getAsObject();
     if(!includes(selection,entities.at({kind=="operation"?"function":kind,symbol}),kind=="operation"))throw Error("E_IDENTITY_SCHEMA","identity record is outside its selection");
