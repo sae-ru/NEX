@@ -153,12 +153,31 @@ class ChangeHistory(harness.ToolchainCase):
         self.assertEqual(current_metadata['change_base_revision'],metadata['head_revision'])
         for key,value in previous_metadata.items():
             if key!='schema':self.assertEqual(current_metadata[key],value,key)
-        current=self.cli('graph');self.assertEqual(current['nodes'],metadata['graph']['nodes'])
-        self.assertEqual(current['operation_graph'],metadata['graph']['operation_graph'])
-        self.restore(metadata['before_revision'],metadata['head_revision'])
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
+        self.assertEqual(self.restore(metadata['before_revision'],metadata['head_revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
+        self.assertEqual(self.rows(),upgraded)
+        migrated_before=self.cli('migrate','--revision',metadata['before_revision'])['revision']
+        migrated_head=self.cli('migrate','--revision',metadata['head_revision'])['revision']
+        current=self.cli('graph')
+        self.assertNotEqual(current['revision'],metadata['head_revision'])
+        self.assertEqual(current['source'],metadata['graph']['source'])
+        self.assertEqual({n['name']:n['id'] for n in current['nodes']},
+                         {n['name']:n['id'] for n in metadata['graph']['nodes']})
+        old_ops={(n['function'],n['path']):n for n in metadata['graph']['operation_graph']['nodes']}
+        new_ops={(n['function'],n['path']):n for n in current['operation_graph']['nodes']}
+        self.assertEqual(set(old_ops),set(new_ops))
+        for key,prior in old_ops.items():
+            for field in ('kind','definition','location','function_id'):self.assertEqual(new_ops[key][field],prior[field],field)
+        self.restore(migrated_before,migrated_head)
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'41\n')
-        event,=self.cli('changes')['changes']
-        self.assertEqual((event['sequence'],event['previous_revision'],event['revision']),(1,metadata['head_revision'],metadata['before_revision']))
+        changes=self.cli('changes');self.assertEqual(changes['total'],3)
+        self.assertEqual(changes['base_revision'],metadata['head_revision'])
+        self.assertEqual([e['action'] for e in changes['changes']],['restore','migrate','migrate'])
+        event=changes['changes'][0]
+        self.assertEqual((event['sequence'],event['previous_revision'],event['revision']),(3,migrated_head,migrated_before))
+        after=self.rows()
+        for table,values in original.items():
+            if table not in ('metadata','head'):self.assertTrue(set(values)<=set(after[table]),table)
 
     def test_restore_older_language_requires_explicit_migration_and_keeps_history(self):
         metadata=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text())

@@ -237,13 +237,22 @@ class OperationPatches(harness.ToolchainCase):
         with sqlite3.connect(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
         # Schema4 adds an empty journal without inventing past transitions.
         self.assertEqual(self.cli('changes')['total'],0)
-        before=self.rows();current=self.cli('graph')
-        old=metadata['graph'];self.assertEqual(current['revision'],old['revision'])
-        self.assertEqual(current['nodes'],old['nodes'])
-        self.assertEqual(len(current['operation_graph']['nodes']),len(old['operation_graph']['nodes']))
-        for new,prior in zip(current['operation_graph']['nodes'],old['operation_graph']['nodes']):
-            for key,value in prior.items():self.assertEqual(new[key],value,key)
+        before=self.rows()
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(self.rows(),before)
+        migrated=self.cli('migrate','--revision',metadata['revision'])['revision']
+        current=self.cli('graph');old=metadata['graph']
+        self.assertNotEqual(current['revision'],old['revision'])
+        self.assertEqual(current['source'],old['source'])
+        self.assertEqual({n['name']:n['id'] for n in current['nodes']},{n['name']:n['id'] for n in old['nodes']})
+        old_ops={(n['function'],n['path']):n for n in old['operation_graph']['nodes']}
+        new_ops={(n['function'],n['path']):n for n in current['operation_graph']['nodes']}
+        self.assertEqual(set(old_ops),set(new_ops))
+        for key,prior in old_ops.items():
+            for field in ('kind','definition','location','function_id'):self.assertEqual(new_ops[key][field],prior[field],field)
+        after=self.rows()
+        for table,values in before.items():
+            if table not in ('metadata','head'):self.assertTrue(set(values)<=set(after[table]),table)
         self.file.unlink()
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],'42\n🧠\n')
         self.assertTrue(self.cli('test','--revision','HEAD','--target','web')['ok'])
@@ -251,7 +260,10 @@ class OperationPatches(harness.ToolchainCase):
         number=self.target('main',kind='expression.integer',number=40)
         self.apply([self.op(number,'41')])
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'43\n🧠\n')
-        self.assertEqual(self.cli('eval','--revision',metadata['revision'])['stdout'],'42\n🧠\n')
+        self.assertEqual(self.cli('eval','--revision',migrated)['stdout'],'42\n🧠\n')
+        retained=self.rows()
+        self.assertEqual(self.cli('eval','--revision',metadata['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
+        self.assertEqual(self.rows(),retained)
 
     def test_simple_enum_pattern_roots_can_change_together(self):
         self.ready('module cases;enum Choice{First(value:i64);Second(value:i64);}fn read(v:Choice)->i64{match v{Choice::First(x)=>{return x;}Choice::Second(y)=>{return y+1;}}}fn main()->unit!{io}{print(read(Choice::First(40)));print(read(Choice::Second(40)));}test fn wanted()->unit{assert(read(Choice::First(40))==41);assert(read(Choice::Second(40))==40);}')

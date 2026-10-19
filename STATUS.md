@@ -23,11 +23,24 @@ library projection remains pending. The current trait suite has17 Python cases.
 The installed SDK19 phase includes actual generic trait LLDB watches and genuine
 legacy migration; its script/resources are prepared and must still execute.
 
-Expanded regression requests were not executed: automatic permission review was
-unavailable because its selected review model was at capacity. No current full66,
-SDK19, Linux, Release/sanitizer or source-trait live-debugger success is claimed.
-The complete PLAN, including async and remaining platforms/development tools,
-remains open. Earlier root/core/platform evidence below is separate.
+Permission review recovered after a human-authorized retry. The first related
+seven-group run passed six groups and found one generic rejection diagnostic
+regression (unit returned E_GENERIC_KIND instead of E_TYPE). The correction
+preserves the rejection and restores the earlier diagnostic; the current17 trait
+and14 generic cases pass (79.76s), with additional unit-reference/constructor
+negative subcases. The earlier failed run remains in evidence.
+
+The first full installed SDK attempt rejected the type-patch example's old0.15
+revision pin. The old SDK still applies that exact patch; the current SDK proves
+migrate(old apply) equals apply(migrated base), retaining history and all patch
+sources/assertions. Only expected_revision changes. The corrected full SDK19
+is running. The earlier exact installed traits phase passed19 commands, including
+real LLDB generic-constructor watches, unchanged stop/handle, source-deleted
+replay and genuine015 migration. That phase used its recorded earlier binary.
+
+Full current66 regression, complete SDK19/platform acceptance, captured trait
+library projection and Release/sanitizer/broader PLAN work remain pending.
+The complete language and development-chain objective is not achieved.
 
 ## Verified internal 0.55 core: language 0.15
 

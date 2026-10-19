@@ -19,9 +19,11 @@ archives with source, old rows/IDs and acceptance conditions preserved.
 Later constructor/associated API model extraction and the SDK19 traits/live phase
 are built or prepared, with execution still pending. The current 17-case trait
 suite, full66 regression, SDK19/platform workflows and trait-bearing dependency
-library projection are not yet accepted. Automatic permission review is currently
-unavailable because its review model is at capacity; rejected test requests did
-not execute. See STATUS.md and docs/traits.md. The complete language/development
+library projection are not yet accepted. Permission review recovered after a human retry.
+The first related run found a unit-argument diagnostic regression; it is fixed,
+with the current traits17/generics14 suites passing. The reviewed type-patch
+example pin now migrates without changing replacements or assertions. Full
+current regression and SDK19 acceptance are running/pending. See STATUS.md and docs/traits.md. The complete language/development
 chain objective remains open in PLAN.md.
 
 The earlier internal 0.55 constructor core still uses language 0.15 and separately

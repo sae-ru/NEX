@@ -109,7 +109,16 @@ class GraphSnapshots(harness.ToolchainCase):
         self.assertEqual(dict(self.rows()['metadata'])['schema'],'3')
         self.assertEqual(self.cli('changes',cwd=recovered)['total'],0)
         self.assertEqual(dict(self.rows()['metadata'])['schema'],'3')
+        archived=self.rows(recovered)
+        self.assertEqual(self.cli('run','--revision','HEAD',cwd=recovered,ok=False)['code'],'E_LANGUAGE_VERSION')
+        self.assertEqual(self.rows(recovered),archived)
+        migrated=self.cli('migrate','--revision',metadata['head_revision'],cwd=recovered)['revision']
+        self.assertNotEqual(migrated,metadata['head_revision'])
+        after=self.rows(recovered)
+        for table,values in archived.items():
+            if table not in ('metadata','head'):self.assertTrue(set(values)<=set(after[table]),table)
         self.assertEqual(self.cli('run','--revision','HEAD',cwd=recovered)['stdout'],'42\n')
+        self.assertEqual(self.rows(),before)
 
     def test_multi_module_and_frozen_library_source_survive_deletion(self):
         library=self.root/'library';library.mkdir();(library/'math.nex').write_text('module numbers;pub fn answer()->i64{return 42;}')

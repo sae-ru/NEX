@@ -1,19 +1,19 @@
 {
   "schema": "nex.development-evidence/1",
   "milestone": "source_traits_0.55.0_prototype",
-  "created": "2026-10-19T04:30:33.384032+00:00",
+  "created": "2026-10-19T06:00:32.036034+00:00",
   "toolchain": "0.55.0",
   "source_language": "0.16",
-  "status": "build_pass_runtime_acceptance_pending",
+  "status": "corrected_scoped_checks_pass_full_acceptance_pending",
   "accepted_release": false,
   "full_objective_complete": false,
-  "current_compiler_sha256": "0278a4cf10609b6a0cfd5e5f23bdb2ba14403094db98bbb95750bfdb3a9d4132",
+  "current_compiler_sha256": "1458c475cf7bb0a64dc17a4783e30cb3adc5f4b948d7a8b535552182177b7d67",
   "current_source_inputs_sha256": {
     "include/nex/traits.h": "0a2936ef7299672413884caa16bcd5e4e5b7c84c6733203317bea39648238873",
     "src/traits.cpp": "f768c796ec2150cbe9df3469a50da88031aa7cb763fd035bb8a616fe71c3bb84",
     "src/api.cpp": "72d448c65b68411c394e7cfa7df46ab4d0a616e6e492ddc19d691f69dbbbe579",
     "src/main.cpp": "25944603c0ff7659a06825b9f58368522a6d4474e90e31c2c53a22fe63d06a4f",
-    "src/language.cpp": "ad3c3c22305906f86b310e4b6094c40c38033b616550a31798caf932f6f12553",
+    "src/language.cpp": "f967cebdeff7fc3a739805d97aa651f260889485f2d00a6b1760993f9a27a826",
     "tests/traits.py": "8e4c7c6b5c393c17eccee30a0e8969e83887bb1749cedc5e0254fdca417d8856",
     "tools/sdk_acceptance.py": "0a219997bb7e78c904c9865f97469cf9e06e4d962a7330912d000510a15a52ee",
     "llm/language-pack.json": "4693f4240d53807d78bf8c904d5f0d4393b477064788fef3a00a89d253e56651",
@@ -21,9 +21,12 @@
     "docs/api.md": "a9460adecd5d30b53dd8476d434e2d0372d0eb454fb14b3a96278ab513fe2ff9",
     "docs/traits.md": "09d9b19fb6cb0b5e1845d89f34e20ccb6b8a1c26ab9cda7d5ab31b37a0da41bb",
     "docs/traits-design.md": "74ec19c1da9c22aef00c31322a4e42ef1d8ed18355610a28626f611262802cdc",
-    "README.md": "fc4a31af32b0f7f113bf218b04ba8e4bf3d98ce5e7e803bb368636950bfa3a92",
-    "STATUS.md": "3792f707a6283598efa63822a9318ed95e4252433e7ca1e85b72d2610ed77044",
-    "PLAN.md": "54b281095fa00a4dd89850ffc3583c3791791b00fc4a5f8b3295dfd565fe005e"
+    "README.md": "6115d0b032054f6bd651dd2aa3d683fa70f27d60ac6b75a896682471ee3ddd7f",
+    "STATUS.md": "e154b3fe2ed6b228302d87d05cff205ffc83b160dc2b3b31bac4a4f7996a9d94",
+    "PLAN.md": "54b281095fa00a4dd89850ffc3583c3791791b00fc4a5f8b3295dfd565fe005e",
+    "src/generics.cpp": "27d28f25a4d1eddef70da860946fff50be37a55b8121f764593bbbf86b4cc0dc",
+    "tests/generics.py": "54f77c1f6a695a77f509c2faff3d73cae74f3dc53e5feaab7ad124a6b60a42de",
+    "examples/type-patches/patch.json": "3efb76bb0fbf523bf4e2852f81d50a546c48072c898814ba988a7447d3a31e38"
   },
   "source_input_scope": "Named changed inputs at this checkpoint, not a full-source validation manifest.",
   "current_builds": [
@@ -35,6 +38,11 @@
     {
       "log": "build/traits-055-language-associated-api-metadata-build.log",
       "sha256": "b2b5360475e118fb553598df2195ba76e5c057a1e0727825f2be692198d9f9b5",
+      "terminal_exit_code": 0
+    },
+    {
+      "log": "build/traits-055-language-unit-diagnostic-build.log",
+      "sha256": "6d1c5874012278c20c009854dbae9827573aa2b05543fe4e767b8042ae63307a",
       "terminal_exit_code": 0
     }
   ],
@@ -576,21 +584,17 @@
     "indexed_resources_present": 133,
     "python_syntax_valid": true,
     "current_trait_tests_authored": 17,
-    "current_trait_tests_executed": false,
+    "current_trait_tests_executed": true,
     "genuine_015_fixture_copies_byte_identical": true
   },
   "review_service": {
-    "condition": "Automatic approval review unavailable: selected review model is at capacity. Not an unsafe-action finding.",
-    "expanded_test_attempts_total": 4,
-    "latest_github_commit_creation_attempts_total": 4,
-    "rejected_actions_executed": false,
-    "expanded_test_output_log_exists": false,
+    "available_after_human_retry": true,
+    "prior_rejected_actions_did_not_execute": true,
     "bypass_attempted": false
   },
   "remaining_gates": [
-    "Current17-case trait suite and related regression",
     "Full66 current-source regression",
-    "InstalledSDK19 actual workflow including live trait watches",
+    "Complete corrected installedSDK19 workflow",
     "Current Linux/full debugger/source-free SDK matrix",
     "Captured trait-bearing client/shared library projection",
     "Release/sanitizer and broader platform/distribution acceptance",
@@ -604,5 +608,143 @@
     "indexed_resources": 133,
     "all_indexed_resources_match_source": true,
     "sdk_acceptance_executed": false
+  },
+  "prior_build_checkpoint": {
+    "current_compiler_sha256": "0278a4cf10609b6a0cfd5e5f23bdb2ba14403094db98bbb95750bfdb3a9d4132",
+    "current_source_inputs_sha256": {
+      "include/nex/traits.h": "0a2936ef7299672413884caa16bcd5e4e5b7c84c6733203317bea39648238873",
+      "src/traits.cpp": "f768c796ec2150cbe9df3469a50da88031aa7cb763fd035bb8a616fe71c3bb84",
+      "src/api.cpp": "72d448c65b68411c394e7cfa7df46ab4d0a616e6e492ddc19d691f69dbbbe579",
+      "src/main.cpp": "25944603c0ff7659a06825b9f58368522a6d4474e90e31c2c53a22fe63d06a4f",
+      "src/language.cpp": "ad3c3c22305906f86b310e4b6094c40c38033b616550a31798caf932f6f12553",
+      "tests/traits.py": "8e4c7c6b5c393c17eccee30a0e8969e83887bb1749cedc5e0254fdca417d8856",
+      "tools/sdk_acceptance.py": "0a219997bb7e78c904c9865f97469cf9e06e4d962a7330912d000510a15a52ee",
+      "llm/language-pack.json": "4693f4240d53807d78bf8c904d5f0d4393b477064788fef3a00a89d253e56651",
+      "docs/language.md": "28259a14a1e3f94b5f3ad7e726cb20952e391ecd49cb202048ad9bd1d57c9a0b",
+      "docs/api.md": "a9460adecd5d30b53dd8476d434e2d0372d0eb454fb14b3a96278ab513fe2ff9",
+      "docs/traits.md": "09d9b19fb6cb0b5e1845d89f34e20ccb6b8a1c26ab9cda7d5ab31b37a0da41bb",
+      "docs/traits-design.md": "74ec19c1da9c22aef00c31322a4e42ef1d8ed18355610a28626f611262802cdc",
+      "README.md": "fc4a31af32b0f7f113bf218b04ba8e4bf3d98ce5e7e803bb368636950bfa3a92",
+      "STATUS.md": "3792f707a6283598efa63822a9318ed95e4252433e7ca1e85b72d2610ed77044",
+      "PLAN.md": "54b281095fa00a4dd89850ffc3583c3791791b00fc4a5f8b3295dfd565fe005e"
+    },
+    "current_builds": [
+      {
+        "log": "build/traits-055-language-associated-api-build.log",
+        "sha256": "cdb3095136896c0b784cc04c91c06943a763c8bf9c82f130cb87997fac85a499",
+        "terminal_exit_code": 0
+      },
+      {
+        "log": "build/traits-055-language-associated-api-metadata-build.log",
+        "sha256": "b2b5360475e118fb553598df2195ba76e5c057a1e0727825f2be692198d9f9b5",
+        "terminal_exit_code": 0
+      },
+      {
+        "log": "build/traits-055-language-unit-diagnostic-build.log",
+        "sha256": "6d1c5874012278c20c009854dbae9827573aa2b05543fe4e767b8042ae63307a",
+        "terminal_exit_code": 0
+      }
+    ],
+    "review_service": {
+      "condition": "Automatic approval review unavailable: selected review model is at capacity. Not an unsafe-action finding.",
+      "expanded_test_attempts_total": 4,
+      "latest_github_commit_creation_attempts_total": 4,
+      "rejected_actions_executed": false,
+      "expanded_test_output_log_exists": false,
+      "bypass_attempted": false
+    },
+    "static_checks": {
+      "json_schemas_valid": 28,
+      "indexed_resources_present": 133,
+      "python_syntax_valid": true,
+      "current_trait_tests_authored": 17,
+      "current_trait_tests_executed": true,
+      "genuine_015_fixture_copies_byte_identical": true
+    }
+  },
+  "initial_related_failure": {
+    "ok": false,
+    "compiler_sha256": "0278a4cf10609b6a0cfd5e5f23bdb2ba14403094db98bbb95750bfdb3a9d4132",
+    "terminal_exit_code": 8,
+    "groups": 7,
+    "passed_groups": 6,
+    "failure": "generics: Box<unit> rejection returned E_GENERIC_KIND instead of preserved E_TYPE",
+    "log": "build/traits-055-language-related-current.log",
+    "log_sha256": "c4b99170c60ad7cfb410e81120351a2add97a224ca97f67e8f35448b8ff541bd",
+    "last_test": "build/traits-055-language-related-initial-LastTest.log",
+    "last_test_sha256": "3c2e5d8fcdcfe16ed2f19529de6ed24e4bc89ed05ab3b22cd4977811806c65f6",
+    "seconds": 255.3,
+    "traits_cases_passed": 17,
+    "constructor_invariant_groups_passed": 20
+  },
+  "current_unit_diagnostic_correction": {
+    "ok": true,
+    "created": "2026-10-19T05:59:20.134595+00:00",
+    "compiler_sha256": "1458c475cf7bb0a64dc17a4783e30cb3adc5f4b948d7a8b535552182177b7d67",
+    "groups": [
+      "traits",
+      "generics"
+    ],
+    "traits_cases": 17,
+    "generics_cases": 14,
+    "negative_subcases_extended": true,
+    "seconds": 79.76,
+    "terminal_exit_code": 0,
+    "log": "build/traits-055-language-unit-diagnostic-focused.log",
+    "log_sha256": "72757fa47157bbae98de183bb58d93b12ea17c86dee2f5613e85ec3bc9354ef3",
+    "last_test": "build/traits-055-language-unit-diagnostic-focused-LastTest.log",
+    "last_test_sha256": "f473ca72bd0aa18b3bb06abb46fc0b3f27dfe57f15b654627af7068c4ca7ad54",
+    "scope": "Current two-group correction gate; prior related7 had one diagnostic regression; full current regression remains pending."
+  },
+  "reviewed_type_patch_pin_migration": {
+    "ok": true,
+    "created": "2026-10-19T05:56:40.445803+00:00",
+    "old_compiler_sha256": "1b0c73ee251611aa8ce65c2be3f541c187ba35145410969b370d1adeef2bfd0a",
+    "new_compiler_sha256": "1458c475cf7bb0a64dc17a4783e30cb3adc5f4b948d7a8b535552182177b7d67",
+    "old_before": "c71c53869f361e0f3b08b0130b649db7acf1ce1a9e6e8426d665ba36ad94ca66",
+    "new_before": "015ec91a226059ca70e554b65a426620b756431085e433ded95594775069e2a6",
+    "old_after": "2bceeb5c3c8fd6b20f1a7891967cd12f720e81cd7440c3666a6411942e7468b4",
+    "new_after": "ebc03431fbcd3d4df73fa07be5ab1a6dadce15c0e2aada078b9321a1e609e12d",
+    "migrate_old_applied_revision_equals_apply_translated_patch": true,
+    "changed_patch_fields": [
+      "expected_revision"
+    ],
+    "replacement_names_kinds_source_and_assertions_unchanged": true,
+    "old_non_head_rows_retained": true,
+    "old_and_new_checks_passed": true,
+    "new_native_typescript_reference_agree": true,
+    "original_patch_sha256": "d274ac40d4d487f6133397033dd112cf0ca82a35dfa92286d369672dc409ab75",
+    "current_patch_sha256": "3efb76bb0fbf523bf4e2852f81d50a546c48072c898814ba988a7447d3a31e38",
+    "commands": 14,
+    "source_deleted_archive_checks": true
+  },
+  "exact_installed_sdk_traits_phase": {
+    "ok": true,
+    "created": "2026-10-19T05:52:04.581897+00:00",
+    "scope": "Exact installed SDK traits function selected via AST; native/TypeScript/reference, actual LLDB constructor/trait watches at unchanged stop/handle, source-deleted replay and genuine015 migration. Not the full19-phase SDK workflow.",
+    "compiler_sha256": "0278a4cf10609b6a0cfd5e5f23bdb2ba14403094db98bbb95750bfdb3a9d4132",
+    "script_sha256": "0a219997bb7e78c904c9865f97469cf9e06e4d962a7330912d000510a15a52ee",
+    "seconds": 7.797,
+    "commands": 19,
+    "evidence": {
+      "traits": {
+        "revision": "12e05e0b4245ab95d0f69eb29f7de9bd024b6ec11e2f8b5e3b841a152d3d2f11",
+        "build_key": "edd3aea37929e8df1cef615d5da8dd33040b7c7c1f2c9a3dabf07d0679dd5dfb",
+        "native_typescript_reference": true,
+        "source_deleted_watch_replay": true,
+        "live_constructor_trait_frame": true,
+        "unchanged_stop_and_handle": true,
+        "genuine015_fixture": true,
+        "old_revision": "0de2f7710b2a5fa515145c0831d97063f81cf059583907aba6d767a5d3e168cc",
+        "migrated_revision": "4763f0e40a6a7c19d4efddf4491014c6a82874419e8f838d0b916e9a7271331b",
+        "old_non_head_rows_retained": true
+      }
+    }
+  },
+  "initial_installed_sdk_full_failure": {
+    "report": "build/sdk-055-traits-associated-api-acceptance/report.json",
+    "report_sha256": "e9779f391dd17f3a231015daa522126dab59f95fcb8a056072d0fcc1d152e2b6",
+    "terminal_exit_code": 1,
+    "reason": "Original type-patch expected_revision had not been translated from genuine015 source; validation assertion retained."
   }
 }

@@ -181,7 +181,7 @@ class GraphIdentities(harness.ToolchainCase):
         self.assertEqual(hashlib.sha256(sql).hexdigest(), metadata['sql_sha256'])
         directory = self.root / 'archived'
         (directory / '.nex').mkdir(parents=True)
-        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.16', 'entry': 'main.nex'}))
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': metadata['language'], 'entry': 'main.nex'}))
         with sqlite3.connect(directory / '.nex/graph.db') as db:
             db.executescript(sql.decode())
             source_rows = db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall()
@@ -196,13 +196,16 @@ class GraphIdentities(harness.ToolchainCase):
             process = subprocess.run([str(old), 'eval', '--revision', 'HEAD', '--json'], cwd=legacy, capture_output=True, text=True, timeout=30)
             self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
             self.assertEqual(json.loads(process.stdout)['stdout'], metadata['stdout'])
-        graph = self.cli('graph', cwd=directory)
-        self.assertEqual(graph['revision'], metadata['revision'])
+        self.assertEqual(self.cli('graph','--revision',metadata['revision'],cwd=directory,ok=False)['code'],'E_LANGUAGE_VERSION')
+        migrated=self.cli('migrate','--revision',metadata['revision'],cwd=directory)['revision']
+        graph=self.cli('graph','--revision','HEAD',cwd=directory)
+        self.assertEqual(graph['revision'],migrated);self.assertNotEqual(migrated,metadata['revision'])
         with sqlite3.connect(directory / '.nex/graph.db') as db:
             self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0], '4')
-            self.assertEqual(db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall(), source_rows)
+            self.assertTrue(set(source_rows)<=set(db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall()))
             self.assertEqual([list(r) for r in db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name')], metadata['node_ids'])
-            self.assertEqual([list(r) for r in db.execute('SELECT revision,function,path,id,hash,site FROM operation_versions ORDER BY revision,function,path')], metadata['operations'])
+            old_revisions={row[0] for row in source_rows}
+            self.assertEqual([list(r) for r in db.execute('SELECT revision,function,path,id,hash,site FROM operation_versions ORDER BY revision,function,path') if r[0] in old_revisions], metadata['operations'])
         self.assertEqual(self.cli('eval', '--revision', 'HEAD', cwd=directory)['stdout'], metadata['stdout'])
         self.assertTrue(graph['declaration_graph']['nodes'])
         if old.exists():

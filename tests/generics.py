@@ -36,6 +36,8 @@ class Generics(harness.ToolchainCase):
             ('test fn wrong<T>() -> unit {}', 'E_TEST'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {let b:Box = Box(1);}', 'E_GENERIC_ARITY'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {Box<unit>(print(1));}', 'E_TYPE'),
+            ('fn id<T>(x:T)->T{return x;} fn wrong()->unit{id<unit>;}', 'E_TYPE'),
+            ('fn wrong<F<_>>(value:F<unit>)->unit{}', 'E_TYPE'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {Box<i64,str>(1);}', 'E_GENERIC_ARITY'),
             ('fn id<T>(x:T) -> T {return x;} fn wrong() -> unit {id<i64>(true);}', 'E_TYPE'),
             ('fn id<T>(x:T) -> T {return x;} fn wrong() -> unit {id<i64,str>(1);}', 'E_GENERIC_ARITY'),

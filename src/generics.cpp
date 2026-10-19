@@ -113,7 +113,7 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.kind==Type::Projection)return resolveProjection(p,type,span,depth);
   if(type.kind==Type::Parameter){
     auto found=p.parameterKinds.find(type.name);if(found==p.parameterKinds.end())throw Error("E_GENERIC_SCOPE","unknown scoped type parameter",span);
-    for(auto &argument:type.arguments){argument=resolveType(p,argument,span,depth+1);if(argumentKind(p,argument,span)!=0||argument==Type::Unit)throw Error("E_GENERIC_KIND","constructor argument must be a value type",span);}
+    for(auto &argument:type.arguments){argument=resolveType(p,argument,span,depth+1);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);if(argumentKind(p,argument,span)!=0)throw Error("E_GENERIC_KIND","constructor argument must be a value type",span);}
     if(!type.arguments.empty()&&type.arguments.size()!=found->second)throw Error("E_GENERIC_KIND","wrong constructor parameter arity",span);return type;
   }
   if(type.kind==Type::Constructor){argumentKind(p,type,span);return type;}

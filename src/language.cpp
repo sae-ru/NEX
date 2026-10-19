@@ -512,7 +512,7 @@ class Checker {
     std::map<std::string,Type> bound;
     if(!call->typeArguments.empty()){
       if(parameters.size()!=call->typeArguments.size()&&!(partial&&call->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
-      for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit||argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);bound[parameters[i]]=argument;}
+      for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);bound[parameters[i]]=argument;}
     }
     if(expected!=Type::Unknown){
       std::function<bool(const Type&)> projected=[&](const Type &type){if(type.kind==Type::Projection)return true;if(type.element&&projected(*type.element))return true;for(const auto &a:type.arguments)if(projected(a))return true;return false;};
@@ -549,7 +549,7 @@ class Checker {
     const Function *target=&p.function(e->text,e->span);
     if(!target->typeParameters.empty()){
       const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,Type> bound;
-      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size()&&!(raw.traitSignature&&e->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<e->typeArguments.size();++i){auto type=resolveType(p,e->typeArguments[i],e->span);if(type==Type::Unit||argumentKind(p,type,e->span)!=p.parameterKinds.at(raw.typeParameters[i]))throw Error("E_GENERIC_KIND","reference argument has the wrong constructor kind",e->span);bound[raw.typeParameters[i]]=type;}}
+      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size()&&!(raw.traitSignature&&e->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<e->typeArguments.size();++i){auto type=resolveType(p,e->typeArguments[i],e->span);if(type==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",e->span);if(argumentKind(p,type,e->span)!=p.parameterKinds.at(raw.typeParameters[i]))throw Error("E_GENERIC_KIND","reference argument has the wrong constructor kind",e->span);bound[raw.typeParameters[i]]=type;}}
       if(expected.kind==Type::Function)unify(signature(raw),expected,bound,e->span);
       std::vector<Type> arguments;for(const auto &parameter:raw.typeParameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","generic function value requires explicit types or a function-type context",e->span);arguments.push_back(bound.at(parameter));}
       target=&instantiateFunction(p,*target,arguments,e->span);if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
