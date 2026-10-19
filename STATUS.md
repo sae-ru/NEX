@@ -1,42 +1,32 @@
 # NEX implementation status
 
-## Toolchain 0.56.1 distribution workflow correction: acceptance pending
+## Toolchain0.56.1: scoped distribution checks passed; root validation pending
 
-The frozen588-file correction passes Linux ARM64 full67 (735.00s), twelve live
-debugger suites and the complete source-free/network-free SDK20. Exact scope is
-in [the Linux evidence](docs/evidence/sdk-distribution-0.56.1-588-linux.json).
-Its macOS full run passes66/67; one task web build times out. That same case
-passes unchanged in22.870s with the prepared offline npm cache. Both attempts
-are retained; a complete final macOS run is still required.
+The [aggregate evidence](docs/evidence/sdk-distribution-0.56.1.json) links exact
+source/compiler identities and complete terminal reports. Frozen597 passes all67
+Linux ARM64 groups, twelve live debugger suites and source-free SDK20. Its
+portable Linux SDK passes twenty phases after relocation and archive recovery
+in a separate network-free container without source, LLVM, MLIR or Z3.
 
-The moved macOS SDK then exposes a Darwin LLDB defect: an executable path with
-a literal backslash loses its loaded modules. Five exact-image filename controls
-isolate the backslash; spaces, quotes, Unicode and percent signs work. `nex debug`
-now uses a reusable owned temporary build cache for that case. A real stopped
-NEX watch returns42 and execution exits0. The frozen588 compiler does not include
-this subsequent correction; current full and portable acceptance remain pending.
+macOS base594 passes all67 groups. The subsequent selected-Crypto search-path
+repair passes all29 cases in source FFI/SDK groups and an actual @rpath library
+regression: the unchanged scenario fails on the preceding compiler, then prints42
+in debug/release and after source deletion. Both relocated/restored macOS SDK20
+workflows pass310 commands each, live LLDB/DAP and real browser builds with five
+negative read controls and a read-only SDK. npm is offline; the kernel profile
+does not claim complete network isolation. Root build/full67/SDK20 remain pending.
 
-Both portable SDK validators still required the historical twelve-phase
-workflow, so a current successful twenty-phase workflow would be rejected.
-The matching SDK acceptance module now supplies the phase contract and validates
-terminal reports. The workflow also checks its action registration, preventing
-an omitted action from appearing complete. Failed commands remain rejected;
-expected rejected programs/traps retain their nonzero exit codes.
-
-The literal-directory Node test launcher and UTF-8 LLDB import commands are
-corrected. Actual relocation exposed a further Node ESM failure on literal
-backslashes. Compiler-managed TypeScript/Vite execution now uses identical files
-in an owned temporary directory for those physical paths, retaining generated
-sources and results. LLVM temporary staging also avoids percent-template parents.
-The initial relocation and focused TMPDIR failures are retained in evidence;
-current full and portable acceptance remain pending.
-
-All eleven archive/distribution contract cases pass, including actual historical
-phase names, missing current phases, duplicate/order errors and incomplete
-commands. Source language 0.16, runtime ABI and canonical forms are unchanged.
-The current compiler/full regression, installed SDK and relocated/restored
-portable bundles still need their own checks. Earlier evidence below does not
-verify this patch. Complete PLAN work remains open.
+Retained attempts include a frozen588 task timeout followed by an unchanged
+offline-cache rerun, Node/TypeScript path failures, percent-TMPDIR staging,
+Darwin LLDB backslash image paths and missing Crypto runtime search paths in
+the independent C++ acceptance hosts and source extern executables. Corrections
+retain assertions and timeouts. Current native builds select configured library
+directories explicitly; language0.16/runtime ABI/canonical forms are unchanged.
+The current generated web example separately passes18 production UI tests and3
+development renderer rejection tests across Chromium, Firefox and WebKit. The
+initial browser harness selected the wrong directory; its logs are retained,
+and the corrected invocation uses the exact build.directory response without
+changing application code, assertions or timeouts. The full PLAN is still open.
 
 ## Isolated0.56 editor installation integration: scoped acceptance passed
 

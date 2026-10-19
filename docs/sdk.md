@@ -207,7 +207,10 @@ The current maintained workflow additionally builds a native HTTP/HTTPS service
 with the selected SQLite/OpenSSL dependencies, rejects unauthenticated requests,
 checks per-principal Unicode data and restarts against the same database. On
 macOS, generated storage/server executables record the selected dependency
-directories as runtime search paths for `@rpath` install names. Moving an SDK
+directories as runtime search paths for `@rpath` install names. The same selection applies to source foreign calls. Independent C++ FFI hosts
+need both the full `native_openssl_crypto` path reported by `nex doctor --json`
+and its parent as separate compiler operands: `-Xlinker -rpath -Xlinker PATH`.
+This preserves literal commas, quotes, backslashes and UTF-8. Moving an SDK
 after building an application requires rebuilding that application; distributing
 application runtime libraries remains separate platform packaging work.
 

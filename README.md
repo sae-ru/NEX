@@ -8,16 +8,22 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This separate **toolchain 0.56.1 / language 0.16** patch repairs portable SDK
-acceptance: macOS/Linux distribution validators now use the matching SDK's
-complete twenty-phase contract. Old twelve-phase reports, missing editor/trait
-checks, duplicate/reordered phases and failed commands are rejected. All eleven
-archive/distribution contract tests pass. Current compiler, installed SDK and
-actual moved/restored bundle acceptance remain pending. Compiler-managed
-TypeScript/Vite execution also handles literal-backslash project paths through
-owned temporary directories, with LLVM percent-TMPDIR staging corrected.
-See [the web guide](docs/web.md) and retained failure evidence; the following 0.56.0
-results are separately scoped.
+The source is **toolchain 0.56.1 / language 0.16**. It includes traits and
+constructor parameters, the installed VS Code extension workflow and a
+twenty-phase development SDK. Portable SDKs pass all twenty phases after moving
+and restoring their archives on macOS/Linux ARM64. macOS includes real LLDB/DAP
+and browser checks with source/dependency roots denied by the kernel; Linux
+uses a separate runtime container without the source, LLVM, MLIR, Z3 or network.
+
+The exact597-file implementation passes Linux full67, twelve live debugger
+suites and source-free SDK20. macOS base594 passes full67; the subsequent
+Crypto linker correction passes29 focused cases, an actual debug/release and
+source-deleted regression, and both portable workflows. Root promotion needs
+its own current build/full67/installed SDK20. The current generated web example
+also passes18 production and3 development Playwright checks across Chromium,
+Firefox and WebKit. [Evidence](docs/evidence/sdk-distribution-0.56.1.json)
+keeps these scopes, compiler hashes and retained failed attempts separate.
+Complete language/platform/development-chain requirements remain in `PLAN.md`.
 
 The preceding frozen editor tree is **toolchain 0.56.0 / language 0.16**.
 It installs VS Code extension sources, an editor guide and capability metadata.
