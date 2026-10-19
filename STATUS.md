@@ -1,4 +1,4 @@
-# Development0.60.1: Docker path correction
+# Development0.60.2: Docker path correction
 
 The public Linux launcher fails before compilation when a physical source path
 contains a quote or comma. The failure is reproduced against all664 exact frozen
@@ -1626,3 +1626,5 @@ Node probes run all ten contracts successfully from that exact path. The early
 result. The failed relocation, actual probes and interruption are retained in
 `docs/evidence/sdk-distribution-0.56.1-node-path-failure.json`. Complete workflow
 and full regression must be repeated with the final corrected source.
+
+Toolchain0.60.2 corrects literal-percent Wasm output paths by linking in an owned physical staging directory and publishing the output bytes. The existing moved-SDK workflow found the failure; matching source, SDK and platform acceptance remain pending. Language0.16 is unchanged.

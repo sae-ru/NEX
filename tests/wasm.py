@@ -167,6 +167,22 @@ for(const value of [0,1,0n,1n,'true',null]){
     self.source('module unsupported;'+source);self.assertEqual(self.wasm('main',ok=False)['code'],code)
   self.source('module unsupported;fn main()->i64{return 1;}')
   self.assertEqual(self.wasm('main',profile='profile',ok=False)['code'],'E_OPTION')
+ def test_literal_percent_quoted_unicode_and_newline_paths(self):
+  self.root=self.root/'Wasm output % "quoted", \\ 🧠\nnext';self.root.mkdir()
+  self.file=self.root/'main.nex'
+  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+  self.source(SOURCE)
+  temporary=self.root/'temporary % "quoted", 🧠';temporary.mkdir()
+  env={name:str(temporary) for name in ['TMPDIR','TMP','TEMP','TEMPDIR']}
+  for profile in ['debug','release']:
+   build=self.wasm(profile=profile,env=env)
+   self.assertIn('%',build['module']);self.assertTrue(Path(build['module']).is_file())
+   self.assertTrue(self.wasm(profile=profile,env=env)['cached'])
+   body=self.imports(build)+"console.log(JSON.stringify({value:String(instance.call([0n,9007199254740993n,1n]))}));"
+   self.assertEqual(self.node(body),{'value':'9007199254740994'})
+  copied=self.root/'copied output % 🧠'
+  exported=self.cli('build','--target','wasm','--entry','compute','--profile','release','-o',copied,env=env,timeout=180)
+  self.assertEqual(Path(exported['module']).read_bytes(),Path(build['module']).read_bytes())
  def test_cache_archived_revision_source_exclusion_and_export(self):
   self.source(SOURCE);first=self.wasm();self.assertFalse(first['cached']);self.assertTrue(self.wasm()['cached'])
   for name in ['module','wrapper','metadata','mlir','llvm']:

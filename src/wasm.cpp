@@ -156,7 +156,17 @@ JSON buildWasm(const Program &p,const std::string &directory,const std::string &
   std::vector<std::string> link{linker,"--no-entry","--fatal-warnings","--stack-first","-z","stack-size=8388608", "--initial-memory=16777216","--max-memory=16777216"};
   for(const auto &value:exports)if(value.getAsString()!="memory")link.push_back("--export="+value.getAsString()->str());
   link.insert(link.end(),{(folder/"program.o").string(),(folder/"runtime.o").string(),(folder/"multi3.o").string(),"-o",(folder/"module.wasm").string()});
-  invoke(link);auto wasm=readFile((folder/"module.wasm").string());
+  // LLVM's FileOutputBuffer expands '%' throughout its temporary filename
+  // model, including parent directories. Link in an owned physical temporary
+  // directory, then publish the bytes into the requested cache path. Keep the
+  // output basename stable because it is recorded in the Wasm name section.
+  fs::path temporary(createTemporaryDirectory("nex-wasm-link"));
+  auto linked=temporary/"module.wasm";link.back()=linked.string();
+  std::string wasm;
+  try{
+   invoke(link);wasm=readFile(linked.string());
+   writeFile((folder/"module.wasm").string(),wasm);fs::remove_all(temporary);
+  }catch(...){fs::remove_all(temporary);throw;}
   if(wasm.size()<8||wasm.size()>8*1048576||wasm.substr(0,8)!=std::string("\0asm\1\0\0\0",8))throw Error("E_WASM_BUILD","invalid or oversized Wasm output");
   Array parameters,functions;for(const auto &parameter:entry.params)parameters.push_back(typeName(parameter.type));
   for(const auto &f:p.functions)if(names.contains(f.name))functions.push_back(Object{{"symbol",f.name},
