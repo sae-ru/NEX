@@ -22,6 +22,7 @@ NativeToolchain hostDefaults() {
   namespace fs=std::filesystem;
   NativeToolchain result;
   result.compiler=NEX_CLANG;
+  result.wasmLinker=NEX_WASM_LD;
   result.archiver=(fs::path(NEX_LLVM_TOOLS)/"llvm-ar").string();
   llvm::Triple host(llvm::sys::getDefaultTargetTriple());
   if(host.isOSLinux())result.linker=(fs::path(NEX_LLVM_TOOLS)/"ld.lld").string();
@@ -55,10 +56,11 @@ NativeToolchain hostDefaults() {
       // Preserve the final name: clang++ and ld.lld dispatch through argv[0].
       return candidate.string();
     };
-    const auto &tools=group("tools",{"compiler","archiver","linker","debug_packager"});
+    const auto &tools=group("tools",{"compiler","archiver","linker","debug_packager","wasm_linker"});
     result.compiler=path(tools,"compiler",false);result.archiver=path(tools,"archiver",false);
     if(host.isOSLinux()||tools.get("linker"))result.linker=path(tools,"linker",false);
     if(host.isOSDarwin()||tools.get("debug_packager"))result.debugPackager=path(tools,"debug_packager",false);
+    result.wasmLinker=tools.get("wasm_linker")?path(tools,"wasm_linker",false):"";
     const auto &sqlite=group("sqlite",{"include","library"});
     result.sqliteInclude=path(sqlite,"include",true);result.sqliteLibrary=path(sqlite,"library",false);
     const auto &ssl=group("openssl",{"include","ssl","crypto"});
@@ -72,6 +74,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   NativeToolchain result;
   auto host=llvm::sys::getDefaultTargetTriple();llvm::Triple hostABI(host);
   auto defaults=hostDefaults();
+  result.wasmLinker=defaults.wasmLinker;
   auto override=std::getenv("NEX_CLANG");result.compiler=override?override:defaults.compiler;
   result.archiver=defaults.archiver;result.debugPackager=defaults.debugPackager;result.sdkManifest=defaults.sdkManifest;
   bool triple=!options.target.empty()&&options.target!="server"&&options.target!="native";

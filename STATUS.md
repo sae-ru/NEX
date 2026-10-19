@@ -1,3 +1,29 @@
+# Development0.60: bounded scalar WebAssembly draft
+
+The isolated implementation adds a real wasm32 MLIR/LLVM backend, pinned
+compiler-rt multiplication support, a no-import module and a checked BigInt
+wrapper. Seven draft backend tests pass, including boundary/seeded arithmetic
+agreement, exact failure sites, evaluation order, short-circuiting, bounded
+loops/recursion, 100 repeated trap recoveries, strict inputs, cache repair and
+source-deleted export. The installed workflow has a23rd Wasm phase; thirteen
+archive/workflow contract tests pass. Actual SDK23 acceptance remains pending.
+
+The committed browser example passes real Chromium, Firefox and WebKit checks
+for exact integers, overflow, invalid input, recovery, keyboard control and a
+narrow viewport. These are mutable-draft checks, not frozen-source/full-platform
+acceptance. The full72 regression, matching installed/portable SDKs and JS/Wasm
+measurements remain required. The language stays0.16; no migration is introduced.
+General Wasm applications, WASI, heap values, f64 and GPU remain unsupported by
+this adapter. The existing TypeScript/React application path remains available.
+
+Root0.58.2 passes full70 (577 Python cases) and SDK22/317. Its graph audit
+retains the original strict failure from three owned probes that discovered the
+parent project. A guarded CLI restore returns HEAD to its original revision and
+preserves every original and probe history row. Subsequent probes use explicit
+project manifests; the root graph is not described as unchanged across that
+incident. Separate frozen0.59 focused and actual macOS moved-core checks pass;
+its full71 and platform/SDK gates remain pending at this capture.
+
 # Development0.59: native core capsule draft
 
 The isolated implementation adds explicit export/read directories, bounded

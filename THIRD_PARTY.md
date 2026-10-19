@@ -3,6 +3,7 @@
 | Component | Current use | License/source |
 |---|---|---|
 | LLVM / MLIR 22.1.8 | Linked compiler infrastructure and native toolchain | [Apache-2.0 with LLVM exceptions](https://llvm.org/docs/DeveloperPolicy.html#copyright-license-and-patents) |
+| LLVM compiler-rt 22.1.8 `__multi3` | Freestanding legalizer helper linked into scalar Wasm modules | Apache-2.0 WITH LLVM-exception; unmodified source, required headers, full license and SHA-256 provenance in `runtime/third_party/compiler-rt` |
 | BLAKE3 through LLVM Support | Content hashing via `llvm/Support/BLAKE3.h` | Uses the implementation already distributed with LLVM; [upstream licensing](https://github.com/BLAKE3-team/BLAKE3#licenses) |
 | SQLite 3.53.1 (macOS); 3.45.1 Ubuntu package (Linux) | Linked project/revision database and optional native per-principal KV storage | [SQLite public-domain dedication](https://sqlite.org/copyright.html) |
 | nlohmann/json 3.12.0 | Strict typed wire JSON in the compiler/interpreter and selected native runtime components | MIT; vendored `runtime/third_party/json.hpp` and `JSON-LICENSE.MIT` |

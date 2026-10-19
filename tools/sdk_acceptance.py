@@ -15,6 +15,7 @@ import sqlite3
 import ssl
 import subprocess
 import threading
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -26,7 +27,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
     'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser')
 
@@ -78,6 +79,12 @@ def validate_completed_report(report):
                     capsule.get('capsule', {}).get('inventory_checked') is True and
                     capsule.get('watch', {}).get('value') == 'Я🧠2' and not capsule.get('inferior_execution', True),
                     'SDK acceptance lacks actual source-deleted moved core capsule evidence')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 60, 0):
+        wasm = report.get('evidence', {}).get('wasm_compute', {})
+        require(all(wasm.get(key) is True for key in ('exact_bigint', 'checked_overflow',
+                'input_rejection', 'resource_stop', 'post_trap_recovery', 'module_integrity',
+                'source_deleted', 'independent_runtime', 'cache_integrity', 'server_exclusion')),
+                'SDK acceptance lacks complete installed scalar Wasm evidence')
 
 
 class DAP:
@@ -329,7 +336,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'core'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'core', 'wasm'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -499,6 +506,84 @@ test fn examples() -> unit {
         require(passed['status'] == 'passed' and passed['task_hash'] == state['task_hash'], 'reviewed task changed or failed')
         state['accepted'] = passed
         report['evidence'].update(after_revision=state['after'], passed_receipt=passed['output'], graph=str(exported_graph))
+
+    def wasm_compute():
+        workspace = root / 'wasm-project'
+        workspace.mkdir()
+        (workspace / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        source = workspace / 'main.nex'
+        source.write_text((resources / 'examples/wasm/main.nex').read_text() + '''
+pub fn bounded(n:i64)->i64{var i:i64=0;while i<n{i=i+1;}return i;}
+server fn excluded()->str !{io}{print("SDK_WASM_SERVER_EXCLUDED_060");return "SDK_WASM_SERVER_EXCLUDED_060";}
+''')
+        cli('test', cwd=workspace)
+        cli('test', '--target', 'web', cwd=workspace)
+        arguments = ['build', '--target', 'wasm', '--entry', 'compute', '--profile', 'release']
+        built = cli(*arguments, cwd=workspace)
+        require(not built['cached'], 'cold Wasm build unexpectedly reused an artifact')
+        require(cli(*arguments, cwd=workspace)['cached'], 'warm Wasm build did not reuse complete artifacts')
+        module = Path(built['module'])
+        original = module.read_bytes()
+        module.write_bytes(original + b'changed')
+        require(not cli(*arguments, cwd=workspace)['cached'] and module.read_bytes() == original,
+                'changed Wasm module survived cache validation')
+        bounded = cli('build', '--target', 'wasm', '--entry', 'bounded', '--profile', 'release', cwd=workspace)
+        for label in ('module', 'wrapper', 'metadata', 'mlir', 'llvm'):
+            require(b'SDK_WASM_SERVER_EXCLUDED_060' not in Path(built[label]).read_bytes(),
+                    'server code entered a scalar Wasm artifact')
+        source.unlink()
+        exported = root / 'independent-wasm'
+        materialized = cli(*arguments, '--revision', built['revision'], '-o', exported, cwd=workspace)
+        require(Path(materialized['module']).read_bytes() == original, 'archived Wasm export differs')
+        bounded_export = exported / 'bounded'
+        bounded_export.mkdir()
+        for name in ('module.wasm', 'module.mjs', 'module.json', 'THIRD_PARTY_NOTICES.txt'):
+            shutil.copyfile(Path(bounded['directory']) / name, bounded_export / name)
+        driver = exported / 'check.mjs'
+        driver.write_text('''import fs from 'node:fs';
+import {createNexWasm} from './module.mjs';
+const raw=fs.readFileSync(new URL('./module.wasm',import.meta.url));
+const module=await createNexWasm(raw);
+if(module.call([9007199254740993n,1n])!==9007199254740993n)throw Error('integer precision differs');
+let overflow;try{module.call([9223372036854775807n,2n])}catch(error){overflow=error;}
+if(overflow?.code!=='E_OVERFLOW'||!overflow.site?.site)throw Error('checked overflow differs');
+for(const args of [[1,2n],[9223372036854775808n,1n]]){
+ let code;try{module.call(args)}catch(error){code=error.code;}if(code!=='E_WASM_INPUT')throw Error('input accepted');
+}
+if(module.call([6n,7n])!==42n)throw Error('failed post-trap recovery');
+const mutated=raw.slice();mutated[mutated.length-1]^=1;
+let rejected;try{await createNexWasm(mutated)}catch(error){rejected=error.code;}
+if(rejected!=='E_WASM_MODULE')throw Error('changed module accepted');
+const boundedFactory=(await import('./bounded/module.mjs')).createNexWasm;
+const bounded=await boundedFactory(fs.readFileSync(new URL('./bounded/module.wasm',import.meta.url)));
+let stopped;try{bounded.call([1000n],{budget:10})}catch(error){stopped=error.code;}
+if(stopped!=='E_WASM_BUDGET'||bounded.call([3n])!==3n)throw Error('resource bound/recovery differs');
+console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_rejection:true,
+ resource_stop:true,post_trap_recovery:true,module_integrity:true}));
+''')
+        previous = environment['NEX_RESOURCE_DIR']
+        try:
+            environment['NEX_RESOURCE_DIR'] = str(root / 'absent-wasm-resources')
+            # Node treats literal backslashes in physical POSIX module paths as
+            # separators. Execute byte-identical independent assets in an owned
+            # ordinary /tmp path, including when the SDK work root has one.
+            with tempfile.TemporaryDirectory(prefix='nex-sdk-wasm-', dir='/tmp') as temporary:
+                independent = Path(temporary) / 'runtime'
+                shutil.copytree(exported, independent)
+                for path in exported.rglob('*'):
+                    if path.is_file():
+                        require(path.read_bytes() == (independent / path.relative_to(exported)).read_bytes(),
+                                'independent Wasm runtime copy differs')
+                observed = json.loads(run([os.environ.get('NEX_NODE') or shutil.which('node'), independent / 'check.mjs'], cwd=independent))
+                require(not (independent / '.nex').exists(), 'independent Wasm runtime created a graph')
+        finally:
+            environment['NEX_RESOURCE_DIR'] = previous
+        require(not source.exists() and not (exported / '.nex').exists(), 'standalone Wasm execution created source/graph state')
+        observed.update(source_deleted=True, independent_runtime=True, cache_integrity=True, server_exclusion=True,
+                        build=built, exported=materialized, bounded=bounded,
+                        module_sha256=hashlib.sha256(original).hexdigest())
+        report['evidence']['wasm_compute'] = observed
 
     def backend_agreement():
         for profile in ('debug', 'release'):
@@ -1936,7 +2021,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
-                ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports),
+                ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]

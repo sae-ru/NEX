@@ -949,6 +949,13 @@ std::string revision(const Program &p) {
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
+    {"wasm_features",llvm::json::Object{{"source_support",true},{"status","experimental_scalar_compute_validation_pending"},
+      {"command","nex build FILE --target wasm --entry NAME --profile debug|release --json"},{"guide","docs/wasm.md"},
+      {"target","wasm32-unknown-unknown"},{"abi",1},{"types",llvm::json::Array{"i64","bool","unit"}},
+      {"realms",llvm::json::Array{"shared","client"}},{"effects",llvm::json::Array{}},
+      {"javascript_i64","BigInt"},{"host_imports",false},{"wrapper","(await createNexWasm(bytes)).call(argumentArray, {budget})"},
+      {"limits",llvm::json::Object{{"functions",128},{"operations",8192},{"function_operations",512},{"parameters",32},{"call_depth",64},{"maximum_budget",10000000},{"memory_bytes",16777216},{"module_bytes",8388608}}},
+      {"pending",llvm::json::Array{"full_current_regression","native_reference_typescript_wasm_matrix","actual_browsers","installed_and_portable_sdk","comparable_performance","general_wasm_applications","wasi","f64","heap_values"}}}},
     {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","file","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
     {"effects",llvm::json::Array{"io","db","fs","ffi"}},
     {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","immutable_binary_files","atomic_binary_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
@@ -1058,7 +1065,7 @@ llvm::json::Value describe() {
     {"trait_features",llvm::json::Array{"parametric_contracts","named_implementations","associated_value_types","constructor_kinds","generic_methods","ordinary_function_bindings","static_dispatch","method_references","overlap_rejection","orphan_ownership","finite_witnesses","source_declaration_patches","history_preserving_015_migration"}},
     {"trait_limits",llvm::json::Object{{"declarations",4096},{"implementations",4096},{"members_per_trait",1024},{"self_plus_method_parameters",64},{"constructor_arity",64},{"obligation_depth",64},{"obligation_steps",4096}}},
     {"trait_integration_pending",llvm::json::Array{"full_current_regression","installed_sdk","linux_matrix","extended_generic_watch_context","trait_projection_full_matrix","release_sanitizers"}},
-    {"not_yet_supported",llvm::json::Array{"async","wasm","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
+    {"not_yet_supported",llvm::json::Array{"async","general_wasm_applications","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 }

@@ -1,6 +1,6 @@
 # NEX browser backend and application contract
 
-The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await, SSR and Wasm remain unfinished.
+The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
 
 ## Build and run
 

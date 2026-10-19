@@ -44,11 +44,11 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
   std::set<std::string> names;std::function<void(const Function&)> visit=[&](const Function &f){if(names.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));return names;
 }
-const Function &nativeEntry(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
+const Function &nativeEntry(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry,bool wasm=false){
   const auto &main=p.function(entry);
   if(!main.typeParameters.empty()||std::any_of(main.typeArguments.begin(),main.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be a concrete generic specialization or a non-generic function",main.span);
   if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
-  if(main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
+  if(!wasm&&main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
   if(main.test!=testEntry)throw Error("E_ENTRY",testEntry?"entry is not a test":"test cannot be the application entry",main.span);
   return main;
 }
@@ -114,7 +114,7 @@ public:
   std::string str()const{return attributes.str();}
 };
 class Emitter {
-  const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false;
+  const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false,wasm=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
@@ -455,6 +455,7 @@ class Emitter {
       case Stmt::Return:{
         Value value;if(s->expr)value=expression(s->expr);cleanupAll(s->span);
         if(profiling)call("nex_profile_leave",{},Type::Unit,s->span);
+        if(wasm)call("nex_wasm_leave",{},Type::Unit,s->span);
         line(!s->expr||value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),s->span);returned=true;break;
       }
       case Stmt::If:{
@@ -477,14 +478,14 @@ class Emitter {
     if(scoped)scopes.pop_back();debug.scope=previousDebugScope;return returned;
   }
   void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
-    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave";
+    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave"&&name!="nex_wasm_leave";
     if(located)runtimeCalls.insert(name);
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr):p(p),debug(p,optimized),profiling(profiling),sites(sharedSites?*sharedSites:ownedSites){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr){
-    const auto &main=nativeEntry(p,entry,testEntry,libraryEntry);
+    const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
     out<<"module {\n";runtimeDeclarations=true;
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_f64_"+std::string(name),"f64, f64, i64","f64");
@@ -493,6 +494,7 @@ public:
     declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
+    if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
     declaration("nex_foreign_invoke","!llvm.ptr, i64, !llvm.ptr, i64","!llvm.ptr");declaration("nex_foreign_configure","i64, !llvm.ptr");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}
     declaration("nex_string_new","!llvm.ptr, i64, i64","!llvm.ptr");declaration("nex_list_new","","!llvm.ptr");declaration("nex_record_new","i64","!llvm.ptr");declaration("nex_enum_new","i64, i64","!llvm.ptr");declaration("nex_enum_tag","!llvm.ptr, i64, i64","i64");
@@ -544,6 +546,7 @@ public:
       }
       for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];SiteScope captureSite(activeSite,pathSites.at("capture/"+std::to_string(i)));auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);value=fromScalar(value,capture.type,capture.span);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
       allocate(f.body);prologue=false;
+      if(wasm)call("nex_wasm_enter",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);
       if(profiling){auto name=rawBytes(f.name,f.span),file=rawBytes(p.location(f.span),f.span),content=rawBytes(hash(json(canonical(f),false)),f.span);call("nex_profile_enter",{name,file,constant(f.span.line,Type::I64,f.span),content},Type::Unit,f.span);}
       call("nex_poll",{constant(f.span.line,Type::I64,f.span)},Type::Unit,f.span);
       if(f.foreign){
@@ -552,7 +555,7 @@ public:
         auto description=json(foreignBinding(p,f),false);auto resultBox=call("nex_foreign_invoke",{rawBytes(description,f.span),constant(description.size(),Type::I64,f.span),packed,constant(f.span.line,Type::I64,f.span)},Type::list(Type::I64),f.span);release(packed,f.span);Value value;
         if(f.result!=Type::Unit){value=call(f.result.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{resultBox,constant(0,Type::I64,f.span),constant(f.span.line,Type::I64,f.span)},f.result.heap()?f.result:Type(Type::I64),f.span);value=fromScalar(value,f.result,f.span);}
         release(resultBox,f.span);if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);line(f.result==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(f.result),f.span);
-      }else if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
+      }else if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);if(wasm)call("nex_wasm_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
       if(!f.closure&&bridges.contains(f.name)){debug.scope.clear();out<<"  func.func @"<<closureSymbol(f)<<"(%closure_environment: !llvm.ptr";std::vector<Value> args;for(const auto &param:f.params){auto name=fresh();out<<", "<<name<<": "<<ty(param.type);args.push_back({name,param.type});}out<<")"<<(f.result==Type::Unit?"":" -> "+ty(f.result))<<" {\n";auto value=call(nativeSymbol(f.name),args,f.result,f.span);line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),f.span);out<<"  }\n";}
     }
     debug.scope.clear();if(libraryEntry||!names.contains(main.name)){out<<globals.str()<<"}\n";return debug.str()+out.str();}
@@ -681,6 +684,8 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
   }catch(...){std::filesystem::remove_all(folder);throw;}
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){return Emitter(p).run(entry,testEntry,libraryEntry);}
+std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}
+std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,const std::string &triple,const std::string &layout){return lower(source,path,triple,layout);}
 BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
   if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
   auto host=llvm::sys::getDefaultTargetTriple();

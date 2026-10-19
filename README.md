@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain 0.59.0 / language 0.16**, under development.
+The current source is **toolchain 0.60.0 / language 0.16**, under development.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -20,13 +20,14 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has 22 phases. The new debugger supports native list/byte pages of at most 1000
+has 23 phases in the 0.60 draft; matching acceptance is pending. The new debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
-The isolated0.59 draft adds core capsule export/read with an exact file inventory,
-original-to-copied image binding and source projections. Its matching C++ build,
-actual moved-core tests, full regressions and SDK/platform gates are pending.
+The core capsule implementation adds export/read with an exact file inventory,
+original-to-copied image binding and source projections. The preceding frozen
+0.59 source passes focused and actual macOS moved-core checks; its complete
+platform/SDK matrix and the new 0.60 matrix remain separate required gates.
 
 Validation results are recorded with their exact source, compiler, platform
 and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).
@@ -108,6 +109,12 @@ reuse, Linux tools and runtime configuration. Current compiler, SDK and deployme
 ```
 
 On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records the target, compiler, optional linker/SDK and target SQLite/OpenSSL paths. Build metadata and caches distinguish architectures. Local run/test/debug/profile commands require the compiler host architecture; NEX does not launch an emulator itself. macOS Intel artifacts have been cross-built on ARM64; macOS Intel execution/debugging remains unverified. The Linux workflow runs matching ARM64/x86-64 compiler containers. See [the native build guide](docs/incremental.md) and [toolchain schema](llm/toolchain.schema.json).
+
+## Experimental Wasm compute modules
+
+The isolated 0.60 draft adds `build --target wasm --entry NAME` for bounded pure
+scalar functions. [The Wasm guide](docs/wasm.md) describes its BigInt ABI, limits
+and pending validation. This is separate from the TypeScript application adapter.
 
 ## Web applications
 

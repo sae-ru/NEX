@@ -72,6 +72,19 @@ class DistributionWorkflow(unittest.TestCase):
             with self.subTest(field=key), self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
 
 
+    def test_current_wasm_sdk_requires_independent_checked_compute_evidence(self):
+        current=self.report();current['doctor']={'version':'0.60.0'}
+        current['evidence']={'core_reports':{'capsule_helper_input_rejected':True}}
+        with self.assertRaisesRegex(RuntimeError,'scalar Wasm evidence'):acceptance.validate_completed_report(current)
+        fields=('exact_bigint','checked_overflow','input_rejection','resource_stop','post_trap_recovery',
+                'module_integrity','source_deleted','independent_runtime','cache_integrity','server_exclusion')
+        current['evidence']['wasm_compute']={name:True for name in fields}
+        acceptance.validate_completed_report(current)
+        for name in fields:
+            changed=copy.deepcopy(current);changed['evidence']['wasm_compute'][name]=False
+            with self.subTest(field=name),self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
+
+
 class Archives(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='nex archive, % 🧠 ')

@@ -2,6 +2,10 @@
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
+The experimental [scalar Wasm compute target](wasm.md) in toolchain 0.60 adds no
+source syntax or language-version change. Its reachable-code restrictions and
+resource/JavaScript ABI limits are narrower than the full language.
+
 Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language0.16.

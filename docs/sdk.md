@@ -12,13 +12,31 @@ The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
-eighteen installed guides. Python 3.9+, the SDK's development dependencies
+installed guides, including the experimental Wasm guide. Python 3.9+, the SDK's development dependencies
 (LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI. On Linux, its application-packaging phase additionally requires `patchelf`, `readelf` and `ldd`; these are development/packaging tools rather than generated-application dependencies.
 The text-file phase checks explicit capability/read-only denial, native/reference
 Unicode/NUL agreement, source-deleted replay and a packaged file application
 executed with compiler resources unavailable. File access requires no SQLite or
 JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
+
+The 0.60 workflow has twenty-three phases. Its `wasm-compute` phase requires
+LLVM 22.1 Clang and `wasm-ld` and current Node.js. It checks exact BigInt results,
+checked overflow and operation attribution, input rejection, bounded loops,
+post-trap recovery, module integrity, cache repair, server-code exclusion and
+archived export after source deletion. The exported modules then execute with
+compiler resources unavailable. Independent execution uses a byte-verified
+temporary copy when necessary for Node's handling of literal backslashes in
+POSIX module paths. The exported evidence remains in the report directory.
+The SDK scenario does not run an actual browser for Wasm; use the separate
+`tests/wasm_browser.py` three-engine scenario in the source checkout.
+
+When a configured Wasm linker exists, the SDK packager copies it and records an
+optional relative `wasm_linker` in `sdk-host.json`. A descriptor without that
+field leaves this experimental target unavailable; it never falls back to the
+original build-machine linker. Include the linker's upstream notices and all
+non-system dependencies in the packaging inventory. `NEX_WASM_LD` explicitly
+overrides linker selection in a trusted development environment.
 
 The foreign-boundary phase also builds an independent C11 shared module and a
 C++20 host against the installed runtime. It pins the exact bundle manifest and

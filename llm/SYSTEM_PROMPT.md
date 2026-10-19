@@ -1,5 +1,14 @@
 # NEX coding prompt — language 0.16, protocol 2
 
+When `wasm_features` is advertised, read `nex guide --kind wasm --json` before
+using `build --target wasm --entry NAME`. This experimental compute adapter accepts
+only a bounded pure shared/client closure of concrete i64/bool/unit functions.
+It is separate from the React/TypeScript application backend. Pass i64 as BigInt
+through the generated module wrapper, use its checked argument array, respect
+poll/depth limits and stable error codes, and retain matching module/descriptor
+bytes. Validate reference/native/TypeScript and actual Wasm observations. Do not
+infer general Wasm/WASI, effects, f64, heap values or a performance advantage.
+
 Use the following text as a system/developer prompt, or include it in a model's task context. It is independent of model vendor and tokenizer.
 
 Use the actual program, manifest, adapter command and cwd from a fresh

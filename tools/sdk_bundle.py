@@ -217,10 +217,12 @@ class Bundle:
             raise ValueError('input SDK contains symlinks; install a plain development SDK first')
         llvm = Path(doctor['native_compiler']).resolve().parent.parent
         tools = {'compiler': 'clang++', 'archiver': 'llvm-ar', 'debug_packager': 'dsymutil'}
+        if doctor.get('wasm_linker'):
+            tools['wasm_linker'] = 'wasm-ld'
         configuration = {'schema': 'nex.sdk-host/1', 'tools': {}}
         for key, name in tools.items():
             target = self.output / 'libexec/nex/llvm/bin' / name
-            original = Path(doctor[{'compiler': 'native_compiler', 'archiver': 'native_archiver', 'debug_packager': 'native_debug_packager'}[key]])
+            original = Path(doctor[{'compiler': 'native_compiler', 'archiver': 'native_archiver', 'debug_packager': 'native_debug_packager', 'wasm_linker': 'wasm_linker'}[key]])
             self.external(original, target)
             configuration['tools'][key] = str(target.relative_to(self.output))
         # clang++ may invoke clang by name; preserve C++ dispatch through argv[0].
@@ -398,10 +400,13 @@ class LinuxBundle(Bundle):
         if any(path.is_symlink() for path in self.output.rglob('*')):
             raise ValueError('input SDK contains symlinks; install a plain development SDK first')
         configuration = {'schema': 'nex.sdk-host/1', 'tools': {}}
-        for name, field in [('clang++', 'native_compiler'), ('llvm-ar', 'native_archiver'), ('ld.lld', 'native_linker')]:
+        tools = [('clang++', 'native_compiler'), ('llvm-ar', 'native_archiver'), ('ld.lld', 'native_linker')]
+        if doctor.get('wasm_linker'):
+            tools.append(('wasm-ld', 'wasm_linker'))
+        for name, field in tools:
             target = self.output / 'libexec/nex/llvm/bin' / name
             self.external(Path(doctor[field]), target)
-            key = {'clang++': 'compiler', 'llvm-ar': 'archiver', 'ld.lld': 'linker'}[name]
+            key = {'clang++': 'compiler', 'llvm-ar': 'archiver', 'ld.lld': 'linker', 'wasm-ld': 'wasm_linker'}[name]
             configuration['tools'][key] = str(target.relative_to(self.output))
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())

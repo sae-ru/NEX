@@ -95,7 +95,20 @@
     "core_reader": "debug/core_report.py",
     "core_report_schema": "llm/core-report.schema.json",
     "core_capsule_helper": "tools/core_capsule.py",
-    "core_capsule_schema": "llm/core-capsule.schema.json"
+    "core_capsule_schema": "llm/core-capsule.schema.json",
+    "wasm": "docs/wasm.md",
+    "wasm_runtime": "runtime/wasm_runtime.c",
+    "wasm_wrapper": "web/wasm_module.mjs",
+    "wasm_compiler_rt_provenance": "runtime/third_party/compiler-rt/provenance.json",
+    "wasm_compiler_rt_license": "runtime/third_party/compiler-rt/LICENSE.TXT",
+    "wasm_compiler_rt_multi3_c": "runtime/third_party/compiler-rt/multi3.c",
+    "wasm_compiler_rt_int_lib_h": "runtime/third_party/compiler-rt/int_lib.h",
+    "wasm_compiler_rt_int_types_h": "runtime/third_party/compiler-rt/int_types.h",
+    "wasm_compiler_rt_int_util_h": "runtime/third_party/compiler-rt/int_util.h",
+    "wasm_compiler_rt_int_endianness_h": "runtime/third_party/compiler-rt/int_endianness.h",
+    "wasm_example": "examples/wasm/README.md",
+    "wasm_module_schema": "llm/wasm-module.schema.json",
+    "wasm_build_schema": "llm/wasm-build.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -153,7 +166,9 @@
     "trait_api_model": "examples/traits/api/model.nex",
     "trait_api_contracts": "examples/traits/api/helpers/contracts.nex",
     "trait_api_client_copy_after_generate": "examples/traits/api/client.nex",
-    "native_indexed_pages": "examples/debugging/pages.nex"
+    "native_indexed_pages": "examples/debugging/pages.nex",
+    "scalar_wasm": "examples/wasm/main.nex",
+    "scalar_wasm_browser": "examples/wasm/index.html"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -326,5 +341,47 @@
       "total_bytes_limit": 35433480192,
       "copy_timeout_seconds": 900
     }
+  },
+  "wasm_features": {
+    "source_support": true,
+    "status": "experimental_scalar_compute_validation_pending",
+    "command": "nex build FILE --target wasm --entry NAME --profile debug|release --json",
+    "guide": "docs/wasm.md",
+    "target": "wasm32-unknown-unknown",
+    "abi": 1,
+    "types": [
+      "i64",
+      "bool",
+      "unit"
+    ],
+    "realms": [
+      "shared",
+      "client"
+    ],
+    "effects": [],
+    "javascript_i64": "BigInt",
+    "host_imports": false,
+    "wrapper": "(await createNexWasm(bytes)).call(argumentArray, {budget})",
+    "limits": {
+      "functions": 128,
+      "operations": 8192,
+      "function_operations": 512,
+      "parameters": 32,
+      "call_depth": 64,
+      "maximum_budget": 10000000,
+      "memory_bytes": 16777216,
+      "module_bytes": 8388608
+    },
+    "pending": [
+      "full_current_regression",
+      "native_reference_typescript_wasm_matrix",
+      "actual_browsers",
+      "installed_and_portable_sdk",
+      "comparable_performance",
+      "general_wasm_applications",
+      "wasi",
+      "f64",
+      "heap_values"
+    ]
   }
 }
