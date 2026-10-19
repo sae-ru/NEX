@@ -11,7 +11,7 @@ NEX is a language and development toolchain built around a checked semantic grap
 This separate **toolchain 0.56.1 / language 0.16** patch repairs portable SDK
 acceptance: macOS/Linux distribution validators now use the matching SDK's
 complete twenty-phase contract. Old twelve-phase reports, missing editor/trait
-checks, duplicate/reordered phases and failed commands are rejected. All ten
+checks, duplicate/reordered phases and failed commands are rejected. All eleven
 archive/distribution contract tests pass. Current compiler, installed SDK and
 actual moved/restored bundle acceptance remain pending; the following 0.56.0
 results are separately scoped.

@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import shlex
 from pathlib import Path
 import sys
 import tarfile
@@ -18,6 +19,12 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_debugger_script_paths_preserve_unicode_and_argument_boundaries(self):
+        for path in ['/SDK, % 🧠/record.py', '/SDK "quoted"/record.py', '/SDK \\ slash/record.py']:
+            command = acceptance.lldb_script_import(Path(path))
+            self.assertEqual(shlex.split(command), ['command', 'script', 'import', path])
+        self.assertIn('🧠', acceptance.lldb_script_import(Path('/SDK 🧠/record.py')))
+
     def report(self):
         return {'schema': 'nex.sdk-acceptance/1', 'ok': True,
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],

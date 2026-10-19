@@ -36,6 +36,12 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def lldb_script_import(script):
+    # LLDB parses command arguments, not JSON Unicode escape sequences. Keep
+    # UTF-8 path characters literal while quoting spaces, quotes and slashes.
+    return 'command script import ' + json.dumps(str(script), ensure_ascii=False)
+
+
 def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -916,7 +922,7 @@ def __lldb_init_module(debugger,_):
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
 '''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('RECORDING',repr(str(recording))))
             run([compiler,'debug','--revision',revision,'--','--no-lldbinit','--batch','-o',
-                 'command script import '+json.dumps(str(script))],cwd=project,timeout=180)
+                 lldb_script_import(script)],cwd=project,timeout=180)
             require(recording.is_file(),'live constructor trait frame was not recorded')
             live=json.loads(recording.read_text());require(live['value']['value']==['42'] and live['identity']['value']==['41'] and live['unchanged_stop_and_handle'],'live constructor trait watch differs or changed stop')
             framefile=project/'native-frame.json';framefile.write_text(json.dumps(live['snapshot']))
@@ -1024,7 +1030,7 @@ def __lldb_init_module(debugger,_):
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
 '''.replace('SOURCE', repr(projected)).replace('LINE', str(line)).replace('RECORDING', repr(str(recording))))
             run([compiler, 'debug', '--revision', revision, '--', '--no-lldbinit', '--batch', '-o',
-                 'command script import ' + json.dumps(str(script))], cwd=project, timeout=180)
+                 lldb_script_import(script)], cwd=project, timeout=180)
             require(recording.is_file(), 'live string provider did not retain a recording')
             live = json.loads(recording.read_text())
             require(live['length']['value'] == '2097152' and live['range']['value'] == 'A🌍' + chr(0) + 'λ' and

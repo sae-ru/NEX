@@ -9,7 +9,7 @@ terminal reports. The workflow also checks its action registration, preventing
 an omitted action from appearing complete. Failed commands remain rejected;
 expected rejected programs/traps retain their nonzero exit codes.
 
-All ten archive/distribution contract cases pass, including actual historical
+All eleven archive/distribution contract cases pass, including actual historical
 phase names, missing current phases, duplicate/order errors and incomplete
 commands. Source language 0.16, runtime ABI and canonical forms are unchanged.
 The current compiler/full regression, installed SDK and relocated/restored
@@ -1412,3 +1412,21 @@ source fixture and exact seed/results are retained in
 error is recorded; no compiler change or weakened assertion was needed.
 These checks do not replace the still-running full67/platform matrix or verify
 changed0.56.1 distribution helpers.
+
+## Retained first portable-SDK failure and correction
+
+The first0.56.1 macOS relocated workflow passes its first ten phases, then the
+live string-range step fails to import its recording script. The external
+acceptance command used JSON ASCII escaping for a Unicode path; LLDB interprets
+that escape literally. Native debug initialization already loads the actual
+UTF-8 formatter and manifest. Both acceptance-script imports now preserve raw
+UTF-8 and escaped argument boundaries, matching compiler debug initialization.
+The archive suite adds a Unicode/quotes/backslash path contract case. The failed
+full workflow and exact stderr are retained in
+`docs/evidence/sdk-distribution-0.56.1-initial-failure.json`. Full relocated and
+archive-restored acceptance must be repeated; no gate or timeout is weakened.
+
+The corrected editor/archive/host focus passes all3 groups (16 Python cases and
+10 Node cases). A real LLDB import from a directory containing Unicode, quotes
+and a backslash also passes without launching an inferior. The full moved SDK
+workflow is being repeated; these focused checks do not replace it.
