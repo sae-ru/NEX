@@ -78,6 +78,37 @@ llvm::json::Value readPatch(const std::string &path){
   }
   return parseJSON(text);
 }
+std::string debugBuildDirectory(const std::string &directory){
+#ifdef __APPLE__
+  auto original=fs::weakly_canonical(directory);
+  if(original.string().find('\\')!=std::string::npos){
+    // Darwin LLDB loses loaded images when the executable path contains '\\'.
+    // Keep one owned native build cache for this project in a usable location.
+    auto base=fs::canonical(fs::temp_directory_path());
+    if(base.string().find_first_of("\\%")!=std::string::npos)base=fs::canonical("/tmp");
+    fs::create_directories(original);auto pointer=original/"debug-cache-directory.json";
+    if(fs::is_symlink(pointer))throw Error("E_DEBUG_CACHE","debug cache pointer must not be a symlink");
+    try{
+      auto record=parseJSON(readBoundedText(pointer.string(),8192,"debug cache pointer","E_DEBUG_CACHE"));
+      auto path=record.getAsString();
+      if(path){
+        fs::path cached(path->str());struct stat info{};
+        if(cached.parent_path()==base&&cached.filename().string().starts_with("nex-debug-")&&
+           ::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&
+           (info.st_mode&0777)==0700&&fs::canonical(cached)==cached&&
+           readBoundedText((cached/"owner.json").string(),8192,"debug cache owner","E_DEBUG_CACHE")==json(original.string(),false)+"\n")return cached.string();
+      }
+    }catch(const std::exception&){/* Missing/stale cache pointers are cache misses. */}
+    fs::path cached(createTemporaryDirectory("nex-debug",base.string()));
+    try{
+      fs::permissions(cached,fs::perms::owner_all,fs::perm_options::replace);
+      writeFile((cached/"owner.json").string(),json(original.string(),false)+"\n");
+      writeFile(pointer.string(),json(cached.string(),false)+"\n");return cached.string();
+    }catch(...){std::error_code ignored;fs::remove_all(cached,ignored);throw;}
+  }
+#endif
+  return directory;
+}
 llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON(readBoundedText(path,4*1048576,"identity manifest","E_IDENTITY_LIMIT"));}
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
@@ -563,6 +594,7 @@ int run(const Options &o) {
     buildOptions.profile="profile";
   }
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
+  if(o.command=="debug")directory=debugBuildDirectory(directory);
   if(o.command=="test") {
     std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     int count=0;llvm::json::Array tests;

@@ -21,6 +21,50 @@ class Debugging(harness.ToolchainCase):
         for file in (harness.REPO / "examples/debugging").glob("*.nex"):
             shutil.copyfile(file, self.root / file.name)
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'Darwin LLDB image-path workaround')
+    def test_backslash_debug_cache_preserves_identity_and_reuses_owned_directory(self):
+        project = self.root / 'project "quoted" \\ % 🧠'
+        project.mkdir()
+        (project / 'main.nex').write_text('''module debug_paths;
+fn observe(value:i64)->unit !{io}{
+ print(value);
+}
+fn main()->unit !{io}{observe(42);}
+''')
+        first = self.cli('debug', cwd=project)
+        program = Path(first['launch']['program'])
+        cache = program.parent.parent
+        self.assertTrue(cache.name.startswith('nex-debug-'))
+        self.addCleanup(shutil.rmtree, cache)
+        self.assertNotIn('\\', str(program))
+        self.assertEqual(cache.stat().st_mode & 0o777, 0o700)
+        manifest = json.loads(Path(first['manifest']).read_text())
+        self.assertEqual(manifest['program'], str(program))
+        self.assertEqual(manifest['build_key'], first['build_key'])
+        self.assertEqual(Path(manifest['sources'][0]['original']).read_bytes(),
+                         Path(manifest['sources'][0]['projection']).read_bytes())
+        second = self.cli('debug', '--kind', 'nex-dap', cwd=project)
+        self.assertEqual(second['manifest'], first['manifest'])
+        self.assertEqual(second['nex_adapter']['launch']['program'], str(program))
+        self.assertEqual(self.cli('run', cwd=project)['stdout'], '42\n')
+        if LIVE:
+            stopped = self.cli('debug', '--', '--no-lldbinit', '--batch',
+                               '-o', 'settings set target.disable-aslr false',
+                               '-o', 'breakpoint set --file source.nex --line 3',
+                               '-o', 'run', '-o', 'nex-eval value + 0', '-o', 'continue',
+                               cwd=project, machine=False, timeout=60)
+            self.assertIn('"value": "42"', stopped.stdout)
+            self.assertIn('exited with status = 0', stopped.stdout)
+
+        # A pointer alone cannot adopt a directory belonging to another project.
+        (cache / 'owner.json').write_text('"another project"\n')
+        third = self.cli('debug', cwd=project)
+        repaired = Path(third['launch']['program']).parent.parent
+        self.addCleanup(shutil.rmtree, repaired)
+        self.assertNotEqual(repaired, cache)
+        self.assertEqual((cache / 'owner.json').read_text(), '"another project"\n')
+        self.assertEqual(third['revision'], first['revision'])
+
     def test_dwarf_types_parameters_scopes_and_semantic_agreement(self):
         built = self.cli("build")
         self.assertEqual(self.cli("run")["stdout"], self.cli("eval")["stdout"])

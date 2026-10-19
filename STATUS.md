@@ -2,6 +2,20 @@
 
 ## Toolchain 0.56.1 distribution workflow correction: acceptance pending
 
+The frozen588-file correction passes Linux ARM64 full67 (735.00s), twelve live
+debugger suites and the complete source-free/network-free SDK20. Exact scope is
+in [the Linux evidence](docs/evidence/sdk-distribution-0.56.1-588-linux.json).
+Its macOS full run passes66/67; one task web build times out. That same case
+passes unchanged in22.870s with the prepared offline npm cache. Both attempts
+are retained; a complete final macOS run is still required.
+
+The moved macOS SDK then exposes a Darwin LLDB defect: an executable path with
+a literal backslash loses its loaded modules. Five exact-image filename controls
+isolate the backslash; spaces, quotes, Unicode and percent signs work. `nex debug`
+now uses a reusable owned temporary build cache for that case. A real stopped
+NEX watch returns42 and execution exits0. The frozen588 compiler does not include
+this subsequent correction; current full and portable acceptance remain pending.
+
 Both portable SDK validators still required the historical twelve-phase
 workflow, so a current successful twenty-phase workflow would be rejected.
 The matching SDK acceptance module now supplies the phase contract and validates
@@ -1424,8 +1438,8 @@ immutable aliases, nested associated types and named method references. The
 source fixture and exact seed/results are retained in
 `docs/evidence/generated-traits-0.56.0.json`. An initial external harness result-key
 error is recorded; no compiler change or weakened assertion was needed.
-These checks do not replace the still-running full67/platform matrix or verify
-changed0.56.1 distribution helpers.
+These generated cases complement the separately recorded frozen0.56 full67 and
+platform matrix; they do not verify changed0.56.1 distribution helpers.
 
 ## Retained first portable-SDK failure and correction
 

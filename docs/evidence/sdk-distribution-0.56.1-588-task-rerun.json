@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "terminal_exit_code": 0,
+  "compiler_sha256": "6f0f4e487c156b4e0561f32766202fdc40bd86704048b34665c64f1538bcdeb1",
+  "source_tree": "55e9c7778eba4a314b0e4e8484903b63cdabceb6",
+  "tests": 1,
+  "case": "Tasks.test_api_server_web_application_and_native_library_deliverables",
+  "seconds": 22.87,
+  "NEX_NPM_CACHE": "/Users/sae/projects/NEX/.nex/build/npm-cache",
+  "npm_config_offline": true,
+  "assertions_and_limits_unchanged": true,
+  "log_sha256": "74121db235a4ad94f12275a403da82893a0c8b65e33a121a7735aa278142ebd5",
+  "scope": "Scoped rerun of full task timeout; not a replacement complete full result."
+}

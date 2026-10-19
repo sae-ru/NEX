@@ -97,6 +97,17 @@ children, stepping and resume/exit handling. In an LLDB DAP REPL, the command
 debugger. Without `--json` and with the default `--kind lldb`, it starts LLDB;
 arguments after `--` go to LLDB.
 
+Darwin LLDB cannot track loaded images when an executable's physical path
+contains a literal backslash. For those project/build paths, `nex debug` uses
+an owned mode-0700 native build cache in a temporary location without backslashes.
+The project build directory retains its cache pointer; repeat descriptors reuse
+the same owned cache. LLDB, raw DAP and the NEX DAP bridge all receive the actual
+executable/manifest paths from that cache. Source identity, frozen source maps,
+build checks and application working directory retain their normal contracts.
+Keep the reported cache while debugging. If the system removes temporary files,
+request a fresh descriptor to rebuild it. Ordinary run/build outputs remain in
+their selected build directory.
+
 For source-operation candidates at a stop, use `nex-operation` and resolve its deterministic site through `nex context --site KEY --revision HASH`. Co-located candidates are explicit; see [operations.md](operations.md) for local persistent identities, exact source hashes and optimized-PC limits.
 
 ## Integrity and validation

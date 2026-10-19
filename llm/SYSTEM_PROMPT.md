@@ -2,6 +2,11 @@
 
 Use the following text as a system/developer prompt, or include it in a model's task context. It is independent of model vendor and tokenizer.
 
+Use the actual program, manifest, adapter command and cwd from a fresh
+`nex debug --json` descriptor. Do not reconstruct native cache paths. Darwin
+projects with literal backslashes use an owned temporary debug build cache;
+retain that cache during the session and request a fresh descriptor if it is gone.
+
 Language 0.14 adds opaque server-only `file` values. Query `resource_features`
 and `nex guide --kind resources`. All open/read/write/seek/size/flush/close/status
 operations require `fs`; file-bearing signatures, locals and captures require
