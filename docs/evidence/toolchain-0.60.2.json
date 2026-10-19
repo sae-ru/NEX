@@ -1,0 +1,401 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T23:23:51.280245+00:00",
+  "status": "verified_scoped_checkpoint",
+  "ok": true,
+  "toolchain": "0.60.2",
+  "language": "0.16",
+  "compiled_and_tested_source_tree": "1f7c88310352fcd563cb153f418f12d27f776945",
+  "source_commit": "983051eeed369b0a49e158208bd0ba651e10f01d",
+  "source_files": 666,
+  "root_compiler_sha256": "d5561599ccfe56971608b5623b0670ad24020445b9b371a3c20682cd9236dcc5",
+  "root_full_regression": {
+    "groups": 72,
+    "python_cases": 593,
+    "explicit_skips": 9,
+    "seconds": 1385.71
+  },
+  "installed_root_sdk": {
+    "phases": 23,
+    "commands": 329,
+    "indexed_resources": 161,
+    "seconds": 386.029
+  },
+  "actual_installed_editor": {
+    "vs_code": "1.142.0",
+    "scope": "actual installed VSIX in VS Code1.142.0/macOS ARM64 with a private profile and current root SDK; scalar/trait watches, breakpoints, scopes, list32768/bytes4MiB tail pages, continuation and exit",
+    "vsix_sha256": "d3467cb1865a5d865ab83e258a38e82e5580360347826d2fc7444f88a5e9a8fc"
+  },
+  "browser_checks": {
+    "wasm_engines": [
+      {
+        "name": "chromium",
+        "version": "156.0.8078.4",
+        "ok": true,
+        "checks": [
+          "exact_i64",
+          "minimum_i64",
+          "overflow",
+          "invalid_integer",
+          "post_error_recovery",
+          "keyboard_submit",
+          "focus_order",
+          "narrow_viewport"
+        ]
+      },
+      {
+        "name": "firefox",
+        "version": "157.0",
+        "ok": true,
+        "checks": [
+          "exact_i64",
+          "minimum_i64",
+          "overflow",
+          "invalid_integer",
+          "post_error_recovery",
+          "keyboard_submit",
+          "focus_order",
+          "narrow_viewport"
+        ]
+      },
+      {
+        "name": "webkit",
+        "version": "27.2",
+        "ok": true,
+        "checks": [
+          "exact_i64",
+          "minimum_i64",
+          "overflow",
+          "invalid_integer",
+          "post_error_recovery",
+          "keyboard_submit",
+          "focus_order",
+          "narrow_viewport"
+        ]
+      }
+    ],
+    "react_production_cases_passed": 18,
+    "react_development_only_production_skips": 3,
+    "react_development_rejection_cases_passed": 3,
+    "physical_mobile_device_tested": false
+  },
+  "distribution_checks": {
+    "macos_arm64": {
+      "moved_phases": 23,
+      "restored_phases": 23,
+      "commands_per_workflow": 329
+    },
+    "linux_arm64": {
+      "moved_phases": 23,
+      "restored_phases": 23,
+      "commands_per_workflow": 320
+    }
+  },
+  "linux_compiler_scope": "linux matching full72/current installed SDK23; Linux includes actual quoted source/output/SDK/evidence mounts and live16",
+  "linux_full_regression_source_details": {
+    "ok": true,
+    "created": "2026-10-19T22:50:09.878407+00:00",
+    "source_tree": "1f7c88310352fcd563cb153f418f12d27f776945",
+    "source_files": 666,
+    "toolchain": "0.60.2",
+    "language": "0.16",
+    "scope": "composed validation: complete unchanged compiler/runtime/test source regression plus current Python-only SDK packaging correction, actual ELF alias/metadata controls and matching current installed SDK; final root independently runs all72 again",
+    "groups": 72,
+    "regression_source_tree": "b603e2392ab8f473209944a188bbd0c4a92ba145",
+    "baseline_full_regression": {
+      "ok": true,
+      "scope": "actual public Linux check from quote/comma/Unicode source and build paths, then separate no-source SDK with quoted physical SDK/evidence mounts",
+      "source_tree": "b603e2392ab8f473209944a188bbd0c4a92ba145",
+      "source_files": 666,
+      "toolchain": "0.60.2",
+      "language": "0.16",
+      "groups": 72,
+      "python_cases_reporting_unittest": 593,
+      "live_suites": [
+        "live-debugging",
+        "live-expressions",
+        "live-generics",
+        "live-constraints",
+        "live-matching",
+        "live-function_debug",
+        "live-bytes_debug",
+        "live-resource_debug",
+        "live-numbers",
+        "live-incremental",
+        "live-native_pages",
+        "live-debug_image",
+        "live-core_dump",
+        "live-core_capsules",
+        "live-string-debug",
+        "live-source-ffi"
+      ],
+      "sdk_phases": 23,
+      "sdk_commands": 329,
+      "indexed_resources": 161,
+      "installed_mount_helper_matches_frozen": true,
+      "environment": {
+        "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "image_id": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "target_arch": "arm64",
+        "docker_server_arch": "arm64",
+        "emulated": false
+      },
+      "compiler_sha256": "11c49b5cccf8b18984320e79bdb13dd231321c183d12fefadf61ae8ceee6ab5b",
+      "installed_compiler_sha256": "1740be7ea8e5431f0e6f0f1a7893e87293d19349cef0cd8171e918ddf173322d",
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-0602b \"quoted\", 🧠/sdk-acceptance/25107ed8494b499397232fcfa8415fca/workflow/report.json",
+        "compiler_sha256": "1740be7ea8e5431f0e6f0f1a7893e87293d19349cef0cd8171e918ddf173322d",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": true,
+        "browser_build": true,
+        "seconds": 272.882
+      },
+      "output": "/Users/sae/projects/NEX/build/linux-0602b \"quoted\", 🧠",
+      "ctest_seconds": 1119.2,
+      "log_sha256": "e1ef442083eb2442845ddb821be1f45dc66be6b3f37295e66037e352483bbe01",
+      "accepted_release": false,
+      "full_objective_complete": false
+    },
+    "source_equivalence": {
+      "changed_files": [
+        "tools/linux/bundle_boundaries.py",
+        "tools/sdk_bundle.py"
+      ],
+      "all_other_source_files_byte_identical": true,
+      "compiler_runtime_cmake_language_tests_and_web_unchanged": true,
+      "compiled_input_source_tree": "b603e2392ab8f473209944a188bbd0c4a92ba145",
+      "current_source_tree": "1f7c88310352fcd563cb153f418f12d27f776945",
+      "actual_elf_probe": "build/linux-elf-aliases-0602-focused-verification.json"
+    },
+    "compiler_sha256": "1740be7ea8e5431f0e6f0f1a7893e87293d19349cef0cd8171e918ddf173322d",
+    "sdk_phases": 23,
+    "sdk_commands": 329,
+    "indexed_resources": 161,
+    "actual_elf_packager_test": {
+      "ok": true,
+      "created": "2026-10-19T21:58:37.485513+00:00",
+      "scope": "actual Linux ARM64 ELF multicall alias sources, two destination depths, private shared dependency relocation, original directory absent, argv0 preserved, collisions rejected; exact final fixture fails preceding assembler",
+      "report": {
+        "ok": true,
+        "elf_aliases": {
+          "ok": true,
+          "two_aliases_same_source": true,
+          "different_destination_depths": true,
+          "all_dependency_copies_relocated": true,
+          "original_dependency_directory_absent": true,
+          "different_source_collisions_rejected": true,
+          "rejected_destinations_unchanged": true,
+          "executions": [
+            {
+              "name": "ld.lld",
+              "stdout": "ld.lld:42\n"
+            },
+            {
+              "name": "wasm-ld",
+              "stdout": "wasm-ld:42\n"
+            }
+          ]
+        },
+        "unsafe_absolute_soname_rejected": true,
+        "no_outside_write": true,
+        "parent_component_names_rejected": true
+      },
+      "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+      "commands": [
+        {
+          "label": "original",
+          "command": [
+            "docker",
+            "run",
+            "--rm",
+            "--platform",
+            "linux/arm64",
+            "--network",
+            "none",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/working-0602-elf-aliases,dst=/src,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/linux-060-wasm-arm64/sdk,dst=/sdk,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/source-checkpoint-20261019-213805-b603e239/tools/sdk_bundle.py,dst=/old-assembler.py,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/linux-elf-aliases-0602-probe-attempt2,dst=/proof",
+            "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+            "python3",
+            "/src/tools/linux/bundle_boundaries.py",
+            "--sdk",
+            "/sdk",
+            "--assembler",
+            "/old-assembler.py",
+            "--output",
+            "/proof/original"
+          ],
+          "exit_code": 1
+        },
+        {
+          "label": "fixed",
+          "command": [
+            "docker",
+            "run",
+            "--rm",
+            "--platform",
+            "linux/arm64",
+            "--network",
+            "none",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/working-0602-elf-aliases,dst=/src,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/linux-060-wasm-arm64/sdk,dst=/sdk,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/source-checkpoint-20261019-213805-b603e239/tools/sdk_bundle.py,dst=/old-assembler.py,readonly",
+            "--mount",
+            "type=bind,src=/Users/sae/projects/NEX/build/linux-elf-aliases-0602-probe-attempt2,dst=/proof",
+            "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+            "python3",
+            "/src/tools/linux/bundle_boundaries.py",
+            "--sdk",
+            "/sdk",
+            "--assembler",
+            "/src/tools/sdk_bundle.py",
+            "--output",
+            "/proof/fixed"
+          ],
+          "exit_code": 0
+        }
+      ],
+      "seconds": 3.437,
+      "source_delta": {
+        "tools/sdk_bundle.py": "1f1bfc2bef99e7cc6d686d877bf19174d36e0cf496d22b40acfe244bf77fe204",
+        "tools/linux/bundle_boundaries.py": "0183b183bf8f4c6b60c53bfac20a90173cc295b6b113c78ac4bb0904210279e4"
+      },
+      "compiler_language_runtime_cmake_unchanged": true,
+      "full_objective_complete": false
+    },
+    "report": "/Users/sae/projects/NEX/build/linux-0602c \"quoted\", 🧠/sdk-acceptance/workflow/report.json",
+    "report_sha256": "fc96903515dd7b027eb85bfee3871e7f468bed7b3be271f9e948a09ed4b583d6",
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "live_suites": [
+      "live-debugging",
+      "live-expressions",
+      "live-generics",
+      "live-constraints",
+      "live-matching",
+      "live-function_debug",
+      "live-bytes_debug",
+      "live-resource_debug",
+      "live-numbers",
+      "live-incremental",
+      "live-native_pages",
+      "live-debug_image",
+      "live-core_dump",
+      "live-core_capsules",
+      "live-string-debug",
+      "live-source-ffi"
+    ]
+  },
+  "source_free_capsule": {
+    "exact_watch": "Я🧠2",
+    "source_checkout_mounted": false,
+    "original_build_mounted": false
+  },
+  "root_graph": {
+    "ok": true,
+    "scope": "all tables identical across this promotion; earlier0.58.2 probe incident is separately preserved",
+    "before": "/Users/sae/projects/NEX/build/root0582-final-pre-0602c-graph-snapshot/graph.db",
+    "after": "/Users/sae/projects/NEX/build/root0602c-post-acceptance-graph-snapshot/graph.db",
+    "all_tables_identical": true,
+    "tables": {
+      "change_journal": 5,
+      "declaration_ids": 3,
+      "declaration_versions": 6,
+      "edges": 596,
+      "graph_edges": 193,
+      "head": 1,
+      "identity_links": 0,
+      "identity_revisions": 5,
+      "metadata": 4,
+      "node_ids": 309,
+      "nodes": 514,
+      "operation_functions": 317,
+      "operation_ids": 3851,
+      "operation_versions": 5725,
+      "revisions": 47,
+      "task_runs": 0
+    },
+    "language_migration": "none; remains0.16",
+    "source_unchanged": true
+  },
+  "same_graph_measurement": {
+    "scope": "same checked NEX source emitted as TypeScript and scalar Wasm in one Node process; warm calls include generated wrapper validation, reset and resource polling; load/first-call measurements are reported separately; not a cross-language or browser speed claim",
+    "node": "v22.22.3",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "cpu": "Apple M5 Max",
+    "scenario_count": 2,
+    "alternating_samples_per_backend_per_scenario": 9,
+    "universal_performance_advantage_claimed": false
+  },
+  "proof_files": {
+    "root-0602c-macos-full-verification.json": {
+      "path": "build/root-0602c-macos-full-verification.json",
+      "sha256": "a8d2a675b5866669f463ae8f2101c84aefd70f49f6bcc08e8ce36f95ab3962db"
+    },
+    "root-0602c-macos-sdk-verification.json": {
+      "path": "build/root-0602c-macos-sdk-verification.json",
+      "sha256": "22a062ca2d4eeb5df582d9e7dcfe02f3e33aaf4d858a80fcac5d17df2ccbc4d3"
+    },
+    "root-0602c-installed-editor-verification.json": {
+      "path": "build/root-0602c-installed-editor-verification.json",
+      "sha256": "093760ecd6eaf4cd5ca8dd532743065adbde7a870b3d67c131e127628a1d1e1d"
+    },
+    "root-0602c-browsers-verification.json": {
+      "path": "build/root-0602c-browsers-verification.json",
+      "sha256": "3bd9b21448491ac6301f16286a1d1b0b3ae6ff96e414262347ed37b144c1df38"
+    },
+    "root-0602c-react-browsers-verification.json": {
+      "path": "build/root-0602c-react-browsers-verification.json",
+      "sha256": "d71f19d8fe4f29a516b6fecc56b2cb7ae4255f822e9e8c590cde31aced2eea3f"
+    },
+    "wasm-paths-0602c-same-graph-benchmark-verification.json": {
+      "path": "build/wasm-paths-0602c-same-graph-benchmark-verification.json",
+      "sha256": "f4e992db17e895e2c4f3f4082f2d2744c0f10004da76b423037370d992baddb2"
+    },
+    "wasm-paths-0602c-macos-complete-verification.json": {
+      "path": "build/wasm-paths-0602c-macos-complete-verification.json",
+      "sha256": "d052dba3b7da2d87adc22900a6ec0d2fa8badfff11b59a134d5720e89db8d2e6"
+    },
+    "wasm-paths-0602c-linux-complete-verification.json": {
+      "path": "build/wasm-paths-0602c-linux-complete-verification.json",
+      "sha256": "0cf7e531691d006562390b90f63702feb5a9ee215765da5d85a851f02633a2a9"
+    },
+    "wasm-paths-0602c-macos-portable-verification.json": {
+      "path": "build/wasm-paths-0602c-macos-portable-verification.json",
+      "sha256": "7efebcc0a984d871462d999c206cf7230bbde73b59d9cb78434d2cedfbd21840"
+    },
+    "wasm-paths-0602c-linux-portable-verification.json": {
+      "path": "build/wasm-paths-0602c-linux-portable-verification.json",
+      "sha256": "820285449be0dc8d1686aa990bb169b58f909267abb5a1f9f67dae6f699f1c49"
+    },
+    "wasm-paths-0602c-source-free-schema-verification.json": {
+      "path": "build/wasm-paths-0602c-source-free-schema-verification.json",
+      "sha256": "34ad057d498972790cf36b0ae225df4a7355aeb2aa71baddfe7b59cf4c1b02e2"
+    }
+  },
+  "preservation": {
+    "normal_index_unchanged": true,
+    "original_head_unchanged": true,
+    "original_root_graph_rows_preserved": true
+  },
+  "remaining_scopes": [
+    "Requested native iOS/iOS Simulator targets are rejected by the current compiler; installed SDKs do not establish support.",
+    "Android NDK/emulator and Windows runtime/toolchain integration are not implemented or verified by this checkpoint.",
+    "Physical Intel/mobile and wider OS/device validation remain separate.",
+    "Other incomplete language/toolchain integrations in PLAN require individual scope/evidence review.",
+    "Global token/performance superiority is not established by these checks."
+  ],
+  "accepted_release": false,
+  "full_objective_complete": false
+}

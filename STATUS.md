@@ -1,26 +1,57 @@
-# Development0.60.2: Docker path correction
+# Verified development checkpoint 0.60.2 / language 0.16
 
-The public Linux launcher fails before compilation when a physical source path
-contains a quote or comma. The failure is reproduced against all664 exact frozen
-0.60 files; it is independent of compiler semantics. A separate candidate shares
-CSV bind-mount encoding between check/bundle workflows, including newline fields,
-and retains readonly source/SDK versus writable build/evidence flags. Two actual Docker path cases pass with exact payloads,
-kernel-enforced readonly inputs, writable evidence and no outbound route. Old raw
-mount strings fail with their original quote/newline errors. Thirteen SDK archive
-contracts pass. The initial sysfs-only network assumption and an overly narrow
-negative-error assertion remain retained; corrected observations do not change
-mount or isolation criteria. Matching build and full regression/SDK gates remain
-pending.
-Language0.16 and graph canonical forms remain unchanged.
+Updated 20 October 2026. The compiled and tested source is the exact 666-file
+Git tree `1f7c88310352fcd563cb153f418f12d27f776945`, backed up as commit
+`983051eeed369b0a49e158208bd0ba651e10f01d`. The following documentation update
+records those completed checks; it does not change their source identity.
+The machine-readable record is [toolchain-0.60.2.json](docs/evidence/toolchain-0.60.2.json).
 
-The preceding0.59 passes macOS/Linux full71, all16 Linux live suites and both
-installed SDK22/320 workflows. macOS moved/restored SDK22 also passes320 commands
-each. A genuine core capsule reads exact Я🧠2 in a fresh container with neither
-source nor original build mounted. Linux portable and quiet AMD64 diagnosis remain
-separate running checks. Frozen0.60 passes focused tests, macOS SDK23/329, three
-actual browsers and a source-deleted cold Wasm rebuild with byte-identical output;
-its full72/current platform matrix remains in progress. No release or full
-language/development-chain completion is claimed.
+- The actual root compiler was rebuilt with `cmake --build build -j 4 --clean-first`.
+  All 72 CTest groups pass: 593 Python cases and 9 explicit skips, 1385.71 seconds.
+- Its installed macOS ARM64 SDK passes 23 phases / 329 commands / 161 indexed
+  resources, including build/run/test, task repair, profiling, real LLDB/DAP,
+  source-deleted replay, API/storage/HTTP, contracts and browser builds.
+- A matching installed VSIX passes in actual VS Code 1.142.0 with this SDK:
+  breakpoints, scopes, watches, large list/byte tail pages, continuation and exit.
+- Fresh generated React production applications pass 18 browser cases and three
+  development renderer-rejection cases across Chromium, Firefox and WebKit.
+  Three production skips are explicitly development-only cases. The scalar Wasm
+  example also passes all three engines.
+- Matching macOS and Linux ARM64 SDK distributions each pass all 23 phases after
+  relocation and archive restoration. Linux runs in a source-free runtime image.
+  An independent Linux core capsule reader restores exact `Я🧠2` with neither
+  original source nor original build mounted, without running the inferior.
+- The Linux compiler/runtime/test baseline is tree `b603e2392ab8f473209944a188bbd0c4a92ba145`:
+  full 72 groups, 593 Python cases, 16 live suites and SDK23/329 pass. The final
+  tree changes only two Python packaging files. Their actual ELF alias/collision
+  probe and fresh installed/relocated/restored SDKs pass separately. The actual
+  macOS root independently reruns all 72 groups from the final tree.
+- Same-graph JS/Wasm measurements record load and first-call costs separately
+  from nine alternating warm samples for each of two scenarios. They establish
+  measurements for the recorded machine and inputs, with no general superiority
+  or token-savings claim.
+- All root graph tables are unchanged across this promotion and its acceptance;
+  all 47 revisions remain present. The earlier 0.58.2 graph-probe incident and
+  its history-preserving repair remain recorded below and in recovery evidence.
+
+The 0.60.1–0.60.2 corrections cover Docker CSV bind paths, literal-percent Wasm
+link output paths and separate relocation of ELF multicall aliases. Original
+failed attempts remain retained alongside the corresponding passing controls.
+Language 0.16 and graph canonical forms are unchanged.
+
+Native iOS/device and simulator targets still return `E_TARGET`, including with
+explicit installed Xcode SDKs. The host query finds no installed simulator
+runtimes. Android NDK/runtime integration and Windows support remain unfinished.
+Cross-built Intel artifacts and emulated historical tests do not establish
+current physical Intel execution. General Wasm applications/WASI/heap values/f64,
+GPU integration and other unfinished PLAN items retain their stated limits.
+This checkpoint is not an all-platform release or completion of the whole goal.
+
+## Historical captures
+
+The entries below describe the state when captured. A pending check in an older
+entry may have a later result in the current checkpoint; its original scope and
+failed attempts are preserved.
 
 # Development0.60: bounded scalar WebAssembly draft
 

@@ -20,15 +20,18 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has 23 phases. The preceding frozen 0.60 macOS SDK passes all329 commands;
-current 0.60.1 tooling-path validation is separate and pending. The new debugger supports native list/byte pages of at most 1000
+has 23 phases. The verified 0.60.2 macOS SDK passes all 329 commands;
+the clean root build passes all 72 regression groups. The debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
 The core capsule implementation adds export/read with an exact file inventory,
-original-to-copied image binding and source projections. The preceding frozen
-0.59 source passes focused and actual macOS moved-core checks; its complete
-platform/SDK matrix and the new 0.60 matrix remain separate required gates.
+original-to-copied image binding and source projections. Current macOS/Linux
+ARM64 SDKs pass moved/restored acceptance. Independent Linux capsule reading
+recovers the checked Unicode value without the original source or build.
+The installed VS Code extension and generated React and Wasm examples pass
+their actual editor and three-browser checks. Native iOS, Android and Windows
+applications and physical Intel/mobile execution remain pending.
 
 Validation results are recorded with their exact source, compiler, platform
 and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).
@@ -113,9 +116,9 @@ On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records t
 
 ## Experimental Wasm compute modules
 
-The isolated 0.60 draft adds `build --target wasm --entry NAME` for bounded pure
+Toolchain 0.60.2 supports `build --target wasm --entry NAME` for bounded pure
 scalar functions. [The Wasm guide](docs/wasm.md) describes its BigInt ABI, limits
-and pending validation. This is separate from the TypeScript application adapter.
+and validation scope. This is separate from the TypeScript application adapter.
 
 ## Web applications
 
