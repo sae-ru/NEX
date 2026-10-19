@@ -183,6 +183,52 @@ Value localRecord(OperationLookup &operations,const Entities &entities,const std
   if(kind=="operation")return operations.at(found->second,path);
   return reference(found->second);
 }
+constexpr size_t queryPreviewBytes=2048,queryCollectionBytes=65536,queryResponseBytes=262144;
+void queryText(const std::string &value,size_t maximum,bool empty,const char *field){
+  if((!empty&&value.empty())||value.size()>maximum||value.find('\0')!=std::string::npos||!llvm::json::isUTF8(value))
+    throw Error("E_QUERY_OPTION",std::string("invalid graph query ")+field);
+}
+void queryLabel(const std::string &value,size_t maximum){
+  if(value.size()>maximum||value.find('\0')!=std::string::npos||!llvm::json::isUTF8(value))
+    throw Error("E_QUERY_LIMIT","graph query result contains an oversized or invalid reference label");
+}
+Object queryReference(const Entity &entity){
+  queryLabel(entity.symbol,8192);queryLabel(entity.module,8192);queryLabel(entity.file,8192);queryLabel(entity.id,128);
+  return reference(entity);
+}
+Object queryNode(const Entity &entity,bool includeSource,size_t focus=0,size_t matchBytes=0){
+  auto row=queryReference(entity);row["module"]=entity.module;row["file"]=entity.file;row["derived"]=entity.derived;
+  row["editable"]=entity.kind!="module"&&!entity.derived;row["preview"]=nullptr;
+  if(includeSource&&!entity.source.empty()){
+    const auto &source=entity.source;size_t begin=focus>512?focus-512:0,end=std::min(source.size(),begin+queryPreviewBytes);
+    while(begin<end&&(static_cast<unsigned char>(source[begin])&0xc0)==0x80)++begin;
+    while(end<source.size()&&end>begin&&(static_cast<unsigned char>(source[end])&0xc0)==0x80)--end;
+    Value match=nullptr;if(matchBytes)match=Object{{"byte_begin",int64_t(focus)},{"byte_end",int64_t(focus+matchBytes)}};
+    row["preview"]=Object{{"relative_to","declaration_source"},{"source_hash",hash(source)},{"source_bytes",int64_t(source.size())},
+      {"byte_begin",int64_t(begin)},{"byte_end",int64_t(end)},{"text",source.substr(begin,end-begin)},
+      {"truncated_before",begin!=0},{"truncated_after",end!=source.size()},{"match",std::move(match)}};
+  }
+  return row;
+}
+bool queryAppend(Array &rows,Object row,size_t &used){
+  Value value=std::move(row);auto encoded=json(value);auto cost=encoded.size()+8*(std::count(encoded.begin(),encoded.end(),'\n')+1)+16;
+  if(cost>queryCollectionBytes)throw Error("E_QUERY_LIMIT","a graph query row exceeds its output budget");
+  if(cost>queryCollectionBytes-used)return false;used+=cost;rows.push_back(std::move(value));return true;
+}
+Object queryPage(unsigned offset,unsigned limit,size_t total,size_t count,bool byteLimited){
+  auto next=size_t(offset)+count;Value cursor=nullptr;if(next<total)cursor=int64_t(next);
+  return Object{{"offset",int64_t(offset)},{"limit",int64_t(limit)},{"total",int64_t(total)},{"returned",int64_t(count)},
+    {"next_offset",std::move(cursor)},{"truncated",next<total},{"byte_limited",byteLimited}};
+}
+Object queryEnvelope(sqlite3 *db,const Program &p,const char *schema,Object selection){
+  Object result{{"schema",schema},{"query_policy","nex.graph-query/1"},{"language",languageVersion},
+    {"namespace",graphIdentityNamespace(db)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",std::move(selection)}};
+  // Selection identity excludes page ranges; exact archived input and namespace
+  // participate, so clients can pin a revision and reject mixed query pages.
+  result["query_hash"]=hash(json(Value(Object(result)),false));return result;
+}
+Value finishQuery(Object result){Value value=std::move(result);if(json(value).size()+1>queryResponseBytes)throw Error("E_QUERY_LIMIT","graph query response exceeds 256 KiB");return value;}
+
 }
 
 void initializeGraphIdentities(sqlite3 *db){
@@ -246,6 +292,59 @@ Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const
     {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",Object{{"entity",kind},{"symbol",selection.symbol}}},
     {"offset",int64_t(offset)},{"total",int64_t(total)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
 }
+void validateGraphQuery(const GraphQueryOptions &o,bool subgraph){
+  const std::set<std::string> kinds={"module","type","function","endpoint"};
+  if((!subgraph&&o.entity!="all"&&!kinds.contains(o.entity))||(subgraph&&!kinds.contains(o.entity)))throw Error("E_QUERY_OPTION","graph query entity must be module, type, function or endpoint; search also accepts all");
+  if(o.offset>10000000||!o.limit||o.limit>1000||o.edgeOffset>10000000||!o.edgeLimit||o.edgeLimit>1000||o.depth>8)throw Error("E_QUERY_OPTION","graph query page/depth limit exceeded");
+  if(subgraph){queryText(o.symbol,8192,false,"symbol");if(!std::set<std::string>{"dependencies","dependents","both"}.contains(o.direction))throw Error("E_QUERY_OPTION","subgraph direction must be dependencies, dependents or both");}
+  else{queryText(o.query,1024,false,"text");if(!std::set<std::string>{"symbol","source","any"}.contains(o.field))throw Error("E_QUERY_OPTION","search field must be symbol, source or any");}
+}
+Value searchGraph(sqlite3 *db,const Program &p,const GraphQueryOptions &o){
+  validateGraphQuery(o,false);auto entities=checkedEntities(db,p);Array rows;size_t total=0,used=0;bool byteLimited=false;
+  for(const auto &[key,entity]:entities){
+    if(o.entity!="all"&&key.first!=o.entity)continue;Array fields;size_t sourceMatch=std::string::npos;
+    if(o.field!="source"&&entity.symbol.find(o.query)!=std::string::npos)fields.push_back("symbol");
+    if(o.field=="any"){
+      if(entity.module.find(o.query)!=std::string::npos)fields.push_back("module");
+      if(entity.file.find(o.query)!=std::string::npos)fields.push_back("file");
+    }
+    if(o.field!="symbol"){sourceMatch=entity.source.find(o.query);if(sourceMatch!=std::string::npos)fields.push_back("source");}
+    if(fields.empty())continue;auto index=total++;
+    if(index<o.offset||rows.size()>=o.limit||byteLimited)continue;
+    auto row=queryNode(entity,sourceMatch!=std::string::npos,sourceMatch,sourceMatch==std::string::npos?0:o.query.size());row["matched_fields"]=std::move(fields);
+    if(!queryAppend(rows,std::move(row),used))byteLimited=true;
+  }
+  auto result=queryEnvelope(db,p,"nex.graph-search/1",Object{{"query",o.query},{"entity",o.entity},{"field",o.field}});
+  result["page"]=queryPage(o.offset,o.limit,total,rows.size(),byteLimited);result["nodes"]=std::move(rows);return finishQuery(std::move(result));
+}
+Value subgraphGraph(sqlite3 *db,const Program &p,const GraphQueryOptions &o){
+  validateGraphQuery(o,true);auto entities=checkedEntities(db,p);Key root{o.entity,o.symbol};
+  if(!entities.contains(root)&&o.entity!="module")root.second=p.module+"::"+o.symbol;
+  if(!entities.contains(root))throw Error("E_QUERY_SYMBOL","subgraph root is absent from the selected checked graph");
+  std::map<Key,std::set<Key>> adjacency;
+  for(const auto &[key,entity]:entities)for(const auto &target:entity.dependencies){
+    if(o.direction!="dependents")adjacency[key].insert(target);
+    if(o.direction!="dependencies")adjacency[target].insert(key);
+  }
+  std::map<Key,unsigned> distances{{root,0}};std::vector<Key> queue{root};
+  for(size_t next=0;next<queue.size();++next){auto node=queue[next];auto distance=distances.at(node);if(distance==o.depth)continue;
+    for(const auto &target:adjacency[node])if(distances.emplace(target,distance+1).second)queue.push_back(target);
+  }
+  size_t boundary=0;for(const auto &[node,distance]:distances){(void)distance;for(const auto &target:adjacency[node])if(!distances.contains(target))++boundary;}
+  std::sort(queue.begin(),queue.end(),[&](const Key &a,const Key &b){return std::tuple{distances.at(a),a}<std::tuple{distances.at(b),b};});
+  Array nodes,edges;size_t nodeBytes=0,edgeBytes=0,totalEdges=0;bool nodeLimited=false,edgeLimited=false;
+  for(size_t i=o.offset;i<queue.size()&&nodes.size()<o.limit;++i){auto row=queryNode(entities.at(queue[i]),true);row["distance"]=int64_t(distances.at(queue[i]));if(!queryAppend(nodes,std::move(row),nodeBytes)){nodeLimited=true;break;}}
+  for(const auto &[key,entity]:entities)if(distances.contains(key))for(const auto &target:entity.dependencies)if(distances.contains(target)){
+    auto index=totalEdges++;if(index<o.edgeOffset||edges.size()>=o.edgeLimit||edgeLimited)continue;
+    Object row{{"source",queryReference(entity)},{"target",queryReference(entities.at(target))}};
+    if(!queryAppend(edges,std::move(row),edgeBytes))edgeLimited=true;
+  }
+  auto result=queryEnvelope(db,p,"nex.subgraph/1",Object{{"entity",o.entity},{"symbol",root.second},{"direction",o.direction},{"depth",int64_t(o.depth)}});
+  result["root"]=queryReference(entities.at(root));result["depth_limited"]=boundary!=0;result["boundary_references"]=int64_t(boundary);
+  result["node_page"]=queryPage(o.offset,o.limit,queue.size(),nodes.size(),nodeLimited);result["edge_page"]=queryPage(o.edgeOffset,o.edgeLimit,totalEdges,edges.size(),edgeLimited);
+  result["nodes"]=std::move(nodes);result["edges"]=std::move(edges);return finishQuery(std::move(result));
+}
+
 Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifest){
   auto object=manifest.getAsObject();if(!object)throw Error("E_IDENTITY_SCHEMA","identity manifest must be an object");
   keys(*object,{"schema","language","identity_policy","namespace","revision","source_hash","selection","offset","total","truncated","nodes"});

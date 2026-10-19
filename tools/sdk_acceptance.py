@@ -236,6 +236,8 @@ test fn examples() -> unit {
         require('optimistic_archived_restore' in descriptor.get('history_features', []) and
                 descriptor.get('graph_database_schema') == 4,
                 'SDK lacks checked change history and revision restore')
+        require({'literal_source_search', 'paged_dependency_radius', 'independent_node_edge_pages'} <=
+                set(descriptor.get('graph_query_features', [])), 'SDK lacks bounded archived graph queries')
         require({'captured_source_inputs', 'uncommitted_candidate_context', 'watch_frame_bound_context'} <=
                 set(descriptor.get('frontend_diagnostic_features', [])), 'SDK lacks captured frontend error context')
         require({'declared_source_language_guard', 'root_version_preflight_before_store',
@@ -265,7 +267,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -742,6 +744,61 @@ test fn examples() -> unit {
             'repeatable_error_identity': True, 'invalid_utf8_lossless': True,
             'static_watch_supplied_frame': True, 'watch_frame_hash': watched['frontend']['watch']['frame_hash'],
             'repaired_archived_native_execution': True}
+
+    def graph_queries():
+        project = root / 'graph-query-workflow'
+        project.mkdir()
+        (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+            'language': report['doctor']['language'], 'entry': 'main.nex'}))
+        source = project / 'main.nex'
+        original = ('module sdk_query;fn leaf()->i64{return 40;}'
+            'fn middle()->i64{return leaf()+2;}fn main()->unit!{io}{print(middle());}')
+        source.write_text(original)
+        revision = cli('check', cwd=project)['revision']
+        changes = cli('changes', cwd=project)
+        found = cli('search', '--query', 'leaf', '--field', 'symbol', cwd=project)
+        require(found['revision'] == revision and len(found['nodes']) == 1 and
+                found['nodes'][0]['symbol'] == 'sdk_query::leaf', 'query did not discover exact checked declaration')
+        graph = cli('subgraph', '--symbol', 'main', '--depth', '2', cwd=project)
+        require({n['symbol'] for n in graph['nodes']} ==
+                {'sdk_query::main', 'sdk_query::middle', 'sdk_query::leaf'} and
+                graph['edge_page']['total'] == 2 and graph['depth_limited'] is False,
+                'query dependency radius differs from the checked program')
+        reverse = cli('subgraph', '--symbol', 'leaf', '--direction', 'dependents', '--depth', '2', cwd=project)
+        require('sdk_query::main' in {n['symbol'] for n in reverse['nodes']} and
+                any(e['source']['symbol'] == 'sdk_query::middle' and
+                    e['target']['symbol'] == 'sdk_query::leaf' for e in reverse['edges']),
+                'reverse query changed edge direction or lost incoming references')
+        page = cli('search', '--query', '::', '--field', 'symbol', '--limit', '1', cwd=project)
+        seen = list(page['nodes'])
+        identity = page['query_hash']
+        while page['page']['next_offset'] is not None:
+            page = cli('search', '--query', '::', '--field', 'symbol', '--limit', '1',
+                '--offset', str(page['page']['next_offset']), '--revision', revision, cwd=project)
+            require(page['query_hash'] == identity, 'query pages mixed selection identities')
+            seen.extend(page['nodes'])
+        require(len(seen) == 3 and len({n['id'] for n in seen}) == 3, 'query cursor lost or duplicated declarations')
+        context = cli('context', '--symbol', found['nodes'][0]['symbol'], '--revision', revision, cwd=project)
+        require('return 40' in context['source'], 'query followup read another declaration')
+        source.unlink()
+        (project / 'nex.json').write_text(json.dumps({'language': '0.14', 'entry': 'main.nex'}))
+        require(cli('search', '--query', 'leaf', '--field', 'symbol', '--revision', revision, cwd=project) == found and
+                cli('subgraph', '--symbol', 'main', '--depth', '2', '--revision', revision, cwd=project) == graph and
+                cli('changes', cwd=project) == changes, 'query depended on physical source or changed graph history')
+        patch = project / 'discovered-repair.json'
+        patch.write_text(json.dumps({'expected_revision': revision, 'expected_source_hash': found['source_hash'],
+            'replacements': [{'name': found['nodes'][0]['symbol'], 'source': 'fn leaf()->i64{return 41;}'}]}))
+        after = cli('apply', '--patch', patch, cwd=project)['revision']
+        require(cli('eval', '--revision', after, cwd=project)['stdout'] == '43\n' and
+                cli('run', '--revision', after, cwd=project)['stdout'] == '43\n' and not source.exists(),
+                'discovered guarded repair failed archived native/reference execution')
+        report['evidence']['graph_queries'] = {'before': revision, 'after': after,
+            'namespace': found['namespace'], 'node_id': found['nodes'][0]['id'],
+            'search_query_hash': found['query_hash'], 'subgraph_query_hash': graph['query_hash'],
+            'exact_archived_source_hash': found['source_hash'], 'source_deleted_lookup': True,
+            'stale_physical_metadata_ignored': True, 'incoming_edges_checked': True,
+            'stable_complete_query_pages': True, 'queries_preserve_history': True,
+            'guarded_repair_from_discovery': True, 'native_reference_after_repair': True}
 
     def foreign_boundary():
         directory = root / 'foreign-boundary'
@@ -1464,6 +1521,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
+                ('graph-queries', graph_queries),
                 ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),

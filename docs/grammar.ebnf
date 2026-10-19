@@ -141,3 +141,5 @@ digit         = "0" .. "9" ;
 
 (* Toolchain0.52 captured frontend diagnostics add no source syntax. Reported
    diagnostic spans are separate from editable source ranges and committed IDs. *)
+
+(* Toolchain0.53 adds archived graph-query commands; source grammar is unchanged. *)

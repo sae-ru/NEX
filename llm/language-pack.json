@@ -80,7 +80,9 @@
     "compatibility": "docs/compatibility.md",
     "project_manifest_schema": "llm/project.schema.json",
     "frontend_diagnostics": "docs/frontend-diagnostics.md",
-    "frontend_diagnostic_schema": "llm/frontend-diagnostics.schema.json"
+    "frontend_diagnostic_schema": "llm/frontend-diagnostics.schema.json",
+    "graph_query_guide": "docs/queries.md",
+    "graph_query_schema": "llm/graph-query.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend --json",
   "context_command": "nex context --symbol NAME",

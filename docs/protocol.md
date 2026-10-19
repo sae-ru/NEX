@@ -392,3 +392,14 @@ object. Read [its guide](frontend-diagnostics.md) and schema from the language
 pack. It identifies actual captured source/fragment input and bounded previews;
 failed candidate bytes may differ from physical files. Runtime operation metadata
 is retained, and diagnostic IDs are not graph node/revision authority.
+
+## Archived graph discovery (toolchain 0.53)
+
+`search --query TEXT` returns `nex.graph-search/1`; `subgraph --symbol NAME`
+returns `nex.subgraph/1`. Both select archived HEAD or explicit `--revision` and
+reject physical filenames. Request the [query guide](queries.md) for literal
+filters, checked static-edge meaning, minimum-hop radius, independent bounded
+node/edge pages and exact byte/query identity. Responses follow the matching
+local-reference `llm/graph-query.schema.json`. They do not execute code, apply
+changes or grant native-library authority. Language/canonical/graph schemas
+remain unchanged. Current validation scope is recorded in `STATUS.md`.
