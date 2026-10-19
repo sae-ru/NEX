@@ -1,0 +1,238 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T14:20:47.795344+00:00",
+  "ok": true,
+  "toolchain": "0.56.1",
+  "language": "0.16",
+  "scope": "Editor resource correction only; compiler/runtime unchanged from root604. This is not a new complete compiler matrix. Installed VSIX was packaged from the explicitly corrected SDK resource overlay; final root CMake install and SDK acceptance remain separate.",
+  "compiler_sha256": "bda387933be8afe38463f461b4df4567ead1420f357823af7ac2165548192cb7",
+  "implementation_hashes": {
+    "editor/vscode/session.js": "421272431ec6a8543320da159e53900a4816c29f9815d8b6ff2f87378c72070d",
+    "editor/vscode/test.js": "e33b51d25418079cb6e1e440c19f27d92565086ec57155be927f0c727a8445ab",
+    "tests/editor.py": "ba697ab872b5534f2ee9009483eb8588ecc7fb7bebabe9536e04b739ae3f70e6",
+    "docs/editor.md": "4a0a860d69222d8892aeeac7c197d667efb20f881334cf7aff76fb7e8569516f",
+    "editor/vscode/README.md": "e2219da53dac49fd21b98684ee90537937e46ae258f8864386d962069ea24c98"
+  },
+  "native_macos_python_cases": 3,
+  "node_contract_cases": 11,
+  "linux": {
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 4.964,
+    "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+    "source_read_only": true,
+    "previous_build_read_only": true,
+    "network": "none",
+    "command": [
+      "/usr/local/bin/docker",
+      "run",
+      "--rm",
+      "--platform",
+      "linux/arm64",
+      "--network",
+      "none",
+      "--cap-add",
+      "SYS_PTRACE",
+      "--security-opt",
+      "seccomp=unconfined",
+      "--mount",
+      "type=bind,src=/Users/sae/projects/NEX/build/working-0561-editor-source-paths,dst=/src,readonly",
+      "--mount",
+      "type=bind,src=/Users/sae/projects/NEX/build/linux-0561-native-linker-arm64,dst=/build,readonly",
+      "-e",
+      "PYTHONDONTWRITEBYTECODE=1",
+      "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+      "python3",
+      "/src/tests/editor.py",
+      "/build/sdk/bin/nex",
+      "--live"
+    ],
+    "compiler_sha256": "19e23c39e001d7a26d47106013657654e0f422cecb7e89ab0883bec09de67c38",
+    "changed_source_hashes": {
+      "editor/vscode/session.js": "421272431ec6a8543320da159e53900a4816c29f9815d8b6ff2f87378c72070d",
+      "editor/vscode/test.js": "e33b51d25418079cb6e1e440c19f27d92565086ec57155be927f0c727a8445ab",
+      "tests/editor.py": "ba697ab872b5534f2ee9009483eb8588ecc7fb7bebabe9536e04b739ae3f70e6"
+    },
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "actual_installed_vsix": {
+    "ok": true,
+    "terminal_exit_code": 0,
+    "host": {
+      "ok": true,
+      "editor_version": "1.142.0",
+      "editor_architecture": "arm64",
+      "installed_extension_path": "/Users/sae/projects/NEX/build/editor-0561-source-map-final-installed-host-acceptance/extensions/sae-ru.nex-language-tools-0.1.0",
+      "installed_extension_version": "0.1.0",
+      "physical_source_breakpoint": true,
+      "native_stack_scopes": true,
+      "pure_watch": {
+        "build_key": "1b297119bb977fb0c6a84d65524ac3a8fd4605021518d7d9d11c900a113806ec",
+        "display": "42",
+        "display_truncated": false,
+        "expression": "total + 2",
+        "frame_truncated": false,
+        "function": "editor_acceptance::main",
+        "language": "0.16",
+        "limits": {
+          "capture_path_depth": 56,
+          "cumulative_text_bytes": 8388608,
+          "frame_captures": 256,
+          "lazy_references": 10000,
+          "steps": 100000,
+          "text_range_scalars": 4096,
+          "text_scalar_observations": 100000,
+          "value_depth": 64,
+          "value_visits": 100000,
+          "wire_result_bytes": 1048576
+        },
+        "ok": true,
+        "read_bindings": [
+          "total"
+        ],
+        "read_paths": [
+          {
+            "binding": "total",
+            "kind": "value",
+            "path": []
+          }
+        ],
+        "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+        "schema": "nex.expression/1",
+        "steps": 3,
+        "stop": {
+          "frame_id": 0,
+          "process_id": "9649",
+          "stop_id": "13",
+          "thread_id": "88353119"
+        },
+        "type": "i64",
+        "value": "42",
+        "wire_schema": {
+          "enums": {},
+          "records": {},
+          "root": "i64",
+          "schema": "nex.wire/2"
+        }
+      },
+      "trait_watch": {
+        "build_key": "1b297119bb977fb0c6a84d65524ac3a8fd4605021518d7d9d11c900a113806ec",
+        "display": "42",
+        "display_truncated": false,
+        "expression": "Readable<Box<i64>>::get(Box<i64>(40)) + 2",
+        "frame_truncated": false,
+        "function": "editor_acceptance::main",
+        "language": "0.16",
+        "limits": {
+          "capture_path_depth": 56,
+          "cumulative_text_bytes": 8388608,
+          "frame_captures": 256,
+          "lazy_references": 10000,
+          "steps": 100000,
+          "text_range_scalars": 4096,
+          "text_scalar_observations": 100000,
+          "value_depth": 64,
+          "value_visits": 100000,
+          "wire_result_bytes": 1048576
+        },
+        "ok": true,
+        "read_bindings": [],
+        "read_paths": [],
+        "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+        "schema": "nex.expression/1",
+        "steps": 8,
+        "stop": {
+          "frame_id": 0,
+          "process_id": "9649",
+          "stop_id": "13",
+          "thread_id": "88353119"
+        },
+        "type": "i64",
+        "value": "42",
+        "wire_schema": {
+          "enums": {},
+          "records": {},
+          "root": "i64",
+          "schema": "nex.wire/2"
+        }
+      },
+      "native_output": "42\r\n",
+      "native_exit_code": 0,
+      "unchanged_watch_stop": true,
+      "native_resume_and_termination": true,
+      "controlled_test_profile": true,
+      "user_profile_modified": false
+    },
+    "compiler_sha256": "bda387933be8afe38463f461b4df4567ead1420f357823af7ac2165548192cb7",
+    "vsix_sha256": "31185a8171690bd42a57804734da3d1c71f512f0f19708b7084e1320fab80b6c",
+    "extension_sources_sha256": {
+      "session.js": "421272431ec6a8543320da159e53900a4816c29f9815d8b6ff2f87378c72070d",
+      "test.js": "e33b51d25418079cb6e1e440c19f27d92565086ec57155be927f0c727a8445ab",
+      "README.md": "e2219da53dac49fd21b98684ee90537937e46ae258f8864386d962069ea24c98"
+    },
+    "initial_harness_failure": "profile path exceeded macOS Unix socket103-byte bound; application and extension tests did not start",
+    "retry_changed_only_controlled_profile_path": true,
+    "assertions_unchanged": true,
+    "user_profile_modified": false,
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "same_observable_regression_before_failed_after_passed": {
+    "ok": true,
+    "unchanged_observable_test": true,
+    "results": [
+      {
+        "case": "before",
+        "exit_code": 1,
+        "seconds": 3.803,
+        "log": "build/editor-0561-source-map-before.log"
+      },
+      {
+        "case": "after",
+        "exit_code": 0,
+        "seconds": 4.112,
+        "log": "build/editor-0561-source-map-after.log"
+      }
+    ]
+  },
+  "path_controls": {
+    "before": {
+      "frozen": true,
+      "spaces": true,
+      "quote": false,
+      "backslash": true,
+      "percent": true,
+      "unicode": true,
+      "original": false
+    },
+    "after": {
+      "frozen": true,
+      "spaces": true,
+      "quote": true,
+      "backslash": true,
+      "percent": true,
+      "unicode": true,
+      "original": true,
+      "newline": true,
+      "escape": true
+    }
+  },
+  "retained_failure": "build/editor-0561-root-original-path-failure.json",
+  "upstream_source": "https://github.com/llvm/llvm-project/blob/release/22.x/lldb/tools/lldb-dap/DAP.cpp#L1073-L1088",
+  "correction": "Escaped target.source-map command before compiler pre-run commands; no raw lldb-dap sourceMap interpolation; original bytes, revision/build and alias checks retained",
+  "assertions_or_limits_weakened": false,
+  "artifacts": {
+    "editor-0561-source-map-focused.log": "e93d5e57fdc6461ad69533f39b1155a845b81eac80d82fadb31fd40f33d88f82",
+    "editor-0561-source-map-node-contracts.log": "873548ca4b35228b0957f31246b35677cd576c8d8e7aa8cfc66a9da5f76e6a3b",
+    "editor-0561-source-map-before.log": "d0239d0906d12bb8349d3c324cbf421ecaffe92d3784921342b182bd0da30f70",
+    "editor-0561-source-map-after.log": "08eee14bf31ef8ea760042f03c5011ea3d3b80c470c88b6e3ad3ab76d8df2937",
+    "editor-0561-linux-source-map/report.json": "25c207cfb9d6bbdf1a1de99d0ab6c75b07599f9743e16e1fb9b3502f1ccf8ebf",
+    "editor-0561-source-map-final-installed-host-verification.json": "5dd90b2403f9c603976fd8666666ae776424520c271ef224831eec48111cbdc4",
+    "editor-0561-source-path-probe/report.json": "05bd814affd6ac8637955f3a4bd610516cc512e8638803e6c7169ba7b19af798",
+    "editor-0561-source-command-probe/report.json": "44816a01c73d6010f7ca68d0b6f01be06385df3b26877ba1021a116be3e64823"
+  },
+  "user_profile_modified": false,
+  "accepted_release": false,
+  "full_objective_complete": false
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "nex.editor-failure/1",
+  "ok": false,
+  "session": "30664 terminal exit1",
+  "compiler_sha256": "bda387933be8afe38463f461b4df4567ead1420f357823af7ac2165548192cb7",
+  "source_tree": "de0526fb81af0a25f4ba4a693c1c40960f1d5cca",
+  "reason": "Native program terminated before original-file breakpoint",
+  "assertions_unchanged": true,
+  "tests": "tests/editor_host.js",
+  "evidence_directory": "build/editor-0561-root-installed-host-acceptance",
+  "source_path_probe": "build/editor-0561-source-path-probe/report.json",
+  "diagnosis": "Actual DAP controls isolate double quote in sourceMap target; literal backslash alone succeeds",
+  "corrected_command_probe": "build/editor-0561-source-command-probe/report.json",
+  "user_profile_modified": false,
+  "accepted_release": false
+}

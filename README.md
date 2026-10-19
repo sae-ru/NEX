@@ -25,6 +25,15 @@ Firefox and WebKit. [Evidence](docs/evidence/sdk-distribution-0.56.1.json)
 keeps these scopes, compiler hashes and retained failed attempts separate.
 Complete language/platform/development-chain requirements remain in `PLAN.md`.
 
+The root0.56.1 build and installed SDK20/310-command workflow pass. Its first
+full67 regression is still running. A separate editor correction fixes original
+breakpoints when a source path contains a double quote: the same native test
+fails before the change and passes afterward on macOS/Linux ARM64. The corrected
+installed VSIX also passes the original-file breakpoint, scalar/trait watches,
+stack/scopes, exact output42 and exit0 in VS Code1.142.0. Nine path controls and
+the initial failure are retained in [editor path evidence](docs/evidence/editor-paths-0.56.1.json).
+This resource correction still needs its final root installation/SDK checks.
+
 The preceding frozen editor tree is **toolchain 0.56.0 / language 0.16**.
 It installs VS Code extension sources, an editor guide and capability metadata.
 The current compiler passes the editor suite, including ten Node contract cases.

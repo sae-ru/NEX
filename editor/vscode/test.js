@@ -28,7 +28,8 @@ test('fresh compiler preparation preserves the frozen launch and argument bounda
   assert.deepEqual(prepared.command, original.adapter_command);
   assert.equal(prepared.launch.program, original.launch.program);
   assert.deepEqual(prepared.launch.initCommands, original.launch.initCommands);
-  assert.deepEqual(prepared.launch.sourceMap, original.launch.sourceMap);
+  assert.equal(prepared.launch.sourceMap, undefined);
+  assert.deepEqual(prepared.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"']);
   assert.deepEqual(prepared.launch.args, ['--nex-grant', 'exact-manifest', 'a b', '$(literal)']);
   assert.equal(prepared.launch.stopOnEntry, true);
   assert.equal(prepared.revision, 'frozen-revision');
@@ -111,10 +112,11 @@ test('original breakpoint files map only when they match the exact frozen source
   const files = new Map([[response.manifest, JSON.stringify(manifest)], [original, Buffer.from('exact source 🧠')], [frozen, Buffer.from('exact source 🧠')]]);
   const options = {execute: async () => ({stdout: JSON.stringify(response)}), readFile: async name => files.get(name)};
   const matched = await prepareSession(configuration, options);
-  assert.deepEqual(matched.launch.sourceMap, [['/anchor/source.nex', original], ...response.launch.sourceMap]);
+  assert.equal(matched.launch.sourceMap, undefined);
+  assert.deepEqual(matched.launch.preRunCommands, ['settings set target.source-map "/anchor/source.nex" "/project with spaces/library.nex" "/frozen" "/original"']);
   files.set(original, Buffer.from('changed source'));
   const changed = await prepareSession(configuration, options);
-  assert.deepEqual(changed.launch.sourceMap, response.launch.sourceMap);
+  assert.deepEqual(changed.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"']);
   assert.deepEqual(changed.frozenSourceFallbacks, [original]);
   await assert.rejects(prepareSession({...configuration, source: original}, options), /changed after compilation/);
   manifest.build_key = 'another build';files.set(response.manifest, JSON.stringify(manifest));
@@ -146,4 +148,20 @@ test('physical entry aliases retain editor breakpoints and reject a retargeted s
       return {stdout: JSON.stringify(response)};
     }}), /selected source changed after compilation/);
   } finally {await fs.rm(root, {recursive: true, force: true});}
+});
+
+test('compiler pre-run commands survive source-map configuration and malformed maps are rejected', async () => {
+  const response = descriptor();response.launch.preRunCommands = ['settings set target.disable-aslr false'];
+  const options = {readFile: emptyManifest, execute: async () => ({stdout: JSON.stringify(response)})};
+  const prepared = await prepareSession({...configuration, preRunCommands: ['untrusted command'], sourceMap: [['ignored', 'user map']]}, options);
+  assert.deepEqual(prepared.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"', 'settings set target.disable-aslr false']);
+  for (const value of ['bad', [null], [['a']], [['a', 'b\0c']], [['a', 4]]]) {
+    response.launch.sourceMap = value;
+    await assert.rejects(prepareSession(configuration, options), /invalid frozen source maps/);
+  }
+  response.launch.sourceMap = [];
+  for (const value of ['bad', [null], ['bad\0command']]) {
+    response.launch.preRunCommands = value;
+    await assert.rejects(prepareSession(configuration, options), /invalid pre-run commands/);
+  }
 });

@@ -52,6 +52,13 @@ preparation, save it and launch again. Stop and relaunch after any source edit;
 the preparation check is not a continuous editor revision lock. The underlying
 compiler/watch evaluator continues to use its captured sources and exact build.
 
+The extension configures the verified source mappings with escaped LLDB arguments
+before the compiler's pre-run commands. It does not pass them through lldb-dap's
+unescaped `sourceMap` command construction. This keeps quotes, backslashes and
+Unicode in original-file paths intact. For a source checkout, run the actual
+native breakpoint/watch regression with `python3 tests/editor.py build/nex --live`;
+the regular editor suite also checks launch validation and source-byte matching.
+
 Breakpoints, stack/scopes, stepping and continuation use LLDB. Ordinary watches
 and the debug console evaluate pure NEX expressions with bounded captured
 values. Missing data is unavailable; no effectful watch executes in the inferior.

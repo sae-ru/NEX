@@ -34,6 +34,8 @@ adapter command together. Original-file breakpoints use exact file mappings only
 when the original bytes equal the corresponding frozen projection. Changed or
 missing library files retain the frozen source fallback; a changed selected entry
 requires a fresh launch. Stop and relaunch after editing a running program.
+Verified source mappings use escaped LLDB arguments, including when original
+paths contain quotes, backslashes or Unicode characters.
 A `.nex` source is required; a saved manifest alone
 cannot launch an arbitrary adapter. Compiler diagnostics are displayed before
 launch. Unsaved buffers must be saved before starting the debug session.

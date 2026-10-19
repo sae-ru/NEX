@@ -11,6 +11,12 @@ function string(value, name) {
   return value;
 }
 
+function lldbArgument(value) {
+  // LLDB's command parser accepts quoted newlines and Unicode literally.
+  // JSON escapes such as \uXXXX have different meanings to that parser.
+  return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+
 // Only a fresh, successful compiler response can select a frozen executable and
 // adapter. No saved manifest or launch.json adapter command authorizes a process.
 async function prepareSession(configuration, options = {}) {
@@ -57,6 +63,7 @@ async function prepareSession(configuration, options = {}) {
       !path.isAbsolute(string(launch.cwd, 'frozen project directory')) || !Array.isArray(launch.initCommands) ||
       launch.initCommands.some(arg => typeof arg !== 'string')) throw new Error('NEX returned an invalid frozen launch configuration.');
   if (launch.args !== undefined && (!Array.isArray(launch.args) || launch.args.some(arg => typeof arg !== 'string'))) throw new Error('NEX returned invalid execution capability arguments.');
+  if (launch.preRunCommands !== undefined && (!Array.isArray(launch.preRunCommands) || launch.preRunCommands.some(arg => typeof arg !== 'string' || arg.includes('\0')))) throw new Error('NEX returned invalid pre-run commands.');
   const manifestPath = string(session.manifest, 'debug manifest');
   if (!path.isAbsolute(manifestPath)) throw new Error('NEX returned a relative debug manifest.');
   const readFile = options.readFile || fs.readFile;
@@ -66,7 +73,7 @@ async function prepareSession(configuration, options = {}) {
   }
   const originals = [], frozenFallbacks = [];
   for (const row of manifest.sources) {
-    if (!['original', 'projection', 'debug_path'].every(key => typeof row[key] === 'string' && path.isAbsolute(row[key]))) {
+    if (!['original', 'projection', 'debug_path'].every(key => typeof row[key] === 'string' && !row[key].includes('\0') && path.isAbsolute(row[key]))) {
       throw new Error('NEX debug manifest contains an invalid source mapping.');
     }
     const selected = row.original === physicalSource;
@@ -81,13 +88,21 @@ async function prepareSession(configuration, options = {}) {
       if (selected) throw new Error('The selected source changed after compilation. Save it and start a fresh NEX launch.');
     }
   }
-  if (launch.sourceMap !== undefined && (!Array.isArray(launch.sourceMap) || launch.sourceMap.some(row => !Array.isArray(row) || row.length !== 2 || row.some(item => typeof item !== 'string')))) {
+  if (launch.sourceMap !== undefined && (!Array.isArray(launch.sourceMap) || launch.sourceMap.some(row => !Array.isArray(row) || row.length !== 2 || row.some(item => typeof item !== 'string' || item.includes('\0'))))) {
     throw new Error('NEX returned invalid frozen source maps.');
   }
+  const sourceMaps = [...originals, ...(launch.sourceMap || [])];
+  const {sourceMap: unusedSourceMap, ...frozenLaunch} = launch;
+  const preRunCommands = [];
+  // lldb-dap inserts sourceMap strings into a command without quoting their
+  // contents. Configure the same map after target creation using escaped LLDB
+  // arguments, so original files containing quotes remain valid breakpoints.
+  if (sourceMaps.length) preRunCommands.push('settings set target.source-map ' + sourceMaps.flat().map(lldbArgument).join(' '));
+  preRunCommands.push(...(launch.preRunCommands || []));
   return {command: [...command], revision: session.revision, buildKey: session.build_key,
     originalSourceMappings: originals, frozenSourceFallbacks: frozenFallbacks,
-    launch: {...launch, name: configuration.name || 'NEX', stopOnEntry: configuration.stopOnEntry || false,
-      sourceMap: [...originals, ...(launch.sourceMap || [])],
+    launch: {...frozenLaunch, name: configuration.name || 'NEX', stopOnEntry: configuration.stopOnEntry || false,
+      preRunCommands,
       // Compiler-provided arguments carry explicit foreign execution grants.
       args: [...(launch.args || []), ...args]}};
 }
