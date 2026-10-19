@@ -176,9 +176,8 @@ missing path; it cannot fetch more data after the process has exited. Offline
 shapes and payloads remain supplied data, not authenticated evidence.
 
 Whole-value operations such as list concatenation, push/set, JSON encoding and
-aggregate equality currently require complete bounded operands. Toolchain0.54 adds
-[scalar shapes and bounded string windows](string-debug.md) for length/index/slice;
-other whole-string operations still need a complete bounded operand. Direct
+aggregate equality currently require complete bounded operands. Strings also
+require complete UTF-8 bytes; chunked scalar indexing/length is pending. Direct
 expansion of a large uncaptured root through DAP is pending; use a selected
 expression to compute a bounded value, then expand its children.
 

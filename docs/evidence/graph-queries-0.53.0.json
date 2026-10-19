@@ -2,8 +2,8 @@
   "schema": "nex.validation-evidence/1",
   "toolchain": "0.53.0",
   "language": "0.15",
-  "recorded_at": "2026-10-19T00:20:18.973496+00:00",
-  "status": "verified_isolated_scoped_root_validation_pending",
+  "recorded_at": "2026-10-19T02:40:13.600517+00:00",
+  "status": "verified_isolated_scoped_root_regression_failed",
   "accepted_release": false,
   "full_objective_complete": false,
   "compiler_sha256": "9692e5f4b70666f4999c8ac624901f22d4bac47a3c0917b98550fdcba5911f85",
@@ -167,6 +167,50 @@
       "live_debugger": true,
       "browser_build": true,
       "scope": "Actual macOS ARM64 installed development SDK; source programs deleted in scenarios, whole source checkout not hidden. Broader release/distribution/platform/ABI and full goal verification remain separate."
+    },
+    "root_macos_regression": {
+      "ok": false,
+      "created": "2026-10-19T02:39:14.085047+00:00",
+      "toolchain": "0.53.0",
+      "language": "0.15",
+      "source_files": 528,
+      "snapshot": "build/graph-queries-053-root-validation-snapshot.json",
+      "compiler_sha256": "9d6ffd6b46269607e58b565bab1902a0ab385c4c34f0c8b60c3af745951e18cf",
+      "groups": 62,
+      "passed": 61,
+      "failed": 1,
+      "failed_group": "frontend_diagnostics",
+      "failures": 4,
+      "errors": 3,
+      "skipped": 1,
+      "terminal_exit_code": 8,
+      "seconds": 1454.5,
+      "log": "build/ctest-053-graph-queries-root.log",
+      "log_sha256": "71dddf7e894b3688e02944fbddcfb5a1f2b20970bfd07dce05cbfbb503f8e645",
+      "last_test": "build/graph-queries-053-root-failed-LastTest.log",
+      "last_test_sha256": "8f7e8689f1092cff73904a83d43e73680ed75529a310bd2d8f4fff8889b212cf",
+      "observations": [
+        "Three missing frontend objects in load/bind diagnostics",
+        "Four diagnostics report input_kind unit where project is expected"
+      ],
+      "cause": "Not yet diagnosed; isolated passes do not supersede this root failure.",
+      "full_objective_complete": false
+    },
+    "root_macos_sdk": {
+      "ok": true,
+      "created": "2026-10-19T00:31:25.335430+00:00",
+      "compiler_sha256": "9d6ffd6b46269607e58b565bab1902a0ab385c4c34f0c8b60c3af745951e18cf",
+      "snapshot": "build/graph-queries-053-root-validation-snapshot.json",
+      "source_files": 528,
+      "report": "build/sdk-053-graph-queries-root-acceptance/report.json",
+      "report_sha256": "675cafc3717db74364f70c7aa26c44d1a137833015acbf196ad4eaf0fc86db46",
+      "phases": 17,
+      "seconds": 323.815,
+      "indexed_resources": 124,
+      "all_resources_match_frozen_source": true,
+      "live_debugger": true,
+      "browser_build": true,
+      "scope": "Actual promoted root macOS ARM64 installed development SDK. Source programs deleted in scenarios; entire source checkout not hidden. Required root full regression is still running separately; this is not a portable release or complete project verification."
     }
   },
   "corrected_failures": [
@@ -175,9 +219,9 @@
     "Initial schema dollar-anchored digest regex admitted a terminal newline; explicit fixed lengths now reject it, with the initial failed validation retained"
   ],
   "remaining": [
-    "Actual promoted root build/full62 macOS regression and installed SDK17 after relocation are pending",
-    "Stopped-string ranges0.54 remain separate isolated work; focused/provider/live/schema checks do not establish its full platform/SDK matrix",
-    "Broader current release/sanitizer/platform/device/distribution/ABI, remaining debugger/core/optimized-PC work, traits/associated/higher-kinded types/async and all other remaining language/development-chain PLAN requirements"
+    "Diagnose promoted root frontend_diagnostics failure (4 assertion failures, 3 missing-context errors); 61 of62 groups passed. Root build and installed SDK17 passed, but root regression is not accepted.",
+    "Stopped-string0.54 has separately verified frozen-source full64/macOS+Linux, SDK18/both and Linux live12 evidence; root promotion is separate.",
+    "Broader release/sanitizer/platform/device/distribution/ABI, debugger/core/optimized-PC work, traits/associated/higher-kinded types/async and remaining full PLAN requirements."
   ],
   "source_snapshot_files": 528,
   "source_sha256": {
@@ -710,7 +754,7 @@
     "web/vite-env.d.ts": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
     "web/vite.config.js": "04cfdab84c2a69e02aa123ae246722c2d401b5316096ef9cf278e647d84e1eb0"
   },
-  "source_scope": "Exact frozen528-file isolated source before promotion and historical051/052 evidence/overview merge. Implementation/runtime/grammar and all124 indexed SDK resources copied exactly to root; root build/full regression/SDK checks now pending.",
+  "source_scope": "Exact frozen528-file isolated source before promotion and historical051/052 evidence/overview merge. Implementation/runtime/grammar and all124 indexed SDK resources copied exactly to root; root build and SDK17 passed; root full62 failed frontend_diagnostics. Exact failed scope is retained under checks.root_macos_regression.",
   "previous_052_scope": {
     "macos": {
       "ok": true,

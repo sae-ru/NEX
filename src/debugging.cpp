@@ -4,8 +4,6 @@
 #include "nex_json.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
-#include <charconv>
-#include <limits>
 #include <filesystem>
 #include <functional>
 
@@ -52,16 +50,8 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   const Array *captures=nullptr;
   if(partial){
     captures=f.getArray("captures");if(!captures||captures->size()>256)throw Error("E_DEBUG_FRAME","partial frame requires at most 256 captures");std::set<std::string> seen;
-    for(const auto &capture:*captures){const auto &c=object(capture);fields(c,{"binding","path","kind","value","unavailable","start","count"});auto binding=required(c,"binding"),kind=required(c,"kind");auto path=c.getArray("path");
-      std::string selection=kind;
-      if(kind=="text_range"){
-        int64_t start=0,count=0;
-        for(const auto &field:{"start","count"}){auto value=required(c,field);int64_t number=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),number);
-          if(value.empty()||(value.size()>1&&value.front()=='0')||value.front()<'0'||value.front()>'9'||parsed.ec!=std::errc()||parsed.ptr!=value.data()+value.size()||number<0||(std::string(field)=="count"&&number>4096))throw Error("E_DEBUG_FRAME","string range requires canonical nonnegative i64 start and count<=4096");selection+=":"+value;if(std::string(field)=="start")start=number;else count=number;}
-        if(start>std::numeric_limits<int64_t>::max()-count)throw Error("E_DEBUG_FRAME","string range end is outside i64");
-        if(auto wire=c.get("value")){auto value=wire->getAsString();if(!value||value->size()>16384||int64_t(nexrt::unicodeOffsets(value->str()).size()-1)!=count)throw Error("E_DEBUG_VALUE","string range value differs from its declared scalar count");}
-      }else if(c.get("start")||c.get("count"))throw Error("E_DEBUG_FRAME","start/count require a string range capture");
-      if(!types.contains(binding)||values.get(binding)||!path||path->size()>56||(kind!="value"&&kind!="shape"&&kind!="text_range")||!seen.insert(binding+":"+json(Array(*path),false)+":"+selection).second)throw Error("E_DEBUG_FRAME","invalid, duplicate or conflicting partial capture");
+    for(const auto &capture:*captures){const auto &c=object(capture);fields(c,{"binding","path","kind","value","unavailable"});auto binding=required(c,"binding"),kind=required(c,"kind");auto path=c.getArray("path");
+      if(!types.contains(binding)||values.get(binding)||!path||path->size()>56||(kind!="value"&&kind!="shape")||!seen.insert(binding+":"+json(Array(*path),false)+":"+kind).second)throw Error("E_DEBUG_FRAME","invalid, duplicate or conflicting partial capture");
       Type type=types.at(binding);Array prefix;for(const auto &part:*path){
         if(type.kind==Type::List||type==Type::Bytes){auto i=part.getAsInteger();if(!i||*i<0)throw Error("E_DEBUG_FRAME","collection paths require nonnegative integer indices");type=type==Type::Bytes?Type(Type::I64):*type.element;}
         else if(type.kind==Type::Record){auto field=part.getAsString();bool found=false;const auto &nominal=p.structure(type.name);if(field){if(nominal.enumeration){auto segment=field->str();auto separator=segment.find("::");if(separator!=std::string::npos)for(const auto &variant:nominal.variants)if(variant.name==segment.substr(0,separator))for(const auto &member:variant.fields)if(member.name==segment.substr(separator+2)){type=member.type;found=true;break;}}else for(const auto &member:nominal.fields)if(member.name==*field){type=member.type;found=true;break;}}if(!found)throw Error("E_DEBUG_FRAME","path field is not in its checked nominal type");}
@@ -73,8 +63,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
         else throw Error("E_DEBUG_FRAME","partial path descends through a scalar/string");
         prefix.push_back(part);
       }
-      if(kind=="shape"&&type.kind!=Type::List&&type!=Type::Bytes&&type!=Type::Str&&type.kind!=Type::Record&&type.kind!=Type::Result&&type.kind!=Type::Function)throw Error("E_DEBUG_FRAME","shape capture requires string, bytes, list, record, result or function type");
-      if(kind=="text_range"&&type!=Type::Str)throw Error("E_DEBUG_FRAME","text_range capture requires a string path");
+      if(kind=="shape"&&type.kind!=Type::List&&type!=Type::Bytes&&type.kind!=Type::Record&&type.kind!=Type::Result&&type.kind!=Type::Function)throw Error("E_DEBUG_FRAME","shape capture requires bytes, list, record, result or function type");
       if(bool(c.get("value"))==bool(c.get("unavailable")))throw Error("E_DEBUG_FRAME","capture requires exactly one value or unavailable reason");if(c.get("unavailable"))required(c,"unavailable");
     }
   }
@@ -109,7 +98,7 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   if(plan){Array requested;for(const auto &local:referenced)requested.push_back(Object{{"name",local},{"type",typeName(types.at(local))},{"wire_schema",debugValueSchema(p,types.at(local),&compiledCallables)}});output=Object{{"schema","nex.expression-plan/1"},{"ok",true},{"type",typeName(type)},{"variables",std::move(requested)}};}
   else {auto result=evaluateExpression(p,expression,types,values,steps,captures,demand,&compiledCallables);output=std::move(*result.getAsObject());output["schema"]=output.get("request")?"nex.expression-demand/1":"nex.expression/1";if(type!=Type::Unit)output["wire_schema"]=debugValueSchema(p,type,&compiledCallables);}
   output["language"]=languageVersion;output["revision"]=revision(p);output["build_key"]=required(m,"build_key");output["function"]=name;output["expression"]=source;output["stop"]=Object(*stop);output["frame_truncated"]=*truncated;
-  output["limits"]=Object{{"steps",int64_t(steps)},{"value_visits",100000},{"value_depth",64},{"cumulative_text_bytes",8*1048576},{"wire_result_bytes",1048576},{"frame_captures",256},{"capture_path_depth",56},{"lazy_references",10000},{"text_range_scalars",4096},{"text_scalar_observations",100000}};
+  output["limits"]=Object{{"steps",int64_t(steps)},{"value_visits",100000},{"value_depth",64},{"cumulative_text_bytes",8*1048576},{"wire_result_bytes",1048576},{"frame_captures",256},{"capture_path_depth",56},{"lazy_references",10000}};
   JSON result=std::move(output);if(json(result,false).size()>4*1048576)throw Error("E_DEBUG_LIMIT","expression response exceeds 4 MiB");return result;
 }
 }

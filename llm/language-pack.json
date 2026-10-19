@@ -82,9 +82,7 @@
     "frontend_diagnostics": "docs/frontend-diagnostics.md",
     "frontend_diagnostic_schema": "llm/frontend-diagnostics.schema.json",
     "graph_query_guide": "docs/queries.md",
-    "graph_query_schema": "llm/graph-query.schema.json",
-    "string_debug": "docs/string-debug.md",
-    "text_range_schema": "llm/text-range.schema.json"
+    "graph_query_schema": "llm/graph-query.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend --json",
   "context_command": "nex context --symbol NAME",
@@ -133,8 +131,7 @@
     "atomic_type_patch": "examples/type-patches/patch.json",
     "native_diagnostics": "examples/native-diagnostics.nex",
     "native_arithmetic": "examples/native-arithmetic.nex",
-    "operation_patch_source": "examples/operation-patches/main.nex",
-    "large_string_debug": "examples/debugging/strings.nex"
+    "operation_patch_source": "examples/operation-patches/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

@@ -132,7 +132,7 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
-The current workflow has eighteen phases. Its foreign-boundary phase compiles a
+The current workflow has seventeen phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
 with NEX resources unavailable. This tests the experimental host transport. The
@@ -249,7 +249,7 @@ it is absent from the resulting SDK's runtime requirements.
 After moving the bundle to a comma/Unicode/percent path, the runtime probe checks
 all inventoried bytes, confirms host LLVM/MLIR/Z3/Clang and source paths are absent,
 and audits actual `ldd` resolutions for compiler/tools and the generated HTTPS
-server. It runs all eighteen maintained phases, including the three locked browser
+server. It runs all seventeen maintained phases, including the three locked browser
 builds and the text/binary-file application workflows.
 The helper then creates a normalized `.tar.gz` and hash, extracts it into another
 source-free container and repeats the workflow with the restored compiler.
@@ -279,7 +279,7 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
-path, then runs all eighteen acceptance phases. `sandbox-exec` denies reads from
+path, then runs all seventeen acceptance phases. `sandbox-exec` denies reads from
 the explicitly supplied source/dependency roots and denies writes to the SDK.
 Each denied root needs a readable input/notice file for an actual negative
 control; a separate control verifies SDK write denial. Node/npm/Python must be
@@ -308,7 +308,7 @@ deletes the materialized source, applies a source/revision-guarded replacement,
 checks the retained local ID with a new site, runs native/reference/TypeScript
 validation and rejects the stale patch. Both the original 41 and revised 42
 outputs must remain runnable from archived sources. This was part of the original
-thirteen-phase workflow and remains in the current eighteen-phase workflow; consult current evidence for the compiler/source hashes
+thirteen-phase workflow and remains in the current seventeen-phase workflow; consult current evidence for the compiler/source hashes
 and the platform scope actually tested.
 
 
@@ -354,7 +354,7 @@ UUIDs. Discovery includes the matching frontend guide/schema.
 
 ## Archived graph-query acceptance (toolchain 0.53)
 
-The toolchain 0.53 seventeen-phase workflow added `graph-queries`. It discovers a
+The current seventeen-phase workflow adds `graph-queries`. It discovers a
 checked function, traverses dependencies and incoming references, pages a pinned
 selection without duplicate/missing IDs, and requests full context. The same
 queries work after source deletion and with stale physical language metadata,
@@ -362,13 +362,3 @@ without moving HEAD/history. A discovered ID/name and exact whole-bundle guard
 then feed an atomic repair, verified by archived native/reference execution.
 This connects discovery to the existing development chain; a static subgraph
 does not prove dynamic test coverage or complete requirement satisfaction.
-
-## Stopped-string acceptance (toolchain 0.54)
-
-The current eighteen-phase workflow adds `string-ranges`. A supplied partial
-frame demonstrates scalar length, exact bounded windows, contained-window reuse
-and explicit missing-range demands. With --live, an actual4MiB native UTF-8
-string is streamed without inferior calls, a bounded window is recorded at an
-unchanged stop/handle, and its last character is replayed after source deletion.
-Supplied data and live recordings stay distinct in the report; these checks
-preserve graph history and do not claim direct DAP root paging or all layouts.

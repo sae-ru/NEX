@@ -12,8 +12,6 @@ import base64
 import time
 import math
 import struct
-import bisect
-import codecs
 
 import lldb
 
@@ -342,93 +340,6 @@ def _raw_string(value, budget):
     budget["bytes"] -= size
     return _string_bytes(value, address, size).decode("utf-8", "strict")
 
-
-class _RawText:
-    """A checked result-code std::string, without a synthetic NEX object."""
-    def __init__(self, value):
-        self.value = value
-
-
-class _TextView:
-    """UTF-8 scalar count/checkpoints; never retain a complete large string."""
-    CHUNK = 65536
-
-    def __init__(self, value, budget):
-        self.value, self.budget = value, budget
-        self.size, self.address = _string_layout(value)
-        if not 0 <= self.size <= 9223372036854775807:
-            raise ValueError('stopped string byte size is outside i64')
-        cache = budget.setdefault('text_cache', {})
-        key = (self.address, self.size)
-        cached = cache.get(key)
-        if cached is None:
-            if self.size > budget.get('scan_bytes', 32 * 1024 * 1024):
-                raise ValueError('stopped string exceeds its physical scan byte budget')
-            decoder = codecs.getincrementaldecoder('utf-8')('strict')
-            checkpoints, offset, scalars = [(0, 0)], 0, 0
-            while offset < self.size:
-                raw = self.read(offset, min(self.CHUNK, self.size - offset))
-                scalars += len(decoder.decode(raw, final=False))
-                offset += len(raw)
-                complete = offset - len(decoder.getstate()[0])
-                if complete != checkpoints[-1][1]:
-                    checkpoints.append((scalars, complete))
-            scalars += len(decoder.decode(b'', final=True))
-            cached = (scalars, checkpoints)
-            cache[key] = cached
-        self.length, self.checkpoints = cached
-        self.scalar_positions = [point[0] for point in self.checkpoints]
-
-    def read(self, start, count):
-        if time.monotonic() > self.budget.get('deadline', float('inf')):
-            raise ValueError('stopped string scan exceeded expression deadline')
-        remaining = self.budget.setdefault('scan_bytes', 32 * 1024 * 1024)
-        if count < 0 or count > remaining or start < 0 or start > self.size or count > self.size - start:
-            raise ValueError('stopped string exceeds its physical scan byte budget')
-        self.budget['scan_bytes'] -= count
-        return _string_bytes(self.value, self.address + start, count)
-
-    def range(self, start, count):
-        if start < 0 or count < 0 or start > self.length or count > self.length - start or count > 4096:
-            raise ValueError('stopped string scalar range is outside checked bounds')
-        if not count:
-            return ''
-        index = bisect.bisect_right(self.scalar_positions, start) - 1
-        scalars, offset = self.checkpoints[index]
-        decoder = codecs.getincrementaldecoder('utf-8')('strict')
-        parts, needed = [], count
-        while offset < self.size and needed:
-            raw = self.read(offset, min(self.CHUNK, self.size - offset))
-            text = decoder.decode(raw, final=offset + len(raw) == self.size)
-            offset += len(raw)
-            begin = max(0, start - scalars)
-            selected = text[begin:begin + needed]
-            parts.append(selected)
-            needed -= len(selected)
-            scalars += len(text)
-        if needed:
-            raise ValueError('stopped string bytes differ from their scanned scalar length')
-        result = ''.join(parts)
-        encoded = len(result.encode('utf-8'))
-        if encoded > self.budget['bytes']:
-            raise ValueError('stopped string range exceeds capture byte budget')
-        self.budget['bytes'] -= encoded
-        return result
-
-
-def _text_view(value, budget):
-    if isinstance(value, _RawText):
-        return _TextView(value.value, budget)
-    raw = value.GetNonSyntheticValue()
-    if not raw.IsValid() or raw.GetError().Fail():
-        raise ValueError('runtime string has no readable location')
-    if raw.GetTypeName() == 'nexrt::Value' and _integer(_member(raw, 'tag')) != 2:
-        raise ValueError('runtime string object tag differs from checked NEX type')
-    data = _data(value)
-    if data is None or _integer(_member(data, 'kind')) != 0:
-        raise ValueError('runtime string kind differs from checked NEX type')
-    return _TextView(_member(data, 'text'), budget)
-
 class _ExactVector:
     def __init__(self, data, name="values"):
         self.value = _member(data, name) if name is not None else data.GetNonSyntheticValue()
@@ -579,8 +490,6 @@ def _file_identity(data):
 
 
 def _wire(value, descriptor, records, budget, depth=0):
-    if descriptor == "str" and isinstance(value, _RawText):
-        return _raw_string(value.value, budget)
     if depth > 60 or budget["nodes"] <= 0:
         raise ValueError("exact capture exceeds its node/depth budget")
     budget["nodes"] -= 1
@@ -664,9 +573,6 @@ def _wire(value, descriptor, records, budget, depth=0):
 
 
 def _header(value, descriptor, records, budget):
-    if descriptor == "str":
-        view = _text_view(value, budget)
-        return None, view, view.length
     raw = value.GetNonSyntheticValue()
     if not raw.IsValid() or raw.GetError().Fail():
         raise ValueError("runtime object has no readable location")
@@ -744,24 +650,21 @@ def _read_path(value, schema, request, budget):
                 value, descriptor = items.GetChildAtIndex(0), descriptor["result"]
             elif segment in ("code", "message") and not success:
                 if segment == "code":
-                    value, descriptor = _RawText(_member(data, "text")), "str"
-                else:
-                    value, descriptor = items.GetChildAtIndex(0), "str"
+                    if request["kind"] != "value" or request["path"][-1] != segment:
+                        raise ValueError("invalid result code path")
+                    return _raw_string(_member(data, "text"), budget)
+                value, descriptor = items.GetChildAtIndex(0), "str"
             else:
                 raise ValueError("partial result path disagrees with stopped result kind")
     if descriptor != request["wire_schema"]["root"]:
         raise ValueError("partial request type differs from checked root path")
     if request["kind"] == "value":
         return _wire(value, descriptor, records, budget)
-    if request["kind"] == "text_range":
-        if descriptor != "str":
-            raise ValueError('text range requires a checked string path')
-        return _text_view(value, budget).range(int(request['start']), int(request['count']))
     if budget["nodes"] <= 0:
         raise ValueError("partial capture exceeds its node budget")
     budget["nodes"] -= 1
     data, items, size = _header(value, descriptor, records, budget)
-    if descriptor in ("bytes", "str") or "list" in descriptor:
+    if descriptor == "bytes" or "list" in descriptor:
         return {"length": str(size)}
     if "record" in descriptor:
         return {"record": descriptor["record"]}
@@ -861,7 +764,7 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
     deadline = time.monotonic() + 10
     plan = _compiler(context, snapshot, expression, "plan")
     schemas = {v["name"]: v["wire_schema"] for v in plan["variables"]}
-    budget = {"nodes": 10000, "bytes": 1024 * 1024, "scan_bytes": 32 * 1024 * 1024, "deadline": deadline}
+    budget = {"nodes": 10000, "bytes": 1024 * 1024}
     bindings = {b["name"]: b for b in snapshot["bindings"]}
     for read_count in range(129):
         _fresh(process, snapshot)
@@ -881,8 +784,6 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
         request = response["request"]
         name = request["binding"]
         capture = {k: request[k] for k in ("binding", "path", "kind")}
-        if request['kind'] == 'text_range':
-            capture.update(start=request['start'], count=request['count'])
         try:
             capture["value"] = _read_path(values[name], schemas[name], request, budget)
             if len(json.dumps([snapshot, capture], ensure_ascii=False).encode("utf-8")) > 1024 * 1024 - 1024:

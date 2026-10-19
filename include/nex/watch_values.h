@@ -25,7 +25,7 @@ class WatchValues {
   std::map<std::string,llvm::json::Object> paths;
   uint64_t visits=0,bytes=0;
   const Ref *reference(const V &value) const;
-  const JSON &read(const Ref &ref,const std::string &kind,const std::string &start="",const std::string &count="");
+  const JSON &read(const Ref &ref,const std::string &kind);
   V decode(const Ref &ref,const JSON &wire);
   V proxy(std::string binding,Type type,Array path,std::string identity="",Array relative={},std::vector<std::string> lineage={});
   V child(const Ref &ref,JSON segment,Type type);

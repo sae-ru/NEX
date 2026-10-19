@@ -403,12 +403,3 @@ node/edge pages and exact byte/query identity. Responses follow the matching
 local-reference `llm/graph-query.schema.json`. They do not execute code, apply
 changes or grant native-library authority. Language/canonical/graph schemas
 remain unchanged. Current validation scope is recorded in `STATUS.md`.
-
-## Stopped-string ranges (toolchain0.54)
-
-The matching build's nex.debug-frame/2 captures add text_range with canonical
-nonnegative decimal start/count strings and an exact UTF-8 value or unavailable
-reason. Counts and indices use Unicode scalars. Existing full/value/shape forms
-remain accepted. The compiler validates type paths, metadata, lengths and alias
-overlaps; [the guide](string-debug.md) describes separate physical scan bounds
-and trust. Old compiler/manifests retain their own matching build requirement.

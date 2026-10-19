@@ -82,25 +82,6 @@ void DebugValues::observeByte(const std::string &id,const Array &path,int64_t in
     if(index<0||index>=whole->second.length()||whole->second.at(index)!=value)invalid("captured octet conflicts with its binary value");
   auto [at,inserted]=binaryOctets[key].emplace(index,value);if(!inserted&&at->second!=value)invalid("conflicting captured binary octets");
 }
-void DebugValues::observeString(const std::string &id,const Array &path,const std::string &value){
-  if(id.empty())return;auto key=id+":"+json(Array(path),false);auto offsets=nexrt::unicodeOffsets(value);
-  observe(id,path,"shape",Object{{"length",std::to_string(offsets.size()-1)}});
-  if(auto old=stringValues.find(key);old!=stringValues.end()&&old->second.text!=value)invalid("conflicting string captures for one stopped callable identity");
-  if(auto selected=stringScalars.find(key);selected!=stringScalars.end())for(const auto &[index,scalar]:selected->second)
-    if(index<0||uint64_t(index)>=offsets.size()-1||value.substr(offsets[index],offsets[index+1]-offsets[index])!=scalar)invalid("string value conflicts with a captured scalar range");
-  stringValues.emplace(std::move(key),TextValue{value,std::move(offsets)});
-}
-void DebugValues::observeTextRange(const std::string &id,const Array &path,int64_t start,const std::string &value){
-  if(id.empty())return;auto key=id+":"+json(Array(path),false);auto offsets=nexrt::unicodeOffsets(value);
-  for(size_t i=0;i+1<offsets.size();++i){auto index=start+int64_t(i);auto scalar=value.substr(offsets[i],offsets[i+1]-offsets[i]);
-    if(auto whole=stringValues.find(key);whole!=stringValues.end()){
-      const auto &full=whole->second;if(index<0||uint64_t(index)>=full.offsets.size()-1||full.text.substr(full.offsets[index],full.offsets[index+1]-full.offsets[index])!=scalar)invalid("captured string range conflicts with its whole value");
-    }
-    auto &selected=stringScalars[key];auto at=selected.find(index);
-    if(at!=selected.end()){if(at->second!=scalar)invalid("conflicting overlapping string scalar ranges");}
-    else{if(++textScalarObservations>100000)throw Error("E_DEBUG_LIMIT","stopped-string scalar observations exceed 100000 values");selected.emplace(index,std::move(scalar));}
-  }
-}
 std::pair<std::string,std::string> DebugValues::callableShape(const Type &type,const JSON &wire){
   const auto &value=object(wire);if(value.size()!=2)invalid("callable shape requires function and identity");auto name=field(value,"function"),id=nex::identity(value);
   checkedDebugCallable(program,name,type,compiled);auto descriptor=name+"\n"+typeName(type);auto [at,inserted]=targets.emplace(id,descriptor);if(!inserted&&at->second!=descriptor)invalid("one callable identity has conflicting checked targets");return {name,id};
@@ -111,7 +92,7 @@ DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned de
   if(type==Type::I64){auto value=integer(wire);observe(id,prefix,"value",wire);return V(value);}
   if(type==Type::F64){nexrt::FloatEnvironment environment;auto value=wire.getAsNumber();if(!value||!std::isfinite(*value))invalid("expected finite debug f64 number");auto result=V::floating(*value);observe(id,prefix,"value",JSON(result.floating()));return result;}
   if(type==Type::Bool){auto value=wire.getAsBoolean();if(!value)invalid("expected debug boolean");observe(id,prefix,"value",wire);return V(*value,true);}
-  if(type==Type::Str){auto value=string(wire);text+=value.size();budget(depth);observe(id,prefix,"value",wire);observeString(id,prefix,value);return V(nexrt::string(std::move(value)));}
+  if(type==Type::Str){auto value=string(wire);text+=value.size();budget(depth);observe(id,prefix,"value",wire);return V(nexrt::string(std::move(value)));}
   if(type==Type::Bytes){
     auto encoded=string(wire);text+=encoded.size();budget(depth);nexrt::ByteBuffer buffer;
     try{buffer=nexrt::ByteBuffer::fromBase64(encoded);}catch(const nexrt::DataError&){invalid("debug bytes require canonical padded base64");}
