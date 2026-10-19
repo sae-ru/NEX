@@ -8,16 +8,7 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated **0.55.0 candidate still accepts language 0.15 only**. It adds
-an internal type-constructor kind/application/substitution and implementation-head
-matching/coherence core. Twenty native invariant groups and 62 existing Python
-cases in four related suites pass. Source traits, associated types, `F<_>`
-syntax, source dispatch and language 0.16 migration are not implemented or
-advertised. [The design](docs/traits-design.md) specifies those remaining steps;
-[the evidence](docs/evidence/constructor-core-0.55.0.json) gives the current scope.
-The complete language/development-chain objective remains open.
-
-The preceding frozen source is toolchain **0.54.0 / language 0.15**, adding
+The working tree is toolchain **0.54.0 / language 0.15**, adding
 [bounded stopped-string Unicode windows](docs/string-debug.md). Its frozen534
 files pass all64 groups on macOS ARM64 (1496.29s) and Linux ARM64 (780.41s):
 534 Python cases and12 C++ probes. Both installed SDK18 workflows pass, along
@@ -27,7 +18,8 @@ replay retained windows after source deletion.
 [Evidence](docs/evidence/string-ranges-0.54.0.json) records source/compiler hashes
 and exact scopes. The previous root0.53 diagnostic failure was traced to stale objects after
 preserving older source timestamps; a clean rebuild passes the same21 cases.
-The promoted0.54 root now requires its own clean build/full64/installed SDK18 checks. Complete language,
+The promoted root passes its own clean build, all64 macOS groups (1318.30s)
+and installed SDK18 (322.356s), with127 indexed resources matching the root. Complete language,
 platform and development-chain requirements remain open in `PLAN.md`.
 
 The preceding isolated **0.51.0 / language 0.15** passes 59 groups on macOS/Linux

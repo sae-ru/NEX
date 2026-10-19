@@ -23,22 +23,20 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
-  unsigned constructorArity=0;
   std::string realm="shared";std::set<std::string> effects;
   Type() = default;
   Type(Kind kind) : kind(kind) {}
   static Type list(Type item) { Type t(List); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type result(Type item) { Type t(Result); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type record(std::string name) { Type t(Record); t.name=std::move(name); return t; }
-  static Type constructor(std::string name,unsigned arity) { Type t(Constructor);t.name=std::move(name);t.constructorArity=arity;return t; }
   static Type function(std::vector<Type> parameters,Type result,std::string realm="shared",std::set<std::string> effects={}) {
     Type t(Function);t.arguments=std::move(parameters);t.element=std::make_shared<Type>(std::move(result));t.realm=std::move(realm);t.effects=std::move(effects);return t;
   }
   bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File; }
   bool operator==(const Type &other) const {
-    return kind==other.kind && name==other.name && constructorArity==other.constructorArity && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
+    return kind==other.kind && name==other.name && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
 };
 std::string typeName(Type type);
