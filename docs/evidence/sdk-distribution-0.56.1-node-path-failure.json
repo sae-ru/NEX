@@ -1,0 +1,60 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T10:40:44.709151+00:00",
+  "status": "retained_relocation_node_path_failure",
+  "terminal_exit_code": 1,
+  "source_tree": "e79553ecfd3be4ad1ee54f7a6e750b254c526c3b",
+  "source_commit": "c9f0ce7d818d22cdf88954fa8c77ae3910469072",
+  "reason": "Node22 --test interprets the absolute test filename as a glob. A literal backslash in the SDK directory prevented finding an existing test.js. The same ten contracts pass when the literal directory is supplied as cwd and only test.js is the pattern.",
+  "verification_sha256": "ee7061c3154413583119f7225461822a4f570065efbf17e1a65c0628a61f6564",
+  "failed_command": {
+    "command": [
+      "/Users/sae/.hermes/node/bin/node",
+      "--test",
+      "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved SDK, % 🧠/share/nex/editor/vscode/test.js"
+    ],
+    "cwd": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved-workflow",
+    "stdout": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved-workflow/logs/031.stdout",
+    "stderr": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved-workflow/logs/031.stderr",
+    "status": "failed",
+    "exit_code": 1
+  },
+  "stderr": "Could not find '/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved SDK, % 🧠/share/nex/editor/vscode/test.js'\n",
+  "actual_node_path_probe": [
+    {
+      "name": "direct",
+      "command": [
+        "/Users/sae/.hermes/node/bin/node",
+        "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved SDK, % 🧠/share/nex/editor/vscode/test.js"
+      ],
+      "cwd": "/Users/sae/projects/NEX",
+      "exit_code": 0,
+      "stdout_tail": "atched or unavailable compiler responses cannot supply an adapter\n  ---\n  duration_ms: 1.326625\n  type: 'test'\n  ...\n# Subtest: restricted and virtual workspaces do not compile or launch\nok 5 - restricted and virtual workspaces do not compile or launch\n  ---\n  duration_ms: 0.224167\n  type: 'test'\n  ...\n# Subtest: each registered launch consumes only its own freshly prepared command\nok 6 - each registered launch consumes only its own freshly prepared command\n  ---\n  duration_ms: 0.4375\n  type: 'test'\n  ...\n# Subtest: trust changes during compiler preparation prevent launch registration\nok 7 - trust changes during compiler preparation prevent launch registration\n  ---\n  duration_ms: 0.109292\n  type: 'test'\n  ...\n# Subtest: original breakpoint files map only when they match the exact frozen source bytes\nok 8 - original breakpoint files map only when they match the exact frozen source bytes\n  ---\n  duration_ms: 1.213958\n  type: 'test'\n  ...\n# Subtest: failed preparation resolves without waiting for notification dismissal\nok 9 - failed preparation resolves without waiting for notification dismissal\n  ---\n  duration_ms: 0.274958\n  type: 'test'\n  ...\n# Subtest: physical entry aliases retain editor breakpoints and reject a retargeted symlink\nok 10 - physical entry aliases retain editor breakpoints and reject a retargeted symlink\n  ---\n  duration_ms: 4.860417\n  type: 'test'\n  ...\n1..10\n# tests 10\n# suites 0\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 16.594917\n",
+      "stderr": ""
+    },
+    {
+      "name": "relative-test",
+      "command": [
+        "/Users/sae/.hermes/node/bin/node",
+        "--test",
+        "test.js"
+      ],
+      "cwd": "/private/tmp/NEX SDK work \"quoted\" \\ 🧠/NEX SDK distribution, % 🧠 6t_q6me_/moved SDK, % 🧠/share/nex/editor/vscode",
+      "exit_code": 0,
+      "stdout_tail": "matched or unavailable compiler responses cannot supply an adapter\n  ---\n  duration_ms: 1.196125\n  type: 'test'\n  ...\n# Subtest: restricted and virtual workspaces do not compile or launch\nok 5 - restricted and virtual workspaces do not compile or launch\n  ---\n  duration_ms: 0.26675\n  type: 'test'\n  ...\n# Subtest: each registered launch consumes only its own freshly prepared command\nok 6 - each registered launch consumes only its own freshly prepared command\n  ---\n  duration_ms: 0.358542\n  type: 'test'\n  ...\n# Subtest: trust changes during compiler preparation prevent launch registration\nok 7 - trust changes during compiler preparation prevent launch registration\n  ---\n  duration_ms: 0.096125\n  type: 'test'\n  ...\n# Subtest: original breakpoint files map only when they match the exact frozen source bytes\nok 8 - original breakpoint files map only when they match the exact frozen source bytes\n  ---\n  duration_ms: 1.016333\n  type: 'test'\n  ...\n# Subtest: failed preparation resolves without waiting for notification dismissal\nok 9 - failed preparation resolves without waiting for notification dismissal\n  ---\n  duration_ms: 0.38325\n  type: 'test'\n  ...\n# Subtest: physical entry aliases retain editor breakpoints and reject a retargeted symlink\nok 10 - physical entry aliases retain editor breakpoints and reject a retargeted symlink\n  ---\n  duration_ms: 6.273125\n  type: 'test'\n  ...\n1..10\n# tests 10\n# suites 0\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 54.25275\n",
+      "stderr": ""
+    }
+  ],
+  "early_full_regression_interruption": {
+    "created": "2026-10-19T10:39:33.779587+00:00",
+    "complete": false,
+    "interrupted_by_agent": true,
+    "reason": "Portable SDK Node absolute-path glob handling needs another helper correction. Early full test attempt is stopped before source mutation; old582 frozen source and GitHub c9f0ce7 remain retained.",
+    "log": "build/ctest-0561-sdk-distribution-corrected-full.log",
+    "log_sha256": "192efef3d8afb33155994b24c3b8b867fe027506da3d7735e87ff47a59cdeb98",
+    "source_manifest": "build/sdk-distribution-0561-corrected-validation-snapshot.json",
+    "full_objective_complete": false,
+    "terminal_exit_code": 143
+  },
+  "full_objective_complete": false
+}

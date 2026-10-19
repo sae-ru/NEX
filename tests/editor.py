@@ -15,7 +15,7 @@ class Editor(harness.ToolchainCase):
         return node
 
     def test_editor_contracts_reject_untrusted_stale_and_malformed_launches(self):
-        process=subprocess.run([self.node(),'--test',str(harness.REPO/'editor/vscode/test.js')],capture_output=True,text=True,timeout=30)
+        process=subprocess.run([self.node(),'--test','test.js'],cwd=harness.REPO/'editor/vscode',capture_output=True,text=True,timeout=30)
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
 
     def test_actual_compiler_session_maps_only_matching_original_source(self):

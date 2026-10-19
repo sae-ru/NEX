@@ -319,7 +319,9 @@ test fn examples() -> unit {
                 'installed editor extension runtime dependencies differ')
         require(package['capabilities']['untrustedWorkspaces']['supported'] is False,
                 'installed editor extension lost its workspace trust gate')
-        run([node, '--test', directory / 'test.js'])
+        # Node's test entry is a glob pattern. A literal backslash in a POSIX
+        # SDK directory must stay in cwd rather than entering that pattern.
+        run([node, '--test', 'test.js'], cwd=directory)
         evidence = {'extension_version': package['version'], 'installed_sources': hashes,
                     'focused_node_contracts': True, 'actual_ide_run': False,
                     'native_session_preparation': False}

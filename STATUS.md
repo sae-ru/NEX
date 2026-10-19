@@ -1430,3 +1430,14 @@ The corrected editor/archive/host focus passes all3 groups (16 Python cases and
 10 Node cases). A real LLDB import from a directory containing Unicode, quotes
 and a backslash also passes without launching an inferior. The full moved SDK
 workflow is being repeated; these focused checks do not replace it.
+
+A second owned relocation run deliberately includes quotes and a literal
+backslash in its parent path. Its editor phase exposes Node22 --test treating
+an absolute filename as a glob; test.js exists but its path does not match.
+The acceptance helper and source editor test now supply the physical directory
+as cwd and the relative test.js pattern. Both actual direct and relative-test
+Node probes run all ten contracts successfully from that exact path. The early
+0.56.1 full regression was stopped before this correction; it is not a complete
+result. The failed relocation, actual probes and interruption are retained in
+`docs/evidence/sdk-distribution-0.56.1-node-path-failure.json`. Complete workflow
+and full regression must be repeated with the final corrected source.

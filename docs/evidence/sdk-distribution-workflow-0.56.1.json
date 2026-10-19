@@ -1,8 +1,8 @@
 {
   "schema": "nex.development-evidence/1",
-  "created": "2026-10-19T10:35:41.639250+00:00",
+  "created": "2026-10-19T10:41:44.409341+00:00",
   "milestone": "portable_sdk_phase_contract_correction",
-  "status": "focused_and_real_lldb_paths_pass_full_acceptance_pending",
+  "status": "focused_lldb_and_literal_node_paths_pass_full_acceptance_pending",
   "toolchain": "0.56.1",
   "source_language": "0.16",
   "compiler_sha256": "694c0abfec583f008e17a3bc21588dbd09ee3ca015a01da94de37ab1a45accf6",
@@ -10,11 +10,11 @@
     "groups": 3,
     "python_cases": 16,
     "node_contract_cases": 10,
-    "seconds": 11.43,
+    "seconds": 11.42,
     "terminal_exit_code": 0,
-    "log": "build/sdk-distribution-0561-unicode-focused.log",
-    "log_sha256": "7bc2c094c8d9d59783ceabe3b5b76da02e7718eca72cf383ebe982358c91d0ff",
-    "last_test_sha256": "76979e17f75bf4e9d0cbcb9a9d686427e7300ddc0f48ebef87824875a7a33d41"
+    "log": "build/sdk-distribution-0561-node-path-focused.log",
+    "log_sha256": "db1bed3f5c337d814055ca34b397d3c96edae7132595d2e712c0b936d040748d",
+    "last_test_sha256": "d04712ab2916f67d1f89b92b5d49bd0c87a4825726ca6a6a33e95ca83a514fc4"
   },
   "corrected_files": [
     "tools/sdk_acceptance.py",
@@ -59,5 +59,8 @@
     "unicode_quotes_backslash_path": "/private/tmp/NEX LLDB \"quoted\" \\ 🧠 fg3jaima",
     "inferior_launched": false
   },
-  "retained_initial_relocation_failure": "sdk-distribution-0.56.1-initial-failure.json"
+  "retained_initial_relocation_failure": "sdk-distribution-0.56.1-initial-failure.json",
+  "literal_node_path_probe": "build/sdk-distribution-0561-node-path-probe.json",
+  "retained_node_relocation_failure": "sdk-distribution-0.56.1-node-path-failure.json",
+  "interrupted_full": "build/sdk-distribution-0561-interrupted-full.json"
 }
