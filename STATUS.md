@@ -1,3 +1,25 @@
+# Isolated development 0.61: explicit iOS archives
+
+The candidate adds macOS cross-compilation of debug/release static libraries for
+ARM64 iOS devices and ARM64/x86-64 iOS Simulator. Explicit versioned targets and
+matching Xcode SDK settings are required; platform, architecture and deployment
+range are checked, followed by a real compiler ABI probe. An ARM64 target on an
+ARM64 Mac is still foreign. It cannot use local run/test/debug/profile/package,
+host dependencies, Tracy profile builds or source foreign-library loading.
+
+The first focused run builds and links all six target/profile combinations,
+checks every object's platform/minimum OS/architecture, verifies cache/revision
+reuse and rejects wrong SDK/target/deployment inputs. One package refusal fixture
+failed earlier with E_NAME because it omitted its nonstandard entry; the corrected
+fixture explicitly selects answer and expects the backend E_TARGET refusal for
+unsupported application output. Local execution commands retain E_TARGET_RUN.
+Matching final focused and full regressions
+are required before promotion. No simulator/device application or execution is
+claimed. Language0.16 and canonical formats are unchanged. See docs/ios.md.
+
+The verified root remains0.60.2. Its evidence below belongs to the exact source
+identity recorded there and does not automatically validate this candidate.
+
 # Verified development checkpoint 0.60.2 / language 0.16
 
 Updated 20 October 2026. The compiled and tested source is the exact 666-file

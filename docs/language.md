@@ -2,6 +2,10 @@
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
+Toolchain 0.61 adds explicit [iOS static archive targets](ios.md) on macOS.
+This changes no source syntax, canonical format or language version. Device and
+simulator SDK/ABI validation does not provide an application host or local run.
+
 The experimental [scalar Wasm compute target](wasm.md) in toolchain 0.60 adds no
 source syntax or language-version change. Its reachable-code restrictions and
 resource/JavaScript ABI limits are narrower than the full language.

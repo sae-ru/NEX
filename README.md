@@ -8,7 +8,9 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain 0.60.2 / language 0.16**, under development.
+The isolated current source is **toolchain 0.61.0 / language 0.16**, under development.
+It adds explicit iOS static archives; matching full acceptance is pending.
+The verified root checkpoint remains 0.60.2.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -30,8 +32,9 @@ original-to-copied image binding and source projections. Current macOS/Linux
 ARM64 SDKs pass moved/restored acceptance. Independent Linux capsule reading
 recovers the checked Unicode value without the original source or build.
 The installed VS Code extension and generated React and Wasm examples pass
-their actual editor and three-browser checks. Native iOS, Android and Windows
-applications and physical Intel/mobile execution remain pending.
+their actual editor and three-browser checks. The candidate iOS archive target is described in [the iOS guide](docs/ios.md).
+Native iOS applications, Android and Windows applications and physical
+Intel/mobile execution remain pending.
 
 Validation results are recorded with their exact source, compiler, platform
 and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).

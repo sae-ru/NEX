@@ -117,9 +117,35 @@ NativeToolchain configureNative(const BuildOptions &options) {
   bool sameOS=abi.getOS()==hostABI.getOS()||(abi.isMacOSX()&&hostABI.isMacOSX());
   bool sameArch=abi.getArch()==hostABI.getArch()&&abi.getSubArch()==hostABI.getSubArch();
   bool crossMac=abi.isMacOSX()&&hostABI.isMacOSX()&&supportedArch(abi)&&supportedArch(hostABI)&&abi.getVendor()==llvm::Triple::Apple;
-  if(!abi.isArch64Bit()||!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))
-    throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI and macOS arm64/x86_64 on a macOS host");
-  result.hostCompatible=sameArch;
+  bool ios=hostABI.isMacOSX()&&abi.getOS()==llvm::Triple::IOS&&abi.getVendor()==llvm::Triple::Apple&&supportedArch(abi)&&
+    (abi.getEnvironment()==llvm::Triple::UnknownEnvironment||abi.isSimulatorEnvironment())&&
+    (abi.isSimulatorEnvironment()||abi.getArch()==llvm::Triple::aarch64);
+  if(!abi.isArch64Bit()||(!ios&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
+    throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64 and explicit iOS archive toolchains on a macOS host");
+  if(ios){
+    // A device and an arm64 simulator share a CPU with this Mac but are not
+    // host executables. Never inherit its SDK or dynamic dependencies.
+    if(options.toolchain.empty()||result.sysroot.empty()||!abi.getOSMajorVersion())
+      throw Error("E_TARGET","iOS archives require --toolchain FILE with an explicit sysroot and versioned device/simulator target");
+    auto settings=std::filesystem::path(result.sysroot)/"SDKSettings.json";
+    if(!std::filesystem::is_regular_file(settings)||std::filesystem::file_size(settings)>65536)
+      throw Error("E_TARGET","iOS sysroot requires SDKSettings.json of at most 64 KiB");
+    auto parsed=llvm::json::parse(readFile(settings.string()));
+    if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_TARGET","invalid iOS SDK settings");}
+    auto object=parsed->getAsObject();auto defaults=object?object->getObject("DefaultProperties"):nullptr;
+    auto platform=abi.isSimulatorEnvironment()?"iphonesimulator":"iphoneos";
+    auto targets=object?object->getObject("SupportedTargets"):nullptr;auto target=targets?targets->getObject(platform):nullptr;
+    auto architectures=target?target->getArray("Archs"):nullptr;
+    auto architecture=abi.getArch()==llvm::Triple::aarch64?"arm64":"x86_64";
+    bool archSupported=architectures&&std::any_of(architectures->begin(),architectures->end(),[&](const auto &value){return value.getAsString()==architecture;});
+    llvm::VersionTuple minimum,maximum;
+    auto minimumText=target?target->getString("MinimumDeploymentTarget"):std::nullopt;
+    auto maximumText=target?target->getString("MaximumDeploymentTarget"):std::nullopt;
+    if(!defaults||defaults->getString("PLATFORM_NAME")!=platform||!archSupported||!minimumText||!maximumText||
+       minimum.tryParse(*minimumText)||maximum.tryParse(*maximumText)||abi.getOSVersion()<minimum||abi.getOSVersion()>maximum)
+      throw Error("E_TARGET","iOS sysroot platform, architecture or deployment range does not match target: "+result.target);
+  }
+  result.hostCompatible=sameOS&&sameArch&&abi.getEnvironment()==hostABI.getEnvironment();
   if(result.linker.empty()&&abi.isOSLinux())result.linker=defaults.linker;
   if(!result.linker.empty()){
     auto linker=llvm::sys::findProgramByName(result.linker);if(!linker)throw Error("E_TOOLCHAIN","cannot find native linker: "+result.linker+"; Linux requires matching LLVM LLD or an explicit linker path");
@@ -195,6 +221,6 @@ void requireNativeHost(const BuildOptions &options) {
   if(!configureNative(options).hostCompatible)throw Error("E_TARGET_RUN","this command executes host code; build the selected target and run/test it on a matching machine; no emulator is configured");
 }
 void requireNativeHost(const BuildResult &result) {
-  if(!result.hostCompatible)throw Error("E_TARGET_RUN","built artifact requires another architecture; run/test it on a matching machine; no emulator is configured");
+  if(!result.hostCompatible)throw Error("E_TARGET_RUN","built artifact requires another OS/architecture ABI; run/test it on a matching machine; no emulator is configured");
 }
 }

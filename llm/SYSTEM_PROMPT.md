@@ -1,5 +1,13 @@
 # NEX coding prompt — language 0.16, protocol 2
 
+When `ios_archive_target` is advertised, read `docs/ios.md` and the native build
+guide. A macOS host can build a debug/release static library for an explicit
+versioned iOS device/simulator target with a matching `nex.toolchain/1` sysroot.
+An arm64 iOS/simulator library is never host-compatible with an arm64 Mac.
+Use `--library --entry NAME`; preserve the matching runtime ABI and compiler
+resources for the embedding host. Do not treat archive/link success as an iOS
+app, simulator/device run, signing, packaging, debugging or profiling result.
+
 When `wasm_features` is advertised, read `nex guide --kind wasm --json` before
 using `build --target wasm --entry NAME`. This experimental compute adapter accepts
 only a bounded pure shared/client closure of concrete i64/bool/unit functions.

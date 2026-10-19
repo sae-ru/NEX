@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "NEX native toolchain",
+  "description": "Native target configuration. iOS static archives require a macOS host, explicit versioned device/simulator target and matching Xcode sysroot; the compiler validates SDK platform, architecture and deployment range. This schema does not establish target execution support.",
   "type": "object",
   "additionalProperties": false,
   "required": [

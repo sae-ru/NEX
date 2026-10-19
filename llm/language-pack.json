@@ -16,6 +16,7 @@
     "api": "docs/api.md",
     "debug": "docs/debugging.md",
     "build": "docs/incremental.md",
+    "ios_archive_target": "docs/ios.md",
     "profile": "docs/profiling.md",
     "verification": "docs/verification.md",
     "verification_contract_schema": "llm/verification.schema.json",
@@ -168,7 +169,9 @@
     "trait_api_client_copy_after_generate": "examples/traits/api/client.nex",
     "native_indexed_pages": "examples/debugging/pages.nex",
     "scalar_wasm": "examples/wasm/main.nex",
-    "scalar_wasm_browser": "examples/wasm/index.html"
+    "scalar_wasm_browser": "examples/wasm/index.html",
+    "ios_archive": "examples/ios/main.nex",
+    "ios_archive_workflow": "examples/ios/README.md"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -383,5 +386,9 @@
       "f64",
       "heap_values"
     ]
-  }
+  },
+  "ios_archive_commands": [
+    "nex toolchain IOS_TOOLCHAIN.json --json",
+    "nex build FILE --toolchain IOS_TOOLCHAIN.json --library --entry NAME --profile release --json"
+  ]
 }

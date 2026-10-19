@@ -1,5 +1,6 @@
 (* NEX 0.16. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain 0.60 scalar Wasm uses this same syntax; target restrictions are semantic. *)
+(* Toolchain 0.61 iOS archives use this syntax unchanged; SDK/ABI selection is external. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint | trait | implementation } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;

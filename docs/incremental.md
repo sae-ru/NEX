@@ -58,7 +58,9 @@ object, C++ runtime object, bridge and final link. The probed LLVM data layout,
 architecture, OS/environment and explicit `macosx` deployment version must match.
 Darwin kernel triples are normalized by Clang and do not specify a macOS release.
 Unsupported OS/architecture combinations fail with E_TARGET. This configures
-macOS cross-compilation; Linux/Windows/iOS/Android cross-targets remain pending.
+macOS cross-compilation. Toolchain 0.61 additionally builds debug/release iOS
+static archives with an explicit matching Xcode sysroot; read [the iOS guide](ios.md).
+Linux/Windows/Android cross-targets and iOS application delivery remain pending.
 
 `--toolchain FILE` supplies a `nex.toolchain/1` JSON configuration; its schema is
 `llm/toolchain.schema.json`. It also works with `--target server` to select HTTP
