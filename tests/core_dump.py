@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 import struct
+import shutil
+import subprocess
 import sys
 import unittest
 
@@ -100,6 +102,18 @@ class CoreDump(harness.ToolchainCase):
         finally:
             self.manifest.write_bytes(original)
 
+    def test_relocated_build_with_an_unbound_directory_name_is_rejected(self):
+        self.prepared()
+        copied = self.root / 'unbound-build'
+        shutil.copytree(self.folder, copied)
+        manifest = json.loads(self.manifest.read_text())
+        manifest['program'] = str(copied/'app')
+        (copied/'debug.json').write_text(json.dumps(manifest))
+        result = self.cli('core', self.core, '--manifest', copied/'debug.json',
+                          ok=False, env={'NEX_LLDB': str(self.root/'not-a-debugger')})
+        self.assertEqual(result['code'], 'E_CORE_BUILD')
+        self.assertIn('content-addressed', result['message'])
+
     @unittest.skipUnless(LIVE, 'use --live for actual read-only LLDB core reports')
     def test_source_deleted_core_exact_watches_and_wrong_image_negative_control(self):
         self.prepared()
@@ -133,6 +147,68 @@ class CoreDump(harness.ToolchainCase):
         result = self.cli('core', self.core, '--manifest', other['manifest'], ok=False)
         self.assertEqual(result['code'], 'E_CORE_READ')
         self.assertIn('image', result['message'])
+
+    @unittest.skipUnless(LIVE and sys.platform == 'linux', 'use --live on Linux for kernel ELF SIGABRT core')
+    def test_kernel_elf_signal_caller_values_and_wrong_image(self):
+        import resource
+        import source_ffi
+        if (Path('/proc/sys/kernel/core_pattern').read_text().strip() != 'core' or
+                Path('/proc/sys/kernel/core_uses_pid').read_text().strip() != '0'):
+            self.skipTest('kernel core naming is not scoped to the fixture cwd')
+        _, hard = resource.getrlimit(resource.RLIMIT_CORE)
+        limit = 128 * 1024**2
+        if hard != resource.RLIM_INFINITY and hard < limit:
+            self.skipTest('per-process hard core limit is below the fixture bound')
+        producer = source_ffi.SourceFFI('test_scalar_unit_short_circuit_and_left_to_right_calls')
+        producer.root, producer.file = self.root, self.file
+        producer.marker = self.root/'foreign-events'
+        producer.env = {'NEX_SOURCE_FFI_MARKER': str(producer.marker)}
+        original = source_ffi.C
+        try:
+            source_ffi.C = original.replace('static const nex_ffi_export_v1', '''
+static nex_ffi_status abort_now(const nex_ffi_api_v1 *a,nex_ffi_call c,const nex_ffi_ref *v,uint64_t n,nex_ffi_ref *o,void *u){(void)a;(void)c;(void)v;(void)n;(void)o;(void)u;abort();}
+static const nex_ffi_export_v1''')
+            producer.program('''module kernel_core;
+server extern fn panic_now()->unit!{ffi}=foreign("test","panic_now","@PIN@");
+server fn observe(value:i64,text:str,items:list<i64>)->unit!{io,ffi}{
+ let answer:i64=value+items[1];print(answer);panic_now();
+}
+server fn main()->unit!{io,ffi}{observe(40,"Я🧠",[1,2,3]);}
+''', {'panic_now': 'abort_now'})
+        finally:
+            source_ffi.C = original
+        source = self.file.read_text()
+        session = self.cli('debug', '--foreign', producer.host, '--kind', 'nex-dap')
+        def bounded_core():
+            resource.setrlimit(resource.RLIMIT_CORE, (limit, hard))
+        crashed = subprocess.run([session['launch']['program'], '--nex-foreign', str(producer.host)],
+            cwd=self.root, capture_output=True, text=True, timeout=60, preexec_fn=bounded_core)
+        self.assertEqual(crashed.returncode, -6, crashed.stdout + crashed.stderr)
+        core = self.root/'core'
+        self.assertTrue(core.is_file())
+        with core.open('rb') as stream:
+            self.assertEqual(stream.read(4), b'\x7fELF')
+        self.assertLessEqual(core.stat().st_size, limit)
+        before = hashlib.sha256(core.read_bytes()).hexdigest()
+        graph = self.root/'.nex/graph.db'
+        graph_before = graph.read_bytes()
+        self.file.unlink()
+        base = self.cli('core', core, '--manifest', session['manifest'])
+        caller = next(frame['index'] for frame in base['frames'] if frame['function'] == 'kernel_core::observe')
+        report = self.cli('core', core, '--manifest', session['manifest'], '--frame', caller,
+                          '--expression', 'text + str(items[1])')
+        self.assertEqual(report['watch']['value'], 'Я🧠2')
+        self.assertIn('SIGABRT', report['threads'][report['selected_thread']]['stop_description'])
+        self.assertTrue(report['core']['unchanged'] and report['stop_unchanged'])
+        self.assertFalse(report['inferior_execution'])
+        self.assertEqual(before, hashlib.sha256(core.read_bytes()).hexdigest())
+        self.assertEqual(graph_before, graph.read_bytes())
+        self.assertFalse(self.file.exists())
+        self.source(source.replace('observe(40,', 'observe(100,'))
+        other = self.cli('debug', '--foreign', producer.host, '--kind', 'nex-dap')
+        rejected = self.cli('core', core, '--manifest', other['manifest'], ok=False)
+        self.assertEqual(rejected['code'], 'E_CORE_READ')
+        self.assertIn('image', rejected['message'])
 
 
 if __name__ == '__main__':

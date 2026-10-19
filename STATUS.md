@@ -1,3 +1,23 @@
+# Development0.58.2: bounded kernel ELF mapping
+
+A real Linux kernel SIGABRT ELF core was correctly refused by0.58.1 because
+LLDB exposes no filename through its memory-region API. The isolated correction
+reads the core's own bounded NT_FILE metadata and binds its PC mapping to the
+retained content-addressed build directory, while keeping loaded-module checks.
+A pure Python reader prototype restores exact caller watch Я🧠2 from the
+source-deleted core and rejects a different executable. It uses the original
+unchanged manifest and an older compiler for the stable watch protocol; this
+is not a matching0.58.2 installed-SDK result. Eleven metadata/string provider
+cases pass, including malformed/ambiguous/nonregular inputs and both byte orders.
+Current C++ directory binding, matching compiler/live/full/SDK checks are pending.
+
+Frozen0.58 macOS full70 passes571 Python cases with six explicit skips in
+1433.61s. Frozen0.58.1 macOS SDK22/317 passes in367.378s. Its five matching
+installed core/image controls pass on each macOS/Linux host, and Linux full70
+is running. These separate scopes are retained; no root promotion or release
+is claimed. Portable core capsules and unique optimized-PC attribution remain
+pending with the wider language/platform/development-chain objective.
+
 # Development0.58.1: Linux core image correction
 
 The frozen0.57.1 Linux ARM64 full69 regression passes, but its additional

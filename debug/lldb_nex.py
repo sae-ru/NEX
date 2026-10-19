@@ -14,6 +14,8 @@ import math
 import struct
 import bisect
 import codecs
+import os
+import stat
 
 import lldb
 
@@ -785,6 +787,86 @@ def _read_path(value, schema, request, budget):
     return {"ok": _integer(_member(data, "kind")) == 3}
 
 
+def _elf_core_mapping(path, pc):
+    """Read the core's own bounded NT_FILE table, without mapped-file fallback."""
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or not 64 <= info.st_size <= 32 * 1024**3:
+            raise ValueError("core image requires a bounded regular ELF core")
+        deadline, consumed = time.monotonic() + 2, 0
+
+        def read(offset, count):
+            nonlocal consumed
+            consumed += count
+            if (offset < 0 or count < 0 or offset + count > info.st_size or
+                    consumed > 32 * 1024**2 or time.monotonic() > deadline):
+                raise ValueError("core image ELF metadata exceeds bounds")
+            data = os.pread(fd, count, offset)
+            if len(data) != count:
+                raise ValueError("core image ELF metadata is truncated")
+            return data
+
+        header = read(0, 64)
+        if header[:5] != b'\x7fELF\x02' or header[5] not in (1, 2):
+            raise ValueError("core image requires ELF64 metadata")
+        endian = '<' if header[5] == 1 else '>'
+        fields = struct.unpack(endian + '16sHHIQQQIHHHHHH', header)
+        offset, stride, count = fields[5], fields[9], fields[10]
+        if fields[1] != 4 or stride != 56 or not 1 <= count <= 4096:
+            raise ValueError("core image ELF program table is invalid")
+        matches = []
+        for index in range(count):
+            entry = struct.unpack(endian + 'IIQQQQQQ', read(offset + index * stride, 56))
+            if entry[0] != 4:  # PT_NOTE
+                continue
+            if entry[5] > 16 * 1024**2:
+                raise ValueError("core image ELF note exceeds limit")
+            notes, cursor = read(entry[2], entry[5]), 0
+            while cursor + 12 <= len(notes):
+                if time.monotonic() > deadline:
+                    raise ValueError("core image ELF metadata deadline exceeded")
+                names, size, kind = struct.unpack_from(endian + 'III', notes, cursor)
+                cursor += 12
+                name_end = cursor + names
+                data_at = cursor + ((names + 3) & ~3)
+                end = data_at + size
+                if names > 4096 or name_end > len(notes) or end > len(notes):
+                    raise ValueError("core image ELF note is truncated")
+                owner = notes[cursor:name_end]
+                cursor = data_at + ((size + 3) & ~3)
+                if cursor > len(notes):
+                    raise ValueError("core image ELF note padding is truncated")
+                if kind != 0x46494c45 or owner.rstrip(b'\0') != b'CORE':  # NT_FILE
+                    continue
+                data = notes[data_at:end]
+                if len(data) < 16:
+                    raise ValueError("core image NT_FILE header is truncated")
+                files, pages = struct.unpack_from(endian + 'QQ', data)
+                strings = 16 + files * 24
+                if not pages or files > 65536 or strings > len(data):
+                    raise ValueError("core image NT_FILE entries exceed bounds")
+                paths = data[strings:].split(b'\0')
+                if len(paths) <= files:
+                    raise ValueError("core image NT_FILE names are truncated")
+                for number in range(files):
+                    if number % 1024 == 0 and time.monotonic() > deadline:
+                        raise ValueError("core image ELF metadata deadline exceeded")
+                    begin, finish, _ = struct.unpack_from(endian + 'QQQ', data, 16 + number * 24)
+                    if begin >= finish:
+                        raise ValueError("core image NT_FILE range is invalid")
+                    if begin <= pc < finish:
+                        name = os.fsdecode(paths[number])
+                        if not name or len(name) > 16384 or not Path(name).is_absolute():
+                            raise ValueError("core image NT_FILE name is invalid")
+                        matches.append(str(Path(name).resolve()))
+        if len(matches) != 1:
+            raise ValueError("core image has no unique recorded PC mapping")
+        return matches[0]
+    finally:
+        os.close(fd)
+
+
 def _require_frame_image(target, frame, program):
     # A core may load its actual image alongside the executable selected by
     # the user. Names and even file paths alone cannot bind a frame to the
@@ -798,14 +880,23 @@ def _require_frame_image(target, frame, program):
         raise ValueError("selected frame image does not match the loaded NEX manifest")
     process = target.GetProcess()
     if process.GetPluginName() in ("minidump", "elf-core"):
+        context = _contexts.get(program, {})
+        key = context.get('build_key', '')
+        if (len(key) != 64 or any(c not in '0123456789abcdef' for c in key) or
+                Path(program).parent.name != key):
+            raise ValueError("core image requires its content-addressed retained build directory")
         # LLDB can resolve a core PC through a different supplied executable
         # at the same address. In that case GetModule() names the supplied
         # image, while the core's recorded mapping still names the real one.
-        region = lldb.SBMemoryRegionInfo()
-        error = process.GetMemoryRegionInfo(frame.GetPC(), region)
-        name = region.GetName()
-        if (error.Fail() or not name or
-                str(Path(name).resolve()) != program):
+        if process.GetPluginName() == 'elf-core':
+            if not hasattr(process, 'GetCoreFile'):
+                raise ValueError("core image requires LLDB core-file metadata access")
+            name = _elf_core_mapping(str(process.GetCoreFile()), frame.GetPC())
+        else:
+            region = lldb.SBMemoryRegionInfo()
+            error = process.GetMemoryRegionInfo(frame.GetPC(), region)
+            name = region.GetName() if error.Success() else None
+        if not name or str(Path(name).resolve()) != program:
             raise ValueError("core recorded frame image does not match the loaded NEX manifest")
         if target.GetNumModules() > 10000:
             raise ValueError("core image module list exceeds limit")

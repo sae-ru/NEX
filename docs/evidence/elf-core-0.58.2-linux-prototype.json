@@ -1,0 +1,461 @@
+{
+  "ok": true,
+  "scope": "Actual Linux kernel ELF core with new Python reader/formatter and original retained manifest; matching0.58.2 compiler not yet built",
+  "matching_installed_sdk": false,
+  "original_manifest_unchanged": true,
+  "core_sha256": "056c8c660f10267437e3cc98eed10645cf6ca89cecdc094ce7f72f84e02a2564",
+  "core_bytes": 1044480,
+  "source_deleted_during_read": true,
+  "graph_unchanged_during_read": true,
+  "wrong_image_rejected": true,
+  "exact_watch": "\u042f\ud83e\udde02",
+  "reader_result": {
+    "schema": "nex.core-report/1",
+    "ok": true,
+    "executable": {
+      "path": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+      "uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD"
+    },
+    "selected_thread": 0,
+    "selected_frame": 17,
+    "thread_count": 1,
+    "threads": [
+      {
+        "index": 0,
+        "thread_id": "78",
+        "stop_reason": 5,
+        "stop_description": "SIGABRT: sent by tkill system call (sender pid=78, uid=0)"
+      }
+    ],
+    "threads_truncated": false,
+    "frame_count": 23,
+    "frames": [
+      {
+        "index": 0,
+        "native_symbol": "___lldb_unnamed_symbol_873a0",
+        "function": null,
+        "module": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+        "pc": "0xffff882974d8",
+        "file_address": "0x874d8",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 1,
+        "native_symbol": "raise",
+        "function": null,
+        "module": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+        "pc": "0xffff8824cb3c",
+        "file_address": "0x3cb3c",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 2,
+        "native_symbol": "abort",
+        "function": null,
+        "module": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+        "pc": "0xffff88237e00",
+        "file_address": "0x27e00",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 3,
+        "native_symbol": "",
+        "function": null,
+        "module": null,
+        "module_uuid": null,
+        "pc": "0xffff881e0908",
+        "file_address": "0xffff881e0908",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 4,
+        "native_symbol": "nexrt::(anonymous namespace)::invoke(unsigned int (*)(nex_ffi_api_v1 const*, unsigned long, unsigned long const*, unsigned long, unsigned long*, void*), std::span<nexrt::Value const, 18446744073709551615ul>, void*, std::function<void ()>, nexrt::ForeignCallLimits, std::shared_ptr<nexrt::foreign_detail::TypedContext>)",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06c9b64",
+        "file_address": "0x159b64",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_ffi.cpp",
+        "line": 212,
+        "column": 16
+      },
+      {
+        "index": 5,
+        "native_symbol": "nexrt::invokeForeignTyped(unsigned int (*)(nex_ffi_api_v1 const*, unsigned long, unsigned long const*, unsigned long, unsigned long*, void*), std::span<nexrt::Value const, 18446744073709551615ul>, nexrt::ForeignSignature const&, void*, std::function<void ()>, nexrt::ForeignCallLimits)",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06ca3ec",
+        "file_address": "0x15a3ec",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_ffi.cpp",
+        "line": 222,
+        "column": 193
+      },
+      {
+        "index": 6,
+        "native_symbol": "nexrt::ForeignFunction::invoke(std::span<nexrt::Value const, 18446744073709551615ul>, std::function<void ()>, nexrt::ForeignCallLimits) const",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06a2624",
+        "file_address": "0x132624",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_ffi_loader.cpp",
+        "line": 234,
+        "column": 10
+      },
+      {
+        "index": 7,
+        "native_symbol": "nexrt::invokeScopedForeign(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, std::span<nexrt::Value const, 18446744073709551615ul>, std::function<void ()>)",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068d9a4",
+        "file_address": "0x11d9a4",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_foreign.cpp",
+        "line": 123,
+        "column": 19
+      },
+      {
+        "index": 8,
+        "native_symbol": "impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'()::operator()() const",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068adb8",
+        "file_address": "0x11adb8",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/foreign_runtime.cpp",
+        "line": 39,
+        "column": 17
+      },
+      {
+        "index": 9,
+        "native_symbol": "nexrt::Handle* nexrt::hostValue<impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'()>(nexrt::SourceLocation, impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'())::'lambda'()::operator()() const",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068a8ac",
+        "file_address": "0x11a8ac",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_host.h",
+        "line": 61,
+        "column": 51
+      },
+      {
+        "index": 10,
+        "native_symbol": "decltype(fp0()) nexrt::hostOperation<nexrt::Handle* nexrt::hostValue<impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'()>(nexrt::SourceLocation, impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'())::'lambda'()>(nexrt::SourceLocation, impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'())",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068a6d4",
+        "file_address": "0x11a6d4",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_host.h",
+        "line": 54,
+        "column": 14
+      },
+      {
+        "index": 11,
+        "native_symbol": "nexrt::Handle* nexrt::hostValue<impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'()>(nexrt::SourceLocation, impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const::'lambda'())",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068a6a8",
+        "file_address": "0x11a6a8",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_host.h",
+        "line": 61,
+        "column": 10
+      },
+      {
+        "index": 12,
+        "native_symbol": "impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0::operator()() const",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068a664",
+        "file_address": "0x11a664",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/foreign_runtime.cpp",
+        "line": 33,
+        "column": 10
+      },
+      {
+        "index": 13,
+        "native_symbol": "decltype(fp0()) nexrt::hostOperation<impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0>(nexrt::SourceLocation, impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)::$_0)",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab068a460",
+        "file_address": "0x11a460",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/nex_host.h",
+        "line": 54,
+        "column": 14
+      },
+      {
+        "index": 14,
+        "native_symbol": "impl_nex_foreign_invoke(char const*, long, nexrt::Handle*, nexrt::SourceLocation)",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab0689734",
+        "file_address": "0x119734",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/foreign_runtime.cpp",
+        "line": 32,
+        "column": 10
+      },
+      {
+        "index": 15,
+        "native_symbol": "nex_foreign_invoke_at",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06897a0",
+        "file_address": "0x1197a0",
+        "source": "/build/kernel-core-probe/.nex/build/runtime-inputs/d8e24bfd2d16de76c727b7f5ee477359a9340745e4ff9eea492a185c5b8a8901/foreign_runtime.cpp",
+        "line": 49,
+        "column": 126
+      },
+      {
+        "index": 16,
+        "native_symbol": "nex_11_kernel_core_9_panic_now",
+        "function": "kernel_core::panic_now",
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab0602658",
+        "file_address": "0x92658",
+        "source": "/build/kernel-core-probe/.nex/build/source-cache/943298c9e49276b43171470d592fa8b53776bf0c6c54507c5bacfd06dff7e749/source.nex",
+        "line": 2,
+        "column": 1
+      },
+      {
+        "index": 17,
+        "native_symbol": "nex_11_kernel_core_7_observe",
+        "function": "kernel_core::observe",
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06025fc",
+        "file_address": "0x925fc",
+        "source": "/build/kernel-core-probe/.nex/build/source-anchors/be5fde200ca8da3f5c14b8f511cbae94cad0c5a1316e5f9ab6701dd005ad3f9a/source.nex",
+        "line": 4,
+        "column": 46
+      },
+      {
+        "index": 18,
+        "native_symbol": "nex_11_kernel_core_4_main",
+        "function": "kernel_core::main",
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab06024c8",
+        "file_address": "0x924c8",
+        "source": "/build/kernel-core-probe/.nex/build/source-cache/943298c9e49276b43171470d592fa8b53776bf0c6c54507c5bacfd06dff7e749/source.nex",
+        "line": 6,
+        "column": 33
+      },
+      {
+        "index": 19,
+        "native_symbol": "main",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab0602518",
+        "file_address": "0x92518",
+        "source": "/build/kernel-core-probe/.nex/build/source-cache/943298c9e49276b43171470d592fa8b53776bf0c6c54507c5bacfd06dff7e749/source.nex",
+        "line": 6,
+        "column": 1
+      },
+      {
+        "index": 20,
+        "native_symbol": "___lldb_unnamed_symbol_28450",
+        "function": null,
+        "module": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+        "pc": "0xffff882384c4",
+        "file_address": "0x284c4",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 21,
+        "native_symbol": "__libc_start_main",
+        "function": null,
+        "module": "/usr/lib/aarch64-linux-gnu/libc.so.6",
+        "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+        "pc": "0xffff88238598",
+        "file_address": "0x28598",
+        "source": null,
+        "line": null,
+        "column": null
+      },
+      {
+        "index": 22,
+        "native_symbol": "_start",
+        "function": null,
+        "module": "/build/kernel-core-probe/.nex/build/55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b/app",
+        "module_uuid": "9837A2DA-A3E2-D9A1-C7E3-6242184D60B9-5F5017DD",
+        "pc": "0xaaaab0602330",
+        "file_address": "0x92330",
+        "source": null,
+        "line": null,
+        "column": null
+      }
+    ],
+    "frames_truncated": false,
+    "stop": {
+      "process_id": "78",
+      "stop_id": "1",
+      "state": 5
+    },
+    "stop_unchanged": true,
+    "values": {
+      "schema": "nex.debug-values/1",
+      "revision": "35be2c138d6a1c732d83ad5174926b047dc8809bd77090427c5766e44d59923d",
+      "function": "kernel_core::observe",
+      "native_symbol": "nex_11_kernel_core_7_observe",
+      "file": "/build/kernel-core-probe/.nex/build/source-anchors/be5fde200ca8da3f5c14b8f511cbae94cad0c5a1316e5f9ab6701dd005ad3f9a/source.nex",
+      "line": 4,
+      "variables": [
+        {
+          "name": "value",
+          "type": "i64",
+          "value": "40"
+        },
+        {
+          "name": "text",
+          "type": "str",
+          "value": "0x0000aaaae430dad0"
+        },
+        {
+          "name": "items",
+          "type": "list<i64>",
+          "value": "0x0000aaaae430df80"
+        },
+        {
+          "name": "answer",
+          "type": "i64",
+          "value": "42"
+        }
+      ],
+      "truncated": false
+    },
+    "operation": {
+      "schema": "nex.debug-operation/1",
+      "language": "0.16",
+      "revision": "35be2c138d6a1c732d83ad5174926b047dc8809bd77090427c5766e44d59923d",
+      "source_hash": "6c334dc802b88a53d274c3dd55c14c3d84c70a1840bd7d89bfa36ad4edccd614",
+      "build_key": "55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b",
+      "function": "kernel_core::observe",
+      "stop": {
+        "process_id": "78",
+        "thread_id": "78",
+        "frame_id": 17,
+        "stop_id": "1"
+      },
+      "line": 4,
+      "column": 46,
+      "selection": "source_column",
+      "candidates": [
+        {
+          "byte_begin": 115,
+          "byte_end": 124,
+          "column": 46,
+          "file": "main.nex",
+          "kind": "statement.expression",
+          "line": 4,
+          "parent": "body",
+          "path": "body/statement/2",
+          "site": "e0ef89e053551ae2a110bf1a5e63d9d34ca777d2edabb22117aa0769ad74298a"
+        },
+        {
+          "byte_begin": 115,
+          "byte_end": 124,
+          "column": 46,
+          "file": "main.nex",
+          "kind": "expression.call",
+          "line": 4,
+          "parent": "body/statement/2",
+          "path": "body/statement/2/expression/0",
+          "site": "fa4c67f422256e139232b94b21570d53b50453a76063e0f8abfd1e0baebacb57"
+        }
+      ],
+      "truncated": false
+    },
+    "watch": {
+      "build_key": "55087cc84b01c4b2b63a2de7364ade3f4ea60b17fbcdabfedf676c20f9ae3c1b",
+      "display": "\"\u042f\ud83e\udde02\"",
+      "display_truncated": false,
+      "expression": "text + str(items[1])",
+      "frame_truncated": false,
+      "function": "kernel_core::observe",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [
+        "items",
+        "text"
+      ],
+      "read_paths": [
+        {
+          "binding": "items",
+          "kind": "value",
+          "path": [
+            1
+          ]
+        },
+        {
+          "binding": "items",
+          "kind": "shape",
+          "path": []
+        },
+        {
+          "binding": "text",
+          "kind": "value",
+          "path": []
+        }
+      ],
+      "revision": "35be2c138d6a1c732d83ad5174926b047dc8809bd77090427c5766e44d59923d",
+      "schema": "nex.expression/1",
+      "steps": 6,
+      "stop": {
+        "frame_id": 17,
+        "process_id": "78",
+        "stop_id": "1",
+        "thread_id": "78"
+      },
+      "type": "str",
+      "value": "\u042f\ud83e\udde02",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "str",
+        "schema": "nex.wire/2"
+      }
+    },
+    "operation_precision": "explicit_source_candidates",
+    "inferior_execution": false
+  },
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "retained_initial_failure": "build/core-image-0581-linux-kernel-core-probe.log",
+  "initial_failure_sha256": "ee2086e354659f260c9b0b9c10afca0bcc4e18a90dc08a9a646123ff9c39f7d0",
+  "provider_cases": 11,
+  "provider_test_log_sha256": "a403b031ca53505b1068c5c1262f30475f8ef294ae83636c47835f0a12e632af"
+}

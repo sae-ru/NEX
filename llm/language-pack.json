@@ -284,7 +284,12 @@
     "function_names_are_not_image_identity": true,
     "requires_matching_manifest": true,
     "linux_core_requires_recorded_mapping": true,
-    "ambiguous_same_path_image_rejected": true
+    "ambiguous_same_path_image_rejected": true,
+    "content_addressed_build_directory": true,
+    "recorded_mapping_sources": [
+      "minidump_memory_region",
+      "elf_nt_file"
+    ]
   },
   "native_core": {
     "schema": "nex.core-report/1",

@@ -61,7 +61,7 @@ JSON inspectCore(const CoreOptions &options){
   auto sources=m.getArray("sources");if(!sources||sources->size()!=expectedSources.size())throw Error("E_CORE_BUILD","core frozen source list differs");
   for(const auto &entry:*sources){const auto &source=object(entry);auto digest=hash(text(required(source,"projection"),16*1048576));auto found=expectedSources.find(digest);if(found==expectedSources.end()||digest!=required(source,"hash"))throw Error("E_CORE_BUILD","core frozen source projection differs");expectedSources.erase(found);}
   auto image=fs::absolute(required(m,"program")).lexically_normal();
-  if(image.parent_path()!=folder||image.filename()!="app")throw Error("E_CORE_BUILD","core inspection requires the retained executable build workspace");
+  if(image.parent_path()!=folder||image.filename()!="app"||folder.filename().string()!=required(m,"build_key"))throw Error("E_CORE_BUILD","core inspection requires its content-addressed retained executable build workspace");
   auto build=read(folder/"build.json",8*1048576);const auto &b=object(build);
   for(const auto *key:{"revision","compiler_build","profile","target"})if(required(b,key)!=required(m,key))throw Error("E_CORE_BUILD",std::string("debug/build identity differs: ")+key);
   if(required(b,"key")!=required(m,"build_key")||b.getString("kind")=="static_library")throw Error("E_CORE_BUILD","core build key/kind differs");

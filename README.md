@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain 0.58.1 / language 0.16**, under development.
+The current source is **toolchain 0.58.2 / language 0.16**, under development.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -247,3 +247,5 @@ will be built afterwards using NEX.
 Development0.58 adds `nex core CORE --manifest BUILD/debug.json --json` for read-only retained-build core inspection. See [core reports](docs/core-debugging.md); full validation remains pending.
 
 Development0.58.1 corrects Linux LLDB minidump image binding and validates minidump input headers. Current validation is isolated; the preceding Linux wrong-image failure remains recorded.
+
+Development0.58.2 reads bounded ELF NT_FILE mapping metadata and requires a retained directory named by its build key. The real Linux ELF reader prototype passes; matching compiler/full SDK validation remains pending.

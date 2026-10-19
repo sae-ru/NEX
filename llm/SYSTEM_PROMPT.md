@@ -330,3 +330,5 @@ as unavailable; select matching artifacts rather than rewriting manifest or
 revision identities. Core archives remain an independently validated workflow.
 
 For native core reports, discover `native_core` and use `nex core CORE --manifest BUILD/debug.json --json`. Keep the matching compiler/build workspace; inspect explicit operation candidates. Core reads do not resume or repair a process. A portable core capsule and unique optimized-PC attribution remain pending.
+
+For native core inspection, preserve the retained content-addressed build directory and use its matching SDK. Do not rewrite a manifest or rename the build directory to bypass image checks. A raw ELF core without unique recorded PC mapping is rejected.

@@ -458,3 +458,10 @@ macOS SDK21 и оба переносимых macOS SDK21. Проверка чу�
   needs bounded format/64-bit stream checks. The preceding Linux negative
   control failed; prototype formatter checks pass. Current full/SDK/platform
   gates remain required before root promotion.
+
+### Kernel ELF mapping: isolated0.58.2
+
+- [ ] Validate bounded NT_FILE PC mapping and content-addressed retained build
+  binding using a matching installed SDK, actual kernel ELF/minidump/Mach-O cores
+  and wrong-image controls. The reader prototype and11 provider cases pass;
+  complete current compiler and platform gates remain pending.

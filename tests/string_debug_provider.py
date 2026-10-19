@@ -4,6 +4,10 @@ import sys
 import types
 import unittest
 import time
+import os
+import struct
+import tempfile
+from pathlib import Path
 path=sys.argv.pop(1)
 sys.modules['lldb']=types.SimpleNamespace()
 spec=importlib.util.spec_from_file_location('string_range_provider',path);provider=importlib.util.module_from_spec(spec);spec.loader.exec_module(provider)
@@ -57,6 +61,60 @@ class Provider(unittest.TestCase):
     def test_changed_buffer_cannot_bypass_utf8_validation_on_selected_range(self):
         value=b'A'*70000;view=provider._TextView(value,self.budget());view.value=b'A'*69999+b'\xff'
         with self.assertRaises(ValueError):view.range(69999,1)
+
+
+class CoreImageMetadata(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='nex ELF metadata ')
+        self.addCleanup(self.temp.cleanup)
+        self.core = Path(self.temp.name) / 'process.core'
+
+    def fixture(self, ranges, endian='<', terminate=True):
+        paths = b'\0'.join(name.encode() for _, _, name in ranges) + (b'\0' if terminate else b'')
+        data = struct.pack(endian+'QQ', len(ranges), 4096)
+        data += b''.join(struct.pack(endian+'QQQ', begin, end, 0) for begin, end, _ in ranges) + paths
+        note = struct.pack(endian+'III', 5, len(data), 0x46494c45) + b'CORE\0\0\0\0'
+        note += data + bytes((-len(data)) % 4)
+        ident = b'\x7fELF\x02' + bytes([1 if endian=='<' else 2, 1]) + bytes(9)
+        header = struct.pack(endian+'16sHHIQQQIHHHHHH',ident,4,183,1,0,64,0,0,64,56,1,0,0,0)
+        entry = struct.pack(endian+'IIQQQQQQ',4,0,120,0,0,len(note),len(note),4)
+        self.core.write_bytes(header+entry+note)
+
+    def test_recorded_path_and_both_byte_orders_without_reading_an_executable(self):
+        path = '/absent/build/' + 'a'*64 + '/app'
+        for endian in ('<','>'):
+            self.fixture([(0x1000,0x2000,path),(0x3000,0x4000,'/other/module')],endian)
+            self.assertEqual(provider._elf_core_mapping(str(self.core),0x1234),path)
+            self.assertEqual(provider._elf_core_mapping(str(self.core),0x3000),'/other/module')
+
+    def test_missing_ambiguous_relative_and_invalid_ranges_are_rejected(self):
+        for ranges in [[],[(1,2,'/other')],[(0x1000,0x2000,'relative')],
+                       [(0x1000,0x2000,'/a'),(0x1000,0x3000,'/b')],[(0x2000,0x1000,'/a')]]:
+            with self.subTest(ranges=ranges),self.assertRaises(ValueError):
+                self.fixture(ranges)
+                provider._elf_core_mapping(str(self.core),0x1234)
+
+    def test_truncated_headers_notes_tables_and_names_fail_closed(self):
+        self.fixture([(0x1000,0x2000,'/app')]);valid=self.core.read_bytes()
+        invalid = [b'x',valid[:63],valid[:119],valid[:-1]]
+        altered=bytearray(valid);struct.pack_into('<H',altered,16,3);invalid.append(altered)
+        altered=bytearray(valid);struct.pack_into('<H',altered,56,4097);invalid.append(altered)
+        altered=bytearray(valid);struct.pack_into('<Q',altered,96,16*1024**2+1);invalid.append(altered)
+        altered=bytearray(valid);struct.pack_into('<Q',altered,140,65537);invalid.append(altered)
+        for data in invalid:
+            with self.subTest(bytes=len(data)),self.assertRaises(ValueError):
+                self.core.write_bytes(data);provider._elf_core_mapping(str(self.core),0x1234)
+        self.fixture([(0x1000,0x2000,'/app')],terminate=False)
+        with self.assertRaises(ValueError):provider._elf_core_mapping(str(self.core),0x1234)
+
+    def test_nonregular_symlink_and_oversized_inputs_do_not_block(self):
+        self.fixture([(0x1000,0x2000,'/app')])
+        link=self.core.with_name('link');link.symlink_to(self.core)
+        with self.assertRaises(OSError):provider._elf_core_mapping(str(link),0x1234)
+        fifo=self.core.with_name('fifo');os.mkfifo(fifo)
+        with self.assertRaises(ValueError):provider._elf_core_mapping(str(fifo),0x1234)
+        with self.core.open('wb') as stream:stream.truncate(32*1024**3+1)
+        with self.assertRaises(ValueError):provider._elf_core_mapping(str(self.core),0x1234)
 
 
 if __name__=='__main__':unittest.main()

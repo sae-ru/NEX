@@ -1,4 +1,4 @@
-# Native core reports (development 0.58.1)
+# Native core reports (development 0.58.2)
 
 This development command reads a native core with its matching retained build:
 `nex core PROCESS.core --manifest BUILD/debug.json --json`.
@@ -11,7 +11,11 @@ stop reason, bounded thread/stack summaries and the selected NEX frame. A frame
 must belong to the executable's loaded module before receiving a graph revision,
 operation candidates or typed values. Function names alone are insufficient.
 For Linux cores, the recorded PC mapping must name the retained executable and
-its loaded image must be unambiguous. Missing mapping evidence is rejected.
+its loaded image must be unambiguous. Missing mapping evidence is rejected. ELF64 uses the core's own NT_FILE note;
+LLDB does not expose its filenames through SBMemoryRegionInfo on the exercised
+Linux host. The parser bounds note bytes, entries, reads and elapsed time.
+The retained directory must be named by its64-digit build key. Keep this
+content-addressed directory intact; arbitrary directory renaming is rejected.
 LLDB can resolve a core PC through another supplied executable; checking
 SBModule equality alone does not establish the recorded image.
 
