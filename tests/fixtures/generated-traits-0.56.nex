@@ -1,0 +1,255 @@
+module generated_traits;
+trait Read {type Item;fn get(value:Self)->Read::Item<Self>;}
+struct Box<T> {value:T;}
+fn extract<T>(value:Box<T>)->T {return value.value;}
+impl boxes<T>:Read for Box<T> {type Item=T;get=extract<T>;}
+fn read<T:Read>(value:T)->Read::Item<T> {return Read<T>::get(value);}
+trait Mapper<Self<_>> {fn map<A,B>(values:Self<A>,apply:fn(A)->B)->Self<B>;}
+fn map_list<A,B>(values:list<A>,apply:fn(A)->B)->list<B> {
+ var result:list<B>=[];var i:i64=0;
+ while i<len(values){result=push(result,apply(values[i]));i=i+1;}
+ return result;
+}
+impl lists:Mapper for list {map=map_list;}
+fn convert<F<_>:Mapper,A,B>(values:F<A>,apply:fn(A)->B)->F<B> {return Mapper<F>::map<A,B>(values,apply);}
+fn generated_0()->unit {
+ let original:list<i64>=[895,-179,780,-619,-640,31,-327];let offset:i64=27;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[922,-152,807,-592,-613,58,-300]);assert(original==[895,-179,780,-619,-640,31,-327]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[922,-152,807,-592,-613,58,-300]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[922,-152,807,-592,-613,58,-300]);
+}
+test fn property_0()->unit {generated_0();}
+fn generated_1()->unit {
+ let original:list<f64>=[-182.0,490.0];let offset:f64=-6.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[-188.0,484.0]);assert(original==[-182.0,490.0]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[-188.0,484.0]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[-188.0,484.0]);
+}
+test fn property_1()->unit {generated_1();}
+fn generated_2()->unit {
+ let original:list<str>=["","🧠","A\u0000λ"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["λ","🧠λ","A\u0000λλ"]);assert(original==["","🧠","A\u0000λ"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["λ","🧠λ","A\u0000λλ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["λ","🧠λ","A\u0000λλ"]);
+}
+test fn property_2()->unit {generated_2();}
+fn generated_3()->unit {
+ let original:list<i64>=[97,682];let offset:i64=-86;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[11,596]);assert(original==[97,682]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[11,596]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[11,596]);
+}
+test fn property_3()->unit {generated_3();}
+fn generated_4()->unit {
+ let original:list<f64>=[359.0,-39.0,92.5,-256.5,41.0,251.5,236.5];let offset:f64=-35.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[324.0,-74.0,57.5,-291.5,6.0,216.5,201.5]);assert(original==[359.0,-39.0,92.5,-256.5,41.0,251.5,236.5]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[324.0,-74.0,57.5,-291.5,6.0,216.5,201.5]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[324.0,-74.0,57.5,-291.5,6.0,216.5,201.5]);
+}
+test fn property_4()->unit {generated_4();}
+fn generated_5()->unit {
+ let original:list<str>=["","é","λ","é","","A"];let offset:str="🧠";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["🧠","é🧠","λ🧠","é🧠","🧠","A🧠"]);assert(original==["","é","λ","é","","A"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["🧠","é🧠","λ🧠","é🧠","🧠","A🧠"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["🧠","é🧠","λ🧠","é🧠","🧠","A🧠"]);
+}
+test fn property_5()->unit {generated_5();}
+fn generated_6()->unit {
+ let original:list<i64>=[];let offset:i64=99;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[]);assert(original==[]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[]);
+}
+test fn property_6()->unit {generated_6();}
+fn generated_7()->unit {
+ let original:list<f64>=[369.0,-285.0,-81.0,209.5,-99.5,-457.5,153.0,-397.5];let offset:f64=-42.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[327.0,-327.0,-123.0,167.5,-141.5,-499.5,111.0,-439.5]);assert(original==[369.0,-285.0,-81.0,209.5,-99.5,-457.5,153.0,-397.5]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[327.0,-327.0,-123.0,167.5,-141.5,-499.5,111.0,-439.5]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[327.0,-327.0,-123.0,167.5,-141.5,-499.5,111.0,-439.5]);
+}
+test fn property_7()->unit {generated_7();}
+fn generated_8()->unit {
+ let original:list<str>=["🌍"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["🌍λ"]);assert(original==["🌍"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["🌍λ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["🌍λ"]);
+}
+test fn property_8()->unit {generated_8();}
+fn generated_9()->unit {
+ let original:list<i64>=[681,67,2,496,104,-920,-12];let offset:i64=33;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[714,100,35,529,137,-887,21]);assert(original==[681,67,2,496,104,-920,-12]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[714,100,35,529,137,-887,21]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[714,100,35,529,137,-887,21]);
+}
+test fn property_9()->unit {generated_9();}
+fn generated_10()->unit {
+ let original:list<f64>=[-458.0];let offset:f64=42.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[-416.0]);assert(original==[-458.0]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[-416.0]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[-416.0]);
+}
+test fn property_10()->unit {generated_10();}
+fn generated_11()->unit {
+ let original:list<str>=["🌍"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["🌍λ"]);assert(original==["🌍"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["🌍λ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["🌍λ"]);
+}
+test fn property_11()->unit {generated_11();}
+fn generated_12()->unit {
+ let original:list<i64>=[-906,-379,-359];let offset:i64=95;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[-811,-284,-264]);assert(original==[-906,-379,-359]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[-811,-284,-264]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[-811,-284,-264]);
+}
+test fn property_12()->unit {generated_12();}
+fn generated_13()->unit {
+ let original:list<f64>=[];let offset:f64=-49.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[]);assert(original==[]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[]);
+}
+test fn property_13()->unit {generated_13();}
+fn generated_14()->unit {
+ let original:list<str>=["","","🌍","A\u0000λ","A\u0000λ"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["λ","λ","🌍λ","A\u0000λλ","A\u0000λλ"]);assert(original==["","","🌍","A\u0000λ","A\u0000λ"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["λ","λ","🌍λ","A\u0000λλ","A\u0000λλ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["λ","λ","🌍λ","A\u0000λλ","A\u0000λλ"]);
+}
+test fn property_14()->unit {generated_14();}
+fn generated_15()->unit {
+ let original:list<i64>=[-438,181,683,798,-359,406,-178];let offset:i64=10;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[-428,191,693,808,-349,416,-168]);assert(original==[-438,181,683,798,-359,406,-178]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[-428,191,693,808,-349,416,-168]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[-428,191,693,808,-349,416,-168]);
+}
+test fn property_15()->unit {generated_15();}
+fn generated_16()->unit {
+ let original:list<f64>=[132.5,260.5,-154.0,-366.0,-99.5];let offset:f64=43.0;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[175.5,303.5,-111.0,-323.0,-56.5]);assert(original==[132.5,260.5,-154.0,-366.0,-99.5]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[175.5,303.5,-111.0,-323.0,-56.5]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[175.5,303.5,-111.0,-323.0,-56.5]);
+}
+test fn property_16()->unit {generated_16();}
+fn generated_17()->unit {
+ let original:list<str>=["🌍","A","🌍"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["🌍λ","Aλ","🌍λ"]);assert(original==["🌍","A","🌍"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["🌍λ","Aλ","🌍λ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["🌍λ","Aλ","🌍λ"]);
+}
+test fn property_17()->unit {generated_17();}
+fn generated_18()->unit {
+ let original:list<i64>=[-316,19,-923];let offset:i64=32;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[-284,51,-891]);assert(original==[-316,19,-923]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[-284,51,-891]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[-284,51,-891]);
+}
+test fn property_18()->unit {generated_18();}
+fn generated_19()->unit {
+ let original:list<f64>=[75.5,179.0,-166.5,226.0];let offset:f64=43.5;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[119.0,222.5,-123.0,269.5]);assert(original==[75.5,179.0,-166.5,226.0]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[119.0,222.5,-123.0,269.5]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[119.0,222.5,-123.0,269.5]);
+}
+test fn property_19()->unit {generated_19();}
+fn generated_20()->unit {
+ let original:list<str>=["é","","A","","é","🧠"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["éλ","λ","Aλ","λ","éλ","🧠λ"]);assert(original==["é","","A","","é","🧠"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["éλ","λ","Aλ","λ","éλ","🧠λ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["éλ","λ","Aλ","λ","éλ","🧠λ"]);
+}
+test fn property_20()->unit {generated_20();}
+fn generated_21()->unit {
+ let original:list<i64>=[-911,-804,795,51,-621,948,59,-404];let offset:i64=28;
+ let changed:list<i64>=convert<list,i64,i64>(original,fn(value:i64)->i64{return read(Box<i64>(value)) + offset;});
+ assert(changed==[-883,-776,823,79,-593,976,87,-376]);assert(original==[-911,-804,795,51,-621,948,59,-404]);
+ let nested:Box<Box<list<i64>>>=Box<Box<list<i64>>>(Box<list<i64>>(changed));
+ assert(read(read(nested))==[-883,-776,823,79,-593,976,87,-376]);
+ let getter:fn(Box<list<i64>>)->list<i64>=Read<Box<list<i64>>>::get;
+ assert(getter(Box<list<i64>>(changed))==[-883,-776,823,79,-593,976,87,-376]);
+}
+test fn property_21()->unit {generated_21();}
+fn generated_22()->unit {
+ let original:list<f64>=[274.0,-281.5,383.5,-370.5,395.0,-14.0,-146.5,19.0];let offset:f64=-36.5;
+ let changed:list<f64>=convert<list,f64,f64>(original,fn(value:f64)->f64{return read(Box<f64>(value)) + offset;});
+ assert(changed==[237.5,-318.0,347.0,-407.0,358.5,-50.5,-183.0,-17.5]);assert(original==[274.0,-281.5,383.5,-370.5,395.0,-14.0,-146.5,19.0]);
+ let nested:Box<Box<list<f64>>>=Box<Box<list<f64>>>(Box<list<f64>>(changed));
+ assert(read(read(nested))==[237.5,-318.0,347.0,-407.0,358.5,-50.5,-183.0,-17.5]);
+ let getter:fn(Box<list<f64>>)->list<f64>=Read<Box<list<f64>>>::get;
+ assert(getter(Box<list<f64>>(changed))==[237.5,-318.0,347.0,-407.0,358.5,-50.5,-183.0,-17.5]);
+}
+test fn property_22()->unit {generated_22();}
+fn generated_23()->unit {
+ let original:list<str>=["A"];let offset:str="λ";
+ let changed:list<str>=convert<list,str,str>(original,fn(value:str)->str{return read(Box<str>(value)) + offset;});
+ assert(changed==["Aλ"]);assert(original==["A"]);
+ let nested:Box<Box<list<str>>>=Box<Box<list<str>>>(Box<list<str>>(changed));
+ assert(read(read(nested))==["Aλ"]);
+ let getter:fn(Box<list<str>>)->list<str>=Read<Box<list<str>>>::get;
+ assert(getter(Box<list<str>>(changed))==["Aλ"]);
+}
+test fn property_23()->unit {generated_23();}
+fn main()->unit!{io} {generated_0();generated_1();generated_2();generated_3();generated_4();generated_5();generated_6();generated_7();generated_8();generated_9();generated_10();generated_11();generated_12();generated_13();generated_14();generated_15();generated_16();generated_17();generated_18();generated_19();generated_20();generated_21();generated_22();generated_23();print("24 generated contracts");}

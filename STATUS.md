@@ -1,5 +1,21 @@
 # NEX implementation status
 
+## Toolchain 0.56.1 distribution workflow correction: acceptance pending
+
+Both portable SDK validators still required the historical twelve-phase
+workflow, so a current successful twenty-phase workflow would be rejected.
+The matching SDK acceptance module now supplies the phase contract and validates
+terminal reports. The workflow also checks its action registration, preventing
+an omitted action from appearing complete. Failed commands remain rejected;
+expected rejected programs/traps retain their nonzero exit codes.
+
+All ten archive/distribution contract cases pass, including actual historical
+phase names, missing current phases, duplicate/order errors and incomplete
+commands. Source language 0.16, runtime ABI and canonical forms are unchanged.
+The current compiler/full regression, installed SDK and relocated/restored
+portable bundles still need their own checks. Earlier evidence below does not
+verify this patch. Complete PLAN work remains open.
+
 ## Isolated0.56 editor installation integration: acceptance pending
 
 Toolchain0.56 keeps source0.16 and its canonical forms unchanged. CMake installs
@@ -24,7 +40,7 @@ live suites and all19 source-free SDK phases/307 commands. Its host controller
 was interrupted; the already running source container completed successfully,
 then the unchanged source-free helper completed. The
 [Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records compiler
-hashes, platform skips and resource equality. macOS full66 is still running.
+hashes, platform skips and resource equality. macOS full66 also passes (1621.33s).
 
 ## Editor extension prototype: actual installed VSIX check passed
 
@@ -1379,3 +1395,20 @@ task/proof acceptance intent or archived fixture was rewritten.
 7. Package portable SDKs, extend the verified Linux chain to broader distributions and physical x86-64 hardware, and implement/verify Windows, mobile SDK targets and native UI/GPU adapters. Finish external dependency capture and compatibility/migration procedures. macOS x86_64 cross-build artifacts are checked on ARM64; macOS Intel execution and Linux x86-64 live debugging remain unverified.
 
 Next implementation steps include finer incremental compilation, broader profiling, optimized operation attribution/string chunks and large-root paging and the remaining target platforms, while maintaining the typed API/browser chain. Keep `describe`, specification, interpreter, both backends and tests synchronized as features are added. The full original objective remains open.
+
+## Additional scoped 0.56 acceptance
+
+The unchanged frozen 0.56.0/source0.16 compiler passes all20 installed macOS SDK
+phases/310 commands (456.164s), with139 indexed resources and seven editor assets
+matching its frozen source. Actual installed IDE acceptance is separately scoped.
+See `docs/evidence/editor-integration-0.56.0-sdk.json`.
+
+Twenty-four deterministic generated trait/constructor/closure cases pass the
+reference main, native main and all24 native/TypeScript tests. Independent Python
+expectations cover i64, exact finite f64, Unicode/NUL strings, empty lists,
+immutable aliases, nested associated types and named method references. The
+source fixture and exact seed/results are retained in
+`docs/evidence/generated-traits-0.56.0.json`. An initial external harness result-key
+error is recorded; no compiler change or weakened assertion was needed.
+These checks do not replace the still-running full67/platform matrix or verify
+changed0.56.1 distribution helpers.

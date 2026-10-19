@@ -8,7 +8,15 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-This isolated development tree is **toolchain 0.56.0 / language 0.16**.
+This separate **toolchain 0.56.1 / language 0.16** patch repairs portable SDK
+acceptance: macOS/Linux distribution validators now use the matching SDK's
+complete twenty-phase contract. Old twelve-phase reports, missing editor/trait
+checks, duplicate/reordered phases and failed commands are rejected. All ten
+archive/distribution contract tests pass. Current compiler, installed SDK and
+actual moved/restored bundle acceptance remain pending; the following 0.56.0
+results are separately scoped.
+
+The preceding frozen editor tree is **toolchain 0.56.0 / language 0.16**.
 It installs VS Code extension sources, an editor guide and capability metadata.
 The current compiler passes the editor suite, including ten Node contract cases.
 An installed VSIX in a separate VS Code 1.142.0/macOS ARM64 profile passes the
@@ -26,7 +34,7 @@ wider IDE/platform targets remain pending.
 The preceding 0.55/source 0.16 trait/library API source passes all 66 Linux ARM64
 groups, twelve live debugger suites and its 19-phase source-free SDK workflow
 (307 commands, no source checkout or network). Its installed macOS SDK19 also
-passes307 commands; the interrupted macOS full regression is being repeated.
+passes307 commands; the resumed macOS full66 also passes (1621.33s).
 [Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records exact
 scope. These results do not verify changed 0.56 sources. The complete language
 and development-chain PLAN remains open.

@@ -1,0 +1,35 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T10:30:49.775817+00:00",
+  "milestone": "portable_sdk_phase_contract_correction",
+  "status": "focused_pass_full_and_relocation_acceptance_pending",
+  "toolchain": "0.56.1",
+  "source_language": "0.16",
+  "compiler_sha256": "694c0abfec583f008e17a3bc21588dbd09ee3ca015a01da94de37ab1a45accf6",
+  "focused": {
+    "groups": 3,
+    "python_cases": 15,
+    "node_contract_cases": 10,
+    "seconds": 12.05,
+    "terminal_exit_code": 0,
+    "log": "build/sdk-distribution-0561-focused.log",
+    "log_sha256": "f0a97db49ef3c45b74553adde02c22f465bd414b09fd0ab128dc50ba497aa80d",
+    "last_test_sha256": "34fbde62f2949dfbbdcc93b7d924f8be2e145282ea1d14cf9d2cccf0db856cd1"
+  },
+  "corrected_files": [
+    "tools/sdk_acceptance.py",
+    "tools/macos/bundle.py",
+    "tools/linux/bundle.py"
+  ],
+  "previous_distribution_contract_phases": 12,
+  "current_contract_phases": 20,
+  "source_canonical_and_runtime_unchanged": true,
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "remaining": [
+    "Current full67 macOS/Linux regression",
+    "Complete20 installed SDK workflow",
+    "Actual relocated and archive-restored macOS/Linux development SDK acceptance",
+    "Release/sanitizers and remaining platform/language/development PLAN"
+  ]
+}

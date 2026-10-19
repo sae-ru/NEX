@@ -13,10 +13,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import sdk_archive
-
-PHASES = ['discovery', 'new-project', 'reviewed-failure', 'graph-repair-import',
-          'backend-agreement', 'binary-values', 'text-files', 'profile',
-          'archive-debug-replay-export', 'scalar-proof', 'authenticated-storage', 'browser']
+import sdk_acceptance
 
 
 def inside(path, root):
@@ -141,9 +138,8 @@ raise RuntimeError('SDK remained writable')
                 command.append('--live')
             run(label+'-workflow', command, environment)
             accepted = json.loads((target/'report.json').read_text())
-            if (not accepted['ok'] or [p['name'] for p in accepted['phases']] != PHASES or
-                    any(p['status'] != 'passed' for p in accepted['phases']) or
-                    accepted['compiler_sha256'] != sdk_archive.digest(prefix/'bin/nex')):
+            sdk_acceptance.validate_completed_report(accepted)
+            if accepted['compiler_sha256'] != sdk_archive.digest(prefix/'bin/nex'):
                 raise RuntimeError('maintained SDK acceptance differs from the inventoried compiler')
             for field in ('native_compiler', 'native_archiver', 'native_debug_packager', 'sdk_manifest',
                           'native_sqlite_library', 'native_openssl_ssl', 'native_openssl_crypto', 'runtime'):
@@ -152,7 +148,7 @@ raise RuntimeError('SDK remained writable')
             sdk_archive.inventory(prefix, allow_python_cache=False)
             copied = output/(label+'-acceptance.json'); shutil.copyfile(target/'report.json', copied)
             return {'ok': True, 'report': str(copied), 'working_report': str(target/'report.json'),
-                    'phases': len(PHASES), 'seconds': accepted['seconds'], 'live_debugger': args.live,
+                    'phases': len(sdk_acceptance.ACCEPTANCE_PHASES), 'seconds': accepted['seconds'], 'live_debugger': args.live,
                     'browser_build': True, 'compiler_sha256': accepted['compiler_sha256'],
                     'configured_read_roots_denied': True, 'sdk_write_denied': True,
                     'negative_read_controls': len(probes)}

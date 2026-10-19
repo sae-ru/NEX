@@ -16,6 +16,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import sdk_archive
+import sdk_acceptance
 
 
 def digest(path):
@@ -78,12 +79,7 @@ def verify(sdk, output):
                    '--output', output / 'workflow', '--forbid-source', '/src', '--browser']
         run(command)
         accepted = json.loads((output / 'workflow/report.json').read_text())
-        expected = ['discovery', 'new-project', 'reviewed-failure', 'graph-repair-import',
-                    'backend-agreement', 'binary-values', 'text-files', 'profile', 'archive-debug-replay-export',
-                    'scalar-proof', 'authenticated-storage', 'browser']
-        if not accepted['ok'] or [phase['name'] for phase in accepted['phases']] != expected or any(
-                phase['status'] != 'passed' for phase in accepted['phases']):
-            raise RuntimeError('maintained SDK workflow did not pass every required phase')
+        sdk_acceptance.validate_completed_report(accepted)
         server = Path(accepted['evidence']['authenticated_storage']['executable'])
         report['server_dependencies'] = dependencies(server)
         report.update(ok=True, compiler_sha256=digest(sdk / 'bin/nex'),

@@ -20,9 +20,34 @@ import urllib.error
 import urllib.request
 
 
+# Distribution validators import the contract from their matching SDK. Keep
+# action registration checked against it so a missing phase cannot look green.
+ACCEPTANCE_PHASES = (
+    'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
+    'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
+    'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
+    'string-ranges', 'binary-values', 'foreign-boundary', 'text-files', 'profile',
+    'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'authenticated-storage', 'browser')
+
+
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def validate_completed_report(report):
+    require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
+            'SDK acceptance did not complete successfully')
+    phases = report.get('phases', [])
+    require(tuple(phase.get('name') for phase in phases) == ACCEPTANCE_PHASES and
+            all(phase.get('status') == 'passed' for phase in phases),
+            'SDK acceptance differs from the complete workflow phase contract')
+    commands = report.get('commands', [])
+    # Expected rejections and runtime traps have nonzero exit codes. Their
+    # recorded status comes from the acceptance action's expected outcome.
+    require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
+            'SDK acceptance contains an incomplete or failed command')
 
 
 class DAP:
@@ -134,7 +159,8 @@ def main():
     logs.mkdir()
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
     report = {'schema': 'nex.sdk-acceptance/1', 'ok': False, 'sdk': str(sdk),
-              'output': str(root), 'phases': [], 'commands': [], 'evidence': {}}
+              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES),
+              'phases': [], 'commands': [], 'evidence': {}}
     started = time.monotonic()
 
     def save():
@@ -1736,7 +1762,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         report['evidence']['browser_build'] = args.browser
 
     try:
-        for name, action in [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
+        actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
@@ -1744,10 +1770,15 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('binary-values', binary_values),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
-                ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]:
+                ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]
+        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,
+                'SDK action registration differs from its workflow phase contract')
+        for name, action in actions:
             phase(name, action)
         report['ok'] = True
+        validate_completed_report(report)
     except BaseException as error:
+        report['ok'] = False
         report['error'] = type(error).__name__ + ': ' + str(error)
         if report['phases'] and report['phases'][-1]['status'] == 'running':
             report['phases'][-1]['status'] = 'failed'

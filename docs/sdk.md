@@ -383,3 +383,19 @@ frozen native debug session and verify byte-checked original-file mapping.
 This is not a VS Code extension-host run. Actual installed VSIX/IDE acceptance
 is recorded separately. See editor.md for explicit packaging and installation;
 NEX never publishes or installs the extension automatically.
+
+## Matching workflow contract (toolchain 0.56.1)
+
+`tools/sdk_acceptance.py` exports the ordered twenty-phase contract and a
+terminal-report validator. macOS and Linux portable bundle checks import that
+matching installed helper, including editor tools, graph recovery/version/error
+checks, graph queries, string ranges and source traits. The workflow checks its
+action registration before running. A historical twelve-phase report cannot
+satisfy current acceptance. Missing/duplicate/reordered/incomplete phases or
+failed commands fail the contract. Expected rejected programs and native traps
+can have nonzero exit codes; their explicit expected outcomes must pass.
+
+Source language 0.16 and runtime/canonical formats are unchanged. This repair
+has focused archive/contract checks; actual current relocated/restored SDK
+acceptance is recorded separately in STATUS.md. Retain matching historical SDK
+scripts with their old archives instead of applying a new contract retroactively.

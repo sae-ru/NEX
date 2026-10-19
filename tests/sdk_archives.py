@@ -13,6 +13,40 @@ import unittest
 sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('sdk_archive', Path(__file__).resolve().parents[1]/'tools/sdk_archive.py')
 archive = importlib.util.module_from_spec(spec); spec.loader.exec_module(archive)
+spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).resolve().parents[1]/'tools/sdk_acceptance.py')
+acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
+
+
+class DistributionWorkflow(unittest.TestCase):
+    def report(self):
+        return {'schema': 'nex.sdk-acceptance/1', 'ok': True,
+                'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
+                'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
+
+    def test_distribution_requires_current_complete_workflow(self):
+        acceptance.validate_completed_report(self.report())
+        old = self.report()
+        old['phases'] = [phase for phase in old['phases'] if phase['name'] in (
+            'discovery', 'new-project', 'reviewed-failure', 'graph-repair-import',
+            'backend-agreement', 'binary-values', 'text-files', 'profile',
+            'archive-debug-replay-export', 'scalar-proof', 'authenticated-storage', 'browser')]
+        self.assertEqual(len(old['phases']), 12)
+        with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
+        for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries'):
+            missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
+            with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_failed_duplicate_reordered_and_incomplete_workflows_are_rejected(self):
+        cases=[]
+        changed=self.report();changed['ok']=False;cases.append(changed)
+        changed=self.report();changed['schema']='other';cases.append(changed)
+        changed=self.report();changed['phases'][1]=dict(changed['phases'][0]);cases.append(changed)
+        changed=self.report();changed['phases'].reverse();cases.append(changed)
+        changed=self.report();changed['phases'][-1]['status']='running';cases.append(changed)
+        changed=self.report();changed['commands'][0]['status']='failed';cases.append(changed)
+        changed=self.report();changed['commands']=[];cases.append(changed)
+        for changed in cases:
+            with self.subTest(report=changed), self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
 
 
 class Archives(unittest.TestCase):
