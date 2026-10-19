@@ -1,5 +1,23 @@
 # NEX implementation status
 
+## Toolchain 0.57: native indexed pages under development
+
+An isolated build adds lazy native list/byte children beyond the 32-element
+text preview. The matching NEX bridge bounds every native variables request to
+1000 children, validates signed32 page arguments, preserves source offsets,
+handles named-only indexed-root requests and rejects handles after execution.
+Page metadata has a separate schema; native previews are not exact wire values.
+
+The initial resource prototype passed five transport cases and a real macOS
+ARM64 list32768/bytes4MiB scenario. The unchanged previous adapter failed the
+late-index check. A subsequent filter check caught LLDB returning indexed
+children to a named-only request; the bridge correction passes that check.
+The actual 0.57 compiler is built. Current full68, installed SDK21, Linux and
+actual editor page checks remain pending. The preceding root604 full67 and
+both root604/root606 SDK20 results retain their separate source/compiler scope.
+The current root606 full67 run is still in progress. Source stays language0.16;
+historical stopped values require their matching saved SDKs.
+
 ## Toolchain0.56.1: scoped distribution checks passed; root validation pending
 
 The [aggregate evidence](docs/evidence/sdk-distribution-0.56.1.json) links exact

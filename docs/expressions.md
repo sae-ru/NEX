@@ -214,9 +214,13 @@ The DAP bridge bounds packets to 8 MiB, outstanding requests to 256 and live
 references to 100,000 per stop. These are operational limits, not successful
 partial evaluations or proofs about arbitrary source execution.
 
-Operation IDs, source-level crash/core analysis, string chunk reads, large-root paging,
-browser NEX source-map watches, additional platforms and an installed editor
-extension remain open development work.
+Toolchain 0.57 adds bounded native indexed pages for list/byte roots through
+the matching NEX DAP bridge; see `debugging.md`. They remain native previews,
+separate from the exact expression results and partial frames described here.
+Direct expansion of large named/string roots, exact optimized-PC/core analysis,
+browser NEX source-map watches and additional host/layout combinations remain
+open development work. String scalar windows and the installed editor workflow
+retain their separately recorded checks.
 
 ```sh
 python3 tests/expressions.py build/nex

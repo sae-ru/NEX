@@ -412,3 +412,16 @@ reason. Counts and indices use Unicode scalars. Existing full/value/shape forms
 remain accepted. The compiler validates type paths, metadata, lengths and alias
 overlaps; [the guide](string-debug.md) describes separate physical scan bounds
 and trust. Old compiler/manifests retain their own matching build requirement.
+
+## Native indexed debugger pages (toolchain 0.57)
+
+The matching NEX stdio DAP bridge exposes indexed children beyond the native
+32-element text preview for list/byte roots. Native variables replies add
+`body.nex.native_page` with `start`, `requested_count`, `returned_count` and
+`limit:1000`; the schema is `llm/dap-native-page.schema.json`. Omitted/zero count
+and larger requested counts return at most1000 children. Negative, Boolean or
+non-signed32 page arguments are rejected. The advertised count is bounded to
+2147483647 children; a page start outside the actual collection returns empty.
+Native pages retain ordinary preview semantics, not exact wire/frame values.
+Execution or a new stop expires references; a late response cannot revive them.
+The debug guide describes direct-LLDB and remaining named/string boundaries.

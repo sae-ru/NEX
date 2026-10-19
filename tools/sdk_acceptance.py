@@ -26,7 +26,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'native-indexed-pages', 'foreign-boundary', 'text-files', 'profile',
     'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser')
 
@@ -1446,6 +1446,67 @@ fn main()->unit!{io}{observe(unwrap(bytes([0,255,128,65])));}
                 client.close()
         report['evidence']['binary_language'] = evidence
 
+    def native_pages():
+        descriptor=cli('describe')
+        require('paged_native_indexed_roots' in descriptor['debug_features'] and
+                descriptor['native_debug_pages']['page_items']==1000,
+                'SDK lacks bounded native indexed pages')
+        directory=root/'native-indexed-pages';directory.mkdir()
+        source=directory/'main.nex'
+        source.write_bytes((resources/'examples/debugging/pages.nex').read_bytes())
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':source.name}))
+        session=cli('debug','--kind','nex-dap',cwd=directory)
+        evidence={'native_descriptor':True,'live_dap_pages':False,'page_limit':1000}
+        if args.live:
+            require(session['nex_adapter']['available'],'installed SDK lacks its native DAP backend')
+            manifest=json.loads(Path(session['manifest']).read_text())
+            projected=manifest['sources'][0]['projection']
+            line=next(i+1 for i,text in enumerate(source.read_text().splitlines()) if 'NATIVE_PAGE_STOP' in text)
+            client=DAP(session['adapter_command'],directory,environment)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True,'supportsVariablePaging':True})
+                pending=client.send('launch',dict(session['launch'],disableASLR=False));client.event('initialized')
+                placed=client.request('setBreakpoints',{'source':{'path':projected},'breakpoints':[{'line':line}]})
+                require(placed['breakpoints'][0]['verified'],'native pages breakpoint was not verified')
+                client.request('configurationDone');client.response(pending)
+                stop=client.event('stopped');frame=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames'][0]['id']
+                scopes=client.request('scopes',{'frameId':frame})['scopes'];roots={}
+                for scope in scopes:
+                    if not scope.get('expensive'):
+                        roots.update({v['name']:v for v in client.request('variables',{'variablesReference':scope['variablesReference']})['variables']})
+                before=client.request('evaluate',{'expression':'len(items)+len(data)','frameId':frame,'context':'watch'})
+                require(before['nex']['value']=='4227072','native root lengths differ before paging')
+                pages={}
+                for name,total,expected in [('items',32768,['40','42']),('data',4194304,['120','255'])]:
+                    reference=roots[name]['variablesReference']
+                    require(roots[name]['indexedVariables']==total,'native root lost its indexed child count')
+                    tail=client.request('variables',{'variablesReference':reference,'filter':'indexed','start':total-2,'count':2})
+                    require([(v['name'],v['value']) for v in tail['variables']]==[(f'[{total-2}]',expected[0]),(f'[{total-1}]',expected[1])],
+                        'native indexed tail differs')
+                    require(not client.request('variables',{'variablesReference':reference,'filter':'named','count':2})['variables'],
+                        'native indexed root returned named children')
+                    default=client.request('variables',{'variablesReference':reference})
+                    large=client.request('variables',{'variablesReference':reference,'start':1000,'count':1000000})
+                    require(len(default['variables'])==len(large['variables'])==1000 and large['variables'][0]['name']=='[1000]',
+                        'native page request exceeded or lost its bound/offset')
+                    require(large['nex']['native_page']=={'start':1000,'requested_count':1000000,'returned_count':1000,'limit':1000},
+                        'native page metadata differs')
+                    pages[name]={'indexed_children':total,'tail':[(v['name'],v['value']) for v in tail['variables']],
+                        'default_count':len(default['variables']),'large_request_count':len(large['variables'])}
+                first=client.request('evaluate',{'expression':'items[len(items)-1]+data[len(data)-1]','frameId':frame,'context':'watch'})
+                second=client.request('evaluate',{'expression':'len(data)','frameId':frame,'context':'watch'})
+                require(first['nex']['value']=='297' and second['nex']['stop']==first['nex']['stop']==before['nex']['stop'],
+                    'native paging changed the stopped watch state')
+                client.request('continue',{'threadId':stop['threadId']});require(client.event('exited')['exitCode']==0,'native page application failed')
+                for name in ('items','data'):
+                    try:client.request('variables',{'variablesReference':roots[name]['variablesReference'],'count':1})
+                    except RuntimeError as error:require('unknown or stale variables reference' in str(error),'native page failed for a different reason after execution')
+                    else:raise RuntimeError('native page handle survived execution')
+                evidence.update(live_dap_pages=True,pages=pages,unchanged_watch_stop=first['nex']['stop'],native_exit_code=0,stale_handles_rejected=True)
+            finally:client.close()
+        report['evidence']['native_indexed_pages']=evidence
+
     def text_files():
         directory = root / 'text-files'
         directory.mkdir()
@@ -1786,7 +1847,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
-                ('binary-values', binary_values),
+                ('binary-values', binary_values), ('native-indexed-pages', native_pages),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]

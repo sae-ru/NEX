@@ -68,5 +68,36 @@ class Transport(harness.ToolchainCase):
             timer.cancel()
             if process.poll() is None:process.terminate();process.communicate(timeout=10)
 
+    def test_native_pages_bound_work_keep_requested_offsets_and_expire_on_resume(self):
+        bridge=self.bridge()
+        bridge.server({'seq':1,'type':'response','command':'variables','request_seq':0,'success':True,'body':{'variables':[{'name':'large','type':'bytes','variablesReference':900,'indexedVariables':4194304}]}})
+        reference=self.messages(self.output)[0]['body']['variables'][0]['variablesReference']
+        self.assertNotEqual(reference,900)
+        bridge.client({'seq':99,'type':'request','command':'variables','arguments':{'variablesReference':reference,'filter':'named','count':2}})
+        self.assertEqual(self.messages(self.output)[-1]['body']['variables'],[])
+        self.assertEqual(self.backend.stdin.getvalue(),b'')
+        for sequence,count in enumerate([0,2,1000000],1):
+            bridge.client({'seq':sequence,'type':'request','command':'variables','arguments':{'variablesReference':reference,'start':4194302,'count':count}})
+            forwarded=self.messages(self.backend.stdin)[-1]
+            self.assertEqual(forwarded['arguments']['start'],4194302)
+            self.assertEqual(forwarded['arguments']['variablesReference'],900)
+            self.assertEqual(forwarded['arguments']['count'],2 if count==2 else 1000)
+            bridge.server({'seq':sequence+10,'type':'response','command':'variables','request_seq':sequence,'success':True,'body':{'variables':[{'name':'[4194303]','value':'255','variablesReference':0}]}})
+            response=self.messages(self.output)[-1]
+            self.assertEqual(response['body']['nex']['native_page'],{'start':4194302,'requested_count':count,'returned_count':1,'limit':1000})
+        bridge.server({'seq':100,'type':'event','event':'continued','body':{'threadId':1}})
+        bridge.client({'seq':4,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+
+    def test_native_page_rejects_invalid_bounds_and_backend_overflow(self):
+        bridge=self.bridge();reference=bridge.allocate({'backend':77})
+        for sequence,change in enumerate([{'start':True},{'count':False},{'start':-1},{'count':-1},{'start':2147483648},{'count':2147483648},{'variablesReference':True},{'filter':'invalid'}],1):
+            bridge.client({'seq':sequence,'type':'request','command':'variables','arguments':{'variablesReference':reference,**change}})
+            self.assertFalse(self.messages(self.output)[-1]['success'])
+        self.assertEqual(self.backend.stdin.getvalue(),b'')
+        bridge.client({'seq':50,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
+        bridge.server({'seq':99,'type':'response','request_seq':50,'command':'variables','success':True,'body':{'variables':[{'variablesReference':0}]*1001}})
+        response=self.messages(self.output)[-1];self.assertFalse(response['success']);self.assertIn('page limit',response['message'])
+
 
 if __name__=='__main__':unittest.main(verbosity=2)

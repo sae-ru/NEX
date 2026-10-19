@@ -156,8 +156,12 @@ class Children:
             self.kind = _member(data, "kind").GetValueAsUnsigned()
             if self.kind in (1, 2, 3, 4, 5, 6, 7):
                 self.data = data
-                self.items = _ExactBytes(data) if self.kind == 7 else _vector(data)
-                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5, 6))
+                self.items = _ExactBytes(data) if self.kind == 7 else _ExactVector(data) if self.kind == 1 else _vector(data)
+                size = self.items.GetNumChildren()
+                # Indexed roots remain lazy: lldb-dap can request a page beyond
+                # the bounded text preview without constructing prior children.
+                # DAP represents counts and indices as signed32 integers.
+                self.count = min(size, 2147483647) if self.kind in (1, 7) else min(size, MAX_ITEMS) + (self.kind in (4, 5, 6))
         except Exception:
             self.count = 0
         return False  # Recompute after every stop; do not retain stale values.
@@ -188,6 +192,14 @@ class Children:
             return None
 
     def get_child_index(self, name):
+        if self.kind in (1, 7):
+            if not isinstance(name, str) or not name.startswith('[') or not name.endswith(']'):
+                return lldb.UINT32_MAX
+            digits = name[1:-1]
+            if not 1 <= len(digits) <= 10 or not digits.isascii() or not digits.isdecimal():
+                return lldb.UINT32_MAX
+            index = int(digits)
+            return index if str(index) == digits and index < self.count else lldb.UINT32_MAX
         for index in range(self.count):
             child = self.get_child_at_index(index)
             if child is not None and child.GetName() == name:

@@ -219,6 +219,9 @@ test fn branches() -> unit {
         self.assertIn("web_request_commands", descriptor["features"])
         self.assertIn("generated_client_helpers", descriptor["api_features"])
         self.assertIn("lldb_dap_launch", descriptor["debug_features"])
+        self.assertIn("paged_native_indexed_roots", descriptor["debug_features"])
+        self.assertEqual(descriptor["native_debug_pages"],pack["native_debug_pages"])
+        self.assertEqual(descriptor["native_debug_pages"]["page_items"],1000)
         self.assertIn("native_module_compilation", descriptor["build_features"])
         for field in ("specification", "grammar", "llm_prompt", "web_guide", "server_guide", "api_guide", "debug_guide", "build_guide", "profile_guide", "verification_guide"):
             self.assertTrue((REPO / descriptor[field]).is_file())

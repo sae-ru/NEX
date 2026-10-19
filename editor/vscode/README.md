@@ -36,6 +36,10 @@ missing library files retain the frozen source fallback; a changed selected entr
 requires a fresh launch. Stop and relaunch after editing a running program.
 Verified source mappings use escaped LLDB arguments, including when original
 paths contain quotes, backslashes or Unicode characters.
+With the matching toolchain 0.57 bridge, native list/byte roots expose indexed
+children beyond the text preview. Page requests return at most1000 children;
+large named/string expansion retains its separate limits. Native previews are
+distinct from exact pure-watch captures.
 A `.nex` source is required; a saved manifest alone
 cannot launch an arbitrary adapter. Compiler diagnostics are displayed before
 launch. Unsaved buffers must be saved before starting the debug session.

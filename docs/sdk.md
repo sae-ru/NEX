@@ -132,7 +132,7 @@ The maintained scenario performs these actual operations:
    transition tests. Check that unreachable server sentinels are absent from
    generated TypeScript.
 
-The current workflow has eighteen phases. Its foreign-boundary phase compiles a
+The 0.57 workflow has twenty-one phases. Its foreign-boundary phase compiles a
 C11 producer and C++20 host using only the installed runtime, verifies copied
 UTF-8/binary values, deletes their source files and runs the independent host
 with NEX resources unavailable. This tests the experimental host transport. The
@@ -282,7 +282,7 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent
-path, then runs all eighteen acceptance phases. `sandbox-exec` denies reads from
+path, then runs every phase in the matching SDK contract. `sandbox-exec` denies reads from
 the explicitly supplied source/dependency roots and denies writes to the SDK.
 Each denied root needs a readable input/notice file for an actual negative
 control; a separate control verifies SDK write denial. Node/npm/Python must be
@@ -402,3 +402,15 @@ Source language 0.16 and runtime/canonical formats are unchanged. This repair
 has focused archive/contract checks; actual current relocated/restored SDK
 acceptance is recorded separately in STATUS.md. Retain matching historical SDK
 scripts with their old archives instead of applying a new contract retroactively.
+
+## Native indexed page acceptance (0.57)
+
+The native-indexed-pages phase requires the compiled capability descriptor and
+the installed list/byte example. With --live it launches the matching NEX DAP
+bridge, opens the last two children of a32768-item list and4MiB byte root, checks
+indexed/named filters, and bounds both omitted and oversized requests to1000
+children. Exact pure watches before and after paging must retain the same stop.
+The application resumes with exit0 and old handles must be rejected. Without
+--live the report explicitly leaves live_dap_pages false; it does not claim a
+native process interaction. The matching distribution validators require all21
+phases in order, including this one.

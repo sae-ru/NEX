@@ -314,3 +314,12 @@ mappings require equality with the frozen projection. Changed library files
 keep frozen mappings; a changed entry rejects preparation. Watches use the
 same bounded pure NEX evaluator. IDE/platform acceptance and NEX Studio are
 separate from a descriptor or a successfully packaged VSIX.
+
+When debug_features includes paged_native_indexed_roots, retrieve the debug
+guide and native_debug_pages descriptor. The matching NEX DAP bridge pages
+native list<T>/bytes roots through ordinary variablesReference/start/count.
+Use indexedVariables for the advertised count; each response returns at most 1000
+children, including requests with omitted/zero count. Read body.nex.native_page
+for the actual returned count and requested offset. Handles expire on execution
+or new stops. Native preview pages are not whole values or exact frame captures;
+use the checked inspect/evaluate demand protocol for semantic reasoning or replay.

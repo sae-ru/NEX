@@ -8,7 +8,14 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
-The source is **toolchain 0.56.1 / language 0.16**. It includes traits and
+The source is **toolchain 0.57.0 / language 0.16**, under development. It adds
+bounded native DAP pages for list/byte roots: the debugger can open late indices
+in a 32,768-item list or 4 MiB buffer, returning at most 1,000 children per
+request. Native previews stay separate from exact watch captures. The isolated
+build passes; full compiler, SDK21 and cross-platform checks are still pending.
+The default grammar and source semantics remain language 0.16.
+
+The preceding source is **toolchain 0.56.1 / language 0.16**. It includes traits and
 constructor parameters, the installed VS Code extension workflow and a
 twenty-phase development SDK. Portable SDKs pass all twenty phases after moving
 and restoring their archives on macOS/Linux ARM64. macOS includes real LLDB/DAP

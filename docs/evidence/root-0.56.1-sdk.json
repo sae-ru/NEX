@@ -1,0 +1,43 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T14:13:52.407047+00:00",
+  "ok": true,
+  "terminal_exit_code": 0,
+  "toolchain": "0.56.1",
+  "source_language": "0.16",
+  "compiler_sha256": "bda387933be8afe38463f461b4df4567ead1420f357823af7ac2165548192cb7",
+  "phases": 20,
+  "commands": 310,
+  "seconds": 373.457,
+  "indexed_resources": 139,
+  "all_indexed_resources_match_frozen_source": true,
+  "editor_assets": {
+    "extension_version": "0.1.0",
+    "installed_sources": {
+      "package.json": "235c4e25b2ddc25b2578d4d3dbb534b3ee15c39caa2d862382c528da7a1b3ebc",
+      "package-lock.json": "b6ff6eb172aeb711dae99debad2f3c86bb31c94ca3dab8b78f66ce7d78960f31",
+      "extension.js": "fbcda94b2be244dbdd11e166fb704546bc79b0f757127f6e0acbe892b5e4de40",
+      "session.js": "35f1fcad59cee4ce5bea768c207c32720b90ccf4ae57dd060dd4cd24fd494498",
+      "language-configuration.json": "0620c4464523da727427550991f2eeefe4cdf704d865081ee78bdf000352b5d9",
+      "README.md": "4b4d2cb4e12bcc54dd82a702a04fd9aee2a6fda39d1106d0d7ef6003b79180aa",
+      "test.js": "1eb27c507bb422d1f1d389a5c3778b362a463987e3edc7d3333a25edd0d9ba50"
+    },
+    "focused_node_contracts": true,
+    "actual_ide_run": false,
+    "native_session_preparation": true,
+    "revision": "d40cfb83e9771e5cb30bbd23a3be0775b7140eb484e6e8b02b10b3a6d3745fea",
+    "build_key": "4b81e2e7d6734cc8cd7c2e9c60ead9acf5e7a8095c0a0a3c09fc5b9a8c40ae1a"
+  },
+  "all_editor_assets_match_frozen_source": true,
+  "live_debugger": true,
+  "browser_build": true,
+  "source_checkout_hidden": false,
+  "report": "build/sdk-0561-root-acceptance/report.json",
+  "report_sha256": "f43d3709332ea9b07cd5b6739020538f89b8fb332f2ab75affc3a8318e7b8699",
+  "source_manifest": "build/root-0561-validation-snapshot.json",
+  "source_tree": "de0526fb81af0a25f4ba4a693c1c40960f1d5cca",
+  "source_commit": "515a2187caefb77c056e1dc9d9f5fc90103e1616",
+  "scope": "Complete installed SDK on macOS ARM64, npm offline using populated NEX_NPM_CACHE. Actual installed IDE is a separate scoped report; editor phase does not claim a GUI run.",
+  "accepted_release": false,
+  "full_objective_complete": false
+}

@@ -66,6 +66,24 @@ async function run() {
     assert.equal(trait.nex.revision, value.nex.revision);
     const scopes = await current.customRequest('scopes', {frameId: frame.id});
     assert.ok(scopes.scopes.length > 0);
+    if (process.env.NEX_EDITOR_NATIVE_PAGES === '1') {
+      const roots = new Map();
+      for (const scope of scopes.scopes) {
+        if (!scope.expensive) for (const variable of (await current.customRequest('variables', {variablesReference: scope.variablesReference})).variables) roots.set(variable.name, variable);
+      }
+      for (const [name, total, expected] of [['items', 32768, ['40', '42']], ['data', 4194304, ['120', '255']]]) {
+        const root = roots.get(name);assert.ok(root);assert.equal(root.indexedVariables, total);
+        const tail = await current.customRequest('variables', {variablesReference: root.variablesReference, filter: 'indexed', start: total - 2, count: 2});
+        assert.deepEqual(tail.variables.map(item => [item.name, item.value]), [[`[${total-2}]`, expected[0]], [`[${total-1}]`, expected[1]]]);
+        assert.equal(tail.nex.native_page.returned_count, 2);
+        assert.deepEqual((await current.customRequest('variables', {variablesReference: root.variablesReference, filter: 'named', count: 2})).variables, []);
+        const page = await current.customRequest('variables', {variablesReference: root.variablesReference, start: 1000, count: 1000000});
+        assert.equal(page.variables.length, 1000);assert.equal(page.variables[0].name, '[1000]');
+        assert.equal(page.nex.native_page.limit, 1000);
+      }
+      const afterPages = await current.customRequest('evaluate', {expression: 'total + 2', frameId: frame.id, context: 'watch'});
+      assert.deepEqual(afterPages.nex.stop, value.nex.stop);assert.equal(afterPages.nex.value, '42');
+    }
     await current.customRequest('continue', {threadId: stop.threadId});
     await terminated.promise;
     const stdout = output.filter(row => row.category === 'stdout').map(row => row.output).join('');
@@ -76,7 +94,7 @@ async function run() {
       installed_extension_version: extension.packageJSON.version, physical_source_breakpoint: true,
       native_stack_scopes: true, pure_watch: value.nex, trait_watch: trait.nex,
       native_output: stdout, native_exit_code: exitCode, unchanged_watch_stop: true,
-      native_resume_and_termination: true, controlled_test_profile: true, user_profile_modified: false}, null, 2) + '\n');
+      native_resume_and_termination: true, native_indexed_pages: process.env.NEX_EDITOR_NATIVE_PAGES === '1', controlled_test_profile: true, user_profile_modified: false}, null, 2) + '\n');
   } finally {
     stopped.cancel(); terminated.cancel(); tracker.dispose();
     if (current) await vscode.debug.stopDebugging(current);

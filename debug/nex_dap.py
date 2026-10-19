@@ -16,6 +16,7 @@ import time
 
 MAX_PACKET = 8 * 1024 * 1024
 MAX_REFERENCES = 100000
+MAX_VARIABLES_PAGE = 1000
 
 
 def read_packet(stream):
@@ -173,7 +174,15 @@ class Bridge:
                 if key == 'variablesReference' and isinstance(child, int) and child > 0:
                     if child not in self.backend_references:
                         self.backend_references[child] = self.allocate({'backend': child})
-                    value[key] = self.backend_references[child]
+                    reference = self.backend_references[child]
+                    # LLDB can ignore the DAP named/indexed filter. These NEX
+                    # root types have only indexed synthetic children; do not
+                    # turn a named-only request into a page of array elements.
+                    native_type = value.get('type', '')
+                    if (isinstance(native_type, str) and (native_type == 'bytes' or native_type.startswith('list<')) and
+                            type(value.get('indexedVariables')) is int and not value.get('namedVariables')):
+                        self.references[reference]['indexed_only'] = True
+                    value[key] = reference
                 else:
                     self.remap(child)
         elif isinstance(value, list):
@@ -204,7 +213,7 @@ class Bridge:
     def children(self, request, stored):
         args = request.get('arguments', {})
         start, count = args.get('start', 0), args.get('count', 0)
-        if not isinstance(start, int) or not isinstance(count, int) or start < 0 or count < 0:
+        if type(start) is not int or type(count) is not int or start < 0 or count < 0:
             raise ValueError('invalid variables page')
         value, descriptor, records = stored['value'], stored['descriptor'], stored['records']
         children = []
@@ -236,7 +245,7 @@ class Bridge:
         else:
             total = 2
             get = lambda i: (('code', value['error']['code'], 'str') if i == 0 else ('message', value['error']['message'], 'str'))
-        end = min(total, start + min(count or 1000, 1000))
+        end = min(total, start + min(count or MAX_VARIABLES_PAGE, MAX_VARIABLES_PAGE))
         for index in range(min(start, total), end):
             name, child, kind = get(index)
             children.append(self.variable(name, child, kind, records))
@@ -261,7 +270,11 @@ class Bridge:
         if command in ('setExpression', 'setVariable'):
             return self.response(request, error='NEX expression adapter does not mutate stopped values')
         reference = args.get('variablesReference')
+        if command == 'variables' and reference is None:
+            return self.response(request, error='variables request requires a current reference')
         if reference is not None:
+            if type(reference) is not int:
+                return self.response(request, error='invalid variables reference')
             stored = self.references.get(reference)
             if stored is None:
                 return self.response(request, error='unknown or stale variables reference')
@@ -270,6 +283,17 @@ class Bridge:
                     return self.response(request, error='computed NEX values are read-only')
                 return self.children(request, stored)
             args['variablesReference'] = stored['backend']
+            if command == 'variables':
+                start, count = args.get('start', 0), args.get('count', 0)
+                if type(start) is not int or type(count) is not int or not 0 <= start <= 2147483647 or not 0 <= count <= 2147483647:
+                    return self.response(request, error='invalid native variables page')
+                if args.get('filter') not in (None, 'named', 'indexed'):
+                    return self.response(request, error='invalid native variables filter')
+                if stored.get('indexed_only') and args.get('filter') == 'named':
+                    return self.response(request, {'variables': [], 'nex': {'native_page': {
+                        'start': start, 'requested_count': count, 'returned_count': 0, 'limit': MAX_VARIABLES_PAGE}}})
+                args['start'] = start
+                args['count'] = min(count or MAX_VARIABLES_PAGE, MAX_VARIABLES_PAGE)
         kind = 'forward'
         if command == 'evaluate':
             expression = args.get('expression')
@@ -307,6 +331,13 @@ class Bridge:
                     args = request.get('arguments', {}); offset = args.get('startFrame', 0)
                     for index, frame in enumerate(message.get('body', {}).get('stackFrames', [])):
                         self.frames[frame['id']] = {'thread_id': str(args['threadId']), 'frame_index': offset + index}
+                if request['command'] == 'variables' and message.get('success'):
+                    variables = message.get('body', {}).get('variables', [])
+                    if len(variables) > MAX_VARIABLES_PAGE:
+                        return self.response(request, error='native backend exceeded the variables page limit')
+                    args = request.get('arguments', {})
+                    message.setdefault('body', {})['nex'] = {'native_page': {'start': args.get('start', 0),
+                        'requested_count': args.get('count', 0), 'returned_count': len(variables), 'limit': MAX_VARIABLES_PAGE}}
                 if pending['kind'] == 'expression':
                     if pending['epoch'] != self.epoch:
                         return self.response(request, error='process stop changed during expression evaluation')

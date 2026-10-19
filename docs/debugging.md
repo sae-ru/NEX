@@ -76,6 +76,32 @@ each stop; do not reuse a previous frame's locations.
 
 ## Editor / Debug Adapter Protocol
 
+Toolchain0.57 adds native indexed pages to the matching NEX stdio bridge
+(`--kind nex-dap`). Native `list<T>` and `bytes` roots advertise their actual
+indexed child counts, up to2147483647. Text previews remain bounded to32
+elements. A DAP `variables` request can start at a later index without reading
+the preceding elements. Both `start` and `count` must be nonnegative signed32
+integers; omitted/zero `count` means at most1000 children. Larger requested
+counts also return at most1000. Native replies add `body.nex.native_page` with
+`start`, `requested_count`, `returned_count` and `limit:1000`, described by
+`llm/dap-native-page.schema.json`. The matching bridge rejects oversized backend
+pages. A named-only request on a NEX indexed root returns no children.
+
+Use standard stack/scopes requests, then the root's `variablesReference` and
+`indexedVariables` to request pages. References expire on execution or a new
+stop, and replies from an earlier stop are rejected. These are read-only native
+previews from this runtime's DWARF layout, not complete wire values, retained
+frame captures or interpreter inputs. Plain `--kind dap` uses LLDB directly and
+does not apply the bridge's1000-child request bound. Named aggregate previews,
+very large indexed counts beyond the DAP bound and direct string expansion
+retain their separate limits. String scalar windows use the existing checked
+expression/capture protocol.
+
+`examples/debugging/pages.nex` creates a32768-element list and4MiB byte value.
+Run `python3 tests/native_pages.py build/nex --live` for actual late-index,
+default/oversized-page, filter, unchanged-stop and stale-reference checks.
+The default suite skips actual process launches unless `--live` is supplied.
+
 For the NEX VS Code extension and original-file breakpoint mapping, see
 [editor.md](editor.md). Its package and current compiler acceptance are separate.
 

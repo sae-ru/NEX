@@ -89,7 +89,8 @@
     "legacy_traits_015": "examples/traits/legacy-0.15.json",
     "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql",
     "trait_api_workflow": "examples/traits/api/README.md",
-    "editor": "docs/editor.md"
+    "editor": "docs/editor.md",
+    "native_dap_page_schema": "llm/dap-native-page.schema.json"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -146,7 +147,8 @@
     "trait_api_service": "examples/traits/api/service.nex",
     "trait_api_model": "examples/traits/api/model.nex",
     "trait_api_contracts": "examples/traits/api/helpers/contracts.nex",
-    "trait_api_client_copy_after_generate": "examples/traits/api/client.nex"
+    "trait_api_client_copy_after_generate": "examples/traits/api/client.nex",
+    "native_indexed_pages": "examples/debugging/pages.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -260,5 +262,18 @@
       "database_sql": "examples/traits/legacy-0.15.sql",
       "purpose": "Genuine historical input for explicit migration; do not use as a current source project or relabel its version."
     }
+  },
+  "native_debug_pages": {
+    "root_types": [
+      "list<T>",
+      "bytes"
+    ],
+    "page_items": 1000,
+    "maximum_index": 2147483647,
+    "maximum_indexed_children": 2147483647,
+    "page_schema": "llm/dap-native-page.schema.json",
+    "metadata_field": "body.nex.native_page",
+    "requires_matching_nex_dap_bridge": true,
+    "native_preview_not_exact_wire_value": true
   }
 }
