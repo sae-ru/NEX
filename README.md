@@ -9,22 +9,21 @@ People and LLMs work with a checked semantic graph. The model helps create and c
 NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
 
 This isolated development tree is **toolchain 0.55.0 / language 0.16**.
-It implements source traits/impls, associated value types, fixed constructor
-parameters, generic trait methods, coherent static dispatch and graph edits.
-An earlier prototype passes 14 focused Python cases plus 20 constructor invariant
-groups, including pure generic-frame watches and source-deleted migration.
-Five current projects and both proof contracts migrated through genuine 0.15
-archives with source, old rows/IDs and acceptance conditions preserved.
+It includes source traits, associated types, constructor parameters and coherent
+static dispatch, plus client API projection for trait-bearing libraries/models.
+Needed client/shared method contracts and real function bodies are retained;
+server members/bindings/functions and unused private declarations are excluded.
+Both complete captured input and the final projected projects are checked.
 
-Later constructor/associated API model extraction and the SDK19 traits/live phase
-are built or prepared, with execution still pending. The current 17-case trait
-suite, full66 regression, SDK19/platform workflows and trait-bearing dependency
-library projection are not yet accepted. Permission review recovered after a human retry.
-The first related run found a unit-argument diagnostic regression; it is fixed,
-with the current traits17/generics14 suites passing. The reviewed type-patch
-example pin now migrates without changing replacements or assertions. Full
-current regression and SDK19 acceptance are running/pending. See STATUS.md and docs/traits.md. The complete language/development
-chain objective remains open in PLAN.md.
+The current compiler passes20 trait cases,14 API cases,21 frontend diagnostic
+cases (one platform skip) and two native probes,102.09s. The installed SDK's
+exact traits/API phase also passes24 commands,22.057s, including native and
+TypeScript consumers, excluded server bodies, actual LLDB watches and
+source-deleted migration/replay. The shipped trait/API example uses generated
+clients and builds its native server. [Evidence](docs/evidence/trait-library-api-0.55.0.json)
+separates these current checks from the preceding baseline's full66/SDK19 pass.
+Full current66, complete SDK19, Linux and Release/platform validation are pending.
+The complete language and development-chain PLAN remains open.
 
 The earlier internal 0.55 constructor core still uses language 0.15 and separately
 passes all65 macOS ARM64 groups. Its evidence does not verify this source extension.

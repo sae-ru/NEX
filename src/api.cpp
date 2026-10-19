@@ -108,6 +108,12 @@ struct ModelClosure {
     for(const auto &[item,bounds]:traitDefinition(p,name).associated)for(const auto &bound:bounds)trait(bound,depth+1);
   }
   void constraints(const TypeBounds &bounds,unsigned depth=0){for(const auto &values:bounds)for(const auto &value:values)trait(value,depth+1);}
+  void implementation(const Implementation &value,unsigned depth=0){
+    trait(value.trait,depth+1);
+    if(!implementations.insert(value.name).second)return;
+    type(value.self,depth+1);constraints(value.typeBounds,depth+1);
+    for(const auto &[item,alias]:value.associated)type(alias,depth+1);
+  }
   void witness(Type actual,const std::string &name,unsigned depth=0){
     if(builtin(name))return;trait(name,depth+1);
     actual=resolveType(p,std::move(actual),{});
@@ -117,10 +123,7 @@ struct ModelClosure {
     auto selected=selectedTraitWitness(p,actual,name);
     if(!selected)throw Error("E_API_TYPE","model bound has no checked implementation witness");
     const auto &value=*selected->implementation;
-    if(implementations.insert(value.name).second){
-      type(value.self,depth+1);constraints(value.typeBounds,depth+1);
-      for(const auto &[item,alias]:value.associated)type(alias,depth+1);
-    }
+    implementation(value,depth);
     for(size_t i=0;i<value.typeParameters.size();++i)if(i<value.typeBounds.size())
       for(const auto &bound:value.typeBounds[i])witness(selected->arguments.at(value.typeParameters[i]),bound,depth+1);
     for(const auto &[item,bounds]:traitDefinition(p,name).associated)
@@ -128,7 +131,7 @@ struct ModelClosure {
   }
   void type(const Type &value,unsigned depth=0){
     if(depth>128)throw Error("E_API_LIMIT","model type dependency depth exceeds128");
-    if(value.kind==Type::Projection){auto sep=value.name.rfind("::");trait(value.name.substr(0,sep),depth+1);}
+    if(value.kind==Type::Projection){auto sep=value.name.rfind("::");auto owner=value.name.substr(0,sep);trait(owner,depth+1);if(value.arguments.size()==1&&!containsParameter(value.arguments.front()))witness(value.arguments.front(),owner,depth+1);}
     if(value.kind==Type::Constructor&&p.hasStructure(value.name)){type(Type::record(value.name),depth+1);return;}
     if(value.element)type(*value.element,depth+1);for(const auto &argument:value.arguments)type(argument,depth+1);
     if(value.kind!=Type::Record||!p.hasStructure(value.name)||!visited.insert(typeName(value)).second)return;
@@ -142,55 +145,156 @@ struct ModelClosure {
     auto fields=s;for(auto field:fields.members())type(field->type,depth+1);
   }
 };
+std::string sourceEffects(const std::set<std::string> &effects){std::string text;if(!effects.empty()){text=" !{";for(const auto &effect:effects){if(text.back()!='{')text+=", ";text+=effect;}text+="}";}return text;}
+std::string modelDeclaration(const Structure &value,SourceTypes &types){
+  auto name=value.localName+types.parameters(value.typeParameters,value.typeArities,value.typeBounds);
+  std::string text=value.exported?"pub ":"";
+  if(value.enumeration){text+="enum "+name+" { ";for(const auto &variant:value.variants){text+=variant.name;if(!variant.fields.empty()){text+="(";for(size_t i=0;i<variant.fields.size();++i){if(i)text+=", ";text+=variant.fields[i].name+": "+types.type(variant.fields[i].type);}text+=")";}text+="; ";}}
+  else{text+="struct "+name+" { ";for(const auto &field:value.fields)text+=field.name+": "+types.type(field.type)+"; ";}
+  return text+"}\n";
+}
+std::string traitDeclaration(const Trait &value,const std::set<std::string> &methods,SourceTypes &types){
+  std::string text=(value.exported?"pub ":"")+std::string("trait ")+value.localName;
+  if(value.selfArity){text+="<Self<";for(unsigned i=0;i<value.selfArity;++i){if(i)text+=", ";text+="_";}text+=">>";}
+  text+=" { ";for(const auto &[item,bounds]:value.associated){text+="type "+item;if(!bounds.empty())text+=": "+types.bounds(bounds);text+="; ";}
+  for(const auto &method:value.methods){auto local=method.name.substr(method.name.rfind("::")+2);if(!methods.contains(local))continue;
+    if(method.realm=="server")throw Error("E_REALM","server trait method cannot enter client projection",method.span);
+    text+=(method.realm=="shared"?"":method.realm+" ")+std::string("fn ")+local+types.parameters(method.typeParameters,method.typeArities,method.typeBounds)+"(";
+    for(size_t i=0;i<method.params.size();++i){if(i)text+=", ";text+=method.params[i].name+": "+types.type(method.params[i].type);}
+    auto result=types.type(method.result);if(method.result.kind==Type::Function)result="("+result+")";
+    text+=")->"+result+sourceEffects(method.effects)+"; ";
+  }
+  return text+"}\n";
+}
+std::string implementationDeclaration(const Program &p,const Implementation &value,const std::set<std::string> &methods,SourceTypes &types){
+  std::string text=(value.exported?"pub ":"")+std::string("impl ")+value.localName+types.parameters(value.typeParameters,value.typeArities,value.typeBounds)+": "+types.bound(value.trait)+" for "+types.type(value.self)+" { ";
+  for(const auto &[item,alias]:value.associated)text+="type "+item+" = "+types.type(alias)+"; ";
+  for(const auto &[name,binding]:value.methods)if(methods.contains(name)){
+    const auto &target=p.function(binding.target);text+=name+" = "+types.name(target.owner,target.localName);
+    if(!binding.typeArguments.empty()){text+="<";for(size_t i=0;i<binding.typeArguments.size();++i){if(i)text+=", ";text+=types.type(binding.typeArguments[i]);}text+=">";}text+="; ";
+  }
+  return text+"}\n";
+}
 Value clientProjection(std::map<std::string,std::string> sources,const std::string &entry,const std::string &directory){
-  // Remove server declarations before checking the SDK. Its standard/library
-  // dependencies may themselves contain server implementations or endpoints.
-  for(auto &[key,text]:sources){auto unit=parse(text,key);std::string projected="module "+unit.module+";\n";
-    for(const auto &dep:unit.imports)projected+="import "+quote(dep.path)+" as "+dep.alias+";\n";
-    for(const auto &s:unit.structures)projected+=unit.definition(s)+"\n";
-    for(const auto &trait:unit.traits)if(trait.methods.empty())projected+=unit.definition(trait)+"\n";
-    for(const auto &implementation:unit.implementations)if(implementation.methods.empty())projected+=unit.definition(implementation)+"\n";
-    for(const auto &f:unit.functions)if(f.realm!="server"&&!f.test)projected+=unit.definition(f)+"\n";
-    text=std::move(projected);
-  }
-  auto p=loadBundle(bundle(sources,entry),directory);
-  std::set<std::string> functions;ModelClosure modelTypes(p);
-  std::function<void(const Type&)> type=[&](const Type &t){modelTypes.type(t);};
-  std::function<void(E)> expression=[&](E e){if(e){type(e->type);for(auto a:e->args)expression(a);}};
-  std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){type(s->type);expression(s->expr);childBlocks(s,block);}};
-  std::function<void(const Function&)> function=[&](const Function &f){if(!functions.insert(f.name).second)return;if(f.realm=="server"||f.test)throw Error("E_REALM","server/test code cannot enter the client SDK",f.span);if(!f.templateName.empty())function(p.function(f.templateName));type(f.result);for(const auto &param:f.params)type(param.type);block(f.body);for(const auto &callee:f.dependencies)function(p.function(callee));};
-  // Retain the generated SDK and the public client/shared surface of captured
-  // dependency libraries, plus the private helpers/types those exports use.
-  for(const auto &f:p.functions)if(f.exported&&(f.unit==entry||f.unit.starts_with("@")))function(f);
-  std::map<std::string,std::set<std::string>> references;
-  auto traitReference=[&](const std::string &name,const std::string &unit){if(!ModelClosure::builtin(name))references[unit].insert(traitDefinition(p,name).unit);};
+  // Check the complete captured program before selecting declarations. Neither
+  // checking nor binding executes server/foreign functions. Bound syntax keeps
+  // source references that concrete associated-type normalization would erase.
+  auto original=bundle(sources,entry);auto p=loadBundle(original,directory);
+  auto syntax=bindBundle(original,directory);ModelClosure models(p);
+  std::set<std::string> functions,sourceFunctions;
+  std::map<std::string,std::set<std::string>> methods,references;
+  std::map<std::string,std::pair<std::string,std::string>> contracts;
+  for(const auto &trait:syntax.traits)for(const auto &method:trait.methods)
+    contracts[method.name]={trait.name,method.name.substr(method.name.rfind("::")+2)};
+  std::function<void(const Type&,const std::string&)> reference;
+  auto traitReference=[&](const std::string &name,const std::string &unit){if(ModelClosure::builtin(name))return;models.trait(name);references[unit].insert(traitDefinition(p,name).unit);};
   auto boundsReference=[&](const TypeBounds &bounds,const std::string &unit){for(const auto &values:bounds)for(const auto &value:values)traitReference(value,unit);};
-  std::function<void(const Type&,const std::string&)> reference=[&](const Type &t,const std::string &unit){if(t.kind==Type::Constructor&&p.hasStructure(t.name)){reference(Type::record(t.name),unit);return;}if(t.kind==Type::Projection){auto sep=t.name.rfind("::");traitReference(t.name.substr(0,sep),unit);}if(t.element)reference(*t.element,unit);for(const auto &argument:t.arguments)reference(argument,unit);if(t.kind==Type::Record){const auto &s=modelTypes.p.structure(t.name);references[unit].insert(s.unit);for(const auto &argument:s.typeArguments)reference(argument,unit);}};
-  for(const auto &f:p.functions)if(functions.contains(f.name)){
-    reference(f.result,f.unit);for(const auto &param:f.params)reference(param.type,f.unit);
-    for(const auto &callee:f.dependencies)references[f.unit].insert(p.function(callee).unit);
-    std::function<void(E)> expr=[&](E e){if(e){reference(e->type,f.unit);for(auto a:e->args)expr(a);}};
-    std::function<void(const std::vector<S>&)> body=[&](const auto &statements){for(auto s:statements){reference(s->type,f.unit);expr(s->expr);childBlocks(s,body);}};body(f.body);
-  }
-  for(const auto &s:modelTypes.p.structures)if(modelTypes.records.contains(s.name)){for(auto field:s.members())reference(field->type,s.unit);boundsReference(s.typeBounds,s.unit);}
-  for(const auto &trait:p.traits)if(modelTypes.traits.contains(trait.name))for(const auto &[item,bounds]:trait.associated)for(const auto &bound:bounds)traitReference(bound,trait.unit);
-  for(const auto &value:p.implementations)if(modelTypes.implementations.contains(value.name)){
-    traitReference(value.trait,value.unit);reference(value.self,value.unit);boundsReference(value.typeBounds,value.unit);
-    for(const auto &[item,alias]:value.associated)reference(alias,value.unit);
-    // A witness can live in a different reachable module from its trait/head.
-    references[entry].insert(value.unit);
+  reference=[&](const Type &type,const std::string &unit){
+    models.type(type);
+    if(type.kind==Type::Projection){auto sep=type.name.rfind("::");traitReference(type.name.substr(0,sep),unit);}
+    if(type.element)reference(*type.element,unit);for(const auto &argument:type.arguments)reference(argument,unit);
+    if((type.kind==Type::Record||type.kind==Type::Constructor)&&models.p.hasStructure(type.name)){
+      const auto &value=models.p.structure(type.name);references[unit].insert(value.unit);
+      for(const auto &argument:value.typeArguments)reference(argument,unit);
+    }
+  };
+  auto method=[&](const std::string &owner,const std::string &local){
+    if(!methods[owner].insert(local).second)return;
+    const auto &trait=traitDefinition(syntax,owner);models.trait(owner);
+    auto found=std::find_if(trait.methods.begin(),trait.methods.end(),[&](const auto &value){return value.name.substr(value.name.rfind("::")+2)==local;});
+    if(found==trait.methods.end()||found->realm=="server")throw Error("E_REALM","server or missing trait method cannot enter client projection",trait.span);
+    reference(found->result,trait.unit);for(const auto &param:found->params)reference(param.type,trait.unit);boundsReference(found->typeBounds,trait.unit);
+  };
+  std::function<void(E,const std::string&)> expression;
+  std::function<void(const std::vector<S>&,const std::string&)> block;
+  expression=[&](E e,const std::string &unit){if(!e)return;
+    reference(e->type,unit);reference(e->annotation,unit);
+    for(const auto &type:e->typeArguments)reference(type,unit);
+    for(const auto &type:e->methodArguments)reference(type,unit);
+    for(const auto &type:e->traitArguments)reference(type,unit);
+    auto contract=contracts.find(e->traitContract.empty()?e->text:e->traitContract);
+    if(contract!=contracts.end()){
+      const auto &[owner,local]=contract->second;method(owner,local);traitReference(owner,unit);
+      const auto &arguments=e->traitArguments.empty()?e->typeArguments:e->traitArguments;
+      if(!arguments.empty())models.witness(arguments.front(),owner);
+    }
+    if(e->lambda){reference(e->lambda->result,unit);for(const auto &param:e->lambda->params)reference(param.type,unit);block(e->lambda->body,unit);}
+    for(auto a:e->args)expression(a,unit);
+  };
+  block=[&](const auto &body,const std::string &unit){for(auto statement:body){reference(statement->type,unit);expression(statement->expr,unit);childBlocks(statement,[&](const auto &child){block(child,unit);});}};
+  std::function<void(const Function&)> function=[&](const Function &f){
+    if(!functions.insert(f.name).second)return;
+    if(f.realm=="server"||f.test)throw Error("E_REALM","server/test code cannot enter the client SDK",f.span);
+    if(!f.templateName.empty()){
+      const auto &source=p.function(f.templateName);function(source);
+      for(size_t i=0;i<f.typeArguments.size();++i)if(i<source.typeBounds.size())for(const auto &bound:source.typeBounds[i])models.witness(f.typeArguments[i],bound);
+    }
+    reference(f.result,f.unit);for(const auto &param:f.params)reference(param.type,f.unit);boundsReference(f.typeBounds,f.unit);
+    if(f.traitSignature){const auto &contract=f.templateName.empty()?f.name:f.templateName;method(f.traitOwner,contract.substr(contract.rfind("::")+2));return;}
+    if(f.closure)function(p.function(f.closureOwner));
+    block(f.body,f.unit);
+    if(f.templateName.empty()&&!f.closure&&sourceFunctions.insert(f.name).second){
+      const auto &source=syntax.function(f.name);reference(source.result,f.unit);for(const auto &param:source.params)reference(param.type,f.unit);boundsReference(source.typeBounds,f.unit);block(source.body,f.unit);
+    }
+    for(const auto &callee:f.dependencies){const auto &target=p.function(callee);references[f.unit].insert(target.unit);function(target);}
+  };
+  // Existing dependency libraries retain their public client/shared surface.
+  // Application functions enter only through generated helpers or a needed
+  // client/shared trait binding, never merely because they are public.
+  for(const auto &f:p.functions)if(f.exported&&!f.test&&f.realm!="server"&&(f.unit==entry||f.unit.starts_with("@")))function(f);
+  for(const auto &trait:syntax.traits)if(trait.exported&&trait.unit.starts_with("@"))for(const auto &value:trait.methods)if(value.realm!="server")method(trait.name,value.name.substr(value.name.rfind("::")+2));
+  std::function<bool(const Type&)> publicHead=[&](const Type &value){
+    if(value.element&&!publicHead(*value.element))return false;for(const auto &argument:value.arguments)if(!publicHead(argument))return false;
+    if((value.kind==Type::Record||value.kind==Type::Constructor)&&p.hasStructure(value.name)){
+      const auto &type=p.structure(value.name);if(!type.exported)return false;for(const auto &argument:type.typeArguments)if(!publicHead(argument))return false;
+    }return true;
+  };
+  auto size=[&](){size_t total=functions.size()+models.traits.size()+models.models.size()+models.implementations.size();for(const auto &[name,values]:methods)total+=values.size();return total;};
+  for(;;){auto before=size();
+    for(const auto &name:models.traits){const auto &trait=traitDefinition(syntax,name);
+      for(const auto &value:trait.methods)if(value.realm!="server")method(name,value.name.substr(value.name.rfind("::")+2));
+      if(trait.exported)for(const auto &value:p.implementations)if(value.trait==name&&publicHead(value.self))models.implementation(value);
+    }
+    for(const auto &value:p.implementations)if(models.implementations.contains(value.name)){
+      traitReference(value.trait,value.unit);reference(value.self,value.unit);boundsReference(value.typeBounds,value.unit);
+      for(const auto &[item,alias]:value.associated)reference(alias,value.unit);
+      for(const auto &[name,binding]:value.methods)if(methods[value.trait].contains(name)){
+        const auto &target=p.function(binding.target);references[value.unit].insert(target.unit);for(const auto &type:binding.typeArguments)reference(type,value.unit);function(target);
+      }
+      references[entry].insert(value.unit);
+    }
+    // Source declarations, not their normalized instances, determine imports.
+    for(const auto &value:syntax.structures)if(models.models.contains(value.name)){boundsReference(value.typeBounds,value.unit);for(auto field:value.members())reference(field->type,value.unit);}
+    for(const auto &value:syntax.traits)if(models.traits.contains(value.name))for(const auto &[item,bounds]:value.associated)for(const auto &bound:bounds)traitReference(bound,value.unit);
+    if(before==size())break;
   }
   std::map<std::string,std::string> projected;std::set<std::string> reachable;
-  std::function<void(const std::string&)> unit=[&](const std::string &key){if(!reachable.insert(key).second)return;const auto &source=p.units.at(key);std::string text="module "+source.module+";\n";
-    for(const auto &dep:source.imports)if(references[key].contains(dep.target)){text+="import "+quote(dep.path)+" as "+dep.alias+";\n";unit(dep.target);}
-    for(const auto &s:p.structures)if(s.unit==key&&s.templateName.empty()&&modelTypes.models.contains(s.name))text+=p.definition(s)+"\n";
-    for(const auto &trait:p.traits)if(trait.unit==key&&modelTypes.traits.contains(trait.name))text+=p.definition(trait)+"\n";
-    for(const auto &value:p.implementations)if(value.unit==key&&modelTypes.implementations.contains(value.name))text+=p.definition(value)+"\n";
-    for(const auto &f:p.functions)if(f.unit==key&&f.templateName.empty()&&!f.closure&&functions.contains(f.name))text+=p.definition(f)+"\n";
-    projected[key]=std::move(text);
+  auto unitFor=[&](const std::string &owner){for(const auto &[key,value]:p.units)if(value.module==owner)return key;throw Error("E_API_LIBRARY","missing captured module "+owner);};
+  std::function<void(const std::string&)> unit=[&](const std::string &key){
+    if(!reachable.insert(key).second)return;const auto &source=p.units.at(key);
+    SourceTypes types{p,key,source.module,{},false,{}};std::set<std::string> originalAliases,used;
+    for(const auto &dep:source.imports){types.aliases[p.units.at(dep.target).module]=dep.alias;types.existing.insert(dep.alias);originalAliases.insert(dep.alias);used.insert(dep.alias);}
+    for(const auto &f:syntax.functions)if(f.unit==key)used.insert(f.localName);
+    for(const auto &s:syntax.structures)if(s.unit==key)used.insert(s.localName);
+    for(const auto &t:syntax.traits)if(t.unit==key)used.insert(t.localName);
+    for(const auto &i:syntax.implementations)if(i.unit==key)used.insert(i.localName);
+    types.existing.insert(used.begin(),used.end());std::string body;
+    for(const auto &s:syntax.structures)if(s.unit==key&&models.models.contains(s.name))body+=modelDeclaration(s,types);
+    for(const auto &t:syntax.traits)if(t.unit==key&&models.traits.contains(t.name))body+=traitDeclaration(t,methods[t.name],types);
+    for(const auto &i:syntax.implementations)if(i.unit==key&&models.implementations.contains(i.name))body+=implementationDeclaration(p,i,methods[i.trait],types);
+    for(const auto &f:p.functions)if(f.unit==key&&f.templateName.empty()&&!f.closure&&!f.traitSignature&&functions.contains(f.name))body+=p.definition(f)+"\n";
+    std::string imports;std::set<std::string> targets;
+    for(const auto &dep:source.imports)if(references[key].contains(dep.target)){imports+="import "+quote(dep.path)+" as "+dep.alias+";\n";targets.insert(dep.target);unit(dep.target);}
+    for(const auto &[owner,alias]:types.aliases)if(!originalAliases.contains(alias)){auto target=unitFor(owner);imports+="import "+quote(importPath(key,target))+" as "+alias+";\n";targets.insert(target);unit(target);}
+    if(key==entry)for(const auto &target:references[entry])if(target!=entry&&!targets.contains(target)){
+      std::string alias="_witness"+std::to_string(targets.size());while(used.contains(alias))alias+="_";used.insert(alias);
+      imports+="import "+quote(importPath(key,target))+" as "+alias+";\n";targets.insert(target);unit(target);
+    }
+    projected[key]="module "+source.module+";\n"+imports+body;
   };unit(entry);
   auto result=bundle(projected,entry);loadBundle(result,directory);return result;
 }
+
 }
 Value describeAPI(const Program &p){
   Array endpoints;
@@ -245,31 +349,19 @@ Value generateAPI(const Program &p,const std::string &directory){
   for(auto e:endpoints)dispatch+="  if request.method == "+quote(e->method)+" && request.path == "+quote(e->path)+" { return "+routeAliases.at(e->unit)+"::"+routers.at(e->unit)+"(request); }\n";
   std::set<std::string> paths;for(auto e:endpoints)paths.insert(e->path);for(const auto &path:paths)dispatch+="  if request.path == "+quote(path)+" { return http::json_response(405, encode_json(err<bool>(\"E_API_METHOD\", \"Method not allowed\"))); }\n";
   dispatch+="  return http::json_response(404, encode_json(err<bool>(\"E_API_ROUTE\", \"Unknown endpoint\")));\n}\n";server[entry]=dispatch;
-  // Extract original nominal templates and the type-only trait/witness closure.
-  // Method contracts/bindings and their implementation bodies stay on the server.
-  ModelClosure modelTypes(p);
-  for(auto e:endpoints){const auto &handler=p.function(e->target);modelTypes.type(handler.result);if(handler.params.size()==2)modelTypes.type(handler.params[1].type);}
-  std::map<std::string,std::vector<const Structure*>> groups;
-  std::map<std::string,std::vector<const Trait*>> traitGroups;
-  std::map<std::string,std::vector<const Implementation*>> implementationGroups;
-  for(const auto &name:modelTypes.models){const auto &s=modelTypes.p.structure(name);if(s.unit.starts_with("@"))standard(client,s.unit);else groups[s.owner].push_back(&s);}
-  for(const auto &name:modelTypes.traits){const auto &value=traitDefinition(modelTypes.p,name);if(value.unit.starts_with("@"))standard(client,value.unit);else{groups[value.owner];traitGroups[value.owner].push_back(&value);}}
-  for(const auto &value:modelTypes.p.implementations)if(modelTypes.implementations.contains(value.name)){if(value.unit.starts_with("@"))standard(client,value.unit);else{groups[value.owner];implementationGroups[value.owner].push_back(&value);}}
-  for(const auto &[owner,structures]:groups){auto path=modelPath(owner);SourceTypes types{modelTypes.p,path,owner,{},true,{}};std::string body;
-    for(auto value:traitGroups[owner]){
-      body+="pub trait "+value->localName;
-      if(value->selfArity){body+="<Self<";for(unsigned i=0;i<value->selfArity;++i){if(i)body+=", ";body+="_";}body+=">>";}
-      body+=" { ";for(const auto &[item,bounds]:value->associated){body+="type "+item;if(!bounds.empty())body+=": "+types.bounds(bounds);body+="; ";}body+="}\n";
-    }
-    for(auto s:structures){auto name=s->localName+types.parameters(s->typeParameters,s->typeArities,s->typeBounds);
-      if(s->enumeration){body+="pub enum "+name+" { ";for(const auto &variant:s->variants){body+=variant.name;if(!variant.fields.empty()){body+="(";for(size_t i=0;i<variant.fields.size();++i){if(i)body+=", ";body+=variant.fields[i].name+": "+types.type(variant.fields[i].type);}body+=")";}body+="; ";}body+="}\n";}
-      else{body+="pub struct "+name+" { ";for(const auto &field:s->fields)body+=field.name+": "+types.type(field.type)+"; ";body+="}\n";}
-    }
-    for(auto value:implementationGroups[owner]){
-      body+="impl "+value->localName+types.parameters(value->typeParameters,value->typeArities,value->typeBounds)+": "+types.bound(value->trait)+" for "+types.type(value->self)+" { ";
-      for(const auto &[item,alias]:value->associated)body+="type "+item+" = "+types.type(alias)+"; ";body+="}\n";
-    }
-    client[path]="module "+owner+";\n"+types.imports()+body;
+  // Capture the original checked source closure in memory. Only the selected
+  // projection below is exported. Keeping original client/shared method bodies
+  // permits real trait conformance without fabricating client-side stubs.
+  std::map<std::string,std::string> clientPaths;
+  for(const auto &[key,unit]:p.units)clientPaths[key]=key.starts_with("@")?key:modelPath(unit.module);
+  for(const auto &[key,unit]:p.units){auto source=parse(unit.source,key);auto path=clientPaths.at(key);std::string text="module "+unit.module+";\n";
+    for(const auto &dep:unit.imports)text+="import "+quote(importPath(path,clientPaths.at(dep.target)))+" as "+dep.alias+";\n";
+    for(const auto &value:source.structures)text+=source.definition(value)+"\n";
+    for(const auto &value:source.traits)text+=source.definition(value)+"\n";
+    for(const auto &value:source.implementations)text+=source.definition(value)+"\n";
+    for(const auto &value:source.functions)text+=source.definition(value)+"\n";
+    for(const auto &value:source.endpoints)text+=source.definition(value)+"\n";
+    client[path]=std::move(text);
   }
   SourceTypes clientTypes{p,"api.nex",prefix+"::client_sdk",{},true,{}};std::string helpers;
   for(auto e:endpoints){const auto &handler=p.function(e->target);auto result=clientTypes.type(handler.result),payload=clientTypes.type(*handler.result.element);std::string input,body="\"\"";
@@ -277,9 +369,7 @@ Value generateAPI(const Program &p,const std::string &directory){
     helpers+="pub fn request_"+e->localName+"(id: str, token: str"+input+", action: str, timeout_ms: i64) -> net::Command {\n  return net::typed_request(id, "+quote(e->method)+", "+quote(e->path)+", "+body+", token, action, timeout_ms, "+quote(json(wireSchema(p,handler.result),false))+");\n}\n";
     helpers+="pub fn response_"+e->localName+"(event: web::Event) -> "+result+" {\n  let envelope: result<net::Response> = net::response(event);\n  if !is_ok(envelope) { return err(error_code(envelope), error_message(envelope)); }\n  let response: net::Response = unwrap(envelope);\n  if !is_ok(response.body) { return err(error_code(response.body), error_message(response.body)); }\n  let decoded: result<"+result+"> = decode_json<"+result+">(unwrap(response.body));\n  if response.status == "+std::to_string(e->successStatus)+" {\n    if !is_ok(decoded) { return err(error_code(decoded), error_message(decoded)); }\n    if !is_ok(unwrap(decoded)) { return err(\"E_API_PROTOCOL\", \"Success status contains an error result\"); }\n    return unwrap(decoded);\n  }\n  if response.status >= 400 {\n    if is_ok(decoded) && !is_ok(unwrap(decoded)) { return unwrap(decoded); }\n    return err(\"HTTP_\" + str(response.status), \"Request rejected\");\n  }\n  return err(\"E_API_PROTOCOL\", \"Unexpected endpoint status\");\n}\n";
   }
-  // An orphan-valid witness may live outside the head/trait's model units.
-  for(const auto &value:modelTypes.p.implementations)if(modelTypes.implementations.contains(value.name))clientTypes.name(value.owner,"");
-  client["api.nex"]="module "+prefix+"::client_sdk;\nimport \"std/net.nex\" as net;\nimport \"std/web.nex\" as web;\n"+clientTypes.imports()+helpers;
+  client["api.nex"]="module "+prefix+"::client_sdk;\nimport \"std/net.nex\" as net;\nimport \"std/web.nex\" as web;\n"+clientTypes.imports()+"import "+quote(importPath("api.nex",clientPaths.at(p.entryUnit)))+" as _original_sources;\n"+helpers;
   auto serverBundle=bundle(server,entry),clientBundle=clientProjection(std::move(client),"api.nex",output.string()+"/client");
   // Both generated projects are checked before any final output is created.
   auto checkedServer=loadBundle(serverBundle,output.string()+"/server"),checkedClient=loadBundle(clientBundle,output.string()+"/client");

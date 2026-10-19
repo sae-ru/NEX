@@ -163,6 +163,9 @@ Type checkExpression(Program &program,const std::string &function,E expression,c
 void validateProjectMetadata(const std::string &root);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
+// Binding-only source syntax for reference projection. Never pass it to a
+// backend: separately check both the original and projected source bundles.
+Program bindBundle(const llvm::json::Value &bundle,const std::string &root);
 llvm::json::Value sourceBundle(const Program &program);
 llvm::json::Value dependencyLock(const Program &program);
 void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language);

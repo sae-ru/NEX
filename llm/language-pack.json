@@ -87,7 +87,8 @@
     "text_range_schema": "llm/text-range.schema.json",
     "traits": "docs/traits.md",
     "legacy_traits_015": "examples/traits/legacy-0.15.json",
-    "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql"
+    "legacy_traits_015_sql": "examples/traits/legacy-0.15.sql",
+    "trait_api_workflow": "examples/traits/api/README.md"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait --json",
   "context_command": "nex context --symbol NAME",
@@ -140,7 +141,11 @@
     "large_string_debug": "examples/debugging/strings.nex",
     "traits": "examples/traits/main.nex",
     "trait_mapping": "examples/traits/mapping.nex",
-    "trait_watch": "examples/traits/watch.nex"
+    "trait_watch": "examples/traits/watch.nex",
+    "trait_api_service": "examples/traits/api/service.nex",
+    "trait_api_model": "examples/traits/api/model.nex",
+    "trait_api_contracts": "examples/traits/api/helpers/contracts.nex",
+    "trait_api_client_copy_after_generate": "examples/traits/api/client.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

@@ -875,11 +875,30 @@ def __lldb_init_module(debugger,_):
         after=rows()
         require(all(old<=after[name] for name,old in before.items() if name!='head'),'migration rewrote historical rows')
         require(cli('eval','--revision','HEAD',cwd=legacy)['stdout']==metadata['stdout'],'migrated contextual names changed meaning')
+        api_project=project/'api-models'
+        shutil.copytree(resources/'examples/traits/api',api_project)
+        cli('test',cwd=api_project)
+        generated=cli('api','--directory',api_project/'generated',cwd=api_project)
+        client=Path(generated['client_entry']).parent
+        consumer=client/'consumer.nex';shutil.copyfile(api_project/'client.nex',consumer)
+        for path in client.rglob('*.nex'):
+            require('NEX_SERVER_TRAIT_EXAMPLE_SENTINEL' not in path.read_text(),
+                    'server trait body entered generated client')
+        client_native=cli('test',consumer,cwd=client)
+        client_web=cli('test',consumer,'--target','web',cwd=client)
+        required_test='traits::api::consumer::values'
+        require(required_test in {test['name'] for test in client_native['tests']} and
+                required_test in {test['name'] for test in client_web['tests']},
+                'generated trait API consumer was not tested')
+        server_build=cli('build',generated['server_entry'],'--target','server',cwd=api_project,timeout=180)
         report['evidence']['traits']={'revision':revision,'build_key':identity['build_key'],
             'native_typescript_reference':True,'source_deleted_watch_replay':True,
             'live_constructor_trait_frame':bool(live),'unchanged_stop_and_handle':bool(live),
             'genuine015_fixture':True,'old_revision':metadata['revision'],'migrated_revision':migrated['revision'],
-            'old_non_head_rows_retained':True}
+            'old_non_head_rows_retained':True,
+            'api_models':{'generated_revision':generated['revision'],'native_typescript_consumer':True,
+                'real_client_shared_trait_method':True,'excluded_server_trait_body':True,
+                'server_native_build':server_build['executable']}}
 
     def string_ranges():
         project = root / 'string-range-workflow'

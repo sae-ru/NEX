@@ -991,7 +991,7 @@ llvm::json::Value describe() {
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},
     {"function_value_guide","docs/functions.md"},
     {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},
-    {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
+    {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},
     {"debug_guide","docs/debugging.md"},
     {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index","persistent_module_ids","persistent_type_ids","paged_declaration_context","transitive_dependency_context","snapshot_scoped_identity_reconciliation","atomic_identity_pages","history_preserving_declaration_backfill"}},
@@ -1051,7 +1051,7 @@ llvm::json::Value describe() {
     {"task_catalogue_command","nex foreign HOST.json --json"},{"task_foreign_field","foreign_hash"},
     {"trait_features",llvm::json::Array{"parametric_contracts","named_implementations","associated_value_types","constructor_kinds","generic_methods","ordinary_function_bindings","static_dispatch","method_references","overlap_rejection","orphan_ownership","finite_witnesses","source_declaration_patches","history_preserving_015_migration"}},
     {"trait_limits",llvm::json::Object{{"declarations",4096},{"implementations",4096},{"members_per_trait",1024},{"self_plus_method_parameters",64},{"constructor_arity",64},{"obligation_depth",64},{"obligation_steps",4096}}},
-    {"trait_integration_pending",llvm::json::Array{"full_current_regression","installed_sdk","linux_matrix","extended_generic_watch_context","trait_model_projection_validation","trait_library_client_projection","release_sanitizers"}},
+    {"trait_integration_pending",llvm::json::Array{"full_current_regression","installed_sdk","linux_matrix","extended_generic_watch_context","trait_projection_full_matrix","release_sanitizers"}},
     {"not_yet_supported",llvm::json::Array{"async","wasm","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};

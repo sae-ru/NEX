@@ -1,0 +1,16 @@
+module traits::api::model;
+import "helpers/contracts.nex" as contract;
+
+pub struct Box<T> { value: T; }
+pub struct Envelope<T: contract::Readable> { value: contract::Readable::Item<T>; }
+
+fn extract<T: wire>(value: Box<T>) -> T { return value.value; }
+server fn audit<T: wire>(value: Box<T>) -> str !{io} {
+  print("NEX_SERVER_TRAIT_EXAMPLE_SENTINEL");
+  return "recorded";
+}
+impl boxes<T: wire>: contract::Readable for Box<T> {
+  type Item = T;
+  get = extract<T>;
+  audit = audit<T>;
+}

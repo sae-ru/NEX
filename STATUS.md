@@ -1,46 +1,34 @@
 # NEX implementation status
 
-## Source 0.16 prototype: traits, constructors and associated types
+## Isolated trait/library API projection: scoped regression passed
 
-The isolated 0.55 source implements contextual trait/impl declarations, custom
-bounds, associated projections, fixed constructor kinds, generic method contracts,
-coherent named implementations and static lowering. All unused declarations are
-checked. Graph declarations/edges/context/guarded edits, language-pack schemas,
-source grammar and canonical migration are connected.
+The new source tree retains real client/shared trait contracts, method targets
+and private dependencies for application models and captured libraries. Server
+members/bindings/functions, tests, endpoints and unused private code are omitted.
+The full input is checked; a binding-only source view preserves imports and
+witness references erased by concrete normalization. It is never lowered or
+executed. The final server/client projects are checked before output creation.
 
-The earlier prototype compiler d99662eb1c6d60212fe69d63ebb7656654b0d98e88d87ce19cc62e1a7a83e5aa
-passes 14 focused Python cases and20 native constructor invariant groups (35.24s).
-Those scopes include supplied-frame generic watches, rejection/visibility checks,
-client emission excluding unreachable server implementations, concrete-associated
-API models and genuine source-deleted 0.15 migration with historical rows/IDs kept.
-Five current projects and two Z3 proof contracts migrated separately; original
-source, old database rows and reviewed task/proof acceptance conditions remain.
+The current compiler passes20 trait cases,14 API cases and21 frontend
+diagnostic cases (one macOS filename skip), plus two C++ probes,102.09s.
+The independent-bound/same-name generic method case passes without a language
+version change. The installed SDK's exact traits/API phase passes24 commands
+in22.057s, including a generated client invoking the real method, native and
+TypeScript agreement, exclusion of server bodies and a native server build.
+Live generic constructor/trait watches retain their stop and handle identities;
+the source-deleted replay and genuine0.15 migration also pass.
 
-Later constructor and associated-model API changes build; their new cases have
-not executed. Application model projection retains only needed trait-associated
-contracts/witnesses, without methods or server bodies. Trait-bearing captured
-library projection remains pending. The current trait suite has17 Python cases.
-The installed SDK19 phase includes actual generic trait LLDB watches and genuine
-legacy migration; its script/resources are prepared and must still execute.
+The initial specialized-method-name failure and the standalone phase adapter's
+missing shutil import remain recorded. The installed acceptance script already
+imports shutil; the corrected adapter requires no product change. See
+[current scoped evidence](docs/evidence/trait-library-api-0.55.0.json).
 
-Permission review recovered after a human-authorized retry. The first related
-seven-group run passed six groups and found one generic rejection diagnostic
-regression (unit returned E_GENERIC_KIND instead of E_TYPE). The correction
-preserves the rejection and restores the earlier diagnostic; the current17 trait
-and14 generic cases pass (79.76s), with additional unit-reference/constructor
-negative subcases. The earlier failed run remains in evidence.
-
-The first full installed SDK attempt rejected the type-patch example's old0.15
-revision pin. The old SDK still applies that exact patch; the current SDK proves
-migrate(old apply) equals apply(migrated base), retaining history and all patch
-sources/assertions. Only expected_revision changes. The corrected full SDK19
-is running. The earlier exact installed traits phase passed19 commands, including
-real LLDB generic-constructor watches, unchanged stop/handle, source-deleted
-replay and genuine015 migration. That phase used its recorded earlier binary.
-
-Full current66 regression, complete SDK19/platform acceptance, captured trait
-library projection and Release/sanitizer/broader PLAN work remain pending.
-The complete language and development-chain objective is not achieved.
+The preceding553-file source016 baseline separately passes all66 macOS groups
+(551 Python cases, two platform skips,13 C++ probes;1333.30s) and the same
+baseline compiler's19-phase SDK (302 commands;331.279s). Its final documentation
+postdates the frozen validation input. [Baseline evidence](docs/evidence/source-traits-0.55.0-macos-baseline.json)
+does not substitute for current-source acceptance. Full current66, SDK19/Linux,
+Release/sanitizers and the full language/development-chain PLAN remain open.
 
 ## Verified internal 0.55 core: language 0.15
 

@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import sqlite3
+import shutil
 import unittest
 import support as harness
 
@@ -64,6 +65,18 @@ class Traits(harness.ToolchainCase):
 
     def test_constructor_parameters_generic_methods_and_inference(self):
         self.agreement(MAPPER,'[2,3]\n')
+
+    def test_same_method_names_keep_independent_trait_parameter_bounds(self):
+        self.agreement('''module separate_contracts;
+trait Numeric {fn apply<T:integer>(marker:Self,value:T)->T;}
+trait Serializable {fn apply<T:wire>(marker:Self,value:T)->T;}
+fn next<T:integer>(marker:i64,value:T)->T{return value+1;}
+fn retain<T:wire>(marker:str,value:T)->T{return value;}
+impl numeric:Numeric for i64 {apply=next;}
+impl serializable:Serializable for str {apply=retain;}
+fn main()->unit!{io}{print(Numeric<i64>::apply<i64>(0,41));print(Serializable<str>::apply<str>("","🧠"));}
+test fn values()->unit{assert(Numeric<i64>::apply<i64>(0,41)==42);assert(Serializable<str>::apply<str>("","🧠")=="🧠");}
+''','42\n🧠\n')
 
     def test_higher_kinded_nominal_fields_and_immutable_closures(self):
         self.agreement(MAPPER.replace('fn main()->unit!{io} {print(convert([1,2],increase));}', '''
@@ -289,7 +302,7 @@ fn main()->unit{}
         self.cli('api','--directory',self.root/'generated')
         projected=(self.root/'generated/client/models/mapper.nex').read_text()
         self.assertIn('Self<_>',projected);self.assertIn('F<_>',projected)
-        self.assertNotIn('map_list',projected)
+        self.assertIn('map = map_list',projected)
         consumer=self.root/'consumer.nex';consumer.write_text('''module consumer;
 import "./generated/client/api.nex" as sdk;
 import "./generated/client/models/mapper.nex" as model;
@@ -297,6 +310,7 @@ import "std/net.nex" as net;
 struct Other<T> {value:T;}
 test fn values()->unit {
  let value:model::Payload<list>=model::Payload<list>::Items([41,42]);
+ assert(model::Mapper<list>::map<i64,i64>([41],fn(value:i64)->i64{return value+1;})==[42]);
  let request:net::Command=sdk::request_echo_value("id","token",value,"done",1000);
  let payload:net::TypedPayload=unwrap(decode_json<net::TypedPayload>(request.body));
  assert(unwrap(decode_json<model::Payload<list>>(payload.body))==value);
@@ -309,6 +323,95 @@ fn main()->unit{}
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_KIND')
         consumer.write_text(original.replace('Payload<list>','Payload<Other>'))
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_BOUND')
+
+    def test_api_library_keeps_callable_generic_traits_and_omits_server_members(self):
+        standard=self.root/'standard';standard.mkdir()
+        for name in ('api.nex','http.nex','web.nex','net.nex'):
+            shutil.copyfile(harness.REPO/'lib'/name,standard/name)
+        with (standard/'net.nex').open('a') as output:
+            output.write(MAPPER[MAPPER.index('trait Mapper'):MAPPER.index('fn main()')]
+                .replace('trait Mapper','pub trait Mapper')
+                .replace('fn convert<','pub fn convert<')
+                .replace('fn map<A,B>(values:Self<A>,apply:fn(A)->B)->Self<B>;',
+                    'fn map<A,B>(values:Self<A>,apply:fn(A)->B)->Self<B>;server fn secret(values:Self<i64>)->str!{io};')
+                .replace('{map=map_list;}','{map=map_list;secret=hidden;}'))
+            output.write('''
+server fn hidden(values:list<i64>)->str!{io}{print("SERVER_LIBRARY_TRAIT_197");return "hidden";}
+fn unused_private()->str{return "UNUSED_LIBRARY_PRIVATE_197";}
+''')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex','libraries':{'std':'standard'}}))
+        self.source('''module routes;import "std/api.nex" as api;import "std/net.nex" as net;
+pub struct Row {value:i64;}
+server fn echo(context:api::Context,input:Row)->result<Row>{return ok(input);}
+endpoint echo_value("POST","/api/echo")=echo;
+fn main()->unit{}
+''')
+        self.cli('api','--directory',self.root/'generated')
+        client=self.root/'generated/client'
+        for path in client.rglob('*.nex'):
+            source=path.read_text()
+            for text in ['SERVER_LIBRARY_TRAIT_197','UNUSED_LIBRARY_PRIVATE_197','fn secret','secret =']:
+                self.assertNotIn(text,source)
+        consumer=client/'consumer.nex';consumer.write_text('''module library_consumer;
+import "./api.nex" as sdk;import "std/net.nex" as net;
+fn increase(value:i64)->i64{return value+1;}
+test fn values()->unit {
+ assert(net::convert<list,i64,i64>([41],increase)==[42]);
+ let apply:fn(list<i64>,fn(i64)->i64)->list<i64>=net::Mapper<list>::map;
+ assert(apply([41],increase)==[42]);
+}
+fn main()->unit!{io}{print(net::convert([41],increase));}
+''')
+        self.assertEqual(self.cli('eval',consumer,cwd=client)['stdout'],'[42]\n')
+        self.assertEqual(self.cli('run',consumer,cwd=client)['stdout'],'[42]\n')
+        self.cli('test',consumer,cwd=client);self.cli('test',consumer,'--target','web',cwd=client)
+        emitted=self.cli('emit',consumer,'--kind','typescript',cwd=client,machine=False).stdout
+        self.assertNotIn('SERVER_LIBRARY_TRAIT_197',emitted)
+
+    def test_api_library_bound_with_application_impl_keeps_raw_associated_references(self):
+        library=self.root/'helpers';library.mkdir()
+        (library/'contracts.nex').write_text('''module helper_contracts;
+pub trait Content {type Item:wire;fn get(value:Self)->Content::Item<Self>;server fn secret(value:Self)->str!{io};}
+''')
+        (library/'marker.nex').write_text('''module helper_marker;
+pub trait Marker {type Item:integer;}
+impl integers:Marker for i64 {type Item=i64;}
+''')
+        (self.root/'model.nex').write_text('''module domain;
+import "helpers/contracts.nex" as contract;import "helpers/marker.nex" as marker;
+pub struct Box<T> {value:T;}
+fn extract<T:wire>(value:Box<T>)->T {let checked:marker::Marker::Item<i64>=0;assert(checked==0);return value.value;}
+server fn hidden<T:wire>(value:Box<T>)->str!{io}{print("SERVER_APPLICATION_TRAIT_198");return "hidden";}
+impl boxes<T:wire>:contract::Content for Box<T> {type Item=T;get=extract<T>;secret=hidden<T>;}
+pub struct Payload<T:contract::Content> {value:contract::Content::Item<T>;}
+fn unused_private()->str{return "UNUSED_APPLICATION_PRIVATE_198";}
+''')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex','libraries':{'helpers':'helpers'}}))
+        self.source('''module routes;import "std/api.nex" as api;import "./model.nex" as model;
+server fn echo(context:api::Context,input:model::Payload<model::Box<i64>>)->result<model::Payload<model::Box<i64>>>{return ok(input);}
+endpoint echo_value("POST","/api/echo")=echo;
+fn main()->unit{}
+''')
+        self.cli('api','--directory',self.root/'generated')
+        client=self.root/'generated/client'
+        for path in client.rglob('*.nex'):
+            source=path.read_text()
+            for text in ['SERVER_APPLICATION_TRAIT_198','UNUSED_APPLICATION_PRIVATE_198','fn secret','secret =']:
+                self.assertNotIn(text,source)
+        self.assertTrue(any('trait Marker' in p.read_text() for p in client.rglob('*.nex')))
+        consumer=client/'consumer.nex';consumer.write_text('''module application_consumer;
+import "./api.nex" as sdk;import "./models/domain.nex" as model;
+import "helpers/contracts.nex" as contract;import "std/net.nex" as net;
+test fn values()->unit {
+ assert(contract::Content<model::Box<i64>>::get(model::Box(42))==42);
+ let data:model::Payload<model::Box<i64>>=model::Payload<model::Box<i64>>(42);
+ let request:net::Command=sdk::request_echo_value("id","token",data,"done",1000);
+ let payload:net::TypedPayload=unwrap(decode_json<net::TypedPayload>(request.body));
+ assert(unwrap(decode_json<model::Payload<model::Box<i64>>>(payload.body))==data);
+}
+fn main()->unit{}
+''')
+        self.cli('test',consumer,cwd=client);self.cli('test',consumer,'--target','web',cwd=client)
 
     def test_rejected_conformance_kinds_and_unused_bodies_preserve_graph(self):
         tag='trait Tag {fn tag(value:Self)->i64;} fn tag(value:i64)->i64{return value;} '

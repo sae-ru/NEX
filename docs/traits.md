@@ -102,8 +102,9 @@ reviewed new canonical pins while preserving requirements, tests, conditions,
 invariants, effects and measured budgets. Do not relabel old artifacts.
 
 `examples/traits` contains source examples and a genuine older SQL fixture.
-API extraction of application models carries only required type-level trait
-contracts and witnesses; it does not copy trait methods or server bodies. See
-api.md for generated-client boundaries and pending validation/library support.
+API extraction retains required associated contracts/witnesses and real
+client/shared method targets, including captured libraries. Server trait members,
+bindings and function bodies are excluded. Both projected projects are checked;
+see api.md for realm/import boundaries and pending full validation.
 General source async, dynamic trait objects, specialization priority and all
 remaining platform/development-chain requirements remain separate work.

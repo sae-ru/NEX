@@ -1,0 +1,104 @@
+{
+  "schema": "nex.development-evidence/1",
+  "milestone": "callable_trait_library_api_projection",
+  "created": "2026-10-19T09:41:53.301451+00:00",
+  "toolchain": "0.55.0",
+  "source_language": "0.16",
+  "status": "scoped_checks_pass_full_acceptance_pending",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "current_compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+  "focused_macos": {
+    "ok": true,
+    "created": "2026-10-19T08:49:18.416970+00:00",
+    "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+    "terminal_exit_code": 0,
+    "groups": 5,
+    "python_cases": 55,
+    "trait_cases": 20,
+    "api_cases": 14,
+    "frontend_diagnostic_cases": 21,
+    "cpp_probes": 2,
+    "constructor_invariant_groups": 20,
+    "seconds": 102.09,
+    "log": "build/traits-055-library-api-current-focused.log",
+    "log_sha256": "157073cfcbb86081c482f8216a1c606f37806296450b6a86b59a9a00f5e5bdec",
+    "last_test": "build/traits-055-library-api-current-focused-LastTest.log",
+    "last_test_sha256": "095fd17a65870920b109409ff8dab00be15f7a5d8e3f42f7a6c75c4d39dc495f",
+    "scope": "Isolated macOS current compiler: trait/library API projection, same-named generic methods with independent bounds, native/TypeScript/reference clients, frontend diagnostics and constructor-kind probes. Not full current SDK/platform acceptance."
+  },
+  "focused_platform_skips": [
+    "frontend_diagnostics: a filename case unavailable on macOS"
+  ],
+  "installed_traits_api_phase": {
+    "ok": true,
+    "created": "2026-10-19T09:37:43.796064+00:00",
+    "scope": "Exact installed SDK traits function selected via AST; native/TypeScript/reference, actual LLDB constructor/trait watches at unchanged stop/handle, source-deleted replay and genuine015 migration. Not the full19-phase SDK workflow.",
+    "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+    "script_sha256": "e229b480cb7165d8d7a50d9f8613745906b206ab0bc4e1fa2c71204963964e26",
+    "seconds": 22.057,
+    "commands": 24,
+    "evidence": {
+      "traits": {
+        "revision": "12e05e0b4245ab95d0f69eb29f7de9bd024b6ec11e2f8b5e3b841a152d3d2f11",
+        "build_key": "3531d079562aed66ca0e7754b1b61cb20321930a7c1a8374e552269eed1df6fb",
+        "native_typescript_reference": true,
+        "source_deleted_watch_replay": true,
+        "live_constructor_trait_frame": true,
+        "unchanged_stop_and_handle": true,
+        "genuine015_fixture": true,
+        "old_revision": "0de2f7710b2a5fa515145c0831d97063f81cf059583907aba6d767a5d3e168cc",
+        "migrated_revision": "4763f0e40a6a7c19d4efddf4491014c6a82874419e8f838d0b916e9a7271331b",
+        "old_non_head_rows_retained": true,
+        "api_models": {
+          "generated_revision": "12c56ad608d39222cefa9f5622346fcc5de03aecc3989d5c15fa2c9687fd9504",
+          "native_typescript_consumer": true,
+          "real_client_shared_trait_method": true,
+          "excluded_server_trait_body": true,
+          "server_native_build": "/Users/sae/projects/NEX/build/sdk-055-trait-library-live-corrected-focused/trait-workflow/api-models/generated/server/.nex/build/09cd0591e975bb2159f1ce80e8b066be66581ef0e7850096f21f15cfa255e227/app"
+        }
+      }
+    }
+  },
+  "initial_projection_failure": {
+    "ok": false,
+    "compiler_sha256": "041555073b063ddaf3cc4058a373e279b2b92fb6469d5e1839c9da68fb729811",
+    "terminal_exit_code": 8,
+    "groups": [
+      "traits",
+      "api"
+    ],
+    "traits_cases": 19,
+    "api_group_passed": true,
+    "failure": "Projection extracted method local name from specialized signature containing scoped generic argument names; original contract template name is required.",
+    "log": "build/traits-055-library-api-initial-focused.log",
+    "last_test": "build/traits-055-library-api-initial-focused-LastTest.log",
+    "last_test_sha256": "0b3a61772f589f6078b7dc245bfc835e80e926a68869ccd043732700e5f40cb8"
+  },
+  "corrected_contract_name_gate": {
+    "ok": true,
+    "compiler_sha256": "4f99108148dd9ed8728d863356170fa715564073987e8bff001014fe3d74d185",
+    "terminal_exit_code": 0,
+    "traits_cases_executed": 19,
+    "api_cases_executed": 14,
+    "seconds": 101.55,
+    "scope": "Current API/library projection with real shared/client method bodies, filtered server members, raw associated-type references and both generated bundles rechecked. New twentieth same-name/bound-independence case has not executed.",
+    "log": "build/traits-055-library-api-contract-name-focused.log",
+    "log_sha256": "8994726231fcea91152aefda03134a72d427830337f1bdd4872e14c5a47b564c",
+    "last_test": "build/traits-055-library-api-contract-name-focused-LastTest.log",
+    "last_test_sha256": "83cbadb503fa663362d0b74f0f0a669a3f0f86891f35d381de8e11941eab9df9"
+  },
+  "adapter_failure": {
+    "log": "build/traits-055-library-installed-sdk-live-focused.log",
+    "sha256": "ce1085706c05fb599d4c686412fa597797d7cc7d93bd882ec01f59e6dd92a66f",
+    "reason": "Standalone AST phase adapter omitted shutil from its namespace; installed acceptance script already imports it. Corrected adapter passed without a product change."
+  },
+  "baseline_evidence": "source-traits-0.55.0-macos-baseline.json",
+  "remaining": [
+    "Full current66 macOS regression",
+    "Complete current19-phase installed SDK workflow",
+    "Linux/full debugger/source-free SDK matrix",
+    "Release/sanitizer and broader platform/distribution acceptance",
+    "All remaining language and development-chain PLAN requirements"
+  ]
+}

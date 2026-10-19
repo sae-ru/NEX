@@ -225,7 +225,7 @@ public:
       }
     }
   }
-  Program run(){
+  Program run(bool validate=true){
     std::string phase="load";bool complete=false;
     try{
     safeKey(entry);if(entry.starts_with("@"))throw Error("E_BUNDLE","entry must be a project source path");visit(entry);
@@ -234,7 +234,7 @@ public:
     Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
     for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
-    p.imports=p.units.at(entry).imports;phase="check";check(p);return p;
+    p.imports=p.units.at(entry).imports;if(validate){phase="check";check(p);}return p;
     }catch(Error &error){
       if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
       if(phase=="load")if(auto context=error.frontend.getAsObject())if(auto value=context->getString("phase"))phase=value->str();
@@ -266,13 +266,15 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
   }
   return p;
 }
-Program loadBundle(const llvm::json::Value &bundle,const std::string &root){
+static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate){
   auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
   auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
   std::map<std::string,std::string> sources;
   for(const auto &[key,value]:*files){safeKey(key.str());auto text=value.getAsString();if(!text)throw Error("E_BUNDLE","source file must contain text");sources[key.str()]=text->str();}
-  return Loader(root,required(*obj,"entry"),true,std::move(sources)).run();
+  return Loader(root,required(*obj,"entry"),true,std::move(sources)).run(validate);
 }
+Program loadBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,true);}
+Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
   const Function *generic=&f;for(unsigned depth=0;generic->closure&&depth<64;++depth)generic=&p.function(generic->closureOwner);

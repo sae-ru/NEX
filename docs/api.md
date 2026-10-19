@@ -41,7 +41,7 @@ Without `--directory`, `api` returns `nex.api/1`: endpoint identities, methods/r
 Generation requires a new or empty output directory. Both candidate projects are checked before final output, and a temporary sibling directory is renamed into place only when generation succeeds. The output contains:
 
 - `server/`: complete frozen original sources, generated typed routers/entry, vendored dependencies, project manifest and lock. Build its reported entry with `--target server`.
-- `client/api.nex`: pure `request_OPERATION` and `response_OPERATION` helpers. Client models keep their original nominal module names in `client/models/MODULE/PATH.nex`. Only required model declarations are extracted from application modules. Captured standard/package dependencies retain their public client/shared surface and reachable private helpers/types; server/test declarations and unused private code are removed, including from overridden libraries. Unneeded imports/files and text outside retained declarations are excluded.
+- `client/api.nex`: pure `request_OPERATION` and `response_OPERATION` helpers. Client models keep their original nominal module names in `client/models/MODULE/PATH.nex`. Required model declarations and their client/shared trait method closures are extracted from application modules. Captured standard/package dependencies retain their public client/shared functions/traits and required private helpers/types. Server functions, server trait members/bindings, endpoints, tests and unused private code are removed, including from overridden libraries. Unneeded imports/files and text outside retained declarations are excluded.
 - `api.json`: exact NEX endpoint/wire descriptors.
 - `openapi.json`: OpenAPI 3.1.1 paths, operation names, bearer authentication and schemas. Wire i64 uses an exact canonical signed-64-bit decimal-string pattern. NEX's additional UTF-8, duplicate-key and aggregate resource checks remain authoritative.
 
@@ -105,15 +105,22 @@ JSON/body limits. Generated models retain the primitive type; they do not expose
 mutable typed arrays. Nominal wire descriptor objects keep their existing meaning.
 
 Language 0.16 model extraction retains constructor parameter arities, custom
-bounds and associated type projections. Application model modules carry the
-required type-only traits and selected implementation heads/associated aliases,
-including transitive bound witnesses. They preserve nominal module/type argument
-identities and recheck model bounds. Method signatures, method bindings and their
-function bodies are omitted from this model-only projection; importing an
-extracted model does not provide the original trait's callable API. Import a
-reviewed client/shared library for that API. No server method is replaced by a
-stub. Concrete wire layouts continue to come from the original checked graph.
+bounds and associated type projections, with their checked witness closure.
+Required client/shared trait methods retain their real ordinary targets, generic
+prefix arguments, signatures, realms/effects and private dependencies. Server
+members and their bindings/targets are excluded. No method is replaced by a stub
+or an implementation with different behavior. Retained public trait contracts
+remain callable from their permitted client/shared realm.
 
-This source-0.16 adapter is under validation. Full current regression, installed
-SDK/platform checks and trait-bearing captured library projection remain pending;
-the descriptor and `STATUS.md` retain that scope.
+The generator checks the complete captured input before projection, then checks
+both final server/client projects before writing output. Static source references
+remain available even when a concrete associated type normalizes to a primitive;
+their required imports/witnesses cannot be inferred from the normalized type
+alone. Generation executes no server or foreign function. Nominal module/type
+argument identities and concrete wire layouts remain those of the original
+checked program. Imports and witness modules retain ordinary visibility,
+acyclic-source and coherent-implementation checks.
+
+The earlier API/trait regression passes on the isolated library-projection
+prototype; full current regression, SDK/platform and release checks remain
+pending. The descriptor and STATUS.md record exact validation scopes.

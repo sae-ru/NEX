@@ -291,3 +291,11 @@ instances are derived. Keep source0.15 artifacts with SDK0.54 and use explicit
 history-preserving migration. Regenerate reviewed task/proof pins without
 changing goals, assertions, properties, effects or budgets. Distinguish scoped
 source tests from pending full SDK/platform/debugger/API integrations.
+
+When api_features advertises client_trait_library_projection, generated client
+models/libraries retain required real client/shared trait methods and their
+dependencies. Server members/bindings/functions are excluded; do not invent a
+local implementation for a server method. Preserve generic constructor kinds,
+associated types, exact effects/realms and the generated dependency lock. Both
+input and projected projects are checked; scoped success does not prove full
+SDK/platform acceptance.
