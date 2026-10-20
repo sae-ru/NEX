@@ -55,6 +55,21 @@ async function run() {
   const use = references.find(value => value.uri?.fsPath === source.fsPath);
   assert.equal(use.range.start.line, 2); assert.equal(use.range.start.character, query.character);
   assert.equal(use.range.end.character, query.character + 6);
+  // Edit only the imported buffer, then query the unchanged entry immediately.
+  // The query must flush that buffer instead of reusing its earlier i64 index.
+  const modelDocument = await vscode.workspace.openTextDocument(model);
+  await replace(modelDocument, 'module model;\npub fn answer(n:i64)->i64{return true;}\n');
+  const afterImportedEdit = await vscode.commands.executeCommand('vscode.executeHoverProvider', source, query);
+  assert.equal((afterImportedEdit || []).some(value => value.contents.some(content => content.value?.includes('i64'))), false);
+  await eventually(() => Promise.resolve(vscode.languages.getDiagnostics(model).filter(value => value.source === 'nex')),
+    values => values.some(value => value.code === 'E_TYPE'), 'unsaved imported-buffer diagnostic');
+  assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
+  assert.equal(document.getText(), original);
+  await replace(modelDocument, modelOriginal);
+  await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', source, query),
+    values => values?.some(value => value.contents.some(content => content.value?.includes('i64'))), 'imported-buffer repair');
+  assert.equal(await modelDocument.save(), true);
+  assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
   const invalid = 'module ide_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
   await replace(document, invalid);
   const eolEditor = await vscode.window.showTextDocument(document);
@@ -96,7 +111,7 @@ async function run() {
   const report = {schema:'nex.editor-ide-acceptance/1',ok:true,editor:vscode.version,
     extension_version:extension.packageJSON.version,extension_path:extension.extensionPath,
     compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
-    actual_installed_vsix:true,checked_references:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
+    actual_installed_vsix:true,checked_references:true,imported_unsaved_context_checked:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
     outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
     unicode_crlf_unsaved_error:true,explicit_crlf_eol_asserted:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
     physical_sources_unchanged:true,graph_not_created:true,close_verified:true,
