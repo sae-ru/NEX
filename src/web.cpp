@@ -108,6 +108,7 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   const char *node=std::getenv("NEX_NODE");
   return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()});
 }
+llvm::json::Value inspectWebApp(const Program &p){return prepare(p).metadata;}
 llvm::json::Value generateWebApp(const Program &p,const std::string &directory){
   namespace fs=std::filesystem;
   auto project=prepare(p);fs::path output=fs::absolute(directory);

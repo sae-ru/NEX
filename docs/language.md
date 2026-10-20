@@ -655,3 +655,5 @@ execution authority. See [the string debugger guide](string-debug.md).
 Toolchain 0.66 adds checked source analysis and a development stdio language server (see lsp.md). They use the existing checker with explicit source overlays and add no syntax, effects, runtime behavior, canonical-format change or migration.
 
 Toolchain 0.67 adds a VS Code client for the existing readonly analysis/LSP interface. Editor diagnostics, hover/navigation and text synchronization introduce no source syntax, effects, runtime ABI, canonical-format change or language migration. See editor.md.
+
+Toolchain0.71 introduces an additive external project-build description (`nex.project-build/1`) and checked component/import architecture. It does not change source language0.16, canonical identities, existing `nex.project/1`, interpreter/MLIR/TypeScript semantics or graph history. Read [project builds](project-build.md) for actual artifact kinds and pending linkage/concurrency/accelerator work.

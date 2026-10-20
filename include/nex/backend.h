@@ -24,6 +24,7 @@ std::string emitMLIR(const Program &program, const std::string &entry = "main", 
 std::string emitWasmMLIR(const Program &program,const std::string &entry,bool optimized);
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,
                            const std::string &triple,const std::string &layout);
+void validateNativeBuildEntry(const Program &program,const BuildOptions &options);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);
 int execute(const std::vector<std::string> &arguments);
 // The caller owns cleanup (or retains failed native intermediates).

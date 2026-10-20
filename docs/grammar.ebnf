@@ -174,3 +174,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.67 VS Code LSP client reuses this grammar; no language migration. *)
 
 (* Toolchain0.68 checked editor references are external metadata; syntax and language0.16 remain unchanged. *)
+
+(* Toolchain0.71 project build descriptions are external JSON metadata in
+   nex.build.json, not source grammar. They do not add concurrency, GPU/NPU
+   syntax or change language0.16 canonical identities. *)

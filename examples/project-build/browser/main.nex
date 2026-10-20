@@ -1,0 +1,7 @@
+module project::browser;
+import "std/web.nex" as web;
+import "../core/value.nex" as core;
+client fn initial()->i64 {return core::calculate(0);}
+client fn update(state:i64,event:web::Event)->i64 {return state+1;}
+client fn view(state:i64)->web::View {return web::element("main",[],[],[web::text(str(state))]);}
+client fn title()->str {return "NEX project";}

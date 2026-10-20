@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/project-build-1.json",
+  "title": "Checked NEX project build architecture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "components",
+    "configurations",
+    "default_configuration"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.project-build/1"
+    },
+    "default_configuration": {
+      "$ref": "#/$defs/name"
+    },
+    "components": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 128,
+      "propertyNames": {
+        "$ref": "#/$defs/name"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "root",
+          "entry"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "source",
+              "executable",
+              "static_library",
+              "server",
+              "web"
+            ]
+          },
+          "root": {
+            "$ref": "#/$defs/path"
+          },
+          "entry": {
+            "$ref": "#/$defs/path"
+          },
+          "entry_function": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "dependencies": {
+            "type": "object",
+            "maxProperties": 128,
+            "propertyNames": {
+              "$ref": "#/$defs/name"
+            },
+            "additionalProperties": {
+              "const": "source"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "static_library"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "entry_function"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "source",
+                    "web"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "entry_function"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "configurations": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "propertyNames": {
+        "$ref": "#/$defs/name"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "enum": [
+              "debug",
+              "profile",
+              "release"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "not": {
+              "enum": [
+                "web",
+                "server",
+                "wasm"
+              ]
+            }
+          },
+          "toolchain": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[A-Za-z_][A-Za-z_0-9]*$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^[^\\\\:\\u0000]+$"
+    }
+  },
+  "description": "Filesystem containment, normalized paths, disjoint roots, referenced names, acyclic dependencies, direct import boundaries, source language, native entry/web contracts and locks are compiler-checked. Dependency source linkage compiles reachable source into each consumer; it does not link a separately built archive. Shared-library output, archive consumption, GPU/NPU source adapters and full static executable policy remain pending."
+}

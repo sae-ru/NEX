@@ -141,7 +141,12 @@
     "editor_node_tests": "editor/vscode/test.js",
     "editor_installation": "editor/vscode/README.md",
     "editor_references_schema": "llm/editor-references.schema.json",
-    "editor_identifiers_schema": "llm/editor-identifiers.schema.json"
+    "editor_identifiers_schema": "llm/editor-identifiers.schema.json",
+    "project_build": "docs/project-build.md",
+    "project_build_schema": "llm/project-build.schema.json",
+    "cix_hardware": "docs/cix-p1.md",
+    "cix_gpu_probe": "tools/accelerators/cix_opencl_probe.py",
+    "cix_npu_probe": "tools/accelerators/cix_onnx_probe.py"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -206,7 +211,13 @@
     "ios_archive_workflow": "examples/ios/README.md",
     "mobile_web_contract": "examples/web/main.nex",
     "windows_core": "examples/windows/main.nex",
-    "windows_storage": "examples/windows/storage.nex"
+    "windows_storage": "examples/windows/storage.nex",
+    "project_build": "examples/project-build/nex.build.json",
+    "project_build_source_manifest": "examples/project-build/nex.json",
+    "project_build_core": "examples/project-build/core/value.nex",
+    "project_build_app": "examples/project-build/app/main.nex",
+    "project_build_archive": "examples/project-build/archive/main.nex",
+    "project_build_browser": "examples/project-build/browser/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

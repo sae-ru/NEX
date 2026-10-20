@@ -2063,3 +2063,9 @@ host metadata and optional exact server CORS origins. Language0.16 is unchanged.
 Its native server and browser/network tests, actual mobile API checks and
 complete platform/installed SDK acceptance are pending. This entry makes no
 root promotion, release or full objective completion claim.
+
+## Toolchain0.71 candidate: checked project builds and CIX hardware evidence
+
+Isolated implementation adds `nex.project-build/1`, component ownership/import DAG checks, named build configurations, read-only plans and actual native/static-archive/server/web orchestration. Dependencies currently compile source; separately built archives are not consumed by those source edges. Full79/installed SDK/platform/root-integration gates remain pending. Earlier0.70 evidence retains its exact source and binary scopes.
+
+On a physical CIX P1 ARM64 board, a private patched0.70 Linux development SDK launches and builds/runs ten language examples in debug/release; all20 native outputs match the interpreter and copied binaries run without NEX/LLVM/MLIR/Z3 dependencies. Checked overflow traps in both profiles. Separately, Mali OpenCL checked196608 integer outputs and a fixed-shape3x2 ONNX fixture passed three Zhouyi NPU runs with CPU EP fallback disabled, actual Zhouyi profile placement and `/dev/aipu` open. Direct accelerator calls from NEX and broad hardware support remain pending.

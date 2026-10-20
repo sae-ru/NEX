@@ -686,10 +686,7 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){return Emitter(p).run(entry,testEntry,libraryEntry);}
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,const std::string &triple,const std::string &layout){return lower(source,path,triple,layout);}
-BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
-  if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
-  auto host=llvm::sys::getDefaultTargetTriple();
-  auto toolchain=configureNative(options);auto target=toolchain.target;
+void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool server=options.target=="server";
   if(server){
     const auto &handler=p.function(options.entry);
@@ -704,6 +701,13 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   // Entry validation is independent of emission, including warm cache hits.
   nativeEntry(p,options.entry,options.testEntry,options.libraryEntry||server);
+}
+BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
+  if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
+  auto host=llvm::sys::getDefaultTargetTriple();
+  auto toolchain=configureNative(options);auto target=toolchain.target;
+  bool server=options.target=="server";
+  validateNativeBuildEntry(p,options);
   llvm::Triple configuredABI(toolchain.target);
   bool windows=configuredABI.isWindowsGNUEnvironment();
   if(windows&&(server||options.profile=="profile"))throw Error("E_TARGET","Windows core supports debug/release executables and archives; HTTP servers and profiling remain pending");

@@ -620,3 +620,12 @@ Windows, физические мобильные/Intel-цели, Android NDK/nat
 
 - Explicit GNU/UCRT64-bit PE/archive target, ABI/cache/notices and runtime rejection boundaries: verified cross-builds; root75/SDK23 and x64 Wine6 pass. Actual Windows OS/ARM64 execution remains unverified.
 - Actual Windows OS/ARM64 execution, Windows-hosted compiler, debugger/profiler, platform I/O, GUI/plugin binding and signed distribution remain pending.
+
+### Toolchain0.71 project architecture candidate
+
+- [x] Implement separate versioned component/build metadata, strict field/capability validation, disjoint physical source ownership, checked direct import edges and cycle rejection.
+- [x] Implement a read-only source-checked plan and selected/native/web artifact orchestration without synchronizing graph HEAD.
+- [ ] Complete full regression, installed SDK and platform gates before root integration.
+- [ ] Add actual component archive consumption, shared-library exports/ownership ABI, explicit full-static policy and resolved binary dependency reports.
+- [ ] Add safe structured CPU tasks/channels and separate asynchronous I/O.
+- [ ] Implement GPU/NPU adapters callable from NEX and verify actual device placement/fallback policy. CIX P1 OpenCL and Zhouyi probes have passed separately; probes alone do not complete NEX integration.

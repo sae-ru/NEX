@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
     'archive-debug-replay-export', 'scalar-proof', 'traits',
-    'authenticated-storage', 'browser')
+    'authenticated-storage', 'browser', 'project-build')
 
 
 def require(condition, message):
@@ -337,7 +337,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -2024,6 +2024,51 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         report['evidence']['binary_browser'] = binary_evidence
         report['evidence']['browser_build'] = args.browser
 
+    def project_build():
+        description = cli('describe')['project_build']
+        require(description['manifest_schema'] == 'nex.project-build/1' and
+                description['dependency_linkage'] == ['source'], 'SDK project build contract differs')
+        architecture = root / 'project-architecture'
+        shutil.copytree(resources / 'examples/project-build', architecture)
+        planned = cli('project', '--kind', 'plan', cwd=architecture)
+        require(planned['schema'] == 'nex.project-plan/1' and planned['source_checked'] and
+                not planned['external_tools_invoked'] and not (architecture / '.nex').exists(),
+                'project plan did not remain read-only')
+        selected = cli('project', '--kind', 'plan', '--component', 'app', cwd=architecture)
+        require([c['name'] for c in selected['components']] == ['core', 'app'], 'project dependency closure differs')
+        native = cli('project', '--kind', 'build', '--component', 'app', '--configuration', 'release', cwd=architecture)
+        application, = native['artifacts']
+        require(application['kind'] == 'executable' and run([application['artifact']]) == '22\n',
+                'project application did not execute its shared source')
+        archive = cli('project', '--kind', 'build', '--component', 'archive', '--configuration', 'release', cwd=architecture)
+        library, = archive['artifacts']
+        debug = json.loads(Path(library['debug_manifest']).read_text())
+        symbol = next(f['native_symbol'] for f in debug['functions'] if f['name'] == 'project::archive::answer')
+        host = architecture / 'archive-host.cpp'
+        host.write_text('extern "C" long long ' + symbol + '();int main(){return ' + symbol + '()==22?0:1;}')
+        executable = architecture / 'archive-host'
+        run([report['doctor']['native_compiler'], '-std=c++20', host, library['artifact'], '-o', executable])
+        run([executable])
+        warm = cli('project', '--kind', 'build', '--component', 'app', '--configuration', 'release', cwd=architecture)
+        require(warm['plan_hash'] == native['plan_hash'] and warm['artifacts'][0]['cached'], 'project cache/plan changed')
+        manifest = architecture / 'nex.build.json'
+        broken = json.loads(manifest.read_text()); broken['components']['app']['dependencies'] = {}
+        manifest.write_text(json.dumps(broken))
+        rejected = cli('project', '--kind', 'build', '--component', 'app', cwd=architecture, expected_success=False)
+        require(rejected['code'] == 'E_PROJECT_BOUNDARY', 'undeclared architecture edge was accepted')
+        shutil.copy2(resources / 'examples/project-build/nex.build.json', manifest)
+        web_result = None
+        if args.browser:
+            built = cli('project', '--kind', 'build', '--component', 'browser', '--configuration', 'release', cwd=architecture, timeout=300)
+            web_result, = built['artifacts']
+            require(web_result['kind'] == 'web' and (Path(web_result['result']['dist']) / 'index.html').is_file(),
+                    'project browser artifact is missing')
+        require(not (architecture / '.nex/graph.db').exists(), 'project build synchronized graph history')
+        report['evidence']['project_build'] = {'plan_hash': planned['plan_hash'], 'selected_plan_hash': selected['plan_hash'],
+            'native_artifact': application['artifact'], 'archive': library['artifact'], 'archive_host_executed': True,
+            'source_linkage': True, 'undeclared_import_rejected': True, 'web_built': web_result is not None,
+            'graph_store_opened': False}
+
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
@@ -2033,7 +2078,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
-                ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser)]
+                ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:

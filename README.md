@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.70.0 / language0.16**, under development.
+The current source is **toolchain0.71.0 / language0.16**, under development.
 The language includes checked integers/finite floats, Unicode strings, immutable
 aggregates, exhaustive matching, generics, traits/associated types, constructor
 parameters, function values and snapshot closures. Types, effects, client/server
@@ -292,3 +292,7 @@ The candidate adds `nex analyze` for unsaved sources and `nex lsp` for stdio com
 ## Isolated development0.67: VS Code editing
 
 The candidate extension0.2 connects unsaved-source diagnostics, type hover, definitions and outline to the installed nex lsp service. Provider/transport contracts and a real Node-to-compiler test pass during development; own0.67 build/full78/SDK and actual installed IDE acceptance remain required. See docs/editor.md.
+
+## Project architecture candidate
+
+Toolchain0.71 adds [checked component/build descriptions](docs/project-build.md) in `nex.build.json`, with read-only plans and selected native/static-archive/server/web artifacts. Source dependencies are checked against real import ownership, including configured-package aliases; current linkage is explicitly source compilation. General archive consumption, DLL output, full-static policy, source concurrency and GPU/NPU language adapters remain pending. Full candidate regression/SDK/platform gates must pass before root promotion. The [physical CIX P1 checks](docs/cix-p1.md) separately exercise toolchain0.70 native programs and installed accelerator APIs.
