@@ -1,7 +1,10 @@
 # Persistent graph identities
 
-Toolchain 0.44 retains language 0.15 and database schema 3. It adds independent
-module/type nodes and checked references between stores. Query `nex describe
+Toolchain 0.44 introduced independent module/type nodes and checked references
+between stores while retaining its then-current language 0.15/database schema 3.
+Current language 0.16 additionally indexes source traits and named implementations;
+the current main database schema is4. These versioned extensions preserve local
+identity history; source-language migration remains explicit. Query `nex describe
 --json` for the installed compiler's policy and limits; `nex guide --kind graph
 --json` returns this guide. `llm/graph-identity.schema.json` describes the JSON
 responses with local schema references only. Toolchain 0.45 adds atomic source
@@ -10,7 +13,7 @@ type replacements through the existing patch protocol.
 ## Identity and content
 
 Each store allocates a 32-hex namespace. Module names, qualified type names,
-function names and endpoint names have persistent local IDs. Generic type
+trait/implementation names, function names and endpoint names have persistent local IDs. Generic type
 instances also have IDs; their source templates remain separate nodes. Function
 and operation IDs retain their existing history. Deleting and reintroducing a
 logical declaration in the same store reuses its declaration ID. Renaming a
@@ -51,14 +54,17 @@ like `check`. Reconcile and resolve accept saved revisions only.
 `nex.declaration-context/1`. Module/type context clips source at 4096 UTF-8 bytes,
 omits canonical definitions larger than 8192 bytes and caps outgoing reference
 previews at 100. Counts and omission/truncation flags remain explicit. Module
-source is empty: its definition represents membership/imports. Source type nodes are `editable` in toolchain 0.45; modules and derived
-specializations remain read-only. Replace a source type and its affected
+source is empty: its definition represents membership/imports. Source type nodes
+are `editable` from toolchain 0.45; language 0.16 also supports guarded source
+trait and named-implementation patches. Use `context --entity trait|impl` for
+their checked declarations. Modules, contract method nodes and derived
+specializations remain read-only. Replace source declarations and their affected
 functions/endpoints together with `nex apply --patch FILE`. Adding top-level definitions
 or changing imports still requires export/edit/check.
 
 `identities` exports `nex.identities/1`. Supported entities are `all`, `module`,
-`type`, `function`, `endpoint` and `operation`. A selected module exports itself,
-its source functions/types/endpoints and their source operations; caller-specific
+`type`, `trait`, `impl`, `function`, `endpoint` and `operation`. A selected module exports itself,
+its source functions/types/traits/implementations/endpoints and their source operations; caller-specific
 derived nodes are excluded. An unscoped export includes derived nodes too.
 A function selection contains its declaration; use `all --symbol FUNCTION` to
 include operations, or `operation --symbol FUNCTION` for operations alone.
@@ -122,12 +128,15 @@ semantics and language revision hashing are unchanged.
 
 ## Existing stores
 
-The extension adds declaration versions/IDs, dependency edges, revision policy
-markers and identity links, with `identity_schema=1` in metadata. The main
-database remains schema 3. Opening a genuine 0.43 store lazily indexes checked
-archived source without changing old revisions, source bytes, function IDs,
-operation IDs or HEAD. Older compilers can still read their original tables.
-No language migration or fixture retagging is involved. Readers verify stored
+The0.44 extension added declaration versions/IDs, dependency edges, revision
+policy markers and identity links, with `identity_schema=1` in metadata, while
+its main database remained schema 3. Its lazy indexing of genuine 0.43 archives
+retained old revisions, source bytes, function IDs, operation IDs and HEAD.
+Current compilers additionally use the schema 4 journal introduced in 0.49;
+opening an older supported database preserves its rows and lineage, and does not
+silently migrate the archived source language. Keep matching older SDKs for
+historical source/artifacts and use explicit migration for current-language
+checking. Do not retag genuine fixtures. Readers verify stored
 declaration/edge and identity-operation metadata against checked source, and
 reject unsupported identity policies.
 

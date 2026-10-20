@@ -2,6 +2,11 @@
 
 Commands are local and model-independent. The compiler handles parsing, checking and transactions; the invoking LLM produces source or a patch. JSON is ordinary UTF-8 with no provider-specific tool format.
 
+The current source language is0.16, graph/context protocol 2 and graph database
+schema 4. Sections labelled with older language/toolchain versions describe when
+an extension was introduced; they do not select the current language or runtime.
+Query the installed descriptor and use the matching specification/grammar.
+
 ## Discovery and diagnostics
 
 `nex describe --json` returns `nex.language/1`. Its `version` and `features` describe implemented behavior. `not_yet_supported` makes the boundary explicit. Specification and prompt paths are repository-relative.
@@ -44,9 +49,9 @@ Toolchain 0.6.0 additionally recognizes an optional pure `commands(State, State,
 
 `nex token --user USER --auth FILE --json` appends an authentication entry and reports a newly generated bearer token. Only its SHA256 hash is stored, and the update is atomic. It does not deploy/configure a running server.
 
-`nex build FILE --library --entry NAME` emits a native static archive and no C main wrapper. The archive contains the selected closure and required runtime components. Its matching trusted runtime ABI is documented in `docs/server.md`; source-level FFI declarations remain unsupported.
+`nex build FILE --library --entry NAME` emits a native static archive and no C main wrapper. The archive contains the selected closure and required runtime components. Its matching trusted C++ runtime ABI is documented in `docs/server.md`. Source-level foreign calls use separate concrete server-only `extern` declarations, bundle pins and explicit host catalogues; see [the FFI guide](ffi-design.md). Building an archive does not itself grant a foreign module execution authority. FFI remains experimental and platform-restricted.
 
-Native `build` and `emit --kind llvm` accept `--target TRIPLE` or `--toolchain FILE` (`nex.toolchain/1`, schema `llm/toolchain.schema.json`). A manifest also works with `--target server`. Configured targets are the 64-bit host ABI and macOS arm64/x86_64 cross-builds on macOS. Build responses add `target`, `compiler_target`, `host_compatible`; the same ABI/SDK flags apply to generated and runtime objects and linking. Foreign `run/test/debug/profile` fail with E_TARGET_RUN, absent target dependencies with E_TARGET_LIBRARY, invalid configurations with E_TOOLCHAIN. See `nex guide --kind build` for SDK/dependency selection, metadata, cache isolation and execution-verification limits.
+Native `build` and `emit --kind llvm` accept `--target TRIPLE` or `--toolchain FILE` (`nex.toolchain/1`, schema `llm/toolchain.schema.json`). A manifest also works with `--target server`. Configured paths include the 64-bit host ABI, macOS arm64/x86_64 cross-builds on macOS, explicit iOS static archives with matching Xcode SDKs and explicit Windows GNU/UCRT PE/archive targets. Their runtime/artifact restrictions differ: read `ios_archive_target`, `windows_core_target` and the [iOS](ios.md)/[Windows](windows.md) guides. Windows filesystem/foreign/server/profile/package paths remain unavailable. Build responses add `target`, `compiler_target`, `host_compatible`; the same ABI/SDK flags apply to generated and runtime objects and linking. Foreign `run/test/debug/profile` fail with E_TARGET_RUN, absent target dependencies with E_TARGET_LIBRARY, invalid configurations with E_TOOLCHAIN. See `nex guide --kind build` for SDK/dependency selection, metadata, cache isolation and execution-verification limits.
 
 ## Bounded context
 
@@ -84,7 +89,7 @@ Project files have normalized relative keys; library keys use `@std/FILE` or `@p
 }
 ```
 
-`nex apply --patch patch.json --json` replaces existing function, endpoint and (toolchain 0.45) source struct/enum definitions. Each source defines exactly the requested local declaration; include the required `pub`, realm, test marker and effects. Optional `kind` is `function`, `endpoint` or `type` and must match the selected definition. Additional top-level definitions and imports cannot be injected. Patch names can be fully qualified or entry-module shorthand; duplicate resolved symbols and unknown JSON fields are rejected. Multiple files and definition kinds can change in one patch. The complete candidate bundle is reparsed and checked before a transaction commits. HEAD is checked before preparing the candidate and again inside the write transaction; stale context returns `E_CONFLICT` and changes nothing. The revision must be a lowercase 64-character digest.
+`nex apply --patch patch.json --json` replaces existing functions, endpoints, source struct/enum types, traits and named implementations. Each source defines exactly the requested local declaration; include the required `pub`, realm, test marker and effects. Optional `kind` is `function`, `endpoint`, `type`, `trait` or `impl` and must match the selected definition. Additional top-level definitions and imports cannot be injected. Patch names can be fully qualified or entry-module shorthand; duplicate resolved symbols and unknown JSON fields are rejected. Multiple files and definition kinds can change in one patch. The complete candidate bundle is reparsed and checked before a transaction commits. HEAD is checked before preparing the candidate and again inside the write transaction; stale context returns `E_CONFLICT` and changes nothing. The revision must be a lowercase 64-character digest. Operation replacements use `kind: "operation"`, `operation_id` and an additional exact source guard; see the operation section below and `llm/patch.schema.json`.
 
 Type replacements preserve logical type IDs and retained snapshots. Generic instances are derived: patch their source template together with affected constructors, signatures and matches. Struct-to-enum changes are allowed when the complete replacement bundle type-checks. See [the graph guide](graph.md) and `examples/type-patches`.
 
@@ -104,11 +109,13 @@ For a one-file revision, `nex export --revision HEAD -o PATH` writes just that s
 
 ## Language/database migration
 
-The graph database migrates schema 1 to schema 2 transactionally, retaining stored sources and recording older revisions as language 0.1. Stored 0.1/0.2 source is preserved and wrapped as a single-file bundle on recovery/migration; 0.3/0.4 bundles retain all their files. Current language is 0.15. Viewing/building an old-language graph requires explicit migration; export remains available for recovery. Newly reserved builtin names can require explicit source edits.
+The current graph database schema is4. Supported schema 1–3 upgrades preserve stored sources, local identities and history; schema 4 establishes a HEAD-transition journal without inventing unknown earlier transitions. Schema 1 sources retain language 0.1 metadata. Stored 0.1/0.2 sources remain recoverable single-file bundles; later source bundles preserve their complete reachable files. Current source language is0.16. Database-schema upgrades do not migrate source language: checking/building an older-language archive requires explicit `nex migrate`, while export remains available for recovery. Keep matching SDKs for historical artifacts; newly reserved names or canonical formats can require explicit source/acceptance-pin review.
 
 `nex migrate --json` reparses and checks the archived HEAD under the current language, atomically adopts its new revision if HEAD is unchanged, and preserves the old revision. `--revision HASH` selects another retained snapshot. `nex migrate GRAPH.json --json` accepts legacy `nex.graph/1` single-file source or a `nex.graph/2` bundle and explicitly adopts its checked source. That operation treats the old hash as declared metadata, not as a verified current hash. Ordinary `import` rejects a language mismatch or an incorrect recomputed revision. Migration does not overwrite source files; materialize the chosen result with `export`.
 
-Structure definitions currently change through the source workflow. Function replacement patches preserve the source's structure definitions and recheck all affected types.
+Source types, traits and named implementations can change through the guarded
+declaration-patch workflow together with affected callers. Derived instances
+remain read-only. New declarations/imports still require export/edit/check.
 
 ## Build artifacts and debugging
 
@@ -125,7 +132,7 @@ nex context --symbol app::sum
 nex debug src/main.nex -- -o 'breakpoint set --name nex_3_app_3_sum'
 ```
 
-Use `native_symbol` from context or the graph for the exact debugger name. Qualified NEX symbols have length-prefixed native components, avoiding collisions among module names. Source line information, including imported files, is emitted through MLIR's LLVM debug scope pass. Toolchain 0.8 adds real typed parameter/local records, lexical binding scopes, bounded LLDB previews and a read-only `nex-values` frame report. `nex debug FILE --kind dap --json` and `nex debug FILE --json` return `nex.debug-session/1` with `adapter`, matching `manifest` and an editor `launch` configuration. Plain `nex debug` loads the captured views and launches LLDB. `nex.debug-values/1` reports revision/function/file/line and bounded `{name,type,value}` previews; duplicate shadowed names stay separate. Native build JSON adds `debug_manifest`. Debug artifacts and source projections are checked on cache hits. Full NEX expression evaluation remains pending. See [the debugging guide](debugging.md).
+Use `native_symbol` from context or the graph for the exact debugger name. Qualified NEX symbols have length-prefixed native components, avoiding collisions among module names. Source line information, including imported files, is emitted through MLIR's LLVM debug scope pass. Toolchain 0.8 introduced typed parameter/local records, lexical binding scopes, bounded LLDB previews and a read-only `nex-values` frame report. `nex debug FILE --kind dap --json` and `nex debug FILE --json` return `nex.debug-session/1` with `adapter`, matching `manifest` and an editor `launch` configuration. Plain `nex debug` loads the captured views and launches LLDB. `nex.debug-values/1` reports revision/function/file/line and bounded `{name,type,value}` previews; duplicate shadowed names stay separate. Native build JSON adds `debug_manifest`. Debug artifacts and source projections are checked on cache hits. Checked pure NEX expressions are supported in a separate interpreter process through LLDB/NEX DAP, with bounded typed captures and explicit unavailable data. They do not execute code in the inferior or permit effects. See [expressions](expressions.md), the stopped-frame section below and [debugging](debugging.md) for exact limits and adapter selection.
 
 ## Endpoint operations
 
@@ -157,7 +164,7 @@ The CLI returns `nex.verification-session/1`; `output` identifies the complete `
 
 `nex contract --kind intent --contracts FILE` returns `nex.verification-intent/1` and `intent_hash`. Task verification fixes these pre/postconditions while rebasing only source/revision/function hashes in a separate derived contract. Loop annotations remain checked proof strategy. `nex test --symbol NAME` selects one test and rejects ordinary functions. `--build-directory PATH` selects a build workspace (default remains project `.nex/build`), allowing task workspaces to reuse validated module objects.
 
-See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are 0.15/2.
+See `docs/tasks.md` and `llm/task.schema.json` for fields, bounds, POSIX group cleanup, hardware budgets, external-tool trust and replay limitations. Static linkage is not dynamic coverage or proof of prose requirements. Current source language/graph protocol are0.16/2.
 
 ## Stopped-frame expressions
 

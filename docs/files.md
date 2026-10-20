@@ -1,4 +1,8 @@
-# Text and binary files — language 0.13
+# Text and binary files — language 0.16
+
+Whole-text intrinsics were introduced in language 0.12, binary intrinsics in
+0.13 and owned streaming files in 0.14. This guide describes their current
+capability contract; older introduction versions do not select current syntax.
 
 ```nex
 module example;
@@ -62,17 +66,25 @@ access. Client/shared code cannot invoke these server intrinsics or declare `fs`
 Unreachable server definitions stay absent from TypeScript/browser output.
 Pure debugger expressions and scalar proofs cannot perform filesystem effects.
 
-Language 0.11 archives need explicit `nex migrate`, retaining their sources,
-history and unchanged logical function IDs. New builtin names may conflict with
-old user definitions; a rejected migration leaves HEAD unchanged. Repair an
-exported source bundle explicitly and migrate that candidate without replacing
-the original archive. Keep SDK 0.29 for old receipts/debug frames and review new
-task/proof pins without weakening their acceptance intent. Function/9, program/10,
-structure/4 and enum/3 formats remain; the language version changes revision identity.
+Older-language archives need explicit `nex migrate`, retaining their sources,
+history and logical function IDs. New builtin names may conflict with old user
+definitions; a rejected migration leaves HEAD unchanged. Repair an exported
+source bundle explicitly and migrate that candidate without replacing the
+original archive. Keep matching SDKs for old receipts/debug frames (including
+SDK 0.29 for language 0.11) and review new task/proof pins without weakening
+acceptance intent. The original text-file extension retained its function/9,
+program/10, structure/4 and enum/3 shapes; current language 0.16 canonical formats
+are specified in [language.md](language.md). Migration creates a new revision
+without retagging the historical one.
 
-Streaming, exposed resources, general FFI/async, HTTP file policy
-and other platforms remain pending. The underlying adapter design and direct
-native probes are recorded in [files-design.md](files-design.md).
+Language 0.14 adds server-only owned `file` values and bounded streaming through
+the [resource API](resources.md). Streaming writes can be partial and do not
+provide whole-file replacement atomicity. Concrete source foreign calls are a
+separate experimental [FFI](ffi-design.md) facility; generic foreign resources,
+source async/await, a stock HTTP file-grant policy and additional platforms remain
+pending. Current filesystem support is macOS/Linux; the Windows target rejects
+these calls. The underlying adapter design and direct native probes are recorded
+in [files-design.md](files-design.md).
 
 Language 0.13 also exposes `file_read_bytes(str)->result<bytes>` and
 `file_write_bytes(str,bytes)->result<bool>`. They require server/fs and share all

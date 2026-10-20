@@ -2,7 +2,7 @@
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
-Toolchain0.64 adds an explicit [Windows GNU/UCRT core target](windows.md); the0.65
+Toolchain 0.64 adds an explicit [Windows GNU/UCRT core target](windows.md); the0.65
 candidate adds strict Unicode environment access and explicit target SQLite storage.
 Its target/runtime restrictions add no syntax, canonical changes or language
 migration. Windows execution and development-host support have separate status.
@@ -17,23 +17,23 @@ resource/JavaScript ABI limits are narrower than the full language.
 
 Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
-canonical-format change. Their tooling version does not migrate language0.16.
+canonical-format change. Their tooling version does not migrate language 0.16.
 
 Physical projects can declare `nex.project/1` and language `0.16` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
-Language0.16 adds [traits, associated value types and constructor parameters](traits.md).
+Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
 Explicit migration from0.15 preserves historical revisions/IDs; keep SDK0.54 for
 old artifacts. Current source integration and remaining validation scopes are
-advertised by `trait_integration_pending`; the earlier language0.15 constructor
+advertised by `trait_integration_pending`; the earlier language 0.15 constructor
 core is separate evidence. The declarations use contextual names and do not
 reserve ordinary old `trait`, `impl`, `type`, `for` or `Self` identifiers.
 
-Toolchain0.62 adds an external [mobile project generator](mobile.md) using the
+Toolchain 0.62 adds an external [mobile project generator](mobile.md) using the
 existing pure web application contract. Its platform hosting and relative URL
 policy change no source syntax, type/effect rules or canonical format.
 
-Toolchain0.63 adds external HTTPS host configuration and exact server CORS
+Toolchain 0.63 adds external HTTPS host configuration and exact server CORS
 origins ([mobile API](mobile-api.md)); this changes no language syntax, effects,
 realms, canonical format or migration requirements.
 
@@ -253,7 +253,7 @@ Their order has no semantic significance; source canonical forms/context expose
 sorted `type_bounds`, and `describe` reports the exact supported domains and
 implications. Concrete specializations use the existing checked interpreter,
 native and TypeScript operations without runtime trait dispatch. Public API model
-extraction preserves original bounds. Language0.16 also implements user-defined
+extraction preserves original bounds. Language 0.16 also implements user-defined
 traits/implementations, associated value types and fixed constructor parameters;
 see [traits](traits.md). Type defaults, type lambdas and general higher-kinded
 inference remain pending.
@@ -482,7 +482,7 @@ The interpreter has a configurable step budget (default 1,000,000) and a call de
 
 Each checked function and nominal type has a canonical structured representation. BLAKE3 hashes identify function content and program revisions. Language 0.16 uses `nex.function/13`, `nex.structure/5`, `nex.enum/4` and `nex.program/14`. Historical language 0.15 used function/12, structure/4, enum/3 and program/13. Floating expression literals store their normalized binary64 bits in the canonical value slot; decimal spelling does not alter identity. Template parameters, sorted bounds and specialization origin/arguments are explicit metadata; program identity includes checked source declarations and excludes derived instances and lifted closures. Parent canonical expressions include lambda bodies/signatures; derived closure context records owner/captures. Canonical matches include resolved case names, numeric discriminators, typed bindings and arm bodies. Comments and source locations are excluded. Reordering independent definitions or renaming an import alias does not change program identity, while changing field/case order does. Moving files without changing their logical module/dependency identities preserves semantic identity.
 
-SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename and portable ID reconciliation are planned. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
+SQLite stores revisions, function nodes, and call edges. Local node IDs remain stable for a given logical module/local name as its body changes or another entry module imports it. Explicit identity-preserving rename remains pending. Snapshot-scoped identity reconciliation is implemented: import or check the destination source first, then use `nex identities --kind reconcile` with an expected destination HEAD. It records checked references between namespaces/revisions while preserving destination IDs; import alone does not adopt foreign IDs. See [graph identities](graph.md) for page bounds and resolution. Every current revision archives all reachable source files in a `nex.sources/1` bundle. Building a stored revision does not reload live files, package roots or dependency locks. A revision retains its first source projection; whitespace-only edits can share the semantic revision. Build keys also include the actual source bundle so debug locations are refreshed.
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
@@ -634,7 +634,7 @@ execution; static references do not prove dynamic coverage.
 
 ## Stopped-string range tools (toolchain0.54)
 
-Source semantics, canonical forms and language0.15 remain unchanged. Debugger
+Source semantics, canonical forms and language 0.15 remain unchanged. Debugger
 string shapes count Unicode scalars; bounded text_range captures let the isolated
 watch interpreter index/slice held strings without materializing their whole
 value. These captures are debugger data, not source string constructors or
