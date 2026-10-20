@@ -29,7 +29,7 @@ async function run() {
   assert.equal(vscode.workspace.isTrusted, true);
   const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');
   assert.ok(extension && extension.extensionPath.startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
-  assert.equal(extension.packageJSON.version, '0.2.0');
+  assert.equal(extension.packageJSON.version, '0.3.0');
   await vscode.workspace.getConfiguration('nex', folder.uri).update('compilerPath', process.env.NEX_EDITOR_COMPILER, vscode.ConfigurationTarget.Workspace);
   await extension.activate();
   const source = vscode.Uri.joinPath(folder.uri, 'main with spaces.nex');
@@ -50,6 +50,11 @@ async function run() {
     values => values?.some(value => value.uri?.fsPath === model.fsPath), 'cross-module definition');
   const destination = definitions.find(value => value.uri?.fsPath === model.fsPath);
   assert.equal(destination.range.start.line, 1); assert.equal(destination.range.start.character, 7);
+  const references = await eventually(() => vscode.commands.executeCommand('vscode.executeReferenceProvider', source, query),
+    values => values?.some(value => value.uri?.fsPath === source.fsPath), 'exact source references');
+  const use = references.find(value => value.uri?.fsPath === source.fsPath);
+  assert.equal(use.range.start.line, 2); assert.equal(use.range.start.character, query.character);
+  assert.equal(use.range.end.character, query.character + 6);
   const invalid = 'module ide_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
   await replace(document, invalid);
   const eolEditor = await vscode.window.showTextDocument(document);
@@ -91,7 +96,7 @@ async function run() {
   const report = {schema:'nex.editor-ide-acceptance/1',ok:true,editor:vscode.version,
     extension_version:extension.packageJSON.version,extension_path:extension.extensionPath,
     compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
-    actual_installed_vsix:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
+    actual_installed_vsix:true,checked_references:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
     outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
     unicode_crlf_unsaved_error:true,explicit_crlf_eol_asserted:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
     physical_sources_unchanged:true,graph_not_created:true,close_verified:true,

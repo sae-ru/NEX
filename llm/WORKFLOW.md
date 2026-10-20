@@ -106,3 +106,5 @@ nex export --revision HEAD --directory ../lesson-fixed --json
 не изменяются. Статическая связь требования с графом не доказывает полноту
 тестов или человеческой формулировки. Снимки не замораживают всю ОС, внешние
 инструменты и окружение; границы повторения описаны в руководстве.
+
+For checked source references, query describe.editor_analysis and use its advertised references_command/schema. Keep analysis/1 consumers on the default command. Treat the new occurrence locations as bounded captured-source metadata and continue normal check/test/task acceptance after any edit.

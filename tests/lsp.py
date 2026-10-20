@@ -202,6 +202,139 @@ class LanguageServer(harness.ToolchainCase):
             self.assertTrue(result['symbols'])
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_exact_references_preserve_v1_and_distinguish_writes_and_function_values(self):
+        text=('module refs;\nfn twice(n:i64)->i64{return n+n;}\n'
+              'fn main()->i64{var n:i64=20;n=n+1;let f:fn(i64)->i64=twice;return f(n)+twice(n);}')
+        self.source(text)
+        legacy=self.cli('analyze',self.file)
+        indexed=self.cli('analyze',self.file,'--references')
+        self.assertEqual(indexed['schema'],'nex.analysis/2')
+        without={k:v for k,v in indexed.items() if k!='occurrences'};without['schema']='nex.analysis/1'
+        self.assertEqual(legacy,without)
+        rows=indexed['occurrences'];raw=text.encode()
+        def refs(name,at):
+            declaration=text.index(name,at)
+            return [row for row in rows if row['definition']['range']=={'begin':declaration,'end':declaration+len(name)}]
+        parameter=refs('n',text.index('n:i64'))
+        local=refs('n',text.index('n:i64',text.index('fn main')))
+        callable=refs('f',text.index('let f'))
+        function=refs('twice',text.index('fn twice'))
+        self.assertEqual(sorted(row['role'] for row in parameter),['declaration','read','read'])
+        self.assertEqual(sorted(row['role'] for row in local),['declaration','read','read','read','write'])
+        self.assertEqual(sorted(row['role'] for row in callable),['call','declaration'])
+        self.assertEqual(sorted(row['role'] for row in function),['call','declaration','read'])
+        for row in rows:
+            value=raw[row['range']['begin']:row['range']['end']].decode()
+            self.assertRegex(value,r'^[A-Za-z_][A-Za-z_0-9]*$')
+        client=self.client();client.initialize();client.open(self.file,text)
+        at=text.index('n:i64',text.index('fn main'))
+        prefix=text[:at];query={'textDocument':{'uri':self.file.as_uri()},'position':{'line':prefix.count('\n'),'character':len(prefix.rsplit('\n',1)[-1])},'context':{'includeDeclaration':False}}
+        usages=client.request('textDocument/references',query);self.assertEqual(len(usages),4)
+        for usage in usages:
+            self.assertEqual(usage['range']['end']['character']-usage['range']['start']['character'],1)
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_reference_closure_capture_and_pattern_binders_have_physical_identity(self):
+        text=('module refs;enum Maybe{Some(value:i64);None;}\n'
+              'fn apply(x:i64)->i64{let value:i64=3;let call:fn(i64)->i64='
+              'fn(value:i64)->i64{return value+x;};return call(value); }\n'
+              'fn choose(m:Maybe)->i64{return match m {Maybe::Some(value)=>value,Maybe::None()=>0};}\n'
+              'fn main()->i64{return apply(1)+choose(Maybe::Some(2));}')
+        self.source(text);data=self.cli('analyze',self.file,'--references');rows=data['occurrences']
+        x=text.index('x:i64');self.assertEqual(len([o for o in rows if o['definition']['range']=={'begin':x,'end':x+1}]),2)
+        for start in [text.index('let value')+4,text.index('fn(value')+3,text.index('Some(value)=>')+5]:
+            selected=[o for o in rows if o['definition']['range']=={'begin':start,'end':start+5}]
+            self.assertEqual(sorted(o['role'] for o in selected),['declaration','read'])
+        for relative in ['examples/traits/main.nex','examples/generics/main.nex','examples/enums/main.nex','examples/functions/main.nex']:
+            index=self.cli('analyze',harness.REPO/relative,'--references')
+            self.assertEqual(index['schema'],'nex.analysis/2')
+            self.assertTrue(index['occurrences'])
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_fields_patterns_and_wildcards_do_not_merge_unrelated_bindings(self):
+        text=('module refs;struct Left{value:i64;}struct Right{value:i64;}\n'
+              'fn main()->i64{let a:Left=Left(20);let b:Right=Right(2);let _:i64=22;'
+              'return match a {Left(value)=>value+b.value+a.value+(match 1 {_=>_})};}\n'
+              'test fn correct()->unit{assert(main()==64);}')
+        self.source(text);data=self.cli('analyze',self.file,'--references');rows=data['occurrences']
+        left=text.index('value:i64');right=text.index('value:i64',left+1)
+        for offset in [left,right]:
+            selected=[row for row in rows if row['definition']['range']=={'begin':offset,'end':offset+5}]
+            self.assertEqual(sorted(row['role'] for row in selected),['declaration','read'])
+        owner=text.index('Left{')
+        selected=[row for row in rows if row['definition']['range']=={'begin':owner,'end':owner+4}]
+        self.assertEqual(sorted(row['role'] for row in selected),['call','declaration','pattern'])
+        underscore=text.index('_:i64');wildcard=text.index('_=>')
+        selected=[row for row in rows if row['definition']['range']=={'begin':underscore,'end':underscore+1}]
+        self.assertEqual(sorted(row['role'] for row in selected),['declaration','read'])
+        self.assertFalse(any(row['range']=={'begin':wildcard,'end':wildcard+1} for row in rows))
+        legacy=self.cli('analyze',self.file)
+        use=text.rindex('_}')
+        expression=next(row for row in legacy['expressions'] if row['range']=={'begin':use,'end':use+1})
+        self.assertEqual(expression['definition']['range'],{'begin':underscore,'end':underscore+1})
+        self.assertFalse((self.root/'.nex').exists())
+        self.cli('test',self.file)
+        self.cli('test',self.file,'--target','web')
+
+    def test_cross_module_references_aliases_open_entries_and_unicode_crlf(self):
+        helper=self.root/'model 🧠.nex';library='module model;\npub fn answer(n:i64)->i64{return n;}\n';helper.write_text(library)
+        main=('module app;\r\nimport "./model 🧠.nex" as a;\r\nimport "./model 🧠.nex" as b;\r\n'
+              'fn main()->i64{let s:str="Я🧠";return a::answer(1)+b::answer(2);}')
+        self.source(main);physical=self.file.read_bytes();client=self.client();self.assertTrue(client.initialize()['capabilities']['referencesProvider'])
+        client.open(self.file,main);client.open(helper,library);self.assertEqual(client.diagnostics(self.file,1),[])
+        query={'textDocument':{'uri':helper.resolve().as_uri()},'position':{'line':1,'character':8},'context':{'includeDeclaration':False}}
+        refs=client.request('textDocument/references',query)
+        starts=[main.split('\r\n')[3].index('answer'),main.split('\r\n')[3].rindex('answer')]
+        self.assertEqual(refs,[{'uri':self.file.resolve().as_uri(),'range':{'start':{'line':3,'character':start+1},'end':{'line':3,'character':start+7}}} for start in starts])
+        query['context']['includeDeclaration']=True
+        with_declaration=client.request('textDocument/references',query);self.assertEqual(len(with_declaration),3)
+        orphan=self.root/'orphan.nex';orphan_text='module orphan;import "./model 🧠.nex" as m;fn read()->i64{return m::answer(3);}'
+        orphan.write_text(orphan_text);client.open(orphan,orphan_text)
+        expanded=client.request('textDocument/references',query);self.assertEqual(len(expanded),4)
+        self.assertEqual(len([row for row in expanded if row['uri']==helper.resolve().as_uri()]),1)
+        client.send('textDocument/didClose',{'textDocument':{'uri':orphan.as_uri()}})
+        self.assertEqual(len(client.request('textDocument/references',query)),3)
+        for context in [None,{}, {'includeDeclaration':1},{'includeDeclaration':'yes'}]:
+            response=client.response(client.send('textDocument/references',{**query,'context':context},request=True))
+            self.assertEqual(response['error']['code'],-32602)
+        self.assertEqual(self.file.read_bytes(),physical);self.assertEqual(helper.read_text(),library);self.assertFalse((self.root/'.nex').exists())
+
+    def test_reference_caps_conflicting_captures_and_cancel_are_explicit(self):
+        spec=importlib.util.spec_from_file_location('nex_lsp_refs',harness.REPO/'editor/lsp/server.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        server=module.Server(harness.NEX,output=io.BytesIO());text='n '*10002
+        file={'key':'main.nex','path':str(self.file),'text':text,'hash':'a'*64}
+        declaration={'file':'main.nex','range':{'begin':0,'end':1}}
+        occurrences=[{'file':'main.nex','range':{'begin':i*2,'end':i*2+1},'definition':declaration,'role':'declaration' if i==0 else 'read'} for i in range(10002)]
+        cache={'epoch':0,'indices':[{'files':[file],'occurrences':occurrences}],'documents':{}}
+        params={'textDocument':{'uri':self.file.as_uri()},'position':{'line':0,'character':0},'context':{'includeDeclaration':False}}
+        try:
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
+            self.assertEqual(failure.exception.code,-32803)
+            cache['indices'][0]['occurrences']=occurrences[:3]
+            cache['indices'].append({'files':[{**file,'hash':'b'*64,'text':'n '}],'occurrences':[]})
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
+            self.assertEqual(failure.exception.code,-32801)
+            cache['indices'].pop()
+            changed={'file':'main.nex','range':{'begin':0,'end':1},'definition':{'file':'main.nex','range':{'begin':2,'end':3}},'role':'read'}
+            cache['indices'].append({'files':[file],'occurrences':[changed]})
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
+            self.assertEqual(failure.exception.code,-32801)
+            cache['indices'].pop()
+            long_path=self.root/('я'*120)/('я'*120)/'module.nex'
+            other={**file,'key':'other.nex','path':str(long_path),'text':'n '*10000}
+            huge=[{'file':'other.nex','range':{'begin':i*2,'end':i*2+1},'definition':declaration,'role':'read'} for i in range(10000)]
+            cache['indices'][0]={'files':[file,other],'occurrences':[occurrences[0],*huge]}
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
+            self.assertEqual(failure.exception.code,-32803);self.assertIn('8 MiB',str(failure.exception))
+            cache['indices'][0]={'files':[file],'occurrences':occurrences[:3]}
+            cancel=threading.Event();cancel.set()
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache,cancel)
+            self.assertEqual(failure.exception.code,-32800)
+            unicode='Я🧠\r\nn n';offsets=[len(unicode[:i].encode()) for i in [0,1,2,3,4,5,6,7]]
+            positions=module.range_positions(unicode,offsets,lambda:None)
+            self.assertEqual(positions,{offset:module.position(unicode,offset) for offset in offsets})
+        finally:server.close()
+
     def test_lifecycle_fragmented_messages_and_method_errors(self):
         client=self.client()
         first=client.response(client.send('textDocument/hover',{},request=True))
@@ -346,7 +479,7 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertEqual(report['messages_sent'],13);self.assertEqual(report['stderr'],'')
+        self.assertEqual(report['messages_sent'],16);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

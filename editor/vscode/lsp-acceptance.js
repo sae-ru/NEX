@@ -50,6 +50,13 @@ async function accept(compiler, output) {
     assert.deepEqual(definition[0].range, {start:{line:1,character:7},end:{line:1,character:13}});
     assert.equal((await client.request('textDocument/hover',query)).contents.value, 'i64');
     report.checks.push('actual Node stdio client and checked cross-module definition/hover/outline');
+    const references = await client.request('textDocument/references', {...query,context:{includeDeclaration:false}});
+    assert.deepEqual(references, [{uri:sourceURI,range:{start:query.position,end:{line:2,character:query.position.character+6}}}]);
+    const withDeclaration = await client.request('textDocument/references', {...query,context:{includeDeclaration:true}});
+    assert.equal(withDeclaration.length, 2); assert.ok(withDeclaration.some(value => value.uri === modelURI));
+    report.reference_checks = true;
+    report.checks.push('exact cross-module references and explicit declaration inclusion');
+
     const invalid = 'module editor_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
     client.notify('textDocument/didChange', {textDocument:{uri:sourceURI,version:2},contentChanges:[{text:invalid}]});
     const errors = await diagnostics(2);

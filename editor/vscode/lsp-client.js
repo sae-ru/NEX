@@ -127,10 +127,10 @@ class LanguageClient extends EventEmitter {
   async start(rootUri) {
     const initialized = await this.request('initialize', {
       processId: process.pid, rootUri,
-      capabilities: {general: {positionEncodings: ['utf-16']}, textDocument: {publishDiagnostics: {versionSupport: true}}}
+      capabilities: {general: {positionEncodings: ['utf-16']}, textDocument: {publishDiagnostics: {versionSupport: true}, references: {dynamicRegistration: false}}}
     });
     const caps = initialized?.capabilities;
-    if (caps?.positionEncoding !== 'utf-16' || caps.textDocumentSync?.change !== 1 || !caps.hoverProvider || !caps.definitionProvider || !caps.documentSymbolProvider) {
+    if (caps?.positionEncoding !== 'utf-16' || caps.textDocumentSync?.change !== 1 || !caps.hoverProvider || !caps.definitionProvider || !caps.documentSymbolProvider || !caps.referencesProvider) {
       throw new Error('Select NEX 0.66 or newer with its matching language-server resources.');
     }
     this.notify('initialized', {});

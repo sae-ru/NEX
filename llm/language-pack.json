@@ -139,7 +139,8 @@
     "editor_language_client_tests": "editor/vscode/language.test.js",
     "editor_language_config": "editor/vscode/language-configuration.json",
     "editor_node_tests": "editor/vscode/test.js",
-    "editor_installation": "editor/vscode/README.md"
+    "editor_installation": "editor/vscode/README.md",
+    "editor_references_schema": "llm/editor-references.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -431,6 +432,7 @@
   "editor_commands": [
     "nex analyze FILE --json",
     "nex analyze FILE --overlay OVERLAY.json --json",
+    "nex analyze FILE --references --overlay OVERLAY.json --json",
     "nex lsp"
   ]
 }

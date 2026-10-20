@@ -1,3 +1,18 @@
+# Isolated development0.68: checked source references
+
+The candidate adds opt-in analysis/2 with exact name occurrences while retaining
+default analysis/1. LSP/VS Code0.3 connect checked references for functions,
+lexical values, nominal constructor calls/patterns and structure fields, with
+explicit limits and scope. Queries flush all connected open buffers and suppress
+replies after any of them changes. Wildcard patterns no longer create a false
+editor binding that shadows an outer ordinary `_`; execution is unchanged.
+
+The candidate keeps language0.16, graph formats and all runtime/backend semantics.
+Full78/SDK/platform and actual installed IDE gates are still required. The real
+working root remains verified0.67/d40fa471 until guarded promotion. Type/trait/
+import-alias reference syntax, cross-workspace buffers, closed unreachable files,
+completion/rename and the remaining language/development-chain work stay pending.
+
 # Verified root development checkpoint 0.67 / language 0.16
 
 Actual root source 4fbd3c6775702a76c16a8d93611ef65a2df0506c (714 files) builds and passes all 78

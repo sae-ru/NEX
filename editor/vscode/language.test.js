@@ -105,6 +105,44 @@ function host() {
 }
 const span = {start: {line:0,character:3}, end: {line:0,character:7}};
 
+test('references pass declaration context and exact physical locations', async () => {
+  const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory});
+  try {
+    await integration.sync(h.document);
+    h.clients[0].answer = (method,params) => {
+      assert.equal(method,'textDocument/references');
+      assert.deepEqual(params.context,{includeDeclaration:false});
+      return [{uri:'file:///project/model.nex',range:span}];
+    };
+    const values = await integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:false});
+    assert.equal(values.length,1); assert.equal(values[0].uri.fsPath,'/project/model.nex');
+    assert.deepEqual(values[0].range.start,span.start);
+    h.clients[0].answer = () => [{uri:'https://example.test/model.nex',range:span}];
+    await assert.rejects(integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:true}),/non-file reference/);
+  } finally {await integration.dispose();}
+});
+
+test('queries flush imported buffers and suppress replies after any connected document changes', async () => {
+  const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory,delay:5000});
+  const imported = {...h.document,uri:h.vscode.Uri.file('/project/model.nex'),text:'module model;fn answer()->i64{return 42;}'};
+  h.vscode.workspace.textDocuments.push(imported);
+  try {
+    await integration.sync(h.document); await integration.sync(imported);
+    imported.version = 2; imported.text += '\n// 🧠'; integration.change(imported);
+    let finish;
+    h.clients[0].answer = () => new Promise(resolve => {finish = resolve;});
+    const pending = integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:false});
+    while (!finish) await new Promise(resolve => setImmediate(resolve));
+    const changed = h.messages.findIndex(([method,params]) => method === 'textDocument/didChange' && params.textDocument.uri === imported.uri.toString());
+    const queried = h.messages.findIndex(([method]) => method === 'textDocument/references');
+    assert.ok(changed >= 0 && changed < queried);
+    assert.equal(h.messages[changed][1].textDocument.version,2);
+    imported.version = 3;
+    finish([{uri:imported.uri.toString(),range:span}]);
+    assert.deepEqual(await pending,[]);
+  } finally {await integration.dispose();}
+});
+
 test('untrusted, virtual and disabled language features never start a compiler', async () => {
   const h = host(), integration = createLanguageIntegration(h.vscode, {createClient:h.factory});
   try {
@@ -192,5 +230,26 @@ test('frozen debugger projections use the debugger rather than a live source ind
     h.document.uri=h.vscode.Uri.file('/private/tmp/nex-debug-owned/source.nex');await integration.sync(h.document);
     assert.equal(h.clients.length,0);
     h.document.uri=h.vscode.Uri.file('/project/main.nex');await integration.sync(h.document);assert.equal(h.clients.length,1);
+  } finally {await integration.dispose();}
+});
+
+test('known manifest changes invalidate an in-flight semantic reply', async () => {
+  const h = host(), changes = [], disposable = () => ({dispose() {}});
+  Object.assign(h.vscode.languages, {registerHoverProvider:disposable,registerDefinitionProvider:disposable,
+    registerReferenceProvider:disposable,registerDocumentSymbolProvider:disposable});
+  for (const name of ['onDidOpenTextDocument','onDidChangeTextDocument','onDidCloseTextDocument','onDidSaveTextDocument','onDidChangeConfiguration']) h.vscode.workspace[name] = disposable;
+  h.vscode.workspace.createFileSystemWatcher = pattern => ({dispose() {},onDidCreate:disposable,onDidDelete:disposable,
+    onDidChange(callback) {changes.push([pattern,callback]);return disposable();}});
+  h.vscode.commands = {registerCommand:disposable};
+  const integration = createLanguageIntegration(h.vscode,{createClient:h.factory});
+  try {
+    integration.register(); await integration.sync(h.document);
+    let finish; h.clients[0].answer = () => new Promise(resolve => {finish = resolve;});
+    const pending = integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:false});
+    while (!finish) await new Promise(resolve => setImmediate(resolve));
+    changes.find(([pattern]) => pattern === '**/nex.json')[1](h.vscode.Uri.file('/project/nex.json'));
+    finish([{uri:h.document.uri.toString(),range:span}]);
+    assert.deepEqual(await pending,[]);
+    assert.ok(h.messages.some(([method]) => method === 'workspace/didChangeWatchedFiles'));
   } finally {await integration.dispose();}
 });

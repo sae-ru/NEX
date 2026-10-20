@@ -1,10 +1,14 @@
-# NEX Language Tools 0.2
+# NEX Language Tools 0.3
 
-Open a .nex file in a trusted physical workspace. Select an installed NEX0.66+
+Open a .nex file in a trusted physical workspace. Select an installed NEX0.68+
 compiler with `nex.compilerPath`; its matching resources provide `nex lsp`.
-The extension displays unsaved-source diagnostics, type hover, definitions and
+The extension displays unsaved-source diagnostics, type hover, definitions, references and
 an outline through that server. **NEX: Restart Language Server** restarts the
 connection; `nex.languageServer.enabled` enables editing features per resource.
+
+References distinguish lexical bindings and nominal fields, using the coverage
+and limits in docs/lsp.md. A query flushes all connected open buffers; a reply
+from an older document context is discarded.
 
 The client starts one literal executable per workspace/compiler configuration,
 uses full document versions and cancels superseded requests. Diagnostic source
@@ -15,7 +19,7 @@ and cannot display an older semantic result. Check/test/task acceptance remains
 part of ordinary project development.
 
 This extension uses no runtime npm dependencies. Current source/server coverage
-and pending completion/references/rename are in the installed docs/lsp.md guide.
+and pending completion/rename and broader reference coverage are in the installed docs/lsp.md guide.
 Compiler, installed SDK and actual IDE checks have separate evidence scopes.
 
 The native debugger usage and packaging instructions follow.

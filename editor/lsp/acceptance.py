@@ -83,6 +83,15 @@ def accept(compiler, output):
         hover = request('textDocument/hover',{**query,'position':{'line':2,'character':22}})
         assert hover['contents']['value']=='i64',hover
         report['checks'].append('actual stdio lifecycle, declarations, checked hover and definition')
+        reference_query={**query,'position':{'line':2,'character':22},'context':{'includeDeclaration':False}}
+        references=request('textDocument/references',reference_query)
+        assert references==[{'uri':source.as_uri(),'range':{'start':{'line':2,'character':22},'end':{'line':2,'character':27}}}],references
+        reference_query['context']['includeDeclaration']=True
+        references=request('textDocument/references',reference_query)
+        assert len(references)==2 and references[0]['range']==defined[0]['range'],references
+        report['checks'].append('exact semantic references with explicit declaration inclusion')
+        report['reference_checks']=True
+
         invalid = 'module editor_sdk;\r\nfn main()->i64{let text:str="Я🧠";return absent;}\r\n'
         send('textDocument/didChange',{'textDocument':{'uri':source.as_uri(),'version':2},'contentChanges':[{'text':invalid}]})
         errors = diagnostics(2)
@@ -97,8 +106,10 @@ def accept(compiler, output):
         send('textDocument/didChange',{'textDocument':{'uri':source.as_uri(),'version':3},'contentChanges':[{'text':main}]})
         assert diagnostics(3)==[]
         assert diagnostics(1,helper)==[]
-        defined = request('textDocument/definition',{**query,'position':{'line':0,'character':main.index('m::answer')+3}})
+        defined = request('textDocument/definition',{**query,'position':{'line':0,'character':len(main[:main.index('m::answer')+3].encode('utf-16-le'))//2}})
         assert len(defined)==1 and defined[0]['uri']==helper.as_uri(),defined
+        references=request('textDocument/references',{**query,'position':{'line':0,'character':len(main[:main.index('m::answer')+3].encode('utf-16-le'))//2},'context':{'includeDeclaration':True}})
+        assert len(references)==2 and {row['uri'] for row in references}=={source.as_uri(),helper.as_uri()},references
         send('textDocument/didClose',{'textDocument':{'uri':helper.as_uri()}})
         report['checks'].append('new unsaved imported module, overlay repair and cross-file definition')
         request('shutdown')

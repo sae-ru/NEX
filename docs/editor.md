@@ -1,15 +1,15 @@
-# NEX editing and debugging: development toolchain 0.67
+# NEX editing and debugging: development toolchain 0.68
 
-Extension 0.2 activates when a physical .nex document opens in a trusted
+Extension 0.3 activates when a physical .nex document opens in a trusted
 workspace. Set `nex.compilerPath` to the matching installed compiler. The
 extension starts `nex lsp`, sends unsaved document versions and displays compiler
-diagnostics, checked type hover, source definitions and declaration outlines.
+diagnostics, checked type hover, source definitions, declaration outlines and checked references.
 Use **NEX: Restart Language Server** after replacing a compiler installation.
 `nex.languageServer.enabled` controls these editing features per resource.
 
 The client uses the compiler's UTF-16 LSP positions, preserves argument
 boundaries and checks document versions before displaying replies. Changes are
-debounced; a navigation request first sends the latest text. Closing/restarting
+debounced; a navigation request first sends every open buffer tracked by that connection. Replies are discarded if any connected document changes before delivery. Closing/restarting
 an entry cleans up its process, pending requests and diagnostics. Oversized or
 non-scalar document text is reported locally and cannot reuse an older index.
 The client requires the same 1 MiB/document, 8 MiB/workspace and 128-document
@@ -26,8 +26,8 @@ Runtime client code uses Node built-ins and the VS Code API; no runtime npm
 package is required. The separately locked development dependencies package and
 test the VSIX. Installed-SDK Node/server acceptance, the compiler's full suite
 and actual installed VS Code acceptance have distinct evidence scopes. Current
-0.67 integration is a candidate until its recorded checks pass. Completion,
-references/rename, parser recovery/incremental indexing, other editors/platforms
+0.68 integration is a candidate until its recorded checks pass. References use
+the coverage/limits in lsp.md. Completion/rename, parser recovery/incremental indexing, other editors/platforms
 and NEX Studio remain pending.
 
 The existing native debugger workflow follows. Its historical 0.56 results keep
@@ -103,15 +103,15 @@ See `expressions.md` for exact stop/handle and paging rules.
 The separate extension0.1 prototype has an actual installed VSIX acceptance run
 on macOS ARM64 / VS Code1.142.0. That report uses its recorded0.55 compiler.
 Current0.56 compiler/source/SDK acceptance is recorded separately in STATUS.md.
-Editor support does not add unsupported native targets. Windows/mobile compiler
-support, wider IDE/platform verification, LSP, NEX Studio, direct large-root DAP
-pages and exact optimized-PC/core mapping remain pending. Project licensing and
+These0.56 statements describe that historical cohort. Current support and
+remaining Windows/mobile host, IDE/platform, NEX Studio and optimized-PC/core
+work are recorded in STATUS.md. Project licensing and
 public Marketplace publication are separate decisions.
 
 Primary API references: [debugger extensions](https://code.visualstudio.com/api/extension-guides/debugger-extension),
 [workspace trust](https://code.visualstudio.com/api/extension-guides/workspace-trust),
 [VSIX packaging](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
 
-The development toolchain 0.66 adds a separate stdio LSP adapter and readonly compiler analysis, described in [lsp.md](lsp.md). Existing VS Code debugger activation remains independent; a language client and actual IDE acceptance remain pending.
+The development toolchain 0.66 adds a separate stdio LSP adapter and readonly compiler analysis, described in [lsp.md](lsp.md). Debugger activation remains independent. Later0.67 adds actual installed client/debugger checks; current0.68 validation retains its own scope.
 
 Frozen debugger source projections retain their captured debugger context. The client excludes internal .nex files and the projections reported by a fresh debug session from live source analysis.

@@ -15,6 +15,7 @@ import urllib.parse
 
 MAX_MESSAGE = 16 * 1048576
 MAX_DOCUMENT = 1048576
+MAX_REFERENCES = 10000
 
 
 class RPCError(Exception):
@@ -83,6 +84,30 @@ def position(text, offset):
 
 def source_range(text, interval):
     return {'start': position(text, interval['begin']), 'end': position(text, interval['end'])}
+
+
+def range_positions(text, offsets, check):
+    """Map requested scalar boundaries in one pass, rather than per occurrence."""
+    needed = set(offsets)
+    result = {}
+    byte = line = column = 0
+    previous_cr = False
+    for index, char in enumerate(text):
+        if index % 4096 == 0:
+            check()
+        if byte in needed:
+            result[byte] = {'line': line, 'character': column - int(previous_cr)}
+        byte += len(char.encode('utf-8'))
+        if char == '\n':
+            line, column = line + 1, 0
+        else:
+            column += 2 if ord(char) > 0xffff else 1
+        previous_cr = char == '\r'
+    if byte in needed:
+        result[byte] = {'line': line, 'character': column - int(previous_cr)}
+    if result.keys() != needed:
+        raise RPCError(-32603, 'Compiler returned a non-scalar reference interval')
+    return result
 
 
 def project(path):
@@ -168,7 +193,7 @@ class Server:
             path.write_bytes(raw)
             with self.lock:
                 self.current(epoch)
-                self.process = subprocess.Popen([self.compiler, 'analyze', str(entry), '--overlay', str(path), '--json'],
+                self.process = subprocess.Popen([self.compiler, 'analyze', str(entry), '--overlay', str(path), '--references', '--json'],
                                                 cwd=root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 process = self.process
             try:
@@ -188,7 +213,7 @@ class Server:
                 result = json.loads(stdout)
             except (ValueError, UnicodeError) as error:
                 raise RPCError(-32603, 'Compiler did not return a NEX analysis response') from error
-            if process.returncode == 0 and result.get('schema') == 'nex.analysis/1' and result.get('ok'):
+            if process.returncode == 0 and result.get('schema') == 'nex.analysis/2' and result.get('ok'):
                 return result
             if process.returncode != 0 and result.get('schema') == 'nex.diagnostic/1':
                 return result
@@ -345,8 +370,70 @@ class Server:
             self.documents[path] = {'uri': descriptor['uri'], 'version': version, 'text': text}
             self.invalidate()
 
-    def query(self, method, params, cache):
+    def references(self, path, params, cache, cancelled):
+        context = params.get('context')
+        if not isinstance(context, dict) or not isinstance(context.get('includeDeclaration'), bool):
+            raise RPCError(-32602, 'References require context.includeDeclaration as a boolean')
+        def check():
+            self.current(cache['epoch'])
+            if cancelled is not None and cancelled.is_set():
+                raise RPCError(-32800, 'Request cancelled')
+        # The same physical source may be checked from more than one entry.
+        # Different captured text or binding targets must not become one index.
+        captured, selected, indices = {}, set(), []
+        for index in cache['indices']:
+            check()
+            files = {f['key']: f for f in index['files']}
+            paths = {key: Path(f['path']).resolve() for key, f in files.items()}
+            for key, f in files.items():
+                canonical = paths[key]
+                previous = captured.get(canonical)
+                if previous and (previous['hash'] != f['hash'] or previous['text'] != f['text']):
+                    raise RPCError(-32801, 'Captured source changed between checked entries')
+                captured[canonical] = f
+            indices.append((index, paths))
+            unit = next((f for key, f in files.items() if paths[key] == path), None)
+            if unit is None:
+                continue
+            offset = byte_offset(unit['text'], params.get('position'))
+            for occurrence in index['occurrences']:
+                at, target = occurrence['range'], occurrence['definition']
+                if paths[occurrence['file']] == path and at['begin'] <= offset < at['end']:
+                    selected.add((paths[target['file']], target['range']['begin'], target['range']['end']))
+        if not selected:
+            return []
+        if len(selected) != 1:
+            raise RPCError(-32801, 'Symbol has different bindings in the checked entries')
+        target = next(iter(selected))
+        found = set()
+        for index, paths in indices:
+            for number, occurrence in enumerate(index['occurrences']):
+                if number % 1000 == 0:
+                    check()
+                declaration = occurrence['definition']
+                identity = (paths[declaration['file']], declaration['range']['begin'], declaration['range']['end'])
+                if identity != target or (not context['includeDeclaration'] and occurrence['role'] == 'declaration'):
+                    continue
+                at = occurrence['range']
+                found.add((paths[occurrence['file']], at['begin'], at['end']))
+                if len(found) > MAX_REFERENCES:
+                    raise RPCError(-32803, 'Reference result exceeds 10000 locations; no partial result returned')
+        positions = {}
+        for file in {row[0] for row in found}:
+            offsets = {offset for source, begin, end in found if source == file for offset in (begin, end)}
+            positions[file] = range_positions(captured[file]['text'], offsets, check)
+        check()
+        result = [{'uri': file.as_uri(), 'range': {'start': positions[file][begin], 'end': positions[file][end]}}
+                  for file, begin, end in sorted(found, key=lambda row: (row[0].as_uri(), row[1], row[2]))]
+        if len(json.dumps(result, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) > 8 * 1048576:
+            raise RPCError(-32803, 'Reference result exceeds 8 MiB; no partial result returned')
+        check()
+        return result
+
+    def query(self, method, params, cache, cancelled=None):
         path, _ = self.document(params)
+        if method == 'textDocument/references':
+            return self.references(path, params, cache, cancelled)
         for index in cache['indices']:
             files = {f['key']: f for f in index['files']}
             unit = next((f for f in files.values() if Path(f['path']).resolve() == path), None)
@@ -378,7 +465,7 @@ class Server:
         return [] if method != 'textDocument/hover' else None
 
     def request(self, ident, method, params):
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -392,7 +479,7 @@ class Server:
                 if cancelled.is_set():
                     raise RPCError(-32800, 'Request cancelled')
                 cache = self.analyze(epoch, documents)
-                result = self.query(method, params, cache)
+                result = self.query(method, params, cache, cancelled)
                 self.current(epoch)
                 if cancelled.is_set():
                     raise RPCError(-32800, 'Request cancelled')
@@ -437,8 +524,8 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True},
-                'serverInfo': {'name': 'NEX Language Server', 'version': '0.66.0'}})
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True},
+                'serverInfo': {'name': 'NEX Language Server', 'version': '0.68.0'}})
         elif not self.initialized:
             if request:
                 self.respond(ident, error=RPCError(-32002, 'Server is not initialized'))

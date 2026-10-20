@@ -67,7 +67,7 @@ function createLanguageIntegration(vscode, options = {}) {
     let entry = clients.get(key);
     if (!entry) {
       const client = makeClient(compiler, cwd);
-      entry = {client, key, documents: new Map(), sent: new Map(), bytes: new Map(), diagnostics: new Map(), disposed: false, failed: false};
+      entry = {client, key, documents: new Map(), sent: new Map(), bytes: new Map(), diagnostics: new Map(), disposed: false, failed: false, context: 0};
       clients.set(key, entry);
       client.on('notification', (method, params) => {
         try {if (method === 'textDocument/publishDiagnostics') publish(entry, params);}
@@ -109,22 +109,30 @@ function createLanguageIntegration(vscode, options = {}) {
     if (total > 8 * 1048576 || (!entry.sent.has(uri) && entry.sent.size >= 128)) return limited('NEX language server supports 128 open documents and 8 MiB of open source text per workspace.');
     if (localLimits.delete(uri)) refresh(document.uri);
     const version = document.version;
-    if (!entry.sent.has(uri)) entry.client.notify('textDocument/didOpen', {textDocument: {uri, languageId: 'nex', version, text}});
-    else if (entry.sent.get(uri) !== version) entry.client.notify('textDocument/didChange', {textDocument: {uri, version}, contentChanges: [{text}]});
+    if (!entry.sent.has(uri)) {entry.client.notify('textDocument/didOpen', {textDocument: {uri, languageId: 'nex', version, text}}); ++entry.context;}
+    else if (entry.sent.get(uri) !== version) {entry.client.notify('textDocument/didChange', {textDocument: {uri, version}, contentChanges: [{text}]}); ++entry.context;}
     entry.sent.set(uri, version);
     entry.bytes.set(uri, raw.length);
     return entry;
   }
-  async function query(method, document, position, token) {
+  async function query(method, document, position, token, extra = {}) {
     const version = document.version;
     try {
       if (token?.isCancellationRequested) return undefined;
       const entry = await sync(document);
       if (!entry || document.version !== version || token?.isCancellationRequested) return undefined;
-      const params = {textDocument: {uri: document.uri.toString()}};
+      // Imported buffers can change while the selected file stays unchanged.
+      // Flush the connection's whole editable context and bind the reply to it.
+      const entries = await Promise.all([...entry.documents.values()].map(sync));
+      if (entries.some(value => value !== entry) || entry.disposed || token?.isCancellationRequested) return undefined;
+      const versions = new Map([...entry.documents].map(([uri, doc]) => [uri, doc.version]));
+      const context = entry.context;
+      if ([...entry.documents].some(([uri, doc]) => !allowed(doc) || entry.sent.get(uri) !== doc.version)) return undefined;
+      const params = {...extra, textDocument: {uri: document.uri.toString()}};
       if (position) params.position = {line: position.line, character: position.character};
       const value = await entry.client.request(method, params, token);
-      if (entry.disposed || !allowed(document) || document.version !== version) return undefined;
+      if (entry.disposed || entry.context !== context || !allowed(document) || document.version !== version || entry.documents.size !== versions.size ||
+          [...entry.documents].some(([uri, doc]) => versions.get(uri) !== doc.version || !allowed(doc))) return undefined;
       return value;
     } catch (error) {
       if (![ -32800, -32801 ].includes(error.code)) log(error);
@@ -145,6 +153,17 @@ function createLanguageIntegration(vscode, options = {}) {
       return values.map(value => {
         const uri = vscode.Uri.parse(value.uri);
         if (uri.scheme !== 'file') throw new Error('NEX returned a non-file definition.');
+        return new vscode.Location(uri, range(value.range));
+      });
+    }},
+    references: {async provideReferences(document, position, context, token) {
+      const values = await query('textDocument/references', document, position, token,
+        {context: {includeDeclaration: context.includeDeclaration}});
+      if (!Array.isArray(values)) return [];
+      if (values.length > 10000) throw new Error('NEX returned too many reference locations.');
+      return values.map(value => {
+        const uri = vscode.Uri.parse(value.uri);
+        if (uri.scheme !== 'file') throw new Error('NEX returned a non-file reference.');
         return new vscode.Location(uri, range(value.range));
       });
     }},
@@ -172,6 +191,7 @@ function createLanguageIntegration(vscode, options = {}) {
     const uri = document.uri.toString(); cancelTimer(uri);
     if (localLimits.delete(uri)) refresh(document.uri);
     for (const entry of [...clients.values()]) if (entry.documents.delete(uri)) {
+      ++entry.context;
       entry.bytes.delete(uri);
       if (entry.sent.delete(uri) && !entry.failed) {
         try {entry.client.notify('textDocument/didClose', {textDocument: {uri}});} catch (error) {log(error);}
@@ -182,9 +202,12 @@ function createLanguageIntegration(vscode, options = {}) {
   }
   function changedFile(uri, type) {
     if (!vscode.workspace.isTrusted || uri.scheme !== 'file' || uri.fsPath.split(path.sep).some(p => ['.git', '.nex', 'node_modules'].includes(p))) return;
-    for (const entry of clients.values()) void entry.ready.then(() => {
-      if (!entry.disposed && !entry.failed) entry.client.notify('workspace/didChangeWatchedFiles', {changes: [{uri: uri.toString(), type}]});
-    }).catch(log);
+    for (const entry of clients.values()) {
+      ++entry.context;
+      void entry.ready.then(() => {
+        if (!entry.disposed && !entry.failed) entry.client.notify('workspace/didChangeWatchedFiles', {changes: [{uri: uri.toString(), type}]});
+      }).catch(log);
+    }
   }
   async function restart() {
     const current = ++generation;
@@ -197,6 +220,7 @@ function createLanguageIntegration(vscode, options = {}) {
   function register() {
     subscriptions.push(vscode.languages.registerHoverProvider(selector, providers.hover),
       vscode.languages.registerDefinitionProvider(selector, providers.definition),
+      vscode.languages.registerReferenceProvider(selector, providers.references),
       vscode.languages.registerDocumentSymbolProvider(selector, providers.symbols),
       vscode.workspace.onDidOpenTextDocument(doc => {void sync(doc).catch(log);}),
       vscode.workspace.onDidChangeTextDocument(event => {if (event.contentChanges.length) change(event.document);}),

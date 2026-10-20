@@ -170,3 +170,5 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.66 editor analysis/LSP reuses the current source grammar; no migration. *)
 
 (* Toolchain0.67 VS Code LSP client reuses this grammar; no language migration. *)
+
+(* Toolchain0.68 checked editor references are external metadata; syntax and language0.16 remain unchanged. *)

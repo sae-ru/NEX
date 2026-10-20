@@ -1,3 +1,13 @@
+# Current isolated work: toolchain0.68 references
+
+- Add exact checked declaration/read/write/call/pattern locations with explicit
+  opt-in analysis/2; preserve default analysis/1 and source language0.16.
+- Connect LSP/VS Code references with declaration inclusion, deterministic bounded
+  results, cancellation, context consistency and guards across imported buffers.
+- Complete full compiler/SDK/platform and actual installed IDE checks before root
+  promotion. Broader type/trait/import-alias references, workspace coverage,
+  completion/rename and the full language/development-chain plan remain open.
+
 # Текущее состояние: toolchain 0.67 / язык 0.16
 
 - [x] Подключить анализ несохранённых исходников и stdio LSP: диагностика,
