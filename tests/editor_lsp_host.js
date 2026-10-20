@@ -92,8 +92,9 @@ async function run() {
     [model,modelDocument,typedLibrary,typedLibrary.indexOf('Item;'),'associated type model::Content::Item<Self>'],
     [source,document,typedMain,typedMain.indexOf('get(value)'),'shared fn model::Content::get(value: Self) -> model::Content::Item<Self>'],
     [source,document,typedMain,typedMain.indexOf('i64>=m::Box'),'type i64']]) {
+    const rendered = new vscode.MarkdownString(); rendered.appendCodeblock(expected, 'nex');
     const values = await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', uri, doc.positionAt(at)),
-      rows => rows?.some(row => row.contents.some(content => content.value === expected)), 'exact identifier hover: ' + expected);
+      rows => rows?.some(row => row.contents.some(content => content.value === rendered.value)), 'exact identifier hover: ' + expected);
     assert.ok(values.some(row => row.range?.start.isEqual(doc.positionAt(at))));
   }
   const primitiveDefinitions = await vscode.commands.executeCommand('vscode.executeDefinitionProvider', source, document.positionAt(typedMain.indexOf('i64>=m::Box')));
