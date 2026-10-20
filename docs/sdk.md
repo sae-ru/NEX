@@ -1,5 +1,9 @@
 # Installed SDK acceptance and handoff
 
+For first installation, application creation, Git versioning and Hermes/Codex
+setup, use the Russian [quickstart](quickstart.md). This page describes SDK
+validation and packaging in more detail.
+
 Install the compiler and its matching resources after building NEX:
 
 ```sh

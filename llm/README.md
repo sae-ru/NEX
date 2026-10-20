@@ -1,5 +1,9 @@
 # Model-independent NEX language pack
 
+For installation, first-project commands, Git/graph preservation and a shared
+application AGENTS.md for Hermes/Codex, start with the Russian
+[quickstart](../docs/quickstart.md).
+
 Toolchain0.70 adds explicit `analyze --details` / `nex.analysis/3` and
 `editor-identifiers.schema.json`. Discover `editor_analysis.identifiers_command`
 for exact source identifier descriptions, explicit null builtin targets and

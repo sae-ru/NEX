@@ -4,6 +4,10 @@
 
 **Главная идея:** минимальное количество токенов для передачи максимального количества точного смысла при максимальной производительности и безопасности исполняемой системы.
 
+**Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
+первый проект, запуск и веб-сборка, что хранить в Git, резервная копия графа,
+работа через Hermes/Codex и общий AGENTS.md для LLM.
+
 NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
