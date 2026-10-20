@@ -337,7 +337,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'core', 'wasm'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -348,7 +348,7 @@ test fn examples() -> unit {
         require(node, 'editor acceptance requires the SDK Node development prerequisite')
         directory = resources / 'editor/vscode'
         names = ['package.json', 'package-lock.json', 'extension.js', 'session.js',
-                 'language-configuration.json', 'README.md', 'test.js']
+                 'language-configuration.json', 'README.md', 'test.js', 'language.js', 'lsp-client.js', 'language.test.js', 'lsp-acceptance.js']
         hashes = {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in names}
         package = json.loads((directory / 'package.json').read_text())
         require(package['name'] == 'nex-language-tools' and not package.get('dependencies'),
@@ -357,7 +357,7 @@ test fn examples() -> unit {
                 'installed editor extension lost its workspace trust gate')
         # Node's test entry is a glob pattern. A literal backslash in a POSIX
         # SDK directory must stay in cwd rather than entering that pattern.
-        run([node, '--test', 'test.js'], cwd=directory)
+        run([node, '--test', 'test.js', 'language.test.js'], cwd=directory)
         evidence = {'extension_version': package['version'], 'installed_sources': hashes,
                     'focused_node_contracts': True, 'actual_ide_run': False,
                     'native_session_preparation': False}
@@ -386,6 +386,9 @@ test fn examples() -> unit {
         require(language_report['ok'] and language_report['source_and_graph_unchanged'],
                 'installed compiler language-server acceptance failed')
         report['evidence']['language_server'] = language_report
+        client_report = json.loads(run([node, directory / 'lsp-acceptance.js', compiler, root / 'editor-language-client']))
+        require(client_report['ok'] and client_report['source_and_graph_unchanged'], 'installed Node language client failed')
+        report['evidence']['editor_language_client'] = client_report
 
     def new_project():
         directory = root / 'created'

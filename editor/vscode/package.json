@@ -1,9 +1,9 @@
 {
   "name": "nex-language-tools",
   "displayName": "NEX Language Tools",
-  "description": "Launch the installed NEX compiler's native debugger and pure NEX watches.",
+  "description": "NEX source diagnostics, type hints, navigation and native debugging from the installed compiler.",
   "publisher": "sae-ru",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"
@@ -17,12 +17,14 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
-    "onDebug:nex"
+    "onLanguage:nex",
+    "onDebug:nex",
+    "onCommand:nex.restartLanguageServer"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false,
-      "description": "NEX debugging compiles and executes the selected project with local development tools."
+      "description": "NEX language tools start the configured local compiler; debugging also builds and executes the project."
     },
     "virtualWorkspaces": {
       "supported": false,
@@ -56,6 +58,12 @@
           "default": "nex",
           "scope": "machine-overridable",
           "description": "Installed NEX executable on the extension host. A path is one executable, never a shell command."
+        },
+        "nex.languageServer.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Check unsaved NEX code and enable type hints, navigation and the outline."
         }
       }
     },
@@ -118,6 +126,14 @@
           }
         ]
       }
+    ],
+    "commands": [
+      {
+        "command": "nex.restartLanguageServer",
+        "title": "Restart Language Server",
+        "category": "NEX",
+        "enablement": "isWorkspaceTrusted"
+      }
     ]
   },
   "devDependencies": {
@@ -128,10 +144,12 @@
     "extension.js",
     "session.js",
     "language-configuration.json",
-    "README.md"
+    "README.md",
+    "language.js",
+    "lsp-client.js"
   ],
   "scripts": {
-    "test": "node --test test.js",
+    "test": "node --test test.js language.test.js",
     "package": "vsce package --no-dependencies --allow-missing-repository --skip-license"
   }
 }

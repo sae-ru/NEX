@@ -1,3 +1,25 @@
+# NEX Language Tools 0.2
+
+Open a .nex file in a trusted physical workspace. Select an installed NEX0.66+
+compiler with `nex.compilerPath`; its matching resources provide `nex lsp`.
+The extension displays unsaved-source diagnostics, type hover, definitions and
+an outline through that server. **NEX: Restart Language Server** restarts the
+connection; `nex.languageServer.enabled` enables editing features per resource.
+
+The client starts one literal executable per workspace/compiler configuration,
+uses full document versions and cancels superseded requests. Diagnostic source
+ranges use UTF-16. Source analysis does not save files, write graph history or
+execute a NEX program. Documents are limited to 1 MiB each, 8 MiB total and128
+open documents per connection. Invalid/oversized text gets a local diagnostic
+and cannot display an older semantic result. Check/test/task acceptance remains
+part of ordinary project development.
+
+This extension uses no runtime npm dependencies. Current source/server coverage
+and pending completion/references/rename are in the installed docs/lsp.md guide.
+Compiler, installed SDK and actual IDE checks have separate evidence scopes.
+
+The native debugger usage and packaging instructions follow.
+
 # NEX Language Tools for VS Code
 
 Development extension for the installed NEX native debugger. It registers the
@@ -46,7 +68,7 @@ launch. Unsaved buffers must be saved before starting the debug session.
 
 Watches are pure NEX expressions over captured stopped values. Missing/unavailable
 data remains explicit. An explicit backtick-prefixed debug-console request is an
-LLDB command. This extension does not add mutation, IntelliSense, an LSP, hot
+LLDB command. Native debugger expressions do not add mutation or hot
 reload or NEX Studio. Current acceptance status is recorded separately; adapter
 tests are not an actual VS Code UI acceptance run.
 

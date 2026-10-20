@@ -101,6 +101,7 @@ async function prepareSession(configuration, options = {}) {
   preRunCommands.push(...(launch.preRunCommands || []));
   return {command: [...command], revision: session.revision, buildKey: session.build_key,
     originalSourceMappings: originals, frozenSourceFallbacks: frozenFallbacks,
+    frozenSourcePaths: manifest.sources.map(row => row.projection),
     launch: {...frozenLaunch, name: configuration.name || 'NEX', stopOnEntry: configuration.stopOnEntry || false,
       preRunCommands,
       // Compiler-provided arguments carry explicit foreign execution grants.

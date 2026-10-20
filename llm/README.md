@@ -153,3 +153,5 @@ process reports and checked local mappings. The [guide](../docs/native-diagnosti
 covers standalone/HTTP logs and source-deleted graph recovery.
 
 Development toolchain 0.66 adds model-independent `nex analyze` and a stdio language server. Read `docs/lsp.md`; the indexed source overlay and checked analysis schemas define the readonly editor interface. Actual IDE-client and broader integration acceptance remain pending.
+
+The toolchain0.67 candidate adds the VS Code0.2 client for the model-independent stdio LSP. The language pack indexes its runtime sources, lock and Node acceptance helper. IDE edits use unsaved versioned source; models still validate ordinary check/test/task or guarded graph patches.

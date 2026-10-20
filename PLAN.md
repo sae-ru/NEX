@@ -1,3 +1,9 @@
+# Current editor integration: toolchain0.67 candidate
+
+- Connect VS Code0.2 to the installed LSP, preserving unsaved versions and readonly analysis.
+- Verify actual installed Node/SDK/IDE behavior, old debugger launch and source/history isolation.
+- Complete wider editor/platform validation and the remaining language/development-chain work below.
+
 # Current editor work: isolated toolchain 0.66
 
 - Implement checked unsaved source analysis, stdio diagnostics/types/definitions/declarations and source/history isolation.

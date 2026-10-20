@@ -1,3 +1,7 @@
+# Isolated development0.67: VS Code language client
+
+Extension0.2 adds trusted physical-document activation, versioned source synchronization, compiler diagnostics/types/definitions/outline, cancellation and restart/cleanup. Development checks pass22 Node contracts and2 actual-client/contract Python cases on the separately identified0.66 compiler. Own0.67 build/full78/SDK, actual installed VSIX and platform validation remain required. Root remains0.65/cd78 pending guarded promotion.
+
 # Isolated development 0.66: language server
 
 The candidate adds readonly compiler analysis with explicit source overlays and a stdio LSP adapter. Focused compiler/stdio checks and full regression/installed SDK/IDE/platform acceptance are tracked separately. The verified root remains0.65 with source cd78ecf0 until guarded promotion.

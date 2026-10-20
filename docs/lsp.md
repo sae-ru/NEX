@@ -57,7 +57,7 @@ Document symbols cover source functions, struct/enum, trait, impl and endpoint
 declarations. No code is executed by hover or definition lookup.
 
 This development adapter is separate from the existing VS Code debugger.
-VS Code language-client activation and actual IDE acceptance, completion,
+The development VS Code0.2 client is described in editor.md. Actual installed IDE acceptance, completion,
 references, rename, type-annotation/field navigation, parser recovery,
 incremental project indexing and the broader IDE/platform matrix remain pending.
 The compiler and installed-SDK verification have their own recorded source and
@@ -66,3 +66,5 @@ binary scopes. This adapter does not make Windows a supported compiler host.
 From a checkout, run `python3 tests/lsp.py /absolute/path/to/nex` for actual
 compiler/stdio scenarios, including unsaved Unicode diagnostics, cross-file
 overlays, history isolation, cancellation and protocol lifecycle failures.
+
+Toolchain 0.67 adds the VS Code 0.2 client described in editor.md. Its document versions, cancellation, local size/Unicode guards and trusted physical workspace gate are independent of ordinary debug launches. Actual installed IDE and SDK checks retain exact source/compiler identities.

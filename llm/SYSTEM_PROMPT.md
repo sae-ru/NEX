@@ -383,3 +383,5 @@ For native core reports, discover `native_core` and use `nex core CORE --manifes
 For native core inspection, preserve the retained content-addressed build directory and use its matching SDK. Do not rewrite a manifest or rename the build directory to bypass image checks. A raw ELF core without unique recorded PC mapping is rejected.
 
 When `editor_analysis` or `language_server` is advertised, read `docs/lsp.md`. Use `nex analyze FILE --overlay OVERLAY.json --json` to check unsaved canonical-path source text without synchronizing the graph; its source ranges are byte intervals, not graph identities. Use ordinary check/test/task acceptance before committing edits. The stdio LSP adapter uses UTF-16 positions; do not apply its positions as compiler byte offsets.
+
+When editor_features includes vscode_stdio_language_client, read docs/editor.md. VS Code edits use the same checker through nex lsp; diagnoses and navigation belong to exact unsaved document versions. IDE source analysis does not replace check/test/task acceptance or synchronize graph revisions. Use the installed compiler and matching extension resources.

@@ -1,0 +1,96 @@
+'use strict';
+
+const vscode = require('vscode');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+async function eventually(action, predicate, label) {
+  const end = Date.now() + 30000;
+  let last;
+  while (Date.now() < end) {
+    last = await action();
+    if (predicate(last)) return last;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timed out waiting for ${label}: ${JSON.stringify(last)}`);
+}
+
+async function replace(document, text) {
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(document.uri, new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)), text);
+  assert.equal(await vscode.workspace.applyEdit(edit), true);
+}
+
+async function run() {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  assert.ok(folder && folder.uri.scheme === 'file');
+  assert.equal(vscode.workspace.isTrusted, true);
+  const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');
+  assert.ok(extension && extension.extensionPath.startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
+  assert.equal(extension.packageJSON.version, '0.2.0');
+  await vscode.workspace.getConfiguration('nex', folder.uri).update('compilerPath', process.env.NEX_EDITOR_COMPILER, vscode.ConfigurationTarget.Workspace);
+  await extension.activate();
+  const source = vscode.Uri.joinPath(folder.uri, 'main with spaces.nex');
+  const model = vscode.Uri.joinPath(folder.uri, 'model 🧠.nex');
+  const original = fs.readFileSync(source.fsPath, 'utf8');
+  const modelOriginal = fs.readFileSync(model.fsPath, 'utf8');
+  const document = await vscode.workspace.openTextDocument(source);
+  await vscode.window.showTextDocument(document);
+  assert.equal(document.languageId, 'nex');
+  assert.equal(vscode.window.activeTextEditor.document.uri.toString(), source.toString());
+  const query = new vscode.Position(2, original.split('\n')[2].indexOf('answer'));
+  const symbols = await eventually(() => vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', source),
+    values => values?.some(value => value.name === 'main'), 'compiler document outline');
+  const hover = await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', source, query),
+    values => values?.some(value => value.contents.some(content => content.value?.includes('i64'))), 'checked type hover');
+  const definitions = await eventually(() => vscode.commands.executeCommand('vscode.executeDefinitionProvider', source, query),
+    values => values?.some(value => value.uri?.fsPath === model.fsPath), 'cross-module definition');
+  const destination = definitions.find(value => value.uri?.fsPath === model.fsPath);
+  assert.equal(destination.range.start.line, 1); assert.equal(destination.range.start.character, 7);
+  const invalid = 'module ide_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
+  await replace(document, invalid);
+  assert.equal(document.isDirty, true);
+  const invalidVersion = document.version;
+  const errors = await eventually(() => Promise.resolve(vscode.languages.getDiagnostics(source).filter(value => value.source === 'nex')),
+    values => values.some(value => value.code === 'E_NAME'), 'unsaved compiler diagnostic');
+  const error = errors.find(value => value.code === 'E_NAME');
+  assert.equal(error.range.start.line, 1);
+  assert.equal(error.range.start.character, invalid.split('\r\n')[1].indexOf('missing'));
+  assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
+  assert.equal(fs.existsSync(path.join(folder.uri.fsPath, '.nex')), false);
+  await replace(document, original);
+  assert.ok(document.version > invalidVersion);
+  await eventually(() => Promise.resolve(vscode.languages.getDiagnostics(source).filter(value => value.source === 'nex')),
+    values => values.length === 0, 'repaired diagnostic version');
+  await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', source, query),
+    values => values?.some(value => value.contents.some(content => content.value?.includes('i64'))), 'repaired checked hover');
+  await vscode.commands.executeCommand('nex.restartLanguageServer');
+  await eventually(() => vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', source),
+    values => values?.some(value => value.name === 'main'), 'fresh server after restart');
+  await vscode.workspace.getConfiguration('nex', folder.uri).update('languageServer.enabled', false, vscode.ConfigurationTarget.Workspace);
+  await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', source, query), values => !values?.length,
+    'disabled language client');
+  await vscode.workspace.getConfiguration('nex', folder.uri).update('languageServer.enabled', true, vscode.ConfigurationTarget.Workspace);
+  await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', source, query),
+    values => values?.some(value => value.contents.some(content => content.value?.includes('i64'))), 're-enabled language client');
+  assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
+  assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
+  assert.equal(fs.existsSync(path.join(folder.uri.fsPath, '.nex')), false);
+  await document.save(); // Save the restored original before closing the owned fixture.
+  await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
+  const report = {schema:'nex.editor-ide-acceptance/1',ok:true,editor:vscode.version,
+    extension_version:extension.packageJSON.version,extension_path:extension.extensionPath,
+    compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
+    actual_installed_vsix:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
+    outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
+    unicode_crlf_unsaved_error:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
+    physical_sources_unchanged:true,graph_not_created:true,close_verified:true,
+    source_sha256:crypto.createHash('sha256').update(original).digest('hex'),
+    model_sha256:crypto.createHash('sha256').update(modelOriginal).digest('hex')};
+  fs.writeFileSync(process.env.NEX_EDITOR_REPORT, JSON.stringify(report,null,2)+'\n');
+}
+
+module.exports = {run};

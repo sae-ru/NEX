@@ -168,3 +168,5 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.59 core capsule commands add no source syntax or language migration. *)
 
 (* Toolchain0.66 editor analysis/LSP reuses the current source grammar; no migration. *)
+
+(* Toolchain0.67 VS Code LSP client reuses this grammar; no language migration. *)

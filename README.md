@@ -280,3 +280,7 @@ Mobile native project generation is documented in [the mobile guide](docs/mobile
 ## Isolated development 0.66: checked editing
 
 The candidate adds `nex analyze` for unsaved sources and `nex lsp` for stdio compiler diagnostics, typed hover, definitions and document symbols. Root integration, current full/SDK/platform checks and a VS Code language client remain pending; see docs/lsp.md.
+
+## Isolated development0.67: VS Code editing
+
+The candidate extension0.2 connects unsaved-source diagnostics, type hover, definitions and outline to the installed nex lsp service. Provider/transport contracts and a real Node-to-compiler test pass during development; own0.67 build/full78/SDK and actual installed IDE acceptance remain required. See docs/editor.md.
