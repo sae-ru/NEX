@@ -1,17 +1,62 @@
-# Isolated development0.68: checked source references
+# Verified root development checkpoint0.68 / language0.16
 
-The candidate adds opt-in analysis/2 with exact name occurrences while retaining
-default analysis/1. LSP/VS Code0.3 connect checked references for functions,
-lexical values, nominal constructor calls/patterns and structure fields, with
-explicit limits and scope. Queries flush all connected open buffers and suppress
-replies after any of them changes. Wildcard patterns no longer create a false
-editor binding that shadows an outer ordinary `_`; execution is unchanged.
+Actual root source 13a9d72d1bd9aa017deb010e84932dd1f6b29817 (716 files) builds and passes all78
+CTest groups in 758.09 seconds. Its installed SDK passes23 phases,
+332 commands and197 indexed resources. Root compiler SHA-256 is
+76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572.
+[Machine-readable evidence](docs/evidence/toolchain-0.68.0.json) separates
+candidate, installed, resumed Linux and actual root execution scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler/runtime/grammar/
+manifest/example or indexed resource; it does not relabel earlier executions.
 
-The candidate keeps language0.16, graph formats and all runtime/backend semantics.
-Full78/SDK/platform and actual installed IDE gates are still required. The real
-working root remains verified0.67/d40fa471 until guarded promotion. Type/trait/
-import-alias reference syntax, cross-workspace buffers, closed unreachable files,
-completion/rename and the remaining language/development-chain work stay pending.
+The source13a9d72d candidate has its own macOS full78/SDK23/332/197 and Linux
+full78 receipts. Linux completed14 live suites before its Docker container ended
+with137 during live-string-debug. Docker Desktop was later observed stopped.
+The exact source/compiler/SDK bytes were retained; two remaining live suites
+passed in a fresh identical-image container after Desktop startup, followed by
+source-free/network-disabled SDK23/332/197. Original failed controllers/report
+and the interrupted zero-byte live log remain retained. The combined16live
+coverage is not a claim of one uninterrupted run. Dependent first root jobs
+stopped before mutation; successful root verification uses separate v2 jobs.
+
+Opt-in analysis/2 adds exact declaration/read/write/call/pattern intervals with
+checker-resolved targets. Default analysis/1 and its strict schema are retained.
+Functions/values, lexical scopes, nominal constructors/patterns and structure
+fields have checked reference lookup; result limits, declaration inclusion,
+deterministic deduplication, cancellation and captured-context conflicts are
+explicit. Type/trait/import-alias reference syntax and broader workspace
+coverage remain pending. Source language0.16 and graph formats are unchanged.
+
+An actual old/new compiler counterexample proves the editor wildcard correction:
+`match ... {_=>_}` does not declare a new `_` that shadows an outer ordinary
+value. The corrected location points at the outer declaration; both compiler
+versions evaluate42 and produce the same canonical revision. Field/pattern/
+wildcard fixtures additionally agree in native/reference/TypeScript execution.
+Nineteen compiler/stdio cases,25 Node contracts and two actual-client/contract
+cases cover scope, Unicode, result limits, contexts and source/history isolation.
+Installed SDK checks send16 Python/server messages and8 Node/client requests.
+
+Actual root SDK VSIX0.3 runs in VS Code1.142.0 on macOS
+ARM64 using two private profiles. It verifies references, unchanged-entry queries
+immediately after imported-buffer edits, repaired imports, explicit CRLF and
+Unicode, diagnostics/navigation/outline, restart/disable/enable and close.
+Physical source bytes remain unchanged and source analysis creates no graph.
+Native debugging verifies source breakpoints, stack/scopes, scalar/trait pure
+watches, unchanged stop identity,32768-item list/4MiB byte roots with bounded
+1000-child pages, continuation and exit0. The user's profile is not modified.
+
+Fresh root SDK Windows checks retain9 PE outputs, each original build context's
+graph snapshot and source where present, and17 x64 Wine cases. Actual Windows
+OS/ARM64 execution and the failed filesystem prototype remain separate/pending.
+All47 root revisions, all16 tables/schema, local identities and normal Git HEAD/
+index are preserved. Earlier SDKs and source/recovery cohorts remain available.
+
+Completion/rename, parser recovery/incremental indexing, remaining reference
+syntax/workspace coverage, Windows/physical-platform adapters, signing and the
+rest of PLAN.md remain open. This is verified development progress, not a
+release or completion of the full language/development-chain objective.
+
+Earlier milestones retain their original identities and scopes below.
 
 # Verified root development checkpoint 0.67 / language 0.16
 

@@ -1,0 +1,256 @@
+{
+  "toolchain": "0.68.0",
+  "language": "0.16",
+  "created": "2026-10-20T09:24:48.623827+00:00",
+  "scope": "Checked source references, wildcard editor identity and context-aware installed VS Code; remaining language/platform work is pending",
+  "implementation_source": {
+    "tree": "f69b54dc5cf49f2c2972a6c657bce0d621b8c6bb",
+    "commit": "6a1c80862214474a66c64e9b27158cf52af28d28",
+    "files": 716
+  },
+  "tested_source": {
+    "tree": "13a9d72d1bd9aa017deb010e84932dd1f6b29817",
+    "commit": "18e82079245c7fb97acf85ba123954c6aee0d474",
+    "files": 716,
+    "delta_from_initial": [
+      "tests/editor_lsp_host.js"
+    ],
+    "delta_scope": "One unindexed actual-IDE host strengthening; all197 indexed resources and compiler/runtime/grammar/manifest/examples identical"
+  },
+  "root": {
+    "compiler_sha256": "76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572",
+    "regression_groups": 78,
+    "sdk_phases": 23,
+    "sdk_commands": 332,
+    "resource_files": 197,
+    "sdk_report_sha256": "971606d8c1b9195686b3fa7e3f09de1afe15d143eefc5559d2d09957c02b5c2b",
+    "all47_revisions_all16_tables_schema_preserved": true,
+    "normal_git_head_index_unchanged": true,
+    "regression_seconds": 758.09,
+    "regression_log_sha256": "a55a0a9dd442f99481210333938b182b4168dac129bc084cdd43af5d0e18d18b",
+    "controller": "build/root-068-integration-v2-controller.json",
+    "sdk_report": "build/sdk-068-root-acceptance/report.json"
+  },
+  "candidate_macos_linux": {
+    "ok": true,
+    "created": "2026-10-20T09:09:21.354149+00:00",
+    "source_tree": "13a9d72d1bd9aa017deb010e84932dd1f6b29817",
+    "source_files": 716,
+    "implementation_source": "f69b54dc5cf49f2c2972a6c657bce0d621b8c6bb",
+    "unindexed_host_delta": [
+      "tests/editor_lsp_host.js"
+    ],
+    "toolchain": "0.68.0",
+    "language": "0.16",
+    "macos_compiler_sha256": "b1cc0f4aa7fe162f25edb658d15e626b4503f8a97f4154eb9d84aaaa1b30cc7e",
+    "macos_full_groups": 78,
+    "macos_full_seconds": 887.26,
+    "linux_full_groups": 78,
+    "linux_full_seconds": 750.82,
+    "linux_live": {
+      "original_passed_suites": 14,
+      "resumed_suites": 2,
+      "combined_passed_suites": 16,
+      "original_container_exit": 137,
+      "original_interrupted_phase_retained": true,
+      "original_report_sha256": "97046c35337dd59abeb030604636c8de8762569bb226debb3b57a350e878832b",
+      "resumed_container_exit": 0,
+      "resumed_container_oom_killed": false,
+      "scope": "Original full78/14live plus two separately resumed live suites on exact same SDK bytes after Docker Desktop restart; no single uninterrupted run claimed"
+    },
+    "linux_install_delta": {
+      "ok": true,
+      "build_compiler_sha256": "33a3b38b98607dc1ff93995d049af630cc778ca75f7da415de74e05fa0c55c8d",
+      "installed_sdk_compiler_sha256": "4beeefcaf2dd78760c6c6d8f604d86bdaa26406d6ca9eecc8e79bc80cd8fc7f1",
+      "changed_bytes": 1,
+      "offset": 61420,
+      "old": 58,
+      "new": 0,
+      "section": ".dynstr",
+      "dynamic_paths": [
+        {
+          "tag": 29,
+          "old": "/usr/lib/llvm-22/lib:/opt/z3/bin:",
+          "new": "/usr/lib/llvm-22/lib:/opt/z3/bin",
+          "absolute_start": 61388
+        }
+      ],
+      "cause": "CMake install removes trailing RUNPATH colon padding",
+      "all_other_bytes_identical": true
+    },
+    "sdk_each": {
+      "phases": 23,
+      "commands": 332,
+      "indexed_resources": 197,
+      "installed_lsp_messages": 16,
+      "installed_node_client_requests": 8
+    },
+    "macos_sdk_report_sha256": "8d603f3f1b96d870de23685f66ed3b64a560944b6fd6c9878a98a98f2c9df4d9",
+    "linux_sdk_report_sha256": "7152e407357436dcae3f47fbe68f816d6a3158b69f65daf701f9ce5becf8fef7",
+    "linux_source_checkout_mounted": false,
+    "linux_network": "none",
+    "actual_vscode": "1.142.0/macOS ARM64",
+    "extension": "0.3.0",
+    "vsix_sha256": "cbd0ee7ad48cf8d44234bc5e7dba268684d6acdeba88a99a399e9abc00598cad",
+    "actual_editor_references": true,
+    "actual_imported_unsaved_context_guard": true,
+    "actual_editor_explicit_crlf": true,
+    "actual_native_debugger_pages": true,
+    "focused_compiler_lsp_cases": 19,
+    "node_contracts": 25,
+    "actual_client_contract_cases": 2,
+    "wildcard_counterexample": {
+      "ok": true,
+      "created": "2026-10-20T07:52:23.803266+00:00",
+      "scope": "Actual old/new compiler counterexample for editor wildcard target; source language semantics unchanged",
+      "analyses": [
+        {
+          "compiler": "root067",
+          "compiler_sha256": "aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628",
+          "revision": "7e3997ad41664b670d11a1c8d7ffa43b310521ca7b7b9591d41a6e5b0eff3054",
+          "definition_begin": 72
+        },
+        {
+          "compiler": "candidate068",
+          "compiler_sha256": "b1cc0f4aa7fe162f25edb658d15e626b4503f8a97f4154eb9d84aaaa1b30cc7e",
+          "revision": "7e3997ad41664b670d11a1c8d7ffa43b310521ca7b7b9591d41a6e5b0eff3054",
+          "definition_begin": 47
+        }
+      ],
+      "old_incorrect_target": 72,
+      "new_correct_outer_target": 47,
+      "same_canonical_revision": true,
+      "runtime_results": [
+        {
+          "compiler": "root067",
+          "value": 42
+        },
+        {
+          "compiler": "candidate068",
+          "value": 42
+        }
+      ],
+      "private_project_has_own_manifest": true,
+      "root_graph_not_used": true,
+      "full_objective_complete": false
+    },
+    "root_gate_scope": "Own root build/full78/SDK/installed IDE/Windows checks remain separate",
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "actual_root_ide": {
+    "editor": "1.142.0",
+    "host": "macOS ARM64",
+    "extension": "0.3.0",
+    "compiler_sha256": "76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572",
+    "vsix_sha256": "9987109bb7357ae71e816548fe1de8d9ede7c4ceed8d1902fcc8226019dd7a45",
+    "language_client": {
+      "schema": "nex.editor-ide-acceptance/1",
+      "ok": true,
+      "editor": "1.142.0",
+      "extension_version": "0.3.0",
+      "extension_path": "/Users/sae/projects/NEX/build/ide068-root-installed-editor/extensions/sae-ru.nex-language-tools-0.3.0",
+      "compiler_sha256": "76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572",
+      "actual_installed_vsix": true,
+      "checked_references": true,
+      "imported_unsaved_context_checked": true,
+      "trusted_physical_workspace": true,
+      "controlled_test_profile": true,
+      "user_profile_modified": false,
+      "outline_symbols": [
+        "main"
+      ],
+      "checked_hover": true,
+      "cross_module_definition": true,
+      "unicode_crlf_unsaved_error": true,
+      "explicit_crlf_eol_asserted": true,
+      "repaired_document_version": true,
+      "restart_verified": true,
+      "disable_enable_verified": true,
+      "physical_sources_unchanged": true,
+      "graph_not_created": true,
+      "close_verified": true,
+      "source_sha256": "85cefa967a258bbd878017b7e901b08886ee914bedd0e5497c862d1263b2b2f4",
+      "model_sha256": "0e7c83c5c390afc9c9c49dabe81b4073e351a4afde1a4770e06de76a81a02f7e"
+    },
+    "lsp_report_sha256": "a69d4981a1598e84c5bac1fa1e951b92f64d8e3e895c870b772e5dd725064376",
+    "debug_report_sha256": "be9ad11d95944f0c298e501b86f5f4cd5c5d98960152b5306e4bbac1f1599a6c",
+    "native_debugger": {
+      "ok": true,
+      "physical_source_breakpoint": true,
+      "native_stack_scopes": true,
+      "unchanged_watch_stop": true,
+      "native_indexed_pages": true,
+      "native_resume_and_termination": true,
+      "native_exit_code": 0,
+      "controlled_test_profile": true,
+      "user_profile_modified": false
+    },
+    "native_pages": {
+      "list_items": 32768,
+      "byte_items": 4194304,
+      "max_page": 1000
+    }
+  },
+  "windows": {
+    "compiler_sha256": "76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572",
+    "pe_files": 9,
+    "x64_wine_cases": 17,
+    "original_build_context_snapshots": 9,
+    "report_sha256": "eb948d1e937d58d7fe62bf47cbfee28275aca78eb4ea58b4e790e2bf6f4240c4",
+    "actual_windows_os_execution": false,
+    "arm64_execution": false,
+    "filesystem_available": false,
+    "earlier_failed_filesystem_evidence": "docs/evidence/toolchain-0.65.0.json"
+  },
+  "retained_interruption": {
+    "ok": true,
+    "scope": "Retain interruption and successful continuation without relabeling original results",
+    "original_controller_exit": 1,
+    "docker_container_exit": 137,
+    "unfinished_live_log_bytes": 0,
+    "docker_desktop_observed_stopped": true,
+    "docker_socket_observed_missing": true,
+    "docker_backend_log_later_quit_utc": "2026-10-20T08:12:00.858486Z",
+    "desktop_start_command": [
+      "docker",
+      "desktop",
+      "start",
+      "--detach"
+    ],
+    "underlying_reason_for_exit137": "not proven; no product test failure was emitted",
+    "same_source_and_sdk_bytes_preserved": true,
+    "remaining_native_tests_reexecuted": 2,
+    "source_free_sdk_completed": true,
+    "original_full78_and14live_retained": true,
+    "dependent_root_jobs_stopped_before_mutation": true,
+    "root_retry_controllers": [
+      "root-068-integration-v2-controller.json",
+      "root-068-installed-ide-v2-controller.json",
+      "root-068-windows-runtime-v2-verification.json"
+    ],
+    "full_objective_complete": false
+  },
+  "final_overview_delta": {
+    "files": [
+      "README.md",
+      "STATUS.md",
+      "PLAN.md",
+      "docs/evidence/toolchain-0.68.0.json"
+    ],
+    "indexed_resources_unchanged": 197,
+    "compiler_runtime_grammar_manifest_examples_unchanged": true,
+    "scope": "Unindexed overview/evidence only; original executions retain their exact source identities"
+  },
+  "earlier_mobile_browser_distribution": "Actual mobile API UI retains0.63 scope; earlier browser/distribution results keep their identities in STATUS.md",
+  "pending": [
+    "type/trait/import-alias reference syntax and wider workspace coverage",
+    "completion/rename and parser recovery/incremental indexing",
+    "cross-provider coding and comparable token/performance measurements",
+    "actual Windows OS/ARM64, filesystem and broader native adapters/host tools",
+    "physical Intel/mobile execution and signing",
+    "remaining language/runtime/development-chain integrations in PLAN.md"
+  ],
+  "accepted_release": false,
+  "full_objective_complete": false
+}

@@ -1,28 +1,20 @@
-# Current isolated work: toolchain0.68 references
+# Текущее состояние: toolchain0.68 / язык0.16
 
-- Add exact checked declaration/read/write/call/pattern locations with explicit
-  opt-in analysis/2; preserve default analysis/1 and source language0.16.
-- Connect LSP/VS Code references with declaration inclusion, deterministic bounded
-  results, cancellation, context consistency and guards across imported buffers.
-- Complete full compiler/SDK/platform and actual installed IDE checks before root
-  promotion. Broader type/trait/import-alias references, workspace coverage,
-  completion/rename and the full language/development-chain plan remain open.
-
-# Текущее состояние: toolchain 0.67 / язык 0.16
-
-- [x] Подключить анализ несохранённых исходников и stdio LSP: диагностика,
-  типы, определения, декларации; не изменять исходники и историю графа.
-- [x] Подключить VS Code 0.2 и проверить настоящий установленный VSIX:
-  Unicode/CRLF, версии документа, перезапуск, исходные breakpoint и большие
-  значения в нативном отладчике; использовать отдельные тестовые профили.
-- [x] Проверить собственную рабочую сборку full78/SDK23/332/196; отдельно
-  сохранить macOS/Linux candidate full78, Linux16live и SDK без исходников/сети.
-- [x] Сохранить все47 ревизий, все16 таблиц/схему графа и обычный Git HEAD/index.
-- [ ] Добавить completion, references/rename, восстановление после синтаксических
-  ошибок и инкрементальный индекс, сохраняя версии, идентичность и границы контекста.
-- [ ] Расширить реальную IDE/платформенную матрицу и выполнить оставшуюся работу
-  над языком, runtime и цепочкой ниже. Фактические области проверок записаны
-  в STATUS.md и docs/evidence/toolchain-0.67.0.json.
+- [x] Добавить точные семантические ссылки для функций, значений/присваиваний,
+  полей структур и конструкторов/образцов; сохранить строгий analysis/1, а новый
+  индекс выдавать явно как analysis/2. Wildcard `_` не объявляет переменную.
+- [x] Подключить VS Code0.3: поиск ссылок, версии всех подключённых буферов,
+  немедленный запрос после правки импорта и защита от смены манифеста.
+- [x] Проверить собственный root full78/SDK23/332/197, настоящий установленный
+  VSIX и свежие9PE/17Wine. Отдельно сохранить candidate Mac/Linux и16live Linux
+  с явной границей между14 первоначальными и2 возобновлёнными проверками.
+- [x] Сохранить все47 ревизий, все16 таблиц/схему и обычный Git HEAD/index.
+- [ ] Дополнить ссылки в аннотациях типов, trait/impl и import-alias синтаксисе,
+  межпроектные буферы и закрытые недостижимые файлы с точными границами контекста.
+- [ ] Добавить completion/rename, восстановление после синтаксических ошибок
+  и инкрементальный индекс; продолжить оставшуюся работу над языком/runtime/
+  платформами ниже. Фактические области проверок — STATUS.md и
+  docs/evidence/toolchain-0.68.0.json.
 
 # Language contract status: 20 October 2026
 
