@@ -1,22 +1,51 @@
-# Candidate development toolchain0.70 / language0.16
+# Verified root development checkpoint0.70 / language0.16
 
-The isolated0.70 candidate adds `analyze --details` / `nex.analysis/3`, a strict
-indexed schema and exact lexer-word descriptions for VS Code0.5. Source
-signatures, lexical values/generics, aliases, nominal declarations and trait
-members use actual parser/binder/checker data. Builtin types/constraints have
-null physical targets; syntax words have null descriptions and targets. This
-fixes the real0.69 counterexample where `i64` in `id<i64>(42)` navigated to `id`.
-Dedicated compiler/LSP cases cover UTF-16/CRLF, conflicts/cancellation, source
-and graph isolation, template/concrete types and explicit output limits.
-Default analysis/1 and `--references` analysis/2 retain their strict wire shapes;
-source language0.16 and canonical formats require no migration.
+Core source 74a013fc876cfcb725608c9ce490e71720aeb76b (719 files) builds and passes all78 CTest groups
+in 752.95 seconds. Its installed SDK passes23 phases/332 commands/198
+indexed resources; compiler SHA-256 is 88273ccf08e1f73b8ecd08130514c6d00cb487eeaad5a49960cbf36148506701.
+[Machine-readable evidence](docs/evidence/toolchain-0.70.0.json) separates the
+candidate macOS/Linux/installed-IDE and actual root execution scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler, grammar, manifest,
+example or indexed resource and does not relabel earlier executions.
 
-Full current-source regression, installed SDK, actual private IDE and platform
-gates remain pending. Root0.69, all47 revisions/all16 tables/schema and ordinary
-Git HEAD/index remain unchanged while the candidate is validated. Completion,
-rename, parser recovery/incremental indexing, closed unreachable files,
-cross-workspace buffers, Studio and the rest of the full objective remain open.
-The following verified0.69 results retain their original source/compiler scope.
+Explicit analysis/3 uses exact lexer-word ranges and actual bound source
+signatures, generic arities/bounds, lexical values, aliases and trait members.
+Builtin types/constraints have null physical targets; syntax words have null
+descriptions and targets. This fixes the genuine0.69 `id<i64>(42)` false-definition
+counterexample. Generic functions show source templates; concrete field reads
+can show their checked instantiated type. The model-independent prompt, schema,
+manifest and guides describe these distinctions and explicit limits.
+33 compiler/stdio cases and two actual Node-client/contract wrappers cover source
+and graph isolation, UTF-16/CRLF, conflicts, cancellation and16KiB/8MiB limits.
+Five genuine old/new compiler cases preserve canonical revisions and both strict
+legacy analysis/1 and analysis/2 payloads apart from compiler identity. Source
+language0.16 and canonical formats require no migration.
+
+The original implementation candidate passes full78 and installed SDK on macOS and Linux
+ARM64. Linux completes16 live suites and source-free/network-disabled SDK
+acceptance. Installed Python LSP sends29 messages and the Node client17 requests;
+both verify exact aliases, generics, members, signatures and builtin no-definition.
+Only tests/editor_lsp_host.js changes from the original66280d5d candidate to
+the corrected74a013fc source: the first actual-IDE test compared raw plaintext
+to VS Code codeblock markup. The corrected driver verifies rendered expected
+text. All compiler/client runtime files, CTest suites and198 indexed resources
+are unchanged; original full-suite receipts keep their66280d5d scope. The initial
+IDE failure and dependent exits before root mutation are retained.
+The Linux installed ELF delta is checked separately from byte-identical compiler
+claims. Actual installed VSIX0.5 in VS Code1.142.0 uses
+private macOS ARM64 profiles and verifies the same descriptions, unsaved imports,
+explicit CRLF/Unicode repair, lifecycle, native watches and indexed value pages.
+All npm dependency records remain unchanged; only extension own version fields
+change. Fresh root-SDK checks retain9 Windows PE build graphs and17 x64 Wine
+successes. Wine is distinct from actual Windows OS/ARM64 execution. All47 root
+graph revisions, all16 tables/schema, local IDs and normal Git HEAD/index remain
+preserved. Process-scoped test sleep assertions change no global power settings.
+
+Completion/rename, parser recovery/incremental indexing, closed-file/cross-workspace
+coverage, Studio, cross-provider coding/token measurements and broader platform/
+application acceptance remain pending. Earlier mobile/browser/distribution
+results retain their original cohorts. The full objective remains open.
+The following historical0.69 statements retain their original source/compiler scope.
 
 # Verified root development checkpoint0.69 / language0.16
 
