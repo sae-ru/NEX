@@ -1,3 +1,10 @@
+When `server_cors` and mobile API configuration are advertised, read
+`docs/mobile-api.md`. The operator selects one HTTPS origin with `--api-origin`;
+never embed tokens in client code or static resources. API paths stay `/api/`
+and require runtime Bearer credentials. Configure exact server CORS origins;
+preflight does not authenticate a user. Keep timeout/cancellation uncertainty
+and response limits intact. Verify the actual host and network path separately.
+
 # NEX coding prompt — language 0.16, protocol 2
 
 When `mobile_project_generation` is advertised, read `docs/mobile.md` and the

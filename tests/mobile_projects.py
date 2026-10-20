@@ -16,6 +16,24 @@ spec.loader.exec_module(mobile)
 
 
 class MobileProjects(unittest.TestCase):
+    def test_api_origin_and_configured_asset_provenance(self):
+        for value in ('https://api.example.test','https://localhost:9443','https://127.0.0.1:9443'):
+            self.assertEqual(mobile.api_origin(value),value)
+        for value in ('http://api.test','https://api.test/','https://a:b@api.test','https://api.test?q',
+                      'https://api.test#hash','https://API.test','https://api.test:443','https://api.test:0',
+                      'https://api.test:65536','https://api.test:0443','https://127.1','https://0x7f000001',
+                      'https://api..test','https://-api.test','https://api.test\n','https://[::1]:9443'):
+            with self.subTest(value=value),self.assertRaises(mobile.Failure) as caught:mobile.api_origin(value)
+            self.assertEqual(caught.exception.code,'E_MOBILE_API')
+        with tempfile.TemporaryDirectory() as directory:
+            index=Path(directory)/'index.html';index.write_text('<html><head></head><body></body></html>')
+            before=mobile.sha(index);receipt=mobile.configure_api(index,'https://api.test:9443')
+            self.assertEqual(receipt['original_sha256'],before)
+            self.assertEqual(receipt['configured_sha256'],mobile.sha(index))
+            self.assertNotEqual(before,mobile.sha(index))
+            self.assertIn('<meta name="nex-api-origin" content="https://api.test:9443">',index.read_text())
+            with self.assertRaises(mobile.Failure):mobile.configure_api(index,'https://other.test')
+
     def test_real_url_policy_and_opaque_origins(self):
         result = subprocess.run([os.environ.get('NEX_NODE','node'), str(ROOT/'tests/url_policy.mjs'), str(ROOT/'web/urls.ts')],
                                 capture_output=True,text=True,timeout=30)

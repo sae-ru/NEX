@@ -120,7 +120,8 @@
     "mobile_cordova_notice": "mobile/CORDOVA-ANDROID-NOTICE.txt",
     "mobile_apache_license": "mobile/APACHE-2.0.txt",
     "view_url_policy": "web/urls.ts",
-    "mobile_cordova_ios_notice": "mobile/CORDOVA-IOS-NOTICE.txt"
+    "mobile_cordova_ios_notice": "mobile/CORDOVA-IOS-NOTICE.txt",
+    "mobile_api": "docs/mobile-api.md"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",

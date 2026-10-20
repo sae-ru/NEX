@@ -114,7 +114,9 @@ Requests permit GET/HEAD/POST/PUT/PATCH/DELETE/OPTIONS, same-origin `/api/` path
 
 Completion dispatches `Event(action, encoded_response, current_path)`. `net::response(event)` returns `result<net::Response>` using the standard strict codec. Check the envelope, request ID, `body` result and HTTP `status`; then decode the body as the shared application model with `decode_json<T>`. HTTP 4xx/5xx are ordinary responses with their status/body. Transport failures produce body errors: `E_NETWORK`, `E_TIMEOUT`, `E_CANCELED`, `E_UTF8` or `E_LIMIT`. Their messages omit URLs, tokens and native error details. A response is delivered at most once. Unmount aborts work and suppresses late events; sign-out should clear state and issue `cancel_all`.
 
-Cancellation/timeouts are cooperative at the server and do not prove a mutation was rolled back: it may have committed before the connection ended. Refresh to determine the durable result. The adapter does not automatically retry mutations. Out-of-order response handling belongs in the pure update function; the example checks IDs across cancellation/logout/re-entry. Tokens are entered at runtime and retained only in page memory in the example; reload requires sign-in again. Never put credentials in NEX client source or static assets. Account registration, cookie sessions and cross-origin APIs are outside this adapter's current contract.
+Cancellation/timeouts are cooperative at the server and do not prove a mutation was rolled back: it may have committed before the connection ended. Refresh to determine the durable result. The adapter does not automatically retry mutations. Out-of-order response handling belongs in the pure update function; the example checks IDs across cancellation/logout/re-entry. Tokens are entered at runtime and retained only in page memory in the example; reload requires sign-in again. Never put credentials in NEX client source or static assets. Account registration and cookie sessions remain pending. An operator can configure
+one explicit HTTPS API origin through the trusted host metadata described in
+[mobile API configuration](mobile-api.md); request commands cannot choose hosts.
 
 Build both sides and serve them from the native host:
 
@@ -160,9 +162,10 @@ On an exact `capacitor://localhost` iOS origin, relative routes and asset paths
 are allowed. Explicit custom-scheme URLs, authority-relative paths and other
 opaque origins remain rejected. Navigation compares this full local origin;
 two URL.origin values of `null` do not establish same origin. Browser HTTP(S)
-and mail/tel link behavior is unchanged. Network commands require HTTP(S), so
-the offline mobile host cannot silently treat a local `/api/` asset URL as a
-remote server. See [mobile projects](mobile.md) for the separate native steps.
+and mail/tel link behavior is unchanged. Without explicit API host configuration, network commands require an HTTP(S)
+application origin. Toolchain0.63 adds an explicit HTTPS API origin, checked
+independently of commands, for mobile and separately hosted clients. It retains
+strict streaming limits, cancellation, redirects and credentials policy. See [mobile projects](mobile.md) for the separate native steps.
 
 NEX `i64` becomes TypeScript `bigint` with explicit range checks on arithmetic. BigInt is never converted to a JavaScript number for arithmetic. Division/remainder, left-to-right operand evaluation, short-circuiting, lexical scope, Unicode scalar indexing/slicing, nominal equality and immutable aggregate behavior follow the reference interpreter. Conversion to JavaScript array indices happens only after bounds checking. Browser input rejects unpaired UTF-16 surrogates at the boundary. Managed values use frozen arrays/records and the JavaScript garbage collector; native reference-counted handles are a backend detail.
 

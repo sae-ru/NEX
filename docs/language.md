@@ -28,6 +28,10 @@ Toolchain0.62 adds an external [mobile project generator](mobile.md) using the
 existing pure web application contract. Its platform hosting and relative URL
 policy change no source syntax, type/effect rules or canonical format.
 
+Toolchain0.63 adds external HTTPS host configuration and exact server CORS
+origins ([mobile API](mobile-api.md)); this changes no language syntax, effects,
+realms, canonical format or migration requirements.
+
 ## Source and program structure
 
 Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.

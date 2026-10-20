@@ -8,9 +8,10 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The isolated current source is **toolchain 0.62.0 / language 0.16**, under development.
-It adds explicit iOS archives and an experimental mobile project generator;
-matching complete acceptance and mobile UI validation are pending.
+The isolated current source is **toolchain 0.63.0 / language 0.16**, under development.
+It adds explicit iOS archives, experimental mobile projects and explicit HTTPS
+API hosting. Earlier0.62 native iOS/Android WebView UI probes passed; the0.63
+API change and matching complete acceptance remain under validation.
 The verified root checkpoint remains 0.60.2.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,

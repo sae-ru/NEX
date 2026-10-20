@@ -1699,3 +1699,10 @@ result. The failed relocation, actual probes and interruption are retained in
 and full regression must be repeated with the final corrected source.
 
 Toolchain0.60.2 corrects literal-percent Wasm output paths by linking in an owned physical staging directory and publishing the output bytes. The existing moved-SDK workflow found the failure; matching source, SDK and platform acceptance remain pending. Language0.16 is unchanged.
+
+
+Toolchain0.63 is an isolated candidate extending0.62 with explicit HTTPS API
+host metadata and optional exact server CORS origins. Language0.16 is unchanged.
+Its native server and browser/network tests, actual mobile API checks and
+complete platform/installed SDK acceptance are pending. This entry makes no
+root promotion, release or full objective completion claim.

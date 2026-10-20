@@ -7,6 +7,8 @@ frameworks, original browser notices and a bounded provenance report.
 """
 import argparse
 import hashlib
+import html
+import ipaddress
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -15,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import urllib.request
+import urllib.parse
 import zipfile
 
 RESOURCES = Path(__file__).resolve().parents[1]
@@ -28,6 +31,33 @@ class Failure(Exception):
     def __init__(self, code, message):
         super().__init__(message)
         self.code = code
+
+
+def api_origin(value):
+    """The host selects one canonical HTTPS origin, without credentials or paths."""
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        host = parsed.hostname or ''
+        if (len(value) > 300 or not re.fullmatch(r'https://[a-z0-9.-]+(?::[1-9][0-9]{0,4})?', value) or
+                len(host) > 253 or not all(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', part) for part in host.split('.')) or
+                parsed.port in (0, 443) or (parsed.port is not None and parsed.port > 65535)):
+            raise ValueError()
+        # WHATWG URL treats a numeric final label as IPv4, not a DNS name.
+        if re.fullmatch(r'(?:[0-9]+|0x[0-9a-f]+)', host.split('.')[-1]):
+            if str(ipaddress.IPv4Address(host)) != host:
+                raise ValueError()
+    except (AttributeError, TypeError, ValueError):
+        raise Failure('E_MOBILE_API', 'API origin requires canonical https://HOST[:PORT], without paths or credentials')
+    return value
+
+
+def configure_api(index, origin):
+    text = index.read_text()
+    if text.count('</head>') != 1 or 'nex-api-origin' in text:
+        raise Failure('E_MOBILE_API', 'browser index does not accept a unique API configuration')
+    before = sha(index)
+    index.write_text(text.replace('</head>', '<meta name="nex-api-origin" content="' + html.escape(api_origin(origin), quote=True) + '"></head>'))
+    return {'file': 'index.html', 'original_sha256': before, 'configured_sha256': sha(index)}
 
 
 def sha(path):
@@ -166,6 +196,9 @@ def generate(args):
     output = Path(os.path.abspath(args.directory))
     if os.path.lexists(output):
         raise Failure('E_EXISTS', 'mobile generation requires a new directory')
+    origin = getattr(args, 'api_origin', None)
+    if origin is not None:
+        origin = api_origin(origin)
     if not output.parent.is_dir():
         raise Failure('E_MOBILE_DIRECTORY', 'output parent directory must exist')
     nex = Path(args.nex).resolve()
@@ -183,6 +216,7 @@ def generate(args):
               'app_id': args.app_id, 'name': args.name, 'capacitor_version': VERSION, 'commands': commands,
               'compiler_sha256': sha(nex), 'native_application_built': False, 'target_executed': False,
               'source_backend': 'typescript-react', 'native_archive_target': False}
+    report['api_origin'] = origin
     try:
         env = dict(os.environ)
         if args.offline:
@@ -195,6 +229,8 @@ def generate(args):
         if build.get('schema') != 'nex.web-build/1':
             raise Failure('E_MOBILE_PROTOCOL', 'compiler did not produce a browser build')
         report['nex_web_build'] = build
+        if origin is not None:
+            report['host_configuration'] = configure_api(output / 'www/index.html', origin)
         install = [npm, 'ci', '--ignore-scripts', '--no-audit', '--no-fund']
         if os.environ.get('NEX_NPM_CACHE'):
             install.extend(['--cache', os.environ['NEX_NPM_CACHE']])
@@ -247,6 +283,7 @@ def main():
     parser.add_argument('--profile', choices=['debug', 'release'], default='release')
     parser.add_argument('--artifact-cache', required=True)
     parser.add_argument('--offline', action='store_true')
+    parser.add_argument('--api-origin', help='explicit canonical HTTPS API origin, without paths or credentials')
     args = parser.parse_args()
     try:
         report = generate(args)

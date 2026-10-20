@@ -8,6 +8,25 @@ type Prepared = { command: Command; body: string; schema?: Schema };
 const byteLimit = 1024 * 1024;
 const encoder = new TextEncoder();
 function invalid(message: string): never { throw new NexError('E_REQUEST', message); }
+// Deployment configuration belongs to the trusted host, never to a Command.
+// Accept one canonical HTTPS origin; paths, credentials and opaque origins fail.
+export function apiOrigin(value: string): string {
+  try {
+    const url = new URL(value);
+    if (value.length > 300 || !/^https:\/\/[a-z0-9.-]+(?::[1-9][0-9]{0,4})?$/.test(value) ||
+        url.origin !== value || url.username || url.password || url.port === '0' ||
+        url.hostname.length > 253 || !url.hostname.split('.').every(label =>
+          /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))) invalid('Invalid HTTPS API origin');
+    return value;
+  } catch { invalid('Invalid HTTPS API origin'); }
+}
+
+export function configuredAPIOrigin(document: Pick<Document, 'querySelectorAll'>): string | undefined {
+  const entries = document.querySelectorAll('meta[name="nex-api-origin"]');
+  if (!entries.length) return undefined;
+  if (entries.length !== 1) invalid('API origin must be configured once');
+  return apiOrigin(entries[0].getAttribute('content') ?? '');
+}
 function text(value: unknown): asserts value is string {
   if (typeof value !== 'string') invalid('Command fields must be strings');
   nexString(value);
@@ -59,8 +78,11 @@ export class RequestRunner {
   private base: URL;
   private deliver: Delivery;
   private fetcher: typeof fetch;
-  constructor(deliver: Delivery, base = globalThis.location?.href ?? 'http://localhost/', fetcher: typeof fetch = globalThis.fetch.bind(globalThis)) {
-    this.base = new URL(base); this.deliver = deliver; this.fetcher = fetcher;
+  private mode: RequestMode;
+  constructor(deliver: Delivery, base = globalThis.location?.href ?? 'http://localhost/', fetcher: typeof fetch = globalThis.fetch.bind(globalThis), origin?: string) {
+    this.base = new URL(origin === undefined ? base : apiOrigin(origin));
+    this.mode = origin === undefined ? 'same-origin' : 'cors';
+    this.deliver = deliver; this.fetcher = fetcher;
   }
 
   run(commands: ReadonlyArray<Command>): void {
@@ -79,7 +101,7 @@ export class RequestRunner {
       if (this.pending.has(command.id) || this.queued.has(command.id) || started.has(command.id)) invalid('Request identifier is already in use');
       if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].includes(command.method)) invalid('Unsupported request method');
       if (!command.action || encoder.encode(command.action).length > 128) invalid('Invalid response action');
-      if (!command.path.startsWith('/api/') || /[\\\u0000-\u0020\u007f]/.test(command.path) || encoder.encode(command.path).length > 2048) invalid('Requests require a same-origin /api/ path');
+      if (!command.path.startsWith('/api/') || /[\\\u0000-\u0020\u007f]/.test(command.path) || encoder.encode(command.path).length > 2048) invalid('Requests require an /api/ path on the configured origin');
       if (!['http:', 'https:'].includes(this.base.protocol)) invalid('Requests require an HTTP(S) application origin');
       const url = new URL(command.path, this.base);
       if (url.origin !== this.base.origin || !url.pathname.startsWith('/api/') || url.hash || url.username || url.password) invalid('Requests require a same-origin /api/ path');
@@ -133,7 +155,7 @@ export class RequestRunner {
         const response = await this.fetcher(new URL(command.path, this.base), {
           method: command.method, body: command.method === 'GET' || command.method === 'HEAD' ? undefined : requestBody,
           headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...(command.token ? { Authorization: 'Bearer ' + command.token } : {}) },
-          credentials: 'omit', mode: 'same-origin', redirect: 'error', cache: 'no-store', referrerPolicy: 'same-origin', signal: controller.signal,
+          credentials: 'omit', mode: this.mode, redirect: 'error', cache: 'no-store', referrerPolicy: 'same-origin', signal: controller.signal,
         });
         status = response.status;
         const length = response.headers.get('Content-Length');

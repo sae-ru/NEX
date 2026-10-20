@@ -1,4 +1,4 @@
-# Mobile projects — toolchain0.62 candidate
+# Mobile projects — toolchain0.63 candidate
 
 `tools/mobile_project.py` generates iOS and Android projects from the existing
 checked NEX web application contract. Business state, transitions and views stay
@@ -92,3 +92,12 @@ HTTP(S) application origin; mobile remote-API configuration, background services
 native plugin bindings, store deployment and a stable native Swift/JNI ABI remain
 pending. An embedded WebView does not establish native UI rendering or a general
 performance advantage. General source async/GPU support is unchanged.
+
+## Remote API
+
+Pass `--api-origin https://api.example.test` to configure one HTTPS API origin.
+The generated app remains bundled locally; the host only changes the request
+destination. Runtime credentials, exact server CORS origins, TLS trust,
+asset provenance and current validation scope are described in
+[mobile API configuration](mobile-api.md). Offline state-only apps omit this
+option. Real remote API execution of this candidate remains under validation.

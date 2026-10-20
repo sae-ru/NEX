@@ -73,3 +73,16 @@ Outside an HTTP request, server-realm source may use storage from the interprete
 Native builds cache runtime component objects by captured source/header contents, compiler/profile/target and relevant native dependencies, checking object integrity. Exact runtime input projections accompany compilation, so edits to live runtime sources do not alter a build already in progress. NEX function compilation remains whole-program for the selected closure; separate NEX compilation is still pending.
 
 Build JSON reports `kind` (`executable`, `static_library` or `http_server`), `metadata` and `notices`. Metadata records selected runtime components and their captured input directory. Native outputs that embed nlohmann/json or cpp-httplib include the full matching MIT license texts in `THIRD_PARTY_NOTICES.txt`; `-o PATH` copies these to `PATH.THIRD_PARTY_NOTICES.txt`. Distribute the companion notices with those outputs. Pure programs omit them. This does not package external SQLite/OpenSSL libraries or their distribution requirements; portable SDK/runtime dependency bundles remain pending.
+
+## Exact cross-origin API configuration
+
+Toolchain0.63 adds optional repeated `--cors-origin ORIGIN` (maximum16 exact
+origins). Without it the existing server behavior is unchanged. With it,
+allowed API responses carry that exact Origin and `Vary: Origin`, including
+401/errors. Approved OPTIONS preflight validates the method and requested
+Authorization/Content-Type headers without entering NEX or a transaction.
+Other API calls still require the runtime Bearer token. Disallowed origins are
+rejected before authentication/body buffering or mutation. Same-origin browser
+calls and clients without Origin retain their normal authenticated behavior.
+Wildcards, `null`, credentials, paths and cookies are unsupported. See
+[mobile API setup](mobile-api.md) for the origin format and TLS requirements.
