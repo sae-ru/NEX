@@ -86,7 +86,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
     manifest=readFile(file.string());auto parsed=llvm::json::parse(manifest);
     if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_TOOLCHAIN","invalid toolchain JSON");}
     auto object=parsed->getAsObject();if(!object)throw Error("E_TOOLCHAIN","toolchain must be an object");
-    keys(*object,{"schema","target","compiler","linker","archiver","debug_packager","sysroot","sqlite","openssl"});
+    keys(*object,{"schema","target","compiler","linker","archiver","debug_packager","sysroot","sqlite","openssl","windows"});
     if(text(*object,"schema",true)!="nex.toolchain/1")throw Error("E_TOOLCHAIN","expected nex.toolchain/1");
     auto target=llvm::Triple::normalize(text(*object,"target",true));
     if(triple&&result.target!=target)throw Error("E_TOOLCHAIN","--target conflicts with toolchain target");
@@ -111,6 +111,11 @@ NativeToolchain configureNative(const BuildOptions &options) {
     };
     if(auto sqlite=dependency("sqlite",{"include","library"})){result.sqliteInclude=path(*sqlite,"include",true);result.sqliteLibrary=path(*sqlite,"library",false);}
     if(auto ssl=dependency("openssl",{"include","ssl","crypto"})){result.opensslInclude=path(*ssl,"include",true);result.opensslSSL=path(*ssl,"ssl",false);result.opensslCrypto=path(*ssl,"crypto",false);}
+    if(auto windows=dependency("windows",{"runtime","notices"})){
+      result.windowsRuntime=text(*windows,"runtime",true);result.windowsNotices=path(*windows,"notices",false);
+      // Cross toolchains must not inherit host tools, SDKs or component terms.
+      for(const auto &key:{"compiler","linker","archiver","sysroot"})text(*object,key,true);
+    }
   }
   llvm::Triple abi(result.target);
   auto supportedArch=[](const llvm::Triple &t){auto name=t.getArchName();return name=="arm64"||name=="aarch64"||name=="x86_64";};
@@ -120,8 +125,16 @@ NativeToolchain configureNative(const BuildOptions &options) {
   bool ios=hostABI.isMacOSX()&&abi.getOS()==llvm::Triple::IOS&&abi.getVendor()==llvm::Triple::Apple&&supportedArch(abi)&&
     (abi.getEnvironment()==llvm::Triple::UnknownEnvironment||abi.isSimulatorEnvironment())&&
     (abi.isSimulatorEnvironment()||abi.getArch()==llvm::Triple::aarch64);
-  if(!abi.isArch64Bit()||(!ios&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
-    throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64 and explicit iOS archive toolchains on a macOS host");
+  bool windows=abi.isWindowsGNUEnvironment()&&supportedArch(abi)&&abi.getSubArch()==llvm::Triple::NoSubArch;
+  if(!abi.isArch64Bit()||(!ios&&!windows&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
+    throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64, explicit iOS archive and Windows GNU/UCRT core toolchains");
+  if(windows){
+    if(options.toolchain.empty()||result.windowsRuntime!="ucrt-static"||result.windowsNotices.empty())
+      throw Error("E_TARGET","Windows core builds require --toolchain FILE with explicit compiler/linker/archiver/sysroot and windows runtime ucrt-static/notices");
+    auto bytes=std::filesystem::file_size(result.windowsNotices);
+    if(!bytes||bytes>1048576)throw Error("E_TOOLCHAIN","Windows component notices must contain 1..1048576 bytes");
+    result.debugPackager.clear();
+  }else if(!result.windowsRuntime.empty())throw Error("E_TOOLCHAIN","windows configuration requires a supported Windows GNU target");
   if(ios){
     // A device and an arm64 simulator share a CPU with this Mac but are not
     // host executables. Never inherit its SDK or dynamic dependencies.
@@ -162,12 +175,19 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(!result.sysroot.empty())result.driver.insert(result.driver.end(),{"--sysroot="+result.sysroot});
   std::string sdkIdentity;
   if(!result.sysroot.empty())for(const auto &name:{"SDKSettings.json","SDKSettings.plist"}){auto file=std::filesystem::path(result.sysroot)/name;if(std::filesystem::is_regular_file(file))sdkIdentity+=hash(readFile(file.string()));}
+  if(windows)for(const auto &name:{"include/_mingw.h","include/_mingw_mac.h","lib/crt2.o","lib/libucrtbase.a","lib/libmingw32.a","lib/libmingwex.a","lib/libc++.a","lib/libc++abi.a","lib/libunwind.a"}){
+    auto file=std::filesystem::path(result.sysroot)/name;
+    if(!std::filesystem::is_regular_file(file)||std::filesystem::file_size(file)>256ULL*1048576)
+      throw Error("E_TOOLCHAIN","missing/oversized Windows UCRT/libc++ input: "+file.string());
+    sdkIdentity+=name+hash(readFile(file.string()));
+  }
   llvm::json::Array arguments;for(const auto &argument:result.driver)arguments.push_back(argument);
   result.identity=json(llvm::json::Object{{"schema","nex.toolchain-input/1"},{"target",result.target},{"driver",std::move(arguments)},{"sdk_identity",sdkIdentity},
     {"linker",result.linker},{"linker_hash",result.linker.empty()?"":hash(readFile(result.linker))},
     {"archiver",result.archiver},{"archiver_hash",hash(readFile(result.archiver))},
     {"debug_packager",result.debugPackager},{"debug_packager_hash",result.debugPackager.empty()?"":hash(readFile(result.debugPackager))},
-    {"sqlite_include",result.sqliteInclude},{"sqlite_library",result.sqliteLibrary},{"openssl_include",result.opensslInclude},{"openssl_ssl",result.opensslSSL},{"openssl_crypto",result.opensslCrypto}},false);
+    {"sqlite_include",result.sqliteInclude},{"sqlite_library",result.sqliteLibrary},{"openssl_include",result.opensslInclude},{"openssl_ssl",result.opensslSSL},{"openssl_crypto",result.opensslCrypto},
+    {"windows_runtime",result.windowsRuntime},{"windows_notices",result.windowsNotices},{"windows_notices_hash",result.windowsNotices.empty()?"":hash(readFile(result.windowsNotices))}},false);
   return result;
 }
 NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
@@ -181,6 +201,7 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
   if(!configured.debugPackager.empty())manifest["debug_packager"]=configured.debugPackager;
   if(!configured.linker.empty())manifest["linker"]=configured.linker;
   if(!configured.sysroot.empty())manifest["sysroot"]=configured.sysroot;
+  if(!configured.windowsRuntime.empty())manifest["windows"]=llvm::json::Object{{"runtime",configured.windowsRuntime},{"notices",configured.windowsNotices}};
   if(!configured.sqliteInclude.empty())manifest["sqlite"]=llvm::json::Object{{"include",configured.sqliteInclude},{"library",configured.sqliteLibrary}};
   if(!configured.opensslInclude.empty())manifest["openssl"]=llvm::json::Object{{"include",configured.opensslInclude},{"ssl",configured.opensslSSL},{"crypto",configured.opensslCrypto}};
   llvm::json::Object files;uint64_t bytes=0;
@@ -212,8 +233,12 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
   if(!configured.sysroot.empty())for(const auto &name:{"SDKSettings.json","SDKSettings.plist"}){
     auto path=fs::path(configured.sysroot)/name;if(fs::is_regular_file(path))file(path);
   }
+  if(!configured.windowsRuntime.empty()){
+    file(configured.windowsNotices);
+    for(const auto &name:{"include/_mingw.h","include/_mingw_mac.h","lib/crt2.o","lib/libucrtbase.a","lib/libmingw32.a","lib/libmingwex.a","lib/libc++.a","lib/libc++abi.a","lib/libunwind.a"})file(fs::path(configured.sysroot)/name);
+  }
   llvm::json::Value inputs=llvm::json::Object{{"schema","nex.toolchain-snapshot/2"},{"configuration",llvm::json::Object(manifest)},{"files",std::move(files)},
-    {"scope","compiler, archiver, debug packager and selected linker binaries, configured SQLite headers/library, OpenSSL headers/libraries and explicit SDK settings; SDK contents, compiler support files, default system linker/libraries and environment are external"}};
+    {"scope","compiler, archiver, debug packager and selected linker binaries, configured SQLite headers/library, OpenSSL headers/libraries, explicit SDK settings and selected Windows UCRT/libc++ inputs/notices; other SDK contents, compiler support files, default system libraries and environment are external"}};
   if(json(inputs).size()+1>4*1048576)throw Error("E_TOOLCHAIN","toolchain fingerprint metadata exceeds 4 MiB");
   NativeToolchainSnapshot result;result.hash=hash(json(inputs,false));result.target=configured.target;result.hostCompatible=configured.hostCompatible;result.manifest=std::move(manifest);result.inputs=std::move(inputs);return result;
 }

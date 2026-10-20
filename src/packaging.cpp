@@ -4,6 +4,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/SHA256.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cstdlib>
 #include <filesystem>
 #include <algorithm>
@@ -26,6 +27,7 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     const std::string &buildDirectory,const std::string &root,Store &store,
     const PackageOptions &options) {
   namespace fs=std::filesystem;
+  if(llvm::Triple(configureNative(buildOptions).target).isOSWindows())throw Error("E_TARGET","Windows application packages are not configured; build the explicit GNU/UCRT core artifact");
   auto output=fs::absolute(options.directory).lexically_normal();
   if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";

@@ -1,3 +1,9 @@
+# Toolchain0.64 Windows candidate
+
+Explicit GNU/UCRT core target implementation is under validation. The accepted
+root remains0.63; PE cross-build, compatibility runtime and actual Windows OS
+execution must be reported separately.
+
 # Verified root development checkpoint0.63 / language0.16
 
 The actual root compiler is rebuilt and passes all74 CTest groups. Its installed

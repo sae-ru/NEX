@@ -2,6 +2,10 @@
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
+Toolchain0.64 adds an explicit [Windows GNU/UCRT core target](windows.md).
+Its target/runtime restrictions add no syntax, canonical changes or language
+migration. Windows execution and development-host support have separate status.
+
 Toolchain 0.61 adds explicit [iOS static archive targets](ios.md) on macOS.
 This changes no source syntax, canonical format or language version. Device and
 simulator SDK/ABI validation does not provide an application host or local run.

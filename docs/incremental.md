@@ -60,7 +60,9 @@ Darwin kernel triples are normalized by Clang and do not specify a macOS release
 Unsupported OS/architecture combinations fail with E_TARGET. This configures
 macOS cross-compilation. Toolchain 0.61 additionally builds debug/release iOS
 static archives with an explicit matching Xcode sysroot; read [the iOS guide](ios.md).
-Linux/Windows/Android cross-targets and iOS application delivery remain pending.
+Toolchain0.64 additionally supports explicit GNU/UCRT Windows core artifacts;
+read [the Windows guide](windows.md). Linux/Android cross-targets and iOS
+application delivery remain pending.
 
 `--toolchain FILE` supplies a `nex.toolchain/1` JSON configuration; its schema is
 `llm/toolchain.schema.json`. It also works with `--target server` to select HTTP
@@ -79,7 +81,9 @@ output and its native ABI independently:
 
 An optional `linker` selects a native linker executable. Linux defaults to the matching LLVM `ld.lld`; the final symlink name is preserved for driver dispatch. Selected linker bytes participate in fingerprints (`nex.toolchain-snapshot/2`) and build/cache identity. The Linux guide covers the verified ELF DWARF path.
 
-Only `schema` and `target` are required. Omit unused dependencies. Each supplied
+Ordinary host/macOS configurations require only `schema` and `target`. Windows
+core additionally requires explicit compiler/linker/archiver/sysroot and its
+`windows` runtime/notices object. Omit unused dependencies. Each supplied
 dependency object must include all its fields. Files are limited to 64 KiB;
 unknown keys and nonexistent paths are rejected. Relative paths resolve against
 the configuration directory. A supplied compiler path precedes `NEX_CLANG`;

@@ -705,6 +705,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // Entry validation is independent of emission, including warm cache hits.
   nativeEntry(p,options.entry,options.testEntry,options.libraryEntry||server);
   llvm::Triple configuredABI(toolchain.target);
+  bool windows=configuredABI.isWindowsGNUEnvironment();
+  if(windows&&(server||options.profile=="profile"))throw Error("E_TARGET","Windows core supports debug/release executables and archives; HTTP servers and profiling remain pending");
   if(configuredABI.getOS()==llvm::Triple::IOS&&(!options.libraryEntry||options.profile=="profile"))
     throw Error("E_TARGET","iOS currently supports --library with debug/release; application packaging and device/simulator execution remain pending");
   auto compiler=toolchain.compiler;
@@ -730,13 +732,20 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(!driverABI.isArch64Bit()||driverABI.getArch()!=requestedABI.getArch()||driverABI.getEnvironment()!=requestedABI.getEnvironment()||
      !(driverABI.getOS()==requestedABI.getOS()||(driverABI.isMacOSX()&&requestedABI.isMacOSX()))||wrongDeployment||dataLayout.empty()||probeModule->getDataLayout().getPointerSizeInBits()!=64||driverABI.getSubArch()!=requestedABI.getSubArch())
     throw Error("E_TARGET","native compiler target "+compilerTarget+" does not match configured target "+target+" or has no data layout");
+  if(windows){
+    auto macros=capture(command({"-dM","-E","-x","c++","-include","_mingw.h","-"}));
+    if(macros.code!=0||macros.output.find("#define __MINGW64__ 1\n")==std::string::npos||
+       (macros.output.find("#define _UCRT\n")==std::string::npos&&macros.output.find("#define _UCRT \n")==std::string::npos))
+      throw Error("E_TARGET","Windows compiler must select the configured 64-bit MinGW/UCRT headers: "+macros.errors);
+  }
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
-  bool wire=server,storage=server,files=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
-  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text))files=true;}for(auto arg:e->args)inspect(arg);}};
+  bool wire=server,storage=server,files=false,environmentIO=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
+  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="read_env")environmentIO=true;if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text))files=true;}for(auto arg:e->args)inspect(arg);}};
   std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   bool foreign=false;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
+  if(windows&&(storage||files||foreign||environmentIO))throw Error("E_TARGET","Windows core does not yet configure database, files, foreign modules or environment access");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
@@ -759,6 +768,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     notices+=name+"\n\n"+text+"\n\n";
   };
   license("Dragonbox 1.1.3", "dragonbox/LICENSE-Boost");
+  if(windows){auto text=readFile(toolchain.windowsNotices);runtimeFiles["third_party/windows-runtime-notices.txt"]=text;notices+="Operator-supplied Windows UCRT/static C++ runtime notices\n\n"+text+"\n\n";}
   if(wire)license("nlohmann/json 3.12.0", "JSON-LICENSE.MIT");
   if(server)license("cpp-httplib 0.61.0", "HTTPLIB-LICENSE");
   if(profiling){
@@ -782,7 +792,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
   auto buildRoot=std::filesystem::absolute(directory);auto plan=planNative(p,options.entry);
-  BuildResult result{(folder/(options.libraryEntry?"libnex.a":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible};
+  BuildResult result{(folder/(options.libraryEntry?"libnex.a":windows?"app.exe":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible};
   result.foreignCalls=foreign;
   auto snapshot=p;
   llvm::json::Array debugSources,debugFunctions,heapTypes,debugSourceMap;std::set<std::string> debugTypes;
@@ -964,12 +974,13 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // Stage their output in an independent directory so literal project paths
   // (including percent signs) are never interpreted as that template.
   std::filesystem::path linkStage;auto linkOutput=result.executable;
-  if(driverABI.isOSLinux()||options.libraryEntry){
+  if(driverABI.isOSLinux()||windows||options.libraryEntry){
     linkStage=createTemporaryDirectory("nex-link");linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
   }
   if(options.libraryEntry){
     std::vector<std::string> archive={toolchain.archiver,"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
   }else {
+    if(windows)link.push_back("-static");
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
     if(storage)link.push_back(toolchain.sqliteLibrary);
     if(driverABI.isOSDarwin()||driverABI.isOSLinux()) {

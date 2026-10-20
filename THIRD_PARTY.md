@@ -65,3 +65,13 @@ Apple/Android SDKs and JDK/Gradle remain external development prerequisites with
 their own licenses and are not included in the NEX source or compiler runtime.
 Native application plugins and resolved build dependencies require their own
 corresponding inventories and notices before distribution.
+
+## Windows core cross-toolchain (toolchain0.64)
+
+The explicit Windows GNU/UCRT target uses an external LLVM-MinGW installation,
+including libc++, libc++abi, libunwind, compiler-rt and the MinGW CRT. These
+components are not vendored here. Static linking does not remove their notice
+requirements. The operator supplies the matching complete runtime notices in
+the toolchain configuration; NEX captures and appends them to artifact notices.
+UCRT and Windows system DLLs remain platform dependencies. SDK/installer
+distribution, signed delivery and actual Windows OS validation remain pending.

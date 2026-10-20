@@ -561,3 +561,8 @@ URL в capacitor://localhost; добавлена точная политика �
 
 Windows, физические мобильные/Intel-цели, Android NDK/native bindings и стабильный
 мобильный ABI остаются обязательными последующими платформенными работами.
+
+## Toolchain0.64 Windows core candidate
+
+- Explicit GNU/UCRT64-bit PE/archive target, ABI/cache/notices and runtime rejection boundaries: implementation under validation.
+- Actual Windows OS/ARM64 execution, Windows-hosted compiler, debugger/profiler, platform I/O, GUI/plugin binding and signed distribution remain pending.

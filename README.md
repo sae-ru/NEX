@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.63.0 / language0.16**, under development.
+The current source is **toolchain0.64.0 / language0.16**, under development.
 It includes explicit iOS native archives, experimental iOS/Android WebView
 projects and operator-configured HTTPS APIs. Actual simulator/emulator checks
 exercise authentication, persistent task operations, routes and principal
@@ -40,7 +40,9 @@ recovers the checked Unicode value without the original source or build.
 The installed VS Code extension and generated React and Wasm examples pass
 their actual editor and three-browser checks. The iOS archive target is described in [the iOS guide](docs/ios.md).
 [Mobile projects](docs/mobile.md) use generated TypeScript/React in a native
-WebView; the MLIR archive path is separate. Windows support, native mobile plugin
+WebView; the MLIR archive path is separate. An initial [Windows GNU/UCRT core target](docs/windows.md) adds explicit
+x86-64/ARM64 PE/archive cross-builds; its validation is pending. Windows-hosted
+development and actual Windows execution, native mobile plugin
 bindings, physical Intel/mobile execution and release signing remain pending.
 
 Validation results are recorded with their exact source, compiler, platform

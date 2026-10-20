@@ -22,6 +22,11 @@ API origin. Follow the server_cors guidance above; credentials stay runtime-only
 When `ios_archive_target` is advertised, read `docs/ios.md` and the native build
 guide. A macOS host can build a debug/release static library for an explicit
 versioned iOS device/simulator target with a matching `nex.toolchain/1` sysroot.
+
+When `windows_core_target` is advertised, read `docs/windows.md`. Supply an explicit
+GNU/UCRT compiler/linker/archiver/sysroot and component notices. Only the reported
+core runtime and debug/release PE/archive paths are available. Foreign ABI builds
+do not establish Windows execution, debugger or SDK distribution support.
 An arm64 iOS/simulator library is never host-compatible with an arm64 Mac.
 Use `--library --entry NAME`; preserve the matching runtime ABI and compiler
 resources for the embedding host. Do not treat archive/link success as an iOS
