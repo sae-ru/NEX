@@ -22,15 +22,15 @@ API origin. Follow the server_cors guidance above; credentials stay runtime-only
 When `ios_archive_target` is advertised, read `docs/ios.md` and the native build
 guide. A macOS host can build a debug/release static library for an explicit
 versioned iOS device/simulator target with a matching `nex.toolchain/1` sysroot.
+An arm64 iOS/simulator library is never host-compatible with an arm64 Mac.
+Use `--library --entry NAME`; preserve the matching runtime ABI and compiler
+resources for the embedding host. Do not treat archive/link success as an iOS
+app, simulator/device run, signing, packaging, debugging or profiling result.
 
 When `windows_core_target` is advertised, read `docs/windows.md`. Supply an explicit
 GNU/UCRT compiler/linker/archiver/sysroot and component notices. Only the reported
 core runtime and debug/release PE/archive paths are available. Foreign ABI builds
 do not establish Windows execution, debugger or SDK distribution support.
-An arm64 iOS/simulator library is never host-compatible with an arm64 Mac.
-Use `--library --entry NAME`; preserve the matching runtime ABI and compiler
-resources for the embedding host. Do not treat archive/link success as an iOS
-app, simulator/device run, signing, packaging, debugging or profiling result.
 
 When `wasm_features` is advertised, read `nex guide --kind wasm --json` before
 using `build --target wasm --entry NAME`. This experimental compute adapter accepts
@@ -335,8 +335,10 @@ functions and preserves ownership/evaluation/traps. Query trait/impl context and
 patch complete source declarations with affected users; contract signatures and
 instances are derived. Keep source0.15 artifacts with SDK0.54 and use explicit
 history-preserving migration. Regenerate reviewed task/proof pins without
-changing goals, assertions, properties, effects or budgets. Distinguish scoped
-source tests from pending full SDK/platform/debugger/API integrations.
+changing goals, assertions, properties, effects or budgets. Read source, SDK, platform, debugger and API evidence with its exact source and
+compiler identity. Scoped source tests do not establish wider integration. The
+descriptor's integration-pending lists track conservative development work; they
+are not source feature switches or certificates for a platform test result.
 
 When api_features advertises client_trait_library_projection, generated client
 models/libraries retain required real client/shared trait methods and their

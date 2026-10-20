@@ -1,10 +1,12 @@
 # Traits, associated types and constructors — language 0.16
 
-This development extension is being integrated. Native/TypeScript/reference
-source cases, rejection tests, guarded graph edits and a genuine 0.15 migration
-pass scoped checks. The descriptor's `trait_integration_pending` lists remaining
-full-regression, SDK, platform and adapter work. Do not infer those results from
-the earlier language-0.15 constructor-core milestone.
+Language0.16 implements the mechanisms described here: user traits, associated
+value types and fixed constructor parameters. The compiler reports their exact
+capabilities and limits. Source/compiler-specific regression, SDK, platform and
+adapter evidence is recorded in STATUS.md and docs/evidence; the descriptor's
+conservative integration-pending tracking does not disable checked declarations
+or certify a platform test result. Keep the earlier language-0.15 constructor
+core and its archived artifacts distinct.
 
 ```nex
 trait Content {
@@ -105,6 +107,6 @@ invariants, effects and measured budgets. Do not relabel old artifacts.
 API extraction retains required associated contracts/witnesses and real
 client/shared method targets, including captured libraries. Server trait members,
 bindings and function bodies are excluded. Both projected projects are checked;
-see api.md for realm/import boundaries and pending full validation.
+see api.md for realm/import boundaries and STATUS.md for exact validation scope.
 General source async, dynamic trait objects, specialization priority and all
 remaining platform/development-chain requirements remain separate work.

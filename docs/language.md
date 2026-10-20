@@ -252,8 +252,10 @@ Their order has no semantic significance; source canonical forms/context expose
 sorted `type_bounds`, and `describe` reports the exact supported domains and
 implications. Concrete specializations use the existing checked interpreter,
 native and TypeScript operations without runtime trait dispatch. Public API model
-extraction preserves original bounds. User-defined traits/implementations,
-associated types, defaults, higher-kinded types remain pending.
+extraction preserves original bounds. Language0.16 also implements user-defined
+traits/implementations, associated value types and fixed constructor parameters;
+see [traits](traits.md). Type defaults, type lambdas and general higher-kinded
+inference remain pending.
 See `examples/constraints.nex`.
 
 Decimal integer literals have no separators or suffixes. Negative values use unary `-`; the minimum i64 literal is accepted explicitly. Positive literals outside the range are rejected.
