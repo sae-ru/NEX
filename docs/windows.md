@@ -14,7 +14,7 @@ or libraries. All paths can be relative to the toolchain configuration file:
 {
   "schema": "nex.toolchain/1",
   "target": "x86_64-w64-windows-gnu",
-  "compiler": "/tools/llvm-mingw/bin/x86_64-w64-mingw32-clang++",
+  "compiler": "/tools/llvm-mingw/bin/clang++",
   "linker": "/tools/llvm-mingw/bin/ld.lld",
   "archiver": "/tools/llvm-mingw/bin/llvm-ar",
   "sysroot": "/tools/llvm-mingw/x86_64-w64-mingw32",
@@ -39,7 +39,8 @@ nex build examples/windows/main.nex --toolchain windows-toolchain.json --profile
 nex build examples/windows/main.nex --toolchain windows-toolchain.json --library --entry answer --json
 ```
 
-For ARM64 use its `aarch64` driver, target and sysroot together. NEX probes the
+For ARM64 select the `aarch64` target and matching sysroot. NEX passes the
+explicit target to the installed Clang++ driver. NEX probes the
 driver's actual LLVM triple, data layout and64-bit pointers and checks selected
 MinGW/UCRT preprocessor definitions before code generation. It never overrides
 an already-emitted host IR target. Build/cache identities include the configured

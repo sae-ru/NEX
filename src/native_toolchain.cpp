@@ -125,7 +125,9 @@ NativeToolchain configureNative(const BuildOptions &options) {
   bool ios=hostABI.isMacOSX()&&abi.getOS()==llvm::Triple::IOS&&abi.getVendor()==llvm::Triple::Apple&&supportedArch(abi)&&
     (abi.getEnvironment()==llvm::Triple::UnknownEnvironment||abi.isSimulatorEnvironment())&&
     (abi.isSimulatorEnvironment()||abi.getArch()==llvm::Triple::aarch64);
-  bool windows=abi.isWindowsGNUEnvironment()&&supportedArch(abi)&&abi.getSubArch()==llvm::Triple::NoSubArch;
+  // LLVM gives ordinary aarch64 the ARMv8 subarchitecture; its name filter
+  // already excludes arm64e, arm64ec, x86_64h and other specialized ABIs.
+  bool windows=abi.isWindowsGNUEnvironment()&&supportedArch(abi);
   if(!abi.isArch64Bit()||(!ios&&!windows&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
     throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64, explicit iOS archive and Windows GNU/UCRT core toolchains");
   if(windows){

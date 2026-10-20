@@ -56,7 +56,7 @@ test fn semantics()->unit {assert(answer()==42);}
 
     def configure(self, arch='x86_64', **fields):
         value={'schema':'nex.toolchain/1','target':arch+'-w64-windows-gnu',
-               'compiler':str(TOOLS/('bin/'+arch+'-w64-mingw32-clang++')),
+               'compiler':str(TOOLS/'bin/clang++'),
                'linker':str(TOOLS/'bin/ld.lld'),'archiver':str(TOOLS/'bin/llvm-ar'),
                'sysroot':str(TOOLS/(arch+'-w64-mingw32')),
                'windows':{'runtime':'ucrt-static','notices':str(self.notices)}, **fields}
@@ -81,7 +81,7 @@ test fn semantics()->unit {assert(answer()==42);}
         for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
             self.configure(arch);inspected=self.cli('toolchain',self.config)
             self.assertFalse(inspected['host_compatible']);self.assertEqual(inspected['manifest']['windows']['runtime'],'ucrt-static')
-            self.assertIn(str(self.notices),inspected['inputs']['files'])
+            self.assertIn(str(self.notices.resolve()),inspected['inputs']['files'])
             for profile in ('debug','release'):
                 built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=180)
                 self.assertFalse(built['host_compatible']);self.assertEqual(Path(built['executable']).name,'app.exe')
