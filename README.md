@@ -13,7 +13,7 @@ It includes explicit iOS native archives, experimental iOS/Android WebView
 projects and operator-configured HTTPS APIs. Actual simulator/emulator checks
 exercise authentication, persistent task operations, routes and principal
 isolation. Platform/SDK results are bound to their source and compiler identities;
-the root integration is verified separately.
+the root integration passes its own build/full74/SDK23 checks.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -25,10 +25,11 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has23 phases. The isolated0.63 implementation passes74 regression groups on
-macOS/Linux ARM64 and329 commands in its installed macOS SDK. Exact evidence
-and remaining root/Linux installed SDK gates are recorded in
-[toolchain-0.63.0.json](docs/evidence/toolchain-0.63.0.json). The debugger supports native list/byte pages of at most 1000
+has23 phases. The actual root build passes all74 regression groups; its installed
+SDK passes329 commands and176 indexed-resource checks. The matching native
+Linux ARM64 implementation passes74 groups,16 live suites and a source-free,
+network-disabled SDK23/329 workflow. Root/mobile/platform identities are recorded
+in [toolchain-0.63.0.json](docs/evidence/toolchain-0.63.0.json). The debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.

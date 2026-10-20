@@ -1,3 +1,29 @@
+# Verified root development checkpoint0.63 / language0.16
+
+The actual root compiler is rebuilt and passes all74 CTest groups. Its installed
+SDK passes23 phases/329 commands/176 indexed resources with compiler SHA256
+2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1.
+Root full74 uses tree9d346edf; the one-file corrected LLM prompt is verified in
+SDK source treeb6324fa8. Compiler/runtime source is unchanged by that prose delta.
+This final status update changes only unindexed overview/evidence documents.
+[Exact evidence](docs/evidence/toolchain-0.63.0.json) separates these cohorts.
+
+The matching Linux ARM64 implementation4c1edca2 passes74 groups,16 live suites
+and23 source-free/network-disabled SDK phases/329 commands/176 resources.
+The installed root SDK freshly generates both native mobile projects offline;
+all five non-index assets are byte-identical to the actually tested iOS/Android
+API applications, while the operator's HTTPS index configuration has its own
+recorded derivation. Generation and actual native execution remain separate.
+All47 root graph revisions and every table remain unchanged through integration,
+SDK acceptance and the fresh mobile generation. Earlier SDKs/frames are retained.
+
+Actual Simulator/emulator/API/browser validation is recorded below. Windows
+NEX target/host support, physical-device/Intel validation, native mobile bindings,
+release signing and broader distribution gates remain pending. The separate
+manual Windows PE prototype does not make Windows a supported NEX CLI target.
+This is a development checkpoint, not a release or full objective completion.
+Historical records below keep their original time and validation scope.
+
 # Development integration0.63 / language0.16
 
 The source includes explicit iOS archives, generated native WebView projects and

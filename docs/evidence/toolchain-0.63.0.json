@@ -102,16 +102,102 @@
     "dedicated_adb_server_stopped": true
   },
   "linux": {
-    "full_ctest_passed": 74,
-    "live_and_source_free_sdk": "running; final result required"
+    "ok": true,
+    "created": "2026-10-20T01:26:31.332461+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "full_ctest": 74,
+    "live_suites": 16,
+    "source_free_sdk_phases": 23,
+    "source_free_sdk_commands": 329,
+    "frozen_resource_files_verified": 176,
+    "network": "none",
+    "execution": "native Linux ARM64 on ARM64 host",
+    "compiler_sha256": "71026159a07948830311117163a9f720ca93c03fe9e301166f9552fae96a5519",
+    "report": "build/linux-063-mobile-api-arm64/verification.json",
+    "sdk_report": "build/linux-063-mobile-api-arm64/source-free-sdk.json",
+    "accepted_release": false,
+    "full_objective_complete": false
   },
   "root_integration": {
-    "verified": false,
-    "state": "preparing source integration; separate root build/full74/SDK23 required",
-    "graph_history_language_migration": false,
-    "previous_root_graph_revisions": 47
+    "verified": true,
+    "macos": {
+      "ok": true,
+      "toolchain": "0.63.0",
+      "language": "0.16",
+      "root_full_source_tree": "9d346edfe233748a6f0d4692f94dbab9a9b0602f",
+      "current_document_source_tree": "b6324fa8bea4ec9130ddfa1a550ea84740707e29",
+      "document_only_delta_after_full": [
+        "llm/SYSTEM_PROMPT.md"
+      ],
+      "compiler_runtime_sources_unchanged": true,
+      "compiler_sha256": "2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1",
+      "full_ctest": 74,
+      "full_seconds": 745.362,
+      "sdk_phases": 23,
+      "sdk_commands": 329,
+      "indexed_resource_files": 176,
+      "sdk_report": "build/sdk-063-root-acceptance/report.json",
+      "graph": "build/root-063-graph-preservation.json",
+      "linux_implementation": "build/mobile-063-linux-verification.json",
+      "mobile_implementation": "build/mobile-063-actual-api-ui-verification.json",
+      "accepted_release": false,
+      "full_objective_complete": false
+    },
+    "mobile_generation": {
+      "ok": true,
+      "compiler_sha256": "2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "api_origin": "https://api.example.test",
+      "original_index_matches_tested_mobile_example": true,
+      "all_non_index_assets_match_actual_mobile_test_cohort": true,
+      "non_index_assets": 5,
+      "both_native_projects_match_final_asset_hashes": true,
+      "native_application_built": false,
+      "target_executed": false,
+      "scope": "fresh installed root SDK generation; separate actual iOS/Android execution belongs to implementation4c1edca2"
+    },
+    "graph_preservation": {
+      "ok": true,
+      "all_tables_identical": true,
+      "revisions": 47,
+      "before": "build/root063-pre-integration-graph-snapshot/graph.db",
+      "after": "build/root063-post-sdk-graph-snapshot/graph.db",
+      "tables": [
+        "change_journal",
+        "declaration_ids",
+        "declaration_versions",
+        "edges",
+        "graph_edges",
+        "head",
+        "identity_links",
+        "identity_revisions",
+        "metadata",
+        "node_ids",
+        "nodes",
+        "operation_functions",
+        "operation_ids",
+        "operation_versions",
+        "revisions",
+        "task_runs"
+      ],
+      "after_generator": "/Users/sae/projects/NEX/build/root063-post-mobile-generator-graph-snapshot/graph.db",
+      "database_bytes_identical_after_generator": true
+    },
+    "current_document_source_tree": "b6324fa8bea4ec9130ddfa1a550ea84740707e29",
+    "final_overview_delta": [
+      "README.md",
+      "STATUS.md",
+      "PLAN.md",
+      "docs/evidence/toolchain-0.63.0.json"
+    ],
+    "final_overview_files_are_not_indexed_sdk_resources": true,
+    "root_graph_revisions": 47
   },
-  "source_note": "This documentation derives from the tested implementation; it does not change compiler/runtime source or language syntax. Root and exact platform/SDK identities are recorded separately.",
+  "source_note": "Root full74 covers9d346edf; SDK23 covers the identical compiler/runtime plus corrected prompt inb6324fa8. This final overview/evidence update changes no compiler/runtime or indexed resource. Mobile native execution belongs to implementation4c1edca2; the root generator separately produces byte-identical non-index assets.",
   "accepted_release": false,
-  "full_objective_complete": false
+  "full_objective_complete": false,
+  "updated": "2026-10-20T01:49:08.412422+00:00"
 }
