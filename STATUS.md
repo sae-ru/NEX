@@ -1,8 +1,26 @@
-# Toolchain0.64 Windows candidate
+# Toolchain0.64 root verification
 
-Explicit GNU/UCRT core target implementation is under validation. The accepted
-root remains0.63; PE cross-build, compatibility runtime and actual Windows OS
-execution must be reported separately.
+The current root is toolchain0.64.0/language0.16. Its implementation source is
+d39fd643 (691 files); actual root build/full75 and its SDK23/329/178 pass.
+The corrected four-document language pack ec5f050b preserves all compiler/runtime
+bytes and passes separate Mac/Linux SDK23/329/178 checks.
+The native Linux ARM64 implementation passes75 groups,16 live suites and a
+network-disabled, source-free SDK23/329/178 workflow. Source/compiler identities
+and the final overview-only delta are tracked in docs/evidence/toolchain-0.64.0.json.
+
+Windows GNU/UCRT core cross-builds produce debug/release PE/COFF and GNU archives
+for x86-64 and ARM64. Fresh installed root SDK builds pass8 PE checks in literal
+Unicode/percent paths and6 x86-64 Wine compatibility executions. Overflow logs
+map to exact NEX source operations; wrong-build logs stay unmapped. Wine under
+Linux emulation is separate from Windows OS and ARM64 execution. The initial
+ARM64 Wine attempt timed out during initialization and remains unverified.
+
+All47 root graph revisions and every graph table are preserved. Original Git
+HEAD/index are unchanged. Windows-hosted development, platform I/O/plugin/package
+adapters, actual Windows/physical-device execution and release signing remain
+pending. This is verified development progress, not a completed full objective.
+
+Earlier detailed milestones and their distinct evidence cohorts follow.
 
 # Verified root development checkpoint0.63 / language0.16
 

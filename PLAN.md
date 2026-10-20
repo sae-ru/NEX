@@ -564,5 +564,5 @@ Windows, физические мобильные/Intel-цели, Android NDK/nat
 
 ## Toolchain0.64 Windows core candidate
 
-- Explicit GNU/UCRT64-bit PE/archive target, ABI/cache/notices and runtime rejection boundaries: implementation under validation.
+- Explicit GNU/UCRT64-bit PE/archive target, ABI/cache/notices and runtime rejection boundaries: verified cross-builds; root75/SDK23 and x64 Wine6 pass. Actual Windows OS/ARM64 execution remains unverified.
 - Actual Windows OS/ARM64 execution, Windows-hosted compiler, debugger/profiler, platform I/O, GUI/plugin binding and signed distribution remain pending.

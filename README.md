@@ -10,10 +10,10 @@ same versioned tools. Compiled applications run independently of an LLM.
 
 The current source is **toolchain0.64.0 / language0.16**, under development.
 It includes explicit iOS native archives, experimental iOS/Android WebView
-projects and operator-configured HTTPS APIs. Actual simulator/emulator checks
+projects and operator-configured HTTPS APIs. The separately recorded0.63 simulator/emulator checks
 exercise authentication, persistent task operations, routes and principal
 isolation. Platform/SDK results are bound to their source and compiler identities;
-the root integration passes its own build/full74/SDK23 checks.
+the root integration passes its own build/full75/SDK23 checks.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -25,23 +25,27 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has23 phases. The actual root build passes all74 regression groups; its installed
-SDK passes329 commands and176 indexed-resource checks. The matching native
-Linux ARM64 implementation passes74 groups,16 live suites and a source-free,
+has23 phases. The actual root build passes all75 regression groups; its installed
+SDK passes329 commands and178 indexed-resource checks. The matching native
+Linux ARM64 implementation passes75 groups,16 live suites and a source-free,
 network-disabled SDK23/329 workflow. Root/mobile/platform identities are recorded
-in [toolchain-0.63.0.json](docs/evidence/toolchain-0.63.0.json). The debugger supports native list/byte pages of at most 1000
+in [toolchain-0.64.0.json](docs/evidence/toolchain-0.64.0.json). The debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
 The core capsule implementation adds export/read with an exact file inventory,
-original-to-copied image binding and source projections. Current macOS/Linux
+original-to-copied image binding and source projections. The separately archived0.60.2 macOS/Linux
 ARM64 SDKs pass moved/restored acceptance. Independent Linux capsule reading
 recovers the checked Unicode value without the original source or build.
-The installed VS Code extension and generated React and Wasm examples pass
-their actual editor and three-browser checks. The iOS archive target is described in [the iOS guide](docs/ios.md).
+Earlier actual editor and three-browser checks retain their source/compiler
+identities in STATUS.md. The current SDK workflow separately checks native DAP
+and browser builds; wider IDE/distribution acceptance is not inferred from it. The iOS archive target is described in [the iOS guide](docs/ios.md).
 [Mobile projects](docs/mobile.md) use generated TypeScript/React in a native
 WebView; the MLIR archive path is separate. An initial [Windows GNU/UCRT core target](docs/windows.md) adds explicit
-x86-64/ARM64 PE/archive cross-builds; its validation is pending. Windows-hosted
+x86-64/ARM64 PE/archive cross-builds. Both architectures pass COFF/archive/cache
+checks; six fresh x86-64 root-SDK PE cases pass Wine compatibility and runtime
+traps map to their exact NEX operations. This does not establish actual Windows
+OS execution. Windows-hosted
 development and actual Windows execution, native mobile plugin
 bindings, physical Intel/mobile execution and release signing remain pending.
 
