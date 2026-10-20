@@ -1,11 +1,61 @@
-# Toolchain0.69 candidate status
+# Verified root development checkpoint0.69 / language0.16
 
-This isolated candidate extends readonly editor references/definitions to actual
-parser/binder source names: types, lexical generic parameters, trait contracts,
-associated members, implementation bindings, enum variants and import aliases.
-Default analysis/1 and strict analysis/2 wire shapes, source language0.16 and
-canonical identities remain unchanged. Current gates are pending. Root0.68 and
-all historical evidence below retain their original source/compiler scopes.
+Core source 787525a23c5fb313df2298d1532463d7e47b5728 (717 files) builds and passes all78 CTest groups
+in 743.77 seconds. Its installed SDK passes23 phases/332 commands/197
+indexed resources; compiler SHA-256 is ba4878efe8cafaae451e9eb62139d0f0adceb258884eefe9adeff6bb55e30f96.
+[The machine-readable evidence](docs/evidence/toolchain-0.69.0.json) retains
+separate corrected candidate/macOS/Linux/installed/root scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler, grammar, manifest,
+example or indexed resource and does not relabel earlier executions.
+
+Readonly analysis/2 now projects actual parser/module-binder type, generic,
+trait/member, implementation, import-alias and enum-variant identities. Strict
+analysis/1 and analysis/2 wire shapes, source language0.16 and canonical formats
+are unchanged. Five genuine0.68/new-compiler comparisons retain equal canonical
+revisions and legacy payloads apart from compiler identity.25 compiler/stdio
+cases,25 Node contracts and two actual-client/contract cases exercise scope,
+UTF-16, conflicts, cancellation, result limits and no source/Store writes.
+Installed SDK LSP acceptance sends23 messages and the Node client11 requests.
+Reference offsets are grouped once per file; synthetic complete-result equality
+and timings are separate from compiler/application performance claims.
+
+The same corrected source's first Mac full run (v2) overlapped observed clamshell,
+maintenance sleep and a later full wake. It retained75 passed groups and failures
+in Windows targets/tasks/toolchains with timeouts; its CTest elapsed time was
+23597.55 seconds. After wake, the same compiler/source passed all26 cases in
+those three groups, without source changes. Accepted Mac full validation uses v3; the same binary then passes8
+fully enabled Wasm cases and installed SDK v4 with the supported explicit
+NEX_WASM_LD selection. The earlier v3 SDK stopped at command220 with
+E_WASM_TOOLCHAIN because its default linker was not configured. This configuration
+error and all before-mutation prerequisite failures are retained.
+Tests use temporary process-scoped idle/system-sleep assertions; global power
+settings were unchanged. Original power timestamps, failed receipts and initial
+root prerequisite/startup failures are retained. These are separate execution
+scopes and are not relabeled as successful first runs.
+
+Corrected candidate0.69 also passes full78/SDK on macOS and Linux ARM64. Linux
+finishes16 live suites and source-free/network-disabled SDK acceptance. The
+first candidate fd1262fe remains explicitly unaccepted: a broad extension-version
+replacement inadvertently changed three dependency requirements in npm lock.
+Its in-progress Mac/Linux tests were intentionally stopped and the waiting IDE
+job ended before packaging. Only this task's identified CTest process and exact-
+mount Docker container were stopped. The corrected candidate787525a2 changes
+only npm lock; all dependency records match the previous verified lock and only
+the extension's own version fields change. Full corrected checks use new v2
+controllers; original interrupted logs and failures remain retained.
+
+Actual root SDK VSIX0.4 runs in VS Code1.142.0 using
+private macOS ARM64 profiles. Typed parameter/alias references, exact trait
+method contract definitions, imported unsaved-buffer invalidation, explicit
+CRLF/Unicode repair, lifecycle and native debugger/page checks pass. Fresh root
+SDK Windows checks retain9 original graph snapshots and17 x64 Wine successes;
+Wine remains distinct from actual Windows OS/ARM64 execution. All47 root graph
+revisions, all16 tables/schema, local IDs and normal Git HEAD/index are preserved.
+
+Dedicated generic/member/alias hover, closed-file/cross-workspace indexing,
+completion/rename, recovery/incremental parsing, Studio and broader platform/
+application acceptance remain pending. Earlier mobile/browser/distribution
+results retain their old compiler/source cohorts. The full objective is open.
 
 # Verified root development checkpoint0.68 / language0.16
 

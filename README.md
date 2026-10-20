@@ -8,10 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.69.0 / language0.16**, an isolated development
-candidate. It adds precise type/trait/member/import references; current full
-regression, SDK, platform and installed IDE gates are pending. The saved physical
-root0.68 baseline and its evidence below retain their original scope.
+The current source is **toolchain0.69.0 / language0.16**, under development.
 The language includes checked integers/finite floats, Unicode strings, immutable
 aggregates, exhaustive matching, generics, traits/associated types, constructor
 parameters, function values and snapshot closures. Types, effects, client/server
@@ -21,42 +18,41 @@ uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 The development chain includes the interpreter, SQLite/BLAKE3 revision store,
 dependency locks, incremental builds, transactional graph patches, task contracts,
 scalar Z3 verification, LLDB/DAP, native profiling and VS Code editing/debugging.
-The actual root passes all78 regression groups and an installed SDK workflow of
-23 phases/332 commands/197 indexed resources. The implementation candidate also
-passes full78 and SDK23/332/197 on macOS and Linux ARM64. Linux's16 live suites
-span14 original successes and2 resumed successes after a Docker interruption;
-its SDK runs without source checkout or external network. The original exit137
-and every execution scope remain explicit in
-[the evidence](docs/evidence/toolchain-0.68.0.json) and [STATUS.md](STATUS.md).
+The actual root passes all78 regression groups and installed SDK acceptance of
+23 phases/332 commands/197 indexed resources. The corrected implementation
+candidate also passes full78/SDK acceptance on macOS and Linux ARM64; Linux
+completes16 live suites and its SDK runs without source checkout or external
+network. Exact scopes and the intentionally stopped first packaging candidate
+are retained in [the evidence](docs/evidence/toolchain-0.69.0.json).
 
 The [language server](docs/lsp.md) analyzes unsaved source without saving files,
-running programs or changing graph history. [VS Code0.3](docs/editor.md) provides
-diagnostics, checked types, definitions, outlines and references. References
-distinguish lexical declarations/reads/writes, nominal constructor calls/patterns
-and structure fields. Opt-in `analyze --references` uses `nex.analysis/2`;
-default `analyze` retains the strict `nex.analysis/1` contract. Type/trait/import-
-alias reference syntax and wider workspace coverage remain pending.
+running programs or changing graph history. [VS Code0.4](docs/editor.md) provides
+diagnostics, checked types, outlines, definitions and references. It distinguishes
+lexical values/type parameters, nominal types, enum variants, fields, trait
+contracts/associated members/implementation bindings and import aliases.
+Qualified names retain separate component targets. Opt-in `analyze --references`
+uses the strict `nex.analysis/2` shape; default `analyze` retains `nex.analysis/1`.
+Genuine0.68/0.69 comparisons preserve canonical revisions and legacy payloads
+apart from compiler identity. Dedicated type-parameter/member/alias hover,
+closed unreachable files, cross-workspace buffers, completion/rename and parser
+recovery/incremental indexing remain pending.
 
-Actual installed VSIX tests on macOS ARM64 verify references, immediate queries
-after editing only an imported unsaved buffer, Unicode/CRLF error/repair,
+Actual installed VSIX tests on macOS ARM64 verify typed references and trait
+contract definitions, imported unsaved-buffer invalidation, Unicode/CRLF repair,
 restart/disable/enable, native breakpoints, pure watches and bounded pages of
-large list/byte roots. Tests use private profiles. The editor's wildcard `_`
-now follows the checker's existing scope rules without changing execution or
-canonical revisions. Completion/rename, parser recovery/incremental indexing,
-other IDE platforms and NEX Studio remain pending.
+large list/byte values. Tests use private profiles. NEX Studio and a broader
+IDE/platform matrix remain pending.
 
 Different LLMs use the versioned [language pack](llm/README.md), shared
 [system prompt](llm/SYSTEM_PROMPT.md), actual `nex describe --json` and bounded
-graph context. Cross-provider coding, token savings and comparable performance
-measurements remain future work.
+graph context. Cross-provider coding, token savings and comparable application
+performance measurements remain future work.
 
 The [Windows GNU/UCRT target](docs/windows.md) cross-builds x86-64/ARM64 PE files
-and GNU archives. Nine fresh root-SDK PE builds and17 x86-64 Wine cases verify
-Unicode environment, explicit SQLite, persistence, isolation and capability
-failures; original build-context graph snapshots are retained. Wine does not
-prove actual Windows OS/ARM64 execution. Filesystem/resource calls remain
-unavailable pending [native Windows validation](docs/windows-files-design.md);
-the earlier failed prototype checks stay recorded.
+and GNU archives. Nine fresh root-SDK PE builds and17 x86-64 Wine cases retain
+their original build-context graph snapshots. Wine does not prove actual Windows
+OS/ARM64 execution. Filesystem/resource calls remain unavailable pending native
+Windows validation; earlier failed prototypes stay recorded.
 
 Experimental [mobile projects](docs/mobile.md) generate iOS/Android WebViews and
 configured HTTPS APIs. Actual mobile UI/API checks retain their separate0.63

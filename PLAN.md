@@ -1,8 +1,8 @@
 # Current0.69 editor checkpoint
 
-- [ ] Validate precise parser/binder type, trait, member and import reference projection.
-- [ ] Run full regression, installed SDK and actual private IDE acceptance for this source.
-- [ ] Promote only after gates, preserving normal Git and all47 graph revisions/all16 tables.
+- [x] Validate precise parser/binder type, trait, member and import reference projection.
+- [x] Run full regression, installed SDK and actual private IDE acceptance for this source.
+- [x] Promote only after gates, preserving normal Git and all47 graph revisions/all16 tables.
 - [ ] Keep untested platforms and the remaining full development-chain objective pending.
 
 # Текущее состояние: toolchain0.68 / язык0.16
