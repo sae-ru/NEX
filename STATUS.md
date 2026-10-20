@@ -1,16 +1,36 @@
-# Toolchain0.65 candidate — validation pending
+# Toolchain0.65 root verification
 
-Candidate source adds strict Windows environment conversion and explicit target
-SQLite storage, with NEX CLI filesystem/resource guards retained. The candidate
-macOS build passes; full regression/SDK validation is pending. Direct runtime
-C++ probes cross-compile for x86-64/ARM64. Wine9 verifies16 ordinary/system groups
-but fails opened-reader replacement, protected-DACL and actual-reparse fixtures;
-a parent-race run also leaves a temporary. This is not a passing filesystem suite.
-See docs/windows-files-design.md. Actual Windows execution remains pending.
+Current root toolchain0.65.0/language0.16 uses source618efe51 (698 files before
+the final overview/evidence-only delta). Actual root build/full76 and its
+installed SDK23/329/180 pass. Candidate macOS full76/SDK23/329/180 and native
+Linux ARM64 full76/16live/source-free SDK23/329/180 pass independently. Exact
+compiler/source/report identities are in docs/evidence/toolchain-0.65.0.json.
+
+Windows environment and explicit target SQLite pass x86-64/ARM64 debug/release
+cross-builds, static host/archive linkage, caches and source replay. Fresh
+installed-root SDK output retains9 PE files;17 x86-64 Wine executions verify
+Unicode environment/database paths, separate-process persistence, three binary
+principal partitions and capability failures. ARM64 and actual Windows OS
+execution remain unverified. Standalone owner defaults to local; an explicitly
+empty owner is invalid, and no default database path is granted.
+
+Windows filesystem/resource operations remain unavailable. The direct prototype
+cross-compiles but its Wine run passes16 ordinary/system groups and fails5
+required filesystem checks; fixture removal also fails. These are retained
+failures, not a passing platform adapter. Native Windows/NTFS validation,
+HTTP/foreign/plugin adapters, Windows development tools/packages/distribution,
+physical-device execution and signing remain pending.
+
+All47 root graph revisions, all16 graph tables/schema and local identities are
+preserved. Original Git HEAD/index remain unchanged. The final overview-only
+delta preserves compiler/runtime/grammar/manifest/examples and all180 indexed
+resources. This is verified development progress, not full objective completion.
+
+Earlier milestones retain their distinct source/compiler scopes below.
 
 # Toolchain0.64 root verification
 
-The current root is toolchain0.64.0/language0.16. Its implementation source is
+The earlier0.64 root cohort is toolchain0.64.0/language0.16. Its implementation source is
 d39fd643 (691 files); actual root build/full75 and its SDK23/329/178 pass.
 The corrected four-document language pack ec5f050b preserves all compiler/runtime
 bytes and passes separate Mac/Linux SDK23/329/178 checks.

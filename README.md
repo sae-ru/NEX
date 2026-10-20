@@ -5,59 +5,43 @@
 **Главная идея:** минимальное количество токенов для передачи максимального количества точного смысла при максимальной производительности и безопасности исполняемой системы.
 
 NEX is a language and development toolchain built around a checked semantic
-graph. People and different LLMs can inspect and change that graph through the
-same versioned tools. Compiled applications run independently of an LLM.
+graph. People and different LLMs use the same versioned specification, prompt
+and compiler tools. Compiled applications run independently of an LLM.
 
-The candidate source is **toolchain0.65.0 / language0.16**, under development.
-It adds Windows Unicode environment and explicit target SQLite adapters; candidate
-regression/SDK validation is pending. The accepted0.64 baseline results below
-retain their own source/compiler identities. Windows filesystem/resource calls
-remain rejected pending native platform validation.
-It includes explicit iOS native archives, experimental iOS/Android WebView
-projects and operator-configured HTTPS APIs. The separately recorded0.63 simulator/emulator checks
-exercise authentication, persistent task operations, routes and principal
-isolation. Platform/SDK results are bound to their source and compiler identities;
-the root integration passes its own build/full75/SDK23 checks.
-The implemented language includes checked integers and finite floats, Unicode
-strings, immutable aggregates, algebraic enums and exhaustive matching,
-generics, traits with associated types and constructor parameters, typed
-function values and snapshot closures. Types, effects, client/server realms and
-owned-resource boundaries are checked before execution. Native code uses
-MLIR/LLVM; browser applications use generated TypeScript with React/Vite.
+The current source is **toolchain0.65.0 / language0.16**, under development.
+The language includes checked integers/finite floats, Unicode strings, immutable
+aggregates, exhaustive algebraic matching, generics, traits/associated types,
+fixed constructor parameters, function values and snapshot closures. The checker
+enforces types, effects, client/server realms and owned-resource boundaries.
+Native output uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 
-The development chain includes a reference interpreter, SQLite/BLAKE3 revision
-store, dependency locks, incremental native builds, transactional graph patches,
-task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
-debugging, a VS Code extension and native profiling. The installed SDK workflow
-has23 phases. The actual root build passes all75 regression groups; its installed
-SDK passes329 commands and178 indexed-resource checks. The matching native
-Linux ARM64 implementation passes75 groups,16 live suites and a source-free,
-network-disabled SDK23/329 workflow. Root/mobile/platform identities are recorded
-in [toolchain-0.64.0.json](docs/evidence/toolchain-0.64.0.json). The debugger supports native list/byte pages of at most 1000
-children, including late indices, without capturing the entire root. Frame
-inspection also checks that the selected frame belongs to the loaded image
-associated with its manifest.
-The core capsule implementation adds export/read with an exact file inventory,
-original-to-copied image binding and source projections. The separately archived0.60.2 macOS/Linux
-ARM64 SDKs pass moved/restored acceptance. Independent Linux capsule reading
-recovers the checked Unicode value without the original source or build.
-Earlier actual editor and three-browser checks retain their source/compiler
-identities in STATUS.md. The current SDK workflow separately checks native DAP
-and browser builds; wider IDE/distribution acceptance is not inferred from it. The iOS archive target is described in [the iOS guide](docs/ios.md).
-[Mobile projects](docs/mobile.md) use generated TypeScript/React in a native
-WebView; the MLIR archive path is separate. An initial [Windows GNU/UCRT core target](docs/windows.md) adds explicit
-x86-64/ARM64 PE/archive cross-builds. Both architectures pass COFF/archive/cache
-checks; six fresh x86-64 root-SDK PE cases pass Wine compatibility and runtime
-traps map to their exact NEX operations. This does not establish actual Windows
-OS execution. Windows-hosted
-development and actual Windows execution, native mobile plugin
-bindings, physical Intel/mobile execution and release signing remain pending.
+The development chain includes an interpreter, SQLite/BLAKE3 revision store,
+dependency locks, incremental builds, transactional graph patches, task contracts,
+scalar Z3 verification, LLDB/DAP, native profiling and a VS Code extension.
+The actual root passes all76 regression groups and an installed SDK workflow
+of23 phases,329 commands and180 indexed resources. Matching native Linux ARM64
+passes76 groups,16 live suites and a network-disabled, source-free SDK23/329/180
+workflow. Exact source/compiler scopes are recorded in
+[toolchain-0.65.0.json](docs/evidence/toolchain-0.65.0.json) and [STATUS.md](STATUS.md).
 
-Validation results are recorded with their exact source, compiler, platform
-and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).
-The [plan](PLAN.md) tracks the remaining language and development-chain work.
-Performance and token savings require comparable measurements; they are goals,
-not established advantages over other languages.
+The [Windows GNU/UCRT target](docs/windows.md) cross-builds x86-64/ARM64
+debug/release PE executables and GNU archives. It adds strict Unicode process
+environment access and explicitly configured target SQLite storage. Nine fresh
+installed-root-SDK PE builds pass cross-target checks;17 x86-64 Wine cases verify
+Unicode, persistence, principal isolation and capability failures. Wine is
+separate from actual Windows OS/ARM64 execution. Filesystem/resource calls remain
+rejected while the [native prototype](docs/windows-files-design.md) awaits Windows
+validation; its failed Wine filesystem checks are retained explicitly.
+
+Experimental [mobile projects](docs/mobile.md) generate iOS/Android WebViews and
+operator-configured HTTPS APIs. The actual mobile UI/authentication/CRUD checks
+belong to the separately recorded0.63 cohort. The [iOS archive path](docs/ios.md)
+is separate. Earlier actual editor/three-browser checks and moved/restored SDK
+distribution checks retain their original identities; broader current IDE and
+distribution execution is not inferred from SDK native DAP and browser builds.
+Windows-hosted development, native plugins, physical Intel/mobile execution and
+release signing remain pending. [PLAN.md](PLAN.md) tracks unfinished integrations.
+Performance and token savings are goals requiring comparable measurements.
 
 ## Build
 

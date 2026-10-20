@@ -1,12 +1,12 @@
-# Candidate0.65 Windows runtime work
+# Toolchain0.65 Windows runtime progress
 
-- Validate Unicode environment and explicit target SQLite through actual NEX PE
-  debug/release output, cache/source replay, host regression and installed SDK.
-- Keep Windows filesystem/resource calls unavailable until the native Windows
-  probe verifies reparse boundaries, private ACLs, root/parent pinning, opened
-  reader replacement and cancellation cleanup. Wine compatibility is separate.
-- Preserve the complete development-chain objective and outstanding platforms;
-  these adapters do not establish Windows-hosted development or overall completion.
+- Unicode environment and explicit target SQLite are verified by real PE/archive
+  cross-builds, cache/source replay, root76/SDK23 and17 fresh x86-64 Wine cases.
+- Windows filesystem/resource calls remain unavailable until actual Windows/NTFS
+  validates reparse boundaries, protected ACLs, pinned roots/parents, opened-reader
+  replacement and cancellation cleanup. Wine failures remain recorded.
+- Windows-hosted development, HTTP/foreign/plugin adapters, packaging/distribution
+  and the broader language/development-chain objective remain pending.
 
 # План разработки NEX
 
