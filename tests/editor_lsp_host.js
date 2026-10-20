@@ -37,6 +37,7 @@ async function run() {
   const original = fs.readFileSync(source.fsPath, 'utf8');
   const modelOriginal = fs.readFileSync(model.fsPath, 'utf8');
   const document = await vscode.workspace.openTextDocument(source);
+  const originalEOL = document.eol;
   await vscode.window.showTextDocument(document);
   assert.equal(document.languageId, 'nex');
   assert.equal(vscode.window.activeTextEditor.document.uri.toString(), source.toString());
@@ -51,6 +52,10 @@ async function run() {
   assert.equal(destination.range.start.line, 1); assert.equal(destination.range.start.character, 7);
   const invalid = 'module ide_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
   await replace(document, invalid);
+  const eolEditor = await vscode.window.showTextDocument(document);
+  await eolEditor.edit(edit => edit.setEndOfLine(vscode.EndOfLine.CRLF));
+  assert.equal(document.eol, vscode.EndOfLine.CRLF);
+  assert.ok(document.getText().includes("\r\n"));
   assert.equal(document.isDirty, true);
   const invalidVersion = document.version;
   const errors = await eventually(() => Promise.resolve(vscode.languages.getDiagnostics(source).filter(value => value.source === 'nex')),
@@ -61,6 +66,8 @@ async function run() {
   assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
   assert.equal(fs.existsSync(path.join(folder.uri.fsPath, '.nex')), false);
   await replace(document, original);
+  await eolEditor.edit(edit => edit.setEndOfLine(originalEOL));
+  assert.equal(document.getText(), original);
   assert.ok(document.version > invalidVersion);
   await eventually(() => Promise.resolve(vscode.languages.getDiagnostics(source).filter(value => value.source === 'nex')),
     values => values.length === 0, 'repaired diagnostic version');
@@ -86,7 +93,7 @@ async function run() {
     compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
     actual_installed_vsix:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
     outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
-    unicode_crlf_unsaved_error:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
+    unicode_crlf_unsaved_error:true,explicit_crlf_eol_asserted:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
     physical_sources_unchanged:true,graph_not_created:true,close_verified:true,
     source_sha256:crypto.createHash('sha256').update(original).digest('hex'),
     model_sha256:crypto.createHash('sha256').update(modelOriginal).digest('hex')};
