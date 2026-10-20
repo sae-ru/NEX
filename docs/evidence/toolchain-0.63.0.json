@@ -1,0 +1,117 @@
+{
+  "schema": "nex.development-evidence/1",
+  "toolchain": "0.63.0",
+  "language": "0.16",
+  "created": "2026-10-20T01:14:18.490847+00:00",
+  "implementation": {
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "source_files": 687,
+    "commit": "ee207153aaa64aa8ad37fc2970b4e25632854eb9",
+    "branch": "codex/backup-nex-20261020-003739",
+    "macos_compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d"
+  },
+  "macos": {
+    "ok": true,
+    "created": "2026-10-20T01:04:17.542688+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+    "full_ctest": 74,
+    "sdk_phases": 23,
+    "sdk_commands": 329,
+    "frozen_resource_files_verified": 176,
+    "actual_mobile_api": "build/mobile-063-actual-api-ui-verification.json",
+    "browsers": "build/mobile-063-corrected-cross-origin-browsers/verification.json",
+    "sdk_report": "build/sdk-063-mobile-api-acceptance/report.json",
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "mobile": {
+    "ok": true,
+    "created": "2026-10-20T01:02:01.592231+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "source_files": 687,
+    "commit": "ee207153aaa64aa8ad37fc2970b4e25632854eb9",
+    "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+    "server": {
+      "ok": true,
+      "phase": "stopped cleanly after mobile probes",
+      "pid": 22964,
+      "api": "https://localhost:50841",
+      "ca": "/Users/sae/projects/NEX/build/mobile-063-native-api/ca.pem",
+      "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+      "server_sha256": "a3bfb3737fda5361658536e28a60a1a19444f084018c7b30d99ccd5178b5b02f",
+      "accepted_release": false,
+      "terminal_exit_code": 0
+    },
+    "ui_backend": "TypeScript/React in Capacitor8.5.3 native WebView, separate from iOS MLIR archives",
+    "native_web_assets": {
+      "NEX_MOBILE_NOTICES.txt": "f33cae078e2c88c46b1f11f38f8cd9e1006b2175ae069184b734d27d07854516",
+      "index.html": "584f27e5c09cae56ef3b0d859b4cbb6f6f7f5f673024ebf8d6885cfc18e3fd83",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-C8g5jqY5.js": "d11c7aab5cf25876a23512fa63a030f8813a0320818b15c7e84741138e80ae2e",
+      "assets/index-C8g5jqY5.js.map": "7e762c4474884ec8a540a26d3b74529f77da4e4b286306152b41654006e92e18"
+    },
+    "api_host_derivation": {
+      "file": "index.html",
+      "original_sha256": "4212b4b62fe45993ef06fa41c0751b10530a1ab4dfd29781067e16eac521dbde",
+      "configured_sha256": "584f27e5c09cae56ef3b0d859b4cbb6f6f7f5f673024ebf8d6885cfc18e3fd83"
+    },
+    "ios": {
+      "runtime": "iOS27.1 ARM64 Simulator",
+      "owned_udid": "BDCA7FCA-FCE9-4716-B46B-A68AE7BE98DF",
+      "native_input": "runtime credential via OS keyboard Command-A/Command-V; task text via OS typeText",
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "case_seconds": 36.207,
+      "result": "build/mobile-063-ios-uitest-attempt6.xcresult",
+      "summary": "build/mobile-063-ios-xctest-summary.json",
+      "checks": [
+        "readable HTTPS401",
+        "runtime Bearer sign in",
+        "persistent POST/PUT/DELETE",
+        "local route navigation",
+        "separate principals and reentry"
+      ],
+      "earlier_native_input_automation_failures_retained": true
+    },
+    "android": {
+      "ok": true,
+      "scope": "actual owned ARM64 Android WebView -> native NEX HTTPS API; debug host trusts only owned test CA for localhost",
+      "checks": [
+        "HTTPS/CORS401 is readable",
+        "runtime token sign in",
+        "Unicode persistent POST",
+        "persistent PUT",
+        "local routes with remote state",
+        "principal isolation and reentry",
+        "persistent DELETE"
+      ],
+      "url": "https://localhost/",
+      "user_agent": "Mozilla/5.0 (Linux; Android 16; Android SDK built for arm64 Build/BE2A.250530.026.D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/133.0.6943.137 Mobile Safari/537.36"
+    },
+    "apk_sha256": "b591da3a2f7721717bd7749e66f3bc801aa7ff8dcd317876680b303327e45b4f",
+    "physical_devices_tested": false,
+    "release_signing_tested": false,
+    "complete_platform_sdk_acceptance_pending": true,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "owned_simulator_shutdown": true,
+    "owned_android_emulator_shutdown": true,
+    "dedicated_adb_server_stopped": true
+  },
+  "linux": {
+    "full_ctest_passed": 74,
+    "live_and_source_free_sdk": "running; final result required"
+  },
+  "root_integration": {
+    "verified": false,
+    "state": "preparing source integration; separate root build/full74/SDK23 required",
+    "graph_history_language_migration": false,
+    "previous_root_graph_revisions": 47
+  },
+  "source_note": "This documentation derives from the tested implementation; it does not change compiler/runtime source or language syntax. Root and exact platform/SDK identities are recorded separately.",
+  "accepted_release": false,
+  "full_objective_complete": false
+}

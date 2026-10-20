@@ -8,11 +8,12 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs can inspect and change that graph through the
 same versioned tools. Compiled applications run independently of an LLM.
 
-The isolated current source is **toolchain 0.63.0 / language 0.16**, under development.
-It adds explicit iOS archives, experimental mobile projects and explicit HTTPS
-API hosting. Earlier0.62 native iOS/Android WebView UI probes passed; the0.63
-API change and matching complete acceptance remain under validation.
-The verified root checkpoint remains 0.60.2.
+The current source is **toolchain0.63.0 / language0.16**, under development.
+It includes explicit iOS native archives, experimental iOS/Android WebView
+projects and operator-configured HTTPS APIs. Actual simulator/emulator checks
+exercise authentication, persistent task operations, routes and principal
+isolation. Platform/SDK results are bound to their source and compiler identities;
+the root integration is verified separately.
 The implemented language includes checked integers and finite floats, Unicode
 strings, immutable aggregates, algebraic enums and exhaustive matching,
 generics, traits with associated types and constructor parameters, typed
@@ -24,8 +25,10 @@ The development chain includes a reference interpreter, SQLite/BLAKE3 revision
 store, dependency locks, incremental native builds, transactional graph patches,
 task contracts, native/API/browser packaging, scalar Z3 verification, LLDB/DAP
 debugging, a VS Code extension and native profiling. The installed SDK workflow
-has 23 phases. The verified 0.60.2 macOS SDK passes all 329 commands;
-the clean root build passes all 72 regression groups. The debugger supports native list/byte pages of at most 1000
+has23 phases. The isolated0.63 implementation passes74 regression groups on
+macOS/Linux ARM64 and329 commands in its installed macOS SDK. Exact evidence
+and remaining root/Linux installed SDK gates are recorded in
+[toolchain-0.63.0.json](docs/evidence/toolchain-0.63.0.json). The debugger supports native list/byte pages of at most 1000
 children, including late indices, without capturing the entire root. Frame
 inspection also checks that the selected frame belongs to the loaded image
 associated with its manifest.
@@ -34,9 +37,10 @@ original-to-copied image binding and source projections. Current macOS/Linux
 ARM64 SDKs pass moved/restored acceptance. Independent Linux capsule reading
 recovers the checked Unicode value without the original source or build.
 The installed VS Code extension and generated React and Wasm examples pass
-their actual editor and three-browser checks. The candidate iOS archive target is described in [the iOS guide](docs/ios.md).
-Native iOS applications, Android and Windows applications and physical
-Intel/mobile execution remain pending.
+their actual editor and three-browser checks. The iOS archive target is described in [the iOS guide](docs/ios.md).
+[Mobile projects](docs/mobile.md) use generated TypeScript/React in a native
+WebView; the MLIR archive path is separate. Windows support, native mobile plugin
+bindings, physical Intel/mobile execution and release signing remain pending.
 
 Validation results are recorded with their exact source, compiler, platform
 and test scope in [STATUS.md](STATUS.md) and [development evidence](docs/evidence/).

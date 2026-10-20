@@ -1,3 +1,26 @@
+# Development integration0.63 / language0.16
+
+The source includes explicit iOS archives, generated native WebView projects and
+explicit HTTPS API hosting. The tested implementation is Git tree4c1edca2,
+commit ee207153aaa64aa8ad37fc2970b4e25632854eb9. This documentation records its
+scoped results; root integration has its own pending build/full74/SDK23 checks.
+[Machine-readable evidence](docs/evidence/toolchain-0.63.0.json) preserves exact
+source/compiler identities and remaining gates.
+
+The implementation passes all74 macOS/Linux ARM64 CTest groups. Its installed
+macOS SDK passes23 phases/329 commands/176 indexed resources. The same-source
+HTTPS client passes three browsers with native API restart. Actual iOS27.1
+Simulator XCTest passes1 case without failures/skips; actual Android16/API36
+ARM64 WebView passes7 API/UI checks. iOS long credentials use runtime native
+keyboard paste; failed earlier input automation attempts remain retained. Final
+Linux live/source-free SDK acceptance and the root's own gates remain pending.
+
+The UI is TypeScript/React inside a native WebView. Native MLIR iOS archive
+embedding, physical devices/Intel, Windows, native plugin bindings, production
+PKI and release signing remain separate work. Language0.16, graph canonical
+formats and stored history do not change. Historical records below retain their
+original time/scope; an old pending statement does not override this record.
+
 # Isolated development0.62: mobile projects and local iOS URL policy
 
 A first prototype builds an actual Simulator .app and Android debug APK from

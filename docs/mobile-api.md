@@ -1,4 +1,4 @@
-# Explicit HTTPS API hosting — toolchain0.63 candidate
+# Explicit HTTPS API hosting — toolchain0.63
 
 NEX commands retain bounded relative `/api/` paths. The deployment operator
 selects one HTTPS API origin when generating a mobile project:
@@ -61,9 +61,15 @@ or storage, and grants no cookie credentials. Denied origins cannot reach a NEX
 handler. Allowed-origin authentication and application errors retain CORS headers.
 
 Native compilation, network execution and mobile UI execution are separate
-checks. The0.62 state-only mobile UI evidence does not establish0.63 remote API
-support. This candidate's full acceptance remains pending until recorded with
-its exact source, compiler, native application and server identities.
+checks. The0.63 source tree4c1edca2 has actual native mobile evidence: one iOS
+Simulator XCTest passes with no failures/skips; an Android ARM64 WebView passes
+seven HTTPS/CORS/authentication/Unicode/data/route checks. The iOS test uses
+runtime credential paste through native keyboard commands, not a compiled-in
+token. Earlier failed native input fixtures remain available. The same-source
+separately hosted client also passes Chromium/Firefox/WebKit, including native
+server restart. See [development evidence](evidence/toolchain-0.63.0.json) for
+identities and scope. These checks do not establish physical-device execution,
+release signing, production certificate deployment or root integration acceptance.
 
 From a source checkout, the opt-in `tests/mobile_api_browser.py COMPILER
 GENERATED_FULLSTACK_PROJECT --output NEW_DIRECTORY --browsers-path CACHE`

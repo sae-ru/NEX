@@ -1,4 +1,4 @@
-# Mobile projects — toolchain0.63 candidate
+# Experimental mobile projects — toolchain0.63
 
 `tools/mobile_project.py` generates iOS and Android projects from the existing
 checked NEX web application contract. Business state, transitions and views stay
@@ -7,10 +7,10 @@ provides the native platform host. The separate native iOS archive target uses
 MLIR/LLVM and is not automatically linked into this UI path.
 
 Generation, native compilation, signing, installation and actual UI execution
-are separate steps. This candidate must pass its matching complete checks before
-promotion. The first actual mobile prototype exposed a relative-URL rejection
-under capacitor://localhost; the candidate adds a narrowly scoped local-origin
-policy. A compile success alone does not establish a working mobile interface.
+are separate steps. The0.63 simulator/emulator application checks are recorded
+in [development evidence](evidence/toolchain-0.63.0.json). The earlier local-origin
+rejection and failed input automation attempts are retained with the corrected
+UI checks. A generated project alone does not establish a running application.
 
 ## Generate
 
@@ -87,10 +87,10 @@ new privileged device capabilities are granted by NEX source in this adapter.
 Relative routes/assets are allowed only on the exact local iOS
 `capacitor://localhost` origin with no credentials/port. Explicit custom-scheme
 URLs, authority-relative paths and unrelated opaque origins are rejected.
-Ordinary HTTP(S)/mail/tel link rules remain. Source network commands require an
-HTTP(S) application origin; mobile remote-API configuration, background services,
-native plugin bindings, store deployment and a stable native Swift/JNI ABI remain
-pending. An embedded WebView does not establish native UI rendering or a general
+Ordinary HTTP(S)/mail/tel link rules remain. Without an explicit API override,
+network commands require an HTTP(S) application origin. The operator can select
+one HTTPS API origin as described below. Background services, native plugin
+bindings, store deployment and a stable native Swift/JNI ABI remain pending. An embedded WebView does not establish native UI rendering or a general
 performance advantage. General source async/GPU support is unchanged.
 
 ## Remote API
@@ -100,4 +100,8 @@ The generated app remains bundled locally; the host only changes the request
 destination. Runtime credentials, exact server CORS origins, TLS trust,
 asset provenance and current validation scope are described in
 [mobile API configuration](mobile-api.md). Offline state-only apps omit this
-option. Real remote API execution of this candidate remains under validation.
+option. Actual HTTPS API operation is verified on an ARM64 iOS27.1 Simulator and an
+ARM64 Android16/API36 emulator, with runtime credentials and an owned test CA.
+The iOS XCTest uses native keyboard paste for long credentials; earlier bulk
+`typeText` and menu attempts are retained. Physical devices, production PKI and
+release signing require separate validation.

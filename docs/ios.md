@@ -75,3 +75,9 @@ ignored deployment arguments and host execution. These are build/link checks.
 Simulator/device installation and execution, signing, `.app`/`.ipa` packaging,
 UI adapters, debugging and profiling remain separate required work. An installed
 Xcode SDK does not provide an installed simulator runtime.
+
+
+The separate [mobile WebView adapter](mobile.md) has actual Simulator application
+and HTTPS API UI evidence in0.63. It does not link these MLIR archives into its
+JavaScript/React UI path, provide native plugin bindings or establish execution
+of a NEX archive on a physical iPhone. Keep these validation scopes separate.
