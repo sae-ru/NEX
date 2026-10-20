@@ -33,7 +33,8 @@ core runtime and debug/release PE/archive paths are available. Foreign ABI build
 do not establish Windows execution, debugger or SDK distribution support.
 When `environment_access`/`database` are true, environment access is strict
 UTF-8/UTF-16; storage needs explicit matching target SQLite include/library paths
-and execution-time NEX_DATABASE/NEX_STORAGE_OWNER. Server realms and io/db effects
+and execution-time NEX_DATABASE; optional NEX_STORAGE_OWNER defaults to local.
+An explicitly empty principal is invalid. Server realms and io/db effects
 remain mandatory. `files=false` remains authoritative even if a filesystem
 prototype is included in the SDK sources. HTTP hosting remains unavailable.
 

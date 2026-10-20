@@ -91,8 +91,10 @@ external prerequisite. For ARM64, supply the separately compiled ARM64 archive.
 The compiler captures the configured `sqlite3.h` and library bytes in build and
 toolchain identities. It cannot substitute host libraries for an unconfigured
 foreign dependency. Storage requires server realm/`db` and explicit execution
-environment `NEX_DATABASE` plus nonempty `NEX_STORAGE_OWNER`; both accept Unicode.
-No default database or principal is granted. Keys/values, transactions and
+environment `NEX_DATABASE`; the optional `NEX_STORAGE_OWNER` selects the principal
+and defaults to `local`, matching the existing standalone adapter. Both accept
+Unicode; an explicitly empty/invalid principal is rejected. No default database
+path is granted. Keys/values, transactions and
 principal isolation use the existing runtime contract. See
 `examples/windows/storage.nex`. HTTP hosting remains unavailable on this target.
 
