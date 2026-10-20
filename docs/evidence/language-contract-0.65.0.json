@@ -1,0 +1,131 @@
+{
+  "toolchain": "0.65.0",
+  "language": "0.16",
+  "created": "2026-10-20T05:08:47.962948+00:00",
+  "scope": "Five-document model-independent language contract correction; no compiler/runtime/grammar/schema/manifest/example changes",
+  "document_source": {
+    "tree": "35c1a438759ac3dec308711b904255e78ccbadae",
+    "commit": "4ef3fa33f699b2d667b5dda099c1f6044748bbfa",
+    "files": 699,
+    "baseline": "3205785a90c1a44ab07869bc598a6bb28263d9c2"
+  },
+  "indexed_document_delta": [
+    "docs/files.md",
+    "docs/graph.md",
+    "docs/language.md",
+    "docs/protocol.md"
+  ],
+  "unindexed_document_delta": [
+    "llm/README.md"
+  ],
+  "implementation_source": "618efe514091c04d7cf3f4c988d3c026151fbcce",
+  "implementation_evidence": "docs/evidence/toolchain-0.65.0.json",
+  "corrections": [
+    "Current language 0.16, graph/context protocol 2 and database schema 4; historical introduction versions remain explicit",
+    "Guarded source type/trait/implementation patches and snapshot-scoped identity reconciliation are implemented",
+    "Stopped pure expressions run in the isolated reference interpreter",
+    "Owned streaming file operations and concrete experimental source FFI have explicit supported scopes",
+    "Native target descriptions retain iOS archive and Windows GNU/UCRT restrictions"
+  ],
+  "documented_workflow": {
+    "commands": 41,
+    "seconds": 13.324,
+    "compiler_sha256": "e950f64129d3a92f62edaeb4d51f524c6d5d31e7880cc4662c9cd618e446e11a",
+    "checks": [
+      "installed document delivery and advertised capabilities",
+      "snapshot-scoped reconciliation preserves destination identities and HEAD",
+      "atomic source-type/caller patches preserve ID, physical source and stale-guard rollback",
+      "trait/implementation transaction, incomplete rejection, all-three-backend agreement and export/edit boundary",
+      "owned streaming aliases, UTF-8 bytes/cursors/close and browser authority rejection",
+      "genuine0.15 archive rejects implicit reinterpretation; explicit0.16 migration retains old revisions/IDs"
+    ],
+    "report_sha256": "8baec2696278e6a87099a18c3f80e8a7b7c47d34c0b11edbbdb77cb870bb15cd",
+    "raw_utf8_nul_stream_bytes_verified": true,
+    "rejected_patch_candidates_preserve_graph": true,
+    "genuine_015_explicit_migration_preserves_history_and_ids": true
+  },
+  "sdk_validation": {
+    "macos_arm64": {
+      "source_tree": "35c1a438759ac3dec308711b904255e78ccbadae",
+      "compiler_sha256": "e950f64129d3a92f62edaeb4d51f524c6d5d31e7880cc4662c9cd618e446e11a",
+      "sdk_phases": 23,
+      "sdk_commands": 329,
+      "resource_files": 180,
+      "sdk_report_sha256": "8a1af1c4bfbe6513c2027ab3b2a583004766965a7c4b6a1aa3f4e9281f92282a",
+      "seconds": 367.516,
+      "all_other_sdk_files_unchanged": true
+    },
+    "linux_arm64": {
+      "source_tree": "35c1a438759ac3dec308711b904255e78ccbadae",
+      "compiler_sha256": "f20325939f8194595bff2fb61cea66231bb28d756a30462ce4d488d0e4c3b6c4",
+      "sdk_phases": 23,
+      "sdk_commands": 329,
+      "resource_files": 180,
+      "sdk_report_sha256": "f3b4f0185452ad49ed39ed95336360c8c2f18ad051cf455599343fc764e656a5",
+      "seconds": 271.207,
+      "all_other_sdk_files_unchanged": true,
+      "source_checkout_mounted": false,
+      "network": "none"
+    }
+  },
+  "root_guides": [
+    {
+      "compiler": "/Users/sae/projects/NEX/build/nex",
+      "kind": "language",
+      "hash": "308c347071977496e2af2611afba0ded536fbc9dd051735c1330a40ef25328de"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/sdk-065-contract-docs-install/bin/nex",
+      "kind": "language",
+      "hash": "308c347071977496e2af2611afba0ded536fbc9dd051735c1330a40ef25328de"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/nex",
+      "kind": "protocol",
+      "hash": "12b9dcff584d1b005455daa3d9c80cbc21ce50be26aeaac46655f0c2aa811505"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/sdk-065-contract-docs-install/bin/nex",
+      "kind": "protocol",
+      "hash": "12b9dcff584d1b005455daa3d9c80cbc21ce50be26aeaac46655f0c2aa811505"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/nex",
+      "kind": "files",
+      "hash": "89c015698572497f1750d1495274f02c2816656e58886ae44731c8408e5f0a5a"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/sdk-065-contract-docs-install/bin/nex",
+      "kind": "files",
+      "hash": "89c015698572497f1750d1495274f02c2816656e58886ae44731c8408e5f0a5a"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/nex",
+      "kind": "graph",
+      "hash": "de946bfdab7090c22c64c548eccd04a727bc46ab698457bf5aebd26834a59c29"
+    },
+    {
+      "compiler": "/Users/sae/projects/NEX/build/sdk-065-contract-docs-install/bin/nex",
+      "kind": "graph",
+      "hash": "de946bfdab7090c22c64c548eccd04a727bc46ab698457bf5aebd26834a59c29"
+    }
+  ],
+  "root_graph_revisions": 47,
+  "root_all16_tables_schema_preserved": true,
+  "normal_git_head_index_unchanged": true,
+  "retained_launcher_failures": [
+    "Wrong baseline report path: launcher stopped before SDK suite",
+    "Mac output log made destination nonempty: suite refused before tests; corrected attempt2 passed"
+  ],
+  "full_regression_scope": "Existing implementation source 618efe51 has actual root/macOS/Linux full76 receipts. Markdown-only changes do not relabel those receipts as new full-suite executions.",
+  "final_overview_scope": "Subsequent README/STATUS/PLAN and this unindexed evidence leaf preserve all 180 indexed resource hashes; no additional full SDK execution is inferred.",
+  "pending": [
+    "cross-provider coding evaluation",
+    "identity-preserving source rename",
+    "Windows filesystem native validation and broader Windows host/integrations",
+    "physical Intel/mobile execution and signing",
+    "remaining PLAN.md integrations"
+  ],
+  "accepted_release": false,
+  "full_objective_complete": false
+}

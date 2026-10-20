@@ -1,3 +1,26 @@
+# Language contract documentation: toolchain 0.65 / language 0.16
+
+Source 35c1a438 corrects five language-pack documents: four indexed guides and
+the delivered llm/README.md. The specification/protocol now match actual source
+type/trait/implementation patches, snapshot-scoped identity aliases, stopped
+pure expressions, owned streaming files, concrete source FFI and target scopes.
+Historical introduction versions remain distinguished from current capabilities.
+
+The matching macOS and source-free/network-disabled Linux ARM64 SDKs each pass
+23 phases, 329 commands and 180 indexed resources. A separate 41-command
+workflow verifies valid and rejected graph transactions, native/interpreter/
+TypeScript agreement, alias preservation, exact UTF-8/NUL streaming bytes and
+explicit migration of a genuine 0.15 snapshot with old revisions/IDs retained.
+See docs/evidence/language-contract-0.65.0.json for exact source/report digests.
+
+Compiler/runtime/grammar/manifest/examples remain byte-identical to the prior
+0.65 implementation. The full76 and Windows17 execution receipts below retain
+their original implementation scopes. The final README/STATUS/PLAN/evidence
+delta changes no indexed resource. All47 root graph revisions/all16 tables,
+schema and Git HEAD/index remain preserved. Earlier root SDKs remain retained.
+Cross-provider evaluation and the unfinished integrations in PLAN.md remain
+pending; this documentation milestone does not complete the broad objective.
+
 # Toolchain0.65 root verification
 
 Current root toolchain0.65.0/language0.16 uses source618efe51 (698 files before

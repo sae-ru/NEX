@@ -24,6 +24,13 @@ passes76 groups,16 live suites and a network-disabled, source-free SDK23/329/180
 workflow. Exact source/compiler scopes are recorded in
 [toolchain-0.65.0.json](docs/evidence/toolchain-0.65.0.json) and [STATUS.md](STATUS.md).
 
+The model-independent [language pack](llm/README.md) now documents the current
+language 0.16 contract consistently. Separate macOS/Linux installed SDK checks
+pass 23 phases, 329 commands and 180 resources with the corrected guides;
+41 documented commands verify graph patches, identity aliases, streaming files
+and history-preserving migration. These documentation checks retain their own
+[source and compiler identities](docs/evidence/language-contract-0.65.0.json).
+
 The [Windows GNU/UCRT target](docs/windows.md) cross-builds x86-64/ARM64
 debug/release PE executables and GNU archives. It adds strict Unicode process
 environment access and explicitly configured target SQLite storage. Nine fresh

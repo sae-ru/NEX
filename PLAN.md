@@ -1,3 +1,14 @@
+# Language contract status: 20 October 2026
+
+- The language 0.16 pack describes implemented graph patches/aliases, stopped
+  pure expressions, streaming files, source FFI and target restrictions.
+- Matching macOS/Linux installed SDKs pass 23 phases/329 commands/180 resources;
+  41 focused documented commands cover transactional rejection and genuine
+  history-preserving migration. Exact evidence is in
+  docs/evidence/language-contract-0.65.0.json.
+- Cross-provider coding evaluation, identity-preserving source rename and the
+  platform/development integrations below remain future work.
+
 # Toolchain0.65 Windows runtime progress
 
 - Unicode environment and explicit target SQLite are verified by real PE/archive
