@@ -1,10 +1,65 @@
-# Isolated development0.67: VS Code language client
+# Verified root development checkpoint 0.67 / language 0.16
 
-Extension0.2 adds trusted physical-document activation, versioned source synchronization, compiler diagnostics/types/definitions/outline, cancellation and restart/cleanup. Development checks pass22 Node contracts and2 actual-client/contract Python cases on the separately identified0.66 compiler. Own0.67 build/full78/SDK, actual installed VSIX and platform validation remain required. Root remains0.65/cd78 pending guarded promotion.
+Actual root source 4fbd3c6775702a76c16a8d93611ef65a2df0506c (714 files) builds and passes all 78
+CTest groups in 741.94 seconds. Its installed SDK passes 23 phases,
+332 commands and 196 indexed resources. Root compiler SHA-256 is
+aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628.
+[Machine-readable evidence](docs/evidence/toolchain-0.67.0.json) records exact
+source/compiler/report scopes. The final README/STATUS/PLAN/evidence-only delta
+preserves all compiler/runtime/grammar/manifest/example bytes and all 196 indexed
+resources; those overview edits do not imply another full-suite execution.
 
-# Isolated development 0.66: language server
+The separate 9cb7e996 implementation candidate passes all 78 groups on macOS
+and Linux ARM64. Each installed SDK passes 23 phases/332 commands/196 resources;
+Linux also passes 16 live suites and runs acceptance with no source checkout
+or network. Root source differs from that candidate only in the unindexed
+actual-IDE host test, which explicitly sets/asserts CRLF and restores original
+EOL before saving. Its own full78/SDK and actual-IDE results are recorded here.
 
-The candidate adds readonly compiler analysis with explicit source overlays and a stdio LSP adapter. Focused compiler/stdio checks and full regression/installed SDK/IDE/platform acceptance are tracked separately. The verified root remains0.65 with source cd78ecf0 until guarded promotion.
+Readonly compiler analysis and stdio LSP provide unsaved diagnostics, checked
+types, declaration outlines and cross-file function/value definitions. Fourteen
+compiler/stdio cases cover Unicode, cancellation, lifecycle, rejected input and
+source/history isolation. The Node client has 22 contracts and two actual-client/
+contract cases; installed SDK checks exercise both Python/server and Node/client.
+Language 0.16, canonical graph formats and language semantics are unchanged.
+
+The actual root SDK packages and installs VSIX 0.2 into a private extension
+directory. Real VS Code 1.142.0 on macOS ARM64 passes
+unsaved Unicode/explicit-CRLF error/repair, hover, cross-module definitions,
+outline, restart, disable/enable and close. Physical sources remain unchanged
+and language analysis creates no graph. A second private profile verifies native
+breakpoints, stack/scopes, pure scalar/trait watches, unchanged stopped identity,
+32768-item list and 4 MiB byte roots with bounded 1000-child pages, continuation
+and exit 0. The user's editor profile is not modified.
+
+Fresh root SDK Windows checks retain nine x86-64/ARM64 PE outputs with each
+original build context's graph snapshot and source where present. Seventeen
+x86-64 Wine cases pass. This does not verify actual Windows OS/ARM64 execution;
+the failed filesystem prototype remains unavailable and is retained separately.
+
+All 47 root revisions, all 16 graph tables/schema, local identities and normal
+Git HEAD/index are preserved. Earlier SDK/source cohorts and failed attempts
+remain retained: the 0.66 lifecycle/protocol failures were fixed and checked;
+its first SDK runs failed from a missing Python import after full77 passed.
+The initial 0.67 IDE collector omitted its native-pages flag, and one owned
+waiting collector was terminated before IDE execution to correct that flag.
+Successful corrected runs do not relabel those original failures.
+
+Completion/references/rename, parser recovery/incremental indexing, broader
+IDE/Windows development, physical-device validation, signing and the remaining
+PLAN.md language/runtime integrations stay open. This is verified development
+progress; no release or full-objective completion is claimed.
+
+# Completed predecessor 0.66: language server and lifecycle repair
+
+Source 126b0d59 adds the SDK import fix to the lifecycle-corrected 158fb058
+source. Fourteen focused cases and both corrected installed SDKs pass
+23 phases/330 commands/185 resources. Their compiler/runtime bytes remain
+those of the original e8f4bbef implementation, whose macOS/Linux full77 and
+Linux 16 live suites passed before the first SDK failure. These are distinct
+cohorts; exact proof is retained in build/lsp-066-scoped-verification.json.
+
+Earlier milestones retain their original source/compiler scopes below.
 
 # Language contract documentation: toolchain 0.65 / language 0.16
 

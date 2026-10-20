@@ -1,14 +1,18 @@
-# Current editor integration: toolchain0.67 candidate
+# Текущее состояние: toolchain 0.67 / язык 0.16
 
-- Connect VS Code0.2 to the installed LSP, preserving unsaved versions and readonly analysis.
-- Verify actual installed Node/SDK/IDE behavior, old debugger launch and source/history isolation.
-- Complete wider editor/platform validation and the remaining language/development-chain work below.
-
-# Current editor work: isolated toolchain 0.66
-
-- Implement checked unsaved source analysis, stdio diagnostics/types/definitions/declarations and source/history isolation.
-- Verify protocol Unicode/lifecycle/cancellation, matching installed SDKs, VS Code client activation and actual editor behavior.
-- Completion/references/rename, parser recovery/incremental indexing and the wider IDE matrix remain pending.
+- [x] Подключить анализ несохранённых исходников и stdio LSP: диагностика,
+  типы, определения, декларации; не изменять исходники и историю графа.
+- [x] Подключить VS Code 0.2 и проверить настоящий установленный VSIX:
+  Unicode/CRLF, версии документа, перезапуск, исходные breakpoint и большие
+  значения в нативном отладчике; использовать отдельные тестовые профили.
+- [x] Проверить собственную рабочую сборку full78/SDK23/332/196; отдельно
+  сохранить macOS/Linux candidate full78, Linux16live и SDK без исходников/сети.
+- [x] Сохранить все47 ревизий, все16 таблиц/схему графа и обычный Git HEAD/index.
+- [ ] Добавить completion, references/rename, восстановление после синтаксических
+  ошибок и инкрементальный индекс, сохраняя версии, идентичность и границы контекста.
+- [ ] Расширить реальную IDE/платформенную матрицу и выполнить оставшуюся работу
+  над языком, runtime и цепочкой ниже. Фактические области проверок записаны
+  в STATUS.md и docs/evidence/toolchain-0.67.0.json.
 
 # Language contract status: 20 October 2026
 

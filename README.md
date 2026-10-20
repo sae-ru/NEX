@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.65.0 / language0.16**, under development.
+The current source is **toolchain 0.67.0 / language 0.16**, under development.
 The language includes checked integers/finite floats, Unicode strings, immutable
 aggregates, exhaustive algebraic matching, generics, traits/associated types,
 fixed constructor parameters, function values and snapshot closures. The checker
@@ -18,36 +18,43 @@ Native output uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 The development chain includes an interpreter, SQLite/BLAKE3 revision store,
 dependency locks, incremental builds, transactional graph patches, task contracts,
 scalar Z3 verification, LLDB/DAP, native profiling and a VS Code extension.
-The actual root passes all76 regression groups and an installed SDK workflow
-of23 phases,329 commands and180 indexed resources. Matching native Linux ARM64
-passes76 groups,16 live suites and a network-disabled, source-free SDK23/329/180
-workflow. Exact source/compiler scopes are recorded in
-[toolchain-0.65.0.json](docs/evidence/toolchain-0.65.0.json) and [STATUS.md](STATUS.md).
+The actual root passes all 78 regression groups and an installed SDK workflow
+of 23 phases, 332 commands and 196 indexed resources. The implementation candidate
+passes the same full suite and SDK checks on macOS and native Linux ARM64;
+Linux additionally passes 16 live suites and runs SDK acceptance without a source
+checkout or network. [Exact evidence](docs/evidence/toolchain-0.67.0.json) keeps
+the candidate, root and installed compiler identities separate.
 
-The model-independent [language pack](llm/README.md) now documents the current
-language 0.16 contract consistently. Separate macOS/Linux installed SDK checks
-pass 23 phases, 329 commands and 180 resources with the corrected guides;
-41 documented commands verify graph patches, identity aliases, streaming files
-and history-preserving migration. These documentation checks retain their own
-[source and compiler identities](docs/evidence/language-contract-0.65.0.json).
+The [language server](docs/lsp.md) analyzes unsaved source without saving files,
+executing programs or modifying graph history. [VS Code extension 0.2](docs/editor.md)
+shows diagnostics, checked types, definitions and an outline. Actual installed
+VSIX tests on macOS ARM64 verify Unicode/CRLF edits, restart/disable/enable,
+source breakpoints, pure watches and bounded pages of large list/byte values.
+These tests use private profiles. Completion, references/rename, parser recovery,
+incremental project indexing, other IDE platforms and NEX Studio remain pending.
+
+Different LLMs use the versioned [language pack](llm/README.md), the shared
+[system prompt](llm/SYSTEM_PROMPT.md), `nex describe --json` and bounded compiler
+context. The earlier [language-contract checks](docs/evidence/language-contract-0.65.0.json)
+retain their own source/compiler scopes; cross-provider coding and token-saving
+measurements remain future work.
 
 The [Windows GNU/UCRT target](docs/windows.md) cross-builds x86-64/ARM64
-debug/release PE executables and GNU archives. It adds strict Unicode process
-environment access and explicitly configured target SQLite storage. Nine fresh
-installed-root-SDK PE builds pass cross-target checks;17 x86-64 Wine cases verify
-Unicode, persistence, principal isolation and capability failures. Wine is
-separate from actual Windows OS/ARM64 execution. Filesystem/resource calls remain
-rejected while the [native prototype](docs/windows-files-design.md) awaits Windows
-validation; its failed Wine filesystem checks are retained explicitly.
+debug/release PE executables and GNU archives. Nine fresh installed-root-SDK PE
+builds and 17 x86-64 Wine cases verify Unicode environment, explicit SQLite,
+persistence, principal isolation and capability failures. Their original fixture
+graph snapshots are retained. Wine is separate from actual Windows OS/ARM64
+execution. Filesystem/resource calls remain rejected while the
+[native prototype](docs/windows-files-design.md) awaits Windows validation;
+its failed Wine filesystem checks remain recorded.
 
 Experimental [mobile projects](docs/mobile.md) generate iOS/Android WebViews and
-operator-configured HTTPS APIs. The actual mobile UI/authentication/CRUD checks
-belong to the separately recorded0.63 cohort. The [iOS archive path](docs/ios.md)
-is separate. Earlier actual editor/three-browser checks and moved/restored SDK
-distribution checks retain their original identities; broader current IDE and
-distribution execution is not inferred from SDK native DAP and browser builds.
-Windows-hosted development, native plugins, physical Intel/mobile execution and
-release signing remain pending. [PLAN.md](PLAN.md) tracks unfinished integrations.
+operator-configured HTTPS APIs. Actual mobile UI/authentication/CRUD checks belong
+to the separately recorded 0.63 cohort. The [iOS archive path](docs/ios.md) is
+separate. Earlier three-browser and moved/restored SDK distribution checks also
+retain their original identities. Windows-hosted development, native plugins,
+physical Intel/mobile execution and release signing remain pending.
+[PLAN.md](PLAN.md) tracks the remaining language/development-chain work.
 Performance and token savings are goals requiring comparable measurements.
 
 ## Build
