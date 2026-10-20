@@ -15,8 +15,9 @@ code through TypeScript/React. It is a WebView host, separate from native iOS
 archives; generation is not signing, building or target execution. Validate
 Xcode/Gradle artifacts and actual target UI separately. The local iOS
 capacitor://localhost origin permits relative routes/assets; arbitrary opaque
-origins or explicit custom-scheme URLs are not allowed. Network requests still
-require HTTP(S); a mobile remote-API adapter remains pending.
+origins or explicit custom-scheme URLs are not allowed. Requests use the
+application HTTP(S) origin unless the operator configures one explicit HTTPS
+API origin. Follow the server_cors guidance above; credentials stay runtime-only.
 
 When `ios_archive_target` is advertised, read `docs/ios.md` and the native build
 guide. A macOS host can build a debug/release static library for an explicit
