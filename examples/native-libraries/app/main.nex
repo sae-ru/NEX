@@ -1,0 +1,14 @@
+module native_library::app;
+import "../core/math.nex" as math;
+
+fn verify()->unit {
+  assert(math::calculate(5)==22);
+  assert(math::make(40)(2)==42);
+  assert(math::decorate("NEX")=="NEX 🧠");
+}
+fn main()->unit !{io} {
+  verify();
+  print(math::calculate(5));
+  print(math::decorate("NEX"));
+}
+test fn agreement()->unit { verify(); }

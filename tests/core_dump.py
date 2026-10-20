@@ -74,7 +74,7 @@ class CoreDump(harness.ToolchainCase):
         self.prepared()
         never = {'NEX_LLDB': str(self.root / 'not-a-debugger')}
         files = [self.folder / name for name in
-                 ['app', 'program.mlir', 'program.ll', 'compilation.json', 'source-bundle.json']]
+                 ['app', 'program.mlir', 'program.ll', 'compilation.json', 'source-bundle.json', 'library-abi.json']]
         files.append(Path(json.loads(self.manifest.read_text())['sources'][0]['projection']))
         if sys.platform == 'darwin':
             files.append(self.folder / 'app.dSYM/Contents/Resources/DWARF/app')

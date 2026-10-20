@@ -2027,7 +2027,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
     def project_build():
         description = cli('describe')['project_build']
         require(description['manifest_schema'] == 'nex.project-build/1' and
-                description['dependency_linkage'] == ['source'], 'SDK project build contract differs')
+                description['dependency_linkage'] == ['source', 'static'], 'SDK project build contract differs')
         architecture = root / 'project-architecture'
         shutil.copytree(resources / 'examples/project-build', architecture)
         planned = cli('project', '--kind', 'plan', cwd=architecture)
@@ -2064,9 +2064,27 @@ server fn handle(request:http::Request) -> http::Response !{db} {
             require(web_result['kind'] == 'web' and (Path(web_result['result']['dist']) / 'index.html').is_file(),
                     'project browser artifact is missing')
         require(not (architecture / '.nex/graph.db').exists(), 'project build synchronized graph history')
+        binary_project = root / 'native-library-project'
+        shutil.copytree(resources / 'examples/native-libraries', binary_project)
+        binary_plan = cli('project', '--kind', 'plan', cwd=binary_project)
+        require(not (binary_project / '.nex').exists(), 'binary dependency plan created a cache/store')
+        binary_build = cli('project', '--kind', 'build', '--configuration', 'release', cwd=binary_project)
+        binary_artifacts = {a['component']: a for a in binary_build['artifacts']}
+        require(run([binary_artifacts['app']['artifact']]) == '22\nNEX 🧠\n', 'archive consumer differs')
+        compilation = json.loads(Path(binary_artifacts['app']['compilation']).read_text())
+        require(not any(f.startswith('native_library::math::') for u in compilation['units'] for f in u['functions'])
+                and len(compilation['static_libraries']) == 1, 'consumer recompiled its binary dependency')
+        binary_archive = Path(binary_artifacts['core']['artifact'])
+        binary_abi = json.loads((binary_archive.parent / 'library-abi.json').read_text())
+        require(binary_abi['code_only'] and binary_archive.read_bytes().startswith(b'!<arch>\n'), 'code-only archive missing')
+        binary_warm = cli('project', '--kind', 'build', '--configuration', 'release', cwd=binary_project)
+        require(all(a['cached'] for a in binary_warm['artifacts']), 'binary dependencies did not reuse checked artifacts')
+        require(not (binary_project / '.nex/graph.db').exists(), 'binary build opened graph history')
         report['evidence']['project_build'] = {'plan_hash': planned['plan_hash'], 'selected_plan_hash': selected['plan_hash'],
             'native_artifact': application['artifact'], 'archive': library['artifact'], 'archive_host_executed': True,
             'source_linkage': True, 'undeclared_import_rejected': True, 'web_built': web_result is not None,
+            'static_archive_consumption': True, 'consumer_definitions_excluded': True,
+            'binary_plan_hash': binary_plan['plan_hash'], 'binary_artifacts': binary_artifacts,
             'graph_store_opened': False}
 
     try:

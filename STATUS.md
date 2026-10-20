@@ -1,3 +1,9 @@
+# Isolated0.72 native-library candidate
+
+Checked static archive consumption is under validation in this candidate.
+Do not read the historical integrated0.71 evidence below as0.72 coverage.
+Shared-library output and consumption remain required work.
+
 # Verified root development checkpoint0.71 / language0.16
 
 Implementation source `1a3da612e0f3c10e1f737802ef4c580723e27311` (750 files) builds and passes

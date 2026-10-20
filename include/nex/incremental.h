@@ -13,6 +13,8 @@ struct NativePlan {
 };
 // Plan one object per checked concrete function. Body identities are local;
 // external calls depend on contracts, and type dependencies include layouts.
-NativePlan planNative(const Program &program, const std::string &entry);
+NativePlan planNative(const Program &program, const std::string &entry,
+                      const std::vector<std::string> &additionalEntries = {},
+                      bool allCallableBridges = false);
 std::set<std::string> nativeFunctionBridges(const Program &program,const std::set<std::string> &reachable);
 }

@@ -217,7 +217,11 @@
     "project_build_core": "examples/project-build/core/value.nex",
     "project_build_app": "examples/project-build/app/main.nex",
     "project_build_archive": "examples/project-build/archive/main.nex",
-    "project_build_browser": "examples/project-build/browser/main.nex"
+    "project_build_browser": "examples/project-build/browser/main.nex",
+    "native_libraries": "examples/native-libraries/nex.build.json",
+    "native_library_source_manifest": "examples/native-libraries/nex.json",
+    "native_library_core": "examples/native-libraries/core/math.nex",
+    "native_library_app": "examples/native-libraries/app/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -492,5 +496,14 @@
     "source_writes": false,
     "graph_writes": false,
     "execution": false
+  },
+  "native_project_linkage": {
+    "source": "compile reachable source",
+    "static": "checked code-only archive, exact private runtime/toolchain ABI",
+    "exports": "entry_function plus concrete exports",
+    "generic_instantiation": "explicit consumer_instantiations",
+    "guide": "docs/project-build.md",
+    "binary_only_packages": false,
+    "shared_libraries": false
   }
 }

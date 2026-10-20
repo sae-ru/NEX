@@ -1,3 +1,6 @@
+<!-- Isolated0.72 candidate: actual static archive edges, concrete exports,
+private ABI checks and explicit template instantiation are being validated.
+Shared libraries, resolved OS dependencies and full-static policy remain open. -->
 # Checkpoint0.71: checked project architecture
 
 - [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.

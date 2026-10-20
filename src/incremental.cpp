@@ -18,11 +18,13 @@ std::set<std::string> nativeFunctionBridges(const Program &p,const std::set<std:
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
   for(const auto &name:reachable)block(p.function(name).body);return result;
 }
-NativePlan planNative(const Program &p,const std::string &entry){
+NativePlan planNative(const Program &p,const std::string &entry,const std::vector<std::string> &additionalEntries,bool allCallableBridges){
   std::set<std::string> reachable;
   std::function<void(const Function&)> visit=[&](const Function &f){if(reachable.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));
+  for(const auto &name:additionalEntries)visit(p.function(name));
   auto bridges=nativeFunctionBridges(p,reachable);
+  if(allCallableBridges)for(const auto &name:reachable)if(!p.function(name).closure)bridges.insert(name);
   std::map<std::string,std::set<std::string>> members,callers,unitDependencies,unitConsumers;
   for(const auto &name:reachable){
     const auto &f=p.function(name);members[f.unit].insert(name);

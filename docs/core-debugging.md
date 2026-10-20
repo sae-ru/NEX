@@ -101,3 +101,9 @@ an installed SDK. The command must leave graph storage and HEAD untouched.
 References: [LLDB core commands](https://lldb.llvm.org/use/map.html),
 [LoadCore](https://lldb.llvm.org/python_api/lldb.SBTarget.html#lldb.SBTarget.LoadCore),
 [SaveCoreOptions](https://lldb.llvm.org/python_api/lldb.SBSaveCoreOptions.html).
+
+The0.72 candidate extends retained native completion with an ordered ABI/archive
+input list (`nex.native-completion/2`). The reader hashes those additional files
+and capsule export/import preserves their exact bytes. Legacy records without
+these fields keep the earlier six-file contract. This adds no source syntax or
+language migration and does not establish project-artifact DAP integration.

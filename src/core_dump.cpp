@@ -97,6 +97,7 @@ JSON inspectCore(const CoreOptions &options){
   // and source bundle. No compiler or application is run to repair this build.
   std::string completion=required(m,"build_key"),imageHash;uint64_t imageBytes=0;
   for(const auto &file:{image,folder/"program.mlir",folder/"program.ll",folder/"compilation.json",folder/"build.json",folder/"source-bundle.json"}){auto contents=text(file,512*1048576);auto digest=hash(contents);completion+=digest;if(file==image){imageHash=digest;imageBytes=contents.size();}}
+  for(const auto &file:nativeCompletionInputs(b))completion+=hash(text(folder/file,512*1048576));
   if(text(folder/"complete",1024)!=hash(completion)+"\n")throw Error("E_CORE_BUILD","retained executable/build completion record differs");
 #ifdef __APPLE__
   auto symbols=fs::path(image.string()+".dSYM")/"Contents/Resources/DWARF/app";

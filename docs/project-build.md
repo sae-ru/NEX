@@ -56,14 +56,14 @@ that component and cannot bypass architecture checks.
 
 For each loaded import crossing component roots, the importing component must
 declare that **direct** dependency. A transitive dependency does not authorize a
-direct import. Dependencies may target `source` or `static_library` components;
+direct import. Source dependencies may target `source` or `static_library` components;
 applications/servers/web components cannot serve as libraries. Dependency cycles,
 unknown names and overlapping roots are rejected even outside the selected
 closure. Only selected source closures are parsed/checked; an unrelated
 unselected source file is not an implicit build input. Existing `pub`, type,
 effect, realm, import-containment and dependency-lock checks still apply.
 
-## Artifact kinds and source linkage
+## Artifact kinds and dependency linkage
 
 | Kind | Result | Entry contract |
 | --- | --- | --- |
@@ -73,11 +73,67 @@ effect, realm, import-containment and dependency-lock checks still apply.
 | `server` | Native HTTP server | `entry_function`, default `handle`; existing HTTP contract |
 | `web` | TypeScript/React/Vite application and static assets | Existing initial/update/view/title contract |
 
-The only implemented dependency linkage is explicit `"source"`: each consumer
-compiles its reachable checked dependency source. If that dependency also has a
-`static_library` output, the consumer does **not** consume that archive. The
-archive is a separate output for a matching trusted native host. It is not a
-stable cross-version C ABI. Do not label these source edges as archive linkage.
+A `"source"` edge compiles the reachable checked dependency source into its
+consumer. A `"static"` edge requires a `static_library` provider and a native
+consumer (executable, server or another static library). It consumes the actual
+archive and excludes matching definitions from consumer compilation. Source/web
+components cannot consume archives. Dependencies are built before consumers;
+the linker receives archives in caller-before-provider order.
+
+```json
+"math": {
+  "kind": "static_library", "root": "math", "entry": "math/value.nex",
+  "entry_function": "calculate", "exports": ["make", "roundtrip"]
+},
+"app": {
+  "kind": "executable", "root": "app", "entry": "app/main.nex",
+  "dependencies": {"math": "static"}
+}
+```
+
+`entry_function` and optional `exports` select the union of concrete reachable
+function closures. Extra roots must be public concrete functions owned by the
+library component. Private helpers stay private to the source checker. Importing
+an ordinary public function outside that compiled closure rejects with
+`E_PROJECT_EXPORT`; add a concrete export instead of silently compiling its body
+in the consumer. Export roots do not bypass types, effects, realms or locks.
+
+A provider consumed through a static edge emits a **code-only archive**. It
+contains NEX function objects, with unresolved runtime/dependency calls. The
+final executable supplies one runtime for the whole linked closure. Heap values,
+closures, files and cleanup keep their existing ownership rules; there is no
+second resource registry or cross-runtime handle conversion. Such an archive
+is not independently linkable by a bare C++ host without its matching runtime
+and transitive archives. An unconsumed legacy archive retains its runtime-bearing
+host-library behavior. `code_only_library` in the plan distinguishes them.
+
+Sources remain required for checking; this is not a binary-only package manager.
+The exact compiler build, native compiler/toolchain/target/profile and runtime
+core form a private ABI hash. Checked concrete function bodies, interfaces,
+referenced type layouts and callable bridges must agree with the consumer's
+context. A module name resolving to different physical sources in a linked
+closure rejects with `E_PROJECT_ABI`. Native archives are trusted executable
+inputs, not a sandboxed format or stable cross-version C ABI.
+
+A new generic specialization absent from the provider is instantiated in the
+consumer, including its missing helper closure. The plan explicitly reports
+`consumer_instantiations`. This does not authorize a direct ordinary call to an
+unexported binary function. Existing provider specializations still require
+matching checked contracts; source-level safety checks remain identical.
+
+Build results retain `library-abi.json` beside each artifact and actual
+`static_libraries` (path, byte hash, ABI, contracts) in `compilation.json`.
+Archives are captured, hash-checked and copied into the consumer's private
+build directory. Their bytes and contracts enter its build/cache identity;
+changed/corrupt cached outputs are rebuilt. This validates NEX link inputs,
+not all operating-system dynamic dependencies.
+
+Retained builds declare `nex.native-completion/2` and an ordered bounded
+`completion_inputs` list: the ABI record, then captured dependency archives.
+Build completion and core inspection bind these bytes. Core capsules retain
+and validate the same additional files when moving a build. This is a native
+artifact format extension, not a source-language migration. Historical
+completion records without these fields keep their six-file binding contract.
 
 The selected configuration supplies `profile` (`debug`, `profile`, `release`),
 native `target` (default `native`) and optional relative `toolchain` description.
@@ -114,8 +170,8 @@ fails; a multi-artifact build is not a filesystem transaction.
 
 An executable is not a fully static executable. System/runtime libraries can
 remain dynamic. The plan/result explicitly leave binary dependency inspection
-unproven. General NEX DLL/so/dylib output, actual archive/shared dependency
-consumption, stable export/ownership ABI, full-static policies and resolved
+unproven. General NEX DLL/so/dylib output and consumption, binary-only packages, a stable
+cross-version export ABI, full-static policies and resolved operating-system
 binary dependency reports remain pending. Unsupported linkage/kinds fail with
 `E_PROJECT_CAPABILITY`.
 
@@ -123,3 +179,13 @@ General source concurrency, GPU kernels and NPU model adapters also remain
 pending. HTTP workers and client/server/shared realms are not a source task API.
 Separate [CIX P1 hardware checks](cix-p1.md) must not be advertised as completed
 NEX accelerator integration.
+
+Run the complete checked archive example from `examples/native-libraries`:
+
+```sh
+nex project --kind plan --json
+nex project --kind build --configuration release --json
+```
+
+Execute the app artifact reported by the build. It prints `22` and `NEX 🧠`;
+the consumer compilation lists its archive instead of recompiling math functions.

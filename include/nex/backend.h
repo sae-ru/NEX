@@ -1,12 +1,21 @@
 #pragma once
 #include "nex/language.h"
 namespace nex {
+// Compiler-private NEX ABI inputs, produced by a checked project build. Source
+// remains available to the checker; machine definitions come from this archive.
+struct NativeLibraryInput {
+  std::string path, digest, abi;
+  std::map<std::string,std::string> contracts;
+};
 struct BuildOptions {
   std::string profile = "debug", target, entry = "main";
   bool testEntry = false, libraryEntry = false;
   std::string toolchain;
   // Set only by native application packaging, never by ambient environment.
   std::string foreignCatalogue;
+  bool projectLibraryABI = false, codeOnlyLibrary = false;
+  std::vector<std::string> libraryExports;
+  std::vector<NativeLibraryInput> libraries;
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;
@@ -18,6 +27,8 @@ struct BuildResult {
   bool hostCompatible = true;
   unsigned compiledFunctions = 0, reusedFunctions = 0;
   bool foreignCalls = false;
+  std::string libraryABI;
+  std::map<std::string,std::string> functionContracts;
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.
@@ -25,6 +36,9 @@ std::string emitWasmMLIR(const Program &program,const std::string &entry,bool op
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,
                            const std::string &triple,const std::string &layout);
 void validateNativeBuildEntry(const Program &program,const BuildOptions &options);
+// Additional files bound by a versioned retained-build completion record.
+// Legacy records without these fields retain the original six-file contract.
+std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metadata);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);
 int execute(const std::vector<std::string> &arguments);
 // The caller owns cleanup (or retains failed native intermediates).

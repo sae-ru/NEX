@@ -63,6 +63,40 @@ class SourceFFI(harness.ToolchainCase):
     def events(self):
         return self.marker.read_text() if self.marker.exists() else ''
 
+    def test_static_archive_calls_foreign_module_through_one_consumer_runtime(self):
+        self.program('''module archiveffi;
+server extern fn echo(value:str)->str !{ffi}=foreign("test","echo","@PIN@");
+pub server fn exported(value:str)->str !{ffi}{return echo(value);}
+server fn main()->unit !{ffi,io}{print(exported("ok"));}
+''', {'echo':'echo'})
+        core=self.root/'core';core.mkdir();self.file.rename(core/'main.nex')
+        app=self.root/'app';app.mkdir();(app/'main.nex').write_text('''module consumer;
+import "../core/main.nex" as c;
+server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
+''')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
+            'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'}},'components':{
+                'core':{'kind':'static_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}}}}))
+        # The runtime-bearing legacy archive must contain objects, not linker
+        # flags or target Crypto libraries passed as archive member names.
+        legacy=self.cli('build',core/'main.nex','--library','--entry','archiveffi::exported',timeout=180)
+        self.assertTrue(Path(legacy['executable']).read_bytes().startswith(b'!<arch>\n'))
+        self.assertEqual(self.events(),'')
+        for profile in ['debug','release']:
+            built=self.cli('project','--kind','build','--configuration',profile,timeout=180)
+            artifact=next(a for a in built['artifacts'] if a['component']=='app')
+            compilation=json.loads(Path(artifact['compilation']).read_text())
+            self.assertFalse(any(f.startswith('archiveffi::') for u in compilation['units'] for f in u['functions']))
+            if profile=='debug':
+                denied=subprocess.run([artifact['artifact']],env={**os.environ,**self.env},capture_output=True,text=True,timeout=30)
+                self.assertNotEqual(denied.returncode,0);self.assertIn('E_FFI_GRANT',denied.stderr)
+                self.assertEqual(self.events(),'')
+            result=subprocess.run([artifact['artifact'],'--nex-foreign',str(self.host)],env={**os.environ,**self.env},capture_output=True,text=True,timeout=30)
+            self.assertEqual((result.returncode,result.stdout),(0,'Я🧠\n'),result.stderr)
+        self.assertEqual(self.events().count('C'),2)
+
     def both(self,expected):
         self.assertEqual(self.cli('eval','--foreign',self.host,env=self.env)['stdout'],expected)
         for profile in ('debug','release'):

@@ -60,7 +60,20 @@
               "$ref": "#/$defs/name"
             },
             "additionalProperties": {
-              "const": "source"
+              "enum": [
+                "source",
+                "static"
+              ]
+            }
+          },
+          "exports": {
+            "type": "array",
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
             }
           }
         },
@@ -95,6 +108,20 @@
                 "required": [
                   "entry_function"
                 ]
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "exports"
+              ]
+            },
+            "then": {
+              "properties": {
+                "kind": {
+                  "const": "static_library"
+                }
               }
             }
           }
@@ -151,5 +178,5 @@
       "pattern": "^[^\\\\:\\u0000]+$"
     }
   },
-  "description": "Filesystem containment, normalized paths, disjoint roots, referenced names, acyclic dependencies, direct import boundaries, source language, native entry/web contracts and locks are compiler-checked. Dependency source linkage compiles reachable source into each consumer; it does not link a separately built archive. Shared-library output, archive consumption, GPU/NPU source adapters and full static executable policy remain pending."
+  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume code-only native archives under the exact compiler/toolchain/runtime ABI with checked function/type context and explicit generic instantiation. Shared libraries, GPU/NPU source adapters, binary-only packages and full-static executable policy remain pending."
 }

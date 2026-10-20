@@ -27,6 +27,17 @@ BUILD_FILES = ('app', 'program.mlir', 'program.ll', 'compilation.json',
                'build.json', 'source-bundle.json', 'complete')
 
 
+def completion_inputs(build):
+    if 'completion_schema' not in build and 'completion_inputs' not in build:
+        return []
+    inputs = build.get('completion_inputs')
+    if (build.get('completion_schema') != 'nex.native-completion/2' or
+            not isinstance(inputs, list) or not 1 <= len(inputs) <= 129 or
+            inputs != ['library-abi.json'] + ['libraries/%d.a' % i for i in range(len(inputs)-1)]):
+        raise ValueError('invalid retained native completion inputs')
+    return inputs
+
+
 def host():
     machine = platform.machine().lower()
     machine = {'aarch64': 'arm64', 'amd64': 'x86_64'}.get(machine, machine)
@@ -194,6 +205,11 @@ def export(request):
         raise ValueError('debug manifest changed during export')
     for name in BUILD_FILES:
         copy(original.parent/name, prefix+'/'+name)
+    build, build_record = files.json_record(original.parent/'build.json')
+    if inventory[prefix+'/build.json'] != build_record:
+        raise ValueError('build metadata changed during export')
+    for name in completion_inputs(build):
+        copy(original.parent/name, prefix+'/'+name)
     symbols = original.parent/'app.dSYM'
     if sys.platform == 'darwin':
         if symbols.is_symlink() or not symbols.is_dir():
@@ -259,6 +275,10 @@ def prepare(request):
     if not isinstance(sources, list) or len(sources) > 1024:
         raise ValueError('capsule frozen source count exceeds limit')
     expected = {'original-debug.json', 'process.core'} | {prefix+'/'+name for name in BUILD_FILES}
+    build, build_record = files.json_record(root/prefix/'build.json')
+    if inventory.get(prefix+'/build.json') != build_record:
+        raise ValueError('capsule native build metadata differs')
+    expected |= {prefix+'/'+name for name in completion_inputs(build)}
     expected |= {prefix+'/capsule-sources/%04d/source.nex' % index for index in range(len(sources))}
     if sys.platform == 'darwin':
         expected |= {prefix+'/debug-symbols.complete', prefix+'/app.dSYM/Contents/Info.plist',

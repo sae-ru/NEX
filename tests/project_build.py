@@ -120,6 +120,140 @@ client fn title()->str{return "Project browser";}
         self.assertEqual(self.plan(ok=False)['code'],'E_PROJECT_CAPABILITY')
         self.description=copy.deepcopy(base);self.description['execution']={'device':'npu'};self.save()
         self.assertEqual(self.plan(ok=False)['code'],'E_PROJECT_BUILD');self.assertFalse((self.root/'.nex').exists())
+    def binary_core(self):
+        self.description['components']['core'].update(kind='static_library',entry_function='calculate')
+        self.description['components']['app']['dependencies']={'core':'static'}
+        self.save()
+    def build_binary_app(self,profile='release'):
+        built=self.plan('--kind','build','--component','app','--configuration',profile,timeout=180)
+        artifacts={a['component']:a for a in built['artifacts']}
+        run=subprocess.run([artifacts['app']['artifact']],cwd=self.root,capture_output=True,text=True,timeout=15)
+        return built,artifacts,run
+    def test_static_dependency_consumes_archive_without_recompiling_its_functions(self):
+        self.binary_core()
+        before=self.plan('--component','app','--configuration','release');self.assertFalse((self.root/'.nex').exists())
+        built,artifacts,run=self.build_binary_app()
+        self.assertEqual((run.returncode,run.stdout),(0,'22\n'),run.stderr)
+        app=json.loads(Path(artifacts['app']['compilation']).read_text())
+        core=json.loads(Path(artifacts['core']['compilation']).read_text())
+        self.assertEqual([f for u in app['units'] for f in u['functions']],['app::main'])
+        self.assertEqual([f for u in core['units'] for f in u['functions']],['model::calculate'])
+        self.assertEqual(len(app['static_libraries']),1)
+        archive=Path(artifacts['core']['artifact'])
+        self.assertEqual(archive.read_bytes()[:8],b'!<arch>\n')
+        self.assertNotIn(b'runtime.o',archive.read_bytes())
+        abi=json.loads((archive.parent/'library-abi.json').read_text())
+        self.assertTrue(abi['code_only']);self.assertIn('model::calculate',abi['function_contracts'])
+        self.assertEqual(self.cli('eval')['stdout'],run.stdout)
+        warm,again,second=self.build_binary_app()
+        self.assertTrue(all(a['cached'] for a in again.values()));self.assertEqual(run.stdout,second.stdout)
+        self.assertEqual(before['plan_hash'],built['plan_hash'])
+        archive.write_bytes(b'broken archive')
+        repaired,fixed,last=self.build_binary_app()
+        self.assertFalse(fixed['core']['cached']);self.assertEqual((last.returncode,last.stdout),(0,'22\n'))
+        self.assertTrue(Path(fixed['core']['artifact']).read_bytes().startswith(b'!<arch>\n'))
+        private=Path(fixed['app']['artifact']).parent/'libraries/0.a';private.write_bytes(b'bad captured input')
+        _,fixed,last=self.build_binary_app();self.assertFalse(fixed['app']['cached'])
+        self.assertEqual((last.returncode,last.stdout),(0,'22\n'),last.stderr)
+        abi=Path(fixed['core']['artifact']).parent/'library-abi.json';abi.write_text('{}')
+        _,fixed,last=self.build_binary_app();self.assertFalse(fixed['core']['cached'])
+        self.assertEqual((last.returncode,last.stdout),(0,'22\n'),last.stderr)
+    def test_library_exports_aggregates_callbacks_and_snapshot_closures(self):
+        (self.root/'core/value.nex').write_text('''module model;
+pub struct Payload {text:str;data:bytes;values:list<f64>;callback:fn(i64)->i64;}
+pub enum Envelope {None;Some(value:Payload);}
+pub fn calculate(x:i64)->i64{return x*3+7;}
+pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
+pub fn roundtrip(p:Payload)->Payload{return Payload(p.text+"🧠",p.data,p.values,p.callback);}
+pub fn invoke(f:fn(i64)->i64,x:i64)->i64{return f(x);}
+pub fn packed(value:Payload)->result<Envelope>{return ok(Envelope::Some(value));}
+''')
+        (self.root/'app/main.nex').write_text('''module app;import "../core/value.nex" as m;
+fn plus(x:i64)->i64{return x+1;}
+fn verify()->unit{
+let offset:i64=40;let f:fn(i64)->i64=m::make(offset);
+let original:m::Payload=m::Payload("Я",utf8_bytes("hi"),[1.5,2.25],f);
+let p:m::Payload=m::roundtrip(original);
+assert(original.text=="Я");assert(p.text=="Я🧠");assert(p.data==utf8_bytes("hi"));
+assert(p.values==[1.5,2.25]);assert(p.callback(2)==42);
+let restored:m::Payload=match m::packed(p) {ok(m::Envelope::Some(item))=>item,_=>original,};
+assert(restored.text=="Я🧠");assert(restored.callback(2)==42);
+assert(m::invoke(plus,41)==42);let named:fn(i64)->i64=m::calculate;assert(named(5)==22);
+}
+fn main()->unit!{io}{verify();print("ok");}
+test fn agreement()->unit{verify();}
+''')
+        self.binary_core();self.description['components']['core']['exports']=['make','roundtrip','invoke','packed'];self.save()
+        for profile in ['debug','release']:
+            built,artifacts,run=self.build_binary_app(profile)
+            self.assertEqual((run.returncode,run.stdout),(0,'ok\n'),run.stderr)
+            app=json.loads(Path(artifacts['app']['compilation']).read_text())
+            self.assertFalse(any(f.startswith('model::') for u in app['units'] for f in u['functions']))
+            self.assertEqual(self.cli('eval')['stdout'],run.stdout)
+        self.cli('test','--target','web',timeout=180)
+    def test_missing_ordinary_export_rejects_before_build_and_can_be_explicitly_added(self):
+        self.binary_core()
+        (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x;}pub fn other()->i64{return 42;}')
+        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::other());}')
+        for kind in ['plan','build']:
+            self.assertEqual(self.plan('--kind',kind,'--component','app',ok=False)['code'],'E_PROJECT_EXPORT')
+            self.assertFalse((self.root/'.nex').exists())
+        self.description['components']['core']['exports']=['other'];self.save()
+        _,_,run=self.build_binary_app();self.assertEqual((run.returncode,run.stdout),(0,'42\n'),run.stderr)
+    def test_transitive_archives_link_in_consumer_before_provider_order(self):
+        self.binary_core();del self.description['components']['browser']
+        self.description['components']['bridge']['dependencies']={'core':'static'}
+        self.description['components']['app']['dependencies']={'bridge':'static'};self.save()
+        (self.root/'app/main.nex').write_text('module app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::answer());}')
+        _,artifacts,run=self.build_binary_app();self.assertEqual((run.returncode,run.stdout),(0,'22\n'),run.stderr)
+        bridge=json.loads(Path(artifacts['bridge']['compilation']).read_text())
+        self.assertEqual([f for u in bridge['units'] for f in u['functions']],['bridge::answer'])
+        app=json.loads(Path(artifacts['app']['compilation']).read_text())
+        self.assertEqual([Path(x['path']).parent.name for x in app['static_libraries']],
+                         [Path(artifacts[n]['artifact']).parent.name for n in ['bridge','core']])
+    def test_consumer_generic_instantiations_include_helpers_but_do_not_authorize_direct_fallback(self):
+        self.binary_core()
+        (self.root/'core/value.nex').write_text('''module model;
+pub fn calculate(x:i64)->i64{return x;}
+pub fn prefix()->str{return "v=";}
+pub fn format<T>(x:T)->str{return prefix()+str(x);}
+''')
+        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::format<i64>(42));}')
+        plan=self.plan('--component','app');app=plan['components'][-1]
+        self.assertIn('model::prefix',app['consumer_instantiations'])
+        self.assertTrue(any('format' in n for n in app['consumer_instantiations']))
+        _,_,run=self.build_binary_app();self.assertEqual((run.returncode,run.stdout),(0,'v=42\n'),run.stderr)
+        p=self.root/'app/main.nex';p.write_text(p.read_text().replace('print(m::format<i64>(42));','print(m::format<i64>(42));print(m::prefix());'))
+        self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_EXPORT')
+    def test_runtime_files_and_traps_cross_the_archive_boundary(self):
+        self.binary_core()
+        (self.root/'core/value.nex').write_text('''module model;
+pub fn calculate(x:i64)->i64{return x;}
+pub server fn opened()->file!{fs}{return unwrap(file_open_write("data.bin"));}
+pub server fn write(f:file)->unit!{fs}{assert(unwrap(file_write(f,utf8_bytes("Я🧠")))==6);}
+pub fn divide(x:i64)->i64{let owned:list<str>=["held","🧠"];assert(len(owned)==2);return 10/x;}
+''')
+        self.description['components']['core']['exports']=['opened','write','divide'];self.save()
+        p=self.root/'app/main.nex';p.write_text('''module app;import "../core/value.nex" as m;
+server fn main()->unit!{fs,io}{let f:file=m::opened();m::write(f);assert(file_close(f));print("files-ok");}
+''')
+        built=self.plan('--kind','build','--component','app',timeout=180);exe=next(a['artifact'] for a in built['artifacts'] if a['component']=='app')
+        data=self.root/'data';data.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
+        run=subprocess.run([exe],env=env,capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,'files-ok\n'),run.stderr)
+        self.assertEqual((data/'data.bin').read_bytes(),'Я🧠'.encode())
+        p.write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::divide(0));}')
+        for profile in ['debug','release']:
+            _,_,run=self.build_binary_app(profile);self.assertNotEqual(run.returncode,0)
+            self.assertIn('E_DIV_ZERO',run.stderr);self.assertNotIn('E_INTERNAL_LEAK',run.stderr)
+    def test_binary_module_identity_conflict_rejects_even_when_not_imported_by_consumer(self):
+        self.binary_core()
+        (self.root/'core/api.nex').write_text('module api;pub fn calculate(x:i64)->i64{return x+1;}')
+        (self.root/'core/value.nex').write_text('module app;import "./api.nex" as api;pub fn root()->i64{return api::calculate(1);}')
+        self.description['components']['core'].update(entry_function='root',exports=['api::calculate']);self.save()
+        (self.root/'app/main.nex').write_text('module app;import "../core/api.nex" as a;fn main()->unit!{io}{print(a::calculate(1));}')
+        self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_ABI')
+        self.assertFalse((self.root/'.nex').exists())
     def test_all_selected_sources_preflight_before_any_artifact_and_selection_is_explicit(self):
         (self.root/'browser/main.nex').write_text('module broken;fn broken(}')
         self.assertTrue(self.plan('--component','app')['ok'])

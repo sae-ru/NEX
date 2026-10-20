@@ -49,6 +49,11 @@ for editing. These are captured source metadata, not a new type, source syntax,
 semantic identity or language-version migration. Legacy analysis/1 and analysis/2
 remain available independently; see [LSP](lsp.md).
 
+The0.72 candidate adds checked project archive consumption and multiple concrete
+library exports as external build metadata ([project builds](project-build.md)).
+Its native ABI is compiler-private; language0.16, ownership, effects, realms and
+canonical formats are unchanged. Source remains required for checking.
+
 ## Source and program structure
 
 Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
