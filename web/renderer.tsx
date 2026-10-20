@@ -3,6 +3,7 @@ import type { ReactNode, SyntheticEvent, MouseEvent } from 'react';
 import type { View, Event } from './program.ts';
 import { makeEvent } from './program.ts';
 import { NexError } from './nex-runtime.ts';
+import { safeViewURL, sameApplicationOrigin } from './urls.ts';
 
 const tags = new Set(['main', 'header', 'footer', 'section', 'article', 'aside', 'nav', 'div', 'span', 'p',
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'button', 'form', 'label', 'input',
@@ -18,15 +19,6 @@ const numbers = new Set(['maxlength', 'tabindex', 'rows', 'cols']);
 const handlers = new Map([['click', 'onClick'], ['input', 'onChange'], ['change', 'onChange'], ['submit', 'onSubmit'], ['navigate', 'onClick']]);
 const voidTags = new Set(['input', 'img', 'hr', 'br']);
 function invalid(message: string): never { throw new NexError('E_UI', message); }
-function safeURL(value: string, attribute: string): string {
-  if (value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value)) invalid('URL contains whitespace/control characters');
-  let url: URL;
-  try { url = new URL(value, globalThis.location?.href ?? 'http://localhost/'); }
-  catch { return invalid('Invalid URL'); }
-  const protocols = attribute === 'href' ? ['http:', 'https:', 'mailto:', 'tel:'] : ['http:', 'https:'];
-  if (!protocols.includes(url.protocol)) invalid('Unsupported URL protocol');
-  return value;
-}
 function inputValue(target: EventTarget | null): string {
   if (target instanceof HTMLInputElement) return target.type === 'checkbox' || target.type === 'radio' ? String(target.checked) : target.value;
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return target.value;
@@ -57,7 +49,7 @@ export function renderView(root: View, dispatch: (event: Event) => void): ReactN
       } else if (numbers.has(name)) {
         if (!/^-?[0-9]+$/.test(value) || !Number.isSafeInteger(Number(value))) invalid('Invalid integer attribute: ' + name);
         props[key] = Number(value);
-      } else props[key] = name === 'href' || name === 'src' ? safeURL(value, name) : value;
+      } else props[key] = name === 'href' || name === 'src' ? safeViewURL(value, name, new URL(globalThis.location?.href ?? 'http://localhost/')) : value;
     }
     if (props.target === '_blank') props.rel = 'noopener noreferrer';
     const bound = new Set<string>();
@@ -71,7 +63,7 @@ export function renderView(root: View, dispatch: (event: Event) => void): ReactN
           if (click.button !== 0 || click.metaKey || click.ctrlKey || click.shiftKey || click.altKey) return;
           const href = typeof props.href === 'string' ? props.href : invalid('Navigation requires href');
           const url = new URL(href, location.href);
-          if (url.origin !== location.origin || (props.target && props.target !== '_self')) return;
+          if (!sameApplicationOrigin(url, new URL(location.href)) || (props.target && props.target !== '_self')) return;
           event.preventDefault(); history.pushState(null, '', url.pathname + url.search + url.hash);
         } else if (binding.event === 'submit') event.preventDefault();
         dispatch(makeEvent(binding.action, inputValue(event.currentTarget), currentPath()));

@@ -1,0 +1,20 @@
+{
+  "schema": "nex.mobile-native/1",
+  "version": "8.5.3",
+  "upstream_package_commit": "4c7f346d16196e21fbe23d4a7a6fc7af62af6742",
+  "source": "https://github.com/ionic-team/capacitor-swift-pm",
+  "artifacts": [
+    {
+      "name": "Capacitor",
+      "url": "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.3/Capacitor.xcframework.zip",
+      "sha256": "9316f568444411d362dcb4d1946e7572d4aef5d690c122ff6f1cb8a44a920c9f",
+      "bytes": 6611663
+    },
+    {
+      "name": "Cordova",
+      "url": "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.3/Cordova.xcframework.zip",
+      "sha256": "bdcd8eab2d62a077efd76c3c8b9629e65ae7043c1462289a1e55de9be19bbf1f",
+      "bytes": 1842445
+    }
+  ]
+}

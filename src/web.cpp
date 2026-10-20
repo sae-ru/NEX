@@ -77,7 +77,7 @@ Project prepare(const Program &p){
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));
-  for(const auto &file:{"app.tsx","renderer.tsx","net.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
+  for(const auto &file:{"app.tsx","renderer.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
   files["tests/smoke.spec.js"]=readFile(resourceFile("web/smoke.spec.js"));
   files["public/THIRD_PARTY_NOTICES.txt"]=readFile(resourceFile("web/THIRD_PARTY_NOTICES.txt"));
   files["README.md"]="# Generated NEX web application\n\nEdit NEX sources and regenerate this directory.\n\nRun `npm ci --ignore-scripts`, `npm run build`, then `npm run preview`.\nThe `dist` directory contains the client application; configure SPA route fallback to index.html.\nNo NEX compiler or model is needed to serve/run the result.\n\nOptional pure commands(before, after, event) describes bounded same-origin /api/ requests and cancellation using std/net.nex. Responses return as typed JSON in ordinary web events. Configure credentials at runtime; no token is bundled by NEX. Serve this dist with the native HTTP server's --static option for a same-origin API. See the installed web/server guides for contracts and limits.\n";

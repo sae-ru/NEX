@@ -1,0 +1,9 @@
+This application includes modified Apache Cordova iOS components in the
+Capacitor 8.5.3 Cordova compatibility framework. Their source files (including
+CDVPlugin, CDVCommandDelegate, CDVViewController and CDVURLProtocol) identify the
+Apache Software Foundation and are licensed under the Apache License, Version2.0.
+The license text is included in APACHE-2.0.txt. Capacitor's own changes and
+components retain their accompanying MIT licenses.
+
+Corresponding distributed source:
+https://github.com/ionic-team/capacitor/tree/8.5.3/ios/CapacitorCordova

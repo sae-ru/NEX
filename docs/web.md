@@ -155,6 +155,15 @@ Bindings support `click`, `input`, `change`, `submit` and `navigate`. The adapte
 
 ## Semantics, isolation and diagnostics
 
+The mobile project adapter in toolchain0.62 uses the same checked View values.
+On an exact `capacitor://localhost` iOS origin, relative routes and asset paths
+are allowed. Explicit custom-scheme URLs, authority-relative paths and other
+opaque origins remain rejected. Navigation compares this full local origin;
+two URL.origin values of `null` do not establish same origin. Browser HTTP(S)
+and mail/tel link behavior is unchanged. Network commands require HTTP(S), so
+the offline mobile host cannot silently treat a local `/api/` asset URL as a
+remote server. See [mobile projects](mobile.md) for the separate native steps.
+
 NEX `i64` becomes TypeScript `bigint` with explicit range checks on arithmetic. BigInt is never converted to a JavaScript number for arithmetic. Division/remainder, left-to-right operand evaluation, short-circuiting, lexical scope, Unicode scalar indexing/slicing, nominal equality and immutable aggregate behavior follow the reference interpreter. Conversion to JavaScript array indices happens only after bounds checking. Browser input rejects unpaired UTF-16 surrogates at the boundary. Managed values use frozen arrays/records and the JavaScript garbage collector; native reference-counted handles are a backend detail.
 
 The emitter traverses only the functions reachable from selected client/shared entries. Server functions cannot be emitted as entries; the checker also rejects direct cross-realm calls. Unreachable definitions and their literals do not enter generated TypeScript or its source maps. Full archived sources remain local development artifacts and are not copied into browser assets. This is code separation; it does not implement server authorization or secret management.

@@ -181,7 +181,7 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertEqual(generated["language"], "0.16")
         self.assertEqual(set(generated["files"]), {
             "README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", "vite.config.js", "playwright.config.js",
-            "nex-map.json", "src/program.ts", "src/nex-runtime.ts", "src/nex-bytes.ts", "src/renderer.tsx", "src/net.ts", "src/app.tsx", "src/app.css", "src/vite-env.d.ts", "tests/smoke.spec.js", "public/THIRD_PARTY_NOTICES.txt"})
+            "nex-map.json", "src/program.ts", "src/nex-runtime.ts", "src/nex-bytes.ts", "src/renderer.tsx", "src/urls.ts", "src/net.ts", "src/app.tsx", "src/app.css", "src/vite-env.d.ts", "tests/smoke.spec.js", "public/THIRD_PARTY_NOTICES.txt"})
         self.assertEqual((output / "src/nex-bytes.ts").read_text(), (harness.REPO / "web/nex-bytes.ts").read_text())
         for file in generated["files"]:
             self.assertNotIn("API_SECRET_NOT_IN_CLIENT", (output / file).read_text())

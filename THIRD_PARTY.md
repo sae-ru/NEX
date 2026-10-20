@@ -50,3 +50,18 @@ remain in development node_modules. The official separate VS Code1.142.0 ARM64
 test application (commit b224f6bf5a4fcad5fa4c640ed10f179c3b613e48) stays in a local
 build cache and is not redistributed by NEX. Its test profile is separate from
 the user's editor profile. Project licensing/Marketplace publication are pending.
+
+## Candidate mobile host (toolchain0.62)
+
+Mobile project generation pins Capacitor core/CLI/iOS/Android8.5.3 in the separate
+`mobile/package-lock.json`. It does not change the browser dependency lock.
+`mobile/ios-artifacts.json` pins the two official XCFramework zip hashes from
+SwiftPM commit4c7f346d16196e21fbe23d4a7a6fc7af62af6742. Framework bytes are fetched
+into an explicit development cache and copied locally into generated projects.
+MIT license texts for the SwiftPM distribution and npm iOS source, the Apache2
+license and Cordova notices are stored under `mobile/`; generated app assets
+include these notices. Native project generation grants no plugin capabilities.
+Apple/Android SDKs and JDK/Gradle remain external development prerequisites with
+their own licenses and are not included in the NEX source or compiler runtime.
+Native application plugins and resolved build dependencies require their own
+corresponding inventories and notices before distribution.

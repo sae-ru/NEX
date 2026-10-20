@@ -1,5 +1,16 @@
 # NEX coding prompt — language 0.16, protocol 2
 
+When `mobile_project_generation` is advertised, read `docs/mobile.md` and the
+web guide. Use the indexed mobile_project.py tool with the actual compiler,
+source, new output directory, app ID, label, platform and artifact cache.
+It produces pinned Capacitor native projects from reachable client/shared NEX
+code through TypeScript/React. It is a WebView host, separate from native iOS
+archives; generation is not signing, building or target execution. Validate
+Xcode/Gradle artifacts and actual target UI separately. The local iOS
+capacitor://localhost origin permits relative routes/assets; arbitrary opaque
+origins or explicit custom-scheme URLs are not allowed. Network requests still
+require HTTP(S); a mobile remote-API adapter remains pending.
+
 When `ios_archive_target` is advertised, read `docs/ios.md` and the native build
 guide. A macOS host can build a debug/release static library for an explicit
 versioned iOS device/simulator target with a matching `nex.toolchain/1` sysroot.

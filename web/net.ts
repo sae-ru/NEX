@@ -80,6 +80,7 @@ export class RequestRunner {
       if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].includes(command.method)) invalid('Unsupported request method');
       if (!command.action || encoder.encode(command.action).length > 128) invalid('Invalid response action');
       if (!command.path.startsWith('/api/') || /[\\\u0000-\u0020\u007f]/.test(command.path) || encoder.encode(command.path).length > 2048) invalid('Requests require a same-origin /api/ path');
+      if (!['http:', 'https:'].includes(this.base.protocol)) invalid('Requests require an HTTP(S) application origin');
       const url = new URL(command.path, this.base);
       if (url.origin !== this.base.origin || !url.pathname.startsWith('/api/') || url.hash || url.username || url.password) invalid('Requests require a same-origin /api/ path');
       if (command.token && !/^[\x21-\x7e]{1,4096}(?![\s\S])/.test(command.token)) invalid('Invalid bearer credential');

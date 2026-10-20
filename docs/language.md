@@ -24,6 +24,10 @@ advertised by `trait_integration_pending`; the earlier language0.15 constructor
 core is separate evidence. The declarations use contextual names and do not
 reserve ordinary old `trait`, `impl`, `type`, `for` or `Self` identifiers.
 
+Toolchain0.62 adds an external [mobile project generator](mobile.md) using the
+existing pure web application contract. Its platform hosting and relative URL
+policy change no source syntax, type/effect rules or canonical format.
+
 ## Source and program structure
 
 Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.

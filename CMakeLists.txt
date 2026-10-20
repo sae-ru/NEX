@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.61.0 LANGUAGES C CXX)
+project(NEX VERSION 0.62.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -65,13 +65,14 @@ target_compile_definitions(nex PRIVATE NEX_SQLITE_INCLUDE="${SQLite3_INCLUDE_DIR
 target_compile_definitions(nex PRIVATE NEX_OPENSSL_INCLUDE="${OPENSSL_INCLUDE_DIR}" NEX_OPENSSL_SSL="${OPENSSL_SSL_LIBRARY}" NEX_OPENSSL_CRYPTO="${OPENSSL_CRYPTO_LIBRARY}")
 set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}")
 install(TARGETS nex RUNTIME DESTINATION bin)
-install(DIRECTORY docs llm runtime examples lib web debug DESTINATION share/nex
+install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
+install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_archive.py DESTINATION share/nex/tools)
@@ -245,6 +246,8 @@ add_test(NAME native_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_targets.py $<TARGET_FILE:nex>)
 add_test(NAME ios_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ios_targets.py $<TARGET_FILE:nex>)
+add_test(NAME mobile_projects COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/mobile_projects.py)
 add_test(NAME sdk_host COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_host.py $<TARGET_FILE:nex>)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}

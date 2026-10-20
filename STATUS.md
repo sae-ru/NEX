@@ -1,3 +1,21 @@
+# Isolated development0.62: mobile projects and local iOS URL policy
+
+A first prototype builds an actual Simulator .app and Android debug APK from
+NEX-generated React assets using Capacitor8.5.3. Native dependency hashes, exact
+original web assets and build logs are recorded separately. The first iOS run
+survives and paints its document, but shows E_UI on capacitor://localhost
+relative links. Its default screenshot also selected a secondary inactive screen;
+the primary display establishes the actual adapter error. These failures are
+retained rather than reported as successful mobile UI acceptance.
+
+The candidate adds a pinned mobile project generator, local checksum-checked
+iOS frameworks, no inherited Android local.properties, offline generation and
+bounded provenance/logs. It adds a scoped relative-route/asset policy for the exact
+capacitor://localhost origin and rejects opaque-origin network requests. Four
+focused artifact/input/policy cases pass; the full current build, installed SDK,
+actual corrected mobile UI and browser regressions remain required. Language0.16
+and canonical forms are unchanged. See docs/mobile.md.
+
 # Isolated development 0.61: explicit iOS archives
 
 The candidate adds macOS cross-compilation of debug/release static libraries for
