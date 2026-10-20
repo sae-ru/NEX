@@ -85,3 +85,19 @@ Source: [official SQLite download](https://www.sqlite.org/2026/sqlite-amalgamati
 with the existing [public-domain dedication](https://sqlite.org/copyright.html).
 The source/libraries are external prerequisites, not bundled NEX runtime files.
 Host macOS/Linux SQLite versions remain as listed above.
+
+
+## Optional experimental CIX fixture headers
+
+`experiments/cix-p1/` is an optional source example outside the installed SDK
+and default test suite. Its Khronos OpenCL-Headers v2024.10.24 files retain the
+Apache-2.0 notices/license in include/CL and include/OPENCL-LICENSE. Microsoft
+ONNX Runtime v1.20.0 C API and the embedded Mul fixture are covered by the
+MIT notice in include/ONNX-LICENSE. The Arm China Compass ONNX Runtime
+rel-1.22.0 Zhouyi factory declaration retains its Apache-2.0 header notice;
+the included Apache-2.0 license text accompanies it. The example's preparation
+tool includes these and its matching SDK nlohmann/json MIT notice in the bundle.
+The CIX/ARM GPU and Zhouyi runtime/driver binaries are external installed
+prerequisites; they are not redistributed here. A module pin does not cover
+those external files. Driver packaging/redistribution requires its own inventory
+and permissions. See experiments/cix-p1/README.md for exact tested boundaries.

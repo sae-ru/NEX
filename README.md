@@ -13,54 +13,56 @@ graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
 The current source is **toolchain0.71.0 / language0.16**, under development.
-The language includes checked integers/finite floats, Unicode strings, immutable
-aggregates, exhaustive matching, generics, traits/associated types, constructor
-parameters, function values and snapshot closures. Types, effects, client/server
-realms and owned-resource boundaries are checked before execution. Native output
-uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
+The language includes checked numbers, Unicode strings, immutable data,
+matching, generics, traits/associated types, constructor parameters, function
+values and snapshot closures. The checker enforces types, effects and realms.
+Native output uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 
-The development chain includes the interpreter, SQLite/BLAKE3 revision store,
-dependency locks, incremental builds, transactional graph patches, task contracts,
-scalar Z3 verification, LLDB/DAP, native profiling and VS Code editing/debugging.
-The actual root passes all78 regression groups and installed SDK acceptance of
-23 phases/332 commands/198 indexed resources. The implementation candidate also passes
-full78/SDK acceptance on macOS and Linux ARM64; Linux completes16 live suites
-and source-free/network-disabled SDK acceptance. Exact source/compiler scopes
-are retained in [the evidence](docs/evidence/toolchain-0.70.0.json).
+[Project builds](docs/project-build.md) add an explicit `nex.build.json` beside
+existing `nex.json`. Components declare disjoint roots, direct source dependencies,
+entry contracts and configurations. `nex project --kind plan` checks the selected
+architecture without opening the graph store or invoking build tools.
+`--kind build` produces native executables, static archives, HTTP servers and
+browser assets. Source edges compile reachable source into consumers; they do
+not consume a separately built archive. DLL/shared-library output/consumption,
+full-static policies and resolved binary dependency reports remain pending.
 
-The [language server](docs/lsp.md) analyzes unsaved source without saving files,
-running programs or changing graph history. [VS Code0.5](docs/editor.md) provides
-diagnostics, outlines, checked references, exact identifier hover and definitions.
-Source signatures retain generic arity/bounds, effects and realms. Lexical values,
-type parameters, aliases, nominal declarations and trait members have distinct
-meanings; qualified components retain separate targets. Builtin types have no
-invented source definition. Opt-in `analyze --details` uses `nex.analysis/3`;
-default analysis/1 and `--references` analysis/2 keep their strict contracts.
-Genuine0.69/0.70 comparisons preserve both legacy payloads apart from compiler
-identity, canonical revisions and source language0.16. Limits, conflicts,
-cancellation and Unicode/CRLF positions are checked explicitly.
+The actual root passes all79 CTest groups and installed SDK acceptance of
+24 phases/344 commands/209 indexed resources. The original735-file implementation
+candidate also passes full79/SDK24 on macOS and Linux ARM64, including16 live
+Linux suites and source-free/network-disabled SDK acceptance. The root750 source
+adds optional CIX fixtures and documentation; its two indexed-document deltas
+are retained separately. Exact scopes are in [the evidence](docs/evidence/toolchain-0.71.0.json).
 
-Actual installed VSIX tests on macOS ARM64 verify alias/generic/member/builtin
-hover, null builtin definitions, typed references, imported unsaved buffers,
-Unicode/CRLF repair, restart/disable/enable, native breakpoints, pure watches
-and bounded list/byte pages. Tests use private profiles. Completion/rename,
-closed unreachable files, cross-workspace buffers, parser recovery/incremental
-indexing, NEX Studio and a broader IDE/platform matrix remain pending.
+Six project configurations produce nine verified Intel/Windows/iOS cross
+artifacts and three final iOS linked images. A project-built x64 PE returns42
+under Wine. Cross-build/link success does not establish target-device execution.
+The actual root also builds a shared-model/API/browser project in one command:
+12 production UI/API/restart cases pass in Chromium, Firefox and WebKit.
 
-Different LLMs use the versioned [language pack](llm/README.md), shared
-[system prompt](llm/SYSTEM_PROMPT.md), actual `nex describe --json` and bounded
-graph context. Cross-provider coding, token savings and comparable application
-performance measurements remain future work.
+The development chain includes the SQLite/BLAKE3 graph, dependency locks,
+transactional patches, snapshots/recovery, task contracts, scalar Z3 checks,
+LLDB/DAP, native profiling and VS Code0.5. Actual installed-VSIX checks use
+private profiles and verify identifiers/references, unsaved imports, Unicode/
+CRLF, lifecycle, native breakpoints, pure watches and bounded value pages.
+Nine fresh root-SDK PE builds pass17 x64 Wine cases, with original fixture
+snapshots retained. Wine is distinct from actual Windows OS/ARM64 validation.
+Genuine installed0.70/root0.71 comparisons preserve all three analysis payloads
+apart from compiler identity, checked/evaluated results and complete store rows/
+schema/IDs on five examples. Language0.16 requires no migration for this change.
 
-The [Windows GNU/UCRT target](docs/windows.md) cross-builds x86-64/ARM64 PE files
-and GNU archives. Nine fresh root-SDK PE builds and17 x86-64 Wine cases retain
-their original graph snapshots. Wine does not prove actual Windows OS/ARM64
-execution. Filesystem/resource calls remain unavailable pending native validation.
-Experimental [mobile projects](docs/mobile.md) generate iOS/Android WebViews and
-configured HTTPS APIs. Earlier mobile/browser/distribution evidence retains its
-original source/compiler cohorts. Windows-hosted development, broader native
-adapters/plugins, physical Intel/mobile execution, signing and other [PLAN.md](PLAN.md)
-work remain pending. This checkpoint does not complete the full objective.
+Separate [physical CIX P1 evidence](docs/cix-p1.md) uses its private0.70 SDK:
+75 CPU commands and20 debug/release apps passed; an optional fixed trusted FFI
+fixture passed24 actual NEX GPU and16 NPU calls with CPU fallback forbidden.
+These checks do not provide general GPU compilation, a general NPU model API
+or source concurrency. They retain their original compiler/runtime scope.
+
+Different LLMs use the [language pack](llm/README.md), shared prompt and actual
+compiler tools. Cross-provider coding/token measurements remain pending.
+Experimental mobile/WebView and Wasm work retains its own scope. Native GUI
+adapters, DLL/archive consumption, source task scheduling, broader platform/
+device execution, completion/rename, Studio and other [PLAN.md](PLAN.md) work
+remain open. This checkpoint does not complete the full objective.
 
 ## Build
 

@@ -1,3 +1,55 @@
+# Verified root development checkpoint0.71 / language0.16
+
+Implementation source `1a3da612e0f3c10e1f737802ef4c580723e27311` (750 files) builds and passes
+all79 CTest groups in 747.49 seconds. Its installed SDK passes24 phases,
+344 commands and209 indexed resources; compiler SHA-256 is
+`df5a138402e91abd21e3ec83d4d3550f96f50cec591a61377e1958aecadbb843`.
+[Machine-readable evidence](docs/evidence/toolchain-0.71.0.json) separates original
+candidate735, actual root750, installed IDE, cross-target, real-browser and
+historical CIX scopes. The final overview/quickstart/notice delta changes no
+compiler, grammar, manifest, test, example or indexed resource; full-suite
+receipts retain their exact source cohort.
+
+The optional nex.project-build/1 manifest describes source/executable/archive/
+server/web components, disjoint physical roots, direct architecture edges and
+profile/CPU/ABI/toolchain configurations. Readonly planning checks captured
+sources, locks, entry contracts and toolchain fingerprints without graph writes
+or tool execution. Build consumes those Programs and rechecks native tooling.
+Thirteen focused cases include the reproduced package-alias boundary bypass,
+rejection paths, actual archive host linkage and browser server-code exclusion.
+Only source dependency linkage is implemented; emitting a static archive is
+separate from consuming it as a dependency. DLLs, full-static policy, resolved
+binary dependency reports and source concurrency remain pending.
+
+The exact original735 compiler cohort passes full79 and SDK24 on macOS and
+Linux ARM64. Linux completes16 live suites and a source-free/network-disabled
+SDK run. Linux build/install ELF files differ in one trailing DT_RUNPATH byte;
+all other bytes are verified equal after normalizing that declared padding.
+The root750 fixture/documentation follow-up changes two indexed guides, without
+changing compiler/runtime/indexed code from735; its actual SDK verifies all209
+resources. The final unindexed overview delta retains these scopes.
+
+Six checked project configurations produce9 Intel/Windows/iOS artifacts and3
+final iOS linked images. A project PE returns42 under isolated x64 Wine.
+An actual-root project builds one shared model, HTTP server and production
+client, then passes12 cases across Chromium/Firefox/WebKit, including restart
+persistence, clean shutdown and no forbidden redirect. Missing dependency and
+mismatched server ABI requests reject. These are build/runtime observations,
+not universal device or performance guarantees.
+
+Installed VSIX0.5 passes actual private-profile LSP/native debugger checks.
+Nine fresh root SDK PE cases and17 Wine scenarios retain their original fixture
+graph snapshots. Genuine0.70/0.71 comparisons preserve analysis1/2/3 payloads
+apart from compiler identity, revisions, interpreter results and every isolated
+store row/schema/ID through complete normalized API snapshots. Initial direct
+Python-readonly WAL inspection failures and a fixture-path driver correction
+are retained; they are not accepted product failures or migration evidence.
+The primary47-revision graph, all16 tables/schema, IDs and normal Git HEAD/index
+remain unchanged. CIX GPU/NPU evidence remains explicitly toolchain0.70 and
+fixed-fixture FFI, separate from general acceleration support.
+
+The following historical statements retain their original source/compiler scope.
+
 # Verified root development checkpoint0.70 / language0.16
 
 Core source 74a013fc876cfcb725608c9ce490e71720aeb76b (719 files) builds and passes all78 CTest groups

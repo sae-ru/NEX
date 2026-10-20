@@ -4,7 +4,7 @@ NEX — Neural Execution Language, «язык нейронного исполн�
 исходники `.nex` сами или вместе с LLM; компилятор проверяет их и собирает
 приложение. Готовой программе для работы не нужна LLM.
 
-Это инструкция для **toolchain0.70 / языка0.16**. Команды ниже проверяются с
+Это инструкция для **toolchain0.71 / языка0.16**. Команды ниже проверяются с
 этой версией SDK. На20 октября2026 года у проекта ещё нет опубликованного
 GitHub Release с готовым установщиком, `brew install nex` или `npm install nex`.
 Для воспроизводимой установки ниже закреплён проверенный снимок исходников;
@@ -44,10 +44,10 @@ nex describe --json
 ```sh
 git clone https://github.com/sae-ru/NEX.git nex-toolchain
 cd nex-toolchain
-git checkout --detach 37f424b282c257da71dc6b8421789bfd40914448
+git checkout --detach 926481f836aef0b6f803c0b6f37aac106076d9bc
 ```
 
-Это проверенный снимок0.70, а не обещание, что `main` или случайная резервная
+Это проверенный снимок0.71, а не обещание, что `main` или случайная резервная
 ветка содержат ту же версию. Для другого снимка сохраняйте его полный commit
 SHA и читайте его README/STATUS. Команды работы с приложением ниже не требуют
 изменять репозиторий компилятора.
@@ -85,9 +85,9 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DNEX_Z3_ROOT="$(brew --prefix z3)" \
   -DCMAKE_PREFIX_PATH="$(brew --prefix sqlite)"
 cmake --build build -j 4
-cmake --install build --prefix "$HOME/opt/nex-sdk-0.70"
+cmake --install build --prefix "$HOME/opt/nex-sdk-0.71"
 
-export NEX_SDK="$HOME/opt/nex-sdk-0.70"
+export NEX_SDK="$HOME/opt/nex-sdk-0.71"
 export PATH="$NEX_SDK/bin:$PATH"
 nex doctor
 ```

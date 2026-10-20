@@ -1,3 +1,14 @@
+# Checkpoint0.71: checked project architecture
+
+- [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.
+- [x] Build executable/archive/server/web outputs using explicit source dependencies; keep binary linkage limits visible.
+- [x] Pass actual root full79 and installed SDK24/344/209; retain original macOS/Linux735 scopes and16 Linux live suites.
+- [x] Verify9 project cross artifacts,3 iOS final links, project x64 Wine and12 real-browser full-stack/restart cases.
+- [x] Preserve genuine0.70/0.71 wire/canonical/store compatibility, actual installed IDE,9 fresh root PE builds/17 Wine cases and47 revisions/all16 root tables/schema/Git.
+- [ ] Implement actual archive/shared dependency consumption, shared-library output and explicit resolved dependency reports.
+- [ ] Implement source task scheduling and general CPU/GPU/NPU APIs; retain fixed CIX0.70 FFI evidence separately.
+- [ ] Continue broader platform delivery, IDE completion/rename and the remaining full development-chain requirements.
+
 # Verified0.70 identifier-description checkpoint
 
 - [x] Add explicit analysis/3 with exact word descriptions and null builtin targets.
