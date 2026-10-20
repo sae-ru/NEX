@@ -82,6 +82,11 @@
         },
         "utf8": {
           "type": "boolean"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])",
+          "description": "Optional SHA-256 of exact captured source bytes, added by toolchain0.66; historical diagnostic sources may omit it."
         }
       },
       "required": [

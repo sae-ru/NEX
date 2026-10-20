@@ -107,6 +107,7 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
 }
 class Loader {
   fs::path root;bool frozen;std::string entry;
+  std::map<std::string,std::string> overlays;
   std::map<std::string,std::string> texts;
   std::map<std::string,fs::path> packages;
   std::map<std::string,Program> parsed;
@@ -134,7 +135,7 @@ class Loader {
     }
     auto path=fs::weakly_canonical(base/relative);
     if(!inside(path,base))throw Error("E_IMPORT_PATH","import resolves outside its declared root");
-    if(!fs::is_regular_file(path))throw Error("E_IMPORT_FILE","source file not found: "+path.string());return path;
+    if(!fs::is_regular_file(path)&&!(overlays.contains(path.string())&&!fs::exists(path)))throw Error("E_IMPORT_FILE","source file not found: "+path.string());return path;
   }
   void visit(const std::string &key,Span importing={}){
     if(states[key]==2)return;
@@ -144,7 +145,7 @@ class Loader {
     fs::path path;
     try{
       path=physical(key);
-      if(!texts.contains(key)){if(frozen)throw Error("E_BUNDLE","snapshot is missing source "+key);texts[key]=readFile(path.string());}
+      if(!texts.contains(key)){if(frozen)throw Error("E_BUNDLE","snapshot is missing source "+key);texts[key]=overlays.contains(path.string())?overlays.at(path.string()):readFile(path.string());}
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
@@ -215,8 +216,8 @@ class Loader {
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={})
-      :root(fs::weakly_canonical(root)),frozen(frozen),entry(std::move(entry)),texts(std::move(sources)){
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={})
+      :root(fs::weakly_canonical(root)),frozen(frozen),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json");
@@ -253,10 +254,10 @@ void validateProjectMetadata(const std::string &root){
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
   if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json");
 }
-Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock){
+Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();

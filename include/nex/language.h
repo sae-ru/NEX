@@ -16,6 +16,7 @@ struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::str
 // Exact lexical interval, separate from the diagnostic token in Span.
 // Generated semantic nodes leave valid=false; ranges never affect identities.
 struct SourceRange {size_t begin=0,end=0;bool valid=false;};
+struct SourceToken {std::string text;Span span;bool identifier=false;};
 struct Error : std::runtime_error {
   std::string code, output, operationSite, operationId, operationRevision, operationSource; Span span;
   llvm::json::Value frontend=nullptr;
@@ -161,7 +162,10 @@ void bindExpression(const Program &program,const std::string &function,E express
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
 // Check explicit physical-project version/format without opening its graph store.
 void validateProjectMetadata(const std::string &root);
-Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true);
+Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
+    const std::map<std::string,std::string> &overlays={});
+// Same lexer as the parser, for checked editor projections; no source identities.
+std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
 // Binding-only source syntax for reference projection. Never pass it to a
 // backend: separately check both the original and projected source bundles.

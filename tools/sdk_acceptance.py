@@ -380,6 +380,11 @@ test fn examples() -> unit {
             evidence.update(native_session_preparation=True, revision=prepared['revision'],
                             build_key=prepared['buildKey'])
         report['evidence']['editor'] = evidence
+        language_report = json.loads(run([sys.executable, resources / 'editor/lsp/acceptance.py',
+            compiler, '--output', root / 'language-server']))
+        require(language_report['ok'] and language_report['source_and_graph_unchanged'],
+                'installed compiler language-server acceptance failed')
+        report['evidence']['language_server'] = language_report
 
     def new_project():
         directory = root / 'created'

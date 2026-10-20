@@ -892,6 +892,13 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 }
 }
 Program parse(std::string source,std::string path){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path)).run();}
+std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
+  sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
+  for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
+    if(result.size()>=1000000)throw Error("E_ANALYSIS_LIMIT","editor source exceeds one million tokens");
+    result.push_back({std::move(token.text),std::move(token.span),token.kind==Token::Id});}
+  return result;
+}
 void check(Program &p){
   try{Checker(p).run();}catch(Error &error){
     std::map<std::string,std::string> sources;
@@ -1001,7 +1008,9 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
     {"editor_features",llvm::json::Array{"installed_vscode_extension_sources","fresh_compiler_debug_session","byte_checked_original_source_mapping","frozen_source_fallback","workspace_trust_gate"}},
     {"editor_extension_manifest","editor/vscode/package.json"},
-    {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp","studio","marketplace_publication"}},
+    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
+    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol"}},{"status","development_validation_pending"}}},
+    {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp_editor_client_acceptance","lsp_completion_references_rename","studio","marketplace_publication"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads","paged_native_indexed_roots","bounded_backend_variables_requests","constant_time_indexed_child_lookup","frame_module_identity_guard","core_recorded_mapping_image_guard"}},
     {"native_debug_image_binding",llvm::json::Object{{"selected_frame","same_loaded_module_as_executable"},{"function_names_are_not_image_identity",true},{"requires_matching_manifest",true},{"linux_core_requires_recorded_mapping",true},{"ambiguous_same_path_image_rejected",true},{"content_addressed_build_directory",true},{"recorded_mapping_sources",llvm::json::Array{"minidump_memory_region","elf_nt_file"}}}},
     {"native_core",llvm::json::Object{{"schema","nex.core-report/1"},{"guide","docs/core-debugging.md"},{"reader","debug/core_report.py"},{"formats",llvm::json::Array{"elf64","macho64","minidump64"}},{"readonly",true},{"requires_retained_build",true},{"requires_matching_compiler",true},{"portable_capsule",true},{"capsule",llvm::json::Object{{"schema","nex.core-capsule/1"},{"schema_document","llm/core-capsule.schema.json"},{"helper","tools/core_capsule.py"},{"matching_host_only",true},{"original_paths_required",false},{"source_foreign_declarations",false},{"non_system_dependencies",false},{"file_limit",int64_t(4096)},{"total_bytes_limit",int64_t(35433480192)},{"copy_timeout_seconds",int64_t(900)}}},{"operation_precision","explicit_source_candidates"},{"limits",llvm::json::Object{{"core_bytes",int64_t(32)*1024*1024*1024},{"threads",64},{"frames",64},{"timeout_seconds_default",60},{"timeout_seconds_maximum",300}}}}},

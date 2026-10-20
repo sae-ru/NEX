@@ -1,5 +1,6 @@
 #include "nex/frontend_diagnostics.h"
 #include "llvm/Support/Base64.h"
+#include "llvm/Support/SHA256.h"
 #include <algorithm>
 
 namespace nex {
@@ -43,7 +44,9 @@ void attachFrontendDiagnostic(Error &error,const std::map<std::string,std::strin
   JSON source=nullptr,location=nullptr,preview=nullptr;
   if(selected!=sources.end()){
     const auto &text=selected->second;bool valid=utf8(text);
-    source=Object{{"key",label(key)},{"hash",hash(text)},{"bytes",int64_t(text.size())},{"utf8",valid}};
+    auto sha=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(text.data()),text.size()));
+    std::string shaText;for(auto byte:sha){shaText+="0123456789abcdef"[byte>>4];shaText+="0123456789abcdef"[byte&15];}
+    source=Object{{"key",label(key)},{"hash",hash(text)},{"sha256",shaText},{"bytes",int64_t(text.size())},{"utf8",valid}};
     bool located=error.span.begin<=error.span.end&&error.span.end<=text.size()&&
       ((!error.span.file.empty()&&error.span.file==key)||(error.span.file.empty()&&kind!="project"&&phase=="parse"));
     if(located)location=Object{{"kind","diagnostic_span"},{"byte_begin",int64_t(error.span.begin)},{"byte_end",int64_t(error.span.end)}};

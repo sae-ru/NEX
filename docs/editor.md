@@ -76,3 +76,5 @@ public Marketplace publication are separate decisions.
 Primary API references: [debugger extensions](https://code.visualstudio.com/api/extension-guides/debugger-extension),
 [workspace trust](https://code.visualstudio.com/api/extension-guides/workspace-trust),
 [VSIX packaging](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+
+The development toolchain 0.66 adds a separate stdio LSP adapter and readonly compiler analysis, described in [lsp.md](lsp.md). Existing VS Code debugger activation remains independent; a language client and actual IDE acceptance remain pending.

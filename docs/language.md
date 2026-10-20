@@ -639,3 +639,5 @@ string shapes count Unicode scalars; bounded text_range captures let the isolate
 watch interpreter index/slice held strings without materializing their whole
 value. These captures are debugger data, not source string constructors or
 execution authority. See [the string debugger guide](string-debug.md).
+
+Toolchain 0.66 adds checked source analysis and a development stdio language server (see lsp.md). They use the existing checker with explicit source overlays and add no syntax, effects, runtime behavior, canonical-format change or migration.

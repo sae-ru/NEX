@@ -1,3 +1,7 @@
+# Isolated development 0.66: language server
+
+The candidate adds readonly compiler analysis with explicit source overlays and a stdio LSP adapter. Focused compiler/stdio checks and full regression/installed SDK/IDE/platform acceptance are tracked separately. The verified root remains0.65 with source cd78ecf0 until guarded promotion.
+
 # Language contract documentation: toolchain 0.65 / language 0.16
 
 Source 35c1a438 corrects five language-pack documents: four indexed guides and

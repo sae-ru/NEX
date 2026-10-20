@@ -276,3 +276,7 @@ Development0.58.1 corrects Linux LLDB minidump image binding and validates minid
 Development0.58.2 reads bounded ELF NT_FILE mapping metadata and requires a retained directory named by its build key. The real Linux ELF reader prototype passes; matching compiler/full SDK validation remains pending.
 
 Mobile native project generation is documented in [the mobile guide](docs/mobile.md).
+
+## Isolated development 0.66: checked editing
+
+The candidate adds `nex analyze` for unsaved sources and `nex lsp` for stdio compiler diagnostics, typed hover, definitions and document symbols. Root integration, current full/SDK/platform checks and a VS Code language client remain pending; see docs/lsp.md.

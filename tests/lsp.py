@@ -1,0 +1,303 @@
+"""Actual compiler/stdio LSP, unsaved projects and persistent-history isolation."""
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import queue
+import signal
+import sqlite3
+import subprocess
+import sys
+import threading
+import time
+import unittest
+import support as harness
+
+
+class Client:
+    def __init__(self, cwd, command=None):
+        self.process = subprocess.Popen(command or [harness.NEX, 'lsp'], cwd=cwd,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+        self.queue = queue.Queue()
+        self.saved = []
+        self.ident = 0
+        def read():
+            try:
+                while True:
+                    headers = {}
+                    while True:
+                        line = self.process.stdout.readline()
+                        if not line:
+                            return
+                        if line == b'\r\n':
+                            break
+                        key, value = line.decode('ascii').split(':', 1)
+                        headers[key.lower()] = value.strip()
+                    body = self.process.stdout.read(int(headers['content-length']))
+                    self.queue.put(json.loads(body))
+            except Exception as error:
+                self.queue.put(error)
+        self.reader = threading.Thread(target=read, daemon=True)
+        self.reader.start()
+
+    def send(self, method, params=None, request=False, fragments=False):
+        value = {'jsonrpc': '2.0', 'method': method}
+        if params is not None:
+            value['params'] = params
+        if request:
+            self.ident += 1
+            value['id'] = self.ident
+        raw = json.dumps(value, ensure_ascii=False).encode()
+        frame = ('Content-Length: ' + str(len(raw)) + '\r\n\r\n').encode() + raw
+        chunks = [frame[i:i+3] for i in range(0,len(frame),3)] if fragments else [frame]
+        for chunk in chunks:
+            self.process.stdin.write(chunk)
+            self.process.stdin.flush()
+        return value.get('id')
+
+    def take(self, predicate, timeout=15):
+        end = time.monotonic() + timeout
+        for index, message in enumerate(self.saved):
+            if predicate(message):
+                return self.saved.pop(index)
+        while time.monotonic() < end:
+            message = self.queue.get(timeout=max(0.01,end-time.monotonic()))
+            if isinstance(message, Exception):
+                raise message
+            if predicate(message):
+                return message
+            self.saved.append(message)
+        raise AssertionError('No matching LSP response')
+
+    def response(self, ident):
+        return self.take(lambda value:value.get('id') == ident and 'method' not in value)
+
+    def request(self, method, params=None):
+        response = self.response(self.send(method, params, request=True))
+        if 'error' in response:
+            raise AssertionError(response)
+        return response['result']
+
+    def initialize(self):
+        ident = self.send('initialize', {'processId': os.getpid(), 'capabilities': {}}, request=True, fragments=True)
+        result = self.response(ident)['result']
+        self.send('initialized', {})
+        return result
+
+    def open(self, path, text, version=1):
+        self.send('textDocument/didOpen', {'textDocument': {'uri':path.as_uri(),'languageId':'nex','version':version,'text':text}})
+
+    def change(self, path, text, version):
+        self.send('textDocument/didChange', {'textDocument':{'uri':path.as_uri(),'version':version},'contentChanges':[{'text':text}]})
+
+    def diagnostics(self, path, version=None):
+        return self.take(lambda value:value.get('method') == 'textDocument/publishDiagnostics' and
+            value['params']['uri'] == path.as_uri() and (version is None or value['params'].get('version') == version))['params']['diagnostics']
+
+    def close(self, clean=True):
+        try:
+            if self.process.poll() is None and clean:
+                self.request('shutdown')
+                self.send('exit')
+                self.process.wait(timeout=10)
+                if self.process.returncode != 0:
+                    raise AssertionError(self.process.stderr.read().decode())
+        finally:
+            if self.process.poll() is None:
+                os.killpg(self.process.pid, signal.SIGKILL)
+                self.process.wait(timeout=10)
+            for stream in [self.process.stdin,self.process.stdout,self.process.stderr]:
+                stream.close()
+
+
+class LanguageServer(harness.ToolchainCase):
+    def setUp(self):
+        super().setUp()
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        self.source('module app; fn twice(n:i64)->i64{return n*2;} fn main()->i64{return twice(21);}')
+        self.clients=[]
+
+    def tearDown(self):
+        for client in self.clients:
+            client.close()
+        super().tearDown()
+
+    def client(self, command=None):
+        client=Client(self.root,command)
+        self.clients.append(client)
+        return client
+
+    def overlay(self, files):
+        path=self.root/'overlay.json'
+        path.write_text(json.dumps({'schema':'nex.overlay/1','files':{str(k.resolve()):v for k,v in files.items()}}))
+        return path
+
+    def rows(self):
+        path=self.root/'.nex/graph.db'
+        if not path.exists():
+            return None
+        with sqlite3.connect(path) as connection:
+            names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+            return {name:sorted(connection.execute('SELECT * FROM "'+name+'"').fetchall(),key=repr) for name in names}
+
+    def test_analysis_unsaved_import_and_existing_history_are_preserved(self):
+        self.cli('check',self.file)
+        before=self.rows()
+        physical=self.file.read_bytes()
+        helper=self.root/'new file 🧠.nex'
+        main='module app; import "./new file 🧠.nex" as m; fn main()->i64{return m::answer();}'
+        analysis=self.cli('analyze',self.file,'--overlay',self.overlay({self.file:main,helper:'module model; pub fn answer()->i64{return 42;}'}))
+        self.assertTrue(analysis['ok'])
+        self.assertEqual(analysis['schema'],'nex.analysis/1')
+        self.assertFalse(analysis['graph_written'])
+        self.assertFalse(analysis['executed'])
+        self.assertEqual(self.rows(),before)
+        self.assertEqual(self.file.read_bytes(),physical)
+        self.assertFalse(helper.exists())
+        self.assertEqual({s['name'] for s in analysis['symbols']},{'main','answer'})
+        target=next(e['definition'] for e in analysis['expressions'] if e['definition'])
+        self.assertEqual(target['file'],helper.name)
+
+    def test_analysis_uses_same_realm_effect_version_and_lock_checker(self):
+        invalid='module app; fn main()->unit {print(42);}'
+        result=self.cli('analyze',self.file,'--overlay',self.overlay({self.file:invalid}),ok=False)
+        self.assertEqual(result['code'],'E_EFFECT')
+        self.assertEqual(result['frontend']['source']['sha256'],hashlib.sha256(invalid.encode()).hexdigest())
+        self.assertFalse((self.root/'.nex').exists())
+        manifest=self.root/'nex.json'
+        value=json.loads(manifest.read_text());value['language']='0.15';manifest.write_text(json.dumps(value))
+        self.assertEqual(self.cli('analyze',self.file,ok=False)['code'],'E_LANGUAGE_VERSION')
+        self.assertFalse((self.root/'.nex').exists())
+        value['language']='0.16'
+        value['libraries']={'dep':'library'}
+        manifest.write_text(json.dumps(value))
+        library=self.root/'library';library.mkdir()
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'model.nex'}))
+        dependency=library/'model.nex';dependency.write_text('module dep;pub fn answer()->i64{return 1;}')
+        self.source('module app;import "dep/model.nex" as d;fn main()->i64{return d::answer();}')
+        self.cli('lock',self.file)
+        before=self.rows()
+        result=self.cli('analyze',self.file,'--overlay',self.overlay({dependency:'module dep;pub fn answer()->i64{return 2;}'}),ok=False)
+        self.assertEqual(result['code'],'E_LOCK')
+        self.assertEqual(self.rows(),before)
+
+    def test_analysis_rejects_overlay_directory_escape_and_unbounded_inputs(self):
+        outside=self.root/'outside';outside.mkdir();(self.root/'link').symlink_to(outside,target_is_directory=True)
+        path=self.root/'overlay.json'
+        for files in [{'main.nex':'module app;'}, {str(self.root/'link/main.nex'):'module app;'},
+                      {str(self.file):'x'*(1048576+1)}]:
+            path.write_text(json.dumps({'schema':'nex.overlay/1','files':files}))
+            self.assertEqual(self.cli('analyze',self.file,'--overlay',path,ok=False)['code'],'E_OVERLAY')
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_analysis_generic_traits_closures_patterns_and_std_sources(self):
+        for relative in ['examples/traits/main.nex','examples/generics/main.nex','examples/enums/main.nex','examples/functions/main.nex']:
+            source=harness.REPO/relative
+            self.assertTrue(source.is_file(),relative)
+            # Analyze actual checked project sources; no graph synchronization.
+            result=self.cli('analyze',source)
+            self.assertTrue(result['ok'])
+            self.assertTrue(result['symbols'])
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_lifecycle_fragmented_messages_and_method_errors(self):
+        client=self.client()
+        first=client.response(client.send('textDocument/hover',{},request=True))
+        self.assertEqual(first['error']['code'],-32002)
+        capabilities=client.initialize()['capabilities']
+        self.assertEqual(capabilities['positionEncoding'],'utf-16')
+        self.assertEqual(capabilities['textDocumentSync']['change'],1)
+        self.assertTrue(capabilities['definitionProvider'])
+        self.assertEqual(client.response(client.send('nex/unknown',{},request=True))['error']['code'],-32601)
+        self.assertEqual(client.response(client.send('initialize',{},request=True))['error']['code'],-32600)
+        client.send('$/cancelRequest',{'id':[]})
+        bad=client.response(client.send('textDocument/hover',{'textDocument':{'uri':'file://['},'position':{'line':0,'character':0}},request=True))
+        self.assertEqual(bad['error']['code'],-32602)
+        self.assertEqual(client.response(client.send('still-responding',{},request=True))['error']['code'],-32601)
+
+    def test_unsaved_diagnostics_utf16_crlf_and_repair_never_write_sources(self):
+        physical=self.file.read_bytes()
+        client=self.client();client.initialize()
+        bad='module app;\r\nfn main()->i64 {let text:str="Я🧠";return missing;}\r\n'
+        client.open(self.file,bad,3)
+        diagnostics=client.diagnostics(self.file,3)
+        self.assertEqual(len(diagnostics),1)
+        self.assertEqual(diagnostics[0]['code'],'E_NAME')
+        expected=bad.split('\r\n')[1].index('missing')+1  # one astral scalar adds one UTF-16 unit
+        self.assertEqual(diagnostics[0]['range']['start'],{'line':1,'character':expected})
+        fixed=bad.replace('missing','42')
+        client.change(self.file,fixed,4)
+        self.assertEqual(client.diagnostics(self.file,4),[])
+        self.assertEqual(self.file.read_bytes(),physical)
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_definitions_symbols_types_and_local_binding(self):
+        text='module app;\nfn twice(n:i64)->i64 {let x:i64=n+1;return x*2;}\nfn main()->i64{return twice(20);}\n'
+        client=self.client();client.initialize();client.open(self.file,text)
+        self.assertEqual(client.diagnostics(self.file,1),[])
+        params={'textDocument':{'uri':self.file.as_uri()}}
+        symbols=client.request('textDocument/documentSymbol',params)
+        self.assertEqual([s['name'] for s in symbols],['twice','main'])
+        query={**params,'position':{'line':2,'character':22}}
+        definition=client.request('textDocument/definition',query)
+        self.assertEqual(definition[0]['range'],{'start':{'line':1,'character':3},'end':{'line':1,'character':8}})
+        query['position']={'line':1,'character':43}
+        local=client.request('textDocument/definition',query)
+        self.assertEqual(local[0]['range']['start'],{'line':1,'character':26})
+        self.assertEqual(client.request('textDocument/hover',query)['contents']['value'],'i64')
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_imported_document_unsaved_and_old_versions_are_ignored(self):
+        helper=self.root/'helper.nex';helper.write_text('module model;pub fn answer()->i64{return 1;}')
+        text='module app;import "./helper.nex" as m;fn main()->i64{return m::answer();}'
+        self.file.write_text(text)
+        client=self.client();client.initialize();client.open(self.file,text)
+        client.open(helper,'module model;pub fn answer()->i64{return true;}',2)
+        self.assertEqual(client.diagnostics(helper,2)[0]['code'],'E_TYPE')
+        client.change(helper,'module model;pub fn answer()->i64{return 42;}',3)
+        self.assertEqual(client.diagnostics(helper,3),[])
+        client.change(helper,'this old edit is invalid',2)
+        symbols=client.request('textDocument/documentSymbol',{'textDocument':{'uri':helper.as_uri()}})
+        self.assertEqual(symbols[0]['name'],'answer')
+        self.assertEqual(helper.read_text(),'module model;pub fn answer()->i64{return 1;}')
+
+    def test_new_file_and_cancellation_do_not_block_protocol(self):
+        wrapper=self.root/'slow compiler'
+        wrapper.write_text('#!'+sys.executable+'\nimport os,time\ntime.sleep(0.5)\nos.execv('+repr(harness.NEX)+', ['+repr(harness.NEX)+']+__import__("sys").argv[1:])\n')
+        wrapper.chmod(0o700)
+        client=self.client([sys.executable,str(harness.REPO/'editor/lsp/server.py'),'--compiler',str(wrapper)])
+        client.initialize();client.open(self.file,self.file.read_text())
+        request=client.send('textDocument/hover',{'textDocument':{'uri':self.file.as_uri()},'position':{'line':0,'character':16}},request=True)
+        client.send('$/cancelRequest',{'id':request})
+        started=time.monotonic()
+        self.assertEqual(client.response(client.send('unknown',{},request=True))['error']['code'],-32601)
+        self.assertLess(time.monotonic()-started,0.4)
+        self.assertEqual(client.response(request)['error']['code'],-32800)
+        client.change(self.file,'module app; fn main()->i64{return 42;}',5)
+        client.change(self.file,'module app; fn main()->i64{return 43;}',6)
+        self.assertEqual(client.diagnostics(self.file,6),[])
+
+    def test_unicode_position_and_changed_physical_diagnostic_guard(self):
+        spec=importlib.util.spec_from_file_location('nex_lsp',harness.REPO/'editor/lsp/server.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        self.assertEqual(module.byte_offset('a🧠b',{'line':0,'character':3}),5)
+        with self.assertRaises(module.RPCError):module.byte_offset('a🧠b',{'line':0,'character':2})
+        server=module.Server(harness.NEX)
+        try:
+            _, diagnostic=server.diagnostic({'file':'main.nex','code':'E_TYPE','message':'old error','frontend':{
+                'source':{'utf8':True,'sha256':'0'*64},'location':{'byte_begin':20,'byte_end':24}}},self.root,self.file,{})
+            self.assertEqual(diagnostic['range']['start'],{'line':0,'character':0})
+        finally:server.close()
+
+    def test_exit_without_shutdown_and_malformed_frame_are_terminal(self):
+        for raw in [b'Content-Length: 56\r\nContent-Length: 56\r\n\r\n',
+                    b'Content-Length: 0\r\n\r\n']:
+            process=subprocess.run([harness.NEX,'lsp'],input=raw,cwd=self.root,capture_output=True,timeout=10)
+            self.assertEqual(process.returncode,1)
+            self.assertEqual(process.stdout,b'')
+        client=self.client();client.send('exit');self.assertEqual(client.process.wait(timeout=10),1)
+
+
+if __name__=='__main__':
+    unittest.main(verbosity=2)

@@ -444,3 +444,5 @@ bytes, SHA256 and original build/compiler/runtime identities are checked before
 LLDB. The matching installed SDK supplies executable tooling. Unsupported
 capsule formats/hosts/inputs use `E_CORE_CAPSULE`; build/core mismatches retain
 their existing diagnostics. See `docs/core-debugging.md` for exact limits.
+
+Toolchain 0.66 adds `nex analyze [file] [--overlay FILE] --json` (nex.analysis/1) and `nex lsp` (stdio LSP 3.17). Analysis uses the same checker without source, Store/history or execution writes. See `docs/lsp.md` and the indexed overlay/analysis schemas.

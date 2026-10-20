@@ -151,3 +151,5 @@ task schema and task/FFI guides describe these same rules.
 The [native diagnostics schema](native-diagnostics.schema.json) describes bounded
 process reports and checked local mappings. The [guide](../docs/native-diagnostics.md)
 covers standalone/HTTP logs and source-deleted graph recovery.
+
+Development toolchain 0.66 adds model-independent `nex analyze` and a stdio language server. Read `docs/lsp.md`; the indexed source overlay and checked analysis schemas define the readonly editor interface. Actual IDE-client and broader integration acceptance remain pending.

@@ -1,3 +1,9 @@
+# Current editor work: isolated toolchain 0.66
+
+- Implement checked unsaved source analysis, stdio diagnostics/types/definitions/declarations and source/history isolation.
+- Verify protocol Unicode/lifecycle/cancellation, matching installed SDKs, VS Code client activation and actual editor behavior.
+- Completion/references/rename, parser recovery/incremental indexing and the wider IDE matrix remain pending.
+
 # Language contract status: 20 October 2026
 
 - The language 0.16 pack describes implemented graph patches/aliases, stopped
