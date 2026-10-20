@@ -159,7 +159,7 @@ struct Program {
   std::string definition(const Implementation &implementation) const;
   std::string location(const Span &span) const;
 };
-Program parse(std::string source, std::string path,bool editorNames=false);
+Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
 S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
 P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
@@ -169,7 +169,7 @@ Type checkExpression(Program &program,const std::string &function,E expression,c
 // Check explicit physical-project version/format without opening its graph store.
 void validateProjectMetadata(const std::string &root);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
-    const std::map<std::string,std::string> &overlays={},bool editorNames=false);
+    const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);
 // Same lexer as the parser, for checked editor projections; no source identities.
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);

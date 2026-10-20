@@ -53,6 +53,7 @@ Options options(int argc,char **argv) {
     if(a=="-o")a="--output";
     if(flagNames.contains(a))o.flags.insert(a);
     else if(a=="--overlay"){if(o.command!="analyze"||i+1==argc)throw Error("E_OPTION","--overlay requires analyze and a JSON file");o.values[a]=argv[++i];}
+    else if(a=="--details"){if(o.command!="analyze")throw Error("E_OPTION","--details requires analyze");o.flags.insert(a);}
     else if(a=="--references"){if(o.command!="analyze")throw Error("E_OPTION","--references requires analyze");o.flags.insert(a);}
     else if(a=="--capsule"||a=="--export"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--capsule/--export require core and a directory");o.values[a]=argv[++i];}
     else if(a=="--thread"||a=="--frame"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--thread/--frame require core and an index");o.values[a]=argv[++i];}
@@ -147,7 +148,7 @@ int run(const Options &o) {
   if(o.command=="analyze"){
     if(!o.extra.empty())throw Error("E_OPTION","analyze does not execute program arguments");
     for(const auto &[key,_]:o.values)if(key!="--overlay")throw Error("E_OPTION","unsupported analyze option: "+key);
-    for(const auto &flag:o.flags)if(flag!="--json"&&flag!="--references")throw Error("E_OPTION","unsupported analyze flag: "+flag);
+    for(const auto &flag:o.flags)if(flag!="--json"&&flag!="--references"&&flag!="--details")throw Error("E_OPTION","unsupported analyze flag: "+flag);
     auto root=projectRoot(o.positional.empty()?fs::current_path():fs::absolute(o.positional[0]).parent_path());
     auto entry=fs::absolute(o.positional.empty()?defaultSource(root):o.positional[0]).string();
     llvm::json::Value overlay=nullptr;
@@ -159,7 +160,8 @@ int run(const Options &o) {
         else if((c=='}'||c==']')&&depth)--depth;}
       overlay=parseJSON(text);
     }
-    auto result=editorAnalysis(entry,root.string(),overlay,o.has("--references"));
+    if(o.has("--references")&&o.has("--details"))throw Error("E_OPTION","choose --references for analysis/2 or --details for analysis/3");
+    auto result=editorAnalysis(entry,root.string(),overlay,o.has("--references"),o.has("--details"));
     result.getAsObject()->insert({"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}});
     print(std::move(result));return 0;
   }
@@ -255,7 +257,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references] [--json]\n  nex lsp\n  nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"

@@ -193,7 +193,7 @@ class Server:
             path.write_bytes(raw)
             with self.lock:
                 self.current(epoch)
-                self.process = subprocess.Popen([self.compiler, 'analyze', str(entry), '--overlay', str(path), '--references', '--json'],
+                self.process = subprocess.Popen([self.compiler, 'analyze', str(entry), '--overlay', str(path), '--details', '--json'],
                                                 cwd=root, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 process = self.process
             try:
@@ -213,7 +213,7 @@ class Server:
                 result = json.loads(stdout)
             except (ValueError, UnicodeError) as error:
                 raise RPCError(-32603, 'Compiler did not return a NEX analysis response') from error
-            if process.returncode == 0 and result.get('schema') == 'nex.analysis/2' and result.get('ok'):
+            if process.returncode == 0 and result.get('schema') == 'nex.analysis/3' and result.get('ok'):
                 return result
             if process.returncode != 0 and result.get('schema') == 'nex.diagnostic/1':
                 return result
@@ -435,10 +435,59 @@ class Server:
         check()
         return result
 
+    def identifier_query(self, path, method, params, cache, cancelled):
+        captured, selected = {}, {}
+        def check():
+            self.current(cache['epoch'])
+            if cancelled is not None and cancelled.is_set():
+                raise RPCError(-32800, 'Request cancelled')
+        for index in cache['indices']:
+            check()
+            files = {f['key']: f for f in index['files']}
+            paths = {key: Path(f['path']).resolve() for key, f in files.items()}
+            for key, f in files.items():
+                previous = captured.get(paths[key])
+                if previous and (previous['hash'] != f['hash'] or previous['text'] != f['text']):
+                    raise RPCError(-32801, 'Captured source changed between checked entries')
+                captured[paths[key]] = f
+            unit = next((f for key, f in files.items() if paths[key] == path), None)
+            if unit is None:
+                continue
+            offset = byte_offset(unit['text'], params.get('position'))
+            for number, record in enumerate(index.get('identifiers', [])):
+                if number % 1000 == 0:
+                    check()
+                at = record['range']
+                if paths[record['file']] != path or not at['begin'] <= offset < at['end']:
+                    continue
+                target = record['definition']
+                identity = None if target is None else (paths[target['file']], target['range']['begin'], target['range']['end'])
+                description = (at['begin'], at['end'], record['kind'], record['detail'], identity)
+                selected[description] = (record, identity)
+        check()
+        if len(selected) > 1:
+            raise RPCError(-32801, 'Identifier has different checked descriptions or targets')
+        if not selected:
+            return False, None
+        record, target = next(iter(selected.values()))
+        if method == 'textDocument/hover':
+            result = None if record['detail'] is None else {
+                'contents': {'kind': 'plaintext', 'value': record['detail']},
+                'range': source_range(captured[path]['text'], record['range'])}
+        else:
+            result = [] if target is None else [{'uri': target[0].as_uri(),
+                'range': source_range(captured[target[0]]['text'], {'begin': target[1], 'end': target[2]})}]
+        check()
+        return True, result
+
     def query(self, method, params, cache, cancelled=None):
         path, _ = self.document(params)
         if method == 'textDocument/references':
             return self.references(path, params, cache, cancelled)
+        if method in ('textDocument/hover', 'textDocument/definition'):
+            handled, answer = self.identifier_query(path, method, params, cache, cancelled)
+            if handled:
+                return answer
         if method == 'textDocument/definition':
             targets, captured = set(), {}
             for index in cache['indices']:
@@ -570,7 +619,7 @@ class Server:
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
                 'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True},
-                'serverInfo': {'name': 'NEX Language Server', 'version': '0.69.0'}})
+                'serverInfo': {'name': 'NEX Language Server', 'version': '0.70.0'}})
         elif not self.initialized:
             if request:
                 self.respond(ident, error=RPCError(-32002, 'Server is not initialized'))

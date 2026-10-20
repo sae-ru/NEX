@@ -171,7 +171,7 @@ public:
 };
 class Parser {
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
-  bool captureNames=false;std::map<std::string,Span> parameterOrigins;
+  bool captureNames=false,captureDetails=false;std::map<std::string,Span> parameterOrigins;
   void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
     if(!captureNames)return;
     if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
@@ -214,7 +214,7 @@ class Parser {
   }
   std::set<std::string> constraintNames(){
     std::set<std::string> result;
-    do{auto span=peek().span;auto value=qualified();if(!std::set<std::string>{"add","ordered","integer","number","wire"}.contains(value))editorName("trait",value,head(span));if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
+    do{auto span=peek().span;auto value=qualified();if(!std::set<std::string>{"add","ordered","integer","number","wire"}.contains(value))editorName("trait",value,head(span));else if(captureDetails)editorName("builtin_bound",value,head(span));if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
   }
   std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false){
     if(!keep)clearParameters();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
@@ -231,6 +231,8 @@ class Parser {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
     auto t = take();
+    if(captureDetails&&(std::set<std::string>{"i64","f64","bool","unit","str","list"}.contains(t.text)||
+        ((t.text=="bytes"||t.text=="file")&&peek().text!="::")||(t.text=="result"&&peek().text=="<")))editorName("builtin_type",t.text,t.span);
     if(t.text=="("){auto result=type();expect(")");return result;}
     if(t.text=="fn"||t.text=="shared"||t.text=="client"||t.text=="server"){
       auto realm=t.text=="fn"?"shared":t.text;if(t.text!="fn")expect("fn");std::vector<Type> args;expect("(");if(!accept(")")){do{if(args.size()>=1024)throw Error("E_FUNCTION_LIMIT","function type exceeds 1024 parameters",peek().span);args.push_back(type());}while(accept(","));expect(")");}expect("->");auto result=type();return Type::function(std::move(args),std::move(result),realm,effects());
@@ -386,7 +388,7 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false):inputKind(std::move(kind)),captureNames(names) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
     p.source=std::move(source);p.path=std::move(path);
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
@@ -902,7 +904,7 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
   }
 }
 }
-Program parse(std::string source,std::string path,bool editorNames){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames).run();}
+Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails).run();}
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
   sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
   for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
@@ -1019,8 +1021,8 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
     {"editor_features",llvm::json::Array{"installed_vscode_extension_sources","fresh_compiler_debug_session","byte_checked_original_source_mapping","frozen_source_fallback","workspace_trust_gate","vscode_stdio_language_client","unsaved_source_diagnostics","checked_hover_definition_symbols","versioned_document_updates","checked_symbol_references"}},
     {"editor_extension_manifest","editor/vscode/package.json"},
-    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields","type_annotations_and_arguments","lexical_type_parameters","trait_contracts_and_implementation_bindings","enum_variant_declarations","import_aliases"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
-    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.4.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
+    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"identifiers_command","nex analyze FILE --details [--overlay FILE] --json"},{"identifiers_schema","llm/editor-identifiers.schema.json"},{"identifiers_format","nex.analysis/3"},{"identifiers_limits",llvm::json::Object{{"entries",200000},{"identifier_json_bytes",8388608},{"detail_utf8_bytes",16384}}},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields","type_annotations_and_arguments","lexical_type_parameters","trait_contracts_and_implementation_bindings","enum_variant_declarations","import_aliases"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
+    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.5.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
     {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp_wider_editor_matrix","lsp_completion_references_rename","studio","marketplace_publication"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads","paged_native_indexed_roots","bounded_backend_variables_requests","constant_time_indexed_child_lookup","frame_module_identity_guard","core_recorded_mapping_image_guard"}},
     {"native_debug_image_binding",llvm::json::Object{{"selected_frame","same_loaded_module_as_executable"},{"function_names_are_not_image_identity",true},{"requires_matching_manifest",true},{"linux_core_requires_recorded_mapping",true},{"ambiguous_same_path_image_rejected",true},{"content_addressed_build_directory",true},{"recorded_mapping_sources",llvm::json::Array{"minidump_memory_region","elf_nt_file"}}}},

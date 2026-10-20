@@ -1,6 +1,6 @@
-# NEX editing and debugging: development toolchain 0.69
+# NEX editing and debugging: development toolchain 0.70
 
-Extension 0.4 activates when a physical .nex document opens in a trusted
+Extension 0.5 activates when a physical .nex document opens in a trusted
 workspace. Set `nex.compilerPath` to the matching installed compiler. The
 extension starts `nex lsp`, sends unsaved document versions and displays compiler
 diagnostics, checked type hover, source definitions, declaration outlines and checked references.
@@ -26,7 +26,9 @@ Runtime client code uses Node built-ins and the VS Code API; no runtime npm
 package is required. The separately locked development dependencies package and
 test the VSIX. Installed-SDK Node/server acceptance, the compiler's full suite
 and actual installed VS Code acceptance have distinct evidence scopes. Current
-0.69 integration is a candidate until its recorded checks pass. References use
+0.70 integration is a candidate until its recorded checks pass. Identifier hover
+uses analysis/3 source signatures, lexical parameters, aliases and trait members;
+builtin types have no physical definition. References use
 the coverage/limits in lsp.md. Completion/rename, parser recovery/incremental indexing, other editors/platforms
 and NEX Studio remain pending.
 

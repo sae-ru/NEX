@@ -140,7 +140,8 @@
     "editor_language_config": "editor/vscode/language-configuration.json",
     "editor_node_tests": "editor/vscode/test.js",
     "editor_installation": "editor/vscode/README.md",
-    "editor_references_schema": "llm/editor-references.schema.json"
+    "editor_references_schema": "llm/editor-references.schema.json",
+    "editor_identifiers_schema": "llm/editor-identifiers.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -433,6 +434,7 @@
     "nex analyze FILE --json",
     "nex analyze FILE --overlay OVERLAY.json --json",
     "nex analyze FILE --references --overlay OVERLAY.json --json",
+    "nex analyze FILE --details --overlay OVERLAY.json --json",
     "nex lsp"
   ],
   "editor_source_reference_contract": {
@@ -453,12 +455,31 @@
     "pending": [
       "closed_unreachable_files",
       "cross_workspace_buffers",
-      "dedicated_type_parameter_member_alias_hover",
       "completion",
       "rename",
       "parser_recovery",
       "incremental_indexing"
     ],
-    "semantic_identity_changes": false
+    "semantic_identity_changes": false,
+    "identifier_format": "nex.analysis/3",
+    "identifier_schema": "llm/editor-identifiers.schema.json"
+  },
+  "editor_identifier_contract": {
+    "format": "nex.analysis/3",
+    "default_format": "nex.analysis/1",
+    "reference_format": "nex.analysis/2",
+    "source_language": "0.16",
+    "name_ranges": "actual_lexer_word_tokens",
+    "descriptions": "bound_source_declarations_and_checked_value_types",
+    "null_detail": "syntax without a semantic hover description",
+    "null_definition": "no physical source declaration; never use a containing expression target",
+    "limits": {
+      "entries": 200000,
+      "identifier_json_bytes": 8388608,
+      "detail_utf8_bytes": 16384
+    },
+    "source_writes": false,
+    "graph_writes": false,
+    "execution": false
   }
 }

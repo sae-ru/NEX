@@ -106,7 +106,7 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
     expression->text=resolveSymbol(units,symbols,key,name,false,expression->span);
 }
 class Loader {
-  fs::path root;bool frozen,captureNames;std::string entry;size_t capturedNames=0;
+  fs::path root;bool frozen,captureNames,captureDetails;std::string entry;size_t capturedNames=0;
   std::map<std::string,std::string> overlays;
   std::map<std::string,std::string> texts;
   std::map<std::string,fs::path> packages;
@@ -149,7 +149,7 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=parse(texts.at(key),path.string(),captureNames);}catch(Error &e){e.span.file=key;throw;}
+    try{unit=parse(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
     capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
@@ -230,8 +230,8 @@ class Loader {
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false)
-      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false)
+      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json");
@@ -268,10 +268,10 @@ void validateProjectMetadata(const std::string &root){
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
   if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json");
 }
-Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames){
+Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();

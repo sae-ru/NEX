@@ -1,5 +1,11 @@
 # Model-independent NEX language pack
 
+Toolchain0.70 adds explicit `analyze --details` / `nex.analysis/3` and
+`editor-identifiers.schema.json`. Discover `editor_analysis.identifiers_command`
+for exact source identifier descriptions, explicit null builtin targets and
+bounded output. Legacy analysis/1 and analysis/2 remain separate contracts.
+Language0.16 and canonical identities are unchanged. See [LSP](../docs/lsp.md).
+
 Toolchain 0.52 adds [captured-source frontend diagnostics](../docs/frontend-diagnostics.md). Discover its feature/limit fields and `frontend-diagnostics.schema.json`. Failed candidates have their own bounded source context; their diagnostic IDs do not allocate graph nodes or replace revision guards.
 
 Toolchain 0.51 checks declared physical project and reachable configured-library languages. Read [compatibility](../docs/compatibility.md), query `project_features` and use `project.schema.json`. Archived migration/execution stays independent of stale physical metadata.

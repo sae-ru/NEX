@@ -10,10 +10,115 @@ using Object=llvm::json::Object;using Array=llvm::json::Array;using JSON=llvm::j
 Object interval(size_t begin,size_t end){return Object{{"begin",int64_t(begin)},{"end",int64_t(end)}};}
 struct Index {
   const Program &p;Array symbols,expressions;std::map<std::string,std::vector<SourceToken>> tokens;
-  bool references=false;Array occurrences;
+  bool references=false,details=false;Array occurrences;
   std::set<std::tuple<std::string,size_t,size_t,std::string,size_t,size_t,std::string>> seen;
-  Index(const Program &program,bool enabled):p(program),references(enabled){}
+  Index(const Program &program,bool enabled,bool expanded):p(program),references(enabled||expanded),details(expanded){}
   struct Location {std::string file;size_t begin=0,end=0;};
+  using Key=std::tuple<std::string,size_t,size_t>;
+  struct Info {std::string kind,detail;};
+  std::map<Key,Info> information,identifierOverrides;
+  std::map<Key,Info> intrinsicIdentifiers;
+  static Key key(const Location &at){return {at.file,at.begin,at.end};}
+  static std::string shortName(const std::string &name){auto split=name.rfind("::");return split==std::string::npos?name:name.substr(split+2);}
+  static std::string arity(unsigned count){std::string out;if(count){out="<";for(unsigned i=0;i<count;++i){if(i)out+=",";out+="_";}out+=">";}return out;}
+  static Type displayType(Type type){
+    if(type.kind==Type::Parameter){type.kind=Type::Record;type.name=shortName(type.name);}
+    if(type.element)type.element=std::make_shared<Type>(displayType(*type.element));
+    for(auto &argument:type.arguments)argument=displayType(std::move(argument));return type;
+  }
+  static std::string shown(const Type &type){return typeName(displayType(type));}
+  static std::string boundsText(const std::set<std::string> &bounds){std::string out;for(const auto &bound:bounds){out+=out.empty()?": ":" + ";out+=bound;}return out;}
+  template<class D> std::string generics(const D &value){
+    std::string out;if(value.typeParameters.empty())return out;out="<";
+    for(size_t i=0;i<value.typeParameters.size();++i){if(i)out+=", ";out+=shortName(value.typeParameters[i])+arity(i<value.typeArities.size()?value.typeArities[i]:0);if(i<value.typeBounds.size())out+=boundsText(value.typeBounds[i]);}return out+">";
+  }
+  std::string sourceSignature(const Function &f){
+    std::string out=(f.exported&&!f.traitSignature?"pub ":"")+f.realm+" "+(f.foreign?"extern ":"")+(f.test?"test ":"")+"fn "+f.name+generics(f)+"(";
+    for(size_t i=0;i<f.params.size();++i){if(i)out+=", ";out+=f.params[i].name+": "+shown(f.params[i].type);}out+=") -> "+shown(f.result);
+    if(!f.effects.empty()){out+=" !{";bool first=true;for(const auto &effect:f.effects){if(!first)out+=", ";out+=effect;first=false;}out+="}";}return out;
+  }
+  void valueBinding(const Location &at,const std::string &kind,const std::string &name,const Type &type){
+    if(details)information[key(at)]={kind,name+(type.kind==Type::Unknown?"":": "+shown(type))};binding(at);
+  }
+  void valueUse(const Location &at,const Location &target,const Type &type){
+    if(!details||type.kind==Type::Unknown)return;auto found=information.find(key(target));if(found==information.end())return;
+    if(found->second.kind=="parameter"||found->second.kind=="local"||found->second.kind=="pattern_binding"||found->second.kind=="field")
+      identifierOverrides[key(at)]={found->second.kind,p.units.at(at.file).source.substr(at.begin,at.end-at.begin)+": "+shown(type)};
+  }
+  void identifierDetails(Object &result){
+    if(!details)return;
+    // Parameter origins come from the parser. Match them only inside their
+    // actual source declaration, using the checker's bound parameter arrays.
+    std::map<std::string,std::vector<const EditorName*>> parameters;
+    for(const auto &name:p.editorNames)if(name.kind=="parameter_declaration")parameters[name.span.file].push_back(&name);
+    for(auto &[file,list]:parameters)std::sort(list.begin(),list.end(),[](auto a,auto b){return a->span.begin<b->span.begin;});
+    auto inRange=[&](const Span &span,auto visit){
+      const auto &list=parameters[span.file];auto it=std::lower_bound(list.begin(),list.end(),span.begin,[](auto name,size_t at){return name->span.begin<at;});
+      for(;it!=list.end()&&(*it)->span.end<=span.end;++it)visit(**it);
+    };
+    auto typeParameters=[&](const auto &decl){
+      std::map<std::string,size_t> slots;for(size_t i=0;i<decl.typeParameters.size();++i)slots[shortName(decl.typeParameters[i])]=i;
+      if(slots.empty())return;
+      inRange(decl.span,[&](const EditorName &name){auto found=slots.find(name.name);if(found==slots.end())return;auto i=found->second;
+        auto label="type parameter "+decl.typeParameters[i]+arity(i<decl.typeArities.size()?decl.typeArities[i]:0);
+        if(i<decl.typeBounds.size())label+=boundsText(decl.typeBounds[i]);information[{name.span.file,name.span.begin,name.span.end}]={"type_parameter",label};});
+    };
+    auto functionInfo=[&](const Function &f){
+      if(f.closure||!f.templateName.empty())return;typeParameters(f);
+      auto &table=f.traitSignature?members:declarations;if(table.contains(f.name))information[key(table.at(f.name))]={f.traitSignature?"trait_method":"function",sourceSignature(f)};
+      // Signature parameters also have real physical declaration tokens.
+      for(const auto &param:f.params)valueBinding({param.span.file,param.span.begin,param.span.end},"parameter",param.name,param.type);
+    };
+    for(const auto &f:p.functions)if(!f.traitSignature)functionInfo(f);
+    for(const auto &[_,f]:p.functionTemplates)if(!f.traitSignature)functionInfo(f);
+    auto structureInfo=[&](const Structure &s){
+      if(!s.templateName.empty())return;typeParameters(s);
+      if(declarations.contains(s.name))information[key(declarations.at(s.name))]={s.enumeration?"enum":"struct",std::string(s.exported?"pub ":"")+(s.enumeration?"enum ":"struct ")+s.name+generics(s)};
+      for(const auto &variant:s.variants){auto name=s.name+"::"+variant.name;std::string text="enum variant "+s.name+generics(s)+"::"+variant.name+"(";
+        for(size_t i=0;i<variant.fields.size();++i){const auto &field=variant.fields[i];if(i)text+=", ";text+=field.name+": "+shown(field.type);valueBinding({field.span.file,field.span.begin,field.span.end},"field",field.name,field.type);}text+=")";
+        if(variants.contains(name))information[key(variants.at(name))]={"variant",text};
+      }
+    };
+    for(const auto &s:p.structures)structureInfo(s);for(const auto &[_,s]:p.structureTemplates)structureInfo(s);
+    std::map<Key,Info> selfParameters;
+    for(const auto &trait:p.traits){
+      auto at=declarations.at(trait.name);information[key(at)]={"trait",std::string(trait.exported?"pub ":"")+"trait "+trait.name+"<Self"+arity(trait.selfArity)+">"};
+      Info self{"type_parameter","type parameter "+trait.name+"::Self"+arity(trait.selfArity)+" (trait self)"};selfParameters[key(at)]=self;
+      inRange(trait.span,[&](const EditorName &name){if(name.name=="Self")information[{name.span.file,name.span.begin,name.span.end}]=self;});
+      for(const auto &[name,bounds]:trait.associated){auto target=trait.name+"::"+name;if(members.contains(target))information[key(members.at(target))]={"associated_type","associated type "+target+"<Self>"+boundsText(bounds)};}
+      for(const auto &method:trait.methods)functionInfo(method);
+    }
+    for(const auto &impl:p.implementations){typeParameters(impl);auto at=declarations.at(impl.name);information[key(at)]={"impl",std::string(impl.exported?"pub ":"")+"impl "+impl.name+generics(impl)+": "+impl.trait+" for "+shown(impl.self)};}
+    for(const auto &endpoint:p.endpoints){auto at=declarations.at(endpoint.name);information[key(at)]={"endpoint","endpoint "+endpoint.name+" "+endpoint.method+" "+endpoint.path+" = "+endpoint.target};}
+    for(const auto &[file,unit]:p.units)for(const auto &dependency:unit.imports){auto at=aliases.at({file,dependency.alias});information[key(at)]={"import_alias","import "+dependency.alias+" = "+p.units.at(dependency.target).module+" ("+json(dependency.path,false)+")"};}
+    for(const auto &name:p.editorNames){
+      Location at{name.span.file,name.span.begin,name.span.end};
+      if(name.kind=="parameter"&&name.localTarget){auto target=key({name.localTarget->file,name.localTarget->begin,name.localTarget->end});
+        if(selfParameters.contains(target))identifierOverrides[key(at)]=selfParameters.at(target);
+      }
+      if(name.kind=="builtin_type"||name.kind=="builtin_bound"||(name.kind=="type"&&name.name=="result"&&name.target.empty())){
+        auto constructor=name.name=="list"||name.name=="result";intrinsicIdentifiers[key(at)]={name.kind=="builtin_bound"?"builtin_bound":"builtin_type",name.kind=="builtin_bound"?"constraint "+name.name:constructor?"type constructor "+name.name+"<_>":"type "+name.name};
+      }
+    }
+    std::map<Key,JSON> rows;size_t bytes=2; // Include array brackets and separators.
+    auto add=[&](const Location &at,const Info &info,JSON target){
+      if((info.detail.empty()&&info.kind!="syntax")||info.detail.size()>16384)throw Error("E_ANALYSIS_LIMIT","identifier detail is empty or exceeds 16 KiB");
+      JSON row=Object{{"file",at.file},{"range",interval(at.begin,at.end)},{"kind",info.kind},{"detail",info.kind=="syntax"?JSON(nullptr):JSON(info.detail)},{"definition",std::move(target)}};
+      auto found=rows.find(key(at));if(found!=rows.end()){if(found->second!=row)throw Error("E_ANALYSIS_CONTEXT","identifier has conflicting checked descriptions");return;}
+      bytes+=json(row,false).size()+(rows.empty()?0:1);if(bytes>8*1048576)throw Error("E_ANALYSIS_LIMIT","identifier descriptions exceed 8 MiB");tick();rows.emplace(key(at),std::move(row));
+    };
+    for(const auto &row:occurrences){auto object=row.getAsObject();auto atRange=object->getObject("range");Location at{object->getString("file")->str(),size_t(*atRange->getInteger("begin")),size_t(*atRange->getInteger("end"))};auto target=object->getObject("definition");auto targetRange=target->getObject("range");Key targetKey{target->getString("file")->str(),size_t(*targetRange->getInteger("begin")),size_t(*targetRange->getInteger("end"))};
+      auto override=identifierOverrides.find(key(at));auto info=information.find(targetKey);if(override!=identifierOverrides.end())add(at,override->second,*object->get("definition"));
+      else if(info!=information.end())add(at,info->second,*object->get("definition"));
+      else throw Error("E_ANALYSIS_RANGE","checked reference has no identifier description");
+    }
+    for(const auto &[at,info]:intrinsicIdentifiers)add({std::get<0>(at),std::get<1>(at),std::get<2>(at)},info,nullptr);
+    // Every lexer word receives an exact classification. Unclassified syntax
+    // deliberately has no description/definition, preventing a containing
+    // expression from impersonating its keyword or builtin-type token.
+    for(const auto &[file,list]:tokens)for(const auto &token:list)if(token.identifier){Location at{file,token.span.begin,token.span.end};if(!rows.contains(key(at)))add(at,{"syntax",""},nullptr);}
+    Array identifiers;for(auto &[_,row]:rows)identifiers.push_back(std::move(row));result.insert({"identifiers",std::move(identifiers)});
+  }
   std::map<std::string,Location> declarations,members,variants;
   std::map<std::pair<std::string,std::string>,Location> aliases;
   std::map<std::tuple<std::string,size_t,size_t>,Location> contractTargets;
@@ -103,11 +208,12 @@ struct Index {
         auto name=(owner->templateName.empty()?owner->name:owner->templateName)+"::"+variant->name;
         if(variants.contains(name))selected=variants.at(name);
       }}
-      occurrence(*at,selected,role);
+      occurrence(*at,selected,role);valueUse(*at,selected,e->kind==Expr::Invoke?e->args[0]->type:e->type);
     }
   }
   void pattern(P value){
     if(!references||!value)return;
+    if(details&&value->kind==Pattern::Boolean)intrinsicIdentifiers[{value->span.file,value->span.begin,value->span.end}]={"literal",shown(value->type)};
     if(value->kind==Pattern::Constructor&&value->type.kind==Type::Record){
       const auto &owner=p.structure(value->type.name);auto name=owner.templateName.empty()?owner.name:owner.templateName;
       if(auto at=referenceName(value->span,value->sourceRange)){
@@ -127,7 +233,7 @@ struct Index {
   }
   void declaration(const std::string &name,const std::string &local,const std::string &kind,const Span &span,const std::string &detail){
     auto selected=selection(span,local);declarations[name]=selected;tick();
-    binding(selected);
+    binding(selected);if(details)information[key(selected)]={kind,detail};
     symbols.push_back(Object{{"symbol",name},{"name",local},{"kind",kind},{"file",span.file},
       {"range",interval(span.begin,span.end)},{"selection",interval(selected.begin,selected.end)},{"detail",detail}});
   }
@@ -161,7 +267,10 @@ struct Index {
           else if(auto split=name.rfind("::");split!=std::string::npos&&declarations.contains(name.substr(0,split)))target=location(declarations.at(name.substr(0,split)));
         }
       }
+      if(details&&e->kind==Expr::Boolean)intrinsicIdentifiers[{e->span.file,e->span.begin,e->span.end}]={"literal",shown(e->type)};
       reference(e,target,e->kind==Expr::Call?"call":"read");
+      if(details&&target.kind()==JSON::Null&&(e->kind==Expr::Call||e->kind==Expr::Name||e->kind==Expr::FunctionRef)&&builtinNames().contains(e->text))
+        if(auto at=referenceName(e->span,e->sourceRange))intrinsicIdentifiers[key(*at)]={"builtin_function","builtin "+e->text+"; result "+shown(e->type)};
       tick();expressions.push_back(Object{{"file",e->span.file},{"range",interval(e->sourceRange.begin,e->sourceRange.end)},
         {"type",typeName(e->type)},{"definition",std::move(target)}});
     }
@@ -175,17 +284,17 @@ struct Index {
     if(references&&e->kind==Expr::Field&&e->args[0]->type.kind==Type::Record){
       const auto &owner=p.structure(e->args[0]->type.name);auto span=e->span;span.begin=span.end;
       for(const auto &field:owner.fields)if(field.name==e->text)
-        if(auto at=referenceName(span,e->sourceRange))occurrence(*at,{field.span.file,field.span.begin,field.span.end},"read");
+        if(auto at=referenceName(span,e->sourceRange)){Location target{field.span.file,field.span.begin,field.span.end};occurrence(*at,target,"read");valueUse(*at,target,e->type);}
     }
     for(const auto &arm:e->arms)pattern(arm->pattern);
     if(e->lambda){
-      auto child=scope;for(const auto &parameter:e->lambda->params){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;binding(at);}
+      auto child=scope;for(const auto &parameter:e->lambda->params){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;valueBinding(at,"parameter",parameter.name,parameter.type);}
       block(e->lambda->body,std::move(child));
     }
     for(size_t i=0;i<e->args.size();++i){
       auto child=scope;
       for(const auto &arm:e->arms)if((arm->guard&&i==arm->guard)||i==arm->value)
-        for(const auto &parameter:arm->bindings)if(parameter.name!="_"){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;binding(at);}
+        for(const auto &parameter:arm->bindings)if(parameter.name!="_"){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;valueBinding(at,"pattern_binding",parameter.name,parameter.type);}
       expression(e->args[i],std::move(child));
     }
   }
@@ -197,12 +306,12 @@ struct Index {
       }
       if(s->kind==Stmt::Let||s->kind==Stmt::Var){
         auto span=s->span;span.end=s->sourceRange.end;
-        auto name=selection(span,s->name);scope[s->name]=name;binding(name);
+        auto name=selection(span,s->name);scope[s->name]=name;valueBinding(name,"local",s->name,s->type);
       }
       block(s->body,scope);block(s->alternative,scope);
       for(const auto &arm:s->arms){auto child=scope;
         pattern(arm->pattern);
-        for(const auto &parameter:arm->bindings)if(parameter.name!="_"){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;binding(at);}
+        for(const auto &parameter:arm->bindings)if(parameter.name!="_"){auto at=Location{parameter.span.file,parameter.span.begin,parameter.span.end};child[parameter.name]=at;valueBinding(at,"pattern_binding",parameter.name,parameter.type);}
         block(arm->body,std::move(child));}
     }
   }
@@ -214,7 +323,7 @@ struct Index {
     return text;
   }
   void function(const Function &f){
-    Scope scope;for(const auto &param:f.params){auto at=Location{param.span.file,param.span.begin,param.span.end};scope[param.name]=at;binding(at);}
+    Scope scope;for(const auto &param:f.params){auto at=Location{param.span.file,param.span.begin,param.span.end};scope[param.name]=at;valueBinding(at,"parameter",param.name,param.type);}
     block(f.body,std::move(scope));
   }
   JSON run(){
@@ -229,7 +338,7 @@ struct Index {
     for(const auto &[_,f]:p.functionTemplates)addFunction(f);
     auto addStructure=[&](const Structure &s){if(s.templateName.empty()){
       declaration(s.name,s.localName,s.enumeration?"enum":"struct",s.span,(s.enumeration?"enum ":"struct ")+s.localName);
-      for(const auto &field:s.fields)binding({field.span.file,field.span.begin,field.span.end});
+      for(const auto &field:s.fields)valueBinding({field.span.file,field.span.begin,field.span.end},"field",field.name,field.type);
       if(references)for(const auto &variant:s.variants){auto at=Location{variant.span.file,variant.span.begin,variant.span.end};variants[s.name+"::"+variant.name]=at;binding(at);}
     }};
     for(const auto &s:p.structures)addStructure(s);
@@ -240,15 +349,16 @@ struct Index {
     sourceNames();
     for(const auto &f:p.functions)if(!f.closure&&!f.traitSignature&&f.templateName.empty())function(f);
     for(const auto &[_,f]:p.functionTemplates)function(f);
-    Object result{{"schema",references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},
+    Object result{{"schema",details?"nex.analysis/3":references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},
       {"entry",p.entryUnit},{"files",std::move(files)},{"symbols",std::move(symbols)},{"expressions",std::move(expressions)},
       {"graph_written",false},{"source_written",false},{"executed",false}};
+    identifierDetails(result);
     if(references)result.insert({"occurrences",std::move(occurrences)});
     return result;
   }
 };
 }
-llvm::json::Value editorAnalysis(const std::string &entry,const std::string &root,const llvm::json::Value &overlay,bool references){
+llvm::json::Value editorAnalysis(const std::string &entry,const std::string &root,const llvm::json::Value &overlay,bool references,bool details){
   std::map<std::string,std::string> sources;
   if(overlay.kind()!=JSON::Null){
     auto object=overlay.getAsObject();
@@ -263,7 +373,7 @@ llvm::json::Value editorAnalysis(const std::string &entry,const std::string &roo
     }
   }
   validateProjectMetadata(root);
-  auto program=loadProgram(entry,root,true,sources,references);
-  return Index(program,references).run();
+  auto program=loadProgram(entry,root,true,sources,references||details,details);
+  return Index(program,references,details).run();
 }
 }

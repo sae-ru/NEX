@@ -383,11 +383,11 @@ test fn examples() -> unit {
         report['evidence']['editor'] = evidence
         language_report = json.loads(run([sys.executable, resources / 'editor/lsp/acceptance.py',
             compiler, '--output', root / 'language-server']))
-        require(language_report['ok'] and language_report['source_and_graph_unchanged'] and language_report.get('reference_checks') and language_report.get('type_reference_checks'),
+        require(language_report['ok'] and language_report['source_and_graph_unchanged'] and language_report.get('reference_checks') and language_report.get('type_reference_checks') and language_report.get('identifier_checks'),
                 'installed compiler language-server acceptance failed')
         report['evidence']['language_server'] = language_report
         client_report = json.loads(run([node, directory / 'lsp-acceptance.js', compiler, root / 'editor-language-client']))
-        require(client_report['ok'] and client_report['source_and_graph_unchanged'] and client_report.get('reference_checks') and client_report.get('type_reference_checks'), 'installed Node language client failed')
+        require(client_report['ok'] and client_report['source_and_graph_unchanged'] and client_report.get('reference_checks') and client_report.get('type_reference_checks') and client_report.get('identifier_checks'), 'installed Node language client failed')
         report['evidence']['editor_language_client'] = client_report
 
     def new_project():

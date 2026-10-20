@@ -48,7 +48,7 @@ async function accept(compiler, output) {
     const definition = await client.request('textDocument/definition', query);
     assert.equal(definition.length, 1); assert.equal(definition[0].uri, modelURI);
     assert.deepEqual(definition[0].range, {start:{line:1,character:7},end:{line:1,character:13}});
-    assert.equal((await client.request('textDocument/hover',query)).contents.value, 'i64');
+    assert.equal((await client.request('textDocument/hover',query)).contents.value, 'pub shared fn model::answer(n: i64) -> i64');
     report.checks.push('actual Node stdio client and checked cross-module definition/hover/outline');
     const references = await client.request('textDocument/references', {...query,context:{includeDeclaration:false}});
     assert.deepEqual(references, [{uri:sourceURI,range:{start:query.position,end:{line:2,character:query.position.character+6}}}]);
@@ -64,7 +64,7 @@ async function accept(compiler, output) {
     assert.deepEqual(errors[0].range.start, {line:1,character:invalid.split('\r\n')[1].indexOf('missing')});
     client.notify('textDocument/didChange', {textDocument:{uri:sourceURI,version:3},contentChanges:[{text:main}]});
     assert.deepEqual(await diagnostics(3), []);
-    assert.equal((await client.request('textDocument/hover',query)).contents.value, 'i64');
+    assert.equal((await client.request('textDocument/hover',query)).contents.value, 'pub shared fn model::answer(n: i64) -> i64');
     report.checks.push('unsaved Unicode/CRLF diagnostic and repair using matching document versions');
     const typedLibrary = "module model;pub trait Content{type Item;fn get(value:Self)->Content::Item<Self>;}pub struct Box<T>{value:T;}fn extract<T>(value:Box<T>)->T{return value.value;}pub impl boxed<T>:Content for Box<T>{type Item=T;get=extract<T>;}";
     const typedMain = "module editor_types;import \"./model 🧠.nex\" as m;fn main()->i64{let value:m::Box<i64>=m::Box<i64>(42);return m::Content<m::Box<i64>>::get(value);}";
@@ -78,6 +78,17 @@ async function accept(compiler, output) {
     assert.equal(parameter.length,2);
     const contract = await client.request('textDocument/definition', typedQuery(sourceURI,typedMain,typedMain.indexOf('get(value)')));
     assert.deepEqual(contract,[{uri:modelURI,range:{start:{line:0,character:typedLibrary.indexOf('get(value')},end:{line:0,character:typedLibrary.indexOf('get(value')+3}}}]);
+    for (const [uri,text,at,expected] of [
+      [sourceURI,typedMain,typedMain.indexOf('m;'),'import m = model ("./model 🧠.nex")'],
+      [modelURI,typedLibrary,typedLibrary.indexOf('T>{'),'type parameter model::Box::T'],
+      [modelURI,typedLibrary,typedLibrary.indexOf('Item;'),'associated type model::Content::Item<Self>'],
+      [sourceURI,typedMain,typedMain.indexOf('get(value)'),'shared fn model::Content::get(value: Self) -> model::Content::Item<Self>'],
+      [sourceURI,typedMain,typedMain.indexOf('i64>=m::Box'),'type i64']]) {
+      assert.deepEqual((await client.request('textDocument/hover',typedQuery(uri,text,at))).contents,{kind:'plaintext',value:expected});
+    }
+    assert.deepEqual(await client.request('textDocument/definition',typedQuery(sourceURI,typedMain,typedMain.indexOf('i64>=m::Box'))),[]);
+    report.identifier_checks = true;
+    report.checks.push('exact identifier hover and builtin types without an invented physical definition');
     report.type_reference_checks = true;
     report.checks.push('type parameter scopes, alias identities and exact trait contract definitions');
     await client.dispose();

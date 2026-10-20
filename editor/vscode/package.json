@@ -3,7 +3,7 @@
   "displayName": "NEX Language Tools",
   "description": "NEX source diagnostics, type hints, navigation and native debugging from the installed compiler.",
   "publisher": "sae-ru",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"

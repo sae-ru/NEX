@@ -408,7 +408,7 @@ class LanguageServer(harness.ToolchainCase):
             prefix=source[:begin];start={'line':prefix.count('\n'),'character':len(prefix.rsplit('\n',1)[-1].encode('utf-16-le'))//2}
             self.assertEqual(client.request('textDocument/definition',query(at)),[{'uri':uri,'range':{'start':start,'end':{**start,'character':start['character']+len(name)}}}])
         self.assertEqual(len(client.request('textDocument/references',{**query(text.index('m::Maybe')),'context':{'includeDeclaration':True}})),6)
-        self.assertEqual(client.request('textDocument/hover',query(text.index('Maybe<i64>')))['contents']['value'],'enum Maybe')
+        self.assertEqual(client.request('textDocument/hover',query(text.index('Maybe<i64>')))['contents']['value'],'pub enum model::Maybe<T>')
         self.assertFalse((self.root/'.nex').exists());self.assertEqual(self.file.read_bytes(),text.encode())
         # Visibility and import errors are still compiler errors, with no partial index.
         helper.write_text(library.replace('pub enum','enum'))
@@ -472,6 +472,117 @@ class LanguageServer(harness.ToolchainCase):
             self.assertEqual(failure.exception.code,-32800)
         finally:server.close()
 
+    def test_details_preserve_both_legacy_projections_and_classify_exact_words(self):
+        text=('module hover;fn id<T:wire>(value:T)->T{return value;} '
+              'fn main()->i64{return id<i64>(42);}')
+        self.source(text);legacy=self.cli('analyze',self.file);refs=self.cli('analyze',self.file,'--references');details=self.cli('analyze',self.file,'--details')
+        self.assertEqual(details['schema'],'nex.analysis/3')
+        normalize=lambda value:{k:v for k,v in value.items() if k not in ('schema','occurrences','identifiers')}
+        self.assertEqual(normalize(legacy),normalize(refs));self.assertEqual(normalize(refs),normalize(details))
+        self.assertEqual(refs['occurrences'],details['occurrences'])
+        names={row['range']['begin']:row for row in details['identifiers']}
+        self.assertEqual(names[text.index('T:wire')]['kind'],'type_parameter')
+        self.assertEqual(names[text.index('T:wire')]['detail'],'type parameter hover::id::T: wire')
+        self.assertEqual(names[text.index('wire>')]['detail'],'constraint wire');self.assertIsNone(names[text.index('wire>')]['definition'])
+        primitive=names[text.index('i64>(42)')];self.assertEqual(primitive['kind'],'builtin_type');self.assertEqual(primitive['detail'],'type i64');self.assertIsNone(primitive['definition'])
+        self.assertEqual(names[text.index('module')]['kind'],'syntax');self.assertIsNone(names[text.index('module')]['detail'])
+        self.assertEqual(names[text.index('id<T:wire>')]['detail'],'shared fn hover::id<T: wire>(value: T) -> T')
+        duplicate=self.cli('analyze',self.file,'--details','--references',ok=False);self.assertEqual(duplicate['code'],'E_OPTION')
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_actual_hover_and_definition_fix_069_primitive_and_generic_counterexample(self):
+        text='module hover; fn id<T>(value:T)->T{return value;} fn main()->i64{return id<i64>(42);}'
+        self.source(text);client=self.client();client.initialize();client.open(self.file,text);self.assertEqual(client.diagnostics(self.file,1),[])
+        def query(at):return {'textDocument':{'uri':self.file.as_uri()},'position':{'line':0,'character':at}}
+        at=text.index('i64>(42)');self.assertEqual(client.request('textDocument/definition',query(at)),[])
+        self.assertEqual(client.request('textDocument/hover',query(at)),{'contents':{'kind':'plaintext','value':'type i64'},'range':{'start':{'line':0,'character':at},'end':{'line':0,'character':at+3}}})
+        at=text.index('T>(value');self.assertEqual(client.request('textDocument/hover',query(at))['contents']['value'],'type parameter hover::id::T')
+        use=text.index('T)->');definition=client.request('textDocument/definition',query(use));self.assertEqual(definition[0]['range']['start']['character'],at)
+        self.assertIsNone(client.request('textDocument/hover',query(text.index('return value'))))
+        self.assertEqual(client.request('textDocument/hover',query(text.index('id<i64>')))['contents']['value'],'shared fn hover::id<T>(value: T) -> T')
+        self.assertFalse((self.root/'.nex').exists());self.assertEqual(self.file.read_text(),text)
+
+    def test_identifier_details_cover_aliases_contracts_fields_and_unicode_crlf(self):
+        library=('// Я🧠\r\nmodule model;pub trait Content{type Item;fn get(value:Self)->Content::Item<Self>;}'
+                 'pub struct Box<T>{value:T;}fn extract<T>(value:Box<T>)->T{return value.value;}'
+                 'pub impl boxed<T>:Content for Box<T>{type Item=T;get=extract<T>;}')
+        helper=self.root/'model 🧠.nex';helper.write_bytes(library.encode())
+        text=('module hover;\r\nimport "./model 🧠.nex" as m;\r\nfn main()->i64{let s:str="Я🧠";'
+              'let value:m::Box<i64>=m::Box<i64>(42);return m::Content<m::Box<i64>>::get(value);}')
+        self.source(text);data=self.cli('analyze',self.file,'--details');files={row['key']:row for row in data['files']}
+        def record(source,key,word,at=0):
+            begin=len(source[:source.index(word,at)].encode());return next(row for row in data['identifiers'] if row['file']==key and row['range']['begin']==begin)
+        alias=record(text,'main.nex','m;',text.index(' as '));self.assertEqual(alias['kind'],'import_alias');self.assertIn('import m = model',alias['detail'])
+        method=record(library,helper.name,'get(value');self.assertEqual(method['kind'],'trait_method');self.assertEqual(method['detail'],'shared fn model::Content::get(value: Self) -> model::Content::Item<Self>')
+        associated=record(library,helper.name,'Item;');self.assertEqual(associated['detail'],'associated type model::Content::Item<Self>')
+        self_use=record(library,helper.name,'Self)');self.assertEqual(self_use['kind'],'type_parameter');self.assertEqual(self_use['detail'],'type parameter model::Content::Self (trait self)')
+        member_binding=record(library,helper.name,'get=extract');self.assertEqual(member_binding['detail'],method['detail']);self.assertEqual(member_binding['definition'],method['definition'])
+        ordinary=record(library,helper.name,'extract<T>',library.index('fn extract'));self.assertEqual(ordinary['detail'],'shared fn model::extract<T>(value: model::Box<T>) -> T')
+        field=record(library,helper.name,'value.value',library.index('fn extract'))
+        self.assertEqual(field['kind'],'parameter')
+        client=self.client();client.initialize();client.open(self.file,text);client.open(helper,library);self.assertEqual(client.diagnostics(self.file,1),[])
+        at=text.index('get(value)');prefix=text[:at];query={'textDocument':{'uri':self.file.as_uri()},'position':{'line':prefix.count('\n'),'character':len(prefix.rsplit('\n',1)[-1].encode('utf-16-le'))//2}}
+        self.assertEqual(client.request('textDocument/hover',query)['contents']['value'],method['detail'])
+        target=client.request('textDocument/definition',query)[0];self.assertEqual(target['uri'],helper.resolve().as_uri());self.assertEqual(target['range']['start']['line'],1)
+        self.assertFalse((self.root/'.nex').exists());self.assertEqual(self.file.read_bytes(),text.encode());self.assertEqual(helper.read_bytes(),library.encode())
+
+    def test_higher_kind_and_ordinary_self_names_have_distinct_checked_descriptions(self):
+        text=('module kinds;trait Mapper<Self<_>>{fn map<A,B>(values:Self<A>,apply:fn(A)->B)->Self<B>;} '
+              'fn ordinary<Self>(value:Self)->Self{return value;} '
+              'fn main()->i64{let yes:bool=true;let call:fn(i64)->i64=fn(value:i64)->i64{return value;};return call(42);}')
+        self.source(text);data=self.cli('analyze',self.file,'--details');rows={row['range']['begin']:row for row in data['identifiers'] if row['file']=='main.nex'}
+        first=text.index('Self<_>');second=text.index('Self>(value');self.assertEqual(rows[first]['detail'],'type parameter kinds::Mapper::Self<_> (trait self)');self.assertEqual(rows[second]['detail'],'type parameter kinds::ordinary::Self')
+        self.assertNotEqual(rows[first]['definition'],rows[second]['definition']);self.assertEqual(rows[text.index('true;')]['detail'],'bool')
+        self.assertIsNone(rows[text.rindex('return value')]['detail']);self.assertEqual(rows[text.rindex('return value')]['kind'],'syntax')
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_checked_identifier_conflicts_null_targets_and_cancellation_are_explicit(self):
+        spec=importlib.util.spec_from_file_location('nex_lsp_details',harness.REPO/'editor/lsp/server.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        server=module.Server(harness.NEX,output=io.BytesIO());file={'key':'main.nex','path':str(self.file),'text':'T','hash':'a'*64};row={'file':'main.nex','range':{'begin':0,'end':1},'kind':'type_parameter','detail':'type parameter one::T','definition':{'file':'main.nex','range':{'begin':0,'end':1}}};index={'files':[file],'identifiers':[row],'occurrences':[],'symbols':[],'expressions':[]};cache={'epoch':0,'indices':[index],'documents':{}};query={'textDocument':{'uri':self.file.as_uri()},'position':{'line':0,'character':0}}
+        try:
+            self.assertEqual(server.query('textDocument/hover',query,cache)['contents']['value'],row['detail'])
+            cache['indices'].append({**index,'identifiers':[{**row,'detail':'type parameter two::T'}]})
+            for method in ['textDocument/hover','textDocument/definition']:
+                with self.assertRaises(module.RPCError) as error:server.query(method,query,cache)
+                self.assertEqual(error.exception.code,-32801)
+            cache['indices'].pop();index['identifiers']=[{**row,'kind':'builtin_type','detail':'type i64','definition':None}]
+            self.assertEqual(server.query('textDocument/definition',query,cache),[])
+            cancel=threading.Event();cancel.set()
+            with self.assertRaises(module.RPCError) as error:server.query('textDocument/hover',query,cache,cancel)
+            self.assertEqual(error.exception.code,-32800)
+            index['identifiers']=[{**row,'kind':'syntax','detail':None,'definition':None}];self.assertIsNone(server.query('textDocument/hover',query,cache))
+        finally:server.close()
+
+    def test_details_limit_fails_without_partial_output_or_legacy_contract_change(self):
+        # The code is valid; the source declaration's signature exceeds the new
+        # explicit per-identifier display bound, while legacy formats still work.
+        params=[('p'+str(i)+'x'*280) for i in range(64)]
+        text='module bounds;fn wide('+','.join(name+':i64' for name in params)+')->i64{return '+params[0]+';}fn main()->i64{return 42;}'
+        self.source(text);self.assertTrue(self.cli('analyze',self.file)['ok']);self.assertTrue(self.cli('analyze',self.file,'--references')['ok'])
+        result=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(result['code'],'E_ANALYSIS_LIMIT');self.assertIn('16 KiB',result['message'])
+        self.assertNotIn('identifiers',result);self.assertFalse((self.root/'.nex').exists())
+
+    def test_details_keep_template_signatures_and_concrete_field_value_types(self):
+        text=('module details;struct Box<T>{value:T;}'
+              'fn first<T>(box:Box<T>)->T{return box.value;}'
+              'test fn proof()->unit!{io}{print(42);}'
+              'fn main()->i64!{io}{let b:Box<i64>=Box<i64>(42);print(b.value);return first<i64>(b);}')
+        self.source(text);data=self.cli('analyze',self.file,'--details');rows={row['range']['begin']:row for row in data['identifiers'] if row['file']=='main.nex'}
+        self.assertEqual(rows[text.index('first<i64>')]['detail'],'shared fn details::first<T>(box: details::Box<T>) -> T')
+        self.assertEqual(rows[text.index('box.value')+4]['detail'],'value: T')
+        self.assertEqual(rows[text.index('b.value')+2]['detail'],'value: i64')
+        self.assertEqual(rows[text.index('value:T')]['detail'],'value: T')
+        self.assertEqual(rows[text.index('proof()')]['detail'],'shared test fn details::proof() -> unit !{io}')
+        builtin=rows[text.index('print(b')];self.assertEqual(builtin['detail'],'builtin print; result unit');self.assertIsNone(builtin['definition'])
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_details_total_json_bound_is_separate_from_source_and_legacy_limits(self):
+        name='f'+'x'*250
+        text='module bounds;fn '+name+'(n:i64)->i64{return n;}fn main()->i64{'+(name+'(42);')*22000+'return 42;}'
+        self.source(text);self.assertTrue(self.cli('analyze',self.file)['ok']);self.assertTrue(self.cli('analyze',self.file,'--references')['ok'])
+        value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
+        self.assertFalse((self.root/'.nex').exists())
+
     def test_lifecycle_fragmented_messages_and_method_errors(self):
         client=self.client()
         first=client.response(client.send('textDocument/hover',{},request=True))
@@ -516,7 +627,7 @@ class LanguageServer(harness.ToolchainCase):
         query['position']={'line':1,'character':43}
         local=client.request('textDocument/definition',query)
         self.assertEqual(local[0]['range']['start'],{'line':1,'character':26})
-        self.assertEqual(client.request('textDocument/hover',query)['contents']['value'],'i64')
+        self.assertEqual(client.request('textDocument/hover',query)['contents']['value'],'x: i64')
         self.assertFalse((self.root/'.nex').exists())
 
     def test_imported_document_unsaved_and_old_versions_are_ignored(self):
@@ -616,7 +727,7 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertTrue(report['type_reference_checks']);self.assertEqual(report['messages_sent'],23);self.assertEqual(report['stderr'],'')
+        self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertEqual(report['messages_sent'],29);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

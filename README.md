@@ -8,7 +8,7 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.69.0 / language0.16**, under development.
+The current candidate is **toolchain0.70.0 / language0.16**, under development.
 The language includes checked integers/finite floats, Unicode strings, immutable
 aggregates, exhaustive matching, generics, traits/associated types, constructor
 parameters, function values and snapshot closures. Types, effects, client/server
@@ -18,14 +18,20 @@ uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 The development chain includes the interpreter, SQLite/BLAKE3 revision store,
 dependency locks, incremental builds, transactional graph patches, task contracts,
 scalar Z3 verification, LLDB/DAP, native profiling and VS Code editing/debugging.
-The actual root passes all78 regression groups and installed SDK acceptance of
+The preceding verified0.69 root passes all78 regression groups and installed SDK acceptance of
 23 phases/332 commands/197 indexed resources. The corrected implementation
 candidate also passes full78/SDK acceptance on macOS and Linux ARM64; Linux
 completes16 live suites and its SDK runs without source checkout or external
 network. Exact scopes and the intentionally stopped first packaging candidate
 are retained in [the evidence](docs/evidence/toolchain-0.69.0.json).
 
-The [language server](docs/lsp.md) analyzes unsaved source without saving files,
+The0.70 candidate adds exact identifier descriptions through opt-in
+`analyze --details` (`nex.analysis/3`) and VS Code0.5. Generic parameters, source
+signatures, aliases and trait members have checked descriptions; builtin types
+have no invented source definition. Legacy analysis/1 and analysis/2 remain
+explicitly available. Its full SDK/platform/installed-IDE gates are pending.
+
+The preceding0.69 [language server](docs/lsp.md) analyzes unsaved source without saving files,
 running programs or changing graph history. [VS Code0.4](docs/editor.md) provides
 diagnostics, checked types, outlines, definitions and references. It distinguishes
 lexical values/type parameters, nominal types, enum variants, fields, trait

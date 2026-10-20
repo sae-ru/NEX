@@ -81,7 +81,7 @@ def accept(compiler, output):
         defined = request('textDocument/definition',{**query,'position':{'line':2,'character':22}})
         assert defined==[{'uri':source.as_uri(),'range':{'start':{'line':1,'character':3},'end':{'line':1,'character':8}}}],defined
         hover = request('textDocument/hover',{**query,'position':{'line':2,'character':22}})
-        assert hover['contents']['value']=='i64',hover
+        assert hover['contents']['value']=='shared fn editor_sdk::twice(n: i64) -> i64',hover
         report['checks'].append('actual stdio lifecycle, declarations, checked hover and definition')
         reference_query={**query,'position':{'line':2,'character':22},'context':{'includeDeclaration':False}}
         references=request('textDocument/references',reference_query)
@@ -126,6 +126,17 @@ def accept(compiler, output):
                                     (typed_library,helper,typed_library.index('get=extract'),typed_library.index('get(value'))]:
             result=request('textDocument/definition',typed_query(text,path,at))
             assert result==[{'uri':helper.as_uri(),'range':{'start':{'line':0,'character':target},'end':{'line':0,'character':target+(4 if text[at:].startswith('Item') else 3)}}}],result
+        for text,path,at,expected in [
+                (typed_main,source,typed_main.index('m;'),'import m = model ("./new module 🧠.nex")'),
+                (typed_library,helper,typed_library.index('T>{'),'type parameter model::Box::T'),
+                (typed_library,helper,typed_library.index('Item;'),'associated type model::Content::Item<Self>'),
+                (typed_main,source,typed_main.index('get(value)'),'shared fn model::Content::get(value: Self) -> model::Content::Item<Self>'),
+                (typed_main,source,typed_main.index('i64>=m::Box'),'type i64')]:
+            value=request('textDocument/hover',typed_query(text,path,at))
+            assert value['contents']=={'kind':'plaintext','value':expected},value
+        assert request('textDocument/definition',typed_query(typed_main,source,typed_main.index('i64>=m::Box')))==[]
+        report['identifier_checks']=True
+        report['checks'].append('exact alias, generic, associated-member, method and builtin-type descriptions; no invented builtin definition')
         report['type_reference_checks']=True
         report['checks'].append('checked type parameters, import aliases, trait member contracts and implementation bindings')
         send('textDocument/didClose',{'textDocument':{'uri':helper.as_uri()}})

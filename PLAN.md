@@ -1,3 +1,11 @@
+# Current0.70 identifier-description candidate
+
+- [x] Add explicit analysis/3 with exact word descriptions and null builtin targets.
+- [x] Keep source language0.16, canonical formats and strict analysis/1-/2 shapes.
+- [ ] Finish full regression, installed SDK and actual private IDE/platform gates.
+- [ ] Integrate after checks while preserving Git and all47 graph revisions/all16 tables.
+- [ ] Continue completion/rename, recovery/indexing and the remaining development chain.
+
 # Current0.69 editor checkpoint
 
 - [x] Validate precise parser/binder type, trait, member and import reference projection.

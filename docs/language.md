@@ -44,6 +44,11 @@ language-version migration; default analysis/1 consumers remain supported.
 Toolchain0.69 extends the same opt-in editor projection to type/trait/member/import
 names. This is source metadata only; language0.16 and canonical formats are unchanged.
 
+Toolchain0.70 adds opt-in identifier descriptions (`analyze --details`, analysis/3)
+for editing. These are captured source metadata, not a new type, source syntax,
+semantic identity or language-version migration. Legacy analysis/1 and analysis/2
+remain available independently; see [LSP](lsp.md).
+
 ## Source and program structure
 
 Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.

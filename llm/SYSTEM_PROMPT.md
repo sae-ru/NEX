@@ -387,3 +387,16 @@ When `editor_analysis` or `language_server` is advertised, read `docs/lsp.md`. U
 When editor_features includes vscode_stdio_language_client, read docs/editor.md. VS Code edits use the same checker through nex lsp; diagnoses and navigation belong to exact unsaved document versions. IDE source analysis does not replace check/test/task acceptance or synchronize graph revisions. Use the installed compiler and matching extension resources.
 
 When editor_analysis advertises references_command, use that explicit --references form for nex.analysis/2 and its indexed schema. Default analyze remains nex.analysis/1. Occurrence intervals and declaration targets belong to captured source, not persistent graph IDs. Query actual reference coverage/limits; use only the advertised type/trait/import-alias coverage and do not infer closed-file workspace coverage. A method contract, implementation binding and ordinary target function are distinct reference entities. Type parameters are lexical declarations; qualified import/type/member components have separate targets. Implicit Self may point to its trait name. References never authorize source edits, graph synchronization or rename.
+
+When editor_analysis advertises identifiers_command, use the explicit --details
+form and indexed nex.analysis/3 schema for exact identifier descriptions.
+--details and --references are mutually exclusive; keep legacy consumers on
+their original command/schema. Identifier ranges are actual captured lexer
+words. Read detail and definition independently: a null detail means syntax
+without a semantic hover, and a null definition means no physical declaration.
+Never substitute a containing expression target for such a word. Function
+hover describes the source template signature; concrete value reads can show
+instantiated types. Preserve trait-contract versus implementation and lexical
+parameter/alias distinctions. Respect combined-entry, detail-byte and total
+identifier JSON limits; a failed projection yields no partial index. These
+readonly descriptions neither edit source nor synchronize graph history.

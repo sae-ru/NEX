@@ -29,7 +29,7 @@ async function run() {
   assert.equal(vscode.workspace.isTrusted, true);
   const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');
   assert.ok(extension && extension.extensionPath.startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
-  assert.equal(extension.packageJSON.version, '0.4.0');
+  assert.equal(extension.packageJSON.version, '0.5.0');
   await vscode.workspace.getConfiguration('nex', folder.uri).update('compilerPath', process.env.NEX_EDITOR_COMPILER, vscode.ConfigurationTarget.Workspace);
   await extension.activate();
   const source = vscode.Uri.joinPath(folder.uri, 'main with spaces.nex');
@@ -86,6 +86,18 @@ async function run() {
   const typeParameters = await eventually(() => vscode.commands.executeCommand('vscode.executeReferenceProvider', model, modelDocument.positionAt(typedLibrary.indexOf('T>{'))),
     values => values?.length === 2, 'lexical type parameter references');
   assert.ok(typeParameters.every(value => value.uri.fsPath === model.fsPath));
+  for (const [uri,doc,text,at,expected] of [
+    [source,document,typedMain,typedMain.indexOf('m;'),'import m = model ("./model 🧠.nex")'],
+    [model,modelDocument,typedLibrary,typedLibrary.indexOf('T>{'),'type parameter model::Box::T'],
+    [model,modelDocument,typedLibrary,typedLibrary.indexOf('Item;'),'associated type model::Content::Item<Self>'],
+    [source,document,typedMain,typedMain.indexOf('get(value)'),'shared fn model::Content::get(value: Self) -> model::Content::Item<Self>'],
+    [source,document,typedMain,typedMain.indexOf('i64>=m::Box'),'type i64']]) {
+    const values = await eventually(() => vscode.commands.executeCommand('vscode.executeHoverProvider', uri, doc.positionAt(at)),
+      rows => rows?.some(row => row.contents.some(content => content.value === expected)), 'exact identifier hover: ' + expected);
+    assert.ok(values.some(row => row.range?.start.isEqual(doc.positionAt(at))));
+  }
+  const primitiveDefinitions = await vscode.commands.executeCommand('vscode.executeDefinitionProvider', source, document.positionAt(typedMain.indexOf('i64>=m::Box')));
+  assert.deepEqual(primitiveDefinitions, []);
   assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
   assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
   assert.equal(fs.existsSync(path.join(folder.uri.fsPath, '.nex')), false);
@@ -132,7 +144,7 @@ async function run() {
   const report = {schema:'nex.editor-ide-acceptance/1',ok:true,editor:vscode.version,
     extension_version:extension.packageJSON.version,extension_path:extension.extensionPath,
     compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
-    actual_installed_vsix:true,checked_references:true,type_reference_checks:true,imported_unsaved_context_checked:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
+    actual_installed_vsix:true,checked_references:true,type_reference_checks:true,identifier_checks:true,imported_unsaved_context_checked:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
     outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
     unicode_crlf_unsaved_error:true,explicit_crlf_eol_asserted:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
     physical_sources_unchanged:true,graph_not_created:true,close_verified:true,

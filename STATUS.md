@@ -1,3 +1,23 @@
+# Candidate development toolchain0.70 / language0.16
+
+The isolated0.70 candidate adds `analyze --details` / `nex.analysis/3`, a strict
+indexed schema and exact lexer-word descriptions for VS Code0.5. Source
+signatures, lexical values/generics, aliases, nominal declarations and trait
+members use actual parser/binder/checker data. Builtin types/constraints have
+null physical targets; syntax words have null descriptions and targets. This
+fixes the real0.69 counterexample where `i64` in `id<i64>(42)` navigated to `id`.
+Dedicated compiler/LSP cases cover UTF-16/CRLF, conflicts/cancellation, source
+and graph isolation, template/concrete types and explicit output limits.
+Default analysis/1 and `--references` analysis/2 retain their strict wire shapes;
+source language0.16 and canonical formats require no migration.
+
+Full current-source regression, installed SDK, actual private IDE and platform
+gates remain pending. Root0.69, all47 revisions/all16 tables/schema and ordinary
+Git HEAD/index remain unchanged while the candidate is validated. Completion,
+rename, parser recovery/incremental indexing, closed unreachable files,
+cross-workspace buffers, Studio and the rest of the full objective remain open.
+The following verified0.69 results retain their original source/compiler scope.
+
 # Verified root development checkpoint0.69 / language0.16
 
 Core source 787525a23c5fb313df2298d1532463d7e47b5728 (717 files) builds and passes all78 CTest groups

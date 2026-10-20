@@ -27,7 +27,7 @@ class EditorLSP(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertEqual(len(report['checks']),5);self.assertTrue(report['reference_checks']);self.assertTrue(report['type_reference_checks'])
+        self.assertEqual(len(report['checks']),6);self.assertTrue(report['reference_checks']);self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertEqual(report['requests'],17)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

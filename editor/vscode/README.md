@@ -1,6 +1,6 @@
-# NEX Language Tools 0.3
+# NEX Language Tools 0.5
 
-Open a .nex file in a trusted physical workspace. Select an installed NEX0.69+
+Open a .nex file in a trusted physical workspace. Select an matching installed NEX0.70
 compiler with `nex.compilerPath`; its matching resources provide `nex lsp`.
 The extension displays unsaved-source diagnostics, type hover, definitions, references and
 an outline through that server. **NEX: Restart Language Server** restarts the
@@ -84,4 +84,8 @@ API references: [debugger extensions](https://code.visualstudio.com/api/extensio
 [workspace trust](https://code.visualstudio.com/api/extension-guides/workspace-trust),
 [VSIX packaging](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
 
-Extension0.4 uses the matching toolchain0.69 source projection for type/trait/member/alias definitions and references. Separate qualifier components retain separate declaration targets; see the installed language-server guide for scope and limits.
+Extension0.5 uses the matching toolchain0.70 analysis/3 source projection. Hover
+shows exact source signatures, generic parameters, aliases and trait members;
+builtin types/constraints have no invented physical definition. Separate
+qualifier components retain separate targets. See the installed language-server
+guide for coverage, explicit nulls, output bounds and pending features.

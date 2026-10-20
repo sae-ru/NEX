@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.69
+# NEX language server: development toolchain 0.70
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -56,9 +56,9 @@ messages receive an error with a null ID; input bodies must be strict UTF-8.
 Document symbols cover source functions, struct/enum, trait, impl and endpoint
 declarations. No code is executed by hover or definition lookup.
 
-The matching VS Code0.3 client is described in [editor.md](editor.md). It
-requires a matching0.68+ compiler/resource set; retain the0.67 SDK/extension0.2
-for older language-server installations. The earlier0.67 actual installed IDE
+The matching VS Code0.5 client is described in [editor.md](editor.md). Its
+server requires matching0.70 compiler/resources and analysis/3; retain the
+matching older SDK/extension for an older installation. The earlier0.67 actual installed IDE
 checks retain their exact scope in STATUS.md; current0.68 full SDK/platform/IDE
 acceptance is separate. This adapter does not add Windows compiler-host support.
 Completion, rename, parser recovery/incremental indexing and the broader IDE
@@ -108,11 +108,9 @@ from Type equality, source/semantic serialization and revision hashes.
 
 The strict analysis/1 and analysis/2 shapes and roles remain unchanged. In
 analysis/2, exact occurrence targets take precedence for LSP definitions;
-legacy expression-definition fields retain their earlier behavior. Nominal and
-trait hover can describe the declaration. There is no dedicated type-parameter,
-associated-member or import-alias hover contract; do not interpret a containing
-expression's type as a new type-description API. Complete rename, parser
-recovery and incremental indexing remain pending. The search uses successfully checked project/import
+legacy expression-definition fields retain their earlier behavior. Toolchain0.70
+adds the separate identifier-description contract below. Complete rename,
+parser recovery and incremental indexing remain pending. The search uses successfully checked project/import
 indices and separately checked open files; it does not scan closed unreachable
 files or merge unsaved buffers from another client/workspace connection.
 Conflicting captured contents/binding contexts fail explicitly. Superseded or
@@ -126,3 +124,51 @@ compiler/stdio scenarios, including unsaved Unicode diagnostics, cross-file
 overlays, history isolation, cancellation and protocol lifecycle failures.
 
 Toolchain0.68 extends the VS Code0.3 client described in editor.md with checked references. Its document versions, cancellation, local size/Unicode guards and trusted physical workspace gate are independent of ordinary debug launches. Actual installed IDE and SDK checks retain exact source/compiler identities.
+
+## Exact identifier descriptions
+
+Toolchain0.70 uses a new explicit projection for hover and definitions:
+
+```sh
+nex analyze /project/main.nex --details --overlay /private/overlays.json --json
+```
+
+It returns `nex.analysis/3` following `llm/editor-identifiers.schema.json`.
+`--details` and `--references` are mutually exclusive; default analysis/1 and
+explicit analysis/2 keep their original strict schemas. Analysis/3 retains the
+same captured files, canonical revision, symbol and expression fields, adds the
+checked occurrences and an `identifiers` array. Signature parameters and enum
+payload fields also receive their real physical declaration occurrences here.
+These source metadata never enter source serialization, Type equality or graph IDs.
+
+Every actual lexer word token receives an exact file/byte range, `kind`,
+`detail` and `definition`. Semantic descriptions come from parsed/bound source
+declarations and checked value types. Functions show their qualified source
+signature with generic arity/bounds, realm, visibility and effects. Generic call
+hover keeps the source template signature; a concrete field read can show its
+checked instantiated value type. Source generic parameters, nominal headers,
+variants/payload fields, aliases, traits, associated members and implementation
+bindings retain their own meanings. A trait method describes its source
+contract, including on an implementation's left-hand binding. The ordinary
+function on the right retains its own signature. An implicit trait `Self` has a
+distinct description while its physical target remains the trait anchor.
+
+Builtin type/constructor and constraint tokens have a description and a null
+physical definition. Genuine builtin function calls show the builtin name and
+checked result type, without inventing a source declaration or full signature.
+Boolean words show `bool`. Other syntax words have null descriptions and null
+definitions. These nulls are intentional: the LSP must not substitute the type
+or declaration of a containing expression. Thus `i64` in `id<i64>(42)` cannot
+navigate to `id`, and `return` has no function-type hover. Literal/punctuation
+positions outside word tokens retain the earlier expression fallback.
+
+The selected word, target and captured contents must agree across checked
+entries; a conflict fails explicitly. UTF-8 intervals convert to exact UTF-16
+ranges, and cancellation/version checks apply during lookup. The projection
+shares the 200000 combined-entry/16MiB captured-source bounds, and additionally
+bounds each detail to16KiB of UTF-8 and the compact identifiers JSON array,
+including separators, to8MiB. An exceeded bound fails without a partial result.
+No source, Store, cache or application execution is performed. Readonly
+metadata does not authorize rename or graph synchronization. Closed unreachable
+files, cross-workspace buffers, completion/rename and parser recovery/incremental
+indexing remain pending; validation scope is recorded in STATUS.md.

@@ -110,3 +110,13 @@ nex export --revision HEAD --directory ../lesson-fixed --json
 For checked source references, query describe.editor_analysis and use its advertised references_command/schema. Keep analysis/1 consumers on the default command. Treat the new occurrence locations as bounded captured-source metadata and continue normal check/test/task acceptance after any edit.
 
 For source-reference navigation, keep the exact declaration file/byte interval from the checked occurrence. Do not conflate a trait method with its implementation function, an enum qualifier with its variant, an import alias with its imported symbol, or equally spelled parameters in different generic scopes. Default analysis/1 remains available; these source projections add no graph identity or source-edit authority.
+
+Для точных подсказок идентификаторов используйте `editor_analysis.identifiers_command`
+и схему analysis/3, если их сообщает установленный компилятор. `--details` нельзя
+совмещать с `--references`; старые форматы остаются отдельными командами.
+`detail:null` означает слово синтаксиса без семантической подсказки,
+`definition:null` — отсутствие физического определения. Нельзя заменять их
+описанием окружающего выражения. Сигнатура обобщённой функции описывает исходный
+шаблон, а тип чтения значения может быть конкретным. Лимиты и сохранность
+версии контекста обязательны; эти сведения не выполняют переименование и не
+дают права записи графа.
