@@ -1,6 +1,7 @@
 """Actual compiler/stdio LSP, unsaved projects and persistent-history isolation."""
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -297,6 +298,55 @@ class LanguageServer(harness.ToolchainCase):
             self.assertEqual(process.returncode,1)
             self.assertEqual(process.stdout,b'')
         client=self.client();client.send('exit');self.assertEqual(client.process.wait(timeout=10),1)
+
+    def test_timer_scheduling_and_shutdown_cannot_race(self):
+        spec=importlib.util.spec_from_file_location('nex_lsp_shutdown',harness.REPO/'editor/lsp/server.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        server=module.Server(harness.NEX,output=io.BytesIO())
+        entered=threading.Event();release=threading.Event();closed=threading.Event();errors=[]
+        original=server.executor.submit
+        def delayed(*args,**kwargs):
+            entered.set()
+            if not release.wait(5):raise AssertionError('test scheduling barrier timed out')
+            return original(*args,**kwargs)
+        server.executor.submit=delayed
+        def schedule():
+            try:server.background()
+            except Exception as error:errors.append(str(error))
+        def close():
+            try:server.close()
+            except Exception as error:errors.append(str(error))
+            finally:closed.set()
+        scheduling=threading.Thread(target=schedule);closing=threading.Thread(target=close)
+        scheduling.start()
+        try:
+            self.assertTrue(entered.wait(5))
+            closing.start()
+            closed.wait(0.15)
+        finally:
+            release.set();scheduling.join(5)
+            if closing.ident is not None:closing.join(5)
+            else:server.close()
+        self.assertFalse(scheduling.is_alive());self.assertFalse(closing.is_alive())
+        self.assertEqual(errors,[])
+
+    def test_invalid_requests_and_non_utf8_frames_receive_standard_errors(self):
+        client=self.client();client.initialize()
+        for raw,code in [(b'{}',-32600),(b'[]',-32600),('{"jsonrpc":"2.0","method":"a"}'.encode('utf-16'),-32700)]:
+            client.process.stdin.write(('Content-Length: '+str(len(raw))+'\r\n\r\n').encode()+raw)
+            client.process.stdin.flush()
+            response=client.take(lambda m:m.get('id') is None and 'error' in m)
+            self.assertEqual(response['error']['code'],code)
+        self.assertEqual(client.request('textDocument/documentSymbol',{'textDocument':{'uri':self.file.as_uri()}}),[])
+
+    def test_standalone_installed_style_acceptance_uses_actual_compiler(self):
+        output=self.root/'lsp-acceptance'
+        result=subprocess.run([sys.executable,str(harness.REPO/'editor/lsp/acceptance.py'),harness.NEX,'--output',str(output)],
+                              cwd=self.root,capture_output=True,text=True,timeout=45)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        report=json.loads(result.stdout)
+        self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
+        self.assertEqual(report['messages_sent'],13);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

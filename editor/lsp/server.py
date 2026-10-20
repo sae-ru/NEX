@@ -287,8 +287,9 @@ class Server:
                     self.log(str(error))
             except Exception as error:
                 self.log('NEX analysis error: ' + str(error))
-        if not self.shutting_down:
-            self.executor.submit(run)
+        with self.lock:
+            if not self.shutting_down:
+                self.executor.submit(run)
 
     def log(self, message):
         print(message, file=sys.stderr, flush=True)
@@ -458,8 +459,9 @@ class Server:
         return None
 
     def close(self):
-        self.shutting_down = True
-        self.invalidate()
+        with self.lock:
+            self.shutting_down = True
+            self.invalidate()
         self.executor.shutdown(wait=True, cancel_futures=True)
 
 
@@ -505,7 +507,7 @@ def main():
             if raw is None:
                 return 0 if server.shutting_down else 1
             try:
-                message = json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+                message = json.loads(raw.decode('utf-8'), parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
             except (ValueError, UnicodeError):
                 server.respond(None, error=RPCError(-32700, 'Invalid JSON'))
                 continue
@@ -523,7 +525,12 @@ def main():
                         except UnicodeError: ident = None
                     server.respond(ident, error=error)
                 else:
-                    server.log(str(error))
+                    valid_notification = (isinstance(message, dict) and message.get('jsonrpc') == '2.0'
+                                          and isinstance(message.get('method'), str))
+                    if valid_notification:
+                        server.log(str(error))
+                    else:
+                        server.respond(None, error=error)
     finally:
         server.close()
 

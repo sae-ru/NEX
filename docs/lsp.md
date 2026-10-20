@@ -51,6 +51,8 @@ new edits cancel superseded compiler processes. It bounds each open document
 to 1 MiB, all open text to 8 MiB, documents/overlays to 128, input frames/overlay
 JSON to 16 MiB, headers to 8 KiB and each compiler analysis to 30 seconds.
 The compiler projection bounds source text to 16 MiB and entries to 200000.
+Timer scheduling and executor shutdown are serialized. Invalid JSON-RPC
+messages receive an error with a null ID; input bodies must be strict UTF-8.
 Document symbols cover source functions, struct/enum, trait, impl and endpoint
 declarations. No code is executed by hover or definition lookup.
 
