@@ -115,10 +115,10 @@ test fn semantics()->unit {assert(answer()==42);}
         for command in ('run','test','debug','profile'):
             self.assertEqual(self.cli(command,'--toolchain',self.config,ok=False)['code'],'E_TARGET_RUN')
         self.assertEqual(self.cli('build','--toolchain',self.config,'--profile','profile',ok=False)['code'],'E_TARGET')
+        self.source('module storage;server fn main()->unit!{db} {assert(is_ok(store_keys("")));}')
+        self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
         for source in (
-            'server fn main()->unit!{db} {assert(is_ok(store_keys("")));}',
             'server fn main()->unit!{fs} {assert(is_ok(file_read_text("input")));}',
-            'server fn main()->unit!{io} {assert(is_ok(read_env("HOME")));}',
             'server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{ffi} {return opaque();}'
         ):
             self.source('module unavailable;'+source)

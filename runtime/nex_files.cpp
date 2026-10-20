@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#include "nex_files_windows.h"
+#else
 #include "nex_files.h"
 #include <algorithm>
 #include <array>
@@ -328,3 +331,5 @@ FileResource fileOpen(const std::string &relative,FileMode mode,bool environment
   return access(environmentAllowed).open(relative,mode,poll);
 }
 }
+
+#endif

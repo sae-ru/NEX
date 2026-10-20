@@ -2,7 +2,8 @@
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
-Toolchain0.64 adds an explicit [Windows GNU/UCRT core target](windows.md).
+Toolchain0.64 adds an explicit [Windows GNU/UCRT core target](windows.md); the0.65
+candidate adds strict Unicode environment access and explicit target SQLite storage.
 Its target/runtime restrictions add no syntax, canonical changes or language
 migration. Windows execution and development-host support have separate status.
 

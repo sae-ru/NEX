@@ -740,19 +740,19 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
-  bool wire=server,storage=server,files=false,environmentIO=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
-  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="read_env")environmentIO=true;if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text))files=true;}for(auto arg:e->args)inspect(arg);}};
+  bool wire=server,storage=server,files=false;auto names=reachable(p,options.entry);auto callableTargets=nativeFunctionBridges(p,names);
+  std::function<void(E)> inspect=[&](E e){if(e){if(e->kind==Expr::Call){if(e->text=="encode_json"||e->text=="decode_json")wire=true;if(e->text.starts_with("store_"))storage=true;if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text))files=true;}for(auto arg:e->args)inspect(arg);}};
   std::function<void(const std::vector<S>&)> inspectBlock=[&](const auto &body){for(auto s:body){inspect(s->expr);childBlocks(s,inspectBlock);}};
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   bool foreign=false;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
-  if(windows&&(storage||files||foreign||environmentIO))throw Error("E_TARGET","Windows core does not yet configure database, files, foreign modules or environment access");
+  if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   if(foreign&&(toolchain.opensslInclude.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","foreign calls require target OpenSSL Crypto include/library paths");
   bool profiling=options.profile=="profile";
-  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_host.h","nex_io.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
+  std::vector<std::string> components={"runtime.cpp"},headers={"nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_host.h","nex_io.h","nex_platform.h","nex_profile.h","third_party/dragonbox/dragonbox.h","third_party/dragonbox/manifest.json","third_party/dragonbox/LICENSE-Apache2-LLVM"};
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
@@ -839,7 +839,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(size_t i=0;i<plan.units.size();++i){
     const auto &unit=plan.units[i];auto source=codeSnapshot.units.contains(unit.unit)?codeSnapshot.units.at(unit.unit).path:codeSnapshot.path;sourceUnits.insert(unit.unit);
     std::string runtimeABI;
-    for(const auto &file:{"runtime.cpp","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
+    for(const auto &file:{"runtime.cpp","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","third_party/dragonbox/dragonbox.h","nex_host.h","nex_io.h","nex_platform.h","nex_profile.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));

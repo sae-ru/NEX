@@ -1,3 +1,13 @@
+# Toolchain0.65 candidate — validation pending
+
+Candidate source adds strict Windows environment conversion and explicit target
+SQLite storage, with NEX CLI filesystem/resource guards retained. The candidate
+macOS build passes; full regression/SDK validation is pending. Direct runtime
+C++ probes cross-compile for x86-64/ARM64. Wine9 verifies16 ordinary/system groups
+but fails opened-reader replacement, protected-DACL and actual-reparse fixtures;
+a parent-race run also leaves a temporary. This is not a passing filesystem suite.
+See docs/windows-files-design.md. Actual Windows execution remains pending.
+
 # Toolchain0.64 root verification
 
 The current root is toolchain0.64.0/language0.16. Its implementation source is

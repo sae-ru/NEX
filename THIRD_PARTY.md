@@ -75,3 +75,13 @@ requirements. The operator supplies the matching complete runtime notices in
 the toolchain configuration; NEX captures and appends them to artifact notices.
 UCRT and Windows system DLLs remain platform dependencies. SDK/installer
 distribution, signed delivery and actual Windows OS validation remain pending.
+
+The0.65 Windows storage prerequisite separately builds official SQLite3.54.1
+amalgamation source for x86-64 and ARM64 GNU/UCRT, with THREADSAFE=1 and loadable
+extensions omitted. Archive `sqlite-amalgamation-3540100.zip` has published
+SHA3-256 `92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30`
+and verified SHA-256 `0a9c8e34352dad46006aa82836d5383bff9dc6bc9ce5a60553c05aa30e6ad1f9`.
+Source: [official SQLite download](https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip),
+with the existing [public-domain dedication](https://sqlite.org/copyright.html).
+The source/libraries are external prerequisites, not bundled NEX runtime files.
+Host macOS/Linux SQLite versions remain as listed above.

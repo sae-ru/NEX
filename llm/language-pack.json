@@ -122,7 +122,8 @@
     "view_url_policy": "web/urls.ts",
     "mobile_cordova_ios_notice": "mobile/CORDOVA-IOS-NOTICE.txt",
     "mobile_api": "docs/mobile-api.md",
-    "windows_core_target": "docs/windows.md"
+    "windows_core_target": "docs/windows.md",
+    "windows_files_design": "docs/windows-files-design.md"
   },
   "document_access": "nex guide --kind prompt|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -186,7 +187,8 @@
     "ios_archive": "examples/ios/main.nex",
     "ios_archive_workflow": "examples/ios/README.md",
     "mobile_web_contract": "examples/web/main.nex",
-    "windows_core": "examples/windows/main.nex"
+    "windows_core": "examples/windows/main.nex",
+    "windows_storage": "examples/windows/storage.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [

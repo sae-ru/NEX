@@ -1,3 +1,13 @@
+# Candidate0.65 Windows runtime work
+
+- Validate Unicode environment and explicit target SQLite through actual NEX PE
+  debug/release output, cache/source replay, host regression and installed SDK.
+- Keep Windows filesystem/resource calls unavailable until the native Windows
+  probe verifies reparse boundaries, private ACLs, root/parent pinning, opened
+  reader replacement and cancellation cleanup. Wine compatibility is separate.
+- Preserve the complete development-chain objective and outstanding platforms;
+  these adapters do not establish Windows-hosted development or overall completion.
+
 # План разработки NEX
 
 Обновлён: 20 октября 2026 года.
