@@ -49,11 +49,28 @@ all three profiled executions used Zhouyi and maximum absolute error was zero.
 Its temporary directory retains the profile and receipt. Provider registration
 alone is not sufficient evidence of actual placement.
 
-The platform-specific probes do not execute NEX source. Direct GPU/NPU calls
-from compiled NEX, additional models/operators, precision/fallback policies,
-device-loss handling and accelerator integration with profiling/debugging remain
-pending. Physical testing on one ARM64 board proves neither every target nor
-every driver/OS/processor combination.
+The platform-specific probes above do not execute NEX source. A separate
+[experimental trusted adapter](../experiments/cix-p1/README.md) now executes a
+fixed OpenCL affine kernel and one embedded3x2 ONNX model from actual NEX source.
+The interpreter, native debug/release, both native test profiles and a standalone
+application passed on the board:24 GPU calls/24,576 checked output bytes and16
+NPU calls/96 checked values. All16 NPU profiles identify Zhouyi EP only; CPU
+fallback remains disabled. Size/range/float32-precision rejection and standalone
+execution with SDK/source paths unavailable also passed. Exact hashes and scope
+are recorded in [the accelerator evidence](evidence/cix-p1-ffi-0.70.0.json).
+
+The adapter isolates vendor LLVM symbol lookup with `RTLD_DEEPBIND` and retains
+vendor library/static state with `RTLD_NODELETE` until process exit. Without the
+latter, a three-run control passed the first call and failed the second; with it,
+all three passed. Per-call sessions, tensors and OpenCL resources are released.
+This policy is specific to the tested runtime; the compiler/core language did
+not change. The optional fixture is outside the installed SDK/default tests.
+
+Additional models/operators, a general kernel/model API, automatic precision
+policies, device-loss handling, scheduling and integration with NEX profiling/
+debugging remain pending. Physical testing on one ARM64 board proves neither
+every target nor every driver/OS/processor combination. Application deployment
+still requires matching target ABI, platform libraries and accelerator drivers.
 
 Primary runtime references: [Arm China Compass ONNX Runtime](https://github.com/Arm-China/Compass_Onnxruntime)
 and [ONNX Runtime CPU fallback setting](https://github.com/microsoft/onnxruntime/blob/v1.20.0/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h).
