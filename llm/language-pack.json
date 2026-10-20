@@ -434,5 +434,31 @@
     "nex analyze FILE --overlay OVERLAY.json --json",
     "nex analyze FILE --references --overlay OVERLAY.json --json",
     "nex lsp"
-  ]
+  ],
+  "editor_source_reference_contract": {
+    "format": "nex.analysis/2",
+    "source_language": "0.16",
+    "default_format": "nex.analysis/1",
+    "definition_identity": "captured_file_and_exact_declaration_interval",
+    "coverage": [
+      "functions_and_lexical_values",
+      "nominal_types_and_explicit_type_arguments",
+      "lexical_type_and_constructor_parameters",
+      "traits_associated_members_and_implementation_bindings",
+      "enum_variants",
+      "structure_fields",
+      "import_aliases",
+      "endpoint_handlers"
+    ],
+    "pending": [
+      "closed_unreachable_files",
+      "cross_workspace_buffers",
+      "dedicated_type_parameter_member_alias_hover",
+      "completion",
+      "rename",
+      "parser_recovery",
+      "incremental_indexing"
+    ],
+    "semantic_identity_changes": false
+  }
 }

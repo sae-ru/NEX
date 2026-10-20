@@ -14,7 +14,58 @@ struct Index {
   std::set<std::tuple<std::string,size_t,size_t,std::string,size_t,size_t,std::string>> seen;
   Index(const Program &program,bool enabled):p(program),references(enabled){}
   struct Location {std::string file;size_t begin=0,end=0;};
-  std::map<std::string,Location> declarations;
+  std::map<std::string,Location> declarations,members,variants;
+  std::map<std::pair<std::string,std::string>,Location> aliases;
+  std::map<std::tuple<std::string,size_t,size_t>,Location> contractTargets;
+  std::vector<Location> nameParts(const Span &span){
+    std::vector<Location> result;const auto &list=tokens.at(span.file);
+    auto it=std::lower_bound(list.begin(),list.end(),span.begin,[](const SourceToken &t,size_t begin){return t.span.begin<begin;});
+    unsigned depth=0;
+    for(;it!=list.end()&&it->span.end<=span.end;++it){
+      if(it->text=="<"){++depth;continue;}
+      if(it->text==">"){if(depth)--depth;continue;}
+      if(!depth&&it->identifier)result.push_back({span.file,it->span.begin,it->span.end});
+    }
+    return result;
+  }
+  void sourceNames(){
+    if(!references)return;
+    for(const auto &name:p.editorNames){
+      Location at{name.span.file,name.span.begin,name.span.end};
+      if(name.kind=="alias"){aliases[{at.file,name.name}]=at;binding(at);}
+      if(name.kind=="parameter_declaration")binding(at);
+      if(name.kind=="member_declaration"){members[name.target]=at;binding(at);}
+    }
+    for(const auto &name:p.editorNames){
+      if(name.kind=="alias"||name.kind=="parameter_declaration"||name.kind=="member_declaration")continue;
+      auto parts=nameParts(name.span);if(parts.empty())continue;
+      if(name.kind=="parameter"){
+        if(!name.localTarget)throw Error("E_ANALYSIS_RANGE","type parameter has no lexical declaration",name.span);
+        const auto &target=*name.localTarget;occurrence(parts.back(),{target.file,target.begin,target.end},"read");continue;
+      }
+      // Alias and nominal/trait qualifiers have independent physical identities.
+      auto split=name.name.find("::");
+      if(parts.size()>1&&split!=std::string::npos){
+        auto alias=aliases.find({name.span.file,name.name.substr(0,split)});
+        if(alias!=aliases.end())occurrence(parts.front(),alias->second,"read");
+        auto parent=name.target.rfind("::");
+        if(parent!=std::string::npos&&(members.contains(name.target)||variants.contains(name.target))){auto owner=name.target.substr(0,parent);
+          if(declarations.contains(owner))occurrence(parts[parts.size()-2],declarations.at(owner),"read");
+        }
+      }
+      std::optional<Location> target;
+      if(declarations.contains(name.target))target=declarations.at(name.target);
+      if(members.contains(name.target))target=members.at(name.target);
+      if(!target)continue; // Builtin constructors have no physical declaration.
+      if(name.kind=="value"||name.kind=="value_call"){
+        if(members.contains(name.target)){contractTargets[{parts.back().file,parts.back().begin,parts.back().end}]=*target;occurrence(parts.back(),*target,name.kind=="value_call"?"call":"read");}
+        // Ordinary calls/patterns are emitted from the checked expression tree.
+        // A trait's selected implementation must not replace its source contract.
+        continue;
+      }
+      occurrence(parts.back(),*target,"read");
+    }
+  }
   size_t entries=0;
   void tick(){if(++entries>200000)throw Error("E_ANALYSIS_LIMIT","editor analysis exceeds 200000 entries");}
   JSON location(const Location &value){return Object{{"file",value.file},{"range",interval(value.begin,value.end)}};}
@@ -46,14 +97,24 @@ struct Index {
     if(!references)return;
     if(auto object=target.getAsObject())if(auto at=referenceName(e->span,e->sourceRange)){
       auto range=object->getObject("range");
-      occurrence(*at,{object->getString("file")->str(),size_t(*range->getInteger("begin")),size_t(*range->getInteger("end"))},role);
+      Location selected{object->getString("file")->str(),size_t(*range->getInteger("begin")),size_t(*range->getInteger("end"))};
+      if(auto found=contractTargets.find({at->file,at->begin,at->end});found!=contractTargets.end())selected=found->second;
+      else {const Structure *owner=nullptr;if(auto variant=p.variant(e->text,&owner)){
+        auto name=(owner->templateName.empty()?owner->name:owner->templateName)+"::"+variant->name;
+        if(variants.contains(name))selected=variants.at(name);
+      }}
+      occurrence(*at,selected,role);
     }
   }
   void pattern(P value){
     if(!references||!value)return;
     if(value->kind==Pattern::Constructor&&value->type.kind==Type::Record){
       const auto &owner=p.structure(value->type.name);auto name=owner.templateName.empty()?owner.name:owner.templateName;
-      if(declarations.contains(name))if(auto at=referenceName(value->span,value->sourceRange))occurrence(*at,declarations.at(name),"pattern");
+      if(auto at=referenceName(value->span,value->sourceRange)){
+        auto variant=name+"::"+p.units.at(at->file).source.substr(at->begin,at->end-at->begin);
+        if(variants.contains(variant))occurrence(*at,variants.at(variant),"pattern");
+        else if(declarations.contains(name))occurrence(*at,declarations.at(name),"pattern");
+      }
     }
     for(auto child:value->args)pattern(child);
   }
@@ -169,12 +230,14 @@ struct Index {
     auto addStructure=[&](const Structure &s){if(s.templateName.empty()){
       declaration(s.name,s.localName,s.enumeration?"enum":"struct",s.span,(s.enumeration?"enum ":"struct ")+s.localName);
       for(const auto &field:s.fields)binding({field.span.file,field.span.begin,field.span.end});
+      if(references)for(const auto &variant:s.variants){auto at=Location{variant.span.file,variant.span.begin,variant.span.end};variants[s.name+"::"+variant.name]=at;binding(at);}
     }};
     for(const auto &s:p.structures)addStructure(s);
     for(const auto &[_,s]:p.structureTemplates)addStructure(s);
     for(const auto &value:p.traits)declaration(value.name,value.localName,"trait",value.span,"trait "+value.localName);
     for(const auto &value:p.implementations)declaration(value.name,value.localName,"impl",value.span,"impl "+value.localName+": "+value.trait);
     for(const auto &value:p.endpoints)declaration(value.name,value.localName,"endpoint",value.span,"endpoint "+value.method+" "+value.path);
+    sourceNames();
     for(const auto &f:p.functions)if(!f.closure&&!f.traitSignature&&f.templateName.empty())function(f);
     for(const auto &[_,f]:p.functionTemplates)function(f);
     Object result{{"schema",references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},
@@ -200,7 +263,7 @@ llvm::json::Value editorAnalysis(const std::string &entry,const std::string &roo
     }
   }
   validateProjectMetadata(root);
-  auto program=loadProgram(entry,root,true,sources);
+  auto program=loadProgram(entry,root,true,sources,references);
   return Index(program,references).run();
 }
 }

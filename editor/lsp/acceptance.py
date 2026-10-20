@@ -110,6 +110,24 @@ def accept(compiler, output):
         assert len(defined)==1 and defined[0]['uri']==helper.as_uri(),defined
         references=request('textDocument/references',{**query,'position':{'line':0,'character':len(main[:main.index('m::answer')+3].encode('utf-16-le'))//2},'context':{'includeDeclaration':True}})
         assert len(references)==2 and {row['uri'] for row in references}=={source.as_uri(),helper.as_uri()},references
+        typed_library = 'module model;pub trait Content{type Item;fn get(value:Self)->Content::Item<Self>;}pub struct Box<T>{value:T;}fn extract<T>(value:Box<T>)->T{return value.value;}pub impl boxed<T>:Content for Box<T>{type Item=T;get=extract<T>;}'
+        typed_main = 'module editor_types;import "./new module 🧠.nex" as m;fn main()->i64{let value:m::Box<i64>=m::Box<i64>(42);return m::Content<m::Box<i64>>::get(value);}'
+        send('textDocument/didChange',{'textDocument':{'uri':helper.as_uri(),'version':2},'contentChanges':[{'text':typed_library}]})
+        send('textDocument/didChange',{'textDocument':{'uri':source.as_uri(),'version':4},'contentChanges':[{'text':typed_main}]})
+        assert diagnostics(4)==[] and diagnostics(2,helper)==[]
+        def typed_query(text, path, at):
+            return {'textDocument':{'uri':path.as_uri()},'position':{'line':0,'character':len(text[:at].encode('utf-16-le'))//2}}
+        alias = request('textDocument/references',{**typed_query(typed_main,source,typed_main.index('m;')),'context':{'includeDeclaration':True}})
+        assert len(alias)==5 and all(row['uri']==source.as_uri() for row in alias),alias
+        parameter = request('textDocument/references',{**typed_query(typed_library,helper,typed_library.index('T>{')),'context':{'includeDeclaration':True}})
+        assert len(parameter)==2,parameter
+        for text,path,at,target in [(typed_main,source,typed_main.index('get(value)'),typed_library.index('get(value')),
+                                    (typed_library,helper,typed_library.index('Item<Self>'),typed_library.index('Item;')),
+                                    (typed_library,helper,typed_library.index('get=extract'),typed_library.index('get(value'))]:
+            result=request('textDocument/definition',typed_query(text,path,at))
+            assert result==[{'uri':helper.as_uri(),'range':{'start':{'line':0,'character':target},'end':{'line':0,'character':target+(4 if text[at:].startswith('Item') else 3)}}}],result
+        report['type_reference_checks']=True
+        report['checks'].append('checked type parameters, import aliases, trait member contracts and implementation bindings')
         send('textDocument/didClose',{'textDocument':{'uri':helper.as_uri()}})
         report['checks'].append('new unsaved imported module, overlay repair and cross-file definition')
         request('shutdown')

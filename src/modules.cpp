@@ -106,7 +106,7 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
     expression->text=resolveSymbol(units,symbols,key,name,false,expression->span);
 }
 class Loader {
-  fs::path root;bool frozen;std::string entry;
+  fs::path root;bool frozen,captureNames;std::string entry;size_t capturedNames=0;
   std::map<std::string,std::string> overlays;
   std::map<std::string,std::string> texts;
   std::map<std::string,fs::path> packages;
@@ -149,7 +149,8 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=parse(texts.at(key),path.string());}catch(Error &e){e.span.file=key;throw;}
+    try{unit=parse(texts.at(key),path.string(),captureNames);}catch(Error &e){e.span.file=key;throw;}
+    capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
     std::function<void(E)> expr;std::function<void(const std::vector<S>&)> block;
@@ -160,6 +161,7 @@ class Loader {
     for(auto &value:unit.traits){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &method:value.methods){method.span.file=key;method.owner=unit.module;method.unit=key;method.localName=value.localName+"::"+method.name;for(auto &parameter:method.params)parameter.span.file=key;}}
     for(auto &value:unit.implementations){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &[name,method]:value.methods)method.span.file=key;}
     for(auto &endpoint:unit.endpoints){endpoint.span.file=key;endpoint.owner=unit.module;endpoint.localName=endpoint.name;endpoint.unit=key;}
+    for(auto &name:unit.editorNames){name.span.file=key;if(name.localTarget)name.localTarget->file=key;}
     std::set<std::string> aliases;
     for(auto &dependency:unit.imports){dependency.span.file=key;if(!aliases.insert(dependency.alias).second)throw Error("E_IMPORT_ALIAS","duplicate import alias '"+dependency.alias+"'",dependency.span);dependency.target=importTarget(key,dependency.path,dependency.span);}
     parsed.emplace(key,std::move(unit));
@@ -213,11 +215,23 @@ class Loader {
       for(auto &f:unit.functions){f.name=unit.module+"::"+f.localName;parameterScope(f);type(f.result,f.span);for(auto &p:f.params)type(p.type,p.span);block(f.body);}
       for(auto &s:unit.structures){s.name=unit.module+"::"+s.localName;parameterScope(s);for(auto field:s.members())type(field->type,field->span);}
       for(auto &endpoint:unit.endpoints){endpoint.name=unit.module+"::"+endpoint.localName;endpoint.target=resolve(key,endpoint.target,false,endpoint.span);}
+      // Resolve source projections with the exact same visibility/alias tables.
+      for(auto &name:unit.editorNames){
+        if(name.kind=="type"){
+          if(name.name=="result"&&!symbols.at(key).structures.contains("result"))continue;
+          name.target=resolve(key,name.name,true,name.span);
+        }else if(name.kind=="trait")name.target=resolveTraitSymbol(parsed,symbols,key,name.name,name.span);
+        else if(name.kind=="function"||name.kind=="value"||name.kind=="value_call")name.target=resolve(key,name.name,false,name.span);
+        else if(name.kind=="member_declaration")name.target=unit.module+"::"+name.name;
+        else if(name.kind=="member_binding"){
+          auto split=name.name.rfind("::");name.target=resolveTraitSymbol(parsed,symbols,key,name.name.substr(0,split),name.span)+name.name.substr(split);
+        }
+      }
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={})
-      :root(fs::weakly_canonical(root)),frozen(frozen),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false)
+      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json");
@@ -234,7 +248,7 @@ public:
     complete=true;phase="bind";bind();
     Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
-    for(const auto &key:order){auto &unit=parsed.at(key);p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
+    for(const auto &key:order){auto &unit=parsed.at(key);if(p.editorNames.size()+unit.editorNames.size()>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries");for(auto &name:unit.editorNames)p.editorNames.push_back(std::move(name));p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
     p.imports=p.units.at(entry).imports;if(validate){phase="check";check(p);}return p;
     }catch(Error &error){
       if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
@@ -254,10 +268,10 @@ void validateProjectMetadata(const std::string &root){
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
   if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json");
 }
-Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays){
+Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();

@@ -418,9 +418,14 @@ class Server:
                 found.add((paths[occurrence['file']], at['begin'], at['end']))
                 if len(found) > MAX_REFERENCES:
                     raise RPCError(-32803, 'Reference result exceeds 10000 locations; no partial result returned')
+        by_file = {}
+        for number, (file, begin, end) in enumerate(found):
+            if number % 1000 == 0:
+                check()
+            by_file.setdefault(file, set()).update((begin, end))
         positions = {}
-        for file in {row[0] for row in found}:
-            offsets = {offset for source, begin, end in found if source == file for offset in (begin, end)}
+        for file, offsets in by_file.items():
+            check()
             positions[file] = range_positions(captured[file]['text'], offsets, check)
         check()
         result = [{'uri': file.as_uri(), 'range': {'start': positions[file][begin], 'end': positions[file][end]}}
@@ -434,6 +439,38 @@ class Server:
         path, _ = self.document(params)
         if method == 'textDocument/references':
             return self.references(path, params, cache, cancelled)
+        if method == 'textDocument/definition':
+            targets, captured = set(), {}
+            for index in cache['indices']:
+                self.current(cache['epoch'])
+                if cancelled is not None and cancelled.is_set():
+                    raise RPCError(-32800, 'Request cancelled')
+                files = {f['key']: f for f in index['files']}
+                paths = {key: Path(f['path']).resolve() for key, f in files.items()}
+                for key, f in files.items():
+                    previous = captured.get(paths[key])
+                    if previous and (previous['hash'] != f['hash'] or previous['text'] != f['text']):
+                        raise RPCError(-32801, 'Captured source changed between checked entries')
+                    captured[paths[key]] = f
+                unit = next((f for key, f in files.items() if paths[key] == path), None)
+                if unit is None:
+                    continue
+                offset = byte_offset(unit['text'], params.get('position'))
+                for number, occurrence in enumerate(index['occurrences']):
+                    if number % 1000 == 0:
+                        self.current(cache['epoch'])
+                        if cancelled is not None and cancelled.is_set():
+                            raise RPCError(-32800, 'Request cancelled')
+                    at, target = occurrence['range'], occurrence['definition']
+                    if paths[occurrence['file']] == path and at['begin'] <= offset < at['end']:
+                        targets.add((paths[target['file']], target['range']['begin'], target['range']['end']))
+            if len(targets) > 1:
+                raise RPCError(-32801, 'Symbol has different bindings in the checked entries')
+            if targets:
+                file, begin, end = next(iter(targets))
+                self.current(cache['epoch'])
+                return [{'uri': file.as_uri(), 'range': source_range(captured[file]['text'], {'begin': begin, 'end': end})}]
+
         for index in cache['indices']:
             files = {f['key']: f for f in index['files']}
             unit = next((f for f in files.values() if Path(f['path']).resolve() == path), None)
@@ -451,11 +488,19 @@ class Server:
                 if method == 'textDocument/hover':
                     return {'contents': {'kind': 'plaintext', 'value': selected['detail']}, 'range': source_range(text, selected['selection'])}
                 return [{'uri': path.as_uri(), 'range': source_range(text, selected['selection'])}]
+            occurrence = next((o for o in index['occurrences'] if o['file'] == key and o['range']['begin'] <= offset < o['range']['end']), None)
+            if method == 'textDocument/hover' and occurrence:
+                target = occurrence['definition']
+                symbol = next((s for s in index['symbols'] if s['file'] == target['file'] and s['selection'] == target['range']), None)
+                if symbol and symbol['kind'] in ('struct', 'enum', 'trait') and occurrence['role'] != 'call':
+                    return {'contents': {'kind': 'plaintext', 'value': symbol['detail']}, 'range': source_range(text, occurrence['range'])}
             candidates = [e for e in index['expressions'] if e['file'] == key and e['range']['begin'] <= offset < e['range']['end']]
             hit = min(candidates, key=lambda e: e['range']['end'] - e['range']['begin'], default=None)
             if not hit:
                 return None if method == 'textDocument/hover' else []
             if method == 'textDocument/hover':
+                if occurrence and hit['definition'] and occurrence['definition'] != hit['definition'] and occurrence['role'] != 'call':
+                    return None
                 return {'contents': {'kind': 'plaintext', 'value': hit['type']}, 'range': source_range(text, hit['range'])}
             target = hit['definition']
             if target and target['file'] in files:
@@ -525,7 +570,7 @@ class Server:
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
                 'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True},
-                'serverInfo': {'name': 'NEX Language Server', 'version': '0.68.0'}})
+                'serverInfo': {'name': 'NEX Language Server', 'version': '0.69.0'}})
         elif not self.initialized:
             if request:
                 self.respond(ident, error=RPCError(-32002, 'Server is not initialized'))

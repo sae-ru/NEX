@@ -29,7 +29,7 @@ async function run() {
   assert.equal(vscode.workspace.isTrusted, true);
   const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');
   assert.ok(extension && extension.extensionPath.startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
-  assert.equal(extension.packageJSON.version, '0.3.0');
+  assert.equal(extension.packageJSON.version, '0.4.0');
   await vscode.workspace.getConfiguration('nex', folder.uri).update('compilerPath', process.env.NEX_EDITOR_COMPILER, vscode.ConfigurationTarget.Workspace);
   await extension.activate();
   const source = vscode.Uri.joinPath(folder.uri, 'main with spaces.nex');
@@ -70,6 +70,27 @@ async function run() {
     values => values?.some(value => value.contents.some(content => content.value?.includes('i64'))), 'imported-buffer repair');
   assert.equal(await modelDocument.save(), true);
   assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
+  const typedLibrary = "module model;pub trait Content{type Item;fn get(value:Self)->Content::Item<Self>;}pub struct Box<T>{value:T;}fn extract<T>(value:Box<T>)->T{return value.value;}pub impl boxed<T>:Content for Box<T>{type Item=T;get=extract<T>;}";
+  const typedMain = "module editor_types;import \"./model 🧠.nex\" as m;fn main()->i64{let value:m::Box<i64>=m::Box<i64>(42);return m::Content<m::Box<i64>>::get(value);}";
+  await replace(modelDocument, typedLibrary);
+  await replace(document, typedMain);
+  const typedPosition = document.positionAt(typedMain.indexOf('get(value)'));
+  const contract = await eventually(() => vscode.commands.executeCommand('vscode.executeDefinitionProvider', source, typedPosition),
+    values => values?.some(value => value.uri?.fsPath === model.fsPath), 'typed trait method definition');
+  const method = contract.find(value => value.uri?.fsPath === model.fsPath);
+  assert.equal(method.range.start.character, typedLibrary.indexOf('get(value'));
+  assert.equal(method.range.end.character, typedLibrary.indexOf('get(value') + 3);
+  const aliases = await eventually(() => vscode.commands.executeCommand('vscode.executeReferenceProvider', source, document.positionAt(typedMain.indexOf('m;'))),
+    values => values?.length === 5, 'import alias references');
+  assert.ok(aliases.every(value => value.uri.fsPath === source.fsPath));
+  const typeParameters = await eventually(() => vscode.commands.executeCommand('vscode.executeReferenceProvider', model, modelDocument.positionAt(typedLibrary.indexOf('T>{'))),
+    values => values?.length === 2, 'lexical type parameter references');
+  assert.ok(typeParameters.every(value => value.uri.fsPath === model.fsPath));
+  assert.equal(fs.readFileSync(source.fsPath, 'utf8'), original);
+  assert.equal(fs.readFileSync(model.fsPath, 'utf8'), modelOriginal);
+  assert.equal(fs.existsSync(path.join(folder.uri.fsPath, '.nex')), false);
+  await replace(modelDocument, modelOriginal);
+  await replace(document, original);
   const invalid = 'module ide_client;\r\nfn main()->i64{let text:str="Я🧠";return missing;}\r\n';
   await replace(document, invalid);
   const eolEditor = await vscode.window.showTextDocument(document);
@@ -111,7 +132,7 @@ async function run() {
   const report = {schema:'nex.editor-ide-acceptance/1',ok:true,editor:vscode.version,
     extension_version:extension.packageJSON.version,extension_path:extension.extensionPath,
     compiler_sha256:crypto.createHash('sha256').update(fs.readFileSync(process.env.NEX_EDITOR_COMPILER)).digest('hex'),
-    actual_installed_vsix:true,checked_references:true,imported_unsaved_context_checked:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
+    actual_installed_vsix:true,checked_references:true,type_reference_checks:true,imported_unsaved_context_checked:true,trusted_physical_workspace:true,controlled_test_profile:true,user_profile_modified:false,
     outline_symbols:symbols.map(value => value.name),checked_hover:true,cross_module_definition:true,
     unicode_crlf_unsaved_error:true,explicit_crlf_eol_asserted:true,repaired_document_version:true,restart_verified:true,disable_enable_verified:true,
     physical_sources_unchanged:true,graph_not_created:true,close_verified:true,

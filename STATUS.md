@@ -1,3 +1,12 @@
+# Toolchain0.69 candidate status
+
+This isolated candidate extends readonly editor references/definitions to actual
+parser/binder source names: types, lexical generic parameters, trait contracts,
+associated members, implementation bindings, enum variants and import aliases.
+Default analysis/1 and strict analysis/2 wire shapes, source language0.16 and
+canonical identities remain unchanged. Current gates are pending. Root0.68 and
+all historical evidence below retain their original source/compiler scopes.
+
 # Verified root development checkpoint0.68 / language0.16
 
 Actual root source 13a9d72d1bd9aa017deb010e84932dd1f6b29817 (716 files) builds and passes all78

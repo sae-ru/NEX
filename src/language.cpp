@@ -171,6 +171,14 @@ public:
 };
 class Parser {
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
+  bool captureNames=false;std::map<std::string,Span> parameterOrigins;
+  void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
+    if(!captureNames)return;
+    if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
+    p.editorNames.push_back({std::move(kind),name,"",std::move(span),std::move(target)});
+  }
+  Span head(Span start)const{start.end=tokens.at(i-1).span.end;return start;}
+  void clearParameters(){parameters.clear();parameterOrigins.clear();}
   struct SyntaxDepth {
     unsigned &depth;
     SyntaxDepth(unsigned &value,const Span &span):depth(value){if(depth>=256)throw Error("E_PARSE_LIMIT","syntax recursion exceeds 256 levels",span);++depth;}
@@ -206,13 +214,14 @@ class Parser {
   }
   std::set<std::string> constraintNames(){
     std::set<std::string> result;
-    do{auto span=peek().span;auto value=qualified();if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
+    do{auto span=peek().span;auto value=qualified();if(!std::set<std::string>{"add","ordered","integer","number","wire"}.contains(value))editorName("trait",value,head(span));if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
   }
   std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false){
-    if(!keep)parameters.clear();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
+    if(!keep)clearParameters();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
     do{auto parameter=name();auto arity=constructorArity();
       if(parameter.text=="bytes"||parameter.text=="file"||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
       if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most64 parameters",parameter.span);
+      if(captureNames){parameterOrigins[parameter.text]=parameter.span;editorName("parameter_declaration",parameter.text,parameter.span,parameter.span);}
       result.push_back(parameter.text);arities.push_back(arity);bounds.emplace_back();if(accept(":"))bounds.back()=constraintNames();
     }while(accept(","));typeEnd();return result;
   }
@@ -236,7 +245,7 @@ class Parser {
       typeEnd();
       return t.text=="list"?Type::list(std::move(item)):Type::result(std::move(item));
     }
-    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text))value.kind=Type::Parameter;if(peek().text=="<")value.arguments=typeArguments();return value;}
+    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text))value.kind=Type::Parameter;editorName(value.kind==Type::Parameter?"parameter":"type",text,head(t.span),parameterOrigins.contains(text)?std::optional<Span>(parameterOrigins.at(text)):std::nullopt);if(peek().text=="<")value.arguments=typeArguments();return value;}
     throw Error("E_TYPE", "unknown type '"+t.text+"'",t.span);
   }
   static int precedence(const std::string &op) {
@@ -259,6 +268,7 @@ class Parser {
     if(token.text=="["||token.kind==Token::Id){
       if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";value->sourceRange=syntaxRange(token.span.begin);return value;}
       bool list=token.text=="[";if(!list){--i;token=name();value->text=token.text;while(accept("::"))value->text+="::"+name().text;}
+      if(!list&&value->text.find("::")!=std::string::npos)editorName("value",value->text,head(token.span));
       if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
       else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
     }else if(token.kind==Token::String){value->kind=Pattern::String;try{value->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}}
@@ -323,6 +333,7 @@ class Parser {
         while(accept("::"))e->text+="::"+name().text;
         if(genericAhead())e->methodArguments=typeArguments();
       }
+      if(e->text.find("::")!=std::string::npos)editorName(peek().text=="("?"value_call":"value",e->text,head(token.span));
       if(accept("(")) {
         e->kind=Expr::Call;
         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
@@ -375,7 +386,7 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit"):inputKind(std::move(kind)) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false):inputKind(std::move(kind)),captureNames(names) {
     p.source=std::move(source);p.path=std::move(path);
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
@@ -393,38 +404,38 @@ public:
         auto literal=[&](){auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","endpoint requires quoted method/path",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}};
         expect("(");endpoint.method=literal();expect(",");endpoint.path=literal();
         if(accept(",")){auto token=take();auto [end,error]=std::from_chars(token.text.data(),token.text.data()+token.text.size(),endpoint.successStatus);if(token.kind!=Token::Num||error!=std::errc()||end!=token.text.data()+token.text.size())throw Error("E_PARSE","endpoint status must be an integer literal",token.span);}
-        expect(")");expect("=");endpoint.target=qualified();endpoint.span.end=expect(";").span.end;p.endpoints.push_back(std::move(endpoint));continue;
+        expect(")");expect("=");auto targetSpan=peek().span;endpoint.target=qualified();editorName("function",endpoint.target,head(targetSpan));endpoint.span.end=expect(";").span.end;p.endpoints.push_back(std::move(endpoint));continue;
       }
       if(accept("import")){
         Import dependency;dependency.span=tokens.at(i-1).span;auto token=take();
         if(token.kind!=Token::String)throw Error("E_PARSE","import path must be a quoted string",token.span);
         try{dependency.path=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
-        expect("as");dependency.alias=name().text;dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
+        expect("as");auto alias=name();dependency.alias=alias.text;editorName("alias",alias.text,alias.span);dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
       if(accept("trait")){
-        Trait value;value.span=start;value.exported=exported;value.name=name().text;
-        if(accept("<")){expect("Self");value.selfArity=constructorArity();typeEnd();}
-        parameters.clear();parameters["Self"]=value.selfArity;expect("{");
+        Trait value;value.span=start;value.exported=exported;auto traitName=name();value.name=traitName.text;auto selfOrigin=traitName.span;
+        if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity();typeEnd();}
+        clearParameters();parameters["Self"]=value.selfArity;if(captureNames)parameterOrigins["Self"]=selfOrigin;expect("{");
         while(!accept("}")){
-          if(accept("type")){auto item=name();std::set<std::string> bounds;if(accept(":"))bounds=constraintNames();expect(";");if(!value.associated.emplace(item.text,std::move(bounds)).second)throw Error("E_DUPLICATE","duplicate associated type",item.span);continue;}
+          if(accept("type")){auto item=name();editorName("member_declaration",value.name+"::"+item.text,item.span);std::set<std::string> bounds;if(accept(":"))bounds=constraintNames();expect(";");if(!value.associated.emplace(item.text,std::move(bounds)).second)throw Error("E_DUPLICATE","duplicate associated type",item.span);continue;}
           Function method;method.span=peek().span;
           if(peek().text=="shared"||peek().text=="server"||peek().text=="client")method.realm=take().text;
-          expect("fn");method.name=name().text;method.typeParameters=templateParameters(method.typeBounds,method.typeArities,true);expect("(");
+          expect("fn");auto methodName=name();method.name=methodName.text;editorName("member_declaration",value.name+"::"+method.name,methodName.span);method.typeParameters=templateParameters(method.typeBounds,method.typeArities,true);expect("(");
           if(!accept(")")){do{auto item=name();expect(":");method.params.push_back({item.text,type(),item.span});}while(accept(","));expect(")");}
-          expect("->");method.result=type();method.effects=effects();method.span.end=expect(";").span.end;value.methods.push_back(std::move(method));parameters.clear();parameters["Self"]=value.selfArity;
+          expect("->");method.result=type();method.effects=effects();method.span.end=expect(";").span.end;value.methods.push_back(std::move(method));clearParameters();parameters["Self"]=value.selfArity;if(captureNames)parameterOrigins["Self"]=selfOrigin;
         }
-        value.span.end=tokens.at(i-1).span.end;p.traits.push_back(std::move(value));parameters.clear();continue;
+        value.span.end=tokens.at(i-1).span.end;p.traits.push_back(std::move(value));clearParameters();continue;
       }
       if(accept("impl")){
         Implementation value;value.span=start;value.exported=exported;value.name=name().text;
-        value.typeParameters=templateParameters(value.typeBounds,value.typeArities);expect(":");value.trait=qualified();expect("for");value.self=type();expect("{");
+        value.typeParameters=templateParameters(value.typeBounds,value.typeArities);expect(":");auto traitSpan=peek().span;value.trait=qualified();editorName("trait",value.trait,head(traitSpan));expect("for");value.self=type();expect("{");
         while(!accept("}")){
-          if(peek().text=="type"&&peek(1).kind==Token::Id&&accept("type")){auto item=name();expect("=");auto typeValue=type();expect(";");if(!value.associated.emplace(item.text,std::move(typeValue)).second)throw Error("E_DUPLICATE","duplicate associated type binding",item.span);continue;}
-          auto item=name();expect("=");ImplementationMethod method;method.span=item.span;method.target=qualified();if(peek().text=="<")method.typeArguments=typeArguments();expect(";");
+          if(peek().text=="type"&&peek(1).kind==Token::Id&&accept("type")){auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");auto typeValue=type();expect(";");if(!value.associated.emplace(item.text,std::move(typeValue)).second)throw Error("E_DUPLICATE","duplicate associated type binding",item.span);continue;}
+          auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");ImplementationMethod method;method.span=item.span;auto targetSpan=peek().span;method.target=qualified();editorName("function",method.target,head(targetSpan));if(peek().text=="<")method.typeArguments=typeArguments();expect(";");
           if(!value.methods.emplace(item.text,std::move(method)).second)throw Error("E_DUPLICATE","duplicate implementation method",item.span);
         }
-        value.span.end=tokens.at(i-1).span.end;p.implementations.push_back(std::move(value));parameters.clear();continue;
+        value.span.end=tokens.at(i-1).span.end;p.implementations.push_back(std::move(value));clearParameters();continue;
       }
       if(peek().text=="enum") {
         Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);expect("{");
@@ -434,13 +445,13 @@ public:
           if(accept("(")){if(!accept(")")){do{auto field=name();expect(":");v.fields.push_back({field.text,type(),field.span});}while(accept(","));expect(")");}}
           expect(";");s.variants.push_back(std::move(v));
         }
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       if(peek().text=="struct") {
         Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);expect("{");
         if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
@@ -453,7 +464,7 @@ public:
         auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
         ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifestSpan=peek().span;binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
       }else{lambdaCounter=0;f.body=block();}
-      f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
+      f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));clearParameters();
     }
     return std::move(p);
   }catch(Error &error){annotate(error);throw;}
@@ -891,7 +902,7 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
   }
 }
 }
-Program parse(std::string source,std::string path){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path)).run();}
+Program parse(std::string source,std::string path,bool editorNames){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames).run();}
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
   sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
   for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
@@ -1008,8 +1019,8 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
     {"editor_features",llvm::json::Array{"installed_vscode_extension_sources","fresh_compiler_debug_session","byte_checked_original_source_mapping","frozen_source_fallback","workspace_trust_gate","vscode_stdio_language_client","unsaved_source_diagnostics","checked_hover_definition_symbols","versioned_document_updates","checked_symbol_references"}},
     {"editor_extension_manifest","editor/vscode/package.json"},
-    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"type_annotations","trait_syntax","import_aliases","closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
-    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.3.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
+    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields","type_annotations_and_arguments","lexical_type_parameters","trait_contracts_and_implementation_bindings","enum_variant_declarations","import_aliases"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
+    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.4.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
     {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp_wider_editor_matrix","lsp_completion_references_rename","studio","marketplace_publication"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads","paged_native_indexed_roots","bounded_backend_variables_requests","constant_time_indexed_child_lookup","frame_module_identity_guard","core_recorded_mapping_image_guard"}},
     {"native_debug_image_binding",llvm::json::Object{{"selected_frame","same_loaded_module_as_executable"},{"function_names_are_not_image_identity",true},{"requires_matching_manifest",true},{"linux_core_requires_recorded_mapping",true},{"ambiguous_same_path_image_rejected",true},{"content_addressed_build_directory",true},{"recorded_mapping_sources",llvm::json::Array{"minidump_memory_region","elf_nt_file"}}}},

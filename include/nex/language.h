@@ -127,6 +127,11 @@ struct Implementation {
   std::map<std::string,Type> associated;
   std::map<std::string,ImplementationMethod> methods;
 };
+// Opt-in editor projection of actual parsed names. Never serialized in semantic
+// identities or included in Type equality. Targets are bound by the module loader.
+struct EditorName {
+  std::string kind,name,target;Span span;std::optional<Span> localTarget;
+};
 struct Program {
   std::string module, source, path;
   std::vector<Function> functions;
@@ -135,6 +140,7 @@ struct Program {
   std::vector<Endpoint> endpoints;
   std::vector<Trait> traits;
   std::vector<Implementation> implementations;
+  std::vector<EditorName> editorNames;
   bool traitsPrepared=false;
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
@@ -153,7 +159,7 @@ struct Program {
   std::string definition(const Implementation &implementation) const;
   std::string location(const Span &span) const;
 };
-Program parse(std::string source, std::string path);
+Program parse(std::string source, std::string path,bool editorNames=false);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
 S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
 P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
@@ -163,7 +169,7 @@ Type checkExpression(Program &program,const std::string &function,E expression,c
 // Check explicit physical-project version/format without opening its graph store.
 void validateProjectMetadata(const std::string &root);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
-    const std::map<std::string,std::string> &overlays={});
+    const std::map<std::string,std::string> &overlays={},bool editorNames=false);
 // Same lexer as the parser, for checked editor projections; no source identities.
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);

@@ -108,3 +108,5 @@ nex export --revision HEAD --directory ../lesson-fixed --json
 инструменты и окружение; границы повторения описаны в руководстве.
 
 For checked source references, query describe.editor_analysis and use its advertised references_command/schema. Keep analysis/1 consumers on the default command. Treat the new occurrence locations as bounded captured-source metadata and continue normal check/test/task acceptance after any edit.
+
+For source-reference navigation, keep the exact declaration file/byte interval from the checked occurrence. Do not conflate a trait method with its implementation function, an enum qualifier with its variant, an import alias with its imported symbol, or equally spelled parameters in different generic scopes. Default analysis/1 remains available; these source projections add no graph identity or source-edit authority.

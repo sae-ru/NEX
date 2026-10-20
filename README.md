@@ -8,7 +8,10 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.68.0 / language0.16**, under development.
+The current source is **toolchain0.69.0 / language0.16**, an isolated development
+candidate. It adds precise type/trait/member/import references; current full
+regression, SDK, platform and installed IDE gates are pending. The saved physical
+root0.68 baseline and its evidence below retain their original scope.
 The language includes checked integers/finite floats, Unicode strings, immutable
 aggregates, exhaustive matching, generics, traits/associated types, constructor
 parameters, function values and snapshot closures. Types, effects, client/server

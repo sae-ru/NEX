@@ -263,7 +263,7 @@ class LanguageServer(harness.ToolchainCase):
             self.assertEqual(sorted(row['role'] for row in selected),['declaration','read'])
         owner=text.index('Left{')
         selected=[row for row in rows if row['definition']['range']=={'begin':owner,'end':owner+4}]
-        self.assertEqual(sorted(row['role'] for row in selected),['call','declaration','pattern'])
+        self.assertEqual(sorted(row['role'] for row in selected),['call','declaration','pattern','read'])
         underscore=text.index('_:i64');wildcard=text.index('_=>')
         selected=[row for row in rows if row['definition']['range']=={'begin':underscore,'end':underscore+1}]
         self.assertEqual(sorted(row['role'] for row in selected),['declaration','read'])
@@ -314,10 +314,14 @@ class LanguageServer(harness.ToolchainCase):
             cache['indices'].append({'files':[{**file,'hash':'b'*64,'text':'n '}],'occurrences':[]})
             with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
             self.assertEqual(failure.exception.code,-32801)
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/definition',params,cache)
+            self.assertEqual(failure.exception.code,-32801)
             cache['indices'].pop()
             changed={'file':'main.nex','range':{'begin':0,'end':1},'definition':{'file':'main.nex','range':{'begin':2,'end':3}},'role':'read'}
             cache['indices'].append({'files':[file],'occurrences':[changed]})
             with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache)
+            self.assertEqual(failure.exception.code,-32801)
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/definition',params,cache)
             self.assertEqual(failure.exception.code,-32801)
             cache['indices'].pop()
             long_path=self.root/('я'*120)/('я'*120)/'module.nex'
@@ -330,9 +334,142 @@ class LanguageServer(harness.ToolchainCase):
             cancel=threading.Event();cancel.set()
             with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache,cancel)
             self.assertEqual(failure.exception.code,-32800)
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/definition',params,cache,cancel)
+            self.assertEqual(failure.exception.code,-32800)
             unicode='Я🧠\r\nn n';offsets=[len(unicode[:i].encode()) for i in [0,1,2,3,4,5,6,7]]
             positions=module.range_positions(unicode,offsets,lambda:None)
             self.assertEqual(positions,{offset:module.position(unicode,offset) for offset in offsets})
+        finally:server.close()
+
+    def selected_references(self, index, text, declaration, name, file='main.nex'):
+        at=len(text[:declaration].encode())
+        target={'file':file,'range':{'begin':at,'end':at+len(name.encode())}}
+        return [row for row in index['occurrences'] if row['definition']==target]
+
+    def test_type_parameters_have_lexical_scopes_and_nominal_types_have_annotations(self):
+        text=('module types;struct Box<T>{value:T;}\n'
+              'fn id<T>(value:T)->T{return value;}\n'
+              'fn unused<T>(value:T)->T{return value;}\n'
+              'fn main()->i64{let value:Box<i64>=Box<i64>(21);return id<Box<i64>>(value).value*2;}\n'
+              'test fn correct()->unit{assert(main()==42);}')
+        self.source(text);index=self.cli('analyze',self.file,'--references')
+        legacy=self.cli('analyze',self.file);projected={k:v for k,v in index.items() if k!='occurrences'};projected['schema']='nex.analysis/1'
+        self.assertEqual(legacy,projected)
+        for start,count in [(text.index('T>'),2),(text.index('T>',text.index('fn id')),3),(text.index('T>',text.index('fn unused')),3)]:
+            rows=self.selected_references(index,text,start,'T');self.assertEqual(len(rows),count)
+            self.assertEqual(sum(row['role']=='declaration' for row in rows),1)
+        rows=self.selected_references(index,text,text.index('Box<T>'),'Box')
+        self.assertEqual(sorted(row['role'] for row in rows),['call','declaration','read','read'])
+        self.assertFalse((self.root/'.nex').exists())
+        self.cli('test',self.file);self.cli('test',self.file,'--target','web')
+
+    def test_trait_members_implementation_bindings_and_actual_functions_are_distinct(self):
+        text=('module contract;\ntrait Content{type Item;fn get(value:Self)->Content::Item<Self>;}\n'
+              'struct Box<T>{value:T;}\nfn extract<T>(value:Box<T>)->T{return value.value;}\n'
+              'impl boxed<T>:Content for Box<T>{type Item=T;get=extract<T>;}\n'
+              'fn read<T:Content>(value:T)->Content::Item<T>{return Content<T>::get(value);}\n'
+              'fn main()->i64{return read(Box<i64>(42));}\n'
+              'test fn correct()->unit{assert(main()==42);let get:fn(Box<i64>)->i64=Content<Box<i64>>::get;assert(get(Box<i64>(7))==7);}')
+        self.source(text);index=self.cli('analyze',self.file,'--references')
+        method=text.index('get(');rows=self.selected_references(index,text,method,'get')
+        self.assertEqual(sorted(row['role'] for row in rows),['call','declaration','read','read'])
+        associated=text.index('Item;');rows=self.selected_references(index,text,associated,'Item')
+        self.assertEqual(sorted(row['role'] for row in rows),['declaration','read','read','read'])
+        function=text.index('extract<T>');rows=self.selected_references(index,text,function,'extract')
+        self.assertEqual(sorted(row['role'] for row in rows),['declaration','read'])
+        trait=text.index('Content{');rows=self.selected_references(index,text,trait,'Content')
+        self.assertTrue(all(text.encode()[row['range']['begin']:row['range']['end']].decode() in ('Content','Self') for row in rows))
+        implicit=[row for row in rows if text.encode()[row['range']['begin']:row['range']['end']]==b'Self']
+        self.assertEqual(len(implicit),2);self.assertFalse(any(row['role']=='declaration' for row in implicit))
+        self.assertFalse((self.root/'.nex').exists())
+        self.cli('test',self.file);self.cli('test',self.file,'--target','web')
+
+    def test_import_alias_type_and_variant_components_have_separate_definitions(self):
+        library=('module model;pub enum Maybe<T>{Some(value:T);None;}\n'
+                 'pub fn echo<T>(value:T)->T{return value;}')
+        helper=self.root/'model 🧠.nex';helper.write_text(library)
+        text=('module types;\r\nimport "./model 🧠.nex" as m;\r\n'
+              'fn read(x:m::Maybe<i64>)->i64{return match x{m::Maybe::Some(n)=>n,m::Maybe::None()=>0};}\r\n'
+              'fn main()->i64{let s:str="Я🧠";return read(m::Maybe<i64>::Some(m::echo<i64>(42)));}')
+        self.source(text);index=self.cli('analyze',self.file,'--references')
+        alias=text.index('m;');rows=self.selected_references(index,text,alias,'m')
+        self.assertEqual(len(rows),6);self.assertEqual(sum(row['role']=='declaration' for row in rows),1)
+        variant=library.index('Some(');rows=self.selected_references(index,library,variant,'Some',helper.name)
+        self.assertEqual(sorted(row['role'] for row in rows),['call','declaration','pattern'])
+        enum=library.index('Maybe<T>');rows=self.selected_references(index,library,enum,'Maybe',helper.name)
+        self.assertEqual(sorted(row['role'] for row in rows),['declaration','read','read','read','read'])
+        client=self.client();client.initialize();client.open(self.file,text);self.assertEqual(client.diagnostics(self.file,1),[])
+        def query(at):
+            prefix=text[:at];return {'textDocument':{'uri':self.file.as_uri()},'position':{'line':prefix.count('\n'),'character':len(prefix.rsplit('\n',1)[-1].encode('utf-16-le'))//2}}
+        targets=[(text.index('m::Maybe'),self.file.resolve().as_uri(),text,alias,'m'),
+                 (text.index('Maybe<i64>'),helper.resolve().as_uri(),library,enum,'Maybe'),
+                 (text.rindex('Some('),helper.resolve().as_uri(),library,variant,'Some')]
+        for at,uri,source,begin,name in targets:
+            prefix=source[:begin];start={'line':prefix.count('\n'),'character':len(prefix.rsplit('\n',1)[-1].encode('utf-16-le'))//2}
+            self.assertEqual(client.request('textDocument/definition',query(at)),[{'uri':uri,'range':{'start':start,'end':{**start,'character':start['character']+len(name)}}}])
+        self.assertEqual(len(client.request('textDocument/references',{**query(text.index('m::Maybe')),'context':{'includeDeclaration':True}})),6)
+        self.assertEqual(client.request('textDocument/hover',query(text.index('Maybe<i64>')))['contents']['value'],'enum Maybe')
+        self.assertFalse((self.root/'.nex').exists());self.assertEqual(self.file.read_bytes(),text.encode())
+        # Visibility and import errors are still compiler errors, with no partial index.
+        helper.write_text(library.replace('pub enum','enum'))
+        error=self.cli('analyze',self.file,'--references',ok=False);self.assertIn('E_VISIBILITY',json.dumps(error))
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_module_prefix_cannot_invent_a_trait_qualifier_reference(self):
+        library='module catalog::Nested;pub fn answer()->i64{return 42;}'
+        (self.root/'nested.nex').write_text(library)
+        text=('module catalog;import "./nested.nex" as n;'
+              'trait Nested{fn value(x:Self)->Self;}'
+              'fn main()->i64{return n::answer();}')
+        self.source(text);index=self.cli('analyze',self.file,'--references')
+        alias=text.index('n;');rows=self.selected_references(index,text,alias,'n')
+        self.assertEqual(sorted(row['role'] for row in rows),['declaration','read'])
+        use=text.index('n::answer');at={'begin':use,'end':use+1}
+        selected=[row for row in index['occurrences'] if row['file']=='main.nex' and row['range']==at]
+        self.assertEqual(len(selected),1)
+        trait=text.index('Nested{');rows=self.selected_references(index,text,trait,'Nested')
+        self.assertEqual(len(rows),3) # Declaration and the two implicit Self uses.
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_constructor_parameter_and_explicit_self_references_use_real_tokens(self):
+        text=('module kinds;trait Mapper<Self<_>>{fn map<A,B>(values:Self<A>,apply:fn(A)->B)->Self<B>;}\n'
+              'fn map_list<A,B>(values:list<A>,apply:fn(A)->B)->list<B>{let out:list<B>=[];return out;}\n'
+              'impl list_mapper:Mapper for list{map=map_list;}\n'
+              'fn convert<F<_>:Mapper,A,B>(values:F<A>,apply:fn(A)->B)->F<B>{return Mapper<F>::map<A,B>(values,apply); }\n'
+              'fn main()->i64{return 42;}')
+        self.source(text);index=self.cli('analyze',self.file,'--references')
+        self_rows=self.selected_references(index,text,text.index('Self<_>'),'Self')
+        self.assertEqual(sorted(row['role'] for row in self_rows),['declaration','read','read'])
+        constructor=self.selected_references(index,text,text.index('F<_>'),'F')
+        self.assertEqual(sorted(row['role'] for row in constructor),['declaration','read','read','read'])
+        a=text.index('A,B>(values:Self');rows=self.selected_references(index,text,a,'A')
+        self.assertEqual(sorted(row['role'] for row in rows),['declaration','read','read'])
+        self.assertFalse(any(text.encode()[row['range']['begin']:row['range']['end']]==b'_' for row in index['occurrences']))
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_reference_grouping_matches_complete_utf16_results_across_many_files(self):
+        spec=importlib.util.spec_from_file_location('nex_lsp_type_scale',harness.REPO/'editor/lsp/server.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        server=module.Server(harness.NEX,output=io.BytesIO());files=[];occurrences=[];target={'file':'0000.nex','range':{'begin':0,'end':1}}
+        for number in range(512):
+            key=f'{number:04d}.nex';text='T \r\n"🧠" T';begin=len(text[:text.rindex('T')].encode())
+            files.append({'key':key,'path':str(self.root/key),'text':text,'hash':str(number)})
+            occurrences.append({'file':key,'range':{'begin':begin,'end':begin+1},'definition':target,'role':'read'})
+        occurrences.append({'file':'0000.nex','range':target['range'],'definition':target,'role':'declaration'})
+        index={'files':files,'occurrences':occurrences};cache={'epoch':0,'indices':[index,index],'documents':{}}
+        params={'textDocument':{'uri':(self.root/'0000.nex').as_uri()},'position':{'line':0,'character':0},'context':{'includeDeclaration':False}}
+        try:
+            result=server.query('textDocument/references',params,cache)
+            self.assertEqual(len(result),512)
+            self.assertTrue(all(row['range']=={'start':{'line':1,'character':5},'end':{'line':1,'character':6}} for row in result))
+            cancel=threading.Event();calls=0;original=module.range_positions
+            def interrupt(text,offsets,check):
+                nonlocal calls
+                calls+=1
+                if calls==3:cancel.set()
+                return original(text,offsets,check)
+            module.range_positions=interrupt
+            with self.assertRaises(module.RPCError) as failure:server.query('textDocument/references',params,cache,cancel)
+            self.assertEqual(failure.exception.code,-32800)
         finally:server.close()
 
     def test_lifecycle_fragmented_messages_and_method_errors(self):
@@ -479,7 +616,7 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertEqual(report['messages_sent'],16);self.assertEqual(report['stderr'],'')
+        self.assertTrue(report['type_reference_checks']);self.assertEqual(report['messages_sent'],23);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

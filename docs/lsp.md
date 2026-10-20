@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.68
+# NEX language server: development toolchain 0.69
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -70,8 +70,9 @@ Toolchain0.68 adds `textDocument/references` with a required boolean
 `context.includeDeclaration`. Results use exact name-token ranges, canonical
 physical file URIs and deterministic ordering. Names are resolved by the checker
 and lexical scopes. Identical spelling does not merge different parameters,
-locals or structure fields. Constructor calls/patterns currently reference their
-nominal structure/enum declaration. Implicit closure capture machinery creates
+locals or structure fields. Structure calls/patterns reference their nominal declaration. From0.69, enum
+constructor calls/patterns reference the exact variant declaration; the enum
+qualifier separately references its type. Implicit closure capture machinery creates
 no invented source occurrence; physical reads inside a closure are included.
 A wildcard pattern `_` declares nothing and does not shadow an ordinary outer
 value named `_`, matching the checker and all execution backends.
@@ -93,14 +94,32 @@ executes code; source language0.16 and graph formats require no migration.
 Builtins without a physical source declaration have no source-reference target.
 References cover source function calls/values, parameters and locals (including writes,
 lambdas and match bindings), nominal constructor calls/patterns and structure
-field reads. Type annotations, trait/implementation syntax and import-alias
-references remain pending. The search uses successfully checked project/import
+field reads. Toolchain0.69 also covers nominal annotations and explicit type
+arguments, lexical generic parameters (including constructor parameters), trait
+bounds, associated type/method contracts, implementation bindings, endpoint
+handler names and file-local import aliases. In `m::Content<T>::get`, `m`,
+`Content`, `T` and `get` retain separate targets. A trait method points to its
+source contract; the implementation's explicit RHS names the selected ordinary
+function. Implicit `Self` uses point to the trait name, while written
+`Self<_>` uses point to that explicit `Self` token. Constructor placeholders
+and builtin bounds create no physical declarations. Different generic scopes
+never merge by spelling. Parser/module-binder metadata is opt-in and excluded
+from Type equality, source/semantic serialization and revision hashes.
+
+The strict analysis/1 and analysis/2 shapes and roles remain unchanged. In
+analysis/2, exact occurrence targets take precedence for LSP definitions;
+legacy expression-definition fields retain their earlier behavior. Nominal and
+trait hover can describe the declaration. There is no dedicated type-parameter,
+associated-member or import-alias hover contract; do not interpret a containing
+expression's type as a new type-description API. Complete rename, parser
+recovery and incremental indexing remain pending. The search uses successfully checked project/import
 indices and separately checked open files; it does not scan closed unreachable
 files or merge unsaved buffers from another client/workspace connection.
 Conflicting captured contents/binding contexts fail explicitly. Superseded or
 cancelled requests produce no stale locations. Results are bounded to10000
 unique locations and8MiB; exceeding either limit fails without a partial result.
-Name intervals are converted to UTF-16 in one pass per captured source.
+Name intervals are grouped by file in one pass and converted to UTF-16 in one
+pass per captured source. Cancellation also applies during grouping/conversion.
 
 From a checkout, run `python3 tests/lsp.py /absolute/path/to/nex` for actual
 compiler/stdio scenarios, including unsaved Unicode diagnostics, cross-file
