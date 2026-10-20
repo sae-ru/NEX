@@ -14,6 +14,7 @@ import signal
 import sqlite3
 import ssl
 import subprocess
+import sys
 import threading
 import tempfile
 import time
