@@ -1,3 +1,7 @@
+Toolchain0.83 task workload captures, synthetic local server state and request
+budgets are external development metadata. Language0.16 grammar, canonical
+identity, effect/realm/ownership semantics and migration policy are unchanged.
+
 Toolchain0.82 bounded native server workloads are external development metadata.
 They preserve language0.16 syntax, canonical identities, effects, realms and
 ownership rules. No migration occurs.

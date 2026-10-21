@@ -95,7 +95,8 @@ capture is bounded to64MiB,8192 files/aliases,32 configurations and128 component
 Source candidates retain their ordinary16MiB bundle limit. Native build artifacts
 retain first-party images beside their executable; web artifacts retain `dist`.
 Build copies are distinct from deployment packages and relocated debugger
-sessions. Server workloads and dedicated task/editor debugging remain pending.
+sessions. [Server workload profile tasks](task-workloads.md) require the separately
+advertised0.83 capability; dedicated task/editor debugging remains pending.
 
 ## Package acceptance
 

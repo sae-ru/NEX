@@ -7,6 +7,20 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+When task_features advertises project_task_server_workloads, read the
+`task-workload` guide. Add a project server profile check with target server,
+profile configuration, matching entry, workload/workload_hash from a readonly
+project plan, server_workers and reviewed budgets. Capture/replay keeps the exact
+workload bytes and trusted runner. Each check owns fresh synthetic user
+nex-task-workload, credential and database; it needs no operator token or live
+database. Prepare data with workload requests. Keep actual FFI/toolchain grants
+explicit. Duration/p95/p99/rate budgets require reviewed cpu/target from readonly
+nex doctor. Check all response/count/budget failures, unsupported hardware,
+signals, managed pools and dropped counters. Replay readonly inputs into a new
+writable directory and keep its graph/history isolated. A passing workload proves
+only its linked, reviewed criteria; server debugging remains pending.
+
+
 When project_build.features advertises project_server_workload_profiles, read
 `nex guide --kind server-workload --json`. Use project plan/profile with
 `--component NAME --configuration PROFILE_CONFIG --workload FILE`. Review the
@@ -16,8 +30,8 @@ binary dependencies. Keep credentials in the named runtime environment variable;
 never put them in source, workload, Git or captured payloads. Check workload.ok,
 counts, native exit, profile identity, dropped events and managed pools. Warmup
 contributes to native calls but not phase latency statistics. Timeouts never
-retry mutations. Workload task capture/replay, HTTPS/external targets and server
-debugging remain pending; HTTP worker concurrency adds no language syntax.
+retry mutations. Workload task capture/replay requires the separate0.83 capability; HTTPS/external
+targets and server debugging remain pending; HTTP worker concurrency adds no language syntax.
 
 
 When editor_features advertises project_architecture_debug_launch, use extension
@@ -63,7 +77,8 @@ adapter command/launch/cwd/source map to the debugger. Profiles require an
 explicit profile configuration. Pure tests compare the reference backend, and pure shared tests also compare TypeScript;
 effectful tests execute once with explicit runtime grants. Captured project
 diagnostics/profile nodes have null persistent IDs and content/site identities.
-Check actual exit status and timeout/output flags. Project task/replay requires the separately advertised project_architecture_tasks capability; server debugging and workload task capture/replay remain pending.
+Check actual exit status and timeout/output flags. Project task/replay requires the separately advertised project_architecture_tasks capability; server debugging remains pending; workload task capture/replay requires its
+separate advertised capability.
 
 When `mobile_project_generation` is advertised, read `docs/mobile.md` and the
 web guide. Use the indexed mobile_project.py tool with the actual compiler,

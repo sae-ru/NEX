@@ -78,8 +78,9 @@ workload data never grants them.
 `nex.server-workload-result/1`: pinned hashes, expected/completed request counts,
 warmup count, each completed phase's duration, request rate, latency samples and
 min/p50/p95/p99/max latency in nanoseconds. p50 is the ordinary median; p95/p99
-use nearest rank. Latency includes the request, response and byte validation on
-a fresh connection; throughput covers the complete concurrent phase. Warmup is
+use nearest rank. Latency ends after reading the bounded response on a fresh connection;
+expectations are checked before accepting the sample. Throughput covers the
+complete concurrent phase, including expectation validation. Warmup is
 excluded from phase statistics but included in profile function calls and memory.
 Metrics contain no request/response payloads or credential values. Native
 stdout/stderr remain ordinary captured program output.
@@ -89,8 +90,9 @@ provider function hashes and memory measurements. Project identities have null
 persistent graph IDs and `identity_scope:"captured_project"`. Check `ok`, process
 status, memory pools and dropped-event counters before using measurements.
 Instrumented timing under shared-machine load is not an uninstrumented capacity
-claim. Source-free task capture/replay of workloads and server debugging remain
-pending and are not implied by this command.
+claim. Source-free [task capture/replay](task-workloads.md) requires the separately
+advertised `project_task_server_workloads` capability. Server debugging remains
+pending and is not implied by this command.
 
 Limits:1MiB strict UTF-8 JSON, unique keys, depth32, integer numeric tokens,
 1..128 definitions,1..16 phases,1..64 workers per phase,1..4096 iterations,

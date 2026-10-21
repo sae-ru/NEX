@@ -374,7 +374,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload', 'task-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -2065,6 +2065,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         full_descriptor = cli('describe'); description = full_descriptor['project_build']
         require('project_architecture_tasks' in full_descriptor['task_features'], 'SDK lacks project task captures/replay')
         require('project_task_packages' in full_descriptor['task_features'], 'SDK lacks project package acceptance checks')
+        require('project_task_server_workloads' in full_descriptor['task_features'], 'SDK lacks captured server workload profiles')
         require(description['manifest_schema'] == 'nex.project-build/1' and
                 description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
                 'shared_library' in description['artifact_kinds'] and
@@ -2336,6 +2337,29 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         report['evidence']['server_workload']={'ok':True,'requests':16,'phase_concurrency':[1,4],'definition_sha256':expected_workload_hash,
             'runner_sha256':metrics['runner_sha256'],'actual_dynamic_provider':True,'profile_identity_checked':True,'owned_cleanup_checked':True,
             'runtime_credential_captured':False,'profile':str(profile_output)}
+        workload_task=cli('task','nex.build.json','--kind','init','--component','api','--configuration','measured',cwd=workload_project)
+        workload_task['checks']=[{'id':'measure','program':'app','kind':'profile','target':'server','configuration':'measured',
+            'entry':'workload_example::service::handle','scenario':'installed SDK captured server workload',
+            'workload':'workload.json','workload_hash':expected_workload_hash,'server_workers':4,'timeout_seconds':180,
+            'budget':{'max_calls':{'workload_example::core::render':'16'},'max_peak_handles':'100000'}}]
+        workload_task['requirements']=[{'id':'measure','text':'Reviewed local request behavior and actual native memory/call budget',
+            'targets':['server'],'checks':['measure'],'bindings':[{'program':'app','kind':'function','symbol':'workload_example::service::handle'}]}]
+        task_path=workload_project/'task.json';task_path.write_text(json.dumps(workload_task))
+        checked_task=cli('task',task_path,'--kind','check',cwd=workload_project)
+        require(checked_task['workloads']['measure']['definition_sha256']==expected_workload_hash, 'task lost its reviewed workload identity')
+        measured_task=cli('task',task_path,'--kind','run','--directory',root/'server-workload-task-run',cwd=workload_project,timeout=300)
+        require(measured_task['ok'], 'captured server workload task failed')
+        task_receipt=Path(measured_task['output']);task_profile=json.loads((task_receipt.parent/'artifacts/measure/profile.json').read_text())
+        require(task_profile['workload']['completed_requests']==16 and task_profile['workload']['ok'], 'task request observations differ')
+        task_inputs=json.loads((task_receipt.parent/'inputs/manifest.json').read_text())['files']
+        require('inputs/workloads/measure/workload.json' in task_inputs and 'inputs/resources/tools/server_workload.py' in task_inputs and
+            not any('auth.json' in path or 'state.sqlite' in path for path in task_inputs), 'task workload inputs or synthetic-state separation differ')
+        shutil.rmtree(workload_project)
+        replayed_task=cli('task',task_receipt,'--kind','replay','--directory',root/'server-workload-task-replay',timeout=300)
+        require(replayed_task['ok'] and replayed_task['task_hash']==checked_task['task_hash'], 'source-deleted workload task replay failed')
+        report['evidence']['server_workload_task']={'ok':True,'source_deleted_replay':True,'actual_dynamic_provider':True,
+            'requests_per_measurement':16,'synthetic_runtime_state':True,'operator_credentials_captured':False,'receipt':str(task_receipt),
+            'replay':replayed_task['output'],'definition_sha256':expected_workload_hash}
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),

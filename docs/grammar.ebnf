@@ -197,3 +197,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.82 server workloads are external JSON metadata; the source
    grammar, canonical language0.16 identities and migration policy are unchanged. *)
+
+(* Toolchain0.83 workload tasks/budgets use external JSON, with no source
+   syntax, canonical language0.16 identity or migration change. *)

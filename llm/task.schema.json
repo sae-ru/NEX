@@ -514,6 +514,15 @@
                     "additionalProperties": {
                       "$ref": "#/$defs/decimal"
                     }
+                  },
+                  "max_p95_latency_ns": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "max_p99_latency_ns": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "min_requests_per_second": {
+                    "$ref": "#/$defs/decimal"
                   }
                 },
                 "required": [],
@@ -547,6 +556,18 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "workload": {
+                "$ref": "#/$defs/path"
+              },
+              "workload_hash": {
+                "$ref": "#/$defs/hash"
+              },
+              "server_workers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 8
               }
             },
             "required": [
@@ -585,7 +606,10 @@
                 "then": {
                   "properties": {
                     "target": {
-                      "const": "native"
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
                     }
                   }
                 }
@@ -599,9 +623,57 @@
                 "then": {
                   "properties": {
                     "target": {
-                      "const": "native"
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
                     }
                   }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "workload"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "const": "server"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "budget": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "max_p95_latency_ns"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "max_p99_latency_ns"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "min_requests_per_second"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "hardware",
+                    "workload"
+                  ]
                 }
               }
             ],
@@ -611,6 +683,16 @@
               ],
               "toolchain_hash": [
                 "toolchain"
+              ],
+              "workload": [
+                "workload_hash",
+                "configuration"
+              ],
+              "workload_hash": [
+                "workload"
+              ],
+              "server_workers": [
+                "workload"
               ]
             }
           },

@@ -1,3 +1,36 @@
+# Development cohort0.83 (not integrated)
+
+Project server profile checks pin SHA-256 workload bytes, preserve actual binary
+providers and supervise the trusted runner/native descendants directly. Each
+check creates a fresh synthetic user/credential/database, excluded from receipt
+inputs and cleaned after execution. Readonly check needs no credentials. Captured
+workloads and current trusted runner replay after source deletion with readonly
+receipts and an isolated output graph. Existing operator FFI/toolchain grants
+remain explicit. Request p95/p99/rate budgets require reviewed hardware; exact
+integer rate comparisons avoid overflow. Doctor now exposes readonly CPU identity.
+
+Focused preflight passes7.244seconds; actual two-check fresh-state measurement
+and readonly source-deleted replay passes102.031seconds; impossible p95/uint64
+rate and unsupported-hardware checks pass43.562seconds. An initial replay attempt
+retains task timeout diagnostics and a test cleanup-order mistake; new command
+receipts add chosen timeout and elapsed time for inspection. The full task timeout/SIGINT/explicit-FFI/fork cleanup case passes151.734seconds.
+The expanded hardware/budget/bad-response/captured-input-tamper case passes
+56.215seconds, including unchanged graph rows after rejected replay. The earlier
+4second cancellation fixture expired during preparation; its corrected30second
+case measures a long sequence of bounded250ms requests and reaches native code
+before the timeout, then interrupts an uncooperative callback separately.
+Matching full89 and installed SDK/platform gates remain pending.
+Language0.16 syntax/canonical/effect/realm/ownership semantics are unchanged.
+
+Initial frozen0.82 Linux passes87/88 groups: only its strict-C11 usleep fixture
+fails. The portable fixture passes Mac/Linux. Initial0.82 Macfull88 passes, but
+SDK24 fails a bounded core reader during capsule export; the same compiler and
+inputs independently export/read successfully in19.275seconds. Original failure
+is retained; portable full Mac/Linux/SDK acceptance remains mandatory. Primary
+verified0.81 source/compiler/Git and all47 revisions/all16tables/schema/IDs remain.
+Server debugging, dedicated task/editor commands, source concurrency, general
+accelerators, source-foreign packages and broader platform delivery remain open.
+
 # Portable0.82 fixture revision (not integrated)
 
 Frozen0.82 sourcebbd93663 passes the Mac server workload group; its Linux group

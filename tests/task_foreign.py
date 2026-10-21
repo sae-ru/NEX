@@ -130,7 +130,7 @@ class TaskForeign(harness.ToolchainCase):
             for directory,dirs,files in os.walk(harness.REPO/name):
                 dirs[:]=[n for n in dirs if n not in excluded]
                 resources+=sum((Path(directory)/name).is_file() for name in files)
-        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py'))
+        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/server_workload.py'))
         # Task + program, two catalogue files, and three original bundle members.
         remaining=8192-resources-7
         original=json.loads((self.root/'bundle/manifest.json').read_text());index=0

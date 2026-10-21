@@ -12,15 +12,15 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated portable-fixture revision is **toolchain0.82.0 / language0.16**. It adds bounded
-native server workload profiling through `project --kind plan|profile --workload
-FILE`, with strict data schemas, pinned inputs, actual dynamic providers and
-request metrics inside native profiles. Focused real command and cancellation
-checks pass; complete frozen88/installed SDK/Linux verification remains pending.
-The first frozen Linux workload group retains an undeclared-usleep C11 fixture
-failure. This revision uses explicit POSIX200809L/nanosleep; compiler/runtime
-and source language are unchanged. Its full validation remains pending.
-The verified primary0.81 checkpoint is preserved separately; see [its evidence](docs/evidence/toolchain-0.81.0.json).
+This isolated source is **toolchain0.83.0 / language0.16**. It adds pinned
+[server workload acceptance tasks](docs/task-workloads.md), fresh synthetic local
+credentials/databases, captured source-free replay and hardware-bound request
+budgets. Readonly preflight, actual dynamic-provider measurement, readonly
+source-deleted replay and impossible budget rejection pass focused checks.
+Complete frozen89/installed SDK/Linux validation remains pending. The verified
+primary0.81 remains preserved separately; [its evidence](docs/evidence/toolchain-0.81.0.json)
+records that accepted checkpoint. Earlier0.82 platform/SDK observations retain
+their separate source cohorts and failures.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -65,7 +65,7 @@ Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compi
 scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
 APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
 tests real NEX code in two DSOs, but is not a supported compiler build mode.
-Windows DLL integration, server debugging/workload task capture, dedicated task/editor debugging, source concurrency,
+Windows DLL integration, server debugging, dedicated task/editor debugging, source concurrency,
 general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
 remain open. This checkpoint does not complete the full objective.
 

@@ -1,3 +1,14 @@
+# Current0.83 workload tasks
+
+- [x] Pin/capture HTTP workload inputs and current trusted runner for project profiles.
+- [x] Isolate synthetic credentials/database per check and repeat after source deletion.
+- [x] Validate hardware-bound request budgets with overflow-safe integer comparisons.
+- [x] Verify task cancellation, explicit FFI grants, fork cleanup, bad responses
+  and captured-input tampering; broad and exact-limit regressions remain required.
+- [ ] Complete coherent frozen89/installed SDK/Linux validation before integration.
+- [ ] Continue server/editor debugging, source concurrency, general accelerators,
+  source-foreign packages and remaining platform delivery; the objective is open.
+
 # Current portable0.82 fixture verification
 
 - [x] Verify POSIX200809L/nanosleep heartbeat fixture on macOS and Linux ARM64.
