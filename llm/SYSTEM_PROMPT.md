@@ -7,6 +7,12 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+Source concurrency remains pending. The0.86 internal native worker probe is
+trusted-host groundwork compiled with an explicit development flag, not a NEX
+intrinsic. Read docs/concurrency-design.md; do not generate parallel_map/spawn,
+channels, async/await or accelerator APIs. Require actual checker/backend and
+language-version/migration support before using any future source operation.
+
 When task_features advertises project_task_server_workloads, read the
 `task-workload` guide. Add a project server profile check with target server,
 profile configuration, matching entry, workload/workload_hash from a readonly

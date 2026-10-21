@@ -16,6 +16,24 @@ REPO = harness.REPO
 
 
 class Toolchain(harness.ToolchainCase):
+    def test_internal_worker_development_adds_no_source_intrinsic(self):
+        descriptor = self.cli('describe')
+        pack = json.loads((REPO / 'llm/language-pack.json').read_text())
+        self.assertEqual(descriptor['source_concurrency'], pack['source_concurrency'])
+        self.assertEqual(descriptor['source_concurrency']['status'], 'pending')
+        self.assertFalse(descriptor['source_concurrency']['source_operations'])
+        self.assertFalse(descriptor['source_concurrency']['emitted_runtime_enabled'])
+        self.assertEqual(self.cli('guide', '--kind', 'concurrency')['text'],
+                         (REPO / pack['documents']['concurrency_design']).read_text())
+        self.source('module ordinary_name; fn parallel_map(x:i64)->i64{return x+1;} fn main()->unit!{io}{print(parallel_map(41));}')
+        expected = self.cli('eval')['stdout']
+        self.assertEqual(expected, '42\n')
+        self.assertEqual(self.cli('run')['stdout'], expected)
+        head = self.cli('history')['head']
+        self.source('module unsupported; fn main()->i64{return parallel_map(1);}')
+        self.assertEqual(self.cli('check', ok=False)['code'], 'E_NAME')
+        self.assertEqual(self.cli('history')['head'], head)
+
     def test_starter_and_real_native_binary(self):
         self.cli("init", ".")
         self.cli("check")

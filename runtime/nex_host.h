@@ -29,7 +29,11 @@ struct LocatedTrap : Trap {
 void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
 // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
 class RequestScope {
+  friend struct ParallelAccess;
+  struct Control;
   struct Impl;std::shared_ptr<Impl> impl;
+  RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop);
+  void checkExecution(int64_t line,bool forceCancellation,bool consumeStep);
 public:
   explicit RequestScope(uint64_t budget=1000000,uint64_t timeoutMs=5000);
   ~RequestScope();

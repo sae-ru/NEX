@@ -33,6 +33,11 @@ identities, effect/realm/ownership semantics or graph migration requirements.
 Toolchain0.77 project run/test/debug/profile are external development actions;
 language0.16, canonical identities, effects, realms and graph history are unchanged.
 
+Toolchain0.86's explicitly enabled internal native worker prototype changes no
+source-language capability. Source concurrency stays pending; its private host
+contract and remaining language work are in [concurrency design](concurrency-design.md).
+There is no implicit source migration or new builtin.
+
 # NEX language specification 0.16
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.

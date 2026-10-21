@@ -1,3 +1,14 @@
+# Current0.86 structured native worker groundwork
+
+- [x] Implement shared request budgets/deadlines/cancellation and per-job owners
+  in an explicitly enabled compiler-private runtime prototype.
+- [x] Join workers on failures and preserve ordered results and diagnostics;
+  bound workers and prevent nested operating-system thread multiplication.
+- [ ] Complete sanitizer, platform, regression and installed-SDK acceptance.
+- [ ] Expose a checked source operation with type/effect/capture rules, backend
+  agreement, explicit language migration and actual debugger/profile coverage.
+  Source concurrency, async I/O and CPU/GPU/NPU language APIs remain pending.
+
 # Current0.85 server debugging
 
 - [x] Prepare host HTTP debug sessions from actual declared binary providers.

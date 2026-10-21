@@ -1,3 +1,14 @@
+# Development cohort0.86 (not integrated)
+
+Internal native structured-worker groundwork shares the parent request budget,
+cancellation and absolute deadline while keeping per-job handle/resource cleanup.
+Ordered immutable results, joined failures and bounded nested scheduling are
+implemented behind NEX_STRUCTURED_WORKERS. Ordinary emitted runtimes do not
+enable this prototype. Source concurrency and all new syntax remain pending;
+language0.16 is unchanged. See [the contract](docs/concurrency-design.md).
+The0.85 LSP fixture's stale extension0.6 literal is explicitly corrected to0.7
+in this cohort; frozen0.85 remains unchanged. Full0.86 validation is pending.
+
 # Development cohort0.85 (not integrated)
 
 Native server debug preparation now retains actual source/archive/shared

@@ -969,6 +969,9 @@ std::string revision(const Program &p) {
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
+    {"source_concurrency",llvm::json::Object{{"status","pending"},{"guide","docs/concurrency-design.md"},
+      {"source_operations",false},{"internal_runtime_prototype",true},{"emitted_runtime_enabled",false},
+      {"stable_host_abi",false},{"development_compile_definition","NEX_STRUCTURED_WORKERS"}}},
     {"wasm_features",llvm::json::Object{{"source_support",true},{"status","experimental_scalar_compute_validation_pending"},
       {"command","nex build FILE --target wasm --entry NAME --profile debug|release --json"},{"guide","docs/wasm.md"},
       {"target","wasm32-unknown-unknown"},{"abi",1},{"types",llvm::json::Array{"i64","bool","unit"}},

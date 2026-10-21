@@ -4,6 +4,12 @@
 #include <limits>
 #include "nex_host.h"
 #include "nex_io.h"
+#ifdef NEX_STRUCTURED_WORKERS
+#include "nex_parallel.h"
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#endif
 #include <chrono>
 #include <unordered_set>
 #include <algorithm>
@@ -64,42 +70,169 @@ struct ApplicationScope {
   }
 };
 }
+struct RequestScope::Control {
+  std::atomic<uint64_t> steps{0};
+  uint64_t budget;
+  std::chrono::steady_clock::time_point deadline;
+  std::atomic<bool> cancelled{false},active{true},exhausted{false};
+  Control(uint64_t budget,uint64_t timeoutMs):budget(budget),
+    deadline(std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs)){}
+};
 struct RequestScope::Impl {
   std::unordered_set<Handle*> handles;
   ResourceDomain resources;
   std::map<const void*,std::unique_ptr<ResourceDomain>,std::less<>> resourceBindings;
-  uint64_t steps=0,budget;
-  std::chrono::steady_clock::time_point deadline;
-  std::atomic<bool> cancelled{false};
-  std::atomic<bool> active{true};
+  std::shared_ptr<Control> control;
   std::function<bool()> cancellation;
+  bool worker=false;
+  const std::atomic<bool> *workerStop=nullptr;
+  explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
 };
-RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>()){
+RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>(std::make_shared<Control>(budget,timeoutMs))){
   if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
-  impl->budget=budget;impl->deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs);currentRequest=this;
+  currentRequest=this;
   resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
-RequestScope::~RequestScope(){impl->active=false;profileUnwind();impl->resources.revoke();while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;resource_detail::requestBinder=nullptr;}
+RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop):impl(std::make_shared<Impl>(std::move(control))){
+  if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
+  impl->worker=true;impl->workerStop=workerStop;currentRequest=this;
+  resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
+}
+RequestScope::~RequestScope(){
+  if(!impl->worker)impl->control->active=false;
+  profileUnwind();impl->resources.revoke();while(!impl->handles.empty())delete *impl->handles.begin();
+  if(impl->worker)cleanupRuntimeResources();
+  currentRequest=nullptr;resource_detail::requestBinder=nullptr;
+}
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
-void RequestScope::cancel(){impl->cancelled=true;impl->resources.revoke();}
+void RequestScope::cancel(){impl->control->cancelled=true;impl->resources.revoke();}
 ResourceDomain &RequestScope::bindResources(const ResourceDomain &capability){
   auto key=capability.scopeKey();auto found=impl->resourceBindings.find(key);
   if(found==impl->resourceBindings.end())found=impl->resourceBindings.emplace(key,std::make_unique<ResourceDomain>(impl->resources.combine(capability))).first;
   return *found->second;
 }
-void RequestScope::setCancellation(std::function<bool()> check){impl->cancellation=std::move(check);}
-void RequestScope::poll(int64_t line,bool forceCancellation){
-  auto state=impl;
-  if(forceCancellation||(state->steps%64)==0){
-    auto cancellation=state->cancellation;
-    if(cancellation&&cancellation())state->cancelled=true;
-  }
-  if(!state->active){state->resources.revoke();throw Trap("E_CANCELLED","request scope has ended",line);}
-  if(state->cancelled){state->resources.revoke();throw Trap("E_CANCELLED","request was cancelled",line);}
-  if(++state->steps>state->budget){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
-  if(std::chrono::steady_clock::now()>=state->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
+void RequestScope::setCancellation(std::function<bool()> check){
+  if(impl->worker)throw Trap("E_CONTEXT","worker cannot replace the request cancellation callback",0);
+  impl->cancellation=std::move(check);
 }
+void RequestScope::poll(int64_t line,bool forceCancellation){checkExecution(line,forceCancellation,true);}
+void RequestScope::checkExecution(int64_t line,bool forceCancellation,bool consumeStep){
+  auto state=impl;auto control=state->control;
+  // The host's cancellation callback belongs to the coordinator thread. Worker
+  // polls only read shared atomic state; waiting coordinators still run it.
+  if(!state->worker&&(forceCancellation||(control->steps.load()%64)==0)){
+    auto cancellation=state->cancellation;
+    if(cancellation&&cancellation())control->cancelled=true;
+  }
+  if(!control->active){state->resources.revoke();throw Trap("E_CANCELLED","request scope has ended",line);}
+  if(control->cancelled){state->resources.revoke();throw Trap("E_CANCELLED","request was cancelled",line);}
+  if(state->workerStop&&state->workerStop->load()){state->resources.revoke();throw Trap("E_CANCELLED","worker group was cancelled",line);}
+  if(consumeStep){
+    auto steps=control->steps.load();
+    while(steps<control->budget&&!control->steps.compare_exchange_weak(steps,steps+1)){}
+    if(steps>=control->budget)control->exhausted=true;
+  }
+  if(control->exhausted){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
+  if(std::chrono::steady_clock::now()>=control->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
+}
+#ifdef NEX_STRUCTURED_WORKERS
+namespace {
+thread_local size_t parallelDepth=0;
+struct ParallelDepth {
+  ParallelDepth(){++parallelDepth;}
+  ~ParallelDepth(){--parallelDepth;}
+};
+void parallelValueCheck(const Value &value){
+  std::vector<Value> pending{value};std::unordered_set<const Data*> seen;size_t members=1;
+  while(!pending.empty()){
+    auto next=std::move(pending.back());pending.pop_back();
+    if(next.tag!=Value::Object)continue;
+    if(!next.object)throw DataError("E_PARALLEL_VALUE","parallel value has a null object");
+    if(!seen.insert(next.object.get()).second)continue;
+    if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","parallel value graph exceeds its object limit");
+    if((seen.size()%64)==0)pollHostOperation(0);
+    if(next.object->kind==Data::File)throw DataError("E_PARALLEL_VALUE","parallel values cannot contain file resources");
+    // All source-produced members of the other kinds are immutable after their
+    // fresh-value construction. Retain shared Data, never a caller-owned Handle.
+    if(next.object->values.size()>parallelMaximumNodes-members)throw DataError("E_LIMIT","parallel value graph exceeds its member limit");
+    members+=next.object->values.size();
+    pending.insert(pending.end(),next.object->values.begin(),next.object->values.end());
+  }
+}
+}
+struct ParallelAccess {
+  static Value run(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
+    auto *owner=currentRequest;
+    if(!owner)throw Trap("E_CONTEXT","parallel workers require an active request scope",location);
+    return hostOperation(location,[&]{
+      if(!callback)throw DataError("E_CONTEXT","parallel callback is missing");
+      if(workers<1||workers>parallelMaximumWorkers)throw DataError("E_RANGE","parallel worker count must be in 1..16");
+      if(items.tag!=Value::Object||!items.object||items.object->kind!=Data::List)throw DataError("E_TYPE","parallel input must be a list");
+      if(items.object->values.size()>parallelMaximumItems)throw DataError("E_LIMIT","parallel input exceeds 65536 items");
+      owner->checkExecution(location,true,false);
+      parallelValueCheck(items);parallelValueCheck(environment);
+      const Value inputs=items,captures=environment;
+      auto output=std::make_shared<Data>(Data::List);output->values.resize(inputs.object->values.size());
+      std::vector<std::exception_ptr> failures(output->values.size());
+      auto invoke=[&](size_t index){
+        auto value=hostOperation(location,[&]{
+          pollHostOperation(location);
+          auto result=callback(inputs.object->values[index],captures);
+          parallelValueCheck(result);pollHostOperation(location);return result;
+        });
+        output->values[index]=std::move(value);
+      };
+      if(parallelDepth){
+        // A nested pure group runs on its existing worker. It cannot multiply
+        // operating-system threads or introduce a nested request capability.
+        for(size_t i=0;i<output->values.size();++i)try{invoke(i);}catch(...){failures[i]=std::current_exception();}
+      }else if(!output->values.empty()){
+        std::atomic<size_t> next{0},finished{0};std::atomic<bool> stop{false};bool started=false;
+        std::mutex mutex;std::condition_variable ready;
+        auto control=owner->impl->control;
+        const size_t count=std::min(size_t(workers),output->values.size());
+        std::exception_ptr coordinatorFailure;
+        // Declared last: every partial construction/failure joins before any
+        // captured state, input, output or completion primitive can be destroyed.
+        std::vector<std::jthread> threads;threads.reserve(count);
+        try{
+          for(size_t worker=0;worker<count;++worker)threads.emplace_back([&]{
+            ParallelDepth depth;
+            {std::unique_lock lock(mutex);ready.wait(lock,[&]{return started||stop.load();});}
+            for(;;){
+              if(stop.load())break;
+              auto index=next.fetch_add(1);if(index>=output->values.size())break;
+              try{RequestScope scope(control,&stop);invoke(index);}
+              catch(...){failures[index]=std::current_exception();}
+            }
+            ++finished;ready.notify_all();
+          });
+          {std::lock_guard lock(mutex);started=true;}ready.notify_all();
+          std::unique_lock lock(mutex);
+          while(finished.load()!=count){
+            lock.unlock();owner->checkExecution(location,true,false);lock.lock();
+            ready.wait_for(lock,std::chrono::milliseconds(2),[&]{return finished.load()==count;});
+          }
+        }catch(...){
+          coordinatorFailure=std::current_exception();
+          {std::lock_guard lock(mutex);stop=true;}ready.notify_all();
+        }
+        for(auto &thread:threads)thread.join();
+        if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);
+      }
+      // Global cancellation, exhaustion and elapsed deadlines take precedence
+      // over ordinary per-item errors. Waiting never adds execution steps.
+      owner->checkExecution(location,true,false);
+      for(const auto &failure:failures)if(failure)std::rethrow_exception(failure);
+      return Value(std::move(output));
+    });
+  }
+};
+Value parallelValues(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
+  return ParallelAccess::run(items,environment,workers,callback,location);
+}
+#endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
 namespace {
