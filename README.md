@@ -12,11 +12,14 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated source is **toolchain0.82.0 / language0.16**. It adds bounded
+This isolated portable-fixture revision is **toolchain0.82.0 / language0.16**. It adds bounded
 native server workload profiling through `project --kind plan|profile --workload
 FILE`, with strict data schemas, pinned inputs, actual dynamic providers and
 request metrics inside native profiles. Focused real command and cancellation
 checks pass; complete frozen88/installed SDK/Linux verification remains pending.
+The first frozen Linux workload group retains an undeclared-usleep C11 fixture
+failure. This revision uses explicit POSIX200809L/nanosleep; compiler/runtime
+and source language are unchanged. Its full validation remains pending.
 The verified primary0.81 checkpoint is preserved separately; see [its evidence](docs/evidence/toolchain-0.81.0.json).
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and

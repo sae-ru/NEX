@@ -1,3 +1,15 @@
+# Portable0.82 fixture revision (not integrated)
+
+Frozen0.82 sourcebbd93663 passes the Mac server workload group; its Linux group
+passes7/8 cases but strict C11 correctly rejects undeclared usleep in the new
+forked-heartbeat C fixture. This revision selects POSIX200809L and nanosleep
+with time.h. Compiler/runtime/source grammar are unchanged. The portable
+fixture now passes on Linux ARM64 in82.464seconds and macOS in80.672seconds,
+including project timeout/SIGINT, source profile cancellation, descendant and
+sealed-module cleanup. Compiler/runtime source bytes match the first revision
+exactly; its complete frozen Mac/Linux/SDK verification remains pending. Original
+failed evidence and the verified primary0.81 remain preserved.
+
 # Development cohort0.82 (not integrated)
 
 Bounded server workload metadata drives project native profiles under the real

@@ -201,7 +201,7 @@ class Supervision(harness.ToolchainCase):
         self.marker=self.root/'heartbeat';children=self.root/'children'
         self.env={'NEX_SOURCE_FFI_MARKER':str(self.marker),'NEX_WORKLOAD_CHILDREN':str(children)}
         original=ffi_fixture.C
-        loop=r'''mark('C');pid_t child=fork();if(child==0){for(;;){mark('H');usleep(20000);}}
+        loop=r'''mark('C');pid_t child=fork();if(child==0){for(;;){mark('H');struct timespec delay={0,20000000};nanosleep(&delay,0);}}
 const char *path=getenv("NEX_WORKLOAD_CHILDREN");if(path){int f=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(f>=0){char line[128];int n=snprintf(line,sizeof(line),"%ld %ld %ld\n",(long)getpid(),(long)getpgrp(),(long)child);if(n>0&&n<(int)sizeof(line))write(f,line,n);close(f);}}for(;;)pause();'''
         source='''module supervised;
 import "std/http.nex" as http;
@@ -209,7 +209,7 @@ server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");
 server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_response(200,str(echo(42)));}
 '''
         try:
-            ffi_fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>').replace("mark('C');",loop,1)
+            ffi_fixture.C='#define _POSIX_C_SOURCE 200809L\n'+original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#include <time.h>').replace("mark('C');",loop,1)
             self.program(source,{'echo':'echo'})
         finally:ffi_fixture.C=original
         (self.root/'app').mkdir();self.file.rename(self.root/'app/main.nex')

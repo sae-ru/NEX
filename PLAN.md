@@ -1,3 +1,9 @@
+# Current portable0.82 fixture verification
+
+- [x] Verify POSIX200809L/nanosleep heartbeat fixture on macOS and Linux ARM64.
+- [ ] Freeze/back up this revision and repeat complete88/SDK/platform gates.
+- [ ] Keep failed first0.82 Linux evidence and verified primary0.81 separately.
+
 # Current isolated0.82 workload verification
 
 - [x] Implement strict readonly workload planning and actual final-server profiles.
