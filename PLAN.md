@@ -15,7 +15,7 @@
 - [x] Pass actual root full80/SDK24/348/213, current Linux80/17live/source-free SDK, installed IDE,6cross configurations/15artifacts/3iOS links/x64 Wine,3browser static-model API and genuine071/072 compatibility.
 - [x] Preserve all47 revisions/all16 tables/schema/IDs and normal Git HEAD/index; keep old SDKs and original failures.
 - [ ] Integrate general shared-library output/consumption, one shared runtime, dynamic debug/core/profile/package bindings and explicit binary dependency reports.
-- [ ] Add combined project run/debug/test/profile/package/task/replay using selected architecture artifacts.
+- [ ] Complete project task/replay/editor and server workloads above0.76 package and0.77 application run/debug/test/profile candidates; validate exact installed SDKs.
 - [ ] Implement source concurrency and general CPU/GPU/NPU interfaces; keep research and fixed hardware FFI tests separate.
 - [ ] Continue native platform delivery, IDE completion/rename, Studio and all remaining full-language/development-chain work.
 

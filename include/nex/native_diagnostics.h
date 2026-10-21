@@ -6,4 +6,7 @@ namespace nex {
 llvm::json::Value parseNativeManifest(const std::string &text);
 llvm::json::Value nativeDiagnostics(const Program &program,const llvm::json::Value &manifest,
   Store &store,const std::string &errors);
+// Captured project builds deliberately do not create persistent graph IDs.
+llvm::json::Value nativeDiagnostics(const Program &program,const llvm::json::Value &manifest,
+  const std::string &errors);
 }

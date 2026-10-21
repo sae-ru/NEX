@@ -1,3 +1,4 @@
+(* Toolchain0.77 project actions add no source syntax, semantics or migration. *)
 (* Project source/static linkage and concrete export roots are external
    nex.build.json metadata, not language syntax or a version migration. *)
 (* NEX 0.16. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)

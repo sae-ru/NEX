@@ -1,5 +1,58 @@
 # Checked project architecture and builds
 
+## Project actions (candidate0.77)
+
+```sh
+nex project --kind run --component app --configuration debug --json
+nex project --kind test --configuration debug --json
+nex project --kind test --component app --symbol app::checks --json
+nex project --kind debug --component app --adapter nex-dap --json
+nex project --kind profile --component app --configuration measured --profile-output profile.json --json
+nex project --kind run --component browser -- --port 5173 --strictPort
+```
+
+`measured` must name a configuration with `"profile":"profile"`. Actions preserve
+the selected configuration and actual source/static/dynamic edges. Run/debug/profile
+require one application; select it explicitly when more than one exists. Native
+execution requires the compiler host ABI. Validation of the architecture and
+selected entry precedes build tools and execution. No graph Store is opened.
+
+Run streams the selected native application/server, or previews the completed
+browser distribution with locked Vite and a loopback default. Arguments after
+`--` are application/preview arguments. `--json` captures bounded stdout/stderr
+and process status; server/web capture requires an explicit `--timeout 1..3600`.
+Timeout returns124, output exhaustion125, and interruption preserves its signal.
+Forced termination cannot promise normal language cleanup. The preview is a
+development host; its execution does not establish browser UI behavior.
+
+Tests select owned `test fn` definitions once per selected component, including
+dependency components. `--symbol` selects one unique qualified/local test name.
+Every native test is preflighted as a private executable entry under the declared
+dependencies, consumes actual archives/images and retains its test build plan.
+Client/web tests use the reachable TypeScript projection. Pure tests additionally
+compare interpreter observations; pure shared tests also compare TypeScript; effectful tests execute once in their selected
+backend, preserving explicit runtime capabilities. A failed assertion remains a
+failed test even when both backends reject it. At most256 tests are selected. Each returned row is bounded to32KiB. Larger observations retain a full private result file at `report`; the response includes UTF-8-safe output prefixes and byte counts.
+Full UI/API workloads and reviewed project task/replay integration remain pending.
+
+Debug/profile currently select native executable components. Debug emits the
+same `nex.debug-session/1` descriptor as a source command, nested under
+`observation`; use its exact adapter command, launch program, cwd and source map.
+`--adapter lldb|dap|nex-dap` chooses the frontend; an interactive LLDB run is
+available without `--json`. Shared provider frames use the captured image UUIDs.
+Profile requires an instrumented configuration and reports actual final-image
+identity and reachable provider functions. `--profile-output` selects its detailed
+report, while `--output` saves the complete project action JSON.
+
+Project diagnostics and measured functions use content hashes and source sites;
+persistent graph IDs are null with `identity_scope:"captured_project"`.
+`llm/project-action.schema.json` describes action/test envelopes, while existing
+debug/profile/native-diagnostic reports retain their stated contracts. Explicit
+`--foreign HOST.json` grants are checked before execution and around commands;
+receipts and environment variables do not grant foreign authority. Browser
+preview accepts no foreign catalogue. Source-foreign project packaging, native
+server workload debug/profile and dedicated editor/task commands remain pending.
+
 Toolchain0.71 adds `nex project`. This is external build metadata, separate from
 the existing source/language/library manifest `nex.json` (`nex.project/1`). It
 does not change language0.16, source canonical identities or existing commands.
@@ -14,7 +67,7 @@ nex project /path/to/project/nex.build.json --kind plan --json
 ```
 
 `--component` and `--configuration` belong to `project`, not ordinary file
-commands. Omitting the component selects all components. A selected component
+commands. For plan/build/package/test, omitting the component selects all components. Run/debug/profile infer exactly one application or require `--component`. A selected component
 includes its declared transitive dependency closure. The default kind is `plan`.
 The optional positional argument is a directory or build-description file;
 without it NEX uses `nex.build.json` in the enclosing source project.
@@ -134,8 +187,7 @@ locally compiled functions, including nested imports through package aliases.
 Use the complete projection path from its `debug.json` when placing a library
 source breakpoint. A matching captured LLDB formatter can inspect the same
 locals and pure watches after original source deletion; keep the retained build
-workspace or export a checked core capsule. Project commands do not yet produce
-a combined project debug/test/task session automatically.
+workspace or export a checked core capsule. Candidate0.77 project actions use these actual artifacts for native run/test/debug/profile. Project task/replay integration remains pending.
 
 Retained builds declare `nex.native-completion/2` and an ordered bounded
 `completion_inputs` list: the ABI record, then captured dependency archives.
@@ -191,7 +243,7 @@ language history.
 Build output is not a deployment package. Keep the full `images/` directory
 beside its executable; external system dependencies retain their platform/notice
 requirements.
-Windows DLLs and combined project run/test/debug/task commands remain pending.
+Windows DLLs and combined project task/replay/editor commands remain pending.
 Do not pass a project app through an ordinary source command expecting the
 declared binary architecture to survive that independent compilation.
 
@@ -199,8 +251,7 @@ Toolchain0.75 adds manual LLDB frames and read-only core/capsule workflows for
 these images; see [core debugging](core-debugging.md). The final app manifest
 covers reachable provider code and binds selected images by bytes and UUID.
 Explicit export retains the complete image/symbol inventory for matching-host
-reads after original source/image deletion. Combined project DAP/editor sessions
-and capsules with external non-system dependencies remain pending.
+reads after original source/image deletion. Candidate0.77 emits project DAP descriptors for native applications; dedicated editor commands and capsules with external non-system dependencies remain pending.
 
 The selected configuration supplies `profile` (`debug`, `profile`, `release`),
 native `target` (default `native`) and optional relative `toolchain` description.
@@ -293,6 +344,5 @@ Credentials, keys, databases and operator runtime settings are supplied after
 packaging. Serve a web directory from its matching configured server/static
 host; browser route fallback and API configuration retain their existing rules.
 Project foreign-pin projection, debug/core provenance for rewritten packaged
-images, Windows installers and combined project run/test/debug/task flows remain
-pending. Use source packaging for the existing explicitly reviewed foreign
+images, Windows installers and project task/replay/editor flows remain pending. Use source packaging for the existing explicitly reviewed foreign
 catalogue workflow; do not silently replace a binary project edge with source.

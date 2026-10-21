@@ -14,6 +14,7 @@
 #include "nex/tasks.h"
 #include "nex/foreign_catalogue.h"
 #include "nex/debugging.h"
+#include "nex/debug_session.h"
 #include "nex/core_dump.h"
 #include "nex/packaging.h"
 #include "llvm/Support/FileSystem.h"
@@ -48,7 +49,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
+  const std::set<std::string> valueNames={"--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -87,37 +88,6 @@ llvm::json::Value readPatch(const std::string &path){
   }
   return parseJSON(text);
 }
-std::string debugBuildDirectory(const std::string &directory){
-#ifdef __APPLE__
-  auto original=fs::weakly_canonical(directory);
-  if(original.string().find('\\')!=std::string::npos){
-    // Darwin LLDB loses loaded images when the executable path contains '\\'.
-    // Keep one owned native build cache for this project in a usable location.
-    auto base=fs::canonical(fs::temp_directory_path());
-    if(base.string().find_first_of("\\%")!=std::string::npos)base=fs::canonical("/tmp");
-    fs::create_directories(original);auto pointer=original/"debug-cache-directory.json";
-    if(fs::is_symlink(pointer))throw Error("E_DEBUG_CACHE","debug cache pointer must not be a symlink");
-    try{
-      auto record=parseJSON(readBoundedText(pointer.string(),8192,"debug cache pointer","E_DEBUG_CACHE"));
-      auto path=record.getAsString();
-      if(path){
-        fs::path cached(path->str());struct stat info{};
-        if(cached.parent_path()==base&&cached.filename().string().starts_with("nex-debug-")&&
-           ::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&
-           (info.st_mode&0777)==0700&&fs::canonical(cached)==cached&&
-           readBoundedText((cached/"owner.json").string(),8192,"debug cache owner","E_DEBUG_CACHE")==json(original.string(),false)+"\n")return cached.string();
-      }
-    }catch(const std::exception&){/* Missing/stale cache pointers are cache misses. */}
-    fs::path cached(createTemporaryDirectory("nex-debug",base.string()));
-    try{
-      fs::permissions(cached,fs::perms::owner_all,fs::perm_options::replace);
-      writeFile((cached/"owner.json").string(),json(original.string(),false)+"\n");
-      writeFile(pointer.string(),json(cached.string(),false)+"\n");return cached.string();
-    }catch(...){std::error_code ignored;fs::remove_all(cached,ignored);throw;}
-  }
-#endif
-  return directory;
-}
 llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON(readBoundedText(path,4*1048576,"identity manifest","E_IDENTITY_LIMIT"));}
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
@@ -147,20 +117,36 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 }
 int run(const Options &o) {
   if(o.command=="project"){
-    const bool packaging=o.get("--kind","plan")=="package";
-    for(const auto &[key,value]:o.values){(void)value;if(key!="--kind"&&key!="--component"&&key!="--configuration"&&key!="--build-directory"&&key!="--output"&&!(packaging&&(key=="--directory"||key=="--notices")))throw Error("E_OPTION","unsupported project option: "+key);}
+    const auto kind=o.get("--kind","plan");const bool packaging=kind=="package",execution=kind=="run"||kind=="test"||kind=="profile"||kind=="debug";
+    for(const auto &[key,value]:o.values){(void)value;
+      bool allowed=key=="--kind"||key=="--component"||key=="--configuration"||key=="--build-directory"||key=="--output"||
+        (packaging&&(key=="--directory"||key=="--notices"))||(execution&&key=="--foreign")||
+        ((kind=="run"||kind=="test"||kind=="profile")&&key=="--timeout")||(kind=="test"&&key=="--symbol")||
+        (kind=="debug"&&key=="--adapter")||(kind=="profile"&&(key=="--profile-output"||key=="--events"||key=="--scenario"));
+      if(!allowed)throw Error("E_OPTION","unsupported project option: "+key);
+    }
     for(const auto &flag:o.flags)if(flag!="--json"&&!(packaging&&flag=="--dpkg-notices"))throw Error("E_OPTION","unsupported project flag: "+flag);
-    if(!o.extra.empty())throw Error("E_OPTION","project does not execute application arguments");
+    if(!o.extra.empty()&&kind!="run"&&kind!="profile"&&kind!="debug")throw Error("E_OPTION","application arguments require project run/profile/debug");
     auto selected=fs::absolute(o.positional.empty()?projectRoot(fs::current_path())/"nex.build.json":fs::path(o.positional[0]));
     if(fs::is_directory(selected))selected/="nex.build.json";
     auto source=readBoundedText(selected.string(),262144,"project build manifest","E_PROJECT_LIMIT");
     try{nexrt::validateJSONText(source);}catch(const nexrt::DataError &e){throw Error("E_PROJECT_BUILD",e.what());}
     ProjectBuildOptions project{o.get("--kind","plan"),o.get("--component"),o.get("--configuration"),o.get("--build-directory"),NEX_VERSION,NEX_BUILD_ID};
     project.package.directory=o.get("--directory");project.package.notices=o.get("--notices");project.package.compiler=o.compiler;project.package.dpkgNotices=o.has("--dpkg-notices");
+    auto count=[&](const std::string &key,unsigned fallback,unsigned minimum,unsigned maximum){
+      auto raw=o.get(key);if(!o.values.contains(key))return fallback;if(raw.empty())throw Error("E_OPTION",key+" requires a nonempty integer");uint64_t n=0;
+      for(char c:raw){if(c<'0'||c>'9'||n>(maximum-unsigned(c-'0'))/10)throw Error("E_OPTION",key+" is outside its supported integer range");n=n*10+unsigned(c-'0');}
+      if(n<minimum||n>maximum)throw Error("E_OPTION",key+" is outside its supported integer range");return unsigned(n);
+    };
+    project.compiler=o.compiler;project.machine=o.has("--json");project.adapter=o.get("--adapter","lldb");project.arguments=o.extra;
+    project.foreign=o.get("--foreign");project.selectedTest=o.get("--symbol");project.timeout=count("--timeout",30,1,3600);project.explicitTimeout=o.values.contains("--timeout");
+    project.profiling={o.get("--profile-output"),o.get("--scenario"),count("--events",100000,0,1000000),project.timeout,{}};
     auto result=buildProject(selected.parent_path().string(),selected.string(),source,project);
+    auto code=int(result.getAsObject()->getInteger("exit_code").value_or(0));
     if(o.values.contains("--output"))writeFile(o.get("--output"),json(result)+"\n");
-    print(std::move(result));return 0;
+    if(project.machine||(kind!="run"&&(kind!="debug"||project.adapter!="lldb")))print(std::move(result));return code;
   }
+  if(o.values.contains("--adapter")||o.values.contains("--profile-output"))throw Error("E_OPTION","--adapter/--profile-output require project");
   if(o.values.contains("--component")||o.values.contains("--configuration"))throw Error("E_OPTION","--component/--configuration require project");
   if(o.command=="analyze"){
     if(!o.extra.empty())throw Error("E_OPTION","analyze does not execute program arguments");
@@ -274,7 +260,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package] [--component NAME] [--configuration NAME] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|debug|profile] [--component NAME] [--configuration NAME] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
@@ -667,7 +653,7 @@ int run(const Options &o) {
     buildOptions.profile="profile";
   }
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
-  if(o.command=="debug")directory=debugBuildDirectory(directory);
+  if(o.command=="debug")directory=nativeDebugBuildDirectory(directory);
   if(o.command=="test") {
     std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     int count=0;llvm::json::Array tests;
@@ -711,27 +697,11 @@ int run(const Options &o) {
   }
   if(o.command=="debug") {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
-    auto folder=fs::path(result.executable).parent_path();auto manifest=(folder/"debug.json").string();
-    std::vector<std::string> init={"command script import "+json((folder/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(manifest,false)+" --compiler "+json(o.compiler,false)};
-    if(!foreignArguments.empty()){std::string command="settings set -- target.run-args";for(const auto &argument:foreignArguments)command+=" "+json(argument,false);init.push_back(std::move(command));}
-    if(o.has("--json")||kind=="dap"||kind=="nex-dap"){
-      llvm::json::Array commands;for(const auto &command:init)commands.push_back(command);
-      auto backend=std::getenv("NEX_LLDB_DAP");std::string dap=backend?backend:"lldb-dap";auto found=llvm::sys::findProgramByName(dap);bool available=bool(found);if(found)dap=*found;
-#ifdef __APPLE__
-      if(!available&&!backend){auto result=capture({"xcrun","--find","lldb-dap"});if(result.code==0){dap=llvm::StringRef(result.output).trim().str();available=!dap.empty();}}
-#endif
-      llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
-      llvm::json::Object launch{{"type",kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},{"program",result.executable},{"cwd",root.string()},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
-      auto debugManifest=llvm::json::parse(readFile(manifest));
-      if(!debugManifest||!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
-      if(auto mappings=debugManifest->getAsObject()->getArray("source_map"))launch["sourceMap"]=llvm::json::Array(*mappings);
-      if(!foreignArguments.empty()){llvm::json::Array arguments;for(const auto &argument:foreignArguments)arguments.push_back(argument);launch["args"]=std::move(arguments);}
-      auto nexLaunch=launch;nexLaunch["type"]="nex";
-      llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",result.key},{"manifest",manifest},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
-        {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};
-      if(kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);print(std::move(session));return 0;
-    }
-    std::vector<std::string> args={"lldb",result.executable};for(const auto &command:init){args.push_back("-o");args.push_back(command);}args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
+    auto session=nativeDebugSession(p,result,root.string(),o.compiler,kind,foreignArguments);
+    if(o.has("--json")||kind!="lldb"){print(std::move(session));return 0;}
+    std::vector<std::string> args={"lldb",result.executable};
+    for(const auto &command:*session.getAsObject()->getObject("launch")->getArray("initCommands")){args.push_back("-o");args.push_back(command.getAsString()->str());}
+    args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
   }
   auto output=o.get("--output");if(!output.empty()){copyFile(result.executable,output,true);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
   auto notices=result.notices;

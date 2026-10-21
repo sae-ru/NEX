@@ -63,6 +63,40 @@ class SourceFFI(harness.ToolchainCase):
     def events(self):
         return self.marker.read_text() if self.marker.exists() else ''
 
+    def test_project_actions_require_current_operator_grants_and_execute_effectful_tests_once(self):
+        self.program('''module actionffi;
+server extern fn echo(value:str)->str !{ffi}=foreign("test","echo","@PIN@");
+pub server fn exported(value:str)->str !{ffi}{return echo(value);}
+server fn main()->unit !{ffi,io}{print(exported("unused"));}
+''', {'echo':'echo'})
+        core=self.root/'core';core.mkdir();self.file.rename(core/'main.nex')
+        app=self.root/'app';app.mkdir();(app/'main.nex').write_text('''module actionconsumer;
+import "../core/main.nex" as c;
+server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
+server test fn granted()->unit !{ffi}{assert(c::exported("test")=="test");}
+''')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
+            'configurations':{'debug':{'profile':'debug'},'measured':{'profile':'profile'}},'components':{
+                'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'dynamic'}}}}))
+        def action(kind,*args,**kwargs):return self.cli('project','--kind',kind,'--component','app',*args,env=self.env,timeout=180,**kwargs)
+        denied=action('run',ok=False);self.assertEqual(denied['code'],'E_FOREIGN_CATALOGUE');self.assertEqual(self.events(),'')
+        descriptor=action('debug','--adapter','nex-dap','--foreign',self.host)['observation']
+        self.assertEqual(descriptor['launch']['args'],['--nex-foreign',str(self.host)]);self.assertEqual(self.events(),'')
+        run=action('run','--foreign',self.host);self.assertEqual(run['observation']['stdout'],'Я🧠\n');self.assertEqual(self.events().count('C'),1)
+        result=action('test','--symbol','granted','--foreign',self.host);test,=result['tests']
+        self.assertFalse(test['reference']);self.assertTrue(test['ok']);self.assertEqual(self.events().count('C'),2)
+        measured=action('profile','--configuration','measured','--foreign',self.host)['observation']
+        self.assertEqual(measured['stdout'],'Я🧠\n');self.assertEqual(self.events().count('C'),3)
+        outside=self.root/'outside';outside.mkdir()
+        process=subprocess.run([harness.NEX,'project',str(self.root),'--kind','profile','--component','app','--configuration','measured','--foreign',str(self.host),'--json'],
+            cwd=outside,env={**os.environ,'NEX_SOURCE_FFI_MARKER':'relative-events'},capture_output=True,text=True,timeout=180)
+        self.assertEqual(process.returncode,0,process.stdout+process.stderr);self.assertEqual(json.loads(process.stdout)['observation']['stdout'],'Я🧠\n')
+        self.assertEqual((self.root/'relative-events').read_text().count('C'),1);self.assertFalse((outside/'relative-events').exists())
+        self.catalogue['libraries']['test']['exports']=[];self.host.write_text(json.dumps(self.catalogue))
+        action('run','--foreign',self.host,ok=False);self.assertEqual(self.events().count('C'),3)
+
     def test_static_archive_calls_foreign_module_through_one_consumer_runtime(self):
         self.program('''module archiveffi;
 server extern fn echo(value:str)->str !{ffi}=foreign("test","echo","@PIN@");

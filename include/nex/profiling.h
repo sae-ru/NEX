@@ -5,6 +5,7 @@ struct ProfileOptions {
   std::string output,scenario;
   unsigned events=100000,timeout=30;
   std::vector<std::string> arguments;
+  std::string directory;
 };
 llvm::json::Value profileNative(const Program &program,const BuildResult &built,llvm::json::Value graph,const ProfileOptions &options);
 }

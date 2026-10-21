@@ -147,7 +147,8 @@
     "cix_hardware": "docs/cix-p1.md",
     "cix_gpu_probe": "tools/accelerators/cix_opencl_probe.py",
     "cix_npu_probe": "tools/accelerators/cix_onnx_probe.py",
-    "project_package_schema": "llm/project-package.schema.json"
+    "project_package_schema": "llm/project-package.schema.json",
+    "project_action_schema": "llm/project-action.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -514,10 +515,12 @@
     "minimum_shared_toolchain": "0.74.0",
     "shared_pending": [
       "windows_dll",
-      "combined_project_execution",
-      "shared_image_dap_editor_sessions",
+      "dedicated_project_editor_commands",
       "project_foreign_pin_projection",
-      "packaged_debug_provenance"
+      "packaged_debug_provenance",
+      "server_workload_profile_and_debug",
+      "project_task_replay",
+      "project_editor_commands"
     ],
     "project_package": {
       "command": "nex project --kind package --directory NEW_DIRECTORY --json",
@@ -527,6 +530,30 @@
       "preserves_configuration": true,
       "opens_graph_store": false,
       "executes_application": false
+    },
+    "project_actions": {
+      "minimum_toolchain": "0.77.0",
+      "kinds": [
+        "run",
+        "test",
+        "debug",
+        "profile"
+      ],
+      "session_schema": "nex.project-session/1",
+      "test_schema": "nex.project-test/1",
+      "schema_file": "llm/project-action.schema.json",
+      "uses_declared_binary_dependencies": true,
+      "persistent_graph_ids": false,
+      "effectful_test_reference_replay": false,
+      "pure_test_reference_comparison": true,
+      "debug_adapters": [
+        "lldb",
+        "dap",
+        "nex-dap"
+      ],
+      "pure_shared_native_typescript_interpreter_agreement": true,
+      "test_response_bytes": 32768,
+      "large_test_observations": "retained private report with bounded UTF-8 output prefixes"
     }
   },
   "native_application_lifetime": {

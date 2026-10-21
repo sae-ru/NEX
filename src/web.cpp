@@ -1,5 +1,6 @@
 #include "nex/web.h"
 #include "nex/backend.h"
+#include "nex/task_process.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <cstdlib>
@@ -97,7 +98,7 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
   return result;
 }
 }
-ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory){
+ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout){
   namespace fs=std::filesystem;
   auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
   writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
@@ -106,7 +107,24 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})
     fs::copy_file(folder/name,runner.path()/name);
   const char *node=std::getenv("NEX_NODE");
-  return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()});
+  return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);
+}
+llvm::json::Value previewWebApp(const std::string &directory,const std::vector<std::string> &arguments,unsigned timeout,bool machine){
+  namespace fs=std::filesystem;
+  if(!fs::is_regular_file(fs::path(directory)/"dist/index.html"))throw Error("E_WEB_TOOL","preview requires a completed web distribution");
+  ToolDirectory runner(directory);
+  if(runner.relocated())fs::copy(directory,runner.path(),fs::copy_options::recursive|fs::copy_options::copy_symlinks);
+  const char *npm=std::getenv("NEX_NPM");
+  std::vector<std::string> command{npm?npm:"npm","--prefix",runner.path().string(),"run","preview","--","--host","127.0.0.1"};
+  command.insert(command.end(),arguments.begin(),arguments.end());
+  if(!machine){auto code=execute(command);return llvm::json::Object{{"exit_code",code},{"ok",code==0}};}
+  auto logs=createTemporaryDirectory("nex-web-preview");
+  try{
+    auto child=runTaskProcess(command,runner.path().string(),{},timeout,logs);fs::remove_all(logs);
+    auto code=child.timedOut?124:child.outputLimit?125:child.process.code;
+    return llvm::json::Object{{"ok",code==0},{"exit_code",code},{"stdout",child.process.output},{"stderr",child.process.errors},
+      {"timed_out",child.timedOut},{"output_limit",child.outputLimit},{"interrupted",child.interrupted}};
+  }catch(...){fs::remove_all(logs);throw;}
 }
 llvm::json::Value inspectWebApp(const Program &p){return prepare(p).metadata;}
 llvm::json::Value generateWebApp(const Program &p,const std::string &directory){

@@ -17,6 +17,9 @@
           },
           {
             "$ref": "#/$defs/unmapped"
+          },
+          {
+            "$ref": "#/$defs/capturedMapped"
           }
         ]
       }
@@ -291,6 +294,62 @@
         "status",
         "reason",
         "report"
+      ],
+      "additionalProperties": false
+    },
+    "capturedMapped": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "mapped"
+        },
+        "report": {
+          "$ref": "#/$defs/report"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "build_key": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "operation_site": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "operation_id": {
+          "type": "null"
+        },
+        "function_id": {
+          "type": "null"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "identity_scope": {
+          "const": "captured_project"
+        }
+      },
+      "required": [
+        "status",
+        "report",
+        "revision",
+        "source_hash",
+        "build_key",
+        "symbol",
+        "operation_site",
+        "operation_id",
+        "function_id",
+        "location",
+        "identity_scope"
       ],
       "additionalProperties": false
     }

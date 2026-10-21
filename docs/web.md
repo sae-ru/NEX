@@ -4,6 +4,12 @@ The compiler generates TypeScript from the checked NEX graph. The application ad
 
 ## Build and run
 
+Candidate0.77 `nex project --kind run --component NAME` previews the completed
+web component using its locked Vite installation. It binds loopback by default;
+pass preview options after `--`. JSON capture requires an explicit timeout.
+Compiler-owned temporary staging also supports literal backslash paths during
+this preview. The process result does not establish actual browser UI execution.
+
 Web development requires Node.js 22.18+ and npm. The checked dependency lock currently uses React/React DOM 19.3.1, TypeScript 7.0.2, Vite 8.3.4 and Playwright 1.64.1. These are exact versions in `web/package-lock.json`, rather than `latest` installs. [Vite's compatibility guide](https://vite.dev/guide/) describes its Node requirement; NEX additionally requires Node's TypeScript stripping for differential tests.
 
 ```sh

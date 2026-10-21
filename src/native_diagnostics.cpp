@@ -1,5 +1,7 @@
 #include "nex/native_diagnostics.h"
+#include "nex/operations.h"
 #include <deque>
+#include <algorithm>
 
 namespace nex {
 namespace {
@@ -18,7 +20,7 @@ bool boundedNesting(llvm::StringRef text){
   return !depth&&!string;
 }
 bool digest(llvm::StringRef text){return text.size()==64&&text.find_first_not_of("0123456789abcdef")==llvm::StringRef::npos;}
-JSON mapReport(const Program &p,const JSON &manifest,Store &store,JSON report){
+JSON mapReport(const Program &p,const JSON &manifest,Store *store,JSON report){
   Object result{{"status","unmapped"},{"reason","report does not match the selected checked build"},{"report",std::move(report)}};
   auto raw=result.getObject("report");auto build=manifest.getAsObject();
   if(!raw||!build)return result;
@@ -44,13 +46,26 @@ JSON mapReport(const Program &p,const JSON &manifest,Store &store,JSON report){
     for(const auto &candidate:*operations){
       auto point=candidate.getAsObject();if(!point||point->getString("site")!=*operation)continue;
       if(!same(*site,*point,"kind")||!site->getInteger("byte_begin")||!site->getInteger("byte_end")||site->getInteger("byte_begin")!=point->getInteger("byte_begin")||site->getInteger("byte_end")!=point->getInteger("byte_end"))return result;
-      auto context=store.operations(p,name->str(),operation->str(),0,1,true);
-      const auto &node=*(*context.getAsObject()->getArray("nodes"))[0].getAsObject();const auto &location=*node.getObject("location");
+      Object node;
+      if(store){
+        auto context=store->operations(p,name->str(),operation->str(),0,1,true);
+        auto nodes=context.getAsObject()->getArray("nodes");if(!nodes||nodes->empty())return result;
+        node=*(*nodes)[0].getAsObject();
+      }else{
+        auto tree=operationTree(p,*checked);
+        auto found=std::find_if(tree.begin(),tree.end(),[&](const auto &o){return o.site==*operation;});
+        if(found==tree.end())return result;
+        node=Object{{"kind",found->kind},{"id",nullptr},{"function_id",nullptr},
+          {"location",Object{{"file",checked->unit},{"line",int64_t(found->span.line)},{"column",int64_t(found->span.column)},
+            {"byte_begin",int64_t(found->span.begin)},{"byte_end",int64_t(found->span.end)}}}};
+      }
+      const auto &location=*node.getObject("location");
       if(node.getString("kind")!=site->getString("kind")||*location.getInteger("byte_begin")-int64_t(checked->span.begin)!=*site->getInteger("byte_begin")||*location.getInteger("byte_end")-int64_t(checked->span.begin)!=*site->getInteger("byte_end"))return result;
       result["status"]="mapped";result.erase("reason");
       for(auto key:{"revision","source_hash","build_key"})result[key]=build->getString(key)->str();
       result["symbol"]=name->str();result["operation_site"]=operation->str();
-      result["operation_id"]=node.getString("id")->str();result["function_id"]=node.getString("function_id")->str();result["location"]=*node.get("location");
+      result["operation_id"]=*node.get("id");result["function_id"]=*node.get("function_id");result["location"]=*node.get("location");
+      if(!store)result["identity_scope"]="captured_project";
       return result;
     }
     return result;
@@ -62,7 +77,7 @@ JSON parseNativeManifest(const std::string &text){
   if(!boundedNesting(text))throw Error("E_DIAGNOSTIC_LIMIT","native manifest JSON exceeds depth 64 or has unbalanced containers/strings");
   auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_JSON",llvm::toString(parsed.takeError()));return std::move(*parsed);
 }
-JSON nativeDiagnostics(const Program &p,const JSON &manifest,Store &store,const std::string &errors){
+static JSON diagnostics(const Program &p,const JSON &manifest,Store *store,const std::string &errors){
   constexpr size_t maximum=32,recordBytes=65536;std::deque<JSON> records;size_t total=0,ignored=0;
   llvm::StringRef remaining(errors);
   while(!remaining.empty()){
@@ -76,4 +91,6 @@ JSON nativeDiagnostics(const Program &p,const JSON &manifest,Store &store,const 
   Array diagnostics;for(auto &record:records)diagnostics.push_back(mapReport(p,manifest,store,std::move(record)));
   return Object{{"schema","nex.native-diagnostics/1"},{"diagnostics",std::move(diagnostics)},{"total",int64_t(total)},{"omitted",int64_t(total-records.size())},{"ignored",int64_t(ignored)},{"limit",int64_t(maximum)}};
 }
+JSON nativeDiagnostics(const Program &p,const JSON &manifest,Store &store,const std::string &errors){return diagnostics(p,manifest,&store,errors);}
+JSON nativeDiagnostics(const Program &p,const JSON &manifest,const std::string &errors){return diagnostics(p,manifest,nullptr,errors);}
 }

@@ -1,3 +1,6 @@
+Toolchain0.77 project run/test/debug/profile are external development actions;
+language0.16, canonical identities, effects, realms and graph history are unchanged.
+
 # NEX language specification 0.16
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.

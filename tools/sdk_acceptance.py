@@ -2061,7 +2061,8 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         description = cli('describe')['project_build']
         require(description['manifest_schema'] == 'nex.project-build/1' and
                 description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
-                'shared_library' in description['artifact_kinds'], 'SDK project build contract differs')
+                'shared_library' in description['artifact_kinds'] and
+                {'project_binary_execution','project_owned_tests','project_native_debug_descriptors','project_native_profiles'} <= set(description['features']), 'SDK project build contract differs')
         architecture = root / 'project-architecture'
         shutil.copytree(resources / 'examples/project-build', architecture)
         planned = cli('project', '--kind', 'plan', cwd=architecture)
@@ -2133,12 +2134,13 @@ pub fn render(x:i64)->str{
  let held:str=str(m::make(40)(x));
  return m::decorate(held); // SHARED_STOP
 }
+test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
 ''')
         shared_description['components']['bridge'] = {'kind': 'shared_library', 'root': 'bridge',
             'entry': 'bridge/main.nex', 'entry_function': 'render', 'dependencies': {'core': 'dynamic'}}
         shared_description['components']['app']['dependencies'] = {'bridge': 'dynamic'}
         app_source = shared_project/'app/main.nex'
-        app_source.write_text('module sdk_shared::app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::render(2));}')
+        app_source.write_text('module sdk_shared::app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::render(2));}test fn app_checks()->unit{assert(b::render(2)=="42 🧠");}')
         (shared_project/'nex.build.json').write_text(json.dumps(shared_description))
         def shared_build(profile):
             return cli('project', '--kind', 'build', '--configuration', profile, cwd=shared_project, timeout=300)
@@ -2180,6 +2182,20 @@ pub fn render(x:i64)->str{
         require(measured['build']['build_key'] == profiled['app']['build_key'] and measured['memory'] and
                 all(p['live'] == 0 and p['allocations'] == p['frees'] for p in measured['memory']),
                 'shared profile is unbound or retains owned values')
+        action_run=cli('project','--kind','run','--component','app','--configuration','release',cwd=shared_project,timeout=300)
+        require(action_run['observation']['stdout']=='42 🧠\n' and not action_run['graph_store_opened'], 'project run did not execute its declared images')
+        action_tests=cli('project','--kind','test','--component','app','--configuration','debug',cwd=shared_project,timeout=300)
+        require({t['name'] for t in action_tests['tests']}=={'sdk_shared::bridge::bridge_checks','sdk_shared::app::app_checks'} and
+                all(t['native'] and t['reference'] and t['typescript'] and t['ok'] for t in action_tests['tests']), 'project owned/native/TypeScript/reference tests differ')
+        action_debug=cli('project','--kind','debug','--component','app','--adapter','nex-dap',cwd=shared_project,timeout=300)
+        debug_artifact=next(a for a in action_debug['artifacts'] if a['component']=='app')
+        require(action_debug['observation']['launch']['program']==debug_artifact['artifact'] and
+                action_debug['observation']['build_key']==debug_artifact['build_key'], 'project debugger independently rebuilt source')
+        action_profile=cli('project','--kind','profile','--component','app','--configuration','profile',cwd=shared_project,timeout=300)
+        actual_profile=action_profile['observation']
+        require(actual_profile['stdout']=='42 🧠\n' and any(f['name']=='sdk_shared::bridge::render' for f in actual_profile['functions']) and
+                all(f['node_id'] is None and f['identity_scope']=='captured_project' for f in actual_profile['functions']) and
+                not (shared_project/'.nex/graph.db').exists(), 'project profile lost provider attribution or created graph IDs')
         deployment = root/'shared-project-package'
         packaged = cli('project', '--kind', 'package', '--configuration', 'release', '--component', 'app',
                        '--directory', deployment, cwd=shared_project, timeout=300)
@@ -2209,6 +2225,8 @@ pub fn render(x:i64)->str{
             'profile_identity_checked': True, 'profile_cleanup_checked': True, 'actual_shared_core': False}
         shared_evidence.update(project_package=str(moved_deployment), relocated_project_package_executed=True,
             package_preserved_shared_edges=True, architecture_package=str(architecture_package), native_and_web_packaged=args.browser)
+        shared_evidence.update(project_run=True,project_owned_tests=len(action_tests['tests']),project_debug_descriptor=True,
+            project_profile=True,captured_project_identities=True)
         if args.live:
             debug_images = {a['component']: a for a in shared_build('debug')['artifacts']}
             debug_app = debug_images['app']; manifest = Path(debug_app['debug_manifest'])

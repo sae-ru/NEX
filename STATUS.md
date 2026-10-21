@@ -1,3 +1,31 @@
+# Development cohort0.77 (not integrated)
+
+Project run/test/debug/profile consume the declared binary architecture and
+configuration. Pure tests compare the interpreter with their selected backend; pure shared tests compare native, TypeScript and interpreter;
+effectful tests execute once with explicit runtime grants. Captured project
+traps/profiles carry checked content identities and null persistent graph IDs.
+Native debug sessions reuse the final image and its captured provider manifests.
+Initial six regression groups pass in141.90seconds. The first live action
+cohort passes9cases; a later10-case cohort has one retained DAP test failure
+because an unloaded DSO breakpoint was required to be pre-resolved. Its corrected
+case requires the actual stop and a resolved breakpoint after loading. Corrected DAP and bounded-output cases pass2tests in32.423seconds. The quoted/backslash/percent/Unicode LLDB/DAP/HTTP case also passes in27.840seconds.
+Final frozen full85/SDK/Linux gates remain pending. Explicit FFI actions, one-time effectful execution, relative profile cwd
+and source changes between preflighted tests have passed addressed checks.
+No completion of the full objective is claimed.
+
+Frozen0.76 source f52e7e69a081c58e2d450095363fb3f55aa0f718 (770files)
+passes full84 and installed SDK24 on macOS/Linux ARM64, including18Linux live
+suites. Actual0.75 root source8b5f35b9e91544b93c3ff66f760538d5e12c431a
+passes83groups, SDK24/361/213, installed VSIX, strict072/075 compatibility,
+6cross configurations/15artifacts/3iOS links/x64Wine and12real browser/API/restart
+cases. Candidate0.76 source is now promoted to the primary checkout with preserved0.75 recovery; actual root full84/SDK24 are running as a separate scope.
+
+Project task/replay/editor workflows, server workload debug/profile, packaged
+image provenance, Windows packages, source concurrency, general accelerators
+and broader platform delivery remain open.
+
+The following cohorts retain their original scope and validation history.
+
 # Development cohort0.76 (not integrated)
 
 `project --kind package` consumes the declared configuration and actual built

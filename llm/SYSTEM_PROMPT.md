@@ -7,6 +7,18 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+When `project_binary_execution` is advertised inside `project_build.features`,
+use `nex project --kind run|test|debug|profile` for a declared architecture.
+Read the project guide. Select the actual component/configuration; a source
+command independently recompiles source and does not preserve binary edges.
+Project debug descriptors are nested under `observation`; pass their exact
+adapter command/launch/cwd/source map to the debugger. Profiles require an
+explicit profile configuration. Pure tests compare the reference backend, and pure shared tests also compare TypeScript;
+effectful tests execute once with explicit runtime grants. Captured project
+diagnostics/profile nodes have null persistent IDs and content/site identities.
+Check actual exit status and timeout/output flags. Project task/replay/editor
+integration and server workload debug/profile are still pending.
+
 When `mobile_project_generation` is advertised, read `docs/mobile.md` and the
 web guide. Use the indexed mobile_project.py tool with the actual compiler,
 source, new output directory, app ID, label, platform and artifact cache.
