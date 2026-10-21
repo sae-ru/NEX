@@ -17,6 +17,10 @@ Pure shared tests compare native/TypeScript/interpreter observations; effectful
 project tests/entries execute once in the selected backend. Captured namespaces
 and code candidates do not rewrite original working files. Use the saved receipt
 for source-free replay and inspect failures, unsupported checks and signals.
+When isolated_replay_graph is advertised, graph IDs/history/cache from replay
+belong to NEW_RUN/state. It does not modify a source or enclosing project graph.
+Use --directory NEW_RUN with readonly input receipts. Query replay history via
+NEW_RUN/state/task.json; do not assume it appears in the original task history.
 When project_task_packages is also advertised, a project check can use kind
 package with the declared configuration and native/server/web target. Read the
 package section of the guide. It captures deployment output without executing

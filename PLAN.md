@@ -1,3 +1,14 @@
+# Current0.80 replay isolation
+
+- Validate private preflight/output graph state and preserved local IDs.
+- Keep enclosing/source/input graphs untouched and support readonly receipts.
+- Verify source/project/package replay, exact8192-file inventory and SDK boundary.
+- Run full87/installed SDK/Linux on one frozen source cohort.
+- Primary integration requires the explicit approval requested by automatic
+  approval review; do not retry that rejected automatic promotion indirectly.
+- Continue server workloads, task/editor tooling, concurrency, accelerators and
+  remaining language/development delivery after the corrected gates.
+
 # Current0.79 project package tasks
 
 - Complete and verify native/server/web package acceptance checks with captured

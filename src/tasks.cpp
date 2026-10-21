@@ -5,6 +5,7 @@
 #include "nex/foreign_catalogue.h"
 #include "nex/project_capture.h"
 #include "nex/task_package.h"
+#include "nex/graph_snapshot.h"
 #include "nex/native_diagnostics.h"
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Host.h"
@@ -601,14 +602,26 @@ struct Runner {
   }
 };
 fs::path runDirectory(const TaskOptions &options){auto directory=options.directory.empty()?fs::path(options.root)/".nex/tasks/runs"/("run-"+nonce()):fs::absolute(options.directory);fs::create_directories(directory.parent_path());if(!fs::create_directory(directory))throw Error("E_EXISTS","task run requires a new directory");fs::permissions(directory,fs::perms::owner_all,fs::perm_options::replace);return directory;}
+struct ReplayPreflight {
+  fs::path directory=createTemporaryDirectory("nex-task-replay-preflight");
+  ~ReplayPreflight(){std::error_code error;fs::remove_all(directory,error);}
+};
 }
 JSON checkTask(const JSON &task,const TaskOptions &options){return summary(prepare(task,options));}
 JSON runTask(const JSON &task,const TaskOptions &options){auto p=prepare(task,options);auto directory=runDirectory(options);saveInputs(p,directory,options);Runner runner{p,options,directory,{}};return runner.run();}
 JSON replayTask(const std::string &receipt,const TaskOptions &options){
   auto path=fs::absolute(receipt);auto old=path.parent_path();auto saved=readJSON(path,32*1048576);const auto &r=object(saved);if(text(r,"schema")!="nex.task-receipt/1")invalid("expected a task receipt");auto manifest=verifyInputs(old,options,digest(r,"input_hash"));auto task=readJSON(old/"inputs/task.json");if(hash(json(task,false))!=text(object(manifest),"task_hash")||text(r,"task_hash")!=text(object(manifest),"task_hash"))throw Error("E_TASK_INTEGRITY","task identity differs from inputs");
-  if(!options.revision.empty()||!options.candidates.empty())invalid("replay uses captured candidates");auto p=prepare(task,options,old);auto directory=runDirectory(options);
+  if(!options.revision.empty()||!options.candidates.empty())invalid("replay uses captured candidates");
+  // Preflight may assign local graph identities. Keep that graph private, then
+  // preserve its complete rows/IDs in the exclusively created output run.
+  // Neither an ancestor project nor the saved receipt needs a writable graph.
+  ReplayPreflight temporary;auto preparation=options;preparation.root=temporary.directory.string();auto p=prepare(task,preparation,old);
+  auto directory=runDirectory(options);auto execution=options;execution.root=(directory/"state").string();fs::create_directory(execution.root);
+  createGraphSnapshot(temporary.directory.string(),(fs::path(execution.root)/".nex").string());
+  writeFile((fs::path(execution.root)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry","main.nex"}})+"\n");
+  writeFile((fs::path(execution.root)/"task.json").string(),json(task)+"\n");
   for(const auto &[name,_]:object(*object(manifest).get("files"))){auto destination=directory/name.str();fs::create_directories(destination.parent_path());copyFile(inside(old,name.str()).string(),destination.string());}
-  atomic(directory/"inputs/manifest.json",manifest);Runner runner{p,options,directory,{}};return runner.run(path.string());
+  atomic(directory/"inputs/manifest.json",manifest);Runner runner{p,execution,directory,{}};return runner.run(path.string());
 }
 JSON projectTaskTemplate(const std::string &directory,const std::string &manifest,const std::string &component,const std::string &configuration){
   auto root=fs::canonical(directory);auto source=readFile(manifest);auto architecture=parse(source);

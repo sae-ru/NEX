@@ -54,6 +54,12 @@ destructors or reversal of application side effects.
 
 ## Captured inputs and replay
 
+When `isolated_replay_graph` is available (toolchain0.80), replay owns its graph,
+cache and history under `NEW_RUN/state`. It never searches upward for a project
+to modify. Saved input receipts can be readonly with an explicit writable output
+directory. Temporary preflight IDs are preserved by a checked SQLite snapshot in
+the output state; recorded bindings refer to that state, not an enclosing graph.
+
 The run stores a `nex.project-capture/1` record in `inputs/projects/PROGRAM.json`.
 It contains selected source closures, project metadata, configuration identities
 and their physical alias relationships. External packages used by those closures

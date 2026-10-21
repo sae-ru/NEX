@@ -195,6 +195,10 @@ def main():
     if root.exists() and (not root.is_dir() or any(root.iterdir())):
         parser.error('--output must be new or empty; previous evidence is never replaced')
     root.mkdir(parents=True, exist_ok=True)
+    # Source commands without a deeper manifest must remain inside this owned
+    # evidence project, even when --output is below another NEX workspace.
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'acceptance-scope.nex'})+'\n')
+    (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
@@ -2227,6 +2231,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         require(packaged_task_stdout=='42 🧠\n', 'task package failed after source deletion')
         task_replay=cli('task',task_receipt,'--kind','replay','--directory',root/'project-task-replay',cwd=root,timeout=600)
         require(task_replay['ok'] and task_replay['programs']==task_run['programs'], 'project task replay fell back to deleted source')
+        require((Path(task_replay['output']).parent/'state/.nex/graph.db').is_file() and not (task_receipt.parent/'.nex/graph.db').exists() and not (root/'.nex/graph.db').exists(), 'project replay used its input or enclosing evidence/workspace graph')
         report['evidence']['project_architecture_task']={'ok':True,'source_deleted_replay':True,'original':str(task_receipt),'replay':task_replay['output'],
             'task_hash':task_checked['task_hash'],'actual_shared_provider':True,'native_execution_supervised_directly':True,
             'deployment_package_after_source_deletion':True,'pinned_notice_source_deleted_replay':True,'checks':len(saved_task['checks'])}

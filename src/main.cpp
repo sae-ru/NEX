@@ -295,7 +295,10 @@ int run(const Options &o) {
   }
   if(o.command=="foreign"){if(o.positional.empty())throw Error("E_OPTION","foreign requires a trusted host catalogue path");print(describeForeignCatalogue(inspectForeignCatalogue(o.positional[0])));return 0;}
   if(o.command=="task"){
-    if(o.positional.empty())throw Error("E_OPTION","task requires a source, task or receipt path");auto path=fs::absolute(o.positional[0]);auto root=projectRoot(path.parent_path());
+    if(o.positional.empty())throw Error("E_OPTION","task requires a source, task or receipt path");auto path=fs::absolute(o.positional[0]);auto kind=o.get("--kind","check");
+    // A receipt can live below an unrelated project's directory. Replaying it
+    // must never discover or modify that ancestor's graph/history/build cache.
+    auto root=kind=="replay"?path.parent_path():projectRoot(path.parent_path());
     TaskOptions options{root.string(),o.compiler,o.get("--revision"),o.get("--directory"),o.get("--task-hash"),{}, {},o.get("--foreign")};
     if(o.values.contains("--toolchains")){
       auto file=fs::absolute(o.get("--toolchains"));if(!fs::is_regular_file(file)||fs::file_size(file)>65536)throw Error("E_OPTION","toolchain catalog requires a JSON file of at most 64 KiB");
@@ -304,7 +307,6 @@ int run(const Options &o) {
         fs::path manifest(path->str());if(manifest.is_relative())manifest=file.parent_path()/manifest;options.toolchains[name]=manifest.lexically_normal().string();}
     }
     if(!o.get("--candidates").empty()){auto file=o.get("--candidates");if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_OPTION","candidate map requires a bounded JSON file");auto map=parseJSON(readFile(file));auto object=map.getAsObject();if(!object||object->size()>8)throw Error("E_OPTION","candidate file must map program IDs to archived revisions");for(const auto &[id,v]:*object){auto revision=v.getAsString();if(!revision)throw Error("E_OPTION","candidate revision must be a string");options.candidates[id.str()]=revision->str();}}
-    auto kind=o.get("--kind","check");
     if(o.values.contains("--foreign")&&(options.foreign.empty()||(kind!="check"&&kind!="run"&&kind!="replay")))throw Error("E_OPTION","task --foreign requires a nonempty catalogue for check/run/replay");
     if(kind=="notices"){print(describeTaskPackageNotices(captureTaskPackageNotices(path.string(),root.string())));return 0;}
     if(kind=="init"){

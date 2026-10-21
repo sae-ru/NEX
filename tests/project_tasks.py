@@ -108,4 +108,15 @@ client test fn correct()->unit{assert(initial()==42);}''')
         rejected=self.cli('task',receipt,'--kind','replay','--directory',self.root/'rejected-replay',ok=False,timeout=120)
         self.assertEqual(rejected['code'],'E_TASK_INTEGRITY');self.assertFalse((self.root/'rejected-replay').exists())
 
+    def test_source_deleted_project_replay_does_not_use_an_enclosing_project_graph(self):
+        ancestor=self.root.parent;(ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'ancestor.nex'}))
+        (ancestor/'ancestor.nex').write_text('module outer;fn main()->i64{return 77;}');self.cli('check',ancestor/'ancestor.nex',cwd=ancestor)
+        task=self.scaffold();task['checks']=[];task['requirements']=[]
+        self.add(task,{'id':'effects','kind':'effects','target':'source','configuration':'debug','symbols':['app::main'],'allowed_effects':['io']},'app::main');self.save_task(task)
+        run=self.task('run','--directory',ancestor/'captured/run');receipt=Path(run['output']);before=harness.database_rows(ancestor/'.nex/graph.db')
+        shutil.rmtree(self.root);shutil.rmtree(self.package)
+        replay=self.cli('task',receipt,'--kind','replay','--directory',ancestor/'replayed',cwd=ancestor,timeout=180)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],run['programs']);self.assertEqual(harness.database_rows(ancestor/'.nex/graph.db'),before)
+        self.assertTrue((Path(replay['output']).parent/'state/.nex/graph.db').is_file());self.assertFalse((receipt.parent/'.nex/graph.db').exists())
+
 if __name__=='__main__':unittest.main()

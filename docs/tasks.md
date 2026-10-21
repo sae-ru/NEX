@@ -1,5 +1,20 @@
 # Tasks and acceptance evidence
 
+Toolchain0.80 advertises `isolated_replay_graph` and `readonly_receipt_replay`.
+Replay preflights saved inputs in an owned temporary graph, then preserves its
+complete rows and local IDs in the new run's `state/.nex/graph.db`. Build caches
+and replay history belong to that state. The source project, input receipt and
+any enclosing project's graph are not selected for writes. Input files remain
+hash-indexed and require the matching compiler/resources and current operator
+catalogues as before. No language0.16 migration is involved.
+
+`--directory NEW_RUN` permits a readonly input receipt. Without it, the default
+output is inside `RECEIPT_DIRECTORY/.nex/tasks/runs`; that parent must be writable.
+The input receipt's graph is never opened by replay. Query the new run's history
+with `nex task NEW_RUN/state/task.json --kind history --json`. The snapshot
+preserves binding IDs used by its receipt; it does not merge them into a source
+or ancestor project. Invalid preflight creates no published output run.
+
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
 LLM vendor. Current source language is 0.16; this is a development-tool protocol.

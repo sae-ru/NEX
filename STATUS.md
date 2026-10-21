@@ -1,3 +1,30 @@
+# Development cohort0.80 (not integrated)
+
+Replay no longer searches ancestor project manifests. Frozen-input preflight
+uses an owned temporary graph; an exact SQLite snapshot preserves its local
+IDs under NEW_RUN/state/.nex before execution. New task history/build caches
+belong to that state. Explicit output permits readonly receipt inputs. SDK
+acceptance also creates its own project boundary. Language0.16 is unchanged.
+
+The first narrower receipt-directory fix passes2 source/project isolation cases
+(2.079/12.505seconds); old0.79 fails the same source regression as intended.
+The stronger output-owned state implementation passes two source/readonly/ID
+cases in4.377seconds, a source-deleted project case in12.418seconds and exact8192
+files/replay in67.365seconds. Full87/SDK/Linux validation remains pending. The corrected exact8192-file test passes78.855seconds;
+the limit itself is unchanged and includes both package helper resources.
+
+Frozen0.79 source9f09c4b17530f0656a7bbb67ee3b56b305dd02b5 passes86/87 groups
+on both macOS and Linux ARM64. Only the fixture resource count fails; native
+project cancellation now runs successfully on both systems. No0.79 SDK/platform
+acceptance or root integration is claimed.
+
+Frozen0.78 passes Macfull86 and SDK24, but its post-SDK guard detects one added
+test-program revision in the primary graph: replay selected an enclosing root.
+All original rows remained; the complete48-revision graph is retained separately.
+The original47 revisions/all16tables/schema/IDs are restored from the validated
+snapshot, and primary source/compiler/Git are unchanged. Earlier failures and
+receipts remain separate. This source does not complete the full objective.
+
 # Development cohort0.79 (not integrated)
 
 Project-backed tasks can request package checks under declared configurations.

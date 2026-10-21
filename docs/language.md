@@ -1,3 +1,6 @@
+Toolchain0.80 isolates replay graph/cache/history as external development state.
+It changes no language0.16 syntax, semantics, canonical identity or migration.
+
 Toolchain0.79 package acceptance checks are external task/build metadata.
 They preserve language0.16, effects, realms, canonical identity and history.
 

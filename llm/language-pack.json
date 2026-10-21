@@ -603,6 +603,14 @@
           "snapshot_license_files": 256,
           "snapshot_license_bytes": 8388608
         }
+      },
+      "replay_state": {
+        "minimum_toolchain": "0.80.0",
+        "location": "NEW_RUN/state",
+        "graph_cache_history_isolated": true,
+        "readonly_inputs_with_explicit_output": true,
+        "ancestor_project_lookup": false,
+        "history_command": "nex task NEW_RUN/state/task.json --kind history --json"
       }
     }
   },
