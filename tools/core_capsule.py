@@ -326,6 +326,17 @@ def prepare(request):
         path = folder/'capsule-sources'/('%04d' % index)/'source.nex'
         if path.relative_to(work).as_posix() not in inventory:
             raise ValueError('capsule lacks frozen source projection')
+        # Historical DWARF used an imported unit's basename. The capsule's
+        # canonical storage filename must not change the debugger's basename.
+        # Materialize an alias only in the fresh, verified staging directory.
+        basename = Path(source['debug_path']).name
+        if not basename or basename in ('.', '..'):
+            raise ValueError('capsule has an invalid source basename')
+        if basename != path.name:
+            alias = path.with_name(basename)
+            with alias.open('xb') as target:
+                target.write(path.read_bytes())
+            path = alias
         source['projection'] = str(path)
         mappings.append([str(Path(source['debug_path']).parent), str(path.parent)])
     manifest['source_map'] = mappings

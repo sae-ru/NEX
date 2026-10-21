@@ -88,6 +88,31 @@ class CoreCapsules(harness.ToolchainCase):
         self.assertEqual(graph.read_bytes(), before)
         self.assertFalse(self.file.exists())
 
+    def test_historical_import_basename_is_preserved_in_verified_staging(self):
+        capsule=self.fake_capsule()
+        original_path=capsule/'original-debug.json';original=json.loads(original_path.read_text())
+        source=original['sources'][0];legacy='imported "quoted" % 🧠.nex'
+        source['debug_path']=str(Path(source['debug_path']).with_name(legacy))
+        original_path.write_text(json.dumps(original))
+        receipt_path=capsule/'capsule.json';receipt=json.loads(receipt_path.read_text())
+        receipt['files']['original-debug.json']={'bytes':original_path.stat().st_size,'sha256':digest(original_path)}
+        receipt_path.write_text(json.dumps(receipt))
+        before={p.relative_to(capsule).as_posix():digest(p) for p in capsule.rglob('*') if p.is_file()}
+        work=self.root/'verified staging';work.mkdir()
+        request={'mode':'prepare','capsule':str(capsule),'work':str(work),
+                 'identity':{key:original[key] for key in ('compiler_build','toolchain','language')}}
+        path=self.root/'prepare-request.json';path.write_text(json.dumps(request))
+        installed=Path(harness.NEX).parent.parent/'share/nex/tools/core_capsule.py'
+        helper=installed if installed.is_file() else harness.REPO/'tools/core_capsule.py'
+        prepared=subprocess.run([sys.executable,str(helper),str(path)],capture_output=True,text=True,timeout=60)
+        self.assertEqual(prepared.returncode,0,prepared.stdout+prepared.stderr)
+        manifest=json.loads(Path(json.loads(prepared.stdout)['manifest']).read_text())
+        projected=Path(manifest['sources'][0]['projection'])
+        self.assertEqual(projected.name,legacy)
+        self.assertEqual(projected.read_text(),SOURCE)
+        self.assertIn([str(Path(source['debug_path']).parent),str(projected.parent)],manifest['source_map'])
+        self.assertEqual(before,{p.relative_to(capsule).as_posix():digest(p) for p in capsule.rglob('*') if p.is_file()})
+
     def test_inventory_changes_extra_files_and_rehashed_semantic_damage_are_rejected(self):
         capsule = self.fake_capsule()
         receipt_path = capsule/'capsule.json'

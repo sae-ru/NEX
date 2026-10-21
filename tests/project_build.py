@@ -1,7 +1,9 @@
 """Project architecture must constrain actual imports and drive real artifacts."""
-import copy,json,os,shlex,sqlite3,subprocess
+import copy,json,os,shlex,sqlite3,subprocess,sys
 from pathlib import Path
 import unittest
+LIVE='--live' in sys.argv
+if LIVE:sys.argv.remove('--live')
 import support as harness
 
 class Projects(harness.ToolchainCase):
@@ -129,6 +131,92 @@ client fn title()->str{return "Project browser";}
         artifacts={a['component']:a for a in built['artifacts']}
         run=subprocess.run([artifacts['app']['artifact']],cwd=self.root,capture_output=True,text=True,timeout=15)
         return built,artifacts,run
+    def archived_alias_fixture(self):
+        self.binary_core()
+        p=self.root/'nex.json';metadata=json.loads(p.read_text());metadata['libraries']={'alias':'core'};p.write_text(json.dumps(metadata))
+        (self.root/'core/value.nex').write_text('module model;import "./logic.nex" as detail;pub fn calculate(x:i64)->i64{return detail::offset(x);}')
+        (self.root/'core/logic.nex').write_text('''module library_detail;
+pub fn offset(x:i64)->i64{
+ let held:list<str>=["Я","🧠"];
+ let result:i64=x*3+7;
+ assert(len(held)==2);
+ return result; // LIBRARY_STOP
+}
+''')
+        (self.root/'app/main.nex').write_text('module app;import "alias/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}')
+        _,artifacts,run=self.build_binary_app('debug')
+        self.assertEqual((run.returncode,run.stdout),(0,'22\n'),run.stderr)
+        return artifacts
+    def test_archive_entry_and_nested_package_imports_have_usable_frozen_sources(self):
+        artifacts=self.archived_alias_fixture()
+        provider=json.loads(Path(artifacts['core']['debug_manifest']).read_text())
+        consumer=json.loads(Path(artifacts['app']['debug_manifest']).read_text())
+        imported={s['original']:s for s in consumer['sources']}
+        self.assertEqual(len(provider['sources']),2)
+        for source in provider['sources']:
+            alias=imported[source['original']]
+            # Actual object DWARF uses provider origins. The executable's map
+            # must resolve them to the same complete, immutable source text.
+            self.assertEqual(source['debug_path'],alias['debug_path'])
+            self.assertEqual(source['projection'],alias['projection'])
+            self.assertTrue(any(Path(source['debug_path']).parent==Path(pair[0]) and
+                                Path(alias['projection']).parent==Path(pair[1]) for pair in consumer['source_map']))
+            self.assertEqual(Path(source['projection']).read_bytes(),Path(source['original']).read_bytes())
+        compiled=json.loads(Path(artifacts['app']['compilation']).read_text())
+        self.assertEqual([f for u in compiled['units'] for f in u['functions']],['app::main'])
+    @unittest.skipUnless(LIVE,'use --live for actual LLDB archive stops, watches and moved core capsules')
+    def test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources(self):
+        artifacts=self.archived_alias_fixture();app=artifacts['app'];manifest=Path(app['debug_manifest'])
+        metadata=json.loads(manifest.read_text())
+        source=next(s for s in metadata['sources'] if s['original']==str((self.root/'core/logic.nex').resolve()))
+        projected=source['projection'];line=next(i+1 for i,s in enumerate(Path(projected).read_text().splitlines()) if 'LIBRARY_STOP' in s)
+        core=self.root/'library.core';report=self.root/'live-archive.json';script=self.root/'live_archive.py'
+        script.write_text('''import json,lldb
+def __lldb_init_module(debugger,internal_dict):
+ debugger.SetAsync(False)
+ target=debugger.GetSelectedTarget()
+ breakpoint=target.BreakpointCreateByLocation(PROJECTED,LINE)
+ assert breakpoint.GetNumLocations()==1
+ process=target.LaunchSimple(None,None,CWD)
+ try:
+  assert process.GetState()==lldb.eStateStopped
+  frame=process.GetSelectedThread().GetSelectedFrame()
+  assert frame.GetLineEntry().GetLine()==LINE
+  def command(text):
+   result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,lldb.SBExecutionContext(frame),result)
+   assert result.Succeeded(),result.GetError()
+   return result.GetOutput()
+  listing=command('source list --address '+hex(frame.GetPC())+' --count 3')
+  assert 'LIBRARY_STOP' in listing,listing
+  watch=json.loads(command('nex-eval held[1] + str(result)'))
+  assert watch['value']=='🧠22',watch
+  command('process save-core --style modified-memory '+json.dumps(CORE))
+  process.Continue()
+  assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+  with open(REPORT,'w') as output:json.dump({'watch':watch,'source_listing':listing},output)
+ finally:
+  if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('PROJECTED',repr(projected)).replace('LINE',str(line)).replace('CWD',repr(str(self.root))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))))
+        for p in self.root.glob('core/*.nex'):p.unlink()
+        (self.root/'app/main.nex').unlink()
+        args=[os.environ.get('NEX_LLDB','lldb'),app['artifact'],'--no-lldbinit','--batch',
+              '-o','settings set target.disable-aslr false',
+              '-o','command script import '+json.dumps(str(manifest.parent/'debugger/lldb_nex.py')),
+              '-o','nex-load-debug '+json.dumps(str(manifest))+' --compiler '+json.dumps(harness.NEX),
+              '-o','command script import '+json.dumps(str(script))]
+        result=subprocess.run(args,capture_output=True,text=True,timeout=90)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertTrue(report.is_file(),result.stdout+result.stderr)
+        self.assertEqual(json.loads(report.read_text())['watch']['value'],'🧠22')
+        capsule=self.root/'capsule'
+        exported=self.cli('core',core,'--manifest',manifest,'--expression','held[1] + str(result)','--export',capsule,timeout=180)
+        self.assertEqual(exported['schema'],'nex.core-capsule-export/1')
+        (self.root/'.nex/build').rename(self.root/'retained-cache')
+        moved=self.root/'moved capsule 🧠';capsule.rename(moved)
+        read=self.cli('core','--capsule',moved,'--expression','held[1] + str(result)',timeout=120)
+        self.assertEqual(read['watch']['value'],'🧠22')
+        self.assertFalse(read['inferior_execution']);self.assertTrue(read['stop_unchanged'])
+        self.assertFalse((self.root/'.nex/graph.db').exists())
     def test_static_dependency_consumes_archive_without_recompiling_its_functions(self):
         self.binary_core()
         before=self.plan('--component','app','--configuration','release');self.assertFalse((self.root/'.nex').exists())

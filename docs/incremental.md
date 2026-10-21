@@ -81,6 +81,12 @@ output and its native ABI independently:
 
 An optional `linker` selects a native linker executable. Linux defaults to the matching LLVM `ld.lld`; the final symlink name is preserved for driver dispatch. Selected linker bytes participate in fingerprints (`nex.toolchain-snapshot/2`) and build/cache identity. The Linux guide covers the verified ELF DWARF path.
 
+Normalized manifests preserve the final executable name for compiler, linker,
+archiver and debug packager aliases, and canonicalize their parent directories.
+Saving an inspected manifest and inspecting it again keeps the same fingerprint.
+Keep a selected shared library and its transitive dependency closure together
+when its RUNPATH uses `$ORIGIN`.
+
 Ordinary host/macOS configurations require only `schema` and `target`. Windows
 core additionally requires explicit compiler/linker/archiver/sysroot and its
 `windows` runtime/notices object. Omit unused dependencies. Each supplied

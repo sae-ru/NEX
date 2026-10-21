@@ -128,6 +128,14 @@ build directory. Their bytes and contracts enter its build/cache identity;
 changed/corrupt cached outputs are rebuilt. This validates NEX link inputs,
 not all operating-system dynamic dependencies.
 
+The final executable's frozen source map covers archive code as well as its
+locally compiled functions, including nested imports through package aliases.
+Use the complete projection path from its `debug.json` when placing a library
+source breakpoint. A matching captured LLDB formatter can inspect the same
+locals and pure watches after original source deletion; keep the retained build
+workspace or export a checked core capsule. Project commands do not yet produce
+a combined project debug/test/task session automatically.
+
 Retained builds declare `nex.native-completion/2` and an ordered bounded
 `completion_inputs` list: the ABI record, then captured dependency archives.
 Build completion and core inspection bind these bytes. Core capsules retain

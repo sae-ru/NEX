@@ -40,6 +40,8 @@ def main():
                 'LiveStringDebug.test_lldb_dap_large_utf8_ranges_snapshots_and_unchanged_stop'])
             run('live-source-ffi',['python3','/src/tests/source_ffi.py','/build/sdk/bin/nex','--live',
                 'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
+            run('live-project-archives',['python3','/src/tests/project_build.py','/build/sdk/bin/nex','--live',
+                'Projects.test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

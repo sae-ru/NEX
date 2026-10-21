@@ -29,7 +29,8 @@ continue
 Line 12 is inside the inner binding of `total`. Both the outer `40` and inner
 `42` remain represented with their own scopes. At line 14 only the outer binding
 is in scope; line 16 observes its updated value `43`. The imported increment
-function has its own captured `sources/model.nex` and parameter/local records.
+function has its own immutable projection and parameter/local records; find its
+path through the `sources` entries in `debug.json`.
 Use `nex context --symbol NAME` to obtain a function's exact `native_symbol` for
 a name breakpoint. Debugger function display may use that native linkage name.
 
@@ -38,6 +39,16 @@ including archived sources and reused native modules. A source-based debug comma
 `nex debug --revision HASH` to debug a stored revision even after original files
 were changed or deleted. `debug.json` maps original paths to their projections
 and records the semantic revision, build key, function names and native symbols.
+
+Within a project build cache, a virtual DWARF source origin identifies its
+logical module, independently of entry/import roles or package aliases. A
+static provider and its consumer therefore map the same origin to the same
+captured module text. Projections use a content-derived directory and the
+filename `source.nex`; select the full projection path for an unambiguous file
+breakpoint. Unrelated edits can still reuse function objects when their emitted
+source coordinates have not changed. Core capsules retain canonical source
+storage and preserve historical imported DWARF basenames when preparing a
+verified temporary workspace.
 
 If the host prevents launching children under a debugger, ordinary compiled
 execution may still work. Report that limitation directly: source/symbol lookup

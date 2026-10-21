@@ -848,18 +848,25 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto operations=operationTree(p,f);for(const auto &operation:operations)if(operation.ast)operationIndex[operation.ast]=operation.site;
     debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"function_hash",hash(json(canonical(f),false))},{"function_source_hash",hash(p.definition(f))},{"native_symbol",nativeSymbol(f.name)},{"callable_symbol",f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"operation_sites",operationSites(f,operations)}});
   }
+  auto sourcePaths=[&](const std::string &module,const std::string &source){
+    auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/2"},{"module",module},{"source",source}},false));
+    auto projection=(buildRoot/"source-cache"/sourceKey/"source.nex").string();
+    // A library's entry and its consumer's package import name the same module.
+    // Its DWARF origin must survive those aliases and entry/import roles.
+    auto anchor=(buildRoot/"source-anchors"/hash(json(llvm::json::Array{"nex.native-source-anchor/2",module},false))/"source.nex").string();
+    return std::pair{projection,anchor};
+  };
   for(auto &[unitKey,unit]:snapshot.units){
-    auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/1"},{"unit",unitKey},{"module",unit.module},{"source",unit.source}},false));
-    auto original=unit.path;unit.path=(buildRoot/"source-cache"/sourceKey/(unitKey==snapshot.entryUnit?"source.nex":unitKey)).string();
+    auto [projection,anchor]=sourcePaths(unit.module,unit.source);
+    auto original=unit.path;unit.path=projection;
     if(unitKey==snapshot.entryUnit)snapshot.path=unit.path;
-    auto anchor=(buildRoot/"source-anchors"/hash(json(llvm::json::Array{unitKey,unit.module},false))/(unitKey==snapshot.entryUnit?"source.nex":unitKey)).string();
     debugAnchors[unitKey]=anchor;
     debugSourceMap.push_back(llvm::json::Array{std::filesystem::path(anchor).parent_path().string(),std::filesystem::path(unit.path).parent_path().string()});
     debugSources.push_back(llvm::json::Object{{"original",original},{"projection",unit.path},{"debug_path",anchor},{"hash",hash(unit.source)}});
   }
   if(snapshot.units.empty()){
-    snapshot.path=(buildRoot/"source-cache"/hash(p.source)/"source.nex").string();
-    debugAnchors[""]=(buildRoot/"source-anchors"/hash(p.module)/"source.nex").string();
+    auto [projection,anchor]=sourcePaths(p.module,p.source);
+    snapshot.path=projection;debugAnchors[""]=anchor;
     debugSourceMap.push_back(llvm::json::Array{std::filesystem::path(debugAnchors.at("")).parent_path().string(),std::filesystem::path(snapshot.path).parent_path().string()});
     debugSources.push_back(llvm::json::Object{{"original",p.path},{"projection",snapshot.path},{"debug_path",debugAnchors.at("")},{"hash",hash(p.source)}});
   }

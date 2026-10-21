@@ -94,8 +94,10 @@ NativeToolchain configureNative(const BuildOptions &options) {
     auto path=[&](const llvm::json::Object &from,const std::string &key,bool directory){
       auto value=text(from,key);if(value.empty())return value;
       auto path=std::filesystem::path(value);if(path.is_relative())path=file.parent_path()/path;
-      // Driver dispatch depends on argv[0]: clang++ selects C++, ld.lld selects ELF.
-      path=(key=="compiler"||key=="linker")?std::filesystem::weakly_canonical(path.parent_path())/path.filename():std::filesystem::weakly_canonical(path);
+      // Executable dispatch can depend on argv[0]. Keep the final alias for
+      // every selected tool, including llvm-ar and debug packagers.
+      bool tool=key=="compiler"||key=="linker"||key=="archiver"||key=="debug_packager";
+      path=tool?std::filesystem::weakly_canonical(path.parent_path())/path.filename():std::filesystem::weakly_canonical(path);
       if(directory?!std::filesystem::is_directory(path):!std::filesystem::is_regular_file(path))throw Error("E_TOOLCHAIN","missing toolchain path: "+path.string());
       return path.string();
     };
@@ -199,9 +201,10 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
   if(!driver)throw Error("E_TOOLCHAIN","cannot locate toolchain compiler: "+configured.compiler);
   auto driverPath=fs::absolute(*driver);auto compiler=(fs::weakly_canonical(driverPath.parent_path())/driverPath.filename()).string();
   llvm::json::Object manifest{{"schema","nex.toolchain/1"},{"target",configured.target},{"compiler",compiler}};
-  manifest["archiver"]=configured.archiver;
-  if(!configured.debugPackager.empty())manifest["debug_packager"]=configured.debugPackager;
-  if(!configured.linker.empty())manifest["linker"]=configured.linker;
+  auto toolPath=[](const std::string &selected){auto path=fs::absolute(selected);return (fs::weakly_canonical(path.parent_path())/path.filename()).string();};
+  manifest["archiver"]=toolPath(configured.archiver);
+  if(!configured.debugPackager.empty())manifest["debug_packager"]=toolPath(configured.debugPackager);
+  if(!configured.linker.empty())manifest["linker"]=toolPath(configured.linker);
   if(!configured.sysroot.empty())manifest["sysroot"]=configured.sysroot;
   if(!configured.windowsRuntime.empty())manifest["windows"]=llvm::json::Object{{"runtime",configured.windowsRuntime},{"notices",configured.windowsNotices}};
   if(!configured.sqliteInclude.empty())manifest["sqlite"]=llvm::json::Object{{"include",configured.sqliteInclude},{"library",configured.sqliteLibrary}};

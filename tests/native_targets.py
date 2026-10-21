@@ -78,6 +78,20 @@ server fn main() -> unit !{db,io} {
         soname=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic).group(1)
         directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
         library=directory/soname;shutil.copy2(original,library)
+        # This fixture is a complete selected SDK, including private ICU/C++
+        # dependencies whose original ELF RUNPATH is relative to their owner.
+        pending=[Path(original).resolve()];seen=set()
+        while pending:
+            image=pending.pop()
+            if image in seen:continue
+            seen.add(image)
+            listing=subprocess.check_output(['ldd',image],text=True)
+            for name,filename in re.findall(r'^\s*(\S+)\s*=>\s*(.*?)\s+\(0x',listing,re.M):
+                dependency=Path(filename).resolve()
+                if any(Path(root).resolve() in dependency.parents for root in ('/lib','/lib64','/usr/lib','/usr/lib64')):continue
+                destination=directory/Path(name).name
+                if not destination.exists():shutil.copy2(dependency,destination)
+                pending.append(dependency)
         self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(library)})
         self.source('''module selected_elf_store;
 server fn main() -> unit !{db,io} {
@@ -97,6 +111,32 @@ server fn main() -> unit !{db,io} {
         invalid=self.root/'invalid:elf';invalid.mkdir();shutil.copy2(original,invalid/soname)
         self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(invalid/soname)})
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
+
+    def test_readonly_manifest_roundtrip_preserves_selected_tool_aliases(self):
+        tools=self.root/'physical tools';tools.mkdir()
+        alias=self.root/'linked tools';alias.symlink_to(tools,target_is_directory=True)
+        fields={}
+        for key,doctor_key,name in [('compiler','native_compiler','clang++'),
+                                    ('archiver','native_archiver','llvm-ar'),
+                                    ('linker','native_linker','ld.lld'),
+                                    ('debug_packager','native_debug_packager','dsymutil')]:
+            if self.doctor[doctor_key]:
+                (tools/name).symlink_to(self.doctor[doctor_key]);fields[key]=str(alias/name)
+        self.configure(**fields)
+        inspected=self.cli('toolchain',self.config)
+        for key,value in fields.items():
+            self.assertEqual(inspected['manifest'][key],str(tools.resolve()/Path(value).name))
+        captured=self.root/'captured.json';captured.write_text(json.dumps(inspected['manifest']))
+        again=self.cli('toolchain',captured)
+        self.assertEqual(again['hash'],inspected['hash']);self.assertEqual(again['inputs'],inspected['inputs'])
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_readonly_default_manifest_roundtrip_has_the_same_fingerprint(self):
+        self.configure()
+        inspected=self.cli('toolchain',self.config)
+        self.config.write_text(json.dumps(inspected['manifest']))
+        self.assertEqual(self.cli('toolchain',self.config)['hash'],inspected['hash'])
+        self.assertFalse((self.root/'.nex').exists())
 
     def test_invalid_manifests_and_non_native_commands_reject(self):
         for value in ([], {}, {'schema':'bad','target':self.doctor['host']},
