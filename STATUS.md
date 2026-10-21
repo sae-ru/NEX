@@ -1,3 +1,23 @@
+# Verified primary0.81
+
+The explicitly approved0.77→0.81 transition is complete. Primary full87 passes
+1192.790seconds; installed SDK24/375commands/225resources passes815.194seconds.
+Actual installed VSIX0.6 works in three fresh private editor hosts; strict
+analysis1/2/3 and complete store/schema/local-ID comparisons with0.77 pass.
+The frozen source also passes macOS/Linux ARM64 full87, installed SDK24 and
+Linux20 live suites. [Evidence](docs/evidence/toolchain-0.81.0.json) records
+implementation/source backup identities and preserved graph/Git state.
+
+Language0.16 is unchanged. All47 revisions/all16tables/schema/IDs remain, and
+old0.77 source/compiler are retained separately. This documentation update
+changes prose/evidence only; compiler implementation and executable are unchanged.
+Public server workload profiling is being developed in an isolated0.82 copy.
+Concurrency, general accelerators, source-foreign project packaging and broader
+platform/development delivery remain pending. Full objective is not complete.
+
+The development sections below retain their original historical observations;
+their former pending0.81 gates are resolved by the evidence above.
+
 # Development cohort0.81 (not integrated)
 
 Extension0.6 adds explicit project launches and NEX: Debug Project Component.

@@ -1,3 +1,17 @@
+# Current verified checkpoint and next work
+
+- [x] Integrate explicitly approved0.81 and verify primary full87, SDK24/375,
+  actual installed extension0.6 and strict0.77/0.81 compatibility.
+- [x] Preserve original47 graph revisions/all16tables/schema/IDs, Git HEAD/index,
+  frozen source backup and recoverable0.77 source/compiler.
+- [ ] Complete isolated bounded native server workload profile command, schemas,
+  SDK acceptance and cancellation/temporary-file cleanup; validate before integration.
+- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
+  project packaging, remaining task/editor commands and broader platform delivery.
+
+[Recorded0.81 evidence](docs/evidence/toolchain-0.81.0.json) supersedes the earlier
+pending integration steps below. This plan is not an implemented-feature list.
+
 # Current0.81 project editor debugging
 
 - Validate explicit project launch configuration and component/configuration UI.

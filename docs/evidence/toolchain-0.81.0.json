@@ -1,0 +1,74 @@
+{
+  "schema": "nex.toolchain-evidence/1",
+  "toolchain": "0.81.0",
+  "language": "0.16",
+  "integration": "explicitly approved primary checkout; compiled implementation unchanged by this documentation reconciliation",
+  "implementation_source_tree": "74d01e0d407c11154d9a2f71a88f3e2ef68a5881",
+  "implementation_source_files": 791,
+  "source_backup_commit": "c3c27c6c9c6f9305d3fd97db113707dfabba35c2",
+  "source_backup_branch": "codex/backup-nex-20261021-131723",
+  "primary_compiler_sha256": "e80d88b85dc0b4ddc55137658221f1f6beedc87324da705623355d30c1785bc1",
+  "primary_full_ctest_groups": 87,
+  "primary_full_ctest_seconds": 1192.79,
+  "primary_installed_sdk": {
+    "phases": 24,
+    "commands": 375,
+    "indexed_resources": 225,
+    "seconds": 815.194
+  },
+  "frozen_platforms": {
+    "macos_arm64": {
+      "full_ctest_groups": 87,
+      "installed_sdk_phases": 24,
+      "indexed_resources": 225
+    },
+    "linux_arm64": {
+      "full_ctest_groups": 87,
+      "live_suites": 20,
+      "sourcefree_network_none_sdk_phases": 24,
+      "indexed_resources": 225
+    }
+  },
+  "primary_additional_gates": {
+    "actual_installed_vsix": "0.6.0",
+    "fresh_editor_hosts": 3,
+    "strict_analysis_cases": 5,
+    "complete_store_compatibility_cases": 5
+  },
+  "preservation": {
+    "revisions": 47,
+    "tables": 16,
+    "schema_rows_and_local_ids_unchanged": true,
+    "git_head_unchanged": true,
+    "normal_git_index_unchanged": true,
+    "previous_source_and_compiler_recovery": "build/root077-pre-081-recovery"
+  },
+  "server_observation": "Manual orchestration on macOS/Linux:432 release plus432 instrumented requests per platform. Public workload CLI is separate isolated0.82 work, not part of this compiler.",
+  "remaining": [
+    "source concurrency",
+    "general CPU/GPU/NPU interfaces",
+    "source-foreign project package projection",
+    "public server workloads/debugging",
+    "remaining task/editor commands",
+    "broader native/mobile/Windows delivery"
+  ],
+  "full_objective_complete": false,
+  "reports": {
+    "build/root-081-integration-controller.json": {
+      "sha256": "28bb16a0fa1eac7eb65184ddd82ec83257e51f12b8ca23bf727144479d7f8bc7",
+      "ok": true
+    },
+    "build/root-081-additional-gates-controller.json": {
+      "sha256": "eac92fa1a25ff88a3296645556d0364998b526152fc30fbb6fc4cebbf203e714",
+      "ok": true
+    },
+    "build/root-081-compatibility-v1/report.json": {
+      "sha256": "bd84c62a93efb49744da4bb22fd051d073db2c860856b4519b1d50cd72325769",
+      "ok": true
+    },
+    "build/candidate081-final-validation-controller-v1.json": {
+      "sha256": "72e38f2e3cff9ae06a6343a2128361abced56f6c459d5131d5a19b71eec7978b",
+      "ok": true
+    }
+  }
+}

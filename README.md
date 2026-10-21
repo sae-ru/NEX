@@ -12,13 +12,15 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated development source is **toolchain0.81.0 / language0.16**. It adds
-project debugging in extension0.6 above0.80 isolated task replay. It checks the
-architecture around preparation and uses actual native library images. New
-editor validation is in progress. Frozen0.80 Macfull87 passes; its Linux run
-retains a diagnostic-string lifetime failure fixed here, and its SDK retains
-a stale notice-fixture dependency root corrected here. Primary0.77 and its
-original47 graph revisions/all16tables/schema/IDs remain preserved separately.
+The primary checkout is **toolchain0.81.0 / language0.16**, integrated after
+explicit approval and verification. Its full87 CTest groups, installed SDK
+24phases/375commands/225resources, real installed extension0.6 in three fresh
+editor hosts and strict0.77/0.81 analysis/store compatibility pass. The exact
+frozen implementation also passes Linux ARM64 full87,20 live suites and
+source-free/network-disabled installed SDK24. See [the recorded evidence](docs/evidence/toolchain-0.81.0.json).
+All47 original graph revisions/all16tables/schema/IDs and normal Git HEAD/index
+are preserved; the old0.77 source/compiler remains recoverable. This is a checked
+checkpoint of the language/toolchain; remaining PLAN work is still open.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -35,7 +37,7 @@ Toolchain0.74 accepts `shared_library`/`dynamic` for macOS/Linux builds,
 captures the linked images and supplies one shared runtime. Toolchain0.75 adds
 manual LLDB/core/capsule workflows for these images;0.76 adds `project --kind
 package` for binary edges and browser distributions. The verified0.77 also
-preserves these edges in project run/test/debug/profile. The0.78 candidate adds
+preserves these edges in project run/test/debug/profile. Toolchain0.78 adds
 [acceptance tasks and captured replay](docs/project-tasks.md) for the architecture.
 
 The historical integrated0.72 checkpoint passes **80 CTest groups** and installed SDK acceptance of
