@@ -504,7 +504,15 @@
     "generic_instantiation": "explicit consumer_instantiations",
     "guide": "docs/project-build.md",
     "binary_only_packages": false,
-    "shared_libraries": false
+    "shared_libraries": true,
+    "dynamic": "checked PIC native images with one shared runtime, macOS/Linux project builds",
+    "minimum_shared_toolchain": "0.74.0",
+    "shared_pending": [
+      "windows_dll",
+      "shared_image_packaging",
+      "shared_image_core_inspection_and_capsules",
+      "combined_project_execution"
+    ]
   },
   "native_application_lifetime": {
     "capability": "native_application_lifetime",

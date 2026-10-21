@@ -31,6 +31,62 @@ def completion_inputs(build):
     if 'completion_schema' not in build and 'completion_inputs' not in build:
         return []
     inputs = build.get('completion_inputs')
+    if build.get('completion_schema') == 'nex.native-completion/3':
+        if not isinstance(inputs, list) or not 4 <= len(inputs) <= 1024:
+            raise ValueError('invalid retained native image completion limit')
+        result = []
+        position = 0
+
+        def take(kind, path):
+            nonlocal position
+            if inputs[position] != {'kind': kind, 'path': path}:
+                raise ValueError('invalid retained native image completion path/kind/order')
+            result.append(path)
+            position += 1
+
+        def kind():
+            value = inputs[position]
+            return value.get('kind') if isinstance(value, dict) else None
+
+        take('abi', 'library-abi.json')
+        take('link_inputs', 'image-inputs.json')
+        take('objects', 'objects.a')
+        archives = 0
+        while position < len(inputs) and kind() == 'static_library':
+            if archives >= 128:
+                raise ValueError('too many retained static libraries')
+            take('static_library', 'libraries/%d.a' % archives)
+            archives += 1
+        image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
+        images = []
+        while position < len(inputs) and kind() == 'owned_image':
+            path = inputs[position].get('path')
+            if (not isinstance(path, str) or not image.fullmatch(path) or
+                    (images and path <= images[-1]) or len(images) >= 129):
+                raise ValueError('invalid retained owned image')
+            images.append(path)
+            take('owned_image', path)
+        if not images:
+            raise ValueError('retained image build requires its runtime')
+        previous = ''
+        while position < len(inputs):
+            value = inputs[position]
+            path = value.get('path') if isinstance(value, dict) else None
+            if not isinstance(path, str) or path <= previous:
+                raise ValueError('invalid retained symbol order')
+            allowed = False
+            for owned in images:
+                if not owned.endswith('.dylib'):
+                    continue
+                prefix = owned + '.dSYM/Contents/'
+                basename = PurePosixPath(owned).name
+                allowed |= path in (prefix+'Info.plist', prefix+'Resources/DWARF/'+basename)
+                allowed |= bool(re.fullmatch(re.escape(prefix)+r'Resources/Relocations/[A-Za-z_0-9]+/'+re.escape(basename)+r'\.yml', path))
+            if not allowed:
+                raise ValueError('invalid retained owned symbols')
+            previous = path
+            take('owned_symbols', path)
+        return result
     if (build.get('completion_schema') != 'nex.native-completion/2' or
             not isinstance(inputs, list) or not 1 <= len(inputs) <= 129 or
             inputs != ['library-abi.json'] + ['libraries/%d.a' % i for i in range(len(inputs)-1)]):

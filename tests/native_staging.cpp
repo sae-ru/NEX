@@ -11,6 +11,10 @@ int main(int argc,char **argv) {
     auto parsed=llvm::json::parse(argv[3]);
     if(!parsed)throw Error("E_JSON",llvm::toString(parsed.takeError()));
     auto o=parsed->getAsObject();if(!o)throw Error("E_JSON","expected options object");
+    if(auto completion=o->getObject("completion_metadata")){
+      llvm::json::Array paths;for(const auto &path:nativeCompletionInputs(*completion))paths.push_back(path);
+      std::cout<<json(llvm::json::Object{{"paths",std::move(paths)}})<<'\n';return 0;
+    }
     BuildOptions options;
     options.projectLibraryABI=true;
     options.entry=o->getString("entry").value_or("main").str();

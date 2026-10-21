@@ -2,6 +2,8 @@
 #include "nex/backend.h"
 #include "nex/incremental.h"
 #include "nex/native_toolchain.h"
+#include "nex/native_images.h"
+#include "llvm/TargetParser/Triple.h"
 #include "nex/web.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
@@ -71,15 +73,15 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     auto o=value.getAsObject();if(!o)fail("component must be an object: "+name.str());
     keys(*o,{"kind","root","entry","entry_function","dependencies","exports"});
     Component c;c.name=name.str();c.kind=text(*o,"kind","",true);c.root=text(*o,"root","",true);c.entry=text(*o,"entry","",true);
-    if(c.kind!="source"&&c.kind!="executable"&&c.kind!="static_library"&&c.kind!="server"&&c.kind!="web")
-      fail("unsupported component kind: "+c.kind+"; shared-library output and accelerator components are pending","E_PROJECT_CAPABILITY");
+    if(c.kind!="source"&&c.kind!="executable"&&c.kind!="static_library"&&c.kind!="shared_library"&&c.kind!="server"&&c.kind!="web")
+      fail("unsupported component kind: "+c.kind+"; accelerator components are pending","E_PROJECT_CAPABILITY");
     c.physicalRoot=path(root,c.root,true);auto entry=path(root,c.entry,false);
     if(!c.entry.ends_with(".nex")||!inside(entry,c.physicalRoot))fail("component entry must be a .nex file inside its root: "+c.name);
     if(c.kind=="source"||c.kind=="web") {
       if(o->get("entry_function"))fail("source/web components do not select entry_function: "+c.name);
-    } else c.function=text(*o,"entry_function",c.kind=="server"?"handle":"main",c.kind=="static_library");
+    } else c.function=text(*o,"entry_function",c.kind=="server"?"handle":"main",(c.kind=="static_library"||c.kind=="shared_library"));
     if(auto value=o->get("exports")){
-      auto names=value->getAsArray();if(c.kind!="static_library"||!names||names->size()>128)fail("exports requires a static_library and at most128 concrete functions");
+      auto names=value->getAsArray();if((c.kind!="static_library"&&c.kind!="shared_library")||!names||names->size()>128)fail("exports requires a native library and at most128 concrete functions");
       std::set<std::string> unique;
       for(const auto &name:*names){auto s=name.getAsString();if(!s||s->empty()||s->size()>4096||s->find('\0')!=llvm::StringRef::npos||!unique.insert(s->str()).second)fail("invalid or duplicate library export");c.exports.push_back(s->str());}
     }
@@ -87,7 +89,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       auto mapping=deps->getAsObject();if(!mapping||mapping->size()>128)fail("dependencies must be an object of at most128 components");
       for(const auto &[dep,link]:*mapping) {
         if(!identifier(dep.str()))fail("invalid dependency component name");
-        auto linkage=link.getAsString();if(linkage!="source"&&linkage!="static")fail("component dependencies require source or static linkage; DLL consumption is pending","E_PROJECT_CAPABILITY");
+        auto linkage=link.getAsString();if(linkage!="source"&&linkage!="static"&&linkage!="dynamic")fail("component dependencies require source, static or dynamic linkage","E_PROJECT_CAPABILITY");
         c.dependencies[dep.str()]=linkage->str();
       }
     }
@@ -99,8 +101,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         fail("component roots overlap: "+first->first+" and "+second->first);
     for(const auto &[name,link]:first->second.dependencies) {
       (void)link;auto found=components.find(name);if(found==components.end())fail("unknown dependency component: "+name);
-      if(found->second.kind!="source"&&found->second.kind!="static_library")fail("only source/static_library components can be source dependencies: "+name);
+      if(found->second.kind!="source"&&found->second.kind!="static_library"&&found->second.kind!="shared_library")fail("only source/native library components can be dependencies: "+name);
       if(link=="static"&&(found->second.kind!="static_library"||first->second.kind=="web"||first->second.kind=="source"))fail("static linkage requires a native consumer and static_library dependency","E_PROJECT_CAPABILITY");
+      if(link=="dynamic"&&(found->second.kind!="shared_library"||first->second.kind=="web"||first->second.kind=="source"))fail("dynamic linkage requires a native consumer and shared_library dependency","E_PROJECT_CAPABILITY");
     }
   }
   std::map<std::string,Configuration> configurations;
@@ -127,6 +130,15 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::set<std::string> selected;
   std::function<void(const std::string&)> select=[&](const auto &name){if(!selected.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){(void)link;select(dep);}};
   if(options.component.empty())for(const auto &[name,c]:components){(void)c;select(name);}else select(options.component);
+  bool sharedSelected=false;
+  for(const auto &name:selected)sharedSelected|=components.at(name).kind=="shared_library";
+  std::map<std::string,bool> dynamicClosure;
+  std::function<bool(const std::string&)> dynamic=[&](const auto &name){
+    auto old=dynamicClosure.find(name);if(old!=dynamicClosure.end())return old->second;
+    bool value=false;for(const auto &[dep,link]:components.at(name).dependencies)value|=link=="dynamic"||dynamic(dep);
+    return dynamicClosure[name]=value;
+  };
+  for(const auto &name:selected)dynamic(name);
   auto owner=[&](const fs::path &file)->std::string {
     auto physical=fs::weakly_canonical(file);for(const auto &[name,c]:components)if(inside(physical,c.physicalRoot))return name;
     return {};
@@ -139,7 +151,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::map<std::string,std::string> capturedSources;
   std::vector<Prepared> prepared;llvm::json::Array descriptions;size_t sourceBytes=0;
   std::set<std::string> binaryProviders;
-  for(const auto &name:selected)for(const auto &[dep,link]:components.at(name).dependencies)if(link=="static")binaryProviders.insert(dep);
+  for(const auto &name:selected)for(const auto &[dep,link]:components.at(name).dependencies)if(link=="static"||link=="dynamic")binaryProviders.insert(dep);
   for(const auto &name:order) {
     if(!selected.contains(name))continue;const auto &c=components.at(name);
     auto program=loadProgram((root/c.entry).string(),root.string());llvm::json::Array sources;
@@ -157,23 +169,27 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       }
       sources.push_back(Object{{"path",key},{"module",unit.module},{"component",from.empty()?llvm::json::Value(nullptr):llvm::json::Value(from)},{"source_hash",hash(unit.source)},{"imports",std::move(imports)}});
     }
-    BuildOptions native;native.profile=configuration.profile;native.entry=c.function;native.libraryEntry=c.kind=="static_library";native.toolchain=configuration.toolchain;
+    BuildOptions native;native.profile=configuration.profile;native.entry=c.function;native.libraryEntry=c.kind=="static_library"||c.kind=="shared_library";native.toolchain=configuration.toolchain;
     native.libraryExports=c.exports;native.projectLibraryABI=c.kind!="source"&&c.kind!="web";
-    native.codeOnlyLibrary=binaryProviders.contains(name);
+    native.codeOnlyLibrary=binaryProviders.contains(name)||c.kind=="shared_library"||(c.kind=="static_library"&&dynamicClosure.at(name));
+    native.positionIndependent=sharedSelected;
+    native.deferredLink=c.kind=="shared_library"||((c.kind=="executable"||c.kind=="server")&&dynamicClosure.at(name));
+    native.functionsOnly=native.deferredLink&&c.kind=="executable";
     native.target=c.kind=="server"?"server":configuration.target;
     llvm::json::Value toolchain=nullptr,web=nullptr;
     if(c.kind=="web")web=inspectWebApp(program);
     else if(c.kind!="source") {
       auto abiOptions=native;abiOptions.target=configuration.target;auto declared=configureNative(abiOptions);auto actual=configureNative(native);
+      llvm::Triple imageABI(actual.target);if(sharedSelected&&!imageABI.isMacOSX()&&!imageABI.isOSLinux())fail("shared project images currently require macOS or Linux targets","E_PROJECT_CAPABILITY");
       if(declared.target!=actual.target)fail("server target requires a matching explicit toolchain for this configuration","E_TARGET");
       auto captured=inspectNativeToolchain(native);toolchain=Object{{"hash",captured.hash},{"target",captured.target},{"host_compatible",captured.hostCompatible}};
       validateNativeBuildEntry(program,native);
-      if(c.kind=="static_library"&&owner(program.units.at(program.function(c.function).unit).path)!=name)fail("library entry must be owned by "+name,"E_PROJECT_EXPORT");
+      if((c.kind=="static_library"||c.kind=="shared_library")&&owner(program.units.at(program.function(c.function).unit).path)!=name)fail("library entry must be owned by "+name,"E_PROJECT_EXPORT");
       for(const auto &entry:c.exports){const auto &f=program.function(entry);if(!f.exported||owner(program.units.at(f.unit).path)!=name)fail("library exports must be public concrete functions owned by "+name,"E_PROJECT_EXPORT");}
     }
     Object dependencies;for(const auto &[dep,link]:c.dependencies)dependencies[dep]=link;
     llvm::json::Array exports;for(const auto &entry:c.exports)exports.push_back(program.function(entry).name);
-    auto description=llvm::json::Value(Object{{"name",name},{"kind",c.kind},{"root",c.root},{"entry",c.entry},{"entry_function",c.function.empty()?llvm::json::Value(nullptr):llvm::json::Value(program.function(c.function).name)},{"exports",std::move(exports)},{"code_only_library",native.codeOnlyLibrary},
+    auto description=llvm::json::Value(Object{{"name",name},{"kind",c.kind},{"root",c.root},{"entry",c.entry},{"entry_function",c.function.empty()?llvm::json::Value(nullptr):llvm::json::Value(program.function(c.function).name)},{"exports",std::move(exports)},{"code_only_library",native.codeOnlyLibrary},{"position_independent",native.positionIndependent},{"shared_runtime_image",native.deferredLink},
       {"dependencies",std::move(dependencies)},{"revision",revision(program)},{"source_bundle_hash",hash(json(sourceBundle(program),false))},{"sources",std::move(sources)},
       {"native_toolchain",std::move(toolchain)},{"web_projection",std::move(web)}});
     prepared.push_back({name,std::move(program),std::move(native),std::move(description)});
@@ -192,7 +208,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   for(auto &item:prepared){
     const auto &c=components.at(item.name);if(c.kind=="source"||c.kind=="web")continue;
     std::set<std::string> binaries,walked;
-    std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static")binaries.insert(dep);gather(dep);}};gather(item.name);
+    std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static"||link=="dynamic")binaries.insert(dep);gather(dep);}};gather(item.name);
     std::map<std::string,fs::path> moduleOrigins;
     auto origins=[&](const Program &p){for(const auto &[key,u]:p.units){(void)key;auto physical=fs::weakly_canonical(u.path);auto [found,inserted]=moduleOrigins.emplace(u.module,physical);if(!inserted&&found->second!=physical)fail("linked module identity resolves to different files: "+u.module,"E_PROJECT_ABI");}};
     origins(item.program);for(const auto &name:binaries)origins(byName.at(name)->program);
@@ -234,31 +250,44 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   auto cache=fs::absolute(options.directory.empty()?(root/".nex/build").string():options.directory);
   llvm::json::Array artifacts;
   std::map<std::string,BuildResult> nativeResults;
-  // All selected source closures, import edges and entry contracts were checked
-  // above. Build consumes those captured Programs, not subsequently edited files.
+  std::map<std::string,llvm::json::Value> webResults;
   for(auto &item:prepared) {
     const auto &c=components.at(item.name);if(c.kind=="source")continue;
-    if(c.kind=="web") {
-      auto result=buildWebApp(item.program,cache.string(),configuration.profile);
-      artifacts.push_back(Object{{"component",item.name},{"kind","web"},{"result",std::move(result)}});
-    } else {
-      auto expected=item.description.getAsObject()->getObject("native_toolchain")->getString("hash")->str();
-      if(inspectNativeToolchain(item.options).hash!=expected)fail("native toolchain changed after project planning","E_PROJECT_INPUT_CHANGED");
-      std::set<std::string> binaries,walked;
-      std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static")binaries.insert(dep);gather(dep);}};gather(item.name);
-      // A caller archive precedes its dependency archives for one-pass linkers.
-      for(auto name=order.rbegin();name!=order.rend();++name)if(binaries.contains(*name)){
-        const auto &dependency=nativeResults.at(*name);
-        item.options.libraries.push_back({dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts});
-      }
-      auto built=build(item.program,cache.string(),item.options);
-      nativeResults[item.name]=built;
-      artifacts.push_back(Object{{"component",item.name},{"kind",c.kind},{"artifact",built.executable},{"cached",built.cached},{"build_key",built.key},
-        {"target",built.target},{"compiler_target",built.compilerTarget},{"host_compatible",built.hostCompatible},{"metadata",(fs::path(built.executable).parent_path()/"build.json").string()},
-        {"debug_manifest",(fs::path(built.executable).parent_path()/"debug.json").string()},{"notices",built.notices},{"compilation",built.compilation}});
+    if(c.kind=="web"){webResults.emplace(item.name,buildWebApp(item.program,cache.string(),configuration.profile));continue;}
+    auto expected=item.description.getAsObject()->getObject("native_toolchain")->getString("hash")->str();
+    if(inspectNativeToolchain(item.options).hash!=expected)fail("native toolchain changed after project planning","E_PROJECT_INPUT_CHANGED");
+    std::set<std::string> binaries,walked;
+    std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static"||link=="dynamic")binaries.insert(dep);gather(dep);}};gather(item.name);
+    for(auto name=order.rbegin();name!=order.rend();++name)if(binaries.contains(*name)){
+      const auto &dependency=nativeResults.at(*name);
+      item.options.libraries.push_back({dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts});
     }
+    nativeResults[item.name]=build(item.program,cache.string(),item.options);
+  }
+  std::map<std::string,std::vector<std::string>> staticFrontiers,dynamicImages;
+  std::set<std::string> imageStages;
+  for(const auto &item:prepared) {
+    const auto &c=components.at(item.name);if(c.kind=="source"||c.kind=="web")continue;
+    if(!item.options.deferredLink&&!(c.kind=="static_library"&&dynamicClosure.at(item.name)))continue;
+    imageStages.insert(item.name);std::set<std::string> statics,dynamics,seen,seenDynamic;
+    std::function<void(const std::string&)> nested=[&](const auto &name){if(!seenDynamic.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic")dynamics.insert(dep);nested(dep);}};
+    std::function<void(const std::string&)> frontier=[&](const auto &name){if(!seen.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic"){dynamics.insert(dep);nested(dep);}else{if(link=="static")statics.insert(dep);frontier(dep);}}};frontier(item.name);
+    for(auto n=order.rbegin();n!=order.rend();++n)if(statics.contains(*n))staticFrontiers[item.name].push_back(*n);
+    for(const auto &n:order)if(dynamics.contains(n))dynamicImages[item.name].push_back(n);
+    imageStages.insert(statics.begin(),statics.end());
+  }
+  std::vector<NativeImageInput> imageInputs;
+  for(const auto &item:prepared)if(imageStages.contains(item.name))imageInputs.push_back({item.name,components.at(item.name).kind,&item.program,item.options,nativeResults.at(item.name),staticFrontiers[item.name],dynamicImages[item.name]});
+  NativeImageResults images;if(!imageInputs.empty())images=buildNativeImages(cache.string(),imageInputs);
+  for(const auto &item:prepared){
+    const auto &c=components.at(item.name);if(c.kind=="source")continue;
+    if(c.kind=="web"){artifacts.push_back(Object{{"component",item.name},{"kind","web"},{"result",std::move(webResults.at(item.name))}});continue;}
+    const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);
+    artifacts.push_back(Object{{"component",item.name},{"kind",c.kind},{"artifact",built.executable},{"cached",built.cached},{"build_key",built.key},
+      {"target",built.target},{"compiler_target",built.compilerTarget},{"host_compatible",built.hostCompatible},{"metadata",(fs::path(built.executable).parent_path()/"build.json").string()},
+      {"debug_manifest",(fs::path(built.executable).parent_path()/"debug.json").string()},{"notices",built.notices},{"compilation",built.compilation}});
   }
   return Object{{"schema","nex.project-build-result/1"},{"ok",true},{"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},
-    {"graph_store_opened",false},{"external_tools_invoked",true},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+    {"native_runtime_image",std::move(images.runtime)},{"graph_store_opened",false},{"external_tools_invoked",true},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
 }
 }

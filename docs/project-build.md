@@ -56,7 +56,7 @@ that component and cannot bypass architecture checks.
 
 For each loaded import crossing component roots, the importing component must
 declare that **direct** dependency. A transitive dependency does not authorize a
-direct import. Source dependencies may target `source` or `static_library` components;
+direct import. Source dependencies may target `source`, `static_library` or `shared_library` components;
 applications/servers/web components cannot serve as libraries. Dependency cycles,
 unknown names and overlapping roots are rejected even outside the selected
 closure. Only selected source closures are parsed/checked; an unrelated
@@ -70,6 +70,7 @@ effect, realm, import-containment and dependency-lock checks still apply.
 | `source` | Checked reusable source; no separate artifact | Source module |
 | `executable` | Native executable | `entry_function`, default `main` |
 | `static_library` | Native GNU archive, `libnex.a` | Required `entry_function`; current trusted runtime ABI |
+| `shared_library` | macOS dylib or Linux shared object (candidate0.74) | Required `entry_function`; same private runtime ABI |
 | `server` | Native HTTP server | `entry_function`, default `handle`; existing HTTP contract |
 | `web` | TypeScript/React/Vite application and static assets | Existing initial/update/view/title contract |
 
@@ -77,7 +78,7 @@ A `"source"` edge compiles the reachable checked dependency source into its
 consumer. A `"static"` edge requires a `static_library` provider and a native
 consumer (executable, server or another static library). It consumes the actual
 archive and excludes matching definitions from consumer compilation. Source/web
-components cannot consume archives. Dependencies are built before consumers;
+components cannot consume native binaries. Dependencies are built before consumers;
 the linker receives archives in caller-before-provider order.
 
 ```json
@@ -143,6 +144,57 @@ and validate the same additional files when moving a build. This is a native
 artifact format extension, not a source-language migration. Historical
 completion records without these fields keep their six-file binding contract.
 
+## Shared native images (candidate0.74)
+
+A `"dynamic"` edge requires a `shared_library` provider and a native consumer.
+The selected shared-image domain is built as PIC under one target, profile and
+private compiler/runtime ABI. Native compiler, archiver, linker, debug packager
+and selected dependency bytes participate in its toolchain fingerprint. Inputs
+are checked again before/after tools; a changed fingerprint rejects the build.
+macOS and Linux are supported targets for this build path; Windows DLL output
+and iOS shared images remain pending.
+
+```json
+"core": {
+  "kind": "shared_library", "root": "core", "entry": "core/value.nex",
+  "entry_function": "calculate"
+},
+"app": {
+  "kind": "executable", "root": "app", "entry": "app/main.nex",
+  "dependencies": {"core": "dynamic"}
+}
+```
+
+The compiler stages actual NEX function archives, then links each shared image
+and the application without recompiling provider source. A static dependency
+frontier is absorbed into its owning image; a dynamic edge links a separate
+image. Generic specializations absent from a provider remain explicit consumer
+instantiations. One common runtime supplies managed values, file resources,
+profiling and cleanup across the whole shared-image domain. Standalone programs
+outside that domain retain their ordinary runtime link.
+
+Shared images have content-keyed basenames and relative loader paths. Each final
+artifact captures its complete first-party image closure in `images/`, including
+the common runtime and native symbols. Its metadata records hashes, SHA-256 and
+UUID/build IDs. `compilation.json` distinguishes actual captured static link
+inputs from the earlier staging binary inputs. The final executable, rather
+than a staging archive, owns application/profile identity. Unrelated application
+body edits do not force unchanged providers or runtime to relink.
+
+These images use `nex.native-completion/3`: typed ABI/link-input/object records,
+then ordered static archives, sorted owned images and sorted owned symbol files.
+The bounded relative path inventory rejects traversal, arbitrary libraries,
+duplicates and reordered records. Earlier completion/2 and legacy six-file
+records remain readable. This changes native artifacts, not source syntax or
+language history.
+
+Build output is not a deployment package. Keep the full `images/` directory
+beside its executable; external system dependencies retain their platform/notice
+requirements. Automatic shared-image packaging, core inspection/capsules for shared images,
+Windows DLLs and combined project run/test/debug/task commands remain pending.
+Do not pass a project app through an ordinary source command expecting the
+declared binary architecture to survive that independent compilation.
+
 The selected configuration supplies `profile` (`debug`, `profile`, `release`),
 native `target` (default `native`) and optional relative `toolchain` description.
 Component kind selects web/server output; target selects a native CPU/OS ABI.
@@ -178,7 +230,7 @@ fails; a multi-artifact build is not a filesystem transaction.
 
 An executable is not a fully static executable. System/runtime libraries can
 remain dynamic. The plan/result explicitly leave binary dependency inspection
-unproven. General NEX DLL/so/dylib output and consumption, binary-only packages, a stable
+unproven. Windows DLL output/consumption, binary-only packages, a stable
 cross-version export ABI, full-static policies and resolved operating-system
 binary dependency reports remain pending. Unsupported linkage/kinds fail with
 `E_PROJECT_CAPABILITY`.

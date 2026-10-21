@@ -37,6 +37,7 @@
 #include <random>
 #include <tuple>
 #include <limits>
+#include <regex>
 
 namespace nex {
 namespace {
@@ -701,6 +702,8 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool server=options.target=="server";
   if(options.deferredLink&&(!options.positionIndependent||!options.projectLibraryABI))
     throw Error("E_OPTION","deferred native linking requires PIC and the checked project ABI");
+  if(options.functionsOnly&&(!options.deferredLink||options.libraryEntry))
+    throw Error("E_OPTION","function-only staging requires a deferred executable");
   if(server){
     const auto &handler=p.function(options.entry);
     if(handler.realm!="server"||handler.test||handler.params.size()!=1||handler.params[0].type!=Type::record("std::http::Request")||handler.result!=Type::record("std::http::Response"))throw Error("E_HTTP_SIGNATURE","server entry must be server fn handle(std::http::Request) -> std::http::Response",handler.span);
@@ -722,6 +725,47 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
   auto schema=metadata.get("completion_schema"),inputs=metadata.get("completion_inputs");
   if(!schema&&!inputs)return {};
   auto values=inputs?inputs->getAsArray():nullptr;
+  if(schema&&schema->getAsString()=="nex.native-completion/3"){
+    auto invalid=[](){throw Error("E_CORE_BUILD","invalid native image completion input path/kind/order");};
+    if(!values||values->size()<4||values->size()>1024)invalid();
+    std::vector<std::string> result;size_t next=0;
+    auto take=[&](const std::string &kind,const std::string &path){
+      const auto *o=(*values)[next++].getAsObject();
+      if(!o||o->size()!=2||o->getString("kind")!=kind||o->getString("path")!=path)invalid();
+      result.push_back(path);
+    };
+    take("abi","library-abi.json");take("link_inputs","image-inputs.json");take("objects","objects.a");
+    auto kind=[&](){auto *o=(*values)[next].getAsObject();return o?o->getString("kind").value_or(""):llvm::StringRef();};
+    size_t archives=0;
+    while(next<values->size()&&kind()=="static_library"){
+      if(archives>=128)invalid();take("static_library","libraries/"+std::to_string(archives++)+".a");
+    }
+    static const std::regex image("images/(libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\\.(so|dylib))");
+    std::set<std::string> images;std::string previous;
+    while(next<values->size()&&kind()=="owned_image"){
+      auto path=(*values)[next].getAsObject()->getString("path");
+      if(!path||!std::regex_match(path->str(),image)||path->str()<=previous||images.size()>=129)invalid();
+      previous=path->str();images.insert(previous);take("owned_image",previous);
+    }
+    if(images.empty())invalid();previous.clear();
+    while(next<values->size()){
+      auto *o=(*values)[next].getAsObject();auto path=o?o->getString("path"):std::nullopt;
+      if(!path||path->str()<=previous)invalid();previous=path->str();bool allowed=false;
+      for(const auto &owned:images){
+        if(!owned.ends_with(".dylib"))continue;
+        auto prefix=owned+".dSYM/Contents/",basename=std::filesystem::path(owned).filename().string();
+        allowed|=previous==prefix+"Info.plist"||previous==prefix+"Resources/DWARF/"+basename;
+        auto relocation=prefix+"Resources/Relocations/";
+        if(previous.starts_with(relocation)){
+          auto tail=previous.substr(relocation.size());auto slash=tail.find('/');
+          allowed|=slash!=std::string::npos&&slash>0&&tail.substr(slash+1)==basename+".yml"&&
+            std::all_of(tail.begin(),tail.begin()+slash,[](char c){return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_';});
+        }
+      }
+      if(!allowed)invalid();take("owned_symbols",previous);
+    }
+    return result;
+  }
   if(!schema||schema->getAsString()!="nex.native-completion/2"||!values||values->empty()||values->size()>129)
     throw Error("E_CORE_BUILD","invalid native completion input schema/limit");
   std::vector<std::string> result;
@@ -736,6 +780,9 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
   auto host=llvm::sys::getDefaultTargetTriple();
   auto toolchain=configureNative(options);auto target=toolchain.target;
+  auto toolchainFingerprint=options.projectLibraryABI||options.deferredLink?inspectNativeToolchain(options).hash:std::string();
+  auto verifyToolchain=[&](){if(!toolchainFingerprint.empty()&&inspectNativeToolchain(options).hash!=toolchainFingerprint)
+    throw Error("E_PROJECT_INPUT_CHANGED","native toolchain changed while building checked project component");};
   bool server=options.target=="server";
   validateNativeBuildEntry(p,options);
   llvm::Triple configuredABI(toolchain.target);
@@ -840,8 +887,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     capturedLibraries.push_back(std::move(bytes));libraryInputs.push_back(llvm::json::Object{{"path",library.path},{"hash",library.digest},{"abi",library.abi},{"contracts",std::move(contracts)}});
   }
   llvm::json::Array exportInputs;for(const auto &entry:options.libraryExports)exportInputs.push_back(entry);
-  std::string linkageIdentity=json(llvm::json::Object{{"project_library_abi",options.projectLibraryABI},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"code_only",options.codeOnlyLibrary},{"exports",std::move(exportInputs)},{"libraries",llvm::json::Array(libraryInputs)}},false);
-  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET")+linkageIdentity);
+  std::string linkageIdentity=json(llvm::json::Object{{"project_library_abi",options.projectLibraryABI},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"functions_only",options.functionsOnly},{"code_only",options.codeOnlyLibrary},{"exports",std::move(exportInputs)},{"libraries",llvm::json::Array(libraryInputs)}},false);
+  std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET")+linkageIdentity);
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
   auto buildRoot=std::filesystem::absolute(directory);auto plan=planNative(p,options.entry,options.libraryExports,options.projectLibraryABI);
   BuildResult result{(folder/(options.deferredLink?"objects.a":options.libraryEntry?"libnex.a":windows?"app.exe":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible,0,0,false,{},{}};
@@ -891,7 +938,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(auto &[unitKey,unit]:codeSnapshot.units)unit.path=debugAnchors.at(unitKey);
   codeSnapshot.path=debugAnchors.at(snapshot.units.empty()?"":snapshot.entryUnit);
   auto nativeSeed=json(llvm::json::Object{{"schema","nex.native-toolchain/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},
-    {"position_independent",options.positionIndependent},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
+    {"position_independent",options.positionIndependent},{"toolchain_fingerprint",toolchainFingerprint},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
     {"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false);
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   result.libraryABI=hash(nativeSeed+coreABI);
@@ -919,7 +966,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));
     if(unit.foreign)for(const auto &file:{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.files)for(const auto &file:{"files_runtime.cpp","nex_files.h","nex_file_abi.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
-    auto wrapper=!options.libraryEntry&&!server&&unit.functions.contains(p.function(options.entry).name)?p.function(options.entry).name:"";
+    auto wrapper=!options.libraryEntry&&!server&&!options.functionsOnly&&unit.functions.contains(p.function(options.entry).name)?p.function(options.entry).name:"";
     unitInputs.push_back(llvm::json::Object{{"schema","nex.native-unit/2"},{"toolchain_key",hash(nativeSeed)},{"semantic_key",hash(unit.contract)},
       {"source_hash",hash(unit.source)},{"debug_path",source},{"runtime_abi_key",hash(runtimeABI)},{"wrapper_entry",wrapper}});
     auto unitKey=hash(json(unitInputs.back(),false));unitKeys.push_back(unitKey);
@@ -955,7 +1002,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     return hash(contents)+"\n";
   };
   auto buildIntact=[&](){try{return readFile((folder/"complete").string())==completion();}catch(const std::exception &){return false;}};
-  if(buildIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=plan.units.size();return result;}
+  if(buildIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){verifyToolchain();result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=plan.units.size();return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
   auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
@@ -970,7 +1017,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(snapshot.units.empty()){captureFile(snapshot.path,snapshot.source);writeFile((folder/"source.nex").string(),snapshot.source);}
   writeFile(debugFile,debugText);writeFile(formatterFile,formatter);writeFile(adapterFile,dapAdapter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
-  auto mlir=Emitter(snapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server,&localNames,&names,options.projectLibraryABI);writeFile(result.mlir,mlir);
+  auto mlir=Emitter(snapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -979,7 +1026,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server,&unit.functions,&names,options.projectLibraryABI);
+        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
@@ -998,12 +1045,12 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       {"cache_record",(buildRoot/"native-cache"/(unitKeys[i]+".json")).string()},{"source",snapshot.units.contains(unit.unit)?snapshot.units.at(unit.unit).path:snapshot.path}});
   }
   result.compiledModules=compiledSourceUnits.size();result.reusedModules=sourceUnits.size()-compiledSourceUnits.size();
-  writeFile(result.llvm,linkIR(unitArtifacts,snapshot.path));
+  writeFile(result.llvm,unitArtifacts.empty()&&options.functionsOnly?lower(mlir,snapshot.path,compilerTarget,dataLayout):linkIR(unitArtifacts,snapshot.path));
   writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity","function"},{"revision",revision(p)},{"build_key",key},
     {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)},{"static_libraries",llvm::json::Array(libraryInputs)}})+"\n");
   for(const auto &component:components){
     if(options.codeOnlyLibrary||options.deferredLink)continue;
-    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
     auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
     std::filesystem::create_directories(cache);
     if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
@@ -1095,7 +1142,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   llvm::json::Object runtimeInputs;for(const auto &[file,contents]:runtimeFiles)runtimeInputs[file]=hash(contents);
   llvm::json::Object functionContracts;for(const auto &[name,digest]:result.functionContracts)functionContracts[name]=digest;
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Object{{"schema","nex.native-library-abi/1"},{"abi",result.libraryABI},{"compiler_build",NEX_BUILD_ID},{"target",target},{"code_only",options.codeOnlyLibrary},{"function_contracts",std::move(functionContracts)},{"static_libraries",llvm::json::Array(libraryInputs)}})+"\n");
-  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema","nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}}));
-  writeFile((folder/"complete").string(),completion());return result;
+  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema","nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}}));
+  verifyToolchain();writeFile((folder/"complete").string(),completion());return result;
 }
 }

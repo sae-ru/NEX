@@ -2,6 +2,8 @@
    nex.build.json metadata, not language syntax or a version migration. *)
 (* NEX 0.16. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain0.73 native application lifetime adds no syntax or migration. *)
+(* Toolchain0.74 shared native project images are external build metadata;
+   language0.16 source grammar and canonical identities are unchanged. *)
 (* Toolchain 0.60 scalar Wasm uses this same syntax; target restrictions are semantic. *)
 (* Toolchain 0.61 iOS archives use this syntax unchanged; SDK/ABI selection is external. *)
 (* Toolchain0.62 mobile projects reuse the web contract without syntax changes. *)

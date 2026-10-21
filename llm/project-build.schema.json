@@ -38,6 +38,7 @@
               "source",
               "executable",
               "static_library",
+              "shared_library",
               "server",
               "web"
             ]
@@ -62,7 +63,8 @@
             "additionalProperties": {
               "enum": [
                 "source",
-                "static"
+                "static",
+                "dynamic"
               ]
             }
           },
@@ -82,7 +84,10 @@
             "if": {
               "properties": {
                 "kind": {
-                  "const": "static_library"
+                  "enum": [
+                    "static_library",
+                    "shared_library"
+                  ]
                 }
               }
             },
@@ -120,7 +125,10 @@
             "then": {
               "properties": {
                 "kind": {
-                  "const": "static_library"
+                  "enum": [
+                    "static_library",
+                    "shared_library"
+                  ]
                 }
               }
             }
@@ -178,5 +186,5 @@
       "pattern": "^[^\\\\:\\u0000]+$"
     }
   },
-  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume code-only native archives under the exact compiler/toolchain/runtime ABI with checked function/type context and explicit generic instantiation. Shared libraries, GPU/NPU source adapters, binary-only packages and full-static executable policy remain pending."
+  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume checked native archives. Dynamic edges consume separately linked shared libraries and one common runtime on macOS/Linux. All binary edges require exact compiler/toolchain/runtime ABI, checked source and explicit generic instantiation. Shared-image packaging/core relocation, Windows DLLs, source GPU/NPU adapters, binary-only packages and full-static executable policy remain pending."
 }

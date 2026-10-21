@@ -118,7 +118,7 @@ client fn title()->str{return "Project browser";}
         for value,code in [('static','E_PROJECT_CAPABILITY'),('dynamic','E_PROJECT_CAPABILITY'),(True,'E_PROJECT_CAPABILITY')]:
             self.description=copy.deepcopy(base);self.description['components']['app']['dependencies']['core']=value;self.save()
             self.assertEqual(self.plan('--kind','build',ok=False)['code'],code)
-        self.description=copy.deepcopy(base);self.description['components']['bridge']['kind']='shared_library';self.save()
+        self.description=copy.deepcopy(base);self.description['components']['bridge']['kind']='dll';self.save()
         self.assertEqual(self.plan(ok=False)['code'],'E_PROJECT_CAPABILITY')
         self.description=copy.deepcopy(base);self.description['execution']={'device':'npu'};self.save()
         self.assertEqual(self.plan(ok=False)['code'],'E_PROJECT_BUILD');self.assertFalse((self.root/'.nex').exists())

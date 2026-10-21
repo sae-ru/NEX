@@ -56,6 +56,11 @@ canonical formats are unchanged. Source remains required for checking.
 
 ## Source and program structure
 
+Toolchain0.74 project `shared_library` components and `dynamic` edges are external
+build metadata. They preserve language0.16, checked ownership, effects, realms
+and canonical identities. They require matching private native ABIs and source
+for checking. See [project builds](project-build.md) for platform/tooling limits.
+
 Toolchain0.73 adds a native application ownership boundary. Normal returns and
 checked failures release the application's managed values and registered
 runtime resources before process exit; checked failures retain exit70 and their

@@ -91,6 +91,8 @@ JSON inspectCore(const CoreOptions &options){
     if(!recorded.is_absolute()||recorded.lexically_normal()!=recorded||recorded.filename()!="app"||recorded.parent_path().filename()!=folder.filename())throw Error("E_CORE_CAPSULE","relocated core requires its original executable build key");
   }
   auto build=read(folder/"build.json",8*1048576);const auto &b=object(build);
+  if(b.getString("completion_schema")=="nex.native-completion/3")
+    throw Error("E_CORE_BUILD","core inspection of shared project images is pending; retain the complete native build and matching SDK");
   for(const auto *key:{"revision","compiler_build","profile","target"})if(required(b,key)!=required(m,key))throw Error("E_CORE_BUILD",std::string("debug/build identity differs: ")+key);
   if(required(b,"key")!=required(m,"build_key")||b.getString("kind")=="static_library")throw Error("E_CORE_BUILD","core build key/kind differs");
   // The retained completion record binds executable, IR, compilation metadata

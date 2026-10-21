@@ -18,6 +18,9 @@ struct BuildOptions {
   // entry validation/main emission, but retain only PIC NEX objects; a final
   // linker owns runtime, bridge and application/profile identity exactly once.
   bool positionIndependent = false, deferredLink = false;
+  // A final image linker owns its C++ entry thunk. Entry validation remains
+  // executable-specific while reusable NEX function objects omit LLVM main.
+  bool functionsOnly = false;
   std::vector<std::string> libraryExports;
   std::vector<NativeLibraryInput> libraries;
 };

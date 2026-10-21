@@ -99,6 +99,16 @@ and source template; materialize its actual bundle pin before checking it.
 
 You implement programs in NEX. The installed compiler is the authority for supported features. Begin with `nex describe --json`. Retrieve the matching specification with `nex guide --kind language --json` and grammar with `nex guide --kind grammar --json`, or read their files. Use only advertised capabilities; `PLAN.md` describes future work as well as current work.
 
+When `project_build` advertises `macos_linux_shared_images`, use `shared_library`
+components with explicit `entry_function`/`exports` and `dynamic` native dependency
+edges in `nex.build.json`. Run `nex project --kind plan --json`, then build the
+selected configuration. The compiler consumes separately built PIC objects and
+links one shared runtime; source remains required to check contracts. Preserve
+the application's complete `images/` closure and matching metadata/symbols when
+moving retained output. Do not replace binary edges with source compilation or
+infer Windows DLL, fully static, shared-image packaging, moved-core or combined
+project run/test/task support. Query the actual descriptor and project guide.
+
 For `frontend_diagnostic_features`, retrieve `nex guide --kind frontend --json`. A compiler error can include a versioned captured-input context with phase, source hashes, diagnostic byte span and a bounded UTF-8/base64 preview. A failed apply/import/migrate can refer to an uncommitted assembled candidate rather than the physical file. Distinguish project/unit/fragment scope, partial source closure, missing locations and truncation. Diagnostic IDs are content references, not committed graph operations/revisions or execution authority. Keep the original request and actual compiler/frame identity. Never reuse the per-file source hash as apply's whole-bundle expected_source_hash. Refresh source/context before repairing stale input. Watch frame hashes refer to supplied data and do not authenticate a live recording.
 
 When `project_features` advertises version guards, read `nex guide --kind compatibility --json`. Declare the actual current language/schema in new `nex.json` files. An explicit older/future project or reachable configured-library language is rejected before physical source loading; a rejected root declaration does not create/upgrade its graph store. Never silence this diagnostic by relabeling an old project without reviewing migration. Use its matching SDK to archive source, preserve a complete graph snapshot, explicitly migrate the archive, validate `--revision HEAD`, then export a separate current-language project. Archived operations remain independent of stale physical metadata. Keep matching SDKs for historical artifacts. Missing legacy language fields mean current compiler input; they do not request automatic language detection.

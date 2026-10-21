@@ -1,14 +1,20 @@
-# Development cohort0.73 (not integrated)
+# Development cohort0.74 (not integrated)
 
-The compiler-private PIC stage and shared runtime/profiler tests are extended
-with an application ownership boundary. Checked standalone failures now unwind
-host temporaries and owned values before returning70, while request grants and
-budgets remain explicit. A0.72 installed-SDK reproducer retains one handle and
-three objects after division by zero; the new boundary passes managed-value and
-shared-image focused tests. Final0.73 regression, SDK and target validation are
-pending. The verified integrated0.72 root and complete graph history are intact.
-General shared-library project output, combined project execution flows,
-concurrency, accelerators and other full-goal work remain pending.
+The0.74 candidate links macOS/Linux project `shared_library` components and
+`dynamic` edges from actual checked PIC archives. One content-keyed shared
+runtime supplies ownership and profiling across the images. The final app
+captures its first-party image/symbol closure and owns application/profile
+identity. Regression, SDK and platform validation of0.74 remain in progress.
+Shared-image packaging, moved core capsules, Windows DLLs, combined project
+execution, concurrency and general accelerator adapters remain pending.
+
+Its final765-file0.73 foundation passes82 CTest groups and installed SDK24 on
+macOS and Linux ARM64; Linux also passes17 live suites. Windows x64/Wine runs
+six ownership/control cases. Constructor allocation fault injection passes with
+ASan; the retained old implementation reproduces its use-after-free. These
+results belong to0.73, not the unaccepted0.74 implementation. Further0.73 IDE,
+strict compatibility/cross and integration gates remain pending. The verified
+integrated0.72 root and complete graph history are intact.
 
 # Verified root development checkpoint0.72 / language0.16
 
