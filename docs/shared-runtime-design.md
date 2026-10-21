@@ -53,3 +53,20 @@ tested executable identity binding. Packaging must preserve configured library
 closure, licenses and relative loader paths without granting a notice bypass
 for arbitrary images. Combined project run/test/debug/profile/package/task
 flows and actual target execution remain required before full acceptance.
+
+The next runtime cohort tests a shared-profiler identity policy. A runtime
+compiled with `NEX_SHARED_PROFILE_RUNTIME` has a weak null host identity;
+the final executable can override it with a strong exact identity. An unbound
+trusted host emits JSON `build: null`. Legacy static profiling archives keep
+their strong archived identity reference, so archive extraction behavior and
+existing hosted profiling remain intact. `nex profile` continues to reject
+reports without its exact selected build/revision. Shared project linking and
+its final image provenance remain pending.
+
+Application handle registration is transactional. Profiling allocation is
+completed before linking a handle into its application scope. A failing request
+registry insertion rolls back the profiling record before propagating the error.
+Deterministic allocator-failure probes cover both boundaries and C++ temporary
+unwinding; an ASan negative control retains the earlier dangling-registration
+failure. Ordinary successful returns still diagnose leaked handles, then clean
+their ownership boundary rather than silently accepting a compiler leak.

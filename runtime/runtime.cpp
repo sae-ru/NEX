@@ -18,6 +18,8 @@ extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{
 namespace nexrt {
 namespace {
 thread_local RequestScope *currentRequest=nullptr;
+struct ApplicationState {Handle *head=nullptr;};
+thread_local ApplicationState *currentApplication=nullptr;
 std::atomic<int64_t> liveHandles{0};
 thread_local std::vector<void(*)() noexcept> resourceCleanups;
 }
@@ -30,9 +32,38 @@ void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=res
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
-  explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){if(owner)owner->track(this);profileAllocate(this,sizeof(Handle),0);++liveHandles;}
-  ~Handle(){profileFree(this);if(owner)owner->untrack(this);--liveHandles;}
+  ApplicationState *applicationOwner=owner?nullptr:currentApplication;
+  Handle *previous=nullptr,*next=nullptr;
+  explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){
+    // Profiling and request registration can allocate. Never leave a failed
+    // constructor registered as a live handle in either ownership boundary.
+    profileAllocate(this,sizeof(Handle),0);
+    try{if(owner)owner->track(this);}
+    catch(...){profileFree(this);throw;}
+    if(applicationOwner){next=applicationOwner->head;if(next)next->previous=this;applicationOwner->head=this;}
+    ++liveHandles;
+  }
+  ~Handle(){
+    profileFree(this);if(owner)owner->untrack(this);
+    if(applicationOwner){if(previous)previous->next=next;else applicationOwner->head=next;if(next)next->previous=previous;}
+    --liveHandles;
+  }
 };
+namespace {
+// This ownership boundary does not grant request capabilities, budgets or
+// cancellation. CLI file/foreign authorization and hosted RequestScope behavior
+// remain independent. Intrusive tracking allocates no per-handle registry node.
+struct ApplicationScope {
+  ApplicationState state;
+  ApplicationState *previous=currentApplication;
+  ApplicationScope(){currentApplication=&state;}
+  ~ApplicationScope(){
+    profileUnwind();
+    while(state.head)delete state.head;
+    cleanupRuntimeResources();currentApplication=previous;
+  }
+};
+}
 struct RequestScope::Impl {
   std::unordered_set<Handle*> handles;
   ResourceDomain resources;
@@ -118,7 +149,7 @@ void printNativeTrap(const char *code,const char *message,int64_t line,const std
   // Copy while the producing module is leased. Cleanup may unload its image.
   auto source=sourceRecord(location.site);auto line=location.line;
   profileUnwind();
-  if(currentRequest){Trap trap(code,message,line);if(source.empty())throw trap;throw LocatedTrap(trap,std::move(source));}
+  if(currentRequest||currentApplication){Trap trap(code,message,line);if(source.empty())throw trap;throw LocatedTrap(trap,std::move(source));}
   cleanupRuntimeResources();
   std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));printNativeTrap(code,message,line,source);std::exit(70);
 }
@@ -429,6 +460,26 @@ static void impl_nex_runtime_finish(nexrt::SourceLocation location){
 }
 void nex_runtime_finish(){return impl_nex_runtime_finish(nexrt::SourceLocation{});}
 void nex_runtime_finish_at(const nexrt::NativeSite *nex_site){return impl_nex_runtime_finish(nexrt::SourceLocation{0,nex_site});}
+static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *const *argv,nexrt::SourceLocation location){
+  try{
+    nexrt::ApplicationScope scope;
+    if(!entry)nexrt::runtimeFail("E_ENTRY","application entry is absent",location);
+    auto result=reinterpret_cast<int64_t(*)(int64_t,const char *const *)>(entry)(argc,argv);
+    impl_nex_runtime_finish(location);
+    return result;
+  }catch(const nexrt::Trap &trap){
+    std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",trap.code.c_str(),trap.what(),static_cast<long long>(trap.line));
+    auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap);
+    nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located?located->source:std::string());
+  }catch(const std::bad_alloc &){
+    std::fflush(stdout);std::fprintf(stderr,"E_MEMORY: allocation failed\n");
+  }catch(const std::exception &){
+    std::fflush(stdout);std::fprintf(stderr,"E_RUNTIME: application host operation failed\n");
+  }
+  return 70;
+}
+int64_t nex_application_run(void *entry,int64_t argc,const char *const *argv){return impl_nex_application_run(entry,argc,argv,nexrt::SourceLocation{});}
+int64_t nex_application_run_at(void *entry,int64_t argc,const char *const *argv,const nexrt::NativeSite *site){return impl_nex_application_run(entry,argc,argv,nexrt::SourceLocation{0,site});}
 static void impl_nex_poll(nexrt::SourceLocation line){
   return nexrt::hostOperation(line,[&]() -> void {if(nexrt::currentRequest)nexrt::currentRequest->poll(line,false);});
 }

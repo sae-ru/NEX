@@ -22,6 +22,13 @@ def quotient(a,b):
 
 
 class NativeArithmetic(harness.ToolchainCase):
+    def test_application_ownership_adds_no_request_loop_budget(self):
+        self.source('''module unbounded_application;
+fn main()->i64{var i:i64=0;while i<1000100{i=i+1;}return i-1000100;}
+''')
+        run=self.cli('run','--profile','release',timeout=90)
+        self.assertEqual(run['exit_code'],0)
+
     def test_boundary_and_seeded_random_values_agree_across_backends(self):
         randomizer=random.Random(20261018)
         boundaries=[LOW,LOW+1,-(1<<32),-(1<<31),-2,-1,0,1,2,(1<<31)-1,1<<32,HIGH-1,HIGH]

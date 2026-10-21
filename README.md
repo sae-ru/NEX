@@ -12,7 +12,10 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The current source is **toolchain0.72.0 / language0.16**, under development.
+This isolated development source is **toolchain0.73.0 / language0.16**. It adds
+compiler-private PIC object staging, shared-profiler host binding tests and
+application cleanup on checked failures. The integrated0.72 root is retained;
+full0.73 acceptance and public shared-library project linking remain pending.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -26,8 +29,8 @@ explicitly reported generic instantiations. Source remains available to the
 checker. A static edge does not request a fully static executable; general
 DLL/shared-library output and resolved binary dependency reports remain pending.
 
-The actual root passes **80 CTest groups** and installed SDK acceptance of
-**24 phases/348 commands/213 indexed resources**. The same implementation also
+The retained integrated0.72 root passes **80 CTest groups** and installed SDK acceptance of
+**24 phases/348 commands/213 indexed resources**. Its0.72 implementation also
 passes Linux ARM64 full80,17 live suites and source-free/network-disabled SDK24.
 See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashes,
 source cohorts and retained failures. The source language remains0.16; no implicit

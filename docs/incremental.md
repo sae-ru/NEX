@@ -1,6 +1,6 @@
 # Native compilation and toolchains — toolchain 0.28
 
-Current source language is 0.11. The native compiler produces a separate object
+Current source language is 0.16. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
 specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or
@@ -288,3 +288,18 @@ produced 223,808/391,168/259,040-byte executables with equal output. These are
 observations on a shared development host during validation, not general
 performance guarantees. Compiler/source hashes and raw observations are retained
 in the development evidence; broader benchmarks remain pending.
+
+## Application ownership on checked failures
+
+Toolchain0.73 wraps the generated entry with a compiler-private C++ ownership
+boundary. A checked failure unwinds host temporaries and releases live managed
+values from every NEX caller/callee scope before returning process code70.
+Normal returns retain the zero-live-value check and original process status.
+Frozen operation diagnostics and final build identity remain attached. This
+boundary adds no request scope, request budget, implicit file grant or source
+concurrency. Trusted embedding hosts still use explicit RequestScope for calls
+that require fault containment and request cancellation. Forced termination
+may skip cleanup and profile output. Language0.16 and graph histories need no
+migration; native objects use the new matching private runtime/compiler ABI.
+Fallible allocation/profiling/request registration completes before a handle is
+committed to its owner; a failed constructor cannot leave a dangling owner entry.

@@ -494,6 +494,7 @@ public:
     declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
+    declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
     declaration("nex_foreign_invoke","!llvm.ptr, i64, !llvm.ptr, i64","!llvm.ptr");declaration("nex_foreign_configure","i64, !llvm.ptr");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}
@@ -562,11 +563,20 @@ public:
     debug.scope.clear();if(libraryEntry||!names.contains(main.name)){out<<globals.str()<<"}\n";return debug.str()+out.str();}
     selectFunction(main);
     auto all=reachable(p,entry);bool foreign=false;for(const auto &name:all)foreign|=p.function(name).foreign.has_value();
-    out<<(foreign?"  func.func @main(%nex_argc: i32, %nex_argv: !llvm.ptr) -> i32 {\n":"  func.func @main() -> i32 {\n");
-    if(foreign){line("%nex_argc64 = arith.extsi %nex_argc : i32 to i64",main.span);call("nex_foreign_configure",{{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::Unit,main.span);}
-    auto value=call(nativeSymbol(main.name),{},main.result,main.span);call("nex_runtime_finish",{},Type::Unit,main.span);
-    if(main.result==Type::I64){auto n=fresh();line(n+" = arith.trunci "+value.name+" : i64 to i32",main.span);line("func.return "+n+" : i32",main.span);}
-    else{auto n=fresh();line(n+" = arith.constant 0 : i32",main.span);line("func.return "+n+" : i32",main.span);}
+    // C++ owns the application boundary so a runtime failure can unwind host
+    // temporaries and release every live managed handle, including caller scopes.
+    out<<"  func.func private @nex_application_entry(%nex_argc64: i64, %nex_argv: !llvm.ptr) -> i64 {\n";
+    if(foreign)call("nex_foreign_configure",{{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::Unit,main.span);
+    auto value=call(nativeSymbol(main.name),{},main.result,main.span);
+    if(main.result==Type::Unit)value=constant(0,Type::I64,main.span);
+    line("func.return "+value.name+" : i64",main.span);
+    out<<"  }\n  func.func @main(%nex_argc: i32, %nex_argv: !llvm.ptr) -> i32 {\n";
+    line("%nex_argc64 = arith.extsi %nex_argc : i32 to i64",main.span);
+    auto function=fresh(),pointer=fresh();
+    line(function+" = func.constant @nex_application_entry : (i64, !llvm.ptr) -> i64",main.span);
+    line(pointer+" = builtin.unrealized_conversion_cast "+function+" : (i64, !llvm.ptr) -> i64 to !llvm.ptr",main.span);
+    auto status=call("nex_application_run",{{pointer,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::I64,main.span);
+    auto process=fresh();line(process+" = arith.trunci "+status.name+" : i64 to i32",main.span);line("func.return "+process+" : i32",main.span);
     out<<"  }"<<loc(main.span)<<"\n"<<globals.str()<<"}\n";return debug.str()+out.str();
   }
 };

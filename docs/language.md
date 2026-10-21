@@ -56,6 +56,13 @@ canonical formats are unchanged. Source remains required for checking.
 
 ## Source and program structure
 
+Toolchain0.73 adds a native application ownership boundary. Normal returns and
+checked failures release the application's managed values and registered
+runtime resources before process exit; checked failures retain exit70 and their
+source diagnostics. This adds no request grant/budget, syntax, canonical-format
+or language-version change. Explicit trusted C++ request scopes retain their
+existing contract. Forced termination remains outside normal cleanup guarantees.
+
 Source is UTF-8; identifiers currently use ASCII letters, digits, and `_`, beginning with a letter or `_`. Keywords are reserved, except contextual `result`, `endpoint`, `enum`, `match`, `bytes` and `file` described below. `//` starts a line comment. Whitespace and comments have no semantic meaning. Each file contains one module declaration followed by imports, structures, enums, functions, traits, implementations and optional endpoint declarations. Module names may have `::`-separated components. Diagnostic columns count source bytes, and diagnostics include the source file.
 
 ```nex

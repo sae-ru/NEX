@@ -64,5 +64,7 @@ template<class F> Handle *hostValue(SourceLocation line,F operation){
 extern "C" {
 void nex_release(nexrt::Handle *handle);
 void nex_runtime_finish();
+// Compiler-generated application thunk: i64(argc, argv), returning process code.
+int64_t nex_application_run(void *entry,int64_t argc,const char *const *argv);
 void nex_poll(int64_t line);
 }

@@ -1,5 +1,5 @@
 """Real PIC object reuse before a final shared-image link (private build API)."""
-import ctypes,hashlib,json,os,platform,shutil,subprocess,sys,unittest
+import ctypes,hashlib,json,os,platform,shutil,subprocess,sys,tempfile,unittest
 from pathlib import Path
 PROBE=str(Path(sys.argv.pop(2)).resolve())
 import support as harness
@@ -40,10 +40,18 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
     def stage(self,name='app',*,ok=True,**options):
         p=self.run_tool([PROBE,self.root/name/'main.nex',self.cache,json.dumps(options)],ok=ok)
         return json.loads(p.stdout)
-    def closure(self,pic=True,defer=True):
-        a=self.stage('producer',entry='create',exports=['make','decorate','opened','divide'],library=True,code_only=True,pic=pic,defer=defer)
-        b=self.stage('consumer',entry='transform',exports=['invoke','write'],library=True,code_only=True,pic=pic,defer=defer,libraries=[a])
-        app=self.stage(libraries=[b,a],pic=pic,defer=defer)
+    def link_output(self,command,output):
+        # LLVM ELF output writers interpret '%' as a template marker. Keep
+        # literal user paths in inputs/loader policy, and publish the linked
+        # bytes from an owned output path without template characters.
+        with tempfile.TemporaryDirectory(prefix='nex-pic-link-') as temporary:
+            linked=Path(temporary)/output.name
+            self.run_tool([*command,'-o',linked])
+            shutil.copy2(linked,output)
+    def closure(self,pic=True,defer=True,profile="debug"):
+        a=self.stage('producer',entry='create',exports=['make','decorate','opened','divide'],library=True,code_only=True,pic=pic,defer=defer,profile=profile)
+        b=self.stage('consumer',entry='transform',exports=['invoke','write'],library=True,code_only=True,pic=pic,defer=defer,libraries=[a],profile=profile)
+        app=self.stage(libraries=[b,a],pic=pic,defer=defer,profile=profile)
         return {'producer':a,'consumer':b,'app':app}
     def test_entry_validation_and_explicit_pic_are_required_before_staging(self):
         self.assertEqual(self.stage(defer=True,ok=False)['code'],'E_OPTION')
@@ -103,14 +111,24 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
         self.assertEqual(repaired['hash'],staged['app']['hash'])
     @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'shared link test needs Mach-O or ELF')
     def test_real_archives_link_two_dsos_with_one_runtime_and_move(self):
+        self.exercise_shared_link('debug')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'shared profile needs Mach-O or ELF')
+    def test_shared_profile_binds_final_executable_and_keeps_unbound_host_null(self):
+        self.exercise_shared_link('profile')
+    def exercise_shared_link(self,profile):
+        profiling=profile=='profile'
         self.cli('test','--symbol','values');self.cli('test','--symbol','values','--target','web')
-        built=self.closure();meta=json.loads(Path(built['app']['metadata']).read_text())
+        built=self.closure(profile=profile);meta=json.loads(Path(built['app']['metadata']).read_text())
         driver=json.loads(meta['toolchain_inputs'])['driver'];darwin=platform.system()=='Darwin'
         link_driver=driver+(['--ld-path='+meta['linker']] if meta['linker'] else [])
         bundle=self.root/'bundle';lib=bundle/'lib';lib.mkdir(parents=True);(bundle/'bin').mkdir()
         objects=self.root/'objects';objects.mkdir();extension='.dylib' if darwin else '.so'
-        runtime=lib/('libnex_runtime'+extension)
-        libraries={name:lib/('libnex_'+name+extension) for name in ('producer','consumer')}
+        # dyld caches install names process-wide, including libraries loaded by
+        # earlier fixtures. Distinct runtime inputs/profile flags need distinct
+        # image names, as the production final linker will require too.
+        runtime_tag=hashlib.sha256(json.dumps({'inputs':meta['runtime_inputs'],'profile':profile,'target':meta['compiler_target']},sort_keys=True).encode()).hexdigest()[:16]
+        runtime=lib/('libnex_runtime_'+runtime_tag+extension)
+        libraries={name:lib/('libnex_'+name+'_'+built[name]['key'][:16]+extension) for name in ('producer','consumer')}
         def rpath(value):return ['-Xlinker','-rpath','-Xlinker',value]
         def from_archive(artifact,stem):
             destination=objects/stem;destination.mkdir()
@@ -123,14 +141,17 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             return result
         def shared(output,inputs):
             flags=['-dynamiclib'] if darwin else ['-shared','-Xlinker','-z','-Xlinker','defs']
-            self.run_tool(link_driver+flags+list(inputs)+['-Xlinker','-install_name' if darwin else '-soname','-Xlinker',('@rpath/' if darwin else '')+output.name,*rpath('@loader_path' if darwin else '$ORIGIN'),'-g','-o',output])
+            self.link_output(link_driver+flags+list(inputs)+['-Xlinker','-install_name' if darwin else '-soname','-Xlinker',('@rpath/' if darwin else '')+output.name,*rpath('@loader_path' if darwin else '$ORIGIN'),'-g'],output)
         projection=Path(meta['runtime_source_projection']);runtime_objects=[]
         for index,component in enumerate(meta['runtime_components']):
             self.assertNotEqual(component,'http_main.cpp')
             obj=objects/('runtime-'+str(index)+'.o')
-            self.run_tool(driver+['-std=c++20','-c',projection/component,'-I',projection,'-g','-O0','-fPIC','-o',obj])
+            arguments=driver+['-std=c++20','-c',projection/component,'-I',projection,'-g','-O0','-fPIC','-o',obj]
+            if profiling:
+                arguments+=['-D'+flag for flag in ('NEX_PROFILE_ENABLED','NEX_SHARED_PROFILE_RUNTIME','TRACY_ENABLE','TRACY_ON_DEMAND','TRACY_DELAYED_INIT','TRACY_MANUAL_LIFETIME','TRACY_ONLY_LOCALHOST','TRACY_NO_BROADCAST','TRACY_NO_CODE_TRANSFER','TRACY_NO_CALLSTACK','TRACY_NO_SYSTEM_TRACING','TRACY_NO_SAMPLING','TRACY_NO_CRASH_HANDLER','TRACY_NO_FRAME_IMAGE')]+['-pthread']
+            self.run_tool(arguments)
             runtime_objects.append(obj)
-        shared(runtime,runtime_objects)
+        shared(runtime,runtime_objects+(['-pthread']+([] if darwin else ['-ldl']) if profiling else []))
         for name in ('producer','consumer'):
             shared(libraries[name],[*from_archive(built[name]['artifact'],name),*([libraries['producer']] if name=='consumer' else []),runtime])
         first=ctypes.CDLL(str(libraries['producer']));second=ctypes.CDLL(str(libraries['consumer']))
@@ -139,22 +160,53 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
         # The test link has its own explicit identity. Staging receipts do not
         # describe these manually linked images or grant production provenance.
         identity={'schema':'nex.test-shared-link/1','marker':'PIC stage'}
-        source=objects/'identity.cpp';source.write_text('extern "C" const char *nex_application_identity()noexcept{return '+json.dumps(json.dumps(identity))+';}')
+        profile_identity={'schema':'nex.test-profile-link/1','marker':'bound shared PIC runtime'}
+        source=objects/'identity.cpp';text='extern "C" const char *nex_application_identity()noexcept{return '+json.dumps(json.dumps(identity))+';}'
+        if profiling:text+='extern "C" const char *nex_profile_build_info(){return '+json.dumps(json.dumps(profile_identity))+';}'
+        source.write_text(text)
         identity_object=objects/'identity.o';self.run_tool(driver+['-std=c++20','-c',source,'-fPIC','-o',identity_object])
         def executable(item,filename):
             app=bundle/'bin'/filename
-            self.run_tool(link_driver+[*from_archive(item['artifact'],filename),identity_object,libraries['consumer'],libraries['producer'],runtime,'-Xlinker','-export_dynamic' if darwin else '--export-dynamic',*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib'),'-g','-o',app])
+            self.link_output(link_driver+[*from_archive(item['artifact'],filename),identity_object,libraries['consumer'],libraries['producer'],runtime,'-Xlinker','-export_dynamic' if darwin else '--export-dynamic',*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib'),'-g'],app)
             return app
         app=executable(built['app'],'app')
         data=self.root/'data';data.mkdir();environment={'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
+        if profiling:
+            environment.update(NEX_TRACY='0',NEX_PROFILE_OUTPUT=str(data/'bound-profile.json'))
         run=self.run_tool([app],env=environment);self.assertEqual((run.stdout,run.stderr),('NEX_PIC_OK\n',''))
+        if profiling:
+            measured=json.loads((data/'bound-profile.json').read_text())
+            self.assertEqual(measured['build'],profile_identity)
+            functions={f['name']:f for f in measured['functions']}
+            self.assertEqual(functions['producer::create']['calls'],64)
+            self.assertEqual(functions['consumer::transform']['calls'],64)
+            self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in measured['memory']))
+            # An ordinary C++ process owns no NEX application/profile identity.
+            debug=json.loads((Path(built['producer']['artifact']).parent/'debug.json').read_text())
+            symbol=next(f['native_symbol'] for f in debug['functions'] if f['name']=='producer::create')
+            host=objects/'unbound.cpp';host.write_text('extern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" void nex_runtime_finish();int main(){auto p='+symbol+'();nex_release(p);nex_runtime_finish();}')
+            host_image=bundle/'bin/unbound-host'
+            self.link_output(link_driver+[host,libraries['producer'],runtime,*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib')],host_image)
+            unbound_environment={**environment,'NEX_PROFILE_OUTPUT':str(data/'unbound-profile.json')}
+            observed=self.run_tool([host_image],env=unbound_environment);self.assertEqual((observed.stdout,observed.stderr),('',''))
+            unbound=json.loads((data/'unbound-profile.json').read_text())
+            self.assertIsNone(unbound['build'])
+            self.assertEqual(next(f['calls'] for f in unbound['functions'] if f['name']=='producer::create'),1)
+            self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in unbound['memory']))
         self.assertEqual((data/'data.bin').read_bytes(),'Я🧠'.encode())
         (self.root/'app/main.nex').write_text(self.app.replace('print("NEX_PIC_OK");','print(a::divide(0));'))
-        failed=self.closure();self.assertTrue(failed['producer']['cached']);self.assertTrue(failed['consumer']['cached'])
+        failed=self.closure(profile=profile);self.assertTrue(failed['producer']['cached']);self.assertTrue(failed['consumer']['cached'])
         trap=self.run_tool([executable(failed['app'],'failing')],env=environment,ok=False)
         self.assertEqual(trap.returncode,70);self.assertIn('E_DIV_ZERO',trap.stderr);self.assertNotIn('E_INTERNAL_LEAK',trap.stderr)
         diagnostic=next(json.loads(line.split(' ',1)[1]) for line in trap.stderr.splitlines() if line.startswith('NEX_NATIVE_TRAP '))
         self.assertEqual(diagnostic['application'],identity)
+        if profiling:
+            measured=json.loads((data/'bound-profile.json').read_text())
+            self.assertEqual(measured['build'],profile_identity)
+            functions={f['name']:f for f in measured['functions']}
+            self.assertEqual(functions['producer::divide']['aborted'],1)
+            self.assertEqual(functions['app::main']['aborted'],1)
+            self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in measured['memory']))
         moved=self.root/'moved % 🧠';bundle.rename(moved)
         run=self.run_tool([moved/'bin/app'],env=environment);self.assertEqual((run.stdout,run.stderr),('NEX_PIC_OK\n',''))
 

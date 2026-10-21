@@ -505,5 +505,16 @@
     "guide": "docs/project-build.md",
     "binary_only_packages": false,
     "shared_libraries": false
+  },
+  "native_application_lifetime": {
+    "capability": "native_application_lifetime",
+    "minimum_toolchain": "0.73.0",
+    "guide": "docs/incremental.md",
+    "normal_and_checked_failure_cleanup": true,
+    "checked_failure_exit": 70,
+    "request_capabilities_added": false,
+    "request_budgets_added": false,
+    "embedding_request_scope": "explicit",
+    "forced_termination_cleanup": false
   }
 }

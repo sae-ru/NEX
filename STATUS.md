@@ -1,3 +1,15 @@
+# Development cohort0.73 (not integrated)
+
+The compiler-private PIC stage and shared runtime/profiler tests are extended
+with an application ownership boundary. Checked standalone failures now unwind
+host temporaries and owned values before returning70, while request grants and
+budgets remain explicit. A0.72 installed-SDK reproducer retains one handle and
+three objects after division by zero; the new boundary passes managed-value and
+shared-image focused tests. Final0.73 regression, SDK and target validation are
+pending. The verified integrated0.72 root and complete graph history are intact.
+General shared-library project output, combined project execution flows,
+concurrency, accelerators and other full-goal work remain pending.
+
 # Verified root development checkpoint0.72 / language0.16
 
 Implementation source `1f24a09cd71ee7cf203359b7a70d03e243505669` (756 files) builds and passes

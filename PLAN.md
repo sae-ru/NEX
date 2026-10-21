@@ -1,3 +1,12 @@
+# Current0.73 implementation work
+
+- Integrate verified PIC object staging into final dynamic project linking.
+- Complete0.73 application failure cleanup and shared-profiler identity gates,
+  preserving normal outputs, process codes, diagnostics, grants and no added
+  request budget. Keep old SDKs/source/history and original failed reports.
+- Then finish shared-image provenance, debugger/core/packaging and selected
+  project execution flows; concurrency/accelerator/platform work remains open.
+
 # Checkpoint0.72: consumed native archives and reproducible tools
 
 - [x] Consume checked static archives, explicit export closures and transitive binary dependencies with one final runtime.
