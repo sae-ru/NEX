@@ -20,7 +20,10 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
     ProcessResult process;
     if(options.directory.empty())process=capture(arguments,options.timeout);
     else{
-      auto child=runTaskProcess(arguments,options.directory,{},options.timeout,(directory/"logs").string());
+      auto child=runTaskProcess(arguments,options.directory,options.environment,options.timeout,(directory/"logs").string());
+      if(child.interrupted&&options.interrupted)options.interrupted(child.interrupted);
+      if(child.timedOut)throw Error("E_PROFILE_TIMEOUT","profile process exhausted its timeout");
+      if(child.outputLimit)throw Error("E_PROFILE_OUTPUT","profile process exhausted its output limit");
       process=std::move(child.process);if(child.timedOut)process.code=124;else if(child.outputLimit)process.code=125;
     }
     if(!std::filesystem::is_regular_file(raw)||std::filesystem::file_size(raw)>256*1024*1024)throw Error("E_PROFILE","profile runtime did not produce a bounded report; process stderr: "+process.errors);

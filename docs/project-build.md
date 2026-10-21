@@ -2,6 +2,13 @@
 
 ## Project actions (candidate0.77)
 
+Toolchain0.78 adds [acceptance tasks and captured replay](project-tasks.md).
+`project --kind build-test --symbol TEST` compiles one native owned test under
+the declared binary architecture without executing it. Its result exposes the
+actual scope, canonical test hash, final artifact and dependencies so a task
+parent can supervise execution directly. `architecture_hash` in a checked plan
+is the canonical build-description hash reviewed by project task contracts.
+
 ```sh
 nex project --kind run --component app --configuration debug --json
 nex project --kind test --configuration debug --json
@@ -33,7 +40,7 @@ Client/web tests use the reachable TypeScript projection. Pure tests additionall
 compare interpreter observations; pure shared tests also compare TypeScript; effectful tests execute once in their selected
 backend, preserving explicit runtime capabilities. A failed assertion remains a
 failed test even when both backends reject it. At most256 tests are selected. Each returned row is bounded to32KiB. Larger observations retain a full private result file at `report`; the response includes UTF-8-safe output prefixes and byte counts.
-Full UI/API workloads and reviewed project task/replay integration remain pending.
+Full UI/API workloads and project package task checks remain pending.
 
 Debug/profile currently select native executable components. Debug emits the
 same `nex.debug-session/1` descriptor as a source command, nested under
@@ -51,7 +58,7 @@ debug/profile/native-diagnostic reports retain their stated contracts. Explicit
 `--foreign HOST.json` grants are checked before execution and around commands;
 receipts and environment variables do not grant foreign authority. Browser
 preview accepts no foreign catalogue. Source-foreign project packaging, native
-server workload debug/profile and dedicated editor/task commands remain pending.
+server workload debug/profile and dedicated editor commands and package task checks remain pending.
 
 Toolchain0.71 adds `nex project`. This is external build metadata, separate from
 the existing source/language/library manifest `nex.json` (`nex.project/1`). It
@@ -243,7 +250,7 @@ language history.
 Build output is not a deployment package. Keep the full `images/` directory
 beside its executable; external system dependencies retain their platform/notice
 requirements.
-Windows DLLs and combined project task/replay/editor commands remain pending.
+Windows DLLs, project package task checks and dedicated editor commands remain pending.
 Do not pass a project app through an ordinary source command expecting the
 declared binary architecture to survive that independent compilation.
 

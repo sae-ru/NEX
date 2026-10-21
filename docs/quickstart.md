@@ -469,3 +469,23 @@ Hermes поддерживает [AGENTS.md](https://hermes-agent.nousresearch.co
 интерпретатор/нативные тесты и сборки, web generation/build, Git clone и graph
 snapshot/recovery. Скачивание/чистая установка всех сторонних пакетов на новом
 компьютере и реальное программирование разными LLM — отдельные проверки.
+
+
+## Задачи для архитектуры проекта (кандидат0.78)
+
+Если `nex describe --json` объявляет `project_architecture_tasks`, можно связать
+приёмку с компонентами и конфигурациями `nex.build.json`:
+
+```sh
+nex task nex.build.json --kind init --component app --configuration debug -o task.json
+# Отредактируйте цель, требования и критерии приёмки в task.json.
+nex task task.json --kind check --json
+nex task task.json --kind run --json
+nex task /путь/к/запуску/receipt.json --kind replay --json
+```
+
+В Git кладите проверенный `task.json` вместе с исходниками и описаниями проекта.
+Задача фиксирует архитектуру, конфигурации и тела выбранных тестов. Снимок запуска
+сохраняет используемые исходники и библиотеки, а повторение заново проверяет
+действующие toolchain/FFI-каталоги. Сгенерированные `.nex`, кеши и секреты в Git
+не кладите. Подробности: [задачи проекта](project-tasks.md).

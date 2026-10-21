@@ -1,3 +1,38 @@
+# Development cohort0.78 (not integrated)
+
+Optional project-backed nex.task/1 programs pin architecture and configuration,
+retain physical source/package/component aliases, and replay captured namespaces.
+Native compilation and execution are separated so the task parent supervises
+run/test/profile processes directly. Current toolchain/FFI catalogues remain
+required; captures grant no authority. Language0.16 and graph history are unchanged.
+
+The first5project-task cases pass270.882seconds, including real archives/DSOs,
+profiles, web output, readonly trust checks, archived graph code and moved replay
+after original sources/packages were deleted. A later six-case direct-supervision
+cohort passes461.544seconds. Initial cancellation cases retained a physical
+/var versus /private/var manifest comparison failure before native execution.
+The canonical-parent fix reaches native code: run/profile timeouts and all three
+SIGINT cases pass. The test-mode timeout expired before native execution, so its
+native-descendant assertion failed; the renewed test allows60seconds for
+compilation and execution and still requires a marker from the actual forked
+native process. Its result is pending.
+Full86/SDK/Linux and final schema/descriptor/example validation remain pending.
+
+Frozen0.77 passes full85 and installed SDK24/369/215 on macOS/Linux ARM64,
+19Linux live suites, actual installed VSIX, strict compatibility,6cross
+configurations/15artifacts/3iOS links/x64Wine and12real browser/API/restart cases.
+Actual root0.77 also passes full85/SDK24/369/215, its own installed VSIX,
+compatibility, cross-build/Wine and12browser cases, plus a live SDK debugger/web
+preview case in27.322seconds. These are separate post-integration observations.
+Root0.76 SDK/source recovery, all47revisions/all16tables and normal
+Git HEAD/index remain preserved.
+
+Project package task checks, server workloads, task/editor debugging, source
+concurrency, general CPU/GPU/NPU APIs and broader platform delivery remain open.
+This source does not complete the full objective.
+
+Historical cohorts below retain their original scope.
+
 # Development cohort0.77 (not integrated)
 
 Project run/test/debug/profile consume the declared binary architecture and

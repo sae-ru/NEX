@@ -1,3 +1,14 @@
+# Current0.78 development chain
+
+- Complete and validate architecture-preserving task check/run/replay with
+  reviewed test/context hashes and current operator catalogues.
+- Verify direct native run/test/profile supervision, forced termination and
+  descendant/private-snapshot cleanup; preserve original failing evidence.
+- Integrate only after full regression, installed SDK and platform checks.
+- Continue package task checks, server workloads, editor/Studio integration,
+  source concurrency, general accelerators and remaining platform delivery.
+- Preserve language history, semantic invariants and prior SDKs/source recoveries.
+
 # Current0.73 implementation work
 
 - Integrate verified PIC object staging into final dynamic project linking.

@@ -104,8 +104,9 @@ void boundTestResult(Object &row,const fs::path &cache){
 
 llvm::json::Value buildProject(const std::string &directory,const std::string &manifest,
                               const std::string &source,const ProjectBuildOptions &options) {
-  const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",testing=options.kind=="test";
-  if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package"&&!execution&&!testing)fail("project kind must be plan, build, package, run, test, debug or profile","E_OPTION");
+  const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",buildTest=options.kind=="build-test",testing=options.kind=="test"||buildTest;
+  if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package"&&!execution&&!testing)fail("project kind must be plan, build, package, run, test, build-test, debug or profile","E_OPTION");
+  if(buildTest&&options.selectedTest.empty())fail("build-test requires --symbol NAME","E_OPTION");
   if(options.kind=="debug"&&options.adapter!="lldb"&&options.adapter!="dap"&&options.adapter!="nex-dap")fail("debug adapter must be lldb, dap or nex-dap","E_OPTION");
   if(options.kind=="run"&&!options.machine&&options.explicitTimeout)fail("supervised project run --timeout requires --json","E_OPTION");
   fs::path packageOutput;
@@ -240,7 +241,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   for(const auto &name:selected)for(const auto &[dep,link]:components.at(name).dependencies)if(link=="static"||link=="dynamic")binaryProviders.insert(dep);
   for(const auto &name:order) {
     if(!selected.contains(name))continue;const auto &c=components.at(name);
-    auto program=loadProgram((root/c.entry).string(),root.string());llvm::json::Array sources;
+    auto program=loadProgram((root/c.entry).string(),root.string(),!options.archivedSources,options.sourceOverlays);llvm::json::Array sources;
     for(const auto &[key,unit]:program.units) {
       sourceBytes+=unit.source.size();if(sourceBytes>64*1048576)fail("selected component source closures exceed64MiB","E_PROJECT_LIMIT");
       auto [captured,inserted]=capturedSources.emplace(unit.path,unit.source);
@@ -336,9 +337,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(readFile((root/"nex.json").string())!=sourceManifest||
      (fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt)!=sourceLock)
     fail("project metadata or dependency lock changed while planning","E_PROJECT_INPUT_CHANGED");
-  for(const auto &[file,text]:capturedSources)if(readFile(file)!=text)fail("captured source changed while planning: "+file,"E_PROJECT_INPUT_CHANGED");
+  for(const auto &[file,text]:capturedSources)if(options.sourceOverlays.contains(file)?options.sourceOverlays.at(file)!=text:readFile(file)!=text)fail("captured source changed while planning: "+file,"E_PROJECT_INPUT_CHANGED");
   Object plan{{"schema","nex.project-plan/1"},{"ok",true},{"language",languageVersion},{"compiler",Object{{"version",options.compilerVersion},{"build",options.compilerBuild}}},
-    {"root",root.string()},{"manifest",manifest},{"manifest_hash",hash(source)},{"source_project_manifest_hash",hash(sourceManifest)},
+    {"root",root.string()},{"manifest",manifest},{"manifest_hash",hash(source)},{"architecture_hash",hash(json(*parsed,false))},{"source_project_manifest_hash",hash(sourceManifest)},
     {"configuration",Object{{"name",configuration.name},{"profile",configuration.profile},{"target",configuration.target},{"toolchain",configuration.toolchain.empty()?llvm::json::Value(nullptr):llvm::json::Value(configuration.toolchain)}}},
     {"selected_component",selectedComponent.empty()?llvm::json::Value(nullptr):llvm::json::Value(selectedComponent)},{"components",std::move(descriptions)},
     {"source_checked",true},{"graph_store_opened",false},{"external_tools_invoked",false},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
@@ -383,7 +384,16 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       for(const auto &component:*planned.getAsObject()->getArray("components"))if(component.getAsObject()->getString("name")==test.item->name){
         if(!component.getAsObject()->getObject("native_toolchain")->getBoolean("host_compatible").value_or(false))fail("project tests require the compiler host ABI","E_TARGET");
       }
-      grant(test.item->program,test.function);
+      if(!buildTest)grant(test.item->program,test.function);
+    }
+    if(buildTest){
+      const auto &test=tests.front();if(test.web)fail("build-test currently produces native test executables","E_PROJECT_CAPABILITY");
+      auto buildOptions=options;buildOptions.kind="build";buildOptions.component=test.item->name;buildOptions.testFunction=test.function;buildOptions.expectedPlanHash=test.planHash;
+      auto built=buildProject(directory,manifest,source,buildOptions);
+      return Object{{"schema","nex.project-test-build/1"},{"ok",true},{"name",test.function},{"component",test.item->name},
+        {"revision",revision(test.item->program)},{"source_bundle_hash",hash(json(sourceBundle(test.item->program),false))},
+        {"content_hash",hash(json(canonical(test.item->program.function(test.function)),false))},{"build",std::move(built)},
+        {"test_execution",false},{"graph_store_opened",false}};
     }
     llvm::json::Array results;bool success=true;
     for(const auto &test:tests){

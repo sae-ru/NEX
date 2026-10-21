@@ -16,6 +16,8 @@ struct ProjectBuildOptions {
   ProfileOptions profiling;
   // Private test-driver override, never accepted from a build manifest or CLI.
   std::string testFunction, selectedTest, expectedPlanHash;
+  std::map<std::string,std::string> sourceOverlays;
+  bool archivedSources = false;
 };
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.

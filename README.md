@@ -12,11 +12,11 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated development source is **toolchain0.77.0 / language0.16**. It adds
-architecture-preserving project run/test/debug/profile commands above0.76 project
-packages. Its full validation is pending. The actual0.75 root passes83 regression
-groups and installed SDK24/361/213; frozen0.76 passes84 groups and installed
-SDK24 on macOS/Linux ARM64. Candidate results do not establish root integration.
+This isolated development source is **toolchain0.78.0 / language0.16**. It adds
+project-backed acceptance tasks and captured replay above0.77 project actions.
+Validation of the new task implementation is in progress. Frozen0.77 and the
+actual0.77 root pass85 groups and installed SDK24/369/215; Linux0.77 also passes
+19live suites. Candidate and primary-root gates retain separate evidence.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -29,12 +29,14 @@ with checked contracts and one final application runtime. Consumers can add
 explicitly reported generic instantiations. Source remains available to the
 checker. A static edge does not request a fully static executable; general
 Windows DLL output and resolved binary dependency reports remain pending.
-The0.74 candidate accepts `shared_library`/`dynamic` for macOS/Linux builds,
-captures the linked images and supplies one shared runtime. Candidate0.75 supports manual LLDB/core/capsule workflows for these images;
-Candidate0.76 adds `project --kind package` for actual binary edges and browser
-distributions; combined execution flows remain pending.
+Toolchain0.74 accepts `shared_library`/`dynamic` for macOS/Linux builds,
+captures the linked images and supplies one shared runtime. Toolchain0.75 adds
+manual LLDB/core/capsule workflows for these images;0.76 adds `project --kind
+package` for binary edges and browser distributions. The verified0.77 also
+preserves these edges in project run/test/debug/profile. The0.78 candidate adds
+[acceptance tasks and captured replay](docs/project-tasks.md) for the architecture.
 
-The retained integrated0.72 root passes **80 CTest groups** and installed SDK acceptance of
+The historical integrated0.72 checkpoint passes **80 CTest groups** and installed SDK acceptance of
 **24 phases/348 commands/213 indexed resources**. Its0.72 implementation also
 passes Linux ARM64 full80,17 live suites and source-free/network-disabled SDK24.
 See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashes,
@@ -59,7 +61,7 @@ Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compi
 scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
 APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
 tests real NEX code in two DSOs, but is not a supported compiler build mode.
-DLL integration, combined project execution/debug/task flows, source concurrency,
+Windows DLL integration, server workloads, dedicated task/editor debugging, source concurrency,
 general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
 remain open. This checkpoint does not complete the full objective.
 

@@ -1,0 +1,3 @@
+module project_task::core;
+pub fn make(offset:i64)->(fn(i64)->i64){return fn(value:i64)->i64{return value+offset;};}
+pub fn decorate(value:str)->str{return value+" 🧠";}

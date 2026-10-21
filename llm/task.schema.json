@@ -88,6 +88,9 @@
               },
               "foreign_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
               }
             },
             "required": [
@@ -179,6 +182,9 @@
               },
               "toolchain_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
               }
             },
             "required": [
@@ -276,6 +282,9 @@
               },
               "foreign_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
               }
             },
             "required": [
@@ -360,6 +369,15 @@
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 100000000
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -427,6 +445,15 @@
                 "minItems": 1,
                 "maxItems": 64,
                 "uniqueItems": true
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -517,6 +544,9 @@
               },
               "foreign_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
               }
             },
             "required": [
@@ -603,6 +633,15 @@
               },
               "kind": {
                 "const": "api"
+              },
+              "configuration": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain": {
+                "$ref": "#/$defs/id"
+              },
+              "toolchain_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -672,6 +711,29 @@
         },
         "baseline_revision": {
           "$ref": "#/$defs/hash"
+        },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "manifest": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^/\\\\]+$"
+            },
+            "component": {
+              "$ref": "#/$defs/id"
+            },
+            "architecture_hash": {
+              "$ref": "#/$defs/hash"
+            }
+          },
+          "required": [
+            "manifest",
+            "component",
+            "architecture_hash"
+          ]
         }
       },
       "required": [

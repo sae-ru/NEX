@@ -1,0 +1,34 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "debug",
+  "configurations": {
+    "debug": {
+      "profile": "debug"
+    },
+    "release": {
+      "profile": "release"
+    },
+    "profile": {
+      "profile": "profile"
+    }
+  },
+  "components": {
+    "core": {
+      "kind": "shared_library",
+      "root": "core",
+      "entry": "core/value.nex",
+      "entry_function": "make",
+      "exports": [
+        "decorate"
+      ]
+    },
+    "app": {
+      "kind": "executable",
+      "root": "app",
+      "entry": "app/main.nex",
+      "dependencies": {
+        "core": "dynamic"
+      }
+    }
+  }
+}

@@ -148,7 +148,9 @@
     "cix_gpu_probe": "tools/accelerators/cix_opencl_probe.py",
     "cix_npu_probe": "tools/accelerators/cix_onnx_probe.py",
     "project_package_schema": "llm/project-package.schema.json",
-    "project_action_schema": "llm/project-action.schema.json"
+    "project_action_schema": "llm/project-action.schema.json",
+    "project_tasks": "docs/project-tasks.md",
+    "project_capture_schema": "llm/project-capture.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -223,7 +225,13 @@
     "native_libraries": "examples/native-libraries/nex.build.json",
     "native_library_source_manifest": "examples/native-libraries/nex.json",
     "native_library_core": "examples/native-libraries/core/math.nex",
-    "native_library_app": "examples/native-libraries/app/main.nex"
+    "native_library_app": "examples/native-libraries/app/main.nex",
+    "project_task_architecture": "examples/project-tasks/nex.build.json",
+    "project_task_source_manifest": "examples/project-tasks/nex.json",
+    "project_task_contract": "examples/project-tasks/task.json",
+    "project_task_core": "examples/project-tasks/core/value.nex",
+    "project_task_app": "examples/project-tasks/app/main.nex",
+    "project_task_guide": "examples/project-tasks/README.md"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -262,7 +270,8 @@
     "nex task task.json --kind check --json",
     "nex task task.json --kind run --task-hash HASH --json",
     "nex task RECEIPT.json --kind replay --json",
-    "nex task task.json --kind history --json"
+    "nex task task.json --kind history --json",
+    "nex task nex.build.json --kind init --component NAME --configuration CONFIG -o task.json --json"
   ],
   "expression_commands": [
     "nex inspect FRAME.json --manifest DEBUG.json --expression TEXT --kind plan --json",
@@ -519,8 +528,8 @@
       "project_foreign_pin_projection",
       "packaged_debug_provenance",
       "server_workload_profile_and_debug",
-      "project_task_replay",
-      "project_editor_commands"
+      "project_editor_commands",
+      "project_package_task_checks"
     ],
     "project_package": {
       "command": "nex project --kind package --directory NEW_DIRECTORY --json",
@@ -554,6 +563,19 @@
       "pure_shared_native_typescript_interpreter_agreement": true,
       "test_response_bytes": 32768,
       "large_test_observations": "retained private report with bounded UTF-8 output prefixes"
+    },
+    "project_tasks": {
+      "minimum_toolchain": "0.78.0",
+      "task_schema": "nex.task/1",
+      "program_field": "project",
+      "configuration_field": "configuration",
+      "capture_schema": "nex.project-capture/1",
+      "guide": "docs/project-tasks.md",
+      "reviewed_architecture_hash": true,
+      "declared_binary_dependencies": true,
+      "trusted_current_toolchain_and_foreign_catalogues": true,
+      "source_free_replay": true,
+      "native_process_supervision": "direct from the task parent, compilation separated from native execution"
     }
   },
   "native_application_lifetime": {

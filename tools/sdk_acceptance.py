@@ -2058,7 +2058,8 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         report['evidence']['browser_build'] = args.browser
 
     def project_build():
-        description = cli('describe')['project_build']
+        full_descriptor = cli('describe'); description = full_descriptor['project_build']
+        require('project_architecture_tasks' in full_descriptor['task_features'], 'SDK lacks project task captures/replay')
         require(description['manifest_schema'] == 'nex.project-build/1' and
                 description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
                 'shared_library' in description['artifact_kinds'] and
@@ -2196,6 +2197,22 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         require(actual_profile['stdout']=='42 🧠\n' and any(f['name']=='sdk_shared::bridge::render' for f in actual_profile['functions']) and
                 all(f['node_id'] is None and f['identity_scope']=='captured_project' for f in actual_profile['functions']) and
                 not (shared_project/'.nex/graph.db').exists(), 'project profile lost provider attribution or created graph IDs')
+        task_project=root/'project-task-example';shutil.copytree(resources/'examples/project-tasks',task_project)
+        task_checked=cli('task','task.json','--kind','check',cwd=task_project,timeout=300)
+        task_run=cli('task','task.json','--kind','run','--task-hash',task_checked['task_hash'],'--directory',root/'project-task-run',cwd=task_project,timeout=600)
+        require(task_run['ok'] and all(c['status']=='passed' for c in task_run['checks']), 'project acceptance task failed')
+        task_receipt=Path(task_run['output']);saved_task=json.loads(task_receipt.read_text())
+        task_build=next(c for c in saved_task['checks'] if c['id']=='build-native')
+        task_app=task_receipt.parent/next(c['directory'] for c in task_build['components'] if c['component']=='app')/'compilation.json'
+        task_compilation=json.loads(task_app.read_text())
+        require(len(task_compilation['owned_images'])==2 and all(u['identity'].startswith('project_task::app::') for u in task_compilation['units']), 'task recompiled its shared provider')
+        task_native=json.loads((task_receipt.parent/'artifacts/output/commands/native.json').read_text())
+        require(task_native['command'][0]!=str(compiler) and '--revision' not in task_native['command'], 'task did not supervise the actual native image directly')
+        shutil.rmtree(task_project)
+        task_replay=cli('task',task_receipt,'--kind','replay','--directory',root/'project-task-replay',cwd=root,timeout=600)
+        require(task_replay['ok'] and task_replay['programs']==task_run['programs'], 'project task replay fell back to deleted source')
+        report['evidence']['project_architecture_task']={'ok':True,'source_deleted_replay':True,'original':str(task_receipt),'replay':task_replay['output'],
+            'task_hash':task_checked['task_hash'],'actual_shared_provider':True,'native_execution_supervised_directly':True,'checks':len(saved_task['checks'])}
         deployment = root/'shared-project-package'
         packaged = cli('project', '--kind', 'package', '--configuration', 'release', '--component', 'app',
                        '--directory', deployment, cwd=shared_project, timeout=300)

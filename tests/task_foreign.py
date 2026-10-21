@@ -257,4 +257,82 @@ class TaskForeign(harness.ToolchainCase):
                 try:process.communicate(timeout=12)
                 except subprocess.TimeoutExpired:process.kill();process.communicate(timeout=10)
 
+    def project_process_fixture(self):
+        original=fixture.C;shutil.rmtree(self.root/'bundle')
+        loop='''mark('C');pid_t child=fork();if(child==0){for(;;)pause();}const char *path=getenv("NEX_TASK_CHILDREN");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd>=0){dprintf(fd,"%ld %ld %ld\\n",(long)getpid(),(long)getpgrp(),(long)child);close(fd);}}for(;;)pause();'''
+        source='''module tasklib;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");pub server fn invoke()->i64!{ffi}{return echo(42);}'''
+        try:
+            fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>').replace("mark('C');",loop,1)
+            self.program(source,{'echo':'echo'})
+        finally:fixture.C=original
+        (self.root/'library').mkdir();self.file.rename(self.root/'library/main.nex');(self.root/'app').mkdir()
+        (self.root/'app/main.nex').write_text('''module taskffi;import "../library/main.nex" as l;
+server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->unit!{ffi}{assert(l::invoke()==42);}''')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
+            'configurations':{'debug':{'profile':'debug'},'profile':{'profile':'profile'}},'components':{
+                'library':{'kind':'shared_library','root':'library','entry':'library/main.nex','entry_function':'invoke'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'library':'dynamic'}}}}))
+        self.catalogue_report=self.cli('foreign',self.host);self.children=self.root/'children'
+        self.env['NEX_TASK_CHILDREN']=str(self.children);ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
+        return ambient
+
+    def assert_project_children_stopped(self):
+        if not self.children.exists():return
+        parent,group,child=map(int,self.children.read_text().split());self.assertEqual(parent,group)
+        def running(pid):
+            p=subprocess.run(['ps','-p',str(pid),'-o','stat='],capture_output=True,text=True)
+            return p.returncode==0 and p.stdout.strip() and not p.stdout.strip().startswith('Z')
+        deadline=time.monotonic()+5
+        while (running(parent) or running(child)) and time.monotonic()<deadline:time.sleep(.05)
+        if running(parent) or running(child):
+            try:os.killpg(group,signal.SIGKILL)
+            except ProcessLookupError:pass
+            self.fail('task left a native process or its forked descendant running')
+
+    def project_wait_task(self,mode,timeout):
+        configuration='profile' if mode=='profile' else 'debug'
+        scaffold=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration',configuration)
+        task=copy.deepcopy(scaffold);task['checks']=[c for c in scaffold['checks'] if c['kind']=='build'];task['requirements']=[r for r in scaffold['requirements'] if r['checks']==['build-native']]
+        check={'id':'wait','kind':mode,'target':'native','configuration':configuration,'timeout_seconds':timeout}
+        if mode=='test':check['tests']=next(c['tests'] for c in scaffold['checks'] if c['kind']=='test')
+        elif mode=='run':check.update(entry='taskffi::main',expect={'stdout':'42\n','exit_code':0})
+        else:check.update(entry='taskffi::main',scenario='uncooperative module',budget={'max_calls':{'taskffi::main':'1'}})
+        self.add(task,check)
+        if mode=='test':task['requirements'][-1]['bindings'][0]['symbol']='taskffi::checks'
+        self.add(task,{'id':'later','kind':'effects','target':'source','configuration':configuration,'symbols':['taskffi::main'],'allowed_effects':['io','ffi']})
+        self.save(task);return task
+
+    def test_project_timeout_reaps_native_descendants_and_keeps_later_independent_checks(self):
+        ambient=self.project_process_fixture()
+        for mode in ('run','test','profile'):
+            with self.subTest(mode=mode):
+                # The limit includes compilation. Leave enough time to reach the
+                # native marker, then require the supervisor to reap its fork.
+                self.children.unlink(missing_ok=True);self.project_wait_task(mode,60)
+                result=self.task('run','--directory',self.root/('timeout-'+mode),ok=False)
+                self.assertTrue(self.children.exists(),result);self.assert_project_children_stopped()
+                rows={c['id']:c for c in result['checks']};self.assertEqual(rows['wait']['code'],'E_TASK_TIMEOUT');self.assertEqual(rows['later']['status'],'passed')
+                self.assertEqual(list(ambient.glob('nex-task-*')),[]);self.assertEqual(list(ambient.glob('nex-module-*')),[])
+
+    def test_project_interrupt_reaps_native_descendants_and_skips_remaining_checks(self):
+        ambient=self.project_process_fixture()
+        for mode in ('run','test','profile'):
+            with self.subTest(mode=mode):
+                self.children.unlink(missing_ok=True);self.project_wait_task(mode,90)
+                process=subprocess.Popen([harness.NEX,'task',str(self.taskfile),'--kind','run','--directory',str(self.root/('interrupt-'+mode)),'--foreign',str(self.host),'--json'],cwd=self.root,env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                try:
+                    deadline=time.monotonic()+120
+                    while not self.children.exists() and process.poll() is None and time.monotonic()<deadline:time.sleep(.05)
+                    if not self.children.exists():
+                        out,err=process.communicate(timeout=10);self.fail(out+err)
+                    process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=30)
+                    self.assertEqual(process.returncode,130,out+err);result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
+                    rows={c['id']:c for c in result['checks']};self.assertEqual(rows['wait']['status'],'interrupted');self.assertEqual(rows['later']['status'],'skipped');self.assert_project_children_stopped()
+                    self.assertEqual(list(ambient.glob('nex-task-*')),[]);self.assertEqual(list(ambient.glob('nex-module-*')),[])
+                finally:
+                    if process.poll() is None:process.send_signal(signal.SIGTERM);process.communicate(timeout=30)
+                    else:process.communicate()
+                    self.assert_project_children_stopped()
+
 if __name__=='__main__':unittest.main()

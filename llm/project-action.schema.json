@@ -178,6 +178,60 @@
         "test_execution",
         "effectful_reference_replay"
       ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "nex.project-test-build/1"
+        },
+        "ok": {
+          "const": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_bundle_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "build": {
+          "type": "object"
+        },
+        "test_execution": {
+          "const": false
+        },
+        "graph_store_opened": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "ok",
+        "name",
+        "component",
+        "revision",
+        "source_bundle_hash",
+        "content_hash",
+        "build",
+        "test_execution",
+        "graph_store_opened"
+      ]
     }
-  ]
+  ],
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
 }

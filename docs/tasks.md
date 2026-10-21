@@ -2,9 +2,13 @@
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.15; this is a development-tool protocol.
+LLM vendor. Current source language is 0.16; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
+
+Toolchain0.78 adds [project-backed tasks](project-tasks.md) with reviewed
+architecture/configurations, actual binary dependencies and captured project
+replay. Programs without the optional `project` object retain the behavior below.
 
 ```sh
 nex task main.nex --kind init -o task.json

@@ -7,6 +7,19 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+When `project_architecture_tasks` is advertised, read `docs/project-tasks.md`.
+Scaffold with `nex task nex.build.json --kind init --component NAME
+--configuration CONFIG`, then review the task. Its optional program.project pins
+the architecture_hash from the actual plan; each check selects a declared
+configuration. Check/run/replay preserve real binary dependencies. Use current
+trusted toolchain/FFI catalogues; captured data grants no execution authority.
+Pure shared tests compare native/TypeScript/interpreter observations; effectful
+project tests/entries execute once in the selected backend. Captured namespaces
+and code candidates do not rewrite original working files. Use the saved receipt
+for source-free replay and inspect failures, unsupported checks and signals.
+Package task checks, server workloads and dedicated editor task debugging remain
+pending; passing a task proves only its reviewed criteria.
+
 When `project_binary_execution` is advertised inside `project_build.features`,
 use `nex project --kind run|test|debug|profile` for a declared architecture.
 Read the project guide. Select the actual component/configuration; a source
@@ -16,8 +29,7 @@ adapter command/launch/cwd/source map to the debugger. Profiles require an
 explicit profile configuration. Pure tests compare the reference backend, and pure shared tests also compare TypeScript;
 effectful tests execute once with explicit runtime grants. Captured project
 diagnostics/profile nodes have null persistent IDs and content/site identities.
-Check actual exit status and timeout/output flags. Project task/replay/editor
-integration and server workload debug/profile are still pending.
+Check actual exit status and timeout/output flags. Project task/replay requires the separately advertised project_architecture_tasks capability; editor integration and server workload debug/profile remain pending.
 
 When `mobile_project_generation` is advertised, read `docs/mobile.md` and the
 web guide. Use the indexed mobile_project.py tool with the actual compiler,

@@ -1,3 +1,7 @@
+Toolchain0.78 project task captures/replay and test build actions are external
+development metadata. They change no source syntax, language0.16 canonical
+identities, effect/realm/ownership semantics or graph migration requirements.
+
 Toolchain0.77 project run/test/debug/profile are external development actions;
 language0.16, canonical identities, effects, realms and graph history are unchanged.
 
