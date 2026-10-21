@@ -12,15 +12,12 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-The primary checkout is **toolchain0.81.0 / language0.16**, integrated after
-explicit approval and verification. Its full87 CTest groups, installed SDK
-24phases/375commands/225resources, real installed extension0.6 in three fresh
-editor hosts and strict0.77/0.81 analysis/store compatibility pass. The exact
-frozen implementation also passes Linux ARM64 full87,20 live suites and
-source-free/network-disabled installed SDK24. See [the recorded evidence](docs/evidence/toolchain-0.81.0.json).
-All47 original graph revisions/all16tables/schema/IDs and normal Git HEAD/index
-are preserved; the old0.77 source/compiler remains recoverable. This is a checked
-checkpoint of the language/toolchain; remaining PLAN work is still open.
+This isolated source is **toolchain0.82.0 / language0.16**. It adds bounded
+native server workload profiling through `project --kind plan|profile --workload
+FILE`, with strict data schemas, pinned inputs, actual dynamic providers and
+request metrics inside native profiles. Focused real command and cancellation
+checks pass; complete frozen88/installed SDK/Linux verification remains pending.
+The verified primary0.81 checkpoint is preserved separately; see [its evidence](docs/evidence/toolchain-0.81.0.json).
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -65,7 +62,7 @@ Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compi
 scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
 APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
 tests real NEX code in two DSOs, but is not a supported compiler build mode.
-Windows DLL integration, server workloads, dedicated task/editor debugging, source concurrency,
+Windows DLL integration, server debugging/workload task capture, dedicated task/editor debugging, source concurrency,
 general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
 remain open. This checkpoint does not complete the full objective.
 

@@ -374,7 +374,7 @@ test fn examples() -> unit {
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
-                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project'):
+                     'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
@@ -2068,7 +2068,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         require(description['manifest_schema'] == 'nex.project-build/1' and
                 description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
                 'shared_library' in description['artifact_kinds'] and
-                {'project_binary_execution','project_owned_tests','project_native_debug_descriptors','project_native_profiles'} <= set(description['features']), 'SDK project build contract differs')
+                {'project_binary_execution','project_owned_tests','project_native_debug_descriptors','project_native_profiles','project_server_workload_profiles'} <= set(description['features']), 'SDK project build contract differs')
         architecture = root / 'project-architecture'
         shutil.copytree(resources / 'examples/project-build', architecture)
         planned = cli('project', '--kind', 'plan', cwd=architecture)
@@ -2308,6 +2308,34 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                     'source/image-deleted shared capsule replay differs')
             shared_evidence.update(actual_shared_core=True, moved_capsule=str(moved), exact_watch='42')
         report['evidence']['shared_project_build'] = shared_evidence
+        workload_project=root/'native-server-workload'
+        shutil.copytree(resources/'examples/server-workload',workload_project)
+        workload_definition=workload_project/'workload.json'
+        checked_workload=cli('project','--kind','plan','--component','api','--workload',workload_definition,cwd=workload_project)
+        require(checked_workload['server_workload']['total_requests']==16 and not (workload_project/'.nex').exists(), 'server workload plan is not readonly')
+        auth_path=root/'workload-auth.json'
+        workload_token=cli('token','--auth',auth_path,'--user','bench')['token']
+        profile_output=root/'server-workload-profile.json'
+        environment['NEX_WORKLOAD_TOKEN']=workload_token
+        try:
+            measured_workload=json.loads(run([compiler,'project','--kind','profile','--component','api','--workload',workload_definition,
+                '--profile-output',profile_output,'--json','--','--auth',auth_path,'--database',root/'workload.sqlite','--workers','4'],cwd=workload_project,timeout=300))
+        finally:environment.pop('NEX_WORKLOAD_TOKEN',None)
+        workload_profile=measured_workload['observation'];metrics=workload_profile['workload']
+        expected_workload_hash=hashlib.sha256(workload_definition.read_bytes()).hexdigest()
+        require(metrics['ok'] and metrics['completed_requests']==metrics['planned_requests']==16 and metrics['definition_sha256']==expected_workload_hash,
+            'workload request expectations/counts/hash differ')
+        require(metrics['runner_sha256']==hashlib.sha256((resources/'tools/server_workload.py').read_bytes()).hexdigest(), 'workload helper differs from installed resources')
+        saved_workload=json.loads(profile_output.read_text());functions={f['name']:f for f in saved_workload['functions']}
+        require(functions['workload_example::core::render']['calls']==16 and functions['workload_example::service::handle']['calls']==16 and
+            saved_workload['memory'] and all(m['live']==0 and m['allocations']==m['frees'] for m in saved_workload['memory']), 'native workload attribution/cleanup differs')
+        server_artifact=next(a for a in measured_workload['artifacts'] if a['component']=='api')
+        require(workload_profile['build_key']==server_artifact['build_key'] and len(json.loads(Path(server_artifact['compilation']).read_text())['owned_images'])==2,
+            'workload did not execute its actual shared provider/runtime')
+        require(workload_token not in json.dumps(measured_workload) and not (workload_project/'.nex/graph.db').exists(), 'workload leaked runtime credential or synchronized graph')
+        report['evidence']['server_workload']={'ok':True,'requests':16,'phase_concurrency':[1,4],'definition_sha256':expected_workload_hash,
+            'runner_sha256':metrics['runner_sha256'],'actual_dynamic_provider':True,'profile_identity_checked':True,'owned_cleanup_checked':True,
+            'runtime_credential_captured':False,'profile':str(profile_output)}
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),

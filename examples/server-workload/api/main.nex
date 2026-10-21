@@ -1,0 +1,6 @@
+module workload_example::service;
+import "std/http.nex" as http;
+import "../core/compute.nex" as core;
+server fn handle(request:http::Request)->http::Response{
+ return http::text_response(200,core::render(42));
+}

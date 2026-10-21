@@ -1,3 +1,27 @@
+# Development cohort0.82 (not integrated)
+
+Bounded server workload metadata drives project native profiles under the real
+source/static/dynamic architecture. The readonly plan validates data before
+sources/tools and pins definition/helper hashes. The runner owns a fresh
+loopback HTTP listener; credentials stay runtime environment values. Profiles
+include expected/completed requests, warmup, concurrent phase latency/rates and
+actual provider call/memory attribution. Language0.16 is unchanged.
+
+Two public command/preflight cases pass32.613seconds. Native timeout/SIGINT
+supervision with an uncooperative FFI callback and forked heartbeat descendant
+passes39.094seconds: the group stops, sealed module snapshots are cleaned and
+all pre-existing graph rows/schema/IDs remain. Earlier retained failures found
+test argument/source-fixture mistakes, insufficient startup time and real
+read-only snapshot cleanup; corrected observations preserve the checks.
+The matching profiler/workload CTest pair passes125.25seconds, including ordinary
+source-profile descendant cleanup. Operator replacement of the workload after
+the actual listener starts is rejected in24.152seconds without accepting a
+profile or leaving temporary files. The earlier attempt to mutate through a
+request correctly failed its missing file capability; that boundary is unchanged.
+The full regression, installed SDK24 and Linux validation remain pending.
+Public workload task capture/replay, server debugging, source concurrency,
+general accelerators and broader platform delivery remain pending.
+
 # Verified primary0.81
 
 The explicitly approved0.77→0.81 transition is complete. Primary full87 passes

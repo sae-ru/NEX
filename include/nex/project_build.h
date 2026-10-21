@@ -18,6 +18,7 @@ struct ProjectBuildOptions {
   std::string testFunction, selectedTest, expectedPlanHash;
   std::map<std::string,std::string> sourceOverlays;
   bool archivedSources = false;
+  std::string workload;
 };
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.

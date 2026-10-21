@@ -1,3 +1,13 @@
+# Current isolated0.82 workload verification
+
+- [x] Implement strict readonly workload planning and actual final-server profiles.
+- [x] Check response expectations, provider identities, managed pools, timeout,
+  SIGINT, forked descendants, sealed FFI snapshots and pre-existing graph rows.
+- [ ] Complete frozen full88, installed SDK24 and Linux checks, preserving errors.
+- [ ] Add workload task capture/replay and remaining server/editor capabilities.
+- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
+  project packaging and remaining platform delivery; the full objective is open.
+
 # Current verified checkpoint and next work
 
 - [x] Integrate explicitly approved0.81 and verify primary full87, SDK24/375,

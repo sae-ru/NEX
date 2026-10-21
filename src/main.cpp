@@ -50,7 +50,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
+  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -120,7 +120,7 @@ int run(const Options &o) {
   if(o.command=="project"){
     const auto kind=o.get("--kind","plan");const bool packaging=kind=="package",execution=kind=="run"||kind=="test"||kind=="profile"||kind=="debug";
     for(const auto &[key,value]:o.values){(void)value;
-      bool allowed=key=="--kind"||key=="--component"||key=="--configuration"||key=="--build-directory"||key=="--output"||
+      bool allowed=((kind=="plan"||kind=="profile")&&key=="--workload")||key=="--kind"||key=="--component"||key=="--configuration"||key=="--build-directory"||key=="--output"||
         (packaging&&(key=="--directory"||key=="--notices"))||(execution&&key=="--foreign")||
         ((kind=="run"||kind=="test"||kind=="profile")&&key=="--timeout")||((kind=="test"||kind=="build-test")&&key=="--symbol")||
         (kind=="debug"&&key=="--adapter")||(kind=="profile"&&(key=="--profile-output"||key=="--events"||key=="--scenario"));
@@ -141,12 +141,15 @@ int run(const Options &o) {
     };
     project.compiler=o.compiler;project.machine=o.has("--json");project.adapter=o.get("--adapter","lldb");project.arguments=o.extra;
     project.foreign=o.get("--foreign");project.selectedTest=o.get("--symbol");project.timeout=count("--timeout",30,1,3600);project.explicitTimeout=o.values.contains("--timeout");
+    if(o.values.contains("--workload")&&o.get("--workload").empty())throw Error("E_OPTION","--workload requires a nonempty project file");
+    project.workload=o.get("--workload");
     project.profiling={o.get("--profile-output"),o.get("--scenario"),count("--events",100000,0,1000000),project.timeout,{}};
     auto result=buildProject(selected.parent_path().string(),selected.string(),source,project);
     auto code=int(result.getAsObject()->getInteger("exit_code").value_or(0));
     if(o.values.contains("--output"))writeFile(o.get("--output"),json(result)+"\n");
     if(project.machine||(kind!="run"&&(kind!="debug"||project.adapter!="lldb")))print(std::move(result));return code;
   }
+  if(o.values.contains("--workload"))throw Error("E_OPTION","--workload requires project plan/profile");
   if(o.values.contains("--adapter")||o.values.contains("--profile-output"))throw Error("E_OPTION","--adapter/--profile-output require project");
   if((o.values.contains("--component")||o.values.contains("--configuration"))&&!(o.command=="task"&&o.get("--kind")=="init"&&!o.get("--component").empty()))throw Error("E_OPTION","--component/--configuration require project or project task init");
   if(o.command=="analyze"){
@@ -261,7 +264,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
@@ -347,9 +350,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"server-workload","docs/server-workload.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }

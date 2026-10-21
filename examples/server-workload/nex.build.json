@@ -1,0 +1,28 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "measured",
+  "configurations": {
+    "measured": {
+      "profile": "profile"
+    },
+    "release": {
+      "profile": "release"
+    }
+  },
+  "components": {
+    "core": {
+      "kind": "shared_library",
+      "root": "core",
+      "entry": "core/compute.nex",
+      "entry_function": "render"
+    },
+    "api": {
+      "kind": "server",
+      "root": "api",
+      "entry": "api/main.nex",
+      "dependencies": {
+        "core": "dynamic"
+      }
+    }
+  }
+}

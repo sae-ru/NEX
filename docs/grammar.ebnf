@@ -194,3 +194,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.76 project packages are external deployment metadata; source
    grammar/canonical language0.16 and graph history are unchanged. *)
+
+(* Toolchain0.82 server workloads are external JSON metadata; the source
+   grammar, canonical language0.16 identities and migration policy are unchanged. *)

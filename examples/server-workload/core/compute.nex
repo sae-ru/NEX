@@ -1,0 +1,7 @@
+module workload_example::core;
+pub fn render(seed:i64)->str{
+ let offset:fn(i64)->i64=fn(x:i64)->i64{return seed+x;};
+ var total:i64=0;var i:i64=0;
+ while i<64{total=total+offset(i);i=i+1;}
+ return str(total)+" 🧠";
+}

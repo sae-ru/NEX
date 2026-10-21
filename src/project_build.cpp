@@ -1,4 +1,5 @@
 #include "nex/project_build.h"
+#include "nex/server_workload.h"
 #include "nex/backend.h"
 #include "nex/incremental.h"
 #include "nex/native_toolchain.h"
@@ -104,6 +105,8 @@ void boundTestResult(Object &row,const fs::path &cache){
 
 llvm::json::Value buildProject(const std::string &directory,const std::string &manifest,
                               const std::string &source,const ProjectBuildOptions &options) {
+  const bool withWorkload=!options.workload.empty();
+  if(withWorkload&&options.kind!="plan"&&options.kind!="profile")fail("--workload requires project plan or profile","E_OPTION");
   const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",buildTest=options.kind=="build-test",testing=options.kind=="test"||buildTest;
   if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package"&&!execution&&!testing)fail("project kind must be plan, build, package, run, test, build-test, debug or profile","E_OPTION");
   if(buildTest&&options.selectedTest.empty())fail("build-test requires --symbol NAME","E_OPTION");
@@ -184,7 +187,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(!options.component.empty()&&!components.contains(options.component))fail("unknown component: "+options.component);
   const auto &configuration=configurations.at(selectedConfiguration);
   auto selectedComponent=options.component;
-  if(execution){
+  if(execution||withWorkload){
     if(selectedComponent.empty()){
       for(const auto &[name,c]:components)if(c.kind=="executable"||c.kind=="server"||c.kind=="web"){
         if(!selectedComponent.empty())fail("project action requires --component when multiple applications exist","E_OPTION");selectedComponent=name;
@@ -193,11 +196,14 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(selectedComponent.empty())fail("project action requires an executable, server or web application","E_PROJECT_CAPABILITY");
     const auto &kind=components.at(selectedComponent).kind;
     if(kind!="executable"&&kind!="server"&&kind!="web")fail("project action requires an executable, server or web application","E_PROJECT_CAPABILITY");
-    if((options.kind=="debug"||options.kind=="profile")&&kind!="executable")fail("project debug/profile currently requires a native executable; server workloads and browser debugging remain pending","E_PROJECT_CAPABILITY");
+    if((options.kind=="debug"||options.kind=="profile")&&kind!="executable"&&!(options.kind=="profile"&&kind=="server"&&withWorkload))fail("project debug/profile requires a native executable, or server profile with --workload; browser and server debug remain pending","E_PROJECT_CAPABILITY");
+    if(withWorkload&&(kind!="server"||configuration.profile!="profile"))fail("--workload requires a server component and a profile configuration","E_OPTION");
     if(options.kind=="profile"&&configuration.profile!="profile")fail("project profile requires a configuration whose profile is profile","E_OPTION");
     if(options.kind=="run"&&options.machine&&(kind=="server"||kind=="web")&&!options.explicitTimeout)fail("captured server/web run requires an explicit --timeout; use an interactive run for a long-lived process","E_OPTION");
     if(kind=="web"&&!options.foreign.empty())fail("a web preview receives no native foreign catalogue","E_OPTION");
   }
+  std::optional<ServerWorkload> workload;
+  if(withWorkload){workload=inspectServerWorkload(root.string(),options.workload);if(options.kind=="profile")validateServerWorkloadAuthority(*workload,options.arguments,options.profiling.environment);}
   std::vector<std::string> order;std::map<std::string,int> state;
   std::function<void(const std::string&)> visit=[&](const auto &name) {
     if(state[name]==2)return;if(state[name]==1)fail("component dependency cycle at "+name,"E_PROJECT_CYCLE");state[name]=1;
@@ -343,6 +349,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     {"configuration",Object{{"name",configuration.name},{"profile",configuration.profile},{"target",configuration.target},{"toolchain",configuration.toolchain.empty()?llvm::json::Value(nullptr):llvm::json::Value(configuration.toolchain)}}},
     {"selected_component",selectedComponent.empty()?llvm::json::Value(nullptr):llvm::json::Value(selectedComponent)},{"components",std::move(descriptions)},
     {"source_checked",true},{"graph_store_opened",false},{"external_tools_invoked",false},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+  if(workload){verifyServerWorkloadInputs(*workload);auto details=Object(workload->plan);details["definition_file"]=workload->selection;details["runner_sha256"]=workload->helperSha256;plan["server_workload"]=std::move(details);}
   auto serialized=json(llvm::json::Value(Object(plan)),false);if(serialized.size()>8*1048576)fail("project plan exceeds8MiB","E_PROJECT_LIMIT");
   auto planHash=hash(serialized);plan["plan_hash"]=planHash;
   if(!options.expectedPlanHash.empty()&&planHash!=options.expectedPlanHash)fail("project test inputs changed after preflight","E_PROJECT_INPUT_CHANGED");
@@ -488,7 +495,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         llvm::json::Array nodes;
         for(const auto &function:item.program.functions)nodes.push_back(Object{{"name",function.name},{"hash",hash(json(canonical(function),false))},{"file",function.unit},{"id",nullptr}});
         auto profiling=options.profiling;profiling.arguments=arguments;profiling.directory=root.string();
+        std::unique_ptr<ServerWorkloadRun> workloadRun;
+        if(workload){workloadRun=std::make_unique<ServerWorkloadRun>(*workload);profiling.launcher=workloadRun->launcher();profiling.additionalEvidence=[&](){return workloadRun->evidence();};}
         observation=profileNative(item.program,built,Object{{"nodes",std::move(nodes)}},profiling);
+        if(workload)verifyServerWorkloadInputs(*workload);
       }else if(options.kind=="debug"){
         observation=nativeDebugSession(item.program,built,root.string(),options.compiler,options.adapter,arguments);
         if(!options.machine&&options.adapter=="lldb"){

@@ -9,6 +9,9 @@ struct ProfileOptions {
   std::string directory;
   std::map<std::string,std::string> environment;
   std::function<void(int)> interrupted;
+  // Private compiler-owned launch prefix/evidence, never executable workload data.
+  std::vector<std::string> launcher;
+  std::function<llvm::json::Value()> additionalEvidence;
 };
 llvm::json::Value profileNative(const Program &program,const BuildResult &built,llvm::json::Value graph,const ProfileOptions &options);
 }

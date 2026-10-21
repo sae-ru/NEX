@@ -1,3 +1,7 @@
+Toolchain0.82 bounded native server workloads are external development metadata.
+They preserve language0.16 syntax, canonical identities, effects, realms and
+ownership rules. No migration occurs.
+
 Toolchain0.81 adds external editor project-debug preparation and owns persisted
 reference error text. Language0.16 syntax, canonical formats and semantics stay
 unchanged; no migration is performed.

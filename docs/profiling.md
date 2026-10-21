@@ -1,3 +1,8 @@
+For actual native project servers, use the bounded [server workload flow](server-workload.md)
+with `project --kind profile --workload FILE`. It preserves static/dynamic edges,
+checks HTTP expectations and records request metrics with native function/memory
+profiles. Server debugging and workload task capture/replay remain pending.
+
 # Native profiling
 
 Toolchain 0.10 instruments reachable native NEX functions in `--profile profile` builds. Language 0.5 semantics, effects and source syntax are unchanged. Debug/release builds do not include the profiler or its hooks. TypeScript/browser and GPU profiling remain separate pending work.
@@ -44,3 +49,9 @@ On the exercised macOS host, starting upstream capture before the application li
 Optional upstream acceptance: `python3 tests/tracy_capture.py build/nex --capture PATH_TO_TRACY_CAPTURE --export PATH_TO_TRACY_CSVEXPORT` performs three direct captures, checks exact function/call agreement and frozen source paths, and saves traces/CSV plus `acceptance.json`. `--inspect PATH` additionally checks named pool balance and embedded build identity with the helper in `tests/tracy_inspect.cpp`, linked against the same upstream TracyServer/headers/configuration. These tools are not prerequisites of the default CTest suite or installed SDK.
 
 Generic functions are measured per concrete specialization, using logical names such as `model::identity<i64>`. Resolve that name through context for its source-template link and arguments. Template declarations and uncompiled watch-only helpers do not create native measurements; source-family aggregation is not implemented.
+
+Host-native profile commands supervise a complete process group with bounded
+stdout/stderr (8MiB each), timeout and interruption diagnostics. Native temporary
+files use an owned private root and are removed after descendants stop, including
+sealed FFI module snapshots. Forced termination does not guarantee a runtime
+profile or language destructors.

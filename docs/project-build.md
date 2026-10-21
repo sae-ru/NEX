@@ -1,6 +1,6 @@
 # Checked project architecture and builds
 
-## Project actions (candidate0.77)
+## Project actions
 
 Toolchain0.78 adds [acceptance tasks and captured replay](project-tasks.md).
 `project --kind build-test --symbol TEST` compiles one native owned test under
@@ -42,7 +42,9 @@ backend, preserving explicit runtime capabilities. A failed assertion remains a
 failed test even when both backends reject it. At most256 tests are selected. Each returned row is bounded to32KiB. Larger observations retain a full private result file at `report`; the response includes UTF-8-safe output prefixes and byte counts.
 Full UI/API workloads and project package task checks remain pending.
 
-Debug/profile currently select native executable components. Debug emits the
+Debug/profile select native executable components. Toolchain0.82 also supports
+server profile with an explicit bounded [workload](server-workload.md) and a
+profile configuration. Debug emits the
 same `nex.debug-session/1` descriptor as a source command, nested under
 `observation`; use its exact adapter command, launch program, cwd and source map.
 `--adapter lldb|dap|nex-dap` chooses the frontend; an interactive LLDB run is
@@ -57,8 +59,8 @@ persistent graph IDs are null with `identity_scope:"captured_project"`.
 debug/profile/native-diagnostic reports retain their stated contracts. Explicit
 `--foreign HOST.json` grants are checked before execution and around commands;
 receipts and environment variables do not grant foreign authority. Browser
-preview accepts no foreign catalogue. Source-foreign project packaging, native
-server workload debug/profile and dedicated editor commands and package task checks remain pending.
+preview accepts no foreign catalogue. Source-foreign project packaging, server debugging, workload task capture/replay and dedicated task editor commands
+remain pending.
 
 Toolchain0.71 adds `nex project`. This is external build metadata, separate from
 the existing source/language/library manifest `nex.json` (`nex.project/1`). It

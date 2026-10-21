@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.81.0 LANGUAGES C CXX)
+project(NEX VERSION 0.82.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -52,7 +52,7 @@ target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
 target_include_directories(nex PRIVATE runtime)
 target_sources(nex PRIVATE src/core_dump.cpp)
-target_sources(nex PRIVATE src/task_package.cpp)
+target_sources(nex PRIVATE src/task_package.cpp src/server_workload.cpp)
 target_sources(nex PRIVATE src/wasm.cpp src/project_build.cpp src/native_images.cpp src/debug_session.cpp src/project_capture.cpp)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_include_directories(nex SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
@@ -85,7 +85,7 @@ install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION s
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/server_workload.py DESTINATION share/nex/tools)
 install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
@@ -304,6 +304,9 @@ add_test(NAME sdk_host COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_host.py $<TARGET_FILE:nex>)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
+add_test(NAME server_workload COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_workload.py $<TARGET_FILE:nex>)
+set_tests_properties(server_workload PROPERTIES COST 180 TIMEOUT 900)
 add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/verification.py $<TARGET_FILE:nex>)
 add_test(NAME tasks COMMAND ${Python3_EXECUTABLE}
