@@ -2060,7 +2060,8 @@ server fn handle(request:http::Request) -> http::Response !{db} {
     def project_build():
         description = cli('describe')['project_build']
         require(description['manifest_schema'] == 'nex.project-build/1' and
-                description['dependency_linkage'] == ['source', 'static'], 'SDK project build contract differs')
+                description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
+                'shared_library' in description['artifact_kinds'], 'SDK project build contract differs')
         architecture = root / 'project-architecture'
         shutil.copytree(resources / 'examples/project-build', architecture)
         planned = cli('project', '--kind', 'plan', cwd=architecture)
@@ -2119,6 +2120,102 @@ server fn handle(request:http::Request) -> http::Response !{db} {
             'static_archive_consumption': True, 'consumer_definitions_excluded': True,
             'binary_plan_hash': binary_plan['plan_hash'], 'binary_artifacts': binary_artifacts,
             'graph_store_opened': False}
+        shared_project = root/'shared-library-project'
+        shutil.copytree(resources/'examples/native-libraries', shared_project)
+        shared_description = json.loads((shared_project/'nex.build.json').read_text())
+        shared_description['configurations']['profile'] = {'profile': 'profile'}
+        shared_description['components']['core']['kind'] = 'shared_library'
+        (shared_project/'bridge').mkdir()
+        bridge = shared_project/'bridge/main.nex'
+        bridge.write_text('''module sdk_shared::bridge;
+import "../core/math.nex" as m;
+pub fn render(x:i64)->str{
+ let held:str=str(m::make(40)(x));
+ return m::decorate(held); // SHARED_STOP
+}
+''')
+        shared_description['components']['bridge'] = {'kind': 'shared_library', 'root': 'bridge',
+            'entry': 'bridge/main.nex', 'entry_function': 'render', 'dependencies': {'core': 'dynamic'}}
+        shared_description['components']['app']['dependencies'] = {'bridge': 'dynamic'}
+        app_source = shared_project/'app/main.nex'
+        app_source.write_text('module sdk_shared::app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::render(2));}')
+        (shared_project/'nex.build.json').write_text(json.dumps(shared_description))
+        def shared_build(profile):
+            return cli('project', '--kind', 'build', '--configuration', profile, cwd=shared_project, timeout=300)
+        linked = shared_build('release'); images = {a['component']: a for a in linked['artifacts']}
+        require(run([images['app']['artifact']]) == '42 🧠\n', 'shared project application differs')
+        compilation = json.loads(Path(images['app']['compilation']).read_text())
+        require(len(compilation['owned_images']) == 3 and not compilation['static_libraries'] and
+                sum(i['kind'] == 'runtime' for i in compilation['owned_images']) == 1 and
+                all(u['identity'].startswith('sdk_shared::app::') for u in compilation['units']),
+                'shared project did not consume separate binary images and one runtime')
+        require(all(a['cached'] for a in shared_build('release')['artifacts']), 'shared project cache missed')
+        app_source.write_text(app_source.read_text().replace('render(2)', 'render(3)'))
+        edited = shared_build('release'); edited_images = {a['component']: a for a in edited['artifacts']}
+        require(edited['native_runtime_image'] == linked['native_runtime_image'] and
+                all(edited_images[n]['build_key'] == images[n]['build_key'] and edited_images[n]['cached']
+                    for n in ('core', 'bridge')) and run([edited_images['app']['artifact']]) == '43 🧠\n',
+                'application edit changed independent shared providers/runtime')
+        moved_app = root/'moved shared app % 🧠'; moved_app.mkdir()
+        executable = Path(edited_images['app']['artifact'])
+        shutil.copy2(executable, moved_app/'app'); shutil.copytree(executable.parent/'images', moved_app/'images')
+        hidden = root/'retained-shared-project'
+        shared_project.rename(hidden)
+        try:
+            require(run([moved_app/'app'], cwd=moved_app) == '43 🧠\n', 'moved shared application needs its original project')
+        finally:
+            hidden.rename(shared_project)
+        app_source.write_text(app_source.read_text().replace('render(3)', 'render(2)'))
+        profiled = {a['component']: a for a in shared_build('profile')['artifacts']}
+        profile_path = root/'shared-profile.json'
+        previous = {k: environment.get(k) for k in ('NEX_TRACY', 'NEX_PROFILE_OUTPUT')}
+        environment.update(NEX_TRACY='0', NEX_PROFILE_OUTPUT=str(profile_path))
+        try:
+            require(run([profiled['app']['artifact']]) == '42 🧠\n', 'shared profile execution differs')
+        finally:
+            for key, value in previous.items():
+                if value is None: environment.pop(key, None)
+                else: environment[key] = value
+        measured = json.loads(profile_path.read_text())
+        require(measured['build']['build_key'] == profiled['app']['build_key'] and measured['memory'] and
+                all(p['live'] == 0 and p['allocations'] == p['frees'] for p in measured['memory']),
+                'shared profile is unbound or retains owned values')
+        shared_evidence = {'separate_shared_libraries': 2, 'one_runtime': True, 'consumer_did_not_recompile_providers': True,
+            'moved_application': str(moved_app/'app'), 'provider_reuse_after_app_edit': True,
+            'profile_identity_checked': True, 'profile_cleanup_checked': True, 'actual_shared_core': False}
+        if args.live:
+            debug_images = {a['component']: a for a in shared_build('debug')['artifacts']}
+            debug_app = debug_images['app']; manifest = Path(debug_app['debug_manifest'])
+            metadata = json.loads(manifest.read_text())
+            projection = next(s['projection'] for s in metadata['sources'] if Path(s['original']).resolve() == bridge.resolve())
+            line = next(i+1 for i, s in enumerate(Path(projection).read_text().splitlines()) if 'SHARED_STOP' in s)
+            core = root/'shared-project.core'
+            lldb = os.environ.get('NEX_LLDB') or shutil.which('lldb')
+            require(lldb is not None, 'shared core acceptance requires LLDB')
+            captured = run([lldb, debug_app['artifact'], '--no-lldbinit', '--batch',
+                '-o', 'settings set target.disable-aslr false',
+                '-o', 'command script import '+json.dumps(str(manifest.parent/'debugger/lldb_nex.py'), ensure_ascii=False),
+                '-o', 'nex-load-debug '+json.dumps(str(manifest), ensure_ascii=False)+' --compiler '+json.dumps(str(compiler), ensure_ascii=False),
+                '-o', 'breakpoint set --file '+json.dumps(projection, ensure_ascii=False)+' --line '+str(line),
+                '-o', 'run', '-o', 'nex-eval held',
+                '-o', 'process save-core --style modified-memory '+json.dumps(str(core), ensure_ascii=False),
+                '-o', 'continue'], cwd=shared_project, timeout=120)
+            require(core.is_file() and 'exited with status = 0' in captured, 'shared library stop/core did not complete')
+            for name in ('core', 'bridge', 'app'): shutil.rmtree(shared_project/name)
+            observed = cli('core', core, '--manifest', manifest, '--expression', 'held', cwd=shared_project, timeout=120)
+            require(observed['watch']['value'] == '42' and not observed['inferior_execution'] and
+                    'libnex_bridge_' in observed['frames'][observed['selected_frame']]['module'], 'shared core frame/watch differs')
+            capsule = root/'shared-core-capsule'
+            exported = cli('core', core, '--manifest', manifest, '--export', capsule, '--expression', 'held', cwd=shared_project, timeout=180)
+            require(exported['read_after_export'], 'shared capsule was not checked after export')
+            original = Path(debug_app['artifact']).parent; original.rename(root/'retained-shared-core-build')
+            moved = root/'moved shared core % 🧠'; capsule.rename(moved)
+            replay = cli('core', '--capsule', moved, '--expression', 'held', cwd=shared_project, timeout=120)
+            require(replay['watch']['value'] == '42' and replay['stop_unchanged'] and not replay['inferior_execution'] and
+                    replay['capsule']['dependency_scope'] == 'captured_first_party_and_matching_host_system',
+                    'source/image-deleted shared capsule replay differs')
+            shared_evidence.update(actual_shared_core=True, moved_capsule=str(moved), exact_watch='42')
+        report['evidence']['shared_project_build'] = shared_evidence
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),

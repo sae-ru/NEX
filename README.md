@@ -12,11 +12,11 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated development source is **toolchain0.74.0 / language0.16**. It adds
-macOS/Linux project shared-image linking above the0.73 ownership/PIC foundation.
+This isolated development source is **toolchain0.75.0 / language0.16**. It adds
+checked LLDB frames and movable core capsules above0.74 shared project images.
 The integrated0.72 root is retained. Candidate0.73 passes82 regression groups
 and installed SDK24 on macOS/Linux ARM64; its remaining integration gates and
-the new0.74 regression/SDK/platform gates are pending.
+the new0.75 regression/SDK/platform gates are pending.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses
@@ -30,8 +30,8 @@ explicitly reported generic instantiations. Source remains available to the
 checker. A static edge does not request a fully static executable; general
 Windows DLL output and resolved binary dependency reports remain pending.
 The0.74 candidate accepts `shared_library`/`dynamic` for macOS/Linux builds,
-captures the linked images and supplies one shared runtime. Shared-image
-packaging, moved core capsules and combined execution flows are still pending.
+captures the linked images and supplies one shared runtime. Candidate0.75 supports manual LLDB/core/capsule workflows for these images;
+shared-image packaging and combined execution flows remain pending.
 
 The retained integrated0.72 root passes **80 CTest groups** and installed SDK acceptance of
 **24 phases/348 commands/213 indexed resources**. Its0.72 implementation also

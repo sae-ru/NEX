@@ -34,6 +34,7 @@ def _command(function, debugger, text=""):
 
 
 def inspect(debugger, request):
+    manifest = json.loads(Path(request["manifest"]).read_text(encoding="utf-8"))
     target = debugger.CreateTarget(request["program"])
     if not target.IsValid():
         raise ValueError("cannot create retained executable target")
@@ -41,6 +42,7 @@ def inspect(debugger, request):
     expected = target.FindModule(target.GetExecutable())
     if not expected.IsValid() or not expected.GetUUIDString():
         raise ValueError("retained executable has no native image identity")
+    expected_images = [expected]
     recorded = request.get('recorded_program', '')
     if recorded:
         error = lldb.SBError()
@@ -48,6 +50,23 @@ def inspect(debugger, request):
                                     str(Path(request['program']).parent), error)
         if error.Fail():
             raise ValueError('cannot map the retained capsule executable: ' + _text(error))
+    recorded_images = request.get('recorded_images', {})
+    if not isinstance(recorded_images, dict) or len(recorded_images) > 129:
+        raise ValueError('invalid trusted recorded image map')
+    for image in manifest.get('owned_images', []):
+        path = image['path']
+        if recorded:
+            original = recorded_images.get(path)
+            if not original:
+                raise ValueError('capsule lacks a recorded owned image mapping')
+            error = lldb.SBError()
+            target.AppendImageSearchPath(str(Path(original).parent), str(Path(path).parent), error)
+            if error.Fail():
+                raise ValueError('cannot map retained owned image: ' + _text(error))
+        module = target.AddModule(path, None, image['uuid'])
+        if (not module.IsValid() or module.GetUUIDString().replace('-', '').lower() != image['uuid']):
+            raise ValueError('cannot load matching retained owned image symbols')
+        expected_images.append(module)
     error = lldb.SBError()
     process = target.LoadCore(request["core"], error)
     if error.Fail() or not process.IsValid() or process.GetState() != lldb.eStateStopped:
@@ -65,7 +84,6 @@ def inspect(debugger, request):
         raise ValueError("core thread index is outside the bounded thread list")
     thread = process.GetThreadAtIndex(thread_index)
     process.SetSelectedThread(thread)
-    manifest = json.loads(Path(request["manifest"]).read_text(encoding="utf-8"))
     functions = {f["native_symbol"]: f for f in manifest["functions"]}
     frame_count = thread.GetNumFrames()
     frame_index = request["frame"]
@@ -76,8 +94,8 @@ def inspect(debugger, request):
         raise ValueError("core has no selected mapped NEX frame in its first64 frames")
     frame = thread.SetSelectedFrame(frame_index)
     actual = frame.GetModule()
-    if actual != expected or Path(str(actual.GetFileSpec())).resolve() != Path(request["program"]).resolve():
-        raise ValueError("core frame image does not match the retained executable")
+    if not any(actual == image for image in expected_images):
+        raise ValueError("core frame image does not match a retained native image")
     function = functions.get(frame.GetSymbol().GetName())
     if function is None:
         raise ValueError("selected core frame is not a mapped NEX function")
@@ -97,6 +115,9 @@ def inspect(debugger, request):
         raise ValueError(_text(loaded.GetError()))
     if recorded:
         formatter._contexts[str(Path(request['program']).resolve())]['_capsule_recorded_program'] = recorded
+        formatter._contexts[str(Path(request['program']).resolve())]['_capsule_recorded_images'] = {
+            str(Path(path).resolve()): recorded for path, recorded in recorded_images.items()}
+    formatter._require_frame_image(target, frame, str(Path(request['program']).resolve()))
     values = _command(formatter.values, debugger)
     operation = _command(formatter.operation, debugger)
     watch = _command(formatter.evaluate, debugger, request["expression"]) if request["expression"] else None
@@ -112,7 +133,7 @@ def inspect(debugger, request):
         module = item.GetModule()
         line = item.GetLineEntry()
         native = item.GetSymbol().GetName()
-        mapped = functions.get(native) if module == expected else None
+        mapped = functions.get(native) if any(module == image for image in expected_images) else None
         address = item.GetPCAddress()
         frames.append({"index": index, "native_symbol": _text(native),
             "function": mapped["name"] if mapped else None,
@@ -139,7 +160,7 @@ def inspect(debugger, request):
 def __lldb_init_module(debugger, context):
     try:
         path = Path(os.environ["NEX_CORE_REQUEST"])
-        if path.stat().st_size > 65536:
+        if path.stat().st_size > 8*1024**2:
             raise ValueError("core reader request exceeds limit")
         request = json.loads(path.read_text(encoding="utf-8"))
         result = inspect(debugger, request)

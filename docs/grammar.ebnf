@@ -183,3 +183,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.71 project build descriptions are external JSON metadata in
    nex.build.json, not source grammar. They do not add concurrency, GPU/NPU
    syntax or change language0.16 canonical identities. *)
+
+(* Toolchain0.75 owned-image frame/core/capsule metadata adds no source grammar
+   or canonical-format change and requires no language0.16 migration. *)

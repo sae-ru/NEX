@@ -2,6 +2,8 @@
 import copy,ctypes,importlib.util,json,os,platform,shutil,subprocess,sys
 from pathlib import Path
 import unittest
+LIVE='--live' in sys.argv
+if LIVE:sys.argv.remove('--live')
 PROBE=str(Path(sys.argv.pop(2)).resolve())
 import support as harness
 
@@ -140,5 +142,92 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         for d in variants:
             with self.assertRaises(ValueError):module.completion_inputs(d)
             self.assertEqual(native(d,False)['code'],'E_CORE_BUILD')
+
+    def test_core_rejects_changed_owned_images_symbols_and_forged_debug_identity_before_lldb(self):
+        app=self.artifacts(self.build())['app'];manifest=Path(app['debug_manifest']);metadata=json.loads(manifest.read_text())
+        core=self.root/'not.core';core.write_bytes(b'x'*64);never={'NEX_LLDB':str(self.root/'not-a-debugger')}
+        def read():return self.cli('core',core,'--manifest',manifest,ok=False,env=never)
+        self.assertEqual(read()['code'],'E_CORE_INPUT')
+        for image in metadata['owned_images']:
+            for path in [Path(image['path']),*[Path(s['path']) for s in image['symbols']]]:
+                original=path.read_bytes()
+                try:
+                    path.write_bytes(original+b'changed')
+                    self.assertEqual(read()['code'],'E_CORE_BUILD',str(path))
+                finally:path.write_bytes(original)
+        original=manifest.read_bytes()
+        for field in ('uuid','sha256','hash','path'):
+            bad=copy.deepcopy(metadata);bad['owned_images'][0][field]='forged'
+            try:
+                manifest.write_text(json.dumps(bad));self.assertEqual(read()['code'],'E_CORE_BUILD',field)
+            finally:manifest.write_bytes(original)
+
+    @unittest.skipUnless(LIVE,'use --live for actual DSO stops, watches and relocated native cores')
+    def test_live_library_frame_watch_and_moved_core_without_original_images(self):
+        path=self.root/'producer/main.nex'
+        path.write_text(path.read_text().replace('pub fn transform(p:m::Payload)->m::Payload{return m::Payload(p.text+"🧠",p.data,p.values,p.callback);}', '''pub fn transform(p:m::Payload)->m::Payload{
+ let held:str=p.text;
+ let output:m::Payload=m::Payload(held+"🧠",p.data,p.values,p.callback);
+ return output; // DSO_STOP
+}'''))
+        app=self.artifacts(self.build())['app'];manifest=Path(app['debug_manifest']);meta=json.loads(manifest.read_text())
+        projection=next(s['projection'] for s in meta['sources'] if Path(s['original']).resolve()==path.resolve())
+        line=next(i+1 for i,s in enumerate(Path(projection).read_text().splitlines()) if 'DSO_STOP' in s)
+        bad=copy.deepcopy(meta);selected=next(i for i in bad['owned_images'] if Path(i['path']).name.startswith('libnex_producer_'));selected['uuid']='0'*len(selected['uuid'])
+        bad_manifest=self.root/'bad-debug.json';bad_manifest.write_text(json.dumps(bad))
+        core=self.root/'shared.core';report=self.root/'shared-live.json';script=self.root/'shared_live.py'
+        data=self.root/'data';data.mkdir()
+        script.write_text('''import json,lldb
+def __lldb_init_module(debugger,internal_dict):
+ debugger.SetAsync(False)
+ target=debugger.GetSelectedTarget()
+ breakpoint=target.BreakpointCreateByLocation(PROJECTION,LINE)
+ process=target.LaunchSimple(None,ENV,CWD)
+ try:
+  assert process.GetState()==lldb.eStateStopped
+  frame=process.GetSelectedThread().GetSelectedFrame()
+  assert 'libnex_producer_' in str(frame.GetModule().GetFileSpec()),str(frame.GetModule().GetFileSpec())
+  def command(text,ok=True):
+   result=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,lldb.SBExecutionContext(frame),result)
+   assert result.Succeeded()==ok,result.GetOutput()+result.GetError()
+   return result.GetOutput() if ok else result.GetError()
+  watch=json.loads(command('nex-eval held + str(len(p.values)) + str(len(p.data))'))
+  assert watch['value']=='Я22',watch
+  callback=json.loads(command('nex-eval p.callback(2)'))
+  assert callback['value']=='42',callback
+  command('nex-load-debug '+json.dumps(BAD,ensure_ascii=False)+' --compiler '+json.dumps(COMPILER,ensure_ascii=False))
+  rejected=command('nex-eval held',False)
+  assert 'image' in rejected,rejected
+  command('nex-load-debug '+json.dumps(MANIFEST,ensure_ascii=False)+' --compiler '+json.dumps(COMPILER,ensure_ascii=False))
+  command('process save-core --style modified-memory '+json.dumps(CORE,ensure_ascii=False))
+  breakpoint.SetEnabled(False);process.Continue()
+  assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
+  with open(REPORT,'w') as output:json.dump({'watch':watch,'callback':callback,'wrong_uuid_rejected':True},output)
+ finally:
+  if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
+'''.replace('PROJECTION',repr(projection)).replace('LINE',str(line)).replace('ENV',repr(['NEX_FILES_ROOT='+str(data),'NEX_FILES_WRITE=1','NEX_TRACY=0','PATH=/usr/bin:/bin'])).replace('CWD',repr(str(self.root))).replace('BAD',repr(str(bad_manifest))).replace('COMPILER',repr(harness.NEX)).replace('MANIFEST',repr(str(manifest))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))))
+        args=[os.environ.get('NEX_LLDB','lldb'),app['artifact'],'--no-lldbinit','--batch',
+              '-o','settings set target.disable-aslr false',
+              '-o','command script import '+json.dumps(str(manifest.parent/'debugger/lldb_nex.py'),ensure_ascii=False),
+              '-o','nex-load-debug '+json.dumps(str(manifest),ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False),
+              '-o','command script import '+json.dumps(str(script),ensure_ascii=False)]
+        p=subprocess.run(args,capture_output=True,text=True,timeout=120)
+        self.assertEqual(p.returncode,0,p.stdout+p.stderr);self.assertTrue(report.is_file(),p.stdout+p.stderr)
+        direct=self.cli('core',core,'--manifest',manifest,'--expression','held + str(len(p.values))',timeout=120)
+        self.assertEqual(direct['watch']['value'],'Я2');self.assertFalse(direct['inferior_execution'])
+        self.assertIn('libnex_producer_',direct['frames'][direct['selected_frame']]['module'])
+        capsule=self.root/'capsule'
+        alias_parent=self.root/'alias';alias_parent.mkdir();alias=alias_parent/manifest.parent.name
+        alias.symlink_to(manifest.parent,target_is_directory=True)
+        aliased=copy.deepcopy(meta);aliased['program']=str(alias/'app');manifest.write_text(json.dumps(aliased))
+        exported=self.cli('core',core,'--manifest',alias/'debug.json','--export',capsule,'--expression','held',timeout=180)
+        self.assertTrue(exported['read_after_export'])
+        alias.unlink();alias_parent.rmdir()
+        for name in ('model','producer','consumer','app'):shutil.rmtree(self.root/name)
+        cache=Path(app['artifact']).parent.parent;shutil.rmtree(cache)
+        moved=self.root/'moved core % 🧠';capsule.rename(moved)
+        observed=self.cli('core','--capsule',moved,'--expression','held + str(len(p.values)) + str(len(p.data))',timeout=120)
+        self.assertEqual(observed['watch']['value'],'Я22');self.assertFalse(observed['inferior_execution'])
+        self.assertTrue(observed['stop_unchanged']);self.assertEqual(observed['capsule']['dependency_scope'],'captured_first_party_and_matching_host_system')
 
 if __name__=='__main__':unittest.main()

@@ -333,7 +333,10 @@
           "const": true
         },
         "dependency_scope": {
-          "const": "matching_host_system_only"
+          "enum": [
+            "matching_host_system_only",
+            "captured_first_party_and_matching_host_system"
+          ]
         }
       }
     }

@@ -191,7 +191,7 @@ def write_json(path, value):
         stream.write(data)
 
 
-def system_dependencies(program):
+def system_dependencies(program, owned_names=()):
     # Read native headers without using ldd or launching the image's loader.
     if sys.platform == 'darwin':
         args = ['/usr/bin/otool', '-L', str(program)]
@@ -211,14 +211,45 @@ def system_dependencies(program):
     if sys.platform == 'darwin':
         libraries = [line.strip().split(' (compatibility version ', 1)[0]
                      for line in text.splitlines()[1:] if line.startswith('\t')]
-        if not libraries or any(not p.startswith(('/usr/lib/', '/System/Library/')) for p in libraries):
+        first_party = {'@rpath/'+name for name in owned_names}
+        if not libraries or any(not p.startswith(('/usr/lib/', '/System/Library/')) and p not in first_party for p in libraries):
             raise ValueError('capsules with non-system native dependencies are not yet supported')
+        libraries = [p for p in libraries if p not in first_party]
     else:
         from sdk_bundle import LinuxBundle
         libraries = re.findall(r'\(NEEDED\).*?\[([^]]+)\]', text)
-        if any('/' in name or name not in LinuxBundle.HOST_LIBRARIES for name in libraries):
+        if any('/' in name or (name not in LinuxBundle.HOST_LIBRARIES and name not in owned_names) for name in libraries):
             raise ValueError('capsules with non-system native dependencies are not yet supported')
+        libraries = [name for name in libraries if name not in owned_names]
     return sorted(set(libraries))
+
+
+def owned_image_paths(manifest, build):
+    paths = completion_inputs(build)
+    shared = build.get('completion_schema') == 'nex.native-completion/3'
+    if not shared:
+        if 'owned_images' in manifest:
+            raise ValueError('legacy capsule cannot add owned images')
+        return []
+    names = [entry['path'] for entry in build['completion_inputs'] if entry['kind'] == 'owned_image']
+    records = manifest.get('owned_images')
+    if not isinstance(records, list) or len(records) != len(names):
+        raise ValueError('capsule owned image inventory differs')
+    if any(not isinstance(r, dict) or not isinstance(r.get('path'), str) for r in records):
+        raise ValueError('invalid capsule owned image records')
+    paths = [Path(r['path']) for r in records]
+    if (any(not p.is_absolute() or os.path.normpath(str(p)) != str(p) or p.parent.name != 'images' or
+            p.parent.parent.name != build['key'] for p in paths) or
+            len({str(p.parent.parent) for p in paths}) != 1 or
+            [p.parent.name+'/'+p.name for p in paths] != names):
+        raise ValueError('capsule owned image paths/order differ')
+    return names
+
+
+def native_dependencies(folder, images):
+    names = {PurePosixPath(name).name for name in images}
+    return sorted({dependency for name in ['app', *images]
+                   for dependency in system_dependencies(folder/name, names)})
 
 
 def identity(manifest):
@@ -285,12 +316,16 @@ def export(request):
     copy(Path(request['core']), 'process.core', CORE_LIMIT)
     if inventory['process.core']['sha256'] != request['core_sha256']:
         raise ValueError('core changed after retained-build inspection')
-    dependencies = system_dependencies(work/prefix/'app')
+    images = owned_image_paths(manifest, build)
+    dependencies = native_dependencies(work/prefix, images)
     receipt = {'schema': 'nex.core-capsule/1', 'identity': bound, 'host': host(),
                'recorded_program': recorded_program, 'original_program': manifest['program'], 'build_directory': prefix,
                'core': 'process.core', 'original_manifest': 'original-debug.json',
                'native_dependencies': dependencies, 'dependency_scope': 'matching_host_system_only',
                'application_execution': False, 'files': inventory}
+    if images:
+        receipt['dependency_scope'] = 'captured_first_party_and_matching_host_system'
+        receipt['recorded_images'] = {name: str((original.parent/name).resolve(strict=True)) for name in images}
     write_json(work/'capsule.json', receipt)
     return {'ok': True, 'files': len(inventory), 'bytes': sum(x['bytes'] for x in inventory.values())}
 
@@ -306,8 +341,11 @@ def prepare(request):
     receipt, receipt_record = files.json_record(root/'capsule.json')
     required = {'schema', 'identity', 'host', 'recorded_program', 'original_program', 'build_directory', 'core',
                 'original_manifest', 'native_dependencies', 'dependency_scope', 'application_execution', 'files'}
+    shared_scope = isinstance(receipt, dict) and receipt.get('dependency_scope') == 'captured_first_party_and_matching_host_system'
+    if shared_scope:
+        required.add('recorded_images')
     if (not isinstance(receipt, dict) or set(receipt) != required or receipt['schema'] != 'nex.core-capsule/1' or
-            receipt['host'] != host() or receipt['dependency_scope'] != 'matching_host_system_only' or
+            receipt['host'] != host() or receipt['dependency_scope'] not in ('matching_host_system_only', 'captured_first_party_and_matching_host_system') or
             receipt['application_execution'] is not False):
         raise ValueError('unsupported capsule format/host/dependency scope')
     inventory = receipt['files']
@@ -334,6 +372,16 @@ def prepare(request):
     build, build_record = files.json_record(root/prefix/'build.json')
     if inventory.get(prefix+'/build.json') != build_record:
         raise ValueError('capsule native build metadata differs')
+    images = owned_image_paths(manifest, build)
+    if bool(images) != shared_scope:
+        raise ValueError('capsule owned image dependency scope differs')
+    recorded_images = receipt.get('recorded_images', {})
+    if not isinstance(recorded_images, dict) or set(recorded_images) != set(images):
+        raise ValueError('capsule recorded image map differs')
+    for name, value in recorded_images.items():
+        if (not isinstance(value, str) or len(value.encode('utf-8')) > 16384 or '\0' in value or
+                value != str(Path(recorded).parent/name)):
+            raise ValueError('invalid recorded owned image path')
     expected |= {prefix+'/'+name for name in completion_inputs(build)}
     expected |= {prefix+'/capsule-sources/%04d/source.nex' % index for index in range(len(sources))}
     if sys.platform == 'darwin':
@@ -374,8 +422,17 @@ def prepare(request):
         if observed != record:
             raise ValueError('capsule file integrity mismatch: '+name)
     folder = work/prefix
-    if system_dependencies(folder/'app') != receipt['native_dependencies']:
+    if native_dependencies(folder, images) != receipt['native_dependencies']:
         raise ValueError('capsule native dependencies differ')
+    for image in manifest.get('owned_images', []):
+        original_image_base = Path(image['path']).parent.parent
+        image['path'] = str(folder/'images'/Path(image['path']).name)
+        for symbol in image.get('symbols', []):
+            relative_symbol = Path(symbol['path']).relative_to(original_image_base)
+            relative(relative_symbol.as_posix())
+            if prefix+'/'+relative_symbol.as_posix() not in inventory:
+                raise ValueError('capsule owned symbols are outside the retained inventory')
+            symbol['path'] = str(folder/relative_symbol)
     manifest['program'] = str(folder/'app')
     mappings = []
     for index, source in enumerate(manifest['sources']):
@@ -402,7 +459,9 @@ def prepare(request):
         raise ValueError('capsule manifest changed during inspection')
     return {'ok': True, 'manifest': str(folder/'debug.json'), 'core': str(root/'process.core'),
             'core_sha256': inventory['process.core']['sha256'],
-            'recorded_program': receipt['recorded_program'], 'manifest_sha256': digest['sha256'],
+            'recorded_program': receipt['recorded_program'], 'original_program': receipt['original_program'],
+            'recorded_images': {str(folder/name): value for name, value in recorded_images.items()},
+            'dependency_scope': receipt['dependency_scope'], 'manifest_sha256': digest['sha256'],
             'files': len(inventory), 'host': receipt['host'], 'native_dependencies': receipt['native_dependencies']}
 
 

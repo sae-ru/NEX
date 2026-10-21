@@ -54,6 +54,10 @@ library exports as external build metadata ([project builds](project-build.md)).
 Its native ABI is compiler-private; language0.16, ownership, effects, realms and
 canonical formats are unchanged. Source remains required for checking.
 
+Toolchain0.75 extends external native frame/core metadata to captured shared images.
+It changes no source syntax, canonical identity, language0.16 semantics or graph
+history; [core debugging](core-debugging.md) states the matching-SDK/host limits.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external

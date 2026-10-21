@@ -1,6 +1,7 @@
 #pragma once
 #include "nex/backend.h"
 namespace nex {
+std::string nativeImageUUID(const std::string &path);
 // Inputs originate only in a checked project plan. Static dependencies are the
 // archive frontier of this image; dynamic dependencies include its DSO closure.
 struct NativeImageInput {

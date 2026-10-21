@@ -42,6 +42,8 @@ def main():
                 'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
             run('live-project-archives',['python3','/src/tests/project_build.py','/build/sdk/bin/nex','--live',
                 'Projects.test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources'])
+            run('live-project-images',['python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
+                'NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

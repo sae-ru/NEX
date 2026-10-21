@@ -190,10 +190,17 @@ language history.
 
 Build output is not a deployment package. Keep the full `images/` directory
 beside its executable; external system dependencies retain their platform/notice
-requirements. Automatic shared-image packaging, core inspection/capsules for shared images,
+requirements. Automatic shared-image packaging,
 Windows DLLs and combined project run/test/debug/task commands remain pending.
 Do not pass a project app through an ordinary source command expecting the
 declared binary architecture to survive that independent compilation.
+
+Candidate0.75 adds manual LLDB frames and read-only core/capsule workflows for
+these images; see [core debugging](core-debugging.md). The final app manifest
+covers reachable provider code and binds selected images by bytes and UUID.
+Explicit export retains the complete image/symbol inventory for matching-host
+reads after original source/image deletion. Combined project DAP/editor sessions
+and capsules with external non-system dependencies remain pending.
 
 The selected configuration supplies `profile` (`debug`, `profile`, `release`),
 native `target` (default `native`) and optional relative `toolchain` description.

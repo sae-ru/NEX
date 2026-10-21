@@ -1,15 +1,17 @@
-# Native core reports and capsules (development 0.59)
+# Native core reports and capsules
 
 This development command reads a native core with its matching retained build:
 `nex core PROCESS.core --manifest BUILD/debug.json --json`.
 An optional `--expression TEXT` uses the existing pure, bounded watch evaluator.
-It does not run, attach to or resume an application. This draft is implemented
-in an isolated source tree. The preceding0.58.2 retained-build pipeline has
-separate platform evidence. Current capsule C++/live/full/SDK validation is pending.
+It does not run, attach to or resume an application. The integrated0.72 pipeline
+has separate regression/installed-SDK evidence. Candidate0.75 extends it to
+captured project shared images; full/SDK/Linux validation of that extension is
+pending. Focused macOS tests cover actual library stops, closure watches, wrong
+UUIDs, alias export and source/image-deleted capsule reads.
 
 The report records core bytes/SHA-256, executable bytes/hash, actual module UUID,
 stop reason, bounded thread/stack summaries and the selected NEX frame. A frame
-must belong to the executable's loaded module before receiving a graph revision,
+must belong to the executable or a captured owned native image before receiving a graph revision,
 operation candidates or typed values. Function names alone are insufficient.
 For Linux cores, the recorded PC mapping must name the retained executable and
 its loaded image must be unambiguous. Missing mapping evidence is rejected. ELF64 uses the core's own NT_FILE note;
@@ -87,7 +89,7 @@ LLDB reader. Paths naming scripts or compilers inside capsule data never select
 executable tooling. Hashes establish agreement with the receipt, not publisher
 authentication. The current slice requires a matching macOS/Linux ARM64 or
 x86-64 host, debugger and system runtime. It rejects source foreign declarations
-and non-system native dependencies; this excludes current TLS/SQLite application
+and external non-system native dependencies; this excludes current TLS/SQLite application
 packages. `otool` on macOS or `readelf` on Linux reads dependency headers without
 launching the application. Cross-OS/architecture/runtime relocation and native
 dependency packaging remain pending. Exact optimized operation attribution
@@ -107,3 +109,26 @@ input list (`nex.native-completion/2`). The reader hashes those additional files
 and capsule export/import preserves their exact bytes. Legacy records without
 these fields keep the earlier six-file contract. This adds no source syntax or
 language migration and does not establish project-artifact DAP integration.
+
+## Captured project images (candidate0.75)
+
+Completion/3 capsules retain the final application's `images/` closure and every
+captured native symbol file. Before LLDB starts, C++ checks BLAKE3/SHA-256, native
+UUID/build ID, typed relative inventory and debug/input agreement, then rechecks
+image/symbol hashes after reading. Live selected frames also require a matching
+image path, SHA-256 and UUID; ambiguous loaded modules reject. Function/source
+names do not substitute for image identity.
+
+Shared receipts keep `nex.core-capsule/1`, adding dependency scope
+`captured_first_party_and_matching_host_system` and a bounded `recorded_images`
+map. Keys name inventoried relative images; values preserve historical physical
+paths recorded by the core. Verified staging projects image/symbol paths into a
+fresh temporary directory while retaining original build/completion inputs.
+Current loader paths do not replace recorded PC evidence. Private relocation
+fields are supplied by the checked reader, never by serialized debug metadata.
+Legacy system-only capsules preserve their previous receipt shape and checks.
+
+Load the final application's `debug.json` for a manual LLDB library session; use
+its frozen provider-source projection for breakpoints. Keep all images/symbols.
+Shared deployment packages and combined project DAP/editor sessions remain
+pending. External non-system dependencies keep the restrictions above.

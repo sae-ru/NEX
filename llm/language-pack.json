@@ -350,7 +350,7 @@
     "native_preview_not_exact_wire_value": true
   },
   "native_debug_image_binding": {
-    "selected_frame": "same_loaded_module_as_executable",
+    "selected_frame": "executable_or_captured_owned_native_image",
     "function_names_are_not_image_identity": true,
     "requires_matching_manifest": true,
     "linux_core_requires_recorded_mapping": true,
@@ -359,7 +359,9 @@
     "recorded_mapping_sources": [
       "minidump_memory_region",
       "elf_nt_file"
-    ]
+    ],
+    "owned_image_hash": "sha256",
+    "owned_image_uuid": true
   },
   "native_core": {
     "schema": "nex.core-report/1",
@@ -392,8 +394,10 @@
       "non_system_dependencies": false,
       "file_limit": 4096,
       "total_bytes_limit": 35433480192,
-      "copy_timeout_seconds": 900
-    }
+      "copy_timeout_seconds": 900,
+      "captured_first_party_images": true
+    },
+    "owned_images": true
   },
   "wasm_features": {
     "source_support": true,
@@ -510,8 +514,8 @@
     "shared_pending": [
       "windows_dll",
       "shared_image_packaging",
-      "shared_image_core_inspection_and_capsules",
-      "combined_project_execution"
+      "combined_project_execution",
+      "shared_image_dap_editor_sessions"
     ]
   },
   "native_application_lifetime": {

@@ -16,6 +16,8 @@ import bisect
 import codecs
 import os
 import stat
+import hashlib
+import re
 
 import lldb
 
@@ -23,6 +25,59 @@ MAX_ITEMS = 32
 MAX_DEPTH = 6
 MAX_TEXT = 4096
 _contexts = {}
+
+
+def _image_hash(path):
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 512*1024**2:
+            raise ValueError('owned native image must be a bounded regular file')
+        digest = hashlib.sha256()
+        count = 0
+        while True:
+            data = os.read(fd, 65536)
+            if not data:
+                break
+            count += len(data)
+            if count > before.st_size:
+                raise ValueError('owned native image grew during inspection')
+            digest.update(data)
+        after = os.fstat(fd)
+        named = os.lstat(path)
+        if (count != before.st_size or
+                (before.st_size, before.st_mtime_ns, before.st_ctime_ns) !=
+                (after.st_size, after.st_mtime_ns, after.st_ctime_ns) or
+                (named.st_dev, named.st_ino) != (before.st_dev, before.st_ino)):
+            raise ValueError('owned native image changed during inspection')
+        return digest.hexdigest()
+    finally:
+        os.close(fd)
+
+
+def _owned_images(manifest, program):
+    images = manifest.get('owned_images', [])
+    if not isinstance(images, list) or len(images) > 129:
+        raise ValueError('invalid owned native image inventory')
+    result = {}
+    for record in images:
+        if not isinstance(record, dict):
+            raise ValueError('invalid owned native image record')
+        path, digest, uuid = (record.get(k) for k in ('path', 'sha256', 'uuid'))
+        if (not isinstance(path, str) or len(path) > 16384 or '\0' in path or
+                not isinstance(digest, str) or not re.fullmatch('[0-9a-f]{64}', digest) or
+                not isinstance(uuid, str) or not re.fullmatch('[0-9a-f]{16,128}', uuid) or len(uuid) % 2 or
+                record.get('kind') not in ('runtime', 'library') or
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', Path(path).name) or
+                not Path(path).is_absolute() or os.path.normpath(path) != path):
+            raise ValueError('invalid owned native image path/identity')
+        resolved = str(Path(path).resolve())
+        if (resolved in result or Path(path).is_symlink() or
+                Path(resolved).parent != (Path(program).parent/'images').resolve() or
+                _image_hash(path) != digest):
+            raise ValueError('owned native image bytes/path differ from the manifest')
+        result[resolved] = record
+    return result
 
 
 def _member(value, name):
@@ -221,8 +276,11 @@ def load(debugger, command, result, internal_dict):
         # Relocation authority comes only from the trusted core reader after
         # capsule inventory/build validation, never a persisted debug field.
         manifest.pop('_capsule_recorded_program', None)
+        manifest.pop('_capsule_recorded_images', None)
+        manifest.pop('_owned_images', None)
         if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
+        manifest['_owned_images'] = _owned_images(manifest, str(Path(manifest['program']).resolve()))
         mappings = manifest.get("source_map", [])
         if not isinstance(mappings, list) or len(mappings) > 4096:
             raise ValueError("invalid NEX source map")
@@ -871,28 +929,43 @@ def _elf_core_mapping(path, pc):
 
 
 def _require_frame_image(target, frame, program):
-    # A core may load its actual image alongside the executable selected by
-    # the user. Names and even file paths alone cannot bind a frame to the
-    # manifest: two loaded modules can have different UUIDs at the same path.
-    # SBModule equality identifies the actual loaded module, without reading
-    # inferior expressions or treating its source names as proof of identity.
     actual = frame.GetModule()
-    expected = target.FindModule(target.GetExecutable())
-    if (not actual.IsValid() or not expected.IsValid() or actual != expected or
-            str(Path(str(actual.GetFileSpec())).resolve()) != program):
+    executable = target.FindModule(target.GetExecutable())
+    if not actual.IsValid() or not executable.IsValid():
         raise ValueError("selected frame image does not match the loaded NEX manifest")
+    context = _contexts.get(program, {})
+    selected = str(Path(str(actual.GetFileSpec())).resolve())
+    expected = executable
+    if actual == executable:
+        if selected != program:
+            raise ValueError("selected frame image does not match the loaded NEX manifest")
+    else:
+        record = context.get('_owned_images', {}).get(selected)
+        if (not record or actual.GetUUIDString().replace('-', '').lower() != record['uuid'] or
+                _image_hash(selected) != record['sha256']):
+            raise ValueError("selected frame owned image identity/bytes differ from the loaded NEX manifest")
+        expected = actual
     process = target.GetProcess()
-    if process.GetPluginName() in ("minidump", "elf-core"):
-        context = _contexts.get(program, {})
+    core = process.GetPluginName() in ("minidump", "elf-core")
+    if core or actual != executable:
+        if target.GetNumModules() > 10000:
+            raise ValueError("native image module list exceeds limit")
+        candidates = [target.GetModuleAtIndex(i) for i in range(target.GetNumModules())
+                      if str(Path(str(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == selected]
+        if (not candidates or not expected.GetUUIDString() or
+                any(m != expected or m.GetUUIDString() != expected.GetUUIDString() for m in candidates)):
+            raise ValueError("native image identity is ambiguous or differs from the retained image")
+    if core:
         key = context.get('build_key', '')
-        recorded = context.get('_capsule_recorded_program', program)
+        recorded_program = context.get('_capsule_recorded_program', program)
         if (len(key) != 64 or any(c not in '0123456789abcdef' for c in key) or
-                Path(program).parent.name != key or not Path(recorded).is_absolute() or
-                Path(recorded).parent.name != key or Path(recorded).name != 'app'):
+                Path(program).parent.name != key or not Path(recorded_program).is_absolute() or
+                Path(recorded_program).parent.name != key or Path(recorded_program).name != 'app'):
             raise ValueError("core image requires its content-addressed retained build directory")
-        # LLDB can resolve a core PC through a different supplied executable
-        # at the same address. In that case GetModule() names the supplied
-        # image, while the core's recorded mapping still names the real one.
+        recorded = (recorded_program if actual == executable else
+                    context.get('_capsule_recorded_images', {}).get(selected, selected))
+        if not isinstance(recorded, str) or not Path(recorded).is_absolute():
+            raise ValueError("invalid recorded owned image mapping")
         if process.GetPluginName() == 'elf-core':
             if not hasattr(process, 'GetCoreFile'):
                 raise ValueError("core image requires LLDB core-file metadata access")
@@ -901,19 +974,11 @@ def _require_frame_image(target, frame, program):
             region = lldb.SBMemoryRegionInfo()
             error = process.GetMemoryRegionInfo(frame.GetPC(), region)
             name = region.GetName() if error.Success() else None
-        # Capsule paths describe the historical mapping. Resolving a now changed
-        # filesystem alias would rewrite that evidence during a later read.
-        named = os.path.normpath(name) if name and '_capsule_recorded_program' in context else str(Path(name).resolve()) if name else None
-        expected_name = os.path.normpath(recorded) if '_capsule_recorded_program' in context else program
+        relocated = '_capsule_recorded_program' in context
+        named = os.path.normpath(name) if name and relocated else str(Path(name).resolve()) if name else None
+        expected_name = os.path.normpath(recorded) if relocated else str(Path(recorded).resolve())
         if not named or named != expected_name:
             raise ValueError("core recorded frame image does not match the loaded NEX manifest")
-        if target.GetNumModules() > 10000:
-            raise ValueError("core image module list exceeds limit")
-        candidates = [target.GetModuleAtIndex(i) for i in range(target.GetNumModules())
-                      if str(Path(str(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == program]
-        if (not candidates or not expected.GetUUIDString() or
-                any(m != expected or m.GetUUIDString() != expected.GetUUIDString() for m in candidates)):
-            raise ValueError("core recorded image identity is ambiguous or differs from the executable")
 
 
 def _stopped(debugger, compiler=True):

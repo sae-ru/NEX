@@ -113,6 +113,8 @@ void provided(const Captured &stage,std::map<std::string,std::string> &contracts
 }
 }
 
+std::string nativeImageUUID(const std::string &path){return uuid(path);}
+
 NativeImageResults buildNativeImages(const std::string &directory,const std::vector<NativeImageInput> &inputs){
   if(inputs.empty())fail("shared image linking needs checked stages");
   auto root=fs::absolute(directory);auto tools=configureNative(inputs.front().options);llvm::Triple triple(tools.target);

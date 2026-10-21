@@ -1,5 +1,6 @@
 #include "nex/core_dump.h"
 #include "nex/backend.h"
+#include "nex/native_images.h"
 #include "nex/task_process.h"
 #include "nex/native_diagnostics.h"
 #include "nex/operations.h"
@@ -91,8 +92,6 @@ JSON inspectCore(const CoreOptions &options){
     if(!recorded.is_absolute()||recorded.lexically_normal()!=recorded||recorded.filename()!="app"||recorded.parent_path().filename()!=folder.filename())throw Error("E_CORE_CAPSULE","relocated core requires its original executable build key");
   }
   auto build=read(folder/"build.json",8*1048576);const auto &b=object(build);
-  if(b.getString("completion_schema")=="nex.native-completion/3")
-    throw Error("E_CORE_BUILD","core inspection of shared project images is pending; retain the complete native build and matching SDK");
   for(const auto *key:{"revision","compiler_build","profile","target"})if(required(b,key)!=required(m,key))throw Error("E_CORE_BUILD",std::string("debug/build identity differs: ")+key);
   if(required(b,"key")!=required(m,"build_key")||b.getString("kind")=="static_library")throw Error("E_CORE_BUILD","core build key/kind differs");
   // The retained completion record binds executable, IR, compilation metadata
@@ -101,6 +100,47 @@ JSON inspectCore(const CoreOptions &options){
   for(const auto &file:{image,folder/"program.mlir",folder/"program.ll",folder/"compilation.json",folder/"build.json",folder/"source-bundle.json"}){auto contents=text(file,512*1048576);auto digest=hash(contents);completion+=digest;if(file==image){imageHash=digest;imageBytes=contents.size();}}
   for(const auto &file:nativeCompletionInputs(b))completion+=hash(text(folder/file,512*1048576));
   if(text(folder/"complete",1024)!=hash(completion)+"\n")throw Error("E_CORE_BUILD","retained executable/build completion record differs");
+  std::vector<std::pair<fs::path,std::string>> ownedHashes;
+  if(b.getString("completion_schema")=="nex.native-completion/3"){
+    const auto original=options.originalProgram.empty()?image:fs::path(options.originalProgram);
+    if(!original.is_absolute()||original.lexically_normal()!=original||original.filename()!="app"||original.parent_path().filename()!=folder.filename())
+      throw Error("E_CORE_BUILD","invalid original shared-image application path");
+    auto link=read(folder/"image-inputs.json",8*1048576);auto captured=object(link).getArray("images"),projected=m.getArray("owned_images");
+    if(!captured||!projected||captured->size()!=projected->size()||captured->empty()||captured->size()>129)
+      throw Error("E_CORE_BUILD","shared-image manifest/input inventory differs");
+    std::set<std::string> expectedImages,expectedSymbols,seenImages,seenSymbols;
+    for(const auto &entry:*b.getArray("completion_inputs")){
+      auto &o=object(entry);if(o.getString("kind")=="owned_image")expectedImages.insert(required(o,"path"));
+      if(o.getString("kind")=="owned_symbols")expectedSymbols.insert(required(o,"path"));
+    }
+    fs::path originalImageBase;bool relocated=!options.recordedProgram.empty();
+    for(size_t i=0;i<captured->size();++i){
+      const auto &record=object((*captured)[i]);auto current=Object(record);fs::path old(required(record,"path"));
+      auto relative=fs::path("images")/old.filename();auto path=folder/relative;
+      auto base=old.parent_path().parent_path();if(originalImageBase.empty())originalImageBase=base;
+      std::error_code directoryError;
+      if(!old.is_absolute()||old.lexically_normal()!=old||old.parent_path().filename()!="images"||base.filename()!=folder.filename()||base!=originalImageBase||
+         (!relocated&&!fs::equivalent(base,folder,directoryError))||!expectedImages.contains(relative.generic_string())||!seenImages.insert(relative.generic_string()).second)
+        throw Error("E_CORE_BUILD","owned image path/order differs from completion inputs");
+      Input input(path,512*1048576);auto bytes=input.text();auto sha=input.sha();
+      if(hash(bytes)!=required(record,"hash")||sha!=required(record,"sha256")||nativeImageUUID(path.string())!=required(record,"uuid"))
+        throw Error("E_CORE_BUILD","owned native image bytes/UUID differ");
+      input.samePath(path);ownedHashes.emplace_back(path,sha);if(relocated)current["path"]=path.string();
+      const auto *symbols=record.getArray("symbols");if(!symbols)throw Error("E_CORE_BUILD","missing owned image symbol inventory");
+      llvm::json::Array currentSymbols;
+      for(const auto &value:*symbols){const auto &symbol=object(value);fs::path oldSymbol(required(symbol,"path"));
+        auto relativeSymbol=oldSymbol.lexically_relative(base),insideSymbols=oldSymbol.lexically_relative(fs::path(old.string()+".dSYM"));
+        if(!expectedSymbols.contains(relativeSymbol.generic_string())||!seenSymbols.insert(relativeSymbol.generic_string()).second||
+           insideSymbols.empty()||insideSymbols.is_absolute()||std::any_of(insideSymbols.begin(),insideSymbols.end(),[](const auto &part){return part=="..";})||
+           hash(text(folder/relativeSymbol,512*1048576))!=required(symbol,"hash"))throw Error("E_CORE_BUILD","owned native symbols differ");
+        ownedHashes.emplace_back(folder/relativeSymbol,Input(folder/relativeSymbol,512*1048576).sha());
+        auto projectedSymbol=Object(symbol);if(relocated)projectedSymbol["path"]=(folder/relativeSymbol).string();currentSymbols.push_back(std::move(projectedSymbol));
+      }
+      current["symbols"]=std::move(currentSymbols);
+      if(json(JSON(std::move(current)),false)!=json((*projected)[i],false))throw Error("E_CORE_BUILD","projected owned image manifest differs");
+    }
+    if(seenImages!=expectedImages||seenSymbols!=expectedSymbols)throw Error("E_CORE_BUILD","owned image/symbol inventory is incomplete");
+  }else if(m.get("owned_images"))throw Error("E_CORE_BUILD","legacy build cannot add an owned-image inventory");
 #ifdef __APPLE__
   auto symbols=fs::path(image.string()+".dSYM")/"Contents/Resources/DWARF/app";
   if(text(folder/"debug-symbols.complete",1024)!=hash(text(symbols,512*1048576))+"\n")throw Error("E_CORE_BUILD","retained native symbols differ");
@@ -138,11 +178,13 @@ JSON inspectCore(const CoreOptions &options){
   }
   if(!elf&&!macho&&!minidump)throw Error("E_CORE_INPUT","core reader requires a64-bit ELF, Mach-O or LLDB minidump core file");auto before=input.sha();
   Temporary temporary{createTemporaryDirectory("nex-core")};auto request=temporary.path/"request.json";
-  writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"recorded_program",options.recordedProgram},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
+  Object recordedImages;for(const auto &[current,recorded]:options.recordedImages)recordedImages[current]=recorded;
+  writeFile(request.string(),json(Object{{"core",core.string()},{"manifest",path.string()},{"compiler",options.compiler},{"formatter",formatter},{"program",image.string()},{"recorded_program",options.recordedProgram},{"recorded_images",std::move(recordedImages)},{"expression",options.expression},{"thread",options.thread},{"frame",options.frame}}));
   auto driver=std::getenv("NEX_LLDB");std::string lldb=driver?driver:"lldb";
   auto script=resourceFile("debug/core_report.py");
   auto child=runTaskProcess({lldb,"--no-lldbinit","--batch","--no-use-colors","-o","settings set target.load-script-from-symbol-file false","-o","settings set symbols.enable-external-lookup false","-o","command script import "+json(script,false)},temporary.path.string(),{{"NEX_CORE_REQUEST",request.string()}},options.timeout,(temporary.path/"logs").string());
   input.samePath(core);if(input.sha()!=before)throw Error("E_CORE_CHANGED","core bytes changed during inspection");
+  for(const auto &[path,sha]:ownedHashes)if(Input(path,512*1048576).sha()!=sha)throw Error("E_CORE_CHANGED","owned image changed during core inspection");
   if(child.timedOut||child.outputLimit||child.interrupted||child.process.code!=0)throw Error("E_CORE_READ","native core reader failed or exceeded its deadline/output limit: "+child.process.errors.substr(0,4096));
   std::string marker="NEX_CORE_RESULT ";JSON report=nullptr;unsigned found=0;llvm::StringRef remaining(child.process.output);
   while(!remaining.empty()){auto [line,rest]=remaining.split('\n');remaining=rest;if(line.consume_front(marker)){if(++found!=1)throw Error("E_CORE_READ","duplicate native core report");report=parseNativeManifest(line.str());}}
@@ -160,10 +202,12 @@ JSON inspectCoreCapsule(const std::string &directory,const CoreOptions &options)
   auto prepared=capsuleWork(Object{{"mode","prepare"},{"capsule",capsule.string()},{"work",temporary.path.string()},{"identity",capsuleIdentity()}});
   const auto &p=object(prepared);CoreOptions projected=options;
   projected.core=required(p,"core");projected.manifest=required(p,"manifest");projected.recordedProgram=required(p,"recorded_program");
+  projected.originalProgram=required(p,"original_program");
+  if(auto images=p.getObject("recorded_images"))for(const auto &[name,value]:*images){auto recorded=value.getAsString();if(!recorded)throw Error("E_CORE_CAPSULE","invalid recorded owned image map");projected.recordedImages[name.str()]=recorded->str();}
   auto report=inspectCore(projected);auto &result=*report.getAsObject();
   auto core=result.getObject("core");
   if(!core||core->getString("sha256")!=required(p,"core_sha256")||Input(capsule/"capsule.json",8*1048576).sha()!=required(p,"manifest_sha256"))throw Error("E_CORE_CHANGED","capsule core or manifest changed during inspection");
-  result["capsule"]=Object{{"directory",capsule.string()},{"manifest_sha256",required(p,"manifest_sha256")},{"recorded_program",projected.recordedProgram},{"files_verified",p.getInteger("files").value_or(0)},{"inventory_checked",true},{"inspection_workspace_ephemeral",true},{"dependency_scope","matching_host_system_only"}};
+  result["capsule"]=Object{{"directory",capsule.string()},{"manifest_sha256",required(p,"manifest_sha256")},{"recorded_program",projected.recordedProgram},{"files_verified",p.getInteger("files").value_or(0)},{"inventory_checked",true},{"inspection_workspace_ephemeral",true},{"dependency_scope",required(p,"dependency_scope")}};
   return report;
 }
 JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){

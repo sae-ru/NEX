@@ -128,7 +128,10 @@
           }
         },
         "dependency_scope": {
-          "const": "matching_host_system_only"
+          "enum": [
+            "matching_host_system_only",
+            "captured_first_party_and_matching_host_system"
+          ]
         },
         "application_execution": {
           "const": false
@@ -167,8 +170,45 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 16384
+        },
+        "recorded_images": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 129,
+          "propertyNames": {
+            "pattern": "^images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\\.(so|dylib)$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "pattern": "^/"
+          }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "dependency_scope": {
+                "const": "captured_first_party_and_matching_host_system"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "recorded_images"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "recorded_images"
+              ]
+            }
+          }
+        }
+      ]
     },
     "export": {
       "type": "object",

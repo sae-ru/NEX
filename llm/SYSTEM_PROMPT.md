@@ -106,7 +106,7 @@ selected configuration. The compiler consumes separately built PIC objects and
 links one shared runtime; source remains required to check contracts. Preserve
 the application's complete `images/` closure and matching metadata/symbols when
 moving retained output. Do not replace binary edges with source compilation or
-infer Windows DLL, fully static, shared-image packaging, moved-core or combined
+infer Windows DLL, fully static, shared-image packaging or combined
 project run/test/task support. Query the actual descriptor and project guide.
 
 For `frontend_diagnostic_features`, retrieve `nex guide --kind frontend --json`. A compiler error can include a versioned captured-input context with phase, source hashes, diagnostic byte span and a bounded UTF-8/base64 preview. A failed apply/import/migrate can refer to an uncommitted assembled candidate rather than the physical file. Distinguish project/unit/fragment scope, partial source closure, missing locations and truncation. Diagnostic IDs are content references, not committed graph operations/revisions or execution authority. Keep the original request and actual compiler/frame identity. Never reuse the per-file source hash as apply's whole-bundle expected_source_hash. Refresh source/context before repairing stale input. Watch frame hashes refer to supplied data and do not authenticate a live recording.
@@ -423,3 +423,16 @@ identifier JSON limits; a failed projection yields no partial index. These
 readonly descriptions neither edit source nor synchronize graph history.
 
 For multi-component build architecture, query `project_build` in describe and read `nex guide --kind project --json`. A separate `nex.build.json` (`nex.project-build/1`) declares component roots, entries, explicit source dependencies and named native configurations. `nex project --kind plan --json` checks sources, direct import boundaries and entry contracts without opening graph history or invoking tools. `--kind build` builds captured selected closures; `--component NAME` selects its dependency closure, and `--configuration NAME` selects the named build settings. Source linkage compiles reachable source into each consumer. Explicit static linkage to a static_library consumes its code-only archive under the exact compiler/toolchain/runtime ABI. entry_function plus optional exports select concrete roots; missing ordinary exports reject. New generic specializations and their missing helper closure are explicitly reported as consumer_instantiations. Keep source available for checking: binary-only packages are pending. Do not invent shared-library output, a fully static executable policy, source threads or GPU/NPU support. CIX hardware probes test installed accelerator APIs separately from NEX language integration.
+
+When `native_core.owned_images` is advertised, live LLDB frames and read-only core
+watches can refer to captured NEX shared libraries. Load the final application's
+`debug.json`, keep its whole `images/` and symbol inventory, and use its frozen
+provider source projection for breakpoints. Selected frames must match an owned
+image's path, SHA-256 and UUID/build ID; names alone do not bind code to a graph.
+Export through `nex core --export`, then inspect `--capsule` with the matching SDK.
+The compiler checks copied image/symbol bytes before LLDB and rechecks afterward.
+Recorded core paths remain historical data, separate from current loader paths;
+never add private relocation fields to a manifest. First-party shared capsules
+record `captured_first_party_and_matching_host_system`; other external native
+dependencies, source foreign declarations, cross-host relocation, automatic
+shared-image packages and combined project/editor execution remain pending.

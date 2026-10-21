@@ -7,6 +7,8 @@ struct CoreOptions {
   unsigned timeout=60;
   // Internal capsule projection, never selected by an ordinary debug manifest.
   std::string recordedProgram;
+  std::string originalProgram;
+  std::map<std::string,std::string> recordedImages;
 };
 llvm::json::Value inspectCore(const CoreOptions &options);
 llvm::json::Value inspectCoreCapsule(const std::string &directory,const CoreOptions &options);

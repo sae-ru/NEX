@@ -1,20 +1,24 @@
-# Development cohort0.74 (not integrated)
+# Development cohort0.75 (not integrated)
 
-The0.74 candidate links macOS/Linux project `shared_library` components and
-`dynamic` edges from actual checked PIC archives. One content-keyed shared
-runtime supplies ownership and profiling across the images. The final app
-captures its first-party image/symbol closure and owns application/profile
-identity. Regression, SDK and platform validation of0.74 remain in progress.
-Shared-image packaging, moved core capsules, Windows DLLs, combined project
-execution, concurrency and general accelerator adapters remain pending.
+Shared project frames bind path/SHA-256/native UUID before typed reads. Core
+inspection verifies completion/3 image/symbol inventories, preloads matching
+modules and keeps historical PC mappings distinct from current loader paths.
+Capsules retain the first-party closure and support alias export, source/image
+deletion and relocation on the matching host. Focused macOS shared-frame/core
+cases and legacy capsule tests pass; Linux/full/installed-SDK gates are pending.
 
-Its final765-file0.73 foundation passes82 CTest groups and installed SDK24 on
-macOS and Linux ARM64; Linux also passes17 live suites. Windows x64/Wine runs
-six ownership/control cases. Constructor allocation fault injection passes with
-ASan; the retained old implementation reproduces its use-after-free. These
-results belong to0.73, not the unaccepted0.74 implementation. Further0.73 IDE,
-strict compatibility/cross and integration gates remain pending. The verified
-integrated0.72 root and complete graph history are intact.
+Cohort0.74 passes83 CTest groups on macOS and Linux ARM64. Its actual installed
+VSIX, strict0.72/0.74 analysis/store comparisons and6cross configurations
+(15artifacts,3iOS final links, x64Wine execution) pass. Its SDK workflow reaches
+23passed stages, then rejects the newly advertised dynamic linkage because the
+old test expects only source/static. The retained failure is not an accepted
+SDK24 result. This0.75 source updates that exact contract and adds actual shared
+project/reuse/relocation/profile/live-core checks to the installed SDK workflow.
+
+The verified integrated0.72 root and graph history remain intact. Shared-image
+packaging, combined project execution/DAP/editor/task flows, Windows DLLs,
+source concurrency, general accelerators and broader platform delivery remain
+pending. No full-objective completion is claimed.
 
 # Verified root development checkpoint0.72 / language0.16
 
