@@ -578,7 +578,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static"||link=="dynamic")binaries.insert(dep);gather(dep);}};gather(item.name);
     for(auto name=order.rbegin();name!=order.rend();++name)if(binaries.contains(*name)){
       const auto &dependency=nativeResults.at(*name);
-      item.options.libraries.push_back({dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts});
+      item.options.libraries.push_back({dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts,dependency.parallelCalls});
     }
     nativeResults[item.name]=build(item.program,cache.string(),item.options);
     if(options.packageProjection)options.packageProjection->verify();

@@ -133,6 +133,7 @@ struct RequestScope::Impl {
   std::shared_ptr<Control> control;
   std::function<bool()> cancellation;
   bool worker=false;
+  bool preserveParentProfile=false;
   size_t functionBaseline=functionOwners.depth;
   const std::atomic<bool> *workerStop=nullptr;
   explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
@@ -149,7 +150,7 @@ RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bo
 }
 RequestScope::~RequestScope(){
   if(!impl->worker)impl->control->active=false;
-  profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
+  if(!impl->preserveParentProfile)profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
   if(impl->worker)cleanupRuntimeResources();
   currentRequest=nullptr;resource_detail::requestBinder=nullptr;
 }
@@ -188,29 +189,20 @@ void RequestScope::checkExecution(int64_t line,bool forceCancellation,bool consu
 #ifdef NEX_STRUCTURED_WORKERS
 namespace {
 thread_local size_t parallelDepth=0;
+thread_local size_t parallelCallDepth=0;
 struct ParallelDepth {
   ParallelDepth(){++parallelDepth;}
   ~ParallelDepth(){--parallelDepth;}
 };
 void parallelValueCheck(const Value &value){
-  std::vector<Value> pending{value};std::unordered_set<const Data*> seen;size_t members=1;
-  while(!pending.empty()){
-    auto next=std::move(pending.back());pending.pop_back();
-    if(next.tag!=Value::Object)continue;
-    if(!next.object)throw DataError("E_PARALLEL_VALUE","parallel value has a null object");
-    if(!seen.insert(next.object.get()).second)continue;
-    if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","parallel value graph exceeds its object limit");
-    if((seen.size()%64)==0)pollHostOperation(0);
-    if(next.object->kind==Data::File)throw DataError("E_PARALLEL_VALUE","parallel values cannot contain file resources");
-    // All source-produced members of the other kinds are immutable after their
-    // fresh-value construction. Retain shared Data, never a caller-owned Handle.
-    if(next.object->values.size()>parallelMaximumNodes-members)throw DataError("E_LIMIT","parallel value graph exceeds its member limit");
-    members+=next.object->values.size();
-    pending.insert(pending.end(),next.object->values.begin(),next.object->values.end());
-  }
+  validateParallelValue(value,[]{pollHostOperation(0);});
 }
 }
 struct ParallelAccess {
+  static Value applicationCompiled(const Value &items,const Value &environment,int64_t workers,CompiledParallelBridge bridge,ParallelValueKind input,ParallelValueKind output,SourceLocation location){
+    RequestScope scope;scope.impl->preserveParentProfile=true;
+    return parallelCompiledValues(items,environment,workers,bridge,input,output,location);
+  }
   static Value run(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
     auto *owner=currentRequest;
     if(!owner)throw Trap("E_CONTEXT","parallel workers require an active request scope",location);
@@ -273,6 +265,13 @@ struct ParallelAccess {
       // Global cancellation, exhaustion and elapsed deadlines take precedence
       // over ordinary per-item errors. Waiting never adds execution steps.
       owner->checkExecution(location,true,false);
+      // A callback can hit a resource bound without exhausting the shared step
+      // counter (for example call depth or an output graph bound). Such failures
+      // must not be hidden by an ordinary lower-index arithmetic error.
+      for(const auto &failure:failures)if(failure)try{std::rethrow_exception(failure);}
+      catch(const Trap &error){
+        if(error.code=="E_LIMIT"||error.code=="E_TIMEOUT"||error.code=="E_CANCELLED"||error.code=="E_MEMORY")throw;
+      }catch(const std::bad_alloc &){throw;}catch(...){/* Ordinary trusted callback failure: select by input order below. */}
       for(const auto &failure:failures)if(failure)std::rethrow_exception(failure);
       return Value(std::move(output));
     });
@@ -286,13 +285,14 @@ struct CompiledParallelResult {Value value;bool assigned=false;};
 thread_local CompiledParallelResult *activeParallelResult=nullptr;
 struct CompiledParallelCall {
   const size_t baseline=functionOwners.depth;
+  const size_t callBaseline=parallelCallDepth;
   CompiledParallelResult *previous=activeParallelResult;
   explicit CompiledParallelCall(CompiledParallelResult &result){
     functionOwners.enter();activeParallelResult=&result;
   }
   CompiledParallelCall(const CompiledParallelCall&)=delete;
   CompiledParallelCall &operator=(const CompiledParallelCall&)=delete;
-  ~CompiledParallelCall(){activeParallelResult=previous;functionOwners.unwind(baseline);}
+  ~CompiledParallelCall(){activeParallelResult=previous;functionOwners.unwind(baseline);parallelCallDepth=callBaseline;}
 };
 bool parallelKindValid(ParallelValueKind kind){
   return kind==ParallelValueKind::I64||kind==ParallelValueKind::Bool||
@@ -323,6 +323,7 @@ Value compiledParallelInvoke(const Value &item,const Value &context){
     auto *environment=makeHandle(context.object->values[0]);
     auto *heap=item.tag==Value::Object?makeHandle(item):nullptr;
     bridge(environment,item.tag==Value::Object?0:item.scalar,heap,&result);
+    if(parallelCallDepth!=call.callBaseline)throw DataError("E_INTERNAL_SCOPE","compiled worker did not close every call scope");
     if(!result.assigned)throw DataError("E_PARALLEL_RESULT","compiled worker returned no value");
     parallelKindCheck(result.value,ParallelValueKind(context.object->values[1].scalar));
     // Result Value retains the immutable payload before job-local handles and
@@ -439,6 +440,31 @@ Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
 }
 extern "C" {
 #ifdef NEX_STRUCTURED_WORKERS
+static Handle *impl_nex_parallel_map(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    if(!items||!environment)throw nexrt::DataError("E_PARALLEL_VALUE","parallel_map requires input and callback handles");
+    if(!nexrt::inRequestScope()&&!nexrt::currentApplication)throw nexrt::DataError("E_CONTEXT","parallel_map requires an application or request scope");
+    auto values=nexrt::readHandle(items),captures=nexrt::readHandle(environment);nexrt::Value result;
+    auto run=[&]{return nexrt::parallelCompiledValues(values,captures,workers,reinterpret_cast<nexrt::CompiledParallelBridge>(bridge),nexrt::ParallelValueKind(input),nexrt::ParallelValueKind(output),location);};
+    if(nexrt::inRequestScope())result=run();
+    else result=nexrt::ParallelAccess::applicationCompiled(values,captures,workers,reinterpret_cast<nexrt::CompiledParallelBridge>(bridge),nexrt::ParallelValueKind(input),nexrt::ParallelValueKind(output),location);
+    // A CLI group's scope has ended. Allocate the coordinator result under its
+    // original application/function owner, never under the expired request.
+    return nexrt::makeHandle(result);
+  });
+}
+Handle *nex_parallel_map(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,int64_t line){return impl_nex_parallel_map(items,environment,workers,bridge,input,output,{line});}
+Handle *nex_parallel_map_at(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,int64_t line,const nexrt::NativeSite *site){return impl_nex_parallel_map(items,environment,workers,bridge,input,output,{line,site});}
+static void impl_nex_parallel_enter(nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{if(nexrt::parallelDepth){if(nexrt::parallelCallDepth>=256)throw nexrt::DataError("E_LIMIT","parallel callback call depth exceeds 256");++nexrt::parallelCallDepth;}});
+}
+void nex_parallel_enter(){impl_nex_parallel_enter({});}
+void nex_parallel_enter_at(const nexrt::NativeSite *site){impl_nex_parallel_enter({0,site});}
+static void impl_nex_parallel_leave(nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{if(nexrt::parallelDepth){if(!nexrt::parallelCallDepth)throw nexrt::DataError("E_CONTEXT","parallel callback call scope is unbalanced");--nexrt::parallelCallDepth;}});
+}
+void nex_parallel_leave(){impl_nex_parallel_leave({});}
+void nex_parallel_leave_at(const nexrt::NativeSite *site){impl_nex_parallel_leave({0,site});}
 static void impl_nex_parallel_return_i64(void *destination,int64_t value,int64_t tag,nexrt::SourceLocation location){
   nexrt::hostOperation(location,[&]{nexrt::assignParallelResult(destination,nexrt::Value::taggedScalar(value,tag));});
 }
@@ -452,6 +478,13 @@ static void impl_nex_parallel_return_heap(void *destination,Handle *value,nexrt:
 }
 void nex_parallel_return_heap(void *destination,Handle *value){impl_nex_parallel_return_heap(destination,value,{});}
 void nex_parallel_return_heap_at(void *destination,Handle *value,const nexrt::NativeSite *site){impl_nex_parallel_return_heap(destination,value,{0,site});}
+#else
+// Project-library objects can be reused by a consumer with no reachable map.
+// Keep their call-scope ABI available without enabling a worker runtime.
+void nex_parallel_enter(){}
+void nex_parallel_enter_at(const nexrt::NativeSite*){}
+void nex_parallel_leave(){}
+void nex_parallel_leave_at(const nexrt::NativeSite*){}
 #endif
 static int64_t impl_nex_owned_enter(nexrt::SourceLocation location){
   return nexrt::hostOperation(location,[&]{return nexrt::functionOwners.enter();});

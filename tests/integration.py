@@ -16,23 +16,18 @@ REPO = harness.REPO
 
 
 class Toolchain(harness.ToolchainCase):
-    def test_internal_worker_development_adds_no_source_intrinsic(self):
-        descriptor = self.cli('describe')
-        pack = json.loads((REPO / 'llm/language-pack.json').read_text())
-        self.assertEqual(descriptor['source_concurrency'], pack['source_concurrency'])
-        self.assertEqual(descriptor['source_concurrency']['status'], 'pending')
-        self.assertFalse(descriptor['source_concurrency']['source_operations'])
-        self.assertFalse(descriptor['source_concurrency']['emitted_runtime_enabled'])
-        self.assertEqual(self.cli('guide', '--kind', 'concurrency')['text'],
-                         (REPO / pack['documents']['concurrency_design']).read_text())
-        self.source('module ordinary_name; fn parallel_map(x:i64)->i64{return x+1;} fn main()->unit!{io}{print(parallel_map(41));}')
-        expected = self.cli('eval')['stdout']
-        self.assertEqual(expected, '42\n')
-        self.assertEqual(self.cli('run')['stdout'], expected)
-        head = self.cli('history')['head']
-        self.source('module unsupported; fn main()->i64{return parallel_map(1);}')
-        self.assertEqual(self.cli('check', ok=False)['code'], 'E_NAME')
-        self.assertEqual(self.cli('history')['head'], head)
+    def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
+        descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())
+        self.assertEqual(descriptor['source_concurrency'],pack['source_concurrency'])
+        self.assertTrue(descriptor['source_concurrency']['source_operations'])
+        self.assertFalse(descriptor['source_concurrency']['browser_workers'])
+        self.assertEqual(self.cli('guide','--kind','concurrency')['text'],(REPO/pack['documents']['concurrency_design']).read_text())
+        self.source('module mapped;fn main()->unit!{io}{print(parallel_map([1,2],fn(x:i64)->i64{return x+40;},2));}')
+        self.assertEqual(self.cli('eval')['stdout'],'[41,42]\n');self.assertEqual(self.cli('run')['stdout'],'[41,42]\n')
+        before=harness.database_rows(self.root/'.nex/graph.db')
+        self.source('module reserved;fn parallel_map(x:i64)->i64{return x+1;}fn main()->unit{}')
+        self.assertEqual(self.cli('check',ok=False)['code'],'E_DUPLICATE')
+        self.assertEqual(harness.database_rows(self.root/'.nex/graph.db'),before)
 
     def test_starter_and_real_native_binary(self):
         self.cli("init", ".")
@@ -229,7 +224,7 @@ test fn branches() -> unit {
 
     def test_pack_and_discovery_match_executable_example(self):
         descriptor = self.cli("describe")
-        self.assertEqual(descriptor["version"], "0.17")
+        self.assertEqual(descriptor["version"], "0.18")
         pack = json.loads((REPO / "llm/language-pack.json").read_text())
         self.assertEqual(pack["language_version"], descriptor["version"])
         self.assertIn("web_ui", descriptor["features"])
@@ -409,11 +404,11 @@ fn main() -> unit !{io} { print(response().message); }
             db.execute("INSERT INTO head VALUES(1,?)", (old,))
         self.assertEqual(self.cli("graph", ok=False)["code"], "E_LANGUAGE_VERSION")
         migrated = self.cli("migrate")
-        self.assertEqual(migrated["language"], "0.17")
+        self.assertEqual(migrated["language"], "0.18")
         self.assertEqual(migrated["declared_original_revision"], old)
         self.assertNotEqual(migrated["revision"], old)
         history = self.cli("history")
-        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.17"})
+        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.18"})
         self.cli("export", "--revision", old, "-o", self.root / "legacy.nex")
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")

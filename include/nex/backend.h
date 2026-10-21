@@ -6,6 +6,7 @@ namespace nex {
 struct NativeLibraryInput {
   std::string path, digest, abi;
   std::map<std::string,std::string> contracts;
+  bool parallelCalls=false;
 };
 struct BuildOptions {
   std::string profile = "debug", target, entry = "main";
@@ -36,6 +37,7 @@ struct BuildResult {
   bool foreignCalls = false;
   std::string libraryABI;
   std::map<std::string,std::string> functionContracts;
+  bool parallelCalls=false;
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.

@@ -49,6 +49,8 @@ def main():
             run('live-project-editor',['python3','/src/tests/editor.py','/build/sdk/bin/nex','--live',
                 'Editor.test_project_original_provider_breakpoint_and_watch'])
             run('live-server-debug',['python3','/src/tests/server_debug.py','/build/sdk/bin/nex','--live'])
+            run('live-cpu-map',['python3','/src/tests/parallel.py','/build/sdk/bin/nex','--live',
+                'Parallel.test_live_worker_breakpoint_watch_and_resume_after_source_deletion'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

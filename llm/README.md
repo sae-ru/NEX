@@ -1,3 +1,8 @@
+Current development source is toolchain0.92/language0.18. Query actual
+source_concurrency before using ordered CPU maps; native threads and serial
+reference/TypeScript are distinct. Full current acceptance remains pending.
+Earlier milestone notes below retain their historical scopes.
+
 Development toolchain0.88/language0.17 adds a **candidate** postfix result
 propagation operator `?`. Parsing, checking and all three execution backends are
 implemented in this isolated source; complete migration/platform/SDK/editor gates

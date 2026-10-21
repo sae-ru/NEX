@@ -6,7 +6,7 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.91.0 / language 0.17**.
+This isolated development source is **toolchain 0.92.0 / language 0.18**.
 Full platform, installed SDK and editor acceptance for this exact source remains
 pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
 Historical receipts in `STATUS.md` retain their original compiler/source scopes;
@@ -25,11 +25,13 @@ and compiler tools. Compiled applications run independently of an LLM.
 Use the [model-independent bootstrap](llm/BOOTSTRAP.md), the
 [language pack](llm/README.md), actual capability discovery and bounded context.
 
-Version 0.91 develops the compiler-private compiled CPU worker boundary.
-A trusted bridge invokes actual NEX closure code with worker-local handles,
-scalar bits and retained immutable results. Source concurrency is still pending:
-ordinary compiler output does not enable this prototype, and there is no source
-`parallel_map` operation. See [the development contract](docs/concurrency-design.md).
+Language 0.18 adds candidate ordered CPU mapping through
+`parallel_map(items, callback, workers)`. Native macOS/Linux uses bounded joined
+threads, pure available-realm callbacks and checked resource-free captures.
+Reference and current TypeScript execute serially; browser workers and general
+async tasks remain pending. See [the contract](docs/concurrency-design.md) and
+[example](examples/parallel.nex). Explicit migration preserves genuine 0.17
+history; a declaration named `parallel_map` requires a reviewed repair.
 
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and snapshot
@@ -60,7 +62,7 @@ Platform coverage is bounded. Linux/macOS execution, Windows cross-build/Wine,
 iOS archives and mobile WebView generation have separate receipts and remaining
 delivery work. Cross-builds are not evidence of actual device execution.
 [CIX P1](docs/cix-p1.md) fixed trusted FFI experiments do not provide general
-GPU/NPU language APIs. Source concurrency, general accelerators, source
+GPU/NPU language APIs. General source tasks/async concurrency, general accelerators, source
 try/catch/throw, broader native targets and cross-model cost measurements remain
 pending in [PLAN.md](PLAN.md). This checkpoint does not complete the objective.
 

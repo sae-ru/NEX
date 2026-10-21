@@ -1,3 +1,9 @@
+Language0.18 adds ordered CPU map semantics to the synchronous TypeScript
+backend through serial evaluation, checked closure metadata and bounded group
+polling. This does not provide browser workers. Pure value/error agreement and
+reachable client/shared-only generation remain required; npm/lock/notices are
+unchanged. See [concurrency](concurrency-design.md).
+
 Language0.17 candidate emits `?` through a private result-propagation sentinel
 and a boundary in the current generated function. Runtime traps are rethrown.
 This reuses the pinned browser runtime without changing npm dependencies or

@@ -1,96 +1,106 @@
-# Structured CPU worker development
+# Ordered CPU mapping — language 0.18 candidate
 
-Source concurrency is **pending**. Language0.17 has no `parallel_map`, `spawn`,
-channel, async/await, GPU or NPU intrinsic. Ordinary native applications and the
-TypeScript/reference backends retain their existing source semantics. HTTP host
-worker concurrency is an independent implemented server configuration.
+The source operation is implemented in this development source. Complete frozen
+regression, installed SDK, platform, editor/debug/profile and migration acceptance
+remain pending. Source async/await, general tasks/channels, browser workers and
+GPU/NPU execution are separate unfinished work. Check actual `nex describe
+--field source_concurrency --json`; an older SDK may expose only a private probe.
 
-Toolchain0.86 develops an internal native worker substrate before exposing a
-language operation. `runtime/nex_parallel.h` is a compiler-private trusted-host
-interface, compiled only with `NEX_STRUCTURED_WORKERS`; ordinary emitted runtimes
-do not enable it. It is not a stable FFI or an installed source capability.
-The checker, reference interpreter and TypeScript backend accept no new builtin.
+## Source contract
 
-Toolchain0.91 adds a compiler-private compiled-call boundary to this substrate.
-`parallelCompiledValues` accepts a closure environment and a trusted pure bridge,
-checks scalar/heap ABI kinds, and creates environment/input handles inside each
-job. Scalar arguments travel as bits; a heap argument uses one local handle.
-The result helpers retain one immutable value without allocating an argument or
-result list/record. They reject missing/duplicate returns and a destination from
-another thread or nested call. Per-call ownership frames clean temporaries and
-unfinished nested frames before handoff, including on exceptions. Returned heap
-aliases and closure captures survive through retained values. No caller-owned
-handle is handed to a worker. File-bearing graphs remain prohibited.
+```nex
+let output:list<i64>=parallel_map([1,2,3],fn(n:i64)->i64{return n+40;},3);
+```
 
-This boundary requires an existing request and does not grant new capabilities,
-refresh a budget/deadline or define a source-language operation. It is compiled
-only with `NEX_STRUCTURED_WORKERS`. Native source lowering, checked capture rules,
-interpreter/TypeScript semantics and explicit source migration remain pending.
-The additional `compiled_workers_native` test builds a code-only archive from
-actual NEX functions, then calls its i64/f64/bool/heap/closure targets through the
-private bridge. Its host exercises the ABI, not replacement function bodies.
-This is separate from SDK or source-concurrency acceptance.
+`parallel_map(list<T>, fn(T)->U, i64) -> list<U>` evaluates the input, callback
+and requested worker count once, left to right. T and U are non-unit values.
+Named generic callbacks infer from the input and expected result where possible;
+explicit arguments and generic higher-order helpers also work. Empty input uses
+a known callback argument type. The callback must have no effects and an
+available realm: shared or the caller's realm. It cannot acquire io/db/fs/ffi
+through a worker operation. Normal effect/realm checks still apply to its body.
 
-## Internal contract
+Input/output and callback signatures containing file types are rejected, including
+nested nominal members and phantom arguments. Function signatures can hide a
+resource captured by another function: the runtime traverses actual immutable
+input/capture graphs before any callback starts and rejects all hidden file
+values. Returned graphs are checked too. Such failure is E_PARALLEL_VALUE;
+there is no silent copy or transfer of resource ownership. Trusted embedding
+code remains responsible for its own native callbacks; this is not a stable ABI.
 
-The prototype `parallelValues` accepts an immutable list, an immutable environment,
-1..16 workers and a trusted stateless callback function. It requires an existing
-`RequestScope`. Input is limited to65,536 items. Each input/environment/output
-value graph is bounded to262,144 objects/members; nested file resources, including
-closure captures and nested aggregates, are rejected before crossing a worker
-boundary. Data references can be retained across threads; caller-owned `Handle`
-pointers cannot. The trusted callback must obey purity and cooperative polling.
-Runtime validation alone cannot certify arbitrary C++ callbacks as pure.
+Results have input order. Expected `result<U>` errors remain ordinary values;
+`?` returns from the callback's own function and cleans its temporaries. Every
+callback completes or the group joins before control returns. Ordinary checked
+failures select the lowest failing input index. Global cancellation, execution
+limits, deadlines and allocation failure take precedence over ordinary item
+errors; they are never converted into an element result or silently swallowed.
+Different physical resource limits/schedules can cause different resource
+failures; no deterministic timing or identical execution-counter claim is made.
 
-Each item has a worker-local request ownership scope. The callback returns a
-retained immutable `Value`; temporary native handles and registered worker-local
-cleanup functions are released before that job ends. Worker scopes share the
-original request's atomic execution counter, exhausted state, cancellation and
-absolute deadline. They do not renew a budget/deadline or inherit a root resource
-domain. Finishing a job does not end the parent request or revoke parent handles.
-Polling keeps the existing single-thread request step/budget behavior, with a
-saturating shared counter. Only the coordinator executes the host cancellation
-callback, including while it waits; that waiting consumes no language steps.
+## Native execution
 
-The group creates at most the requested number of actual operating-system
-threads. All threads wait until group construction succeeds before entering a
-callback. Partial thread creation, allocation failures, callback exceptions,
-cancellation and timeouts join every created thread before destroying captured
-state or returning. A callback that bypasses cooperative polling can delay that
-join; no forced thread termination guarantee is claimed for trusted native code.
+The current native target accepts macOS/Linux 64-bit ABIs. Actual execution and
+acceptance belong to their recorded compiler/source/hardware receipts; another
+OS or cross-build is not a device execution claim. Other CPU targets are pending.
+The group requests1..16 threads and accepts at most65,536 items. It starts at
+most min(workers, items) operating-system threads, holds them until construction
+succeeds and joins every thread on normal/error/partial-construction paths.
+Empty input starts no threads. A nested group runs serially on its existing
+worker and cannot multiply operating-system threads.
 
-Results retain input order. After joining, global cancellation, budget exhaustion
-or an elapsed deadline precedes per-item errors. Otherwise the lowest input index
-with an error supplies its original checked diagnostic/source location, even if
-a higher-index error finished earlier. Ordinary item errors do not revoke the
-parent request. A nested group runs serially on its current worker and cannot
-multiply operating-system threads. These are prototype native contracts, not yet
-a promised language scheduling or cross-backend error-selection contract.
+Hosted work shares its existing request's atomic step counter, cancellation and
+absolute deadline; it does not renew them or inherit file/foreign authority.
+Standalone application groups create a private1,000,000-step/5,000-ms request.
+Nested groups reuse that control. Only the coordinator calls a host cancellation
+callback while waiting. Limits are checked cooperatively; an individual trusted
+native operation can delay cancellation until it polls/returns. No forced thread
+termination or strict real-time deadline guarantee is claimed.
 
-## Validation and remaining language work
+Native/reference value graphs are bounded to262,144 objects/members. Per-worker
+compiled calls are bounded to256 source call frames. Each job creates its own
+handles, retains immutable shared data and uses an owned call frame. Scalar bits
+and one retained result avoid argument/result list allocations. Borrowed input
+aliases and returned closure captures survive cleanup. All unfinished ownership
+frames unwind on failure. The coordinator result is allocated after a standalone
+group request ends, under its original application/function owner. Normal group
+completion preserves the caller's active profiling frames and resources.
 
-`ctest --test-dir BUILD -R structured_workers_runtime --output-on-failure` runs
-the actual C++ runtime probe. It checks four simultaneously executing threads,
-ordered Unicode/capture results, immutable input, nested scheduling, parent and
-worker ownership, diagnostic ordering, shared limits, cancellation monitor
-thread identity/failure, deadlines, file-bearing rejection, allocation failures,
-registered cleanup and both managed memory pools. Sanitizer evidence belongs
-to the exact tested source/compiler; a successful probe does not establish full
-SDK, platform or source-language acceptance.
+Static/dynamic project providers propagate their actual parallel runtime
+requirement. Shared images use one final runtime. Reusable project callables keep
+call-scope hooks even when first built without a reachable map; non-worker
+runtimes provide inert hooks. Artifact keys bind the instrumentation and runtime
+requirements so an incompatible cached function cannot be silently reused.
 
-Before a source operation can be supported, implement and review all of:
+## Reference and TypeScript execution
 
-- Its type/effect/realm and immutable capture rules, including hidden resources
-  in higher-order values, resource-bearing nominal types and rejected programs.
-- Interpreter, native MLIR and TypeScript observable result/error agreement.
-  Browser workers, serialization and scheduling guarantees need an explicit
-  design; a sequential fallback cannot be reported as measured parallelism.
-- A bounded native callback ABI, generated ownership transfers, request and
-  application integration, nested work and cleanup on every checked native exit.
-- An explicit language-version and history-preserving migration path if source
-  semantics or reserved intrinsic names change; retain matching historical SDKs, including language0.16 and0.17.
-- Specification/grammar, capability discovery, provider-independent prompt,
-  language-pack examples, SDK/platform execution and profiling/debugger evidence.
+The reference interpreter evaluates sequentially as the semantic oracle and
+shares its existing interpreter step limit. The current synchronous TypeScript
+backend also evaluates sequentially. It has checked capture metadata, bounded
+value traversal, a shared1,000,000-poll/5,000-ms monotonic group control, and a256
+callback call-depth bound; nested calls reuse it. Both preserve ordered outcomes
+and checked error precedence. Representation-specific object/resource counters
+are backend policies, not byte-for-byte allocation equivalence.
 
-General asynchronous I/O, channels and accelerator placement remain separate
-pending work. Fixed CIX hardware FFI probes do not provide any of these APIs.
+**These two backends provide no measured or promised parallel execution.**
+Actual browser workers need an asynchronous integration and remain pending.
+Browser output still contains only reachable client/shared code; server code and
+capabilities cannot enter it. No npm dependency or bundled notice changed.
+
+## Migration, validation and tools
+
+Language0.17 artifacts require an explicit history-preserving migration. Keep the
+matching SDK and a complete graph snapshot. `parallel_map` is newly reserved for
+function/nominal declarations; old conflicting definitions are rejected without
+rewriting the store. Review a renamed exported candidate and explicitly migrate
+it. Genuine017 SQL/JSON fixtures retain actual source/versions/IDs; never relabel
+an old graph or bypass the version guard.
+
+`examples/parallel.nex` exercises pure generics, ordered results and `?`.
+`parallel_mapping` tests native/reference/TypeScript agreement, actual distinct
+native profile thread IDs with overlapping callback intervals, completed calls
+and zero live managed pools. It also checks nested captures, returned functions,
+scalar tags, single argument evaluation, limits, hidden resources, rejected
+programs and genuine017 migration/explicit reserved-name repair. Live debugger,
+platform, SDK, captured replay and current full acceptance remain separate gates.
+The private26-case runtime suite and actual compiled-closure tests remain useful
+boundary checks, and do not by themselves establish source-language acceptance.

@@ -8,7 +8,7 @@
 (* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
 (* Project source/static linkage and concrete export roots are external
    nex.build.json metadata, not language syntax or a version migration. *)
-(* NEX 0.17. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.18. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain0.73 native application lifetime adds no syntax or migration. *)
 (* Toolchain0.74 shared native project images are external build metadata;
    language0.16 source grammar and canonical identities are unchanged. *)
@@ -215,3 +215,9 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    that function, including a lifted lambda. Success yields T. Evaluation is once,
    left-to-right; checked traps remain terminating. Explicit migration from0.16
    preserves archived revisions/IDs. No identifiers are newly reserved. *)
+
+(* Language0.18 adds the reserved intrinsic parallel_map(items, callback, workers)
++   through ordinary call syntax. Callback typing/effects/realm, resource graphs,
++   bounds and explicit history-preserving migration are semantic rules; see
++   concurrency-design.md. No new expression kind or existing AST ordinal changes. *)
++

@@ -190,6 +190,7 @@ class Bridge:
         self.next_reference = 1
         self.epoch = 0
         self.max_client_sequence = 0
+        self.stopped_thread = None
 
     def emit(self, message):
         original = message.get('seq')
@@ -357,6 +358,8 @@ class Bridge:
                 args['expression'] = '`nex-eval-encoded ' + encoded
                 args['context'] = 'repl'
                 kind = 'expression'
+        if command == 'threads' and self.stopped_thread is not None:
+            kind = 'threads_initial'
         self.pending[request['seq']] = {'request': original, 'kind': kind, 'epoch': self.epoch}
         write_packet(self.backend.stdin, request)
 
@@ -365,10 +368,26 @@ class Bridge:
         if message.get('type') == 'event' and message.get('event') in ('continued', 'stopped', 'terminated', 'exited'):
             self.epoch += 1
             self.references.clear(); self.backend_references.clear(); self.frames.clear()
+            thread = message.get('body', {}).get('threadId') if message.get('event') == 'stopped' else None
+            self.stopped_thread = thread if type(thread) is int and thread > 0 else None
         if message.get('type') == 'response':
             pending = self.pending.pop(message.get('request_seq'), None)
             if pending is not None:
                 request = pending['request']
+                if request['command'] == 'threads' and pending['epoch'] != self.epoch:
+                    return self.response(request, error='process stop changed during thread inspection')
+                if request['command'] == 'threads' and message.get('success') and self.stopped_thread is not None:
+                    threads = message.get('body', {}).get('threads', [])
+                    if not any(thread.get('id') == self.stopped_thread for thread in threads):
+                        # LLDB can return its one-shot launch-time list even
+                        # after a worker has stopped. A list missing the actual
+                        # stopped thread is contradictory: request one fresh
+                        # list, then fail if the backend still omits it. Reuse
+                        # the identity only after its first exchange finishes.
+                        if pending['kind'] == 'threads_initial':
+                            self.pending[request['seq']] = {'request': request, 'kind': 'threads_retry', 'epoch': self.epoch}
+                            return write_packet(self.backend.stdin, request)
+                        return self.response(request, error='stopped thread is absent from backend thread list')
                 if request['command'] in ('variables', 'scopes', 'stackTrace') and pending['epoch'] != self.epoch:
                     return self.response(request, error='process stop changed during inspection')
                 if request['command'] == 'initialize' and message.get('success'):

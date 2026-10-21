@@ -1,12 +1,12 @@
 {
   "schema": "nex.task/1",
-  "language": "0.17",
+  "language": "0.18",
   "id": "bounded-increment",
   "title": "Checked increment acceptance example",
   "goal": "Validate bounded increment behavior, native output, a standalone binary, purity and a defined measured scenario. This fixture validates the development toolchain.",
   "programs": [
     {
-      "baseline_revision": "3137fe903322506e187d002c1cf18e593b172e8eba04a97116c189b036f6918b",
+      "baseline_revision": "5b8b023417fd2475035a0e9a31e180c130839ab173e94302709bb76e817a3b65",
       "entry": "main.nex",
       "id": "app"
     }
@@ -117,7 +117,7 @@
       "program": "app",
       "target": "source",
       "contracts": "proof.json",
-      "intent_hash": "d71b1b51311cec01a2b0dd0d2eeb7fb993e9cfa771ab0770d4c5fa97a971de9c"
+      "intent_hash": "7ef3c050afd07a4fdf71164e01df3acab24bf4dbf4c5950ff4ed171bccbb6397"
     },
     {
       "id": "native-build",

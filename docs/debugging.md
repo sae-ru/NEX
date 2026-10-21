@@ -203,3 +203,12 @@ InstalledSDK0.89 acceptance also exercises the result-propagation sample through
 native/reference/TypeScript, checks profile ownership/completed calls, then
 replays archived source and runs a standalone binary without compiler resources.
 These are required evidence, not a new workflow phase or relaxed criterion.
+
+## CPU worker thread discovery
+
+Some LLDB DAP backends return a one-shot launch-time thread list after a worker
+has stopped. If a successful list omits the actual stopped thread, the NEX
+adapter requests one fresh list before replying to the editor. A second omission
+or a changed stop fails inspection. It never invents threads or resumes the
+process. CPU callback breakpoints and pure watches use the same archived source
+projections and matching compiler as ordinary frames.

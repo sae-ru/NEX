@@ -1,3 +1,23 @@
+# Development 0.92 / language 0.18 — source CPU mapping candidate
+
+Source parallel_map has checker/reference/native/TypeScript implementations.
+Actual native profile events show overlapping callbacks on distinct CPU threads;
+reference/TypeScript execute serially. Ten focused CTest groups pass, including
+source semantics, genuine0.17 migration, static/dynamic providers and runtime
+ownership. The mixed ordinary-error/recursion-limit regression passes after
+fixing global resource-error priority. Private actual-NEX7 and runtime26 suites
+pass ASan/UBSan with strict leak/error settings and ThreadSanitizer.
+A source-deleted live worker breakpoint/watch/resume passes. A stale first LLDB
+thread-list response is refreshed once only when it omits the actual stopped
+thread; transport checks retain stop identity and checked normal shutdown.
+A production TypeScript/Vite CPU-map application passes actual capture/update
+interaction in Chromium, Firefox and WebKit. This is serial browser execution,
+not browser worker support. Current SDK/editor fixtures use language0.18.
+Full matching regression, installed SDK24, Linux, editor and complete historical
+migration gates remain pending. The approved primary remains0.81/language0.16.
+Historical receipts below keep their original scopes; this candidate is not an
+accepted release or completion of the full objective.
+
 # Development 0.91 / language 0.17 — compiled worker boundary
 
 The compiler-private CPU bridge creates job-local handles, passes scalar bits,

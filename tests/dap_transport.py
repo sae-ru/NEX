@@ -158,6 +158,36 @@ class Transport(harness.ToolchainCase):
         bridge.client({'seq':4,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
         self.assertFalse(self.messages(self.output)[-1]['success'])
 
+    def test_threads_refresh_stale_launch_list_and_preserve_request_identity(self):
+        bridge=self.bridge()
+        stop={'seq':100,'type':'event','event':'stopped','body':{'threadId':500,'allThreadsStopped':True,'reason':'breakpoint'}}
+        bridge.server(stop)
+        request={'seq':10,'type':'request','command':'threads'}
+        bridge.client(dict(request));self.assertEqual(self.messages(self.backend.stdin)[-1],request)
+        stale={'seq':101,'type':'response','request_seq':10,'command':'threads','success':True,
+            'body':{'threads':[{'id':400,'name':'main'}]}}
+        bridge.server(stale)
+        self.assertEqual(self.messages(self.backend.stdin),[request,request])
+        self.assertEqual(len(self.messages(self.output)),1);self.assertEqual(bridge.frames,{})
+        threads=[{'id':400,'name':'main'},{'id':500,'name':'worker'},{'id':600,'name':'worker'}]
+        bridge.server({'seq':102,'type':'response','request_seq':10,'command':'threads','success':True,'body':{'threads':threads}})
+        reply=self.messages(self.output)[-1];self.assertEqual(reply['request_seq'],10);self.assertEqual(reply['body']['threads'],threads)
+        bridge.client({'seq':11,'type':'request','command':'threads'})
+        bridge.server({'seq':103,'type':'event','event':'continued','body':{'threadId':500}})
+        bridge.server({'seq':104,'type':'response','request_seq':11,'command':'threads','success':True,'body':{'threads':threads}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+        bridge.server(dict(stop,seq=105));bridge.client({'seq':12,'type':'request','command':'threads'})
+        bridge.server(dict(stale,seq=106,request_seq=12))
+        bridge.server({'seq':107,'type':'event','event':'continued','body':{'threadId':500}})
+        bridge.server({'seq':108,'type':'response','request_seq':12,'command':'threads','success':True,'body':{'threads':threads}})
+        self.assertFalse(self.messages(self.output)[-1]['success']);self.assertEqual(bridge.pending,{})
+        bridge.server(dict(stop,seq=109));bridge.client({'seq':13,'type':'request','command':'threads'})
+        bridge.server(dict(stale,seq=110,request_seq=13));bridge.server(dict(stale,seq=111,request_seq=13))
+        self.assertIn('absent',self.messages(self.output)[-1]['message']);self.assertEqual(bridge.pending,{})
+        bridge.client({'seq':14,'type':'request','command':'threads'})
+        bridge.server({'seq':112,'type':'response','request_seq':14,'command':'threads','success':False,'message':'worker exited'})
+        self.assertIn('worker exited',self.messages(self.output)[-1]['message']);self.assertEqual(bridge.pending,{})
+
     def test_native_page_rejects_invalid_bounds_and_backend_overflow(self):
         bridge=self.bridge();reference=bridge.allocate({'backend':77})
         for sequence,change in enumerate([{'start':True},{'count':False},{'start':-1},{'count':-1},{'start':2147483648},{'count':2147483648},{'variablesReference':True},{'filter':'invalid'}],1):

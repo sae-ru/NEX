@@ -36,7 +36,7 @@ std::string typeName(Type t) {
 const std::set<std::string> &builtinNames(){
   static const std::set<std::string> names=[] {
     std::set<std::string> result={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes","file"};
-    result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
+    result.insert("parallel_map");result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
   }();
   return names;
 }
@@ -128,6 +128,13 @@ bool propagatesResult(const Function &function){
     // expression traversal already visited them; visiting both is exponential.
     if(s->kind!=Stmt::Match)childBlocks(s,block);
   }};
+  block(function.body);return found;
+}
+bool usesParallelMap(const Function &function){
+  bool found=false;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
+  expression=[&](E e){if(!e||found)return;if(e->kind==Expr::Call&&e->text=="parallel_map"){found=true;return;}
+    for(auto a:e->args)expression(a);for(auto arm:e->arms)block(arm->body);};
+  block=[&](const std::vector<S>&body){for(auto s:body){if(found)return;expression(s->expr);if(s->kind!=Stmt::Match)childBlocks(s,block);}};
   block(function.body);return found;
 }
 std::string Program::location(const Span &span)const {
@@ -674,6 +681,38 @@ class Checker {
       }
       if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+      if(e->text=="parallel_map"){
+        arity(3);Type items,callback;bool callbackTyped=false;
+        auto checkCallback=[&](Type value){
+          if(value.kind!=Type::Function||value.arguments.size()!=1||*value.element==Type::Unit)
+            throw Error("E_PARALLEL_TYPE","parallel_map needs a one-argument value-returning callback",e->args[1]->span);
+          callableRealm(value,e->args[1]->span);
+          if(!value.effects.empty())throw Error("E_EFFECT","parallel_map callback must have no declared effects",e->args[1]->span);
+          if(containsFile(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file resources",e->args[1]->span);
+        };
+        try{items=expr(e->args[0]);}catch(const Error &error){
+          if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;
+          callback=expr(e->args[1]);callbackTyped=true;checkCallback(callback);
+          items=expr(e->args[0],Type::list(callback.arguments[0]));
+        }
+        if(items.kind!=Type::List)throw Error("E_TYPE","parallel_map input must be a list",e->args[0]->span);
+        if(containsFile(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file resources",e->args[0]->span);
+        if(!callbackTyped){
+          Type hint;
+          if(e->args[1]->kind==Expr::Name&&!hasLocal(e->args[1]->localName.empty()?e->args[1]->text:e->args[1]->localName)&&e->args[1]->typeArguments.empty()){
+            const auto &target=p.function(e->args[1]->text,e->args[1]->span);
+            if(!target.typeParameters.empty()&&target.params.size()==1){
+              std::map<std::string,Type> bound;unify(target.params[0].type,*items.element,bound,e->args[1]->span);
+              if(expected.kind==Type::List)unify(target.result,*expected.element,bound,e->args[1]->span);
+              if(std::all_of(target.typeParameters.begin(),target.typeParameters.end(),[&](const auto&name){return bound.contains(name);}))hint=substituteType(signature(target),bound);
+            }
+          }
+          callback=expr(e->args[1],hint);checkCallback(callback);
+        }
+        same(*items.element,callback.arguments[0],e->args[0]->span);
+        same(expr(e->args[2],Type::I64),Type::I64,e->args[2]->span);
+        e->type=Type::list(*callback.element);break;
+      }
       if(e->text=="as_f64"||e->text=="as_i64"){
         arity(1);auto input=e->text=="as_f64"?Type(Type::I64):Type(Type::F64);
         same(expr(e->args[0],input),input,e->span);e->type=e->text=="as_f64"?Type(Type::F64):Type::result(Type::I64);break;
@@ -996,9 +1035,7 @@ llvm::json::Value describe() {
       {"index_command","nex describe --kind index --json"},{"field_command","nex describe --field PATH --json"},
       {"full_command","nex describe --json"},{"guide","docs/discovery.md"},{"bootstrap_prompt","llm/BOOTSTRAP.md"},
       {"field_bytes",256},{"path_components",8},{"graph_store_opened",false},{"source_read",false}}},
-    {"source_concurrency",llvm::json::Object{{"status","pending"},{"guide","docs/concurrency-design.md"},
-      {"source_operations",false},{"internal_runtime_prototype",true},{"emitted_runtime_enabled",false},
-      {"stable_host_abi",false},{"development_compile_definition","NEX_STRUCTURED_WORKERS"}}},
+    {"source_concurrency",llvm::json::Object{{"status","candidate_ordered_cpu_mapping"},{"guide","docs/concurrency-design.md"},{"language","0.18"},{"operation","parallel_map"},{"source_operations",true},{"internal_runtime_prototype",true},{"emitted_runtime_enabled",true},{"runtime_inclusion","reachable program or linked provider requirement"},{"stable_host_abi",false},{"development_compile_definition","NEX_STRUCTURED_WORKERS"},{"callback_effects",llvm::json::Array{}},{"callback_realm","shared or current caller realm"},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"native_execution","bounded joined CPU threads"},{"reference_execution","sequential semantic oracle"},{"typescript_execution","sequential synchronous evaluation"},{"browser_workers",false},{"maximum_workers",16},{"maximum_items",65536},{"maximum_value_graph_nodes",262144},{"callback_call_depth",256},{"standalone_group_steps",1000000},{"standalone_group_timeout_ms",5000},{"hosted_budget","inherit existing request control"},{"capture_guard","reject hidden file graphs before callbacks start"},{"source_async_await",false},{"pending",llvm::json::Array{"full_current_regression","installed_sdk","platform_editor_debug_profile_validation","browser_workers","general_tasks_channels_async","other_cpu_targets","gpu","npu"}}}},
     {"wasm_features",llvm::json::Object{{"source_support",true},{"status","experimental_scalar_compute_validation_pending"},
       {"command","nex build FILE --target wasm --entry NAME --profile debug|release --json"},{"guide","docs/wasm.md"},
       {"target","wasm32-unknown-unknown"},{"abi",1},{"types",llvm::json::Array{"i64","bool","unit"}},
@@ -1037,7 +1074,7 @@ llvm::json::Value describe() {
       {"pending",llvm::json::Array{"general_resource_types","stable_ffi_abi","async_tasks","full_platform_sdk_validation"}}}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
-    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]","file_open_read(str) -> result<file> !{fs} [server]","file_open_write(str) -> result<file> !{fs} [server]","file_open_append(str) -> result<file> !{fs} [server]","file_read(file, i64) -> result<bytes> !{fs} [server]","file_write(file, bytes) -> result<i64> !{fs} [server]","file_seek(file, i64) -> result<i64> !{fs} [server]","file_size(file) -> result<i64> !{fs} [server]","file_flush(file) -> result<bool> !{fs} [server]","file_close(file) -> bool !{fs} [server]","file_is_open(file) -> bool !{fs} [server]"}},
+    {"builtins",llvm::json::Array{"parallel_map(list<T>, fn(T)->U, i64) -> list<U> [available-realm pure callback]","as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]","file_open_read(str) -> result<file> !{fs} [server]","file_open_write(str) -> result<file> !{fs} [server]","file_open_append(str) -> result<file> !{fs} [server]","file_read(file, i64) -> result<bytes> !{fs} [server]","file_write(file, bytes) -> result<i64> !{fs} [server]","file_seek(file, i64) -> result<i64> !{fs} [server]","file_size(file) -> result<i64> !{fs} [server]","file_flush(file) -> result<bool> !{fs} [server]","file_close(file) -> bool !{fs} [server]","file_is_open(file) -> bool !{fs} [server]"}},
     {"binary_features",llvm::json::Array{"immutable_contiguous_octets","retained_slice_owners","copied_mutable_host_boundaries","checked_byte_updates","strict_utf8_codecs","canonical_padded_base64","typed_json_base64","binary_files","generic_add_and_wire","bounded_binary_watches"}},
     {"binary_limits",llvm::json::Object{{"octet_min",0},{"octet_max",255},{"standalone_json_raw_bytes",786429},{"partial_watch_slice_octets",255}}},
     {"binary_guide","docs/bytes.md"},

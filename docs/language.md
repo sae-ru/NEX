@@ -1,4 +1,4 @@
-# NEX language specification 0.17
+# NEX language specification 0.18
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -19,7 +19,7 @@ Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language 0.16.
 
-Physical projects can declare `nex.project/1` and language `0.17` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+Physical projects can declare `nex.project/1` and language `0.18` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
 Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
@@ -130,7 +130,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.17",
+  "language": "0.18",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -404,7 +404,7 @@ boundary. Scalar proofs and the scalar Wasm subset do not support it.
 See [result propagation](error-propagation.md) for examples and the explicit
 history-preserving0.16 migration. The existing canonical formats and old AST
 kind ordinals remain; an appended expression kind15 represents this operation.
-Program identities include language0.17. Old artifacts require their matching SDK.
+Program identities include the declared current language (0.18). Old artifacts require their matching SDK.
 This development cohort still needs the descriptor's integration gates.
 
 ### Recoverable results
@@ -700,3 +700,21 @@ Toolchain 0.66 adds checked source analysis and a development stdio language ser
 Toolchain 0.67 adds a VS Code client for the existing readonly analysis/LSP interface. Editor diagnostics, hover/navigation and text synchronization introduce no source syntax, effects, runtime ABI, canonical-format change or language migration. See editor.md.
 
 Toolchain0.71 introduces an additive external project-build description (`nex.project-build/1`) and checked component/import architecture. It does not change source language0.16, canonical identities, existing `nex.project/1`, interpreter/MLIR/TypeScript semantics or graph history. Read [project builds](project-build.md) for actual artifact kinds and pending linkage/concurrency/accelerator work.
+
+### Ordered CPU mapping (0.18)
+
+`parallel_map(items, callback, workers)` produces `list<U>` from `list<T>` and
+a one-argument value-returning `fn(T)->U`. The callback must have no effects and
+must belong to shared or the caller's realm. Arguments evaluate once in source
+order. Explicit file-bearing input/output/callback types are rejected; hidden
+files in opaque immutable captures are rejected at runtime before callbacks start.
+Results retain input order; ordinary checked failures select the lowest failing
+index after the group joins. Global cancellation, budget/deadline exhaustion and
+memory failure take precedence. A `result` error is a value, not a group trap.
+Native macOS/Linux uses bounded joined CPU threads, nested groups reuse their
+worker, and hosted groups inherit request control. The reference and synchronous
+TypeScript implementations evaluate serially and provide no parallelism claim.
+See [the full contract](concurrency-design.md) for limits, scheduling, resources,
+validation status and remaining browser/async/accelerator work. `parallel_map`
+is newly reserved for declaration names; migration from genuine0.17 is explicit
+and history-preserving, and conflicting old names require a reviewed repair.

@@ -28,6 +28,7 @@ int main(int argc,char **argv) {
     if(auto libraries=o->getArray("libraries"))for(const auto &library:*libraries){
       auto l=library.getAsObject();NativeLibraryInput input;
       input.path=l->getString("artifact")->str();input.digest=l->getString("hash")->str();input.abi=l->getString("library_abi")->str();
+      input.parallelCalls=l->getBoolean("parallel").value_or(false);
       for(const auto &[name,contract]:*l->getObject("contracts"))input.contracts[name.str()]=contract.getAsString()->str();
       options.libraries.push_back(std::move(input));
     }
@@ -35,7 +36,7 @@ int main(int argc,char **argv) {
     auto built=build(program,argv[2],options);
     llvm::json::Object contracts;for(const auto &[name,contract]:built.functionContracts)contracts[name]=contract;
     std::cout<<json(llvm::json::Object{{"artifact",built.executable},{"hash",hash(readFile(built.executable))},
-      {"key",built.key},{"cached",built.cached},{"library_abi",built.libraryABI},{"contracts",std::move(contracts)},
+      {"key",built.key},{"cached",built.cached},{"library_abi",built.libraryABI},{"contracts",std::move(contracts)},{"parallel",built.parallelCalls},
       {"metadata",(std::filesystem::path(built.executable).parent_path()/"build.json").string()},
       {"compilation",built.compilation},{"compiled_functions",built.compiledFunctions},{"reused_functions",built.reusedFunctions}})<<'\n';
     return 0;

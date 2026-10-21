@@ -14,7 +14,7 @@ and require runtime Bearer credentials. Configure exact server CORS origins;
 preflight does not authenticate a user. Keep timeout/cancellation uncertainty
 and response limits intact. Verify the actual host and network path separately.
 
-# NEX coding prompt — language 0.16, protocol 2
+# NEX coding prompt — language 0.18, protocol 2
 
 For toolchain0.87, llm/BOOTSTRAP.md provides short initial routing. Use
 `nex describe --kind index --json` and `nex describe --field PATH --json` for
@@ -23,11 +23,15 @@ An older SDK may require the full describe command. Follow this workflow and
 the applicable normative guides; a projection never implies pending support.
 Measure the complete accepted task and failed attempts, not syntax length.
 
-Source concurrency remains pending. The0.86 internal native worker probe is
-trusted-host groundwork compiled with an explicit development flag, not a NEX
-intrinsic. Read docs/concurrency-design.md; do not generate parallel_map/spawn,
-channels, async/await or accelerator APIs. Require actual checker/backend and
-language-version/migration support before using any future source operation.
+For candidate language0.18, query source_concurrency and read the concurrency
+guide before using parallel_map(items, callback, workers). Callbacks are pure,
+in an available realm and resource-free across the worker boundary, including
+hidden captures. Results preserve order; limits/cancellation are never caught
+as ordinary item failures. Native macOS/Linux uses CPU threads; reference and
+current TypeScript execute serially. Do not claim browser workers, async/await,
+general tasks/channels or GPU/NPU support. Migrate genuine0.17 explicitly and
+retain old SDK/source/history; a declaration named parallel_map needs repair.
+Check the actual integration_pending/pending gates for the installed compiler.
 
 When task_features advertises project_task_server_workloads, read the
 `task-workload` guide. Add a project server profile check with target server,
@@ -40,7 +44,7 @@ explicit. Duration/p95/p99/rate budgets require reviewed cpu/target from readonl
 nex doctor. Check all response/count/budget failures, unsupported hardware,
 signals, managed pools and dropped counters. Replay readonly inputs into a new
 writable directory and keep its graph/history isolated. A passing workload proves
-only its linked, reviewed criteria; server debugging remains pending.
+only its linked, reviewed criteria; automatic workload debugging requires its separately advertised capability.
 
 
 When project_build.features advertises project_server_workload_profiles, read
@@ -57,7 +61,7 @@ targets and server debugging remain pending; HTTP worker concurrency adds no lan
 
 
 When editor_features advertises project_architecture_debug_launch, use extension
-0.6 and read docs/editor.md. NEX: Debug Project Component or a launch.project
+0.7 and read docs/editor.md. NEX: Debug Project Component or a launch.project
 object selects manifest/component/configuration. Preserve source/static/dynamic
 dependencies with that project path; save compiled source buffers first. Plans
 are checked around native preparation; only its fresh artifact/adapter and
@@ -99,7 +103,7 @@ adapter command/launch/cwd/source map to the debugger. Profiles require an
 explicit profile configuration. Pure tests compare the reference backend, and pure shared tests also compare TypeScript;
 effectful tests execute once with explicit runtime grants. Captured project
 diagnostics/profile nodes have null persistent IDs and content/site identities.
-Check actual exit status and timeout/output flags. Project task/replay requires the separately advertised project_architecture_tasks capability; server debugging remains pending; workload task capture/replay requires its
+Check actual exit status and timeout/output flags. Project task/replay requires the separately advertised project_architecture_tasks capability; automatic workload debugging requires its separately advertised capability; workload task capture/replay requires its
 separate advertised capability.
 
 When `mobile_project_generation` is advertised, read `docs/mobile.md` and the
@@ -216,7 +220,7 @@ For native acceptance across platforms, use `nex toolchain FILE --json` to inspe
 
 For native platform selection, retrieve `nex guide --kind build --json`. `--target native` uses the host ABI; macOS hosts can cross-build arm64/x86_64 with `--target TRIPLE`. `--toolchain FILE` (`nex.toolchain/1`, `llm/toolchain.schema.json`) selects a target compiler/SDK/dependencies and also works with `--target server`. Read `target`, `compiler_target` and `host_compatible` in build responses. A successful cross-build does not verify execution: local run/test/debug/profile reject a foreign architecture with E_TARGET_RUN. Supply target SQLite/OpenSSL dependencies when needed. Do not infer mobile/Linux/Windows cross-support from LLVM backend availability. Task contracts can pin native toolchains and accept foreign build artifacts; foreign native execution checks remain unsupported.
 
-NEX 0.17 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>` named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Source-level async/await is not yet available. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
+NEX 0.18 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>` named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Source-level async/await is not yet available. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
 
 Import files with `import "./model.nex" as model;` and call `model::create(...)` or use `model::User` as a type. A library import such as `import "std/math.nex" as math;` exposes `math::min`, `math::max`, `math::clamp`, `math::abs`. Register other library roots in `nex.json` under `libraries`. Definitions are private by default; export with `pub fn` or `pub struct`/`pub enum`. `pub` precedes a function realm, for example `pub server fn`. Public APIs cannot expose private structures. Each reachable file declares a distinct logical module. Imports are not re-exports; cyclic module imports are rejected. Preserve existing import aliases and visibility when replacing a function. Use `nex lock` to record or explicitly update reviewed dependency pins; respect E_LOCK rather than silently updating dependencies.
 

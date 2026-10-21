@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "nex/operations.h"
 #include "nex_value.h"
+#include "nex_parallel_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
 #include "nex_files.h"
@@ -82,6 +83,24 @@ class Interpreter {
       if(p.hasStructure(e->text)){
         auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
+      }
+      if(e->text=="parallel_map"){
+        auto items=full(args[0]);auto callback=watch?watch->callable(args[1]):args[1];auto workers=full(args[2]).scalar;
+        if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);
+        if(items.object->values.size()>nexrt::parallelMaximumItems)throw Error("E_LIMIT","parallel input exceeds 65536 items",e->span);
+        auto poll=[&]{step(e->span);};nexrt::validateParallelValue(items,poll);nexrt::validateParallelValue(callback,poll);
+        auto output=std::make_shared<nexrt::Data>(nexrt::Data::List);output->values.resize(items.object->values.size());std::exception_ptr failure;
+        for(size_t i=0;i<items.object->values.size();++i)try{
+          poll();auto value=call(p.function(callback.object->text),{items.object->values[i]},&callback);
+          nexrt::validateParallelValue(value,poll);output->values[i]=std::move(value);
+        }catch(const Error &error){
+          if(error.code=="E_LIMIT"||error.code=="E_TIMEOUT"||error.code=="E_CANCELLED"||error.code=="E_MEMORY")throw;
+          if(!failure)failure=std::current_exception();
+        }catch(const nexrt::DataError &error){
+          if(error.code=="E_LIMIT"||error.code=="E_MEMORY")throw;
+          if(!failure)failure=std::make_exception_ptr(Error(error.code,error.what(),e->span));
+        }
+        if(failure)std::rethrow_exception(failure);return V(std::move(output));
       }
       if(e->text=="ok")return nexrt::success(args[0]);
       if(e->text=="bytes")return nexrt::bytesFromIntegers(full(args[0]));
@@ -194,10 +213,11 @@ class Interpreter {
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
     if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
     if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
-    frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
+    frames.emplace_back(1);struct PopFrame {decltype(frames)&stack;~PopFrame(){stack.pop_back();}} pop{frames};
+    for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}
-    frames.pop_back();return value;
+    return value;
   }
 public:
   Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}

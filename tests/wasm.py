@@ -27,7 +27,7 @@ def quotient(a,b):
 
 class Wasm(harness.ToolchainCase):
  def setUp(self):
-  super().setUp();(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}))
+  super().setUp();(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'main.nex'}))
  def wasm(self,entry='compute',profile='release',**kw):
   doctor=self.cli('doctor');linker=os.environ.get('NEX_WASM_LD',doctor.get('wasm_linker',''))
   if not linker or not Path(linker).is_file():self.skipTest('matching LLVM22.1 wasm-ld is not installed')
@@ -170,7 +170,7 @@ for(const value of [0,1,0n,1n,'true',null]){
  def test_literal_percent_quoted_unicode_and_newline_paths(self):
   self.root=self.root/'Wasm output % "quoted", \\ 🧠\nnext';self.root.mkdir()
   self.file=self.root/'main.nex'
-  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}))
+  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'main.nex'}))
   self.source(SOURCE)
   temporary=self.root/'temporary % "quoted", 🧠';temporary.mkdir()
   env={name:str(temporary) for name in ['TMPDIR','TMP','TEMP','TEMPDIR']}

@@ -44,8 +44,9 @@ class Discovery(harness.ToolchainCase):
             selected = self.cli('describe', '--kind', 'field', '--field', path)
             self.assertEqual(selected['value'], expected)
             self.assertEqual(type(selected['value']), type(expected))
-        self.assertEqual(self.cli('describe', '--field', 'source_concurrency.status')['value'], 'pending')
-        self.assertIs(self.cli('describe', '--field', 'source_concurrency.source_operations')['value'], False)
+        self.assertEqual(self.cli('describe', '--field', 'source_concurrency.status')['value'], 'candidate_ordered_cpu_mapping')
+        self.assertIs(self.cli('describe', '--field', 'source_concurrency.source_operations')['value'], True)
+        self.assertIs(self.cli('describe', '--field', 'source_concurrency.browser_workers')['value'], False)
 
     def test_invalid_paths_and_mixed_options_do_not_fall_back_to_full(self):
         paths = ['', '.', '..', '.types', 'types.', 'types..item', 'types.0',
@@ -68,8 +69,8 @@ class Discovery(harness.ToolchainCase):
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
             (self.root / 'nex.json').write_text(text)
-            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.17')
-            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.17')
+            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.18')
+            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.18')
             self.assertFalse((self.root / '.nex').exists())
 
     def test_existing_graph_rows_ids_and_readonly_inputs_stay_unchanged(self):

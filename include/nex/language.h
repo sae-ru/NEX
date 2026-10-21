@@ -10,7 +10,7 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.17";
+inline constexpr const char *languageVersion = "0.18";
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -46,6 +46,7 @@ std::string typeName(Type type);
 // Only the current function body: nested lambdas have separate return boundaries.
 struct Function;
 bool propagatesResult(const Function &function);
+bool usesParallelMap(const Function &function);
 std::string floatLiteral(int64_t bits);
 struct Pattern;
 using P = std::shared_ptr<Pattern>;

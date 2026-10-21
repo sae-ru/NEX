@@ -31,6 +31,7 @@ class Generator {
   std::set<std::string> functions,structures;
   std::vector<std::map<std::string,std::string>> scopes;
   unsigned unique=0,depth=0,line=1;
+  bool parallelEnabled=false;
   std::ostringstream out;
   llvm::json::Array mappings;
   std::map<const void*,std::string> sites;
@@ -86,10 +87,10 @@ class Generator {
   std::string expr(E e){
     switch(e->kind){
     case Expr::FunctionRef:case Expr::Lambda:{
-      const auto &fn=p.function(e->text);std::string captureParams,captureValues,parameters,arguments;
-      for(size_t i=0;i<e->args.size();++i){auto name="capture_"+std::to_string(++unique);if(i){captureParams+=", ";captureValues+=", ";arguments+=", ";}captureParams+=name+": "+type(fn.captures[i].type);captureValues+=expr(e->args[i]);arguments+=name;}
+      const auto &fn=p.function(e->text);std::string captureParams,captureValues,parameters,arguments,captures;
+      for(size_t i=0;i<e->args.size();++i){auto name="capture_"+std::to_string(++unique);if(i){captureParams+=", ";captureValues+=", ";arguments+=", ";captures+=", ";}captureParams+=name+": "+type(fn.captures[i].type);captureValues+=expr(e->args[i]);arguments+=name;captures+=name;}
       for(size_t i=0;i<fn.params.size();++i){auto name="argument_"+std::to_string(++unique);if(i)parameters+=", ";if(!arguments.empty())arguments+=", ";parameters+=name+": "+type(fn.params[i].type);arguments+=name;}
-      return "(("+captureParams+"): "+type(e->type)+" => ("+parameters+"): "+type(fn.result)+" => "+symbol(fn.name)+"("+arguments+"))("+captureValues+")";
+      return "(("+captureParams+"): "+type(e->type)+" => nex.captured(["+captures+"], ("+parameters+"): "+type(fn.result)+" => "+symbol(fn.name)+"("+arguments+")))("+captureValues+")";
     }
     case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}return text+")";}
     case Expr::Propagate:return "nex.propagate("+expr(e->args[0])+")";
@@ -115,6 +116,7 @@ class Generator {
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
+      if(e->text=="parallel_map")return "nex.parallelMap("+expr(e->args[0])+", "+expr(e->args[1])+", "+expr(e->args[2])+", "+site(e)+")";
       const std::map<std::string,std::string> binary={{"bytes","bytesFromIntegers"},{"utf8_bytes","utf8Bytes"},{"decode_utf8","decodeUTF8"},{"encode_base64","encodeBase64"},{"decode_base64","decodeBase64"}};
       if(binary.contains(e->text))return "nex."+binary.at(e->text)+"("+expr(e->args[0])+(e->text=="utf8_bytes"?", "+site(e):"")+")";
       if((e->text=="push"||e->text=="set"||e->text=="slice")&&e->args[0]->type==Type::Bytes){
@@ -159,7 +161,7 @@ class Generator {
           block(arm->body,false);statement("break "+end+";");if(arm->guard){--depth;statement("}");}scopes.pop_back();--depth;statement("}");}
         statement("nex.invalidEnum("+location+");");--depth;statement("}");break;
       }
-      case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;block(s->body);--depth;statement("}");break;
+      case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;if(parallelEnabled)statement("nex.parallelPoll("+site(s->expr)+");");block(s->body);--depth;statement("}");break;
       }
       mappings.push_back(llvm::json::Object{{"site",sites.at(s.get())},{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
     }
@@ -174,6 +176,7 @@ public:
       visit(p.function(name));
     }
     write("// Generated from checked NEX "+std::string(languageVersion)+"; edit NEX sources.\nimport * as nex from './nex-runtime.ts';\n\n");
+    for(const auto &name:functions)if(usesParallelMap(p.function(name)))parallelEnabled=true;
     for(const auto &name:structures){
       const auto &s=p.structure(name);
       if(s.enumeration){write("export type "+type(Type::record(name))+" =\n");for(size_t i=0;i<s.variants.size();++i){const auto &variant=s.variants[i];write("  "+std::string(i?"| ":"  ")+"(nex.RecordValue & { readonly [nex.TYPE]: "+quote(name)+"; readonly [nex.CASE]: "+quote(variant.name)+"; ");for(const auto &field:variant.fields)write("readonly "+quote(field.name)+": "+type(field.type)+"; ");write("})\n");}write(";\n\n");continue;}
@@ -187,10 +190,12 @@ public:
       for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
       for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
       write(signature+"): "+type(f.result)+" {\n");depth=1;
+      if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       bool propagation=propagatesResult(f);
       if(propagation){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
       block(f.body,false);
       if(propagation){--depth;statement("});");}
+      if(parallelEnabled){--depth;statement("} finally { nex.parallelLeave(); }");}
       depth=0;write("}\n\n");
       included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }

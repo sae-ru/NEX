@@ -94,6 +94,12 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 92, 0):
+        cpu = report.get('evidence', {}).get('cpu_mapping', {})
+        require(all(cpu.get(key) is True for key in ('native_reference', 'typescript',
+                'profile_cleanup', 'source_deleted', 'standalone_without_resources', 'overlapping_callbacks')) and
+                len(cpu.get('thread_ids', [])) >= 2,
+                'SDK acceptance lacks actual ordered CPU mapping/thread/ownership/replay evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 89, 0):
         propagation = report.get('evidence', {}).get('result_propagation', {})
         require(all(propagation.get(key) is True for key in ('native_reference', 'typescript',
@@ -247,7 +253,7 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     # Source commands without a deeper manifest must remain inside this owned
     # evidence project, even when --output is below another NEX workspace.
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'acceptance-scope.nex'})+'\n')
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()
@@ -784,6 +790,45 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
             report['evidence']['result_propagation'] = {'native_reference': True, 'typescript': True,
                 'profile_cleanup': True, 'source_deleted': True, 'standalone_without_resources': True,
                 'revision': saved_revision}
+        if state['descriptor'].get('source_concurrency', {}).get('source_operations'):
+            directory = root / 'cpu-mapping'; directory.mkdir()
+            shutil.copyfile(resources / 'examples/parallel.nex', directory / 'main.nex')
+            (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': 'main.nex'}))
+            saved_revision = cli('check', cwd=directory)['revision']
+            output = cli('eval', cwd=directory)['stdout']
+            require(output == '[{"ok":"value=40"},{"error":{"code":"NEGATIVE","message":"negative input"}},{"ok":"value=42"}]\n2029000\n',
+                    'ordered CPU SDK sample differs from its defined output')
+            for profile in ('debug', 'release'):
+                cli('test', '--profile', profile, cwd=directory)
+                require(cli('run', '--profile', profile, cwd=directory)['stdout'] == output,
+                        'ordered CPU native/reference disagreement')
+            cli('test', '--target', 'web', cwd=directory)
+            measured = cli('profile', '--scenario', 'ordered CPU SDK', cwd=directory)
+            profile_path = Path(measured['output']); profile = json.loads(profile_path.read_text())
+            events = [e for e in profile['traceEvents'] if e.get('name') == 'parallel_example::compute']
+            thread_ids = sorted({e['tid'] for e in events})
+            overlapping = any(a['tid'] != z['tid'] and max(a['ts'], z['ts']) <
+                    min(a['ts'] + a['dur'], z['ts'] + z['dur']) for a in events for z in events)
+            require(len(events) == 16 and len(thread_ids) >= 2 and overlapping,
+                    'native CPU callbacks did not overlap on distinct actual profile threads')
+            require(measured['stdout'] == output and all(p['live'] == 0 and p['allocations'] == p['frees'] for p in profile['memory']) and
+                    all(f['calls'] == f['completed'] and f['aborted'] == 0 for f in profile['functions']),
+                    'CPU group damaged caller profiles or leaked managed values')
+            built = cli('build', '--profile', 'release', cwd=directory)
+            standalone = root / 'cpu-mapping-standalone'; shutil.copyfile(built['executable'], standalone); standalone.chmod(0o755)
+            (directory / 'main.nex').unlink()
+            require(cli('run', '--revision', saved_revision, cwd=directory)['stdout'] == output,
+                    'CPU archived replay changed after deleting source')
+            try:
+                environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+                require(run([standalone]) == output, 'standalone CPU application needs compiler resources')
+            finally:
+                environment['NEX_RESOURCE_DIR'] = unavailable
+            report['evidence']['cpu_mapping'] = {'native_reference': True, 'typescript': True,
+                'profile_cleanup': True, 'source_deleted': True, 'standalone_without_resources': True,
+                'overlapping_callbacks': True, 'thread_ids': thread_ids, 'profile_json': str(profile_path),
+                'profile_sha256': hashlib.sha256(profile_path.read_bytes()).hexdigest(), 'revision': saved_revision}
         operation_project = root / 'operation-patches'
         operation_project.mkdir()
         for name in ('main.nex', 'nex.json'):

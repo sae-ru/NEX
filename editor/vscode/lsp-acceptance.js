@@ -13,7 +13,7 @@ async function accept(compiler, output) {
   const source = path.join(project, 'main with spaces.nex'), model = path.join(project, 'model 🧠.nex');
   const main = 'module editor_client;\nimport "./model 🧠.nex" as m;\nfn main()->i64{return m::answer(21);}\n';
   const library = 'module model;\npub fn answer(n:i64)->i64{return n*2;}\n';
-  fs.writeFileSync(path.join(project, 'nex.json'), JSON.stringify({schema:'nex.project/1',language:'0.17',entry:path.basename(source)}));
+  fs.writeFileSync(path.join(project, 'nex.json'), JSON.stringify({schema:'nex.project/1',language:'0.18',entry:path.basename(source)}));
   fs.writeFileSync(source, main); fs.writeFileSync(model, library);
   const sourceURI = pathToFileURL(source).href, modelURI = pathToFileURL(model).href;
   const notifications = [], waiting = new Set();

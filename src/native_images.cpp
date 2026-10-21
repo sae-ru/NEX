@@ -120,7 +120,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   auto root=fs::absolute(directory);auto tools=configureNative(inputs.front().options);llvm::Triple triple(tools.target);
   bool darwin=triple.isMacOSX();if(!darwin&&!triple.isOSLinux())fail("shared native images currently require macOS or Linux");
   std::map<std::string,Captured> stages;std::map<std::string,std::string> sources;std::set<std::string> components,notices;
-  bool storage=false,foreign=false,profiling=false,wire=false,files=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
+  bool storage=false,foreign=false,profiling=false,wire=false,files=false,parallel=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
   std::string foreignDefault;
   auto toolchainFingerprint=inspectNativeToolchain(inputs.front().options).hash;
   auto verifyToolchain=[&](){if(inspectNativeToolchain(inputs.front().options).hash!=toolchainFingerprint)fail("native image toolchain changed while linking");};
@@ -136,6 +136,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto requirements=stage.build.getObject("runtime_requirements");if(!requirements)fail("missing shared runtime requirements");
     storage|=requirements->getBoolean("storage").value_or(false);foreign|=requirements->getBoolean("foreign").value_or(false);profiling|=requirements->getBoolean("profiling").value_or(false);
     wire|=requirements->getBoolean("wire").value_or(false);files|=requirements->getBoolean("files").value_or(false);
+    parallel|=requirements->getBoolean("parallel").value_or(false);
     auto inventory=stage.build.getObject("runtime_inputs");if(!inventory)fail("missing captured runtime inventory");
     auto projection=fs::path(text(stage.build,"runtime_source_projection"));
     for(const auto &[name,value]:*inventory){
@@ -147,10 +148,10 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   }
   Object runtimeInputs;for(const auto &[name,data]:sources)runtimeInputs[name]=hash(data);
   Array componentNames;for(const auto &name:components)componentNames.push_back(name);
-  Object requirements{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling}};
+  Object requirements{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel}};
   Object runtimeSeed{{"schema","nex.native-runtime-input/1"},{"compiler_build",NEX_BUILD_ID},{"abi",abi},{"toolchain",tools.identity},{"toolchain_fingerprint",toolchainFingerprint},{"profile",profile},
     {"cache",root.string()},{"cwd",fs::current_path().string()},{"inputs",std::move(runtimeInputs)},{"components",std::move(componentNames)},
-    {"shared_profile_identity",profiling},{"foreign",foreign},{"storage",storage},{"foreign_catalogue",foreignDefault}};
+    {"shared_profile_identity",profiling},{"foreign",foreign},{"storage",storage},{"parallel",parallel},{"foreign_catalogue",foreignDefault}};
   auto runtimeText=json(JSON(Object(runtimeSeed)),false),runtimeKey=hash(runtimeText);auto runtimeFolder=root/("runtime-"+runtimeKey);
   auto extension=darwin?".dylib":".so";auto runtime=runtimeFolder/("libnex_runtime_"+runtimeKey+extension);auto projection=runtimeFolder/"runtime-inputs";
   for(const auto &[name,data]:sources)writeFile((projection/name).string(),data);
@@ -162,11 +163,13 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   }catch(const std::exception &){return false;}};
   if(!runtimeIntact()){
     std::vector<std::string> objects;auto runtimeFlags=flags(tools,projection,profile,foreign,true);
+    if(parallel)runtimeFlags.insert(runtimeFlags.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
     if(!foreignDefault.empty())runtimeFlags.push_back("-DNEX_FOREIGN_DEFAULT="+json(foreignDefault,false));
     for(const auto &component:components){auto object=runtimeFolder/("runtime-"+std::to_string(objects.size())+".o");compile(tools,projection/component,object,runtimeFlags);objects.push_back(object.string());}
     if(storage)objects.push_back(tools.sqliteLibrary);
     if(foreign){objects.insert(objects.end(),{tools.opensslCrypto,"-pthread"});if(!darwin)objects.push_back("-ldl");}
     if(profiling){objects.push_back("-pthread");if(!darwin)objects.push_back("-ldl");}
+    if(parallel)objects.push_back("-pthread");
     link(tools,runtime,std::move(objects),darwin,true,storage,foreign,false);
     verifyToolchain();auto record=imageRecord(runtime,runtimeKey,abi,"runtime");record["symbols"]=symbolFiles(runtime);record["inputs"]=Object(runtimeSeed);record["requirements"]=Object(requirements);
     writeFile((runtimeFolder/"inputs.json").string(),runtimeText);writeFile((runtimeFolder/"image.json").string(),json(JSON(Object(record))));
@@ -184,6 +187,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto seedText=json(JSON(Object(seed)),false),key=hash(seedText);auto folder=root/key;
     auto executable=folder/(shared?"libnex_"+input.name+"_"+key+extension:"app");
     BuildResult built=input.stage;built.executable=executable.string();built.key=key;built.mlir=(folder/"program.mlir").string();built.llvm=(folder/"program.ll").string();built.compilation=(folder/"compilation.json").string();built.notices=(folder/"THIRD_PARTY_NOTICES.txt").string();built.cached=false;
+    built.parallelCalls=parallel;
     built.functionContracts.clear();provided(stage,built.functionContracts);for(const auto &name:input.staticDependencies)provided(stages.at(name),built.functionContracts);
     fs::create_directories(folder/"images");copyCaptured(input.stage.executable,folder/"objects.a");
     Array completion;completion.push_back(Object{{"kind","abi"},{"path","library-abi.json"}});completion.push_back(Object{{"kind","link_inputs"},{"path","image-inputs.json"}});completion.push_back(Object{{"kind","objects"},{"path","objects.a"}});

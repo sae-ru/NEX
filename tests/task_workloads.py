@@ -47,7 +47,7 @@ class TaskWorkloads(harness.ToolchainCase):
         self.assertEqual(self.task('check',ok=False)['code'],'E_TASK_WORKLOAD');self.assertFalse((self.root/'.nex/build').exists())
 
     def test_real_dynamic_profile_and_readonly_source_deleted_replay_use_fresh_private_state(self):
-        (self.outer/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'ancestor.nex'}))
+        (self.outer/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'ancestor.nex'}))
         (self.outer/'ancestor.nex').write_text('module ancestor;fn main()->i64{return 77;}')
         self.cli('check',self.outer/'ancestor.nex',cwd=self.outer);ancestor=harness.database_rows(self.outer/'.nex/graph.db')
         (self.root/'server/main.nex').write_text('''module workload::service;

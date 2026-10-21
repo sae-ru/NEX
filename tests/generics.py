@@ -123,7 +123,7 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
         self.assertEqual(self.cli('check',cwd=exported)['revision'],fixed)
 
     def test_actual_016_source_migration_preserves_history(self):
-        old_binary=harness.REPO/'build/sdk-0.17.0/bin/nex'
+        old_binary=harness.REPO/'build/sdk-0.18.0/bin/nex'
         self.source('module legacy; enum E {A(value:i64); B;} fn value(e:E) -> i64 {match e {E::A(n) => {return n;} E::B() => {return 0;}}} fn main() -> unit {assert(value(E::A(42)) == 42);}')
         if sys.platform=='darwin' and old_binary.exists():
             def old_cli(*args):return json.loads(subprocess.check_output([str(old_binary),*args,'--json'],cwd=self.root))
@@ -131,8 +131,8 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
         else:
             fixture=self.historical_store('0.6');old=fixture['revision'];old_graph=fixture['graph'];old_nodes=fixture['operations']
         self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.17');self.assertNotEqual(current['revision'],old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.17'})
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.18');self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.18'})
         graph=self.cli('graph');nodes=self.cli('operations','--symbol','value')['nodes']
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in old_graph['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in old_nodes})
@@ -206,7 +206,7 @@ fn observe<T>(box:Box<T>) -> unit !{io} {print(box.value);}
 fn main() -> unit !{io} {observe(Box(41));}
 ''')
         session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text());revision=session['revision']
-        frame={'schema':'nex.debug-frame/1','language':'0.17','revision':revision,'build_key':manifest['build_key'],
+        frame={'schema':'nex.debug-frame/1','language':'0.18','revision':revision,'build_key':manifest['build_key'],
                'function':'watches::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'box','type':'watches::Box<i64>','value':{'value':'41'}}],'truncated':False}
         path=self.root/'frame.json';path.write_text(json.dumps(frame))

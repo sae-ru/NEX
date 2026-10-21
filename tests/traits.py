@@ -37,7 +37,7 @@ test fn values()->unit {
 class Traits(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'main.nex'}))
 
     def rows(self):
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
@@ -52,12 +52,12 @@ class Traits(harness.ToolchainCase):
 
     def test_descriptor_model_pack_and_source_guide_match(self):
         descriptor=self.cli('describe')
-        self.assertEqual(descriptor['version'],'0.17')
+        self.assertEqual(descriptor['version'],'0.18')
         self.assertTrue({'user_traits','associated_types','constructor_parameters','static_trait_dispatch'}<=set(descriptor['generic_features']))
         guide=self.cli('guide','--kind','trait')
-        self.assertEqual(guide['language'],'0.17');self.assertIn('impl boxed',guide['text'])
+        self.assertEqual(guide['language'],'0.18');self.assertIn('impl boxed',guide['text'])
         pack=json.loads((harness.REPO/'llm/language-pack.json').read_text())
-        self.assertEqual(pack['language_version'],'0.17');self.assertEqual(pack['documents']['traits'],'docs/traits.md')
+        self.assertEqual(pack['language_version'],'0.18');self.assertEqual(pack['documents']['traits'],'docs/traits.md')
         for path in pack['examples'].values():self.assertTrue((harness.REPO/path).is_file(),path)
 
     def test_associated_types_generic_impls_and_method_references(self):
@@ -166,7 +166,7 @@ fn observe<F<_>:Mapper>(value:F<i64>)->unit!{io}{print(Mapper<F>::map<i64,i64>(v
 fn main()->unit!{io}{observe<list>([41]);}
 ''')
         self.source(source);session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text())
-        frame={'schema':'nex.debug-frame/1','language':'0.17','revision':session['revision'],'build_key':manifest['build_key'],
+        frame={'schema':'nex.debug-frame/1','language':'0.18','revision':session['revision'],'build_key':manifest['build_key'],
                'function':'mapper::observe<list>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'list<i64>','value':['41']}],'truncated':False}
         path=self.root/'frame.json';path.write_text(json.dumps(frame))
@@ -339,7 +339,7 @@ fn main()->unit{}
 server fn hidden(values:list<i64>)->str!{io}{print("SERVER_LIBRARY_TRAIT_197");return "hidden";}
 fn unused_private()->str{return "UNUSED_LIBRARY_PRIVATE_197";}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'main.nex','libraries':{'std':'standard'}}))
         self.source('''module routes;import "std/api.nex" as api;import "std/net.nex" as net;
 pub struct Row {value:i64;}
 server fn echo(context:api::Context,input:Row)->result<Row>{return ok(input);}
@@ -386,7 +386,7 @@ impl boxes<T:wire>:contract::Content for Box<T> {type Item=T;get=extract<T>;secr
 pub struct Payload<T:contract::Content> {value:contract::Content::Item<T>;}
 fn unused_private()->str{return "UNUSED_APPLICATION_PRIVATE_198";}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex','libraries':{'helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'main.nex','libraries':{'helpers':'helpers'}}))
         self.source('''module routes;import "std/api.nex" as api;import "./model.nex" as model;
 server fn echo(context:api::Context,input:model::Payload<model::Box<i64>>)->result<model::Payload<model::Box<i64>>>{return ok(input);}
 endpoint echo_value("POST","/api/echo")=echo;
@@ -486,7 +486,7 @@ fn main()->unit!{io}{let value:i64=Tag<i64>::tag(21);print(value);}
             if table!='head':self.assertLessEqual(rows,after[table],table)
         self.assertFalse(self.file.exists());self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],fixture['stdout'])
         exported=self.root/'exported';self.cli('export','--revision','HEAD','--directory',exported)
-        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.17')
+        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.18')
         self.assertEqual(self.cli('eval',cwd=exported)['stdout'],fixture['stdout'])
         self.assertEqual(self.cli('run',cwd=exported)['stdout'],fixture['stdout'])
         self.cli('test','--target','web',cwd=exported)

@@ -13,7 +13,7 @@ class NativeImages(harness.ToolchainCase):
         super().setUp()
         self.root=self.root/'images % 🧠';self.root.mkdir()
         for name in ('model','producer','consumer','app'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'app/main.nex'}))
         (self.root/'model/value.nex').write_text('''module model;
 pub struct Payload{text:str;data:bytes;values:list<f64>;callback:fn(i64)->i64;}
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
