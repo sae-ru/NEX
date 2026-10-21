@@ -1,3 +1,9 @@
+Language0.17 candidate emits `?` through a private result-propagation sentinel
+and a boundary in the current generated function. Runtime traps are rethrown.
+This reuses the pinned browser runtime without changing npm dependencies or
+notices, and retains reachable client/shared-only output and source mapping.
+See [result propagation](error-propagation.md); full integration gates remain.
+
 # NEX browser backend and application contract
 
 The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.

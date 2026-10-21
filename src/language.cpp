@@ -115,6 +115,15 @@ std::string Program::definition(const Endpoint &e)const {
 }
 std::string Program::definition(const Trait &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
 std::string Program::definition(const Implementation &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
+bool propagatesResult(const Function &function){
+  bool found=false;
+  std::function<void(E)> expression;
+  std::function<void(const std::vector<S>&)> block;
+  expression=[&](E e){if(!e||found)return;if(e->kind==Expr::Propagate){found=true;return;}
+    for(auto a:e->args)expression(a);for(auto arm:e->arms)block(arm->body);};
+  block=[&](const std::vector<S> &body){for(auto s:body){expression(s->expr);childBlocks(s,block);}};
+  block(function.body);return found;
+}
 std::string Program::location(const Span &span)const {
   if(units.contains(span.file))return units.at(span.file).path;return span.file.empty()?path:span.file;
 }
@@ -163,7 +172,7 @@ public:
     } else {
       std::string pair = source.substr(i, 2);
       if (pair == "=>" || pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
-      else if (std::string("(){}[]:;.,+-*/%<>=!").find(c) != std::string::npos) advance();
+      else if (std::string("(){}[]:;.,+-*/%<>=!?").find(c) != std::string::npos) advance();
       else throw Error("E_LEX", "unexpected character", s);
     }
     s.end = i; return {source.substr(s.begin, i-s.begin), s, kind};
@@ -342,10 +351,11 @@ class Parser {
       }
     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
     e->sourceRange=syntaxRange(token.span.begin);boundExpression(e);
-    while(peek().text=="."||peek().text=="["||peek().text=="(") {
+    while(peek().text=="."||peek().text=="["||peek().text=="("||peek().text=="?") {
       if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
-      if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
+      if(op.text=="?"){b->kind=Expr::Propagate;b->text="?";}
+      else if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
       else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
       b->sourceRange=syntaxRange(e->sourceRange.begin);boundExpression(b);e=b;
@@ -475,7 +485,7 @@ struct Binding {Type type;bool mutableValue;};
 class Checker {
   Program &p; Function *f=nullptr; std::vector<std::map<std::string,Binding>> scopes;
   struct CaptureScope {size_t boundary;std::map<std::string,Binding> bindings;};
-  std::vector<CaptureScope*> captures;bool watching=false;
+  std::vector<CaptureScope*> captures;bool watching=false;Function *watchBoundary=nullptr;
   bool hasLocal(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return true;return false;}
   bool localFunction(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return it->at(name).type.kind==Type::Function;return false;}
   Binding lookup(const std::string &name,Span span) {
@@ -621,6 +631,13 @@ class Checker {
       e->type=base==Type::Str?Type(Type::Str):base==Type::Bytes?Type(Type::I64):*base.element;break;
     }
     case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
+    case Expr::Propagate: {
+      if(watching&&f==watchBoundary)throw Error("E_DEBUG_RETURN","result propagation needs an executing function; use a pure helper or inspect the result",e->span);
+      if(f->result.kind!=Type::Result)throw Error("E_RESULT_RETURN","postfix ? requires the current function to return result<T>",e->span);
+      auto operand=expr(e->args[0],expected==Type::Unknown?Type():Type::result(expected));
+      if(operand.kind!=Type::Result)throw Error("E_TYPE","postfix ? requires a result<T> operand",e->span);
+      e->type=*operand.element;break;
+    }
     case Expr::Unary: {
       auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):satisfiesConstraint(p,expected,"number")?expected:Type());
       if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"number"))throw Error("E_TYPE","unary - requires number constraint, i64 or f64",e->span);
@@ -804,7 +821,7 @@ public:
   Type watch(const std::string &function,E expression,const std::map<std::string,Type> &locals){
     auto selected=function;
     prepareGenerics(p);
-    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();watching=true;
+    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();watching=true;watchBoundary=&context;
     for(const auto &[name,value]:locals){auto type=value;validType(type,expression->span);define(name,{type,false},expression->span);}
     auto result=expr(expression);for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);return result;
   }
@@ -983,6 +1000,12 @@ llvm::json::Value describe() {
       {"javascript_i64","BigInt"},{"host_imports",false},{"wrapper","(await createNexWasm(bytes)).call(argumentArray, {budget})"},
       {"limits",llvm::json::Object{{"functions",128},{"operations",8192},{"function_operations",512},{"parameters",32},{"call_depth",64},{"maximum_budget",10000000},{"memory_bytes",16777216},{"module_bytes",8388608}}},
       {"pending",llvm::json::Array{"full_current_regression","native_reference_typescript_wasm_matrix","actual_browsers","installed_and_portable_sdk","comparable_performance","general_wasm_applications","wasi","f64","heap_values"}}}},
+    {"result_propagation",llvm::json::Object{{"operator","?"},{"guide","docs/error-propagation.md"},
+      {"operand","result<T>"},{"enclosing_return","result<U>"},{"success","payload"},{"failure","return unchanged code/message from current function"},
+      {"evaluations",1},{"nested_expressions",true},{"lambda_boundary","nearest function"},{"native_owned_function_cleanup",true},
+      {"native_owner_depth",4096},{"watch_top_level",false},{"pure_watch_helpers",true},{"scalar_verification",false},
+      {"checked_traps_caught",false},{"source_try_catch_throw",false},{"explicit_016_migration",true},
+      {"integration_pending",llvm::json::Array{"complete_source_and_sdk_regression","platform_execution","installed_editor","migration_and_preservation_gates"}}}},
     {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","file","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
     {"effects",llvm::json::Array{"io","db","fs","ffi"}},
     {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","immutable_binary_files","atomic_binary_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},

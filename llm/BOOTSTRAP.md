@@ -19,3 +19,7 @@ designs are not implemented features. Preserve the project's language version.
 Retrieve extra context only for a concrete uncertainty. Count the entire accepted
 task's context, tools, generation and retries when comparing token cost. A short
 prompt or a smaller JSON response alone proves no overall LLM improvement.
+
+For typed error forwarding, query `nex describe --field result_propagation --json`
+and `nex guide --kind result --json`. Respect the reported language and pending
+integration gates. General source exceptions remain pending.

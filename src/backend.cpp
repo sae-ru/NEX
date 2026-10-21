@@ -119,6 +119,7 @@ class Emitter {
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
+  Value ownedToken;
   bool runtimeDeclarations=false;std::set<std::string> runtimeCalls;
   struct SiteDescription {std::string function,site,kind;int64_t begin,end;};
   std::map<std::string,SiteDescription> siteDescriptions;
@@ -252,6 +253,15 @@ class Emitter {
     }
   }
   void cleanupAll(Span span){for(auto i=scopes.rbegin();i!=scopes.rend();++i)cleanup(*i,span);}
+  void leaveOwned(Value kept,Span span){
+    if(!ownedToken.name.empty())call("nex_owned_leave",{ownedToken,kept.type.heap()?kept:null(Type::Str,span)},Type::Unit,span);
+  }
+  void returnValue(Value value,Span span){
+    cleanupAll(span);leaveOwned(value,span);
+    if(profiling)call("nex_profile_leave",{},Type::Unit,span);
+    if(wasm)call("nex_wasm_leave",{},Type::Unit,span);
+    line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),span);
+  }
   Value rawBytes(const std::string &text,Span span){
     auto symbol=rawGlobal(text),n=fresh();
     line(n+" = llvm.mlir.addressof @"+symbol+" : !llvm.ptr",span);return {n,Type::Str};
@@ -409,6 +419,13 @@ class Emitter {
       }else result=call(nativeSymbol(e->text),args,e->type,e->span);
       for(auto a:args)release(a,e->span);return result;
     }
+    if(e->kind==Expr::Propagate){
+      auto result=expression(e->args[0]);auto valid=asBool(call("nex_is_ok",{result},Type::I64,e->span),e->span);
+      auto success=label(),failure=label();line("cf.cond_br "+valid.name+", ^"+success+", ^"+failure,e->span);
+      blockLabel(failure);returnValue(result,e->span);
+      blockLabel(success);auto value=call(e->type.heap()?"nex_unwrap_heap":"nex_unwrap_i64",{result,constant(e->span.line,Type::I64,e->span)},e->type.heap()?e->type:Type(Type::I64),e->span);
+      value=fromScalar(value,e->type,e->span);release(result,e->span);return value;
+    }
     Value a=expression(e->args[0]);
     if(e->kind==Expr::Unary){
       if(e->text=="-")return a.type==Type::F64?call("nex_f64_neg",{a,constant(e->span.line,Type::I64,e->span)},a.type,e->span):checkedInteger("neg",constant(0,Type::I64,e->span),a,e->span);
@@ -454,10 +471,7 @@ class Emitter {
       case Stmt::Assign:{auto value=expression(s->expr);store(value,lookup(s->name).name,s->span);break;}
       case Stmt::Expression:release(expression(s->expr),s->span);break;
       case Stmt::Return:{
-        Value value;if(s->expr)value=expression(s->expr);cleanupAll(s->span);
-        if(profiling)call("nex_profile_leave",{},Type::Unit,s->span);
-        if(wasm)call("nex_wasm_leave",{},Type::Unit,s->span);
-        line(!s->expr||value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),s->span);returned=true;break;
+        Value value{"",Type::Unit};if(s->expr)value=expression(s->expr);returnValue(value,s->span);returned=true;break;
       }
       case Stmt::If:{
         auto condition=expression(s->expr);auto yes=label(),no=label(),end=label();
@@ -495,6 +509,7 @@ public:
     declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
+    declaration("nex_owned_enter","","i64");declaration("nex_owned_leave","i64, !llvm.ptr");
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
     declaration("nex_foreign_invoke","!llvm.ptr, i64, !llvm.ptr, i64","!llvm.ptr");declaration("nex_foreign_configure","i64, !llvm.ptr");
@@ -540,7 +555,8 @@ public:
       std::string environment;if(f.closure){environment=fresh();out<<environment<<": !llvm.ptr";}
       for(size_t i=0;i<f.params.size();++i){if(i||f.closure)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
-      prologue=true;
+      ownedToken={};prologue=true;
+      if(propagatesResult(f))ownedToken=call("nex_owned_enter",{},Type::I64,f.span);
       for(size_t i=0;i<f.params.size();++i){
         const auto &param=f.params[i];SiteScope parameterSite(activeSite,pathSites.at("parameter/"+std::to_string(i)));auto slot=allocateSlot(param.type,param.span);
         if(param.type==Type::F64)scopes.back()[param.name]=call("nex_f64_validate",{scopes.back().at(param.name),constant(param.span.line,Type::I64,param.span)},Type::F64,param.span);

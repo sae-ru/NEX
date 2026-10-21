@@ -68,8 +68,8 @@ class Discovery(harness.ToolchainCase):
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
             (self.root / 'nex.json').write_text(text)
-            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.16')
-            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.16')
+            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.17')
+            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.17')
             self.assertFalse((self.root / '.nex').exists())
 
     def test_existing_graph_rows_ids_and_readonly_inputs_stay_unchanged(self):

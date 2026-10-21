@@ -42,7 +42,7 @@ Toolchain0.87 adds external readonly capability projections and a bootstrap
 prompt, not source syntax or new semantics. Language0.16, canonical identities
 and graph history remain unchanged; no migration occurs. See [discovery](discovery.md).
 
-# NEX language specification 0.16
+# NEX language specification 0.17
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -63,7 +63,7 @@ Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language 0.16.
 
-Physical projects can declare `nex.project/1` and language `0.16` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+Physical projects can declare `nex.project/1` and language `0.17` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
 Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
@@ -174,7 +174,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.16",
+  "language": "0.17",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -432,6 +432,25 @@ The checker rejects uncovered values and arms subsumed by earlier unguarded patt
 
 `match` remains contextual; ordinary functions/locals named match remain valid. Constructor patterns use uninstantiated source names and parentheses, including empty cases; the scrutinee supplies generic arguments. Exact list patterns do not support a rest segment. OR/range/rest patterns, custom extractors and block-valued expression arms remain pending. See [matching.md](matching.md) and `examples/matching.nex` for syntax, limits, coverage, ownership and model/debug use.
 
+### Result propagation (0.17)
+
+Postfix `expression?` evaluates its `result<T>` operand once. Success yields T;
+failure immediately returns the same error code/message from the current
+function, which must return `result<U>`. T and U can differ. A lambda has its own
+return boundary. Effects that ran before the failure remain; later operands do
+not execute. Partly constructed values and function locals are cleaned on all
+native exits, preserving the returned value and caller ownership. The operation
+introduces no effects, realm exceptions, grants or renewed execution budget.
+It does not catch checked traps, cancellation or limits. Top-level watch uses
+are rejected; pure called helpers/lambdas can propagate within their own result
+boundary. Scalar proofs and the scalar Wasm subset do not support it.
+
+See [result propagation](error-propagation.md) for examples and the explicit
+history-preserving0.16 migration. The existing canonical formats and old AST
+kind ordinals remain; an appended expression kind15 represents this operation.
+Program identities include language0.17. Old artifacts require their matching SDK.
+This development cohort still needs the descriptor's integration gates.
+
 ### Recoverable results
 
 ```nex
@@ -479,7 +498,7 @@ Precedence from lowest to highest (binary operators associate to the left):
 5. `+`, `-`
 6. `*`, `/`, `%`
 7. Unary `-`, `!`
-8. Field selection and indexing
+8. Postfix calls, field selection, indexing and result propagation `?`
 9. Literals, local names, function/constructor calls, parenthesized expressions
 
 Operands, list items and call/constructor arguments evaluate left to right. `&&` and `||` evaluate their right operand only when required. Logical operators require `bool`; arithmetic and ordering require equal numeric types (`i64` or `f64`). `+` also accepts two strings or lists of the same type. Equality accepts two operands of the same non-unit type.

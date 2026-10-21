@@ -233,7 +233,7 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     # Source commands without a deeper manifest must remain inside this owned
     # evidence project, even when --output is below another NEX workspace.
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'acceptance-scope.nex'})+'\n')
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()

@@ -1,3 +1,7 @@
+Language0.17 candidate adds [result propagation](error-propagation.md); earlier
+cohort notes below retain their historical language references. Preserve explicit
+version migration and consult pending descriptor integration gates.
+
 # NEX CLI and graph protocol 2
 
 Toolchain0.87 adds external readonly `describe --kind index` and
@@ -8,7 +12,7 @@ descriptor and open no graph/source. Existing full `describe` remains
 
 Commands are local and model-independent. The compiler handles parsing, checking and transactions; the invoking LLM produces source or a patch. JSON is ordinary UTF-8 with no provider-specific tool format.
 
-The current source language is0.16, graph/context protocol 2 and graph database
+The current source language is0.17, graph/context protocol 2 and graph database
 schema 4. Sections labelled with older language/toolchain versions describe when
 an extension was introduced; they do not select the current language or runtime.
 Query the installed descriptor and use the matching specification/grammar.
@@ -454,3 +458,10 @@ their existing diagnostics. See `docs/core-debugging.md` for exact limits.
 Toolchain 0.66 adds `nex analyze [file] [--overlay FILE] --json` (nex.analysis/1) and `nex lsp` (stdio LSP 3.17). Analysis uses the same checker without source, Store/history or execution writes. See `docs/lsp.md` and the indexed overlay/analysis schemas.
 
 Toolchain0.67 adds the VS Code0.2 stdio client without a source-language change. It preserves UTF-16 document versions and request cancellation, and invokes the matching nex lsp executable with separate arguments. See docs/editor.md; ordinary CLI analysis/graph/task contracts remain unchanged.
+
+Language0.17 appends expression kind15 for postfix result propagation. It does
+not renumber existing AST kinds or alter canonical non-propagating functions.
+Program revision identity includes the language. Older graphs, frames, receipts
+and task/verification language pins need explicit migration/new reviewed intent;
+requirements, tests and budgets must not be weakened. Capture actual descriptor
+`result_propagation` and retrieve `nex guide --kind result --json`.

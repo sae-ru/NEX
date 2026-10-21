@@ -5,7 +5,7 @@
 namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
-const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating"};
+const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating","propagate_result"};
 const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;

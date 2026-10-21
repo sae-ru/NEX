@@ -1,6 +1,6 @@
 # Versions, compatibility and explicit migration
 
-Toolchain 0.56.1 uses source language 0.16, graph schema 4 and the canonical
+Development toolchain0.88 uses source language0.17, graph schema 4 and the canonical
 formats recorded in docs/language.md. Discover `project_features` and retrieve this guide with
 `nex guide --kind compatibility --json`. The language pack indexes
 `llm/project.schema.json` for authoring current project manifests.
@@ -10,7 +10,7 @@ formats recorded in docs/language.md. Discover `project_features` and retrieve t
 ```json
 {
   "schema": "nex.project/1",
-  "language": "0.16",
+  "language": "0.17",
   "entry": "main.nex",
   "libraries": { "numbers": "./vendor/numbers" }
 }
@@ -80,7 +80,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current 0.16. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Explicit declared version; current0.17. Old archived source requires matching SDK or explicit recheck/migration. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |
@@ -93,3 +93,10 @@ Never infer compatibility from a shared major/minor number alone. JSON Schema
 checks document shape; the installed compiler enforces version, graph and
 semantic rules. Broader stable-ABI, platform/device and reproducible-distribution
 validation remains pending as recorded in `STATUS.md` and `PLAN.md`.
+
+Language0.17 result propagation is additive syntax with an appended AST kind15;
+existing function/structure/enum/program formats retain old kind numbering.
+Program identities include the new language. Preserve a complete snapshot and
+SDK0.81 for0.16 artifacts; explicitly migrate the archived bundle, verify all old
+rows/IDs remain, then export a new0.17 project. Never edit the original version
+field as a substitute. See [result propagation](error-propagation.md).

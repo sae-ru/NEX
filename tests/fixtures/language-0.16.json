@@ -1,0 +1,52 @@
+{
+  "language": "0.16",
+  "toolchain": "0.81.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_result_boundaries;\npub struct Box<T> { value:T; }\nfn identity<T>(value:T)->T { return value; }\nfn read(value:result<i64>)->result<str> {\n  match value { ok(n)=>{return ok(\"value=\"+str(n));} err(code,message)=>{return err(code,message);} }\n}\nfn main()->unit!{io} {\n  let propagate:Box<str> = Box(identity(\"Я\\u0000🦊\"));\n  print(propagate.value);\n  print(read(ok(42)));\n  print(read(err<i64>(\"OLD\", \"same error\")));\n}\ntest fn values()->unit {\n  assert(read(ok(42))==ok(\"value=42\"));\n  assert(read(err<i64>(\"OLD\", \"same error\"))==err<str>(\"OLD\", \"same error\"));\n}\n",
+  "source_sha256": "2d4ebeb459ad16aaf1a62d98ceda0c287d19c37f827a33ba90b59466ff0c6b28",
+  "sql_sha256": "ea86c0038ac71cc964ee23df491d7db051bfaa0645672c755e58d1a533cd9d3a",
+  "compiler_sha256": "e80d88b85dc0b4ddc55137658221f1f6beedc87324da705623355d30c1785bc1",
+  "revision": "c3f1aa036fa6d061c74f4e2439926d8776461ca1b193c52b64c9556ee4164582",
+  "stdout": "Я\u0000🦊\n{\"ok\":\"value=42\"}\n{\"error\":{\"code\":\"OLD\",\"message\":\"same error\"}}\n",
+  "native_and_interpreter_test_passed": true,
+  "typescript_test_passed": true,
+  "capture": "Genuine installed approved SDK0.81/language0.16. No source/database/version/history relabeling. Captured before source result propagation extension.",
+  "commands": [
+    {
+      "name": "check",
+      "args": [
+        "check",
+        "main.nex"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "native-reference-tests",
+      "args": [
+        "test",
+        "main.nex"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "typescript-tests",
+      "args": [
+        "test",
+        "main.nex",
+        "--target",
+        "web"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "reference-main",
+      "args": [
+        "eval",
+        "main.nex"
+      ],
+      "returncode": 0
+    }
+  ],
+  "created": "2026-10-21T20:52:06.886708+00:00"
+}

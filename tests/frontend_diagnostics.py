@@ -16,7 +16,7 @@ SOURCE='module frontend;\nfn value()->i64{return 42;}\nfn main()->unit!{io}{prin
 
 class FrontendDiagnostics(harness.ToolchainCase):
     def ready(self):
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}))
         self.source(SOURCE);return self.cli('check')['revision']
 
     def rows(self):
@@ -28,7 +28,7 @@ class FrontendDiagnostics(harness.ToolchainCase):
         self.assertEqual(error['schema'],'nex.diagnostic/1');value=error['frontend']
         self.assertEqual(value['schema'],'nex.frontend-diagnostic/1');self.assertEqual(value['phase'],phase)
         self.assertEqual(value['input_kind'],kind);self.assertEqual(len(value['id']),64)
-        self.assertEqual(len(value['source_inputs_hash']),64);self.assertEqual(value['language'],'0.16')
+        self.assertEqual(len(value['source_inputs_hash']),64);self.assertEqual(value['language'],'0.17')
         if complete is not None:self.assertEqual(value['source_inputs_complete'],complete)
         self.assertNotIn('operation_id',value);self.assertNotIn('revision',value)
         return value
@@ -155,7 +155,7 @@ class FrontendDiagnostics(harness.ToolchainCase):
     def test_frozen_import_error_never_rereads_physical_source(self):
         revision=self.ready();before=self.rows();self.file.unlink()
         bad='module frozen;fn main()->i64{return "bad";}'
-        graph={'schema':'nex.graph/2','language':'0.16','revision':'0'*64,'source':bad,
+        graph={'schema':'nex.graph/2','language':'0.17','revision':'0'*64,'source':bad,
             'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':bad}}}
         path=self.root/'candidate.json';path.write_text(json.dumps(graph))
         context=self.frontend(self.cli('import',path,ok=False),'check',complete=True)
@@ -171,7 +171,7 @@ class FrontendDiagnostics(harness.ToolchainCase):
     def test_metadata_and_runtime_errors_keep_their_existing_distinctions(self):
         self.ready();manifest=self.root/'nex.json';value=json.loads(manifest.read_text());value['language']='0.14';manifest.write_text(json.dumps(value))
         error=self.cli('check',ok=False);self.assertEqual(error['code'],'E_LANGUAGE_VERSION');self.assertNotIn('frontend',error)
-        value['language']='0.16';manifest.write_text(json.dumps(value));self.source('module runtime;fn main()->unit{assert(false);}')
+        value['language']='0.17';manifest.write_text(json.dumps(value));self.source('module runtime;fn main()->unit{assert(false);}')
         error=self.cli('eval',ok=False);self.assertEqual(error['code'],'E_ASSERT');self.assertNotIn('frontend',error)
         self.assertEqual(len(error['operation_site']),64);self.assertIn('operation_id',error)
 

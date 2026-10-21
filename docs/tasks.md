@@ -1,3 +1,7 @@
+Language0.17 candidate adds [result propagation](error-propagation.md); earlier
+cohort notes below retain their historical language references. Preserve explicit
+version migration and consult pending descriptor integration gates.
+
 # Tasks and acceptance evidence
 
 Toolchain0.80 advertises `isolated_replay_graph` and `readonly_receipt_replay`.
@@ -17,7 +21,7 @@ or ancestor project. Invalid preflight creates no published output run.
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.16; this is a development-tool protocol.
+LLM vendor. Current source language is0.17; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 

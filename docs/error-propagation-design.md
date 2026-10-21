@@ -1,10 +1,9 @@
-# Error propagation work in progress
+# Historical0.88/language0.16 runtime-stage design
 
-This is a design and implementation journal, **not supported language syntax**.
-The current draft compiler still reports language0.16. It does not accept `?`
-or source `try/catch/throw`. The existing `result<T>` and terminating checked
-traps retain their meaning. A source extension requires explicit language0.17
-integration and history-preserving migration before it can be advertised.
+This journal records the completed native ownership groundwork before source
+integration. The current language0.17 candidate contract is
+[error-propagation.md](error-propagation.md); statements below describe that
+earlier0.16 stage and its required next steps.
 
 ## Planned source operation
 

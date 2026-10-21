@@ -27,7 +27,7 @@ class GraphIdentities(harness.ToolchainCase):
     def project(self, name, source=MAIN, library=LIBRARY):
         directory = self.root / name
         directory.mkdir()
-        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.16', 'entry': 'main.nex'}))
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.17', 'entry': 'main.nex'}))
         (directory / 'main.nex').write_text(source)
         (directory / 'library.nex').write_text(library)
         checked = self.cli('check', cwd=directory)
@@ -265,7 +265,7 @@ class GraphIdentities(harness.ToolchainCase):
         graph_file.write_text(json.dumps(graph))
         second = self.root / 'imported'
         second.mkdir()
-        (second / 'nex.json').write_text(json.dumps({'language': '0.16', 'entry': 'main.nex'}))
+        (second / 'nex.json').write_text(json.dumps({'language': '0.17', 'entry': 'main.nex'}))
         self.assertEqual(self.cli('import', graph_file, cwd=second)['revision'], revision)
         (first / 'main.nex').unlink()
         (first / 'library.nex').unlink()

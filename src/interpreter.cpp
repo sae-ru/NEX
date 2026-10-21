@@ -64,6 +64,10 @@ class Interpreter {
   V expr(E e) {
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
+    if(e->kind==Expr::Propagate){auto value=expression(e->args[0]);
+      if(!(watch?watch->isSuccess(value):nexrt::isSuccess(value)))throw Returned{value};
+      return watch?watch->unwrap(value):nexrt::unwrap(value);
+    }
     if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
     if(e->kind==Expr::Floating)return V::floating(nexrt::floatValue(e->number));

@@ -1,3 +1,12 @@
+Language0.17 adds postfix `value?` for result<T> inside a function returning
+result<U>. It evaluates once, yields T on success, or returns the unchanged error
+from that current function (lambdas have their own boundary). Use it to avoid
+repeating is_ok/error_code/error_message branches. It does not catch traps,
+cancellation or limits. Read `nex guide --kind result --json` / docs/error-propagation.md and inspect
+result_propagation.integration_pending before assuming distribution acceptance.
+Never relabel a0.16 project; explicitly migrate archived source and export a new
+current project, preserving history and the old SDK. Top-level watches reject ?.
+
 When `server_cors` and mobile API configuration are advertised, read
 `docs/mobile-api.md`. The operator selects one HTTPS origin with `--api-origin`;
 never embed tokens in client code or static resources. API paths stay `/api/`
@@ -207,7 +216,7 @@ For native acceptance across platforms, use `nex toolchain FILE --json` to inspe
 
 For native platform selection, retrieve `nex guide --kind build --json`. `--target native` uses the host ABI; macOS hosts can cross-build arm64/x86_64 with `--target TRIPLE`. `--toolchain FILE` (`nex.toolchain/1`, `llm/toolchain.schema.json`) selects a target compiler/SDK/dependencies and also works with `--target server`. Read `target`, `compiler_target` and `host_compatible` in build responses. A successful cross-build does not verify execution: local run/test/debug/profile reject a foreign architecture with E_TARGET_RUN. Supply target SQLite/OpenSSL dependencies when needed. Do not infer mobile/Linux/Windows cross-support from LLVM backend availability. Task contracts can pin native toolchains and accept foreign build artifacts; foreign native execution checks remain unsupported.
 
-NEX 0.16 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>` named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Source-level async/await is not yet available. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
+NEX 0.17 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>` named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Source-level async/await is not yet available. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
 
 Import files with `import "./model.nex" as model;` and call `model::create(...)` or use `model::User` as a type. A library import such as `import "std/math.nex" as math;` exposes `math::min`, `math::max`, `math::clamp`, `math::abs`. Register other library roots in `nex.json` under `libraries`. Definitions are private by default; export with `pub fn` or `pub struct`/`pub enum`. `pub` precedes a function realm, for example `pub server fn`. Public APIs cannot expose private structures. Each reachable file declares a distinct logical module. Imports are not re-exports; cyclic module imports are rejected. Preserve existing import aliases and visibility when replacing a function. Use `nex lock` to record or explicitly update reviewed dependency pins; respect E_LOCK rather than silently updating dependencies.
 

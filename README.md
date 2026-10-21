@@ -1,3 +1,11 @@
+Development toolchain0.88/language0.17 adds a **candidate** postfix result
+propagation operator `?`. Parsing, checking and all three execution backends are
+implemented in this isolated source; complete migration/platform/SDK/editor gates
+remain pending. See [the contract](docs/error-propagation.md). Earlier cohort
+notes below refer to their original versions. General source try/catch/throw,
+source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
+or complete LLM-token saving is claimed.
+
 Development source0.85/language0.16 adds candidate HTTP-server project/source
 debugging and extension0.7 launch support. It also corrects the deployment-only
 FFI annotation that made frozen0.84 reject its private test-entry plan. Focused

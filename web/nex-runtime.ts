@@ -25,6 +25,19 @@ export function unwrap<T extends Value>(value: Result<T>, site?: Site): T {
 }
 export function errorCode<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.code : ''; }
 export function errorMessage<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.message : ''; }
+// Private non-value sentinel: only an emitted function boundary handles it.
+class ResultPropagation {
+  readonly failure: Failure;
+  constructor(failure: Failure) { this.failure = failure; }
+}
+export function propagate<T extends Value>(value: Result<T>): T {
+  if (value[TYPE] === 'nex.result.error') throw new ResultPropagation(value);
+  return value.ok;
+}
+export function resultScope<T extends Value>(body: () => Result<T>): Result<T> {
+  try { return body(); }
+  catch (error) { if (error instanceof ResultPropagation) return error.failure; throw error; }
+}
 export type Site = readonly [file: string, line: number, column: number, operationSite?: string];
 export class NexError extends Error {
   readonly code: string;

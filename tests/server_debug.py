@@ -40,7 +40,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
 }
 ''')
         (self.root/'assets/index.html').write_text('<h1>Debug server</h1>')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'service/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'service/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'}},'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'render'},

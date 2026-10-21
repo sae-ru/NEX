@@ -59,10 +59,10 @@
   ],
   "goal": "Build and test shared closure values, print exactly 42 🧠, and measure one make call under the declared architecture.",
   "id": "project-closure",
-  "language": "0.16",
+  "language": "0.17",
   "programs": [
     {
-      "baseline_revision": "9b9f4fafe407b2978de2dbc5eae72572300f295d7ea0f87627ae3e0cf192840e",
+      "baseline_revision": "ad25748592535521e2212171a642ca8d4f0a75628712d7774f4c759e9119ec78",
       "entry": "app/main.nex",
       "id": "app",
       "project": {

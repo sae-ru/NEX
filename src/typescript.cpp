@@ -92,6 +92,7 @@ class Generator {
       return "(("+captureParams+"): "+type(e->type)+" => ("+parameters+"): "+type(fn.result)+" => "+symbol(fn.name)+"("+arguments+"))("+captureValues+")";
     }
     case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}return text+")";}
+    case Expr::Propagate:return "nex.propagate("+expr(e->args[0])+")";
     case Expr::Match:return matchExpression(e);
     case Expr::Integer:return "("+std::to_string(e->number)+"n)";
     case Expr::Floating:return "("+floatLiteral(e->number)+")";
@@ -185,7 +186,12 @@ public:
       auto start=line;std::string signature="export function "+symbol(f.name)+"(";
       for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
       for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
-      write(signature+"): "+type(f.result)+" {\n");depth=1;block(f.body,false);depth=0;write("}\n\n");
+      write(signature+"): "+type(f.result)+" {\n");depth=1;
+      bool propagation=propagatesResult(f);
+      if(propagation){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
+      block(f.body,false);
+      if(propagation){--depth;statement("});");}
+      depth=0;write("}\n\n");
       included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");

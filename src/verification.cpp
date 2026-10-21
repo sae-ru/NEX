@@ -94,6 +94,7 @@ class Engine {
   }
   Sym expression(E e,State &state,bool spec=false){
     poll();if(!e)return {context.bool_val(true),Type::Unit};
+    if(e->kind==Expr::Propagate)throw Stop{"unsupported","result propagation is outside scalar verification",e->span};
     if(e->kind==Expr::Match)throw Stop{"unsupported","match expressions are outside scalar verification",e->span};
     if(e->kind==Expr::Floating||e->type==Type::F64)throw Stop{"unsupported","f64 is outside integer/boolean verification",e->span};
     if(e->type==Type::Bytes)throw Stop{"unsupported","binary values are outside integer/boolean verification",e->span};

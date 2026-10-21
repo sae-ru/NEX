@@ -1,3 +1,11 @@
+Development toolchain0.88/language0.17 adds a **candidate** postfix result
+propagation operator `?`. Parsing, checking and all three execution backends are
+implemented in this isolated source; complete migration/platform/SDK/editor gates
+remain pending. See [the contract](docs/error-propagation.md). Earlier cohort
+notes below refer to their original versions. General source try/catch/throw,
+source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
+or complete LLM-token saving is claimed.
+
 # Mutable0.88 core error-propagation work
 
 - [x] Prototype native function-owned temporaries on normal/error returns, nested
