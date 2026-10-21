@@ -203,3 +203,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.84 project-wide foreign package projection is external build/task
    metadata. Source syntax and language0.16 semantics remain unchanged. *)
+
+(* Toolchain0.85 server debug sessions and runtime launch metadata do not change
+   language0.16 syntax, typing, realm/effect rules or canonical formats. *)

@@ -1,3 +1,37 @@
+# Development cohort0.85 (not integrated)
+
+Native server debug preparation now retains actual source/archive/shared
+providers, checked HTTP application kind, host ABI and explicit runtime args.
+Extension0.7 supports source/project server launches, reviewed foreign fields
+and bounded individual arguments. Plans/source aliases/dirty buffers/trust
+remain checked. Native budgets, ownership and request deadlines are unchanged.
+
+Prototype Mac descriptor/source/real HTTP worker/provider stops, source-deleted
+watch and request completion, graceful shutdown, stopped-deadline timeout and
+SQLite rollback pass4 cases in76.447seconds. Actual project/source editor source
+breakpoints and Unicode watch pass2 cases in28.836seconds. Node25 contract cases
+pass. Initial retained fixtures appended --json to runtime args and replaced
+editor source-map commands; corrected fixtures preserve the actual launch.
+Updated7-case bounded-argument/live worker/editor suite passes93.580seconds;
+current Node39 cases pass. The original FFI project regression with a valid
+catalogue granting only an unrelated export passes99.049seconds; it still
+rejects the selected test before initialization. An earlier new negative
+fixture used an invalid empty grant and expected the wrong diagnostic; retained
+evidence shows E_FFI_GRANT, and the corrected valid denied grant exercises
+E_TASK_FOREIGN_BINDING. Actual installed VSIX0.7 project/server commands, runtime
+input UI, original provider breakpoint, Unicode watch, response and graceful
+exit pass in two fresh private profiles in31.098seconds. These are prototype
+checks; frozen full91/SDK/Linux and matching final installed extension gates
+remain mandatory. Language0.16 syntax/canonical identities/history stay unchanged.
+
+Frozen0.84 6f19a671 passes89/90 groups on Mac and Linux ARM64. Both complete
+reports stop at source_ffi's existing project test: a new packaging catalogue
+annotation entered its private test-plan hash but not its build plan. SDK gates
+were not reached. This source excludes deployment-only annotations from private
+test-entry plans while retaining parent exact reachable-grant validation; the
+existing regression and denied-grant test must pass. Frozen816-file source,
+GitHub2fe5a4c6 and original failure evidence remain unchanged.
+
 # Development cohort0.84 (not integrated)
 
 Project foreign packaging prepares selected app exports once, projects exact

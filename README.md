@@ -1,7 +1,8 @@
-Development source0.84/language0.16 adds candidate project-wide foreign pin
-projection, per-application deployment grants and captured package tasks. Focused
-checks and full platform/installed SDK evidence are recorded separately; this
-source is not the approved primary0.81 checkout. See STATUS.md and PLAN.md.
+Development source0.85/language0.16 adds candidate HTTP-server project/source
+debugging and extension0.7 launch support. It also corrects the deployment-only
+FFI annotation that made frozen0.84 reject its private test-entry plan. Focused
+and full platform/installed SDK evidence are separate; the approved primary
+checkout remains0.81. See STATUS.md and PLAN.md.
 
 # NEX
 

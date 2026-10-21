@@ -117,6 +117,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package"&&!execution&&!testing)fail("project kind must be plan, build, package, run, test, build-test, debug or profile","E_OPTION");
   if(buildTest&&options.selectedTest.empty())fail("build-test requires --symbol NAME","E_OPTION");
   if(options.kind=="debug"&&options.adapter!="lldb"&&options.adapter!="dap"&&options.adapter!="nex-dap")fail("debug adapter must be lldb, dap or nex-dap","E_OPTION");
+  if(options.kind=="debug")validateNativeDebugArguments(options.arguments);
   if(options.kind=="run"&&!options.machine&&options.explicitTimeout)fail("supervised project run --timeout requires --json","E_OPTION");
   fs::path packageOutput;
   if(options.kind=="package"){
@@ -202,7 +203,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(selectedComponent.empty())fail("project action requires an executable, server or web application","E_PROJECT_CAPABILITY");
     const auto &kind=components.at(selectedComponent).kind;
     if(kind!="executable"&&kind!="server"&&kind!="web")fail("project action requires an executable, server or web application","E_PROJECT_CAPABILITY");
-    if((options.kind=="debug"||options.kind=="profile")&&kind!="executable"&&!(options.kind=="profile"&&kind=="server"&&withWorkload))fail("project debug/profile requires a native executable, or server profile with --workload; browser and server debug remain pending","E_PROJECT_CAPABILITY");
+    if(options.kind=="debug"&&!options.foreign.empty()){
+      auto arguments=options.arguments;arguments.insert(arguments.begin(),{kind=="server"?"--foreign":"--nex-foreign",fs::absolute(options.foreign).string()});validateNativeDebugArguments(arguments);
+    }
+    if((options.kind=="debug"||options.kind=="profile")&&kind!="executable"&&!(options.kind=="debug"&&kind=="server")&&!(options.kind=="profile"&&kind=="server"&&withWorkload))fail("project debug requires a native executable/server; profile requires an executable or server with --workload; browser debugging remains pending","E_PROJECT_CAPABILITY");
     if(withWorkload&&(kind!="server"||configuration.profile!="profile"))fail("--workload requires a server component and a profile configuration","E_OPTION");
     if(options.kind=="profile"&&configuration.profile!="profile")fail("project profile requires a configuration whose profile is profile","E_OPTION");
     if(options.kind=="run"&&options.machine&&(kind=="server"||kind=="web")&&!options.explicitTimeout)fail("captured server/web run requires an explicit --timeout; use an interactive run for a long-lived process","E_OPTION");
@@ -368,7 +372,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     }
   }
   std::optional<ForeignCatalogueSnapshot> packageForeign;
-  if(!options.packageProjection&&(options.kind=="package"||options.kind=="plan")&&!options.foreign.empty()){
+  // A private test-entry plan is compared with its actual build. It must not
+  // acquire deployment-only catalogue annotations; the parent still checks
+  // every selected test's exact reachable grants before any execution/tool.
+  if(!options.packageProjection&&(options.kind=="package"||(options.kind=="plan"&&options.testFunction.empty()))&&!options.foreign.empty()){
     if(selectedForeign.empty())fail("selected native applications have no reachable external calls","E_FFI_PACKAGE");
     packageForeign=inspectForeignCatalogue(options.foreign);
     for(const auto &item:prepared)if(applicationForeign.contains(item.name)){

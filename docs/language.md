@@ -1,3 +1,8 @@
+Toolchain0.85 extends checked native debug-session metadata and editor launches
+to HTTP servers, preserving request deadlines and explicit runtime authority.
+It changes no language0.16 source syntax, canonical identity, effects, realms or
+history; no language migration occurs.
+
 Toolchain0.84 adds external project foreign packaging: one checked literal-pin
 projection across components, per-application grants and captured package tasks.
 It changes no language0.16 syntax, effects, realms or canonical formats and

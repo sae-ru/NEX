@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.84.0 LANGUAGES C CXX)
+project(NEX VERSION 0.85.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -310,6 +310,9 @@ add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
 add_test(NAME server_workload COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_workload.py $<TARGET_FILE:nex>)
 set_tests_properties(server_workload PROPERTIES COST 180 TIMEOUT 900)
+add_test(NAME server_debug COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_debug.py $<TARGET_FILE:nex>)
+set_tests_properties(server_debug PROPERTIES COST 100 TIMEOUT 900)
 add_test(NAME task_workloads COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_workloads.py $<TARGET_FILE:nex>)
 set_tests_properties(task_workloads PROPERTIES COST 180 TIMEOUT 1200)

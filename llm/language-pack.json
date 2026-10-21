@@ -160,7 +160,9 @@
     "server_workload_example": "examples/server-workload/README.md",
     "task_workloads": "docs/task-workloads.md",
     "task_workload_state_schema": "llm/task-workload-state.schema.json",
-    "project_foreign_projection_schema": "llm/project-foreign-projection.schema.json"
+    "project_foreign_projection_schema": "llm/project-foreign-projection.schema.json",
+    "server_debug": "docs/server-debugging.md",
+    "debug_session_schema": "llm/debug-session.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -266,7 +268,8 @@
     "nex debug FILE --kind dap --json",
     "nex debug FILE -- --no-lldbinit",
     "nex-values [inside LLDB at a stopped frame]",
-    "nex debug FILE --kind nex-dap --json"
+    "nex debug FILE --kind nex-dap --json",
+    "nex project --kind debug --component service --adapter nex-dap --json -- --auth AUTH.json --database PRIVATE.sqlite --port 0 --timeout-ms 60000"
   ],
   "profile_commands": [
     "nex profile FILE --scenario TEXT --json",
@@ -635,7 +638,7 @@
     },
     "editor_project_debug": {
       "minimum_toolchain": "0.81.0",
-      "extension_version": "0.6.0",
+      "extension_version": "0.7.0",
       "command": "nex.debugProject",
       "launch_field": "project",
       "fields": [
@@ -643,13 +646,28 @@
         "component",
         "configuration"
       ],
-      "native_executable_only": true,
+      "native_executable_only": false,
       "source_static_dynamic_dependencies": true,
       "checked_plans_before_and_after_compilation": true,
       "source_entry_identity_pinned": true,
       "dirty_compiled_buffers_rejected": true,
       "project_alias_source_mapping": true,
-      "guide": "docs/editor.md"
+      "guide": "docs/editor.md",
+      "minimum_server_toolchain": "0.85.0",
+      "kinds": [
+        "executable",
+        "server"
+      ],
+      "source_launch_targets": [
+        "native",
+        "server"
+      ],
+      "foreign_launch_field": "foreign",
+      "runtime_arguments": {
+        "maximum": 128,
+        "member_bytes": 4096,
+        "total_bytes": 65536
+      }
     }
   },
   "native_application_lifetime": {
@@ -662,5 +680,18 @@
     "request_budgets_added": false,
     "embedding_request_scope": "explicit",
     "forced_termination_cleanup": false
+  },
+  "native_debug_session": {
+    "schema": "nex.debug-session/1",
+    "schema_file": "llm/debug-session.schema.json",
+    "guide": "docs/server-debugging.md",
+    "application_kinds": [
+      "executable",
+      "http_server"
+    ],
+    "launch_starts_application": false,
+    "host_only": true,
+    "preserves_request_deadlines": true,
+    "automatic_workload_debug": "pending"
   }
 }

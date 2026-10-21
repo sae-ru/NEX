@@ -1,0 +1,5 @@
+module debug_core;
+pub fn render(body:str)->str{
+  let prefix:str="Я🧠:";
+  return prefix+body;
+}

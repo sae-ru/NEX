@@ -2,6 +2,7 @@
 """Exercise an installed NEX development chain, retaining reviewable evidence."""
 import argparse
 import base64
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -91,6 +92,13 @@ def validate_completed_report(report):
         require(all(foreign.get(key) is True for key in ('actual_shared_provider', 'task_package',
                 'source_deleted_replay', 'module_inputs_deleted', 'environment_without_sdk', 'nominal_contract_agreement')),
                 'SDK acceptance lacks complete installed foreign project packaging evidence')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 85, 0):
+        server=report.get('evidence',{}).get('server_debug',{})
+        require(server.get('descriptor') is True and server.get('actual_shared_provider') is True and server.get('editor_preparation') is True,
+                'SDK acceptance lacks checked server/editor debug preparation')
+        if report.get('evidence',{}).get('live_debugger'):
+            require(all(server.get(key) is True for key in ('live_worker_stop','source_deleted','request_completed','graceful_exit')),
+                    'SDK acceptance lacks actual source-deleted HTTP worker debugging')
 
 
 class DAP:
@@ -277,7 +285,9 @@ def main():
         return Path(row['stdout']).read_text()
 
     def cli(*arguments, cwd=root, expected_success=True, timeout=180):
-        return json.loads(run([compiler, *arguments, '--json'], cwd, expected_success, timeout))
+        arguments=list(arguments);boundary=arguments.index('--') if '--' in arguments else len(arguments)
+        arguments.insert(boundary,'--json')
+        return json.loads(run([compiler, *arguments], cwd, expected_success, timeout))
 
     def phase(name, action):
         row = {'name': name, 'status': 'running'}
@@ -2124,7 +2134,62 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         report['evidence']['binary_browser'] = binary_evidence
         report['evidence']['browser_build'] = args.browser
 
+    def server_debugging():
+        project=root/'server-debugging';shutil.copytree(resources/'examples/server-debug',project)
+        private=project/'private';private.mkdir();auth=private/'auth.json';database=private/'runtime.sqlite'
+        token=cli('token','--user','sdk-debugger','--auth',auth,cwd=project)['token']
+        runtime=['--auth',auth,'--database',database,'--port','0','--timeout-ms','60000']
+        response=cli('project','--kind','debug','--component','service','--adapter','nex-dap','--',*runtime,cwd=project,timeout=300)
+        session=response['observation'];artifact=next(a for a in response['artifacts'] if a['component']=='service')
+        require(session['application_kind']=='http_server' and session['host_compatible'] and session['launch']['program']==artifact['artifact'] and
+            session['build_key']==artifact['build_key'] and not database.exists() and not (project/'.nex/graph.db').exists(), 'server debug preparation changed runtime state or artifact identity')
+        compilation=json.loads(Path(artifact['compilation']).read_text())
+        require(len(compilation['owned_images'])==2 and all(u['identity'].startswith('debug_service::') or u['identity'].startswith('std::') for u in compilation['units']),
+            'server debugger did not consume its actual shared provider')
+        node=os.environ.get('NEX_NODE') or shutil.which('node');require(node,'server editor preparation requires Node')
+        code=('const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]})'
+              '.then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});')
+        prepared=json.loads(run([node,'-e',code,resources/'editor/vscode/session.js',json.dumps({'type':'nex','request':'launch','cwd':str(project),
+            'project':{'manifest':'nex.build.json','component':'service','configuration':'debug'},'args':list(map(str,runtime))}),compiler],cwd=project,timeout=300))
+        require(prepared['buildKey']==artifact['build_key'] and prepared['launch']['program']==artifact['artifact'] and
+                prepared['launch']['args']==list(map(str,runtime)) and any(Path(pair[1]).resolve()==(project/'core/main.nex').resolve() for pair in prepared['originalSourceMappings']),
+                'server editor preparation lost artifact, runtime arguments or original provider mappings')
+        evidence={'descriptor':True,'actual_shared_provider':True,'editor_preparation':True,'live_worker_stop':False,'source_deleted':False,
+            'request_completed':False,'graceful_exit':False,'manifest':session['manifest']}
+        if args.live:
+            manifest=json.loads(Path(session['manifest']).read_text())
+            symbol=next(f['native_symbol'] for f in manifest['functions'] if f['name']=='debug_core::render')
+            for name in ('core','service'):shutil.rmtree(project/name)
+            for name in ('nex.json','nex.build.json'):(project/name).unlink()
+            client=DAP(prepared['command'],project,environment);executor=concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True,'supportsVariableType':True})
+                launch=dict(prepared['launch'],disableASLR=False,preRunCommands=[*prepared['launch'].get('preRunCommands',[]),'process handle -s false -n false -p true SIGTERM'])
+                pending=client.send('launch',launch);client.event('initialized')
+                client.request('setFunctionBreakpoints',{'breakpoints':[{'name':symbol}]})
+                client.request('configurationDone');client.response(pending);pid=client.event('process')['systemProcessId']
+                output='';port=None
+                for _ in range(64):
+                    output+=client.event('output').get('output','');found=re.search(r'NEX server http://127\.0\.0\.1:([0-9]+)',output)
+                    if found:port=int(found.group(1));break
+                require(port is not None,'debug server did not report its loopback listener')
+                def send_request():
+                    request=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/debug',data=b'payload',
+                        headers={'Authorization':'Bearer '+token,'Content-Type':'text/plain'},method='POST')
+                    with urllib.request.urlopen(request,timeout=90) as response:return response.status,json.loads(response.read())
+                request=executor.submit(send_request);stop=client.event('stopped');require(stop['reason']=='breakpoint','server worker did not stop at its provider')
+                frame=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames'][0]
+                watch=client.request('evaluate',{'expression':'body','frameId':frame['id'],'context':'watch'})
+                require(watch['nex']['value']=='payload' and 'debug_core' in frame['name'],'server provider watch differs')
+                client.request('continue',{'threadId':stop['threadId']});require(request.result(timeout=80)==(200,'Я🧠:payload'),'resumed server request differs')
+                os.kill(pid,signal.SIGTERM);require(client.event('exited')['exitCode']==0,'server debuggee failed graceful shutdown')
+                evidence.update(live_worker_stop=True,source_deleted=True,request_completed=True,graceful_exit=True,watch='payload')
+            finally:client.close();executor.shutdown(wait=True)
+        require(not (project/'.nex/graph.db').exists(),'server debugger synchronized a graph Store')
+        report['evidence']['server_debug']=evidence
+
     def project_build():
+        server_debugging()
         full_descriptor = cli('describe'); description = full_descriptor['project_build']
         require('project_architecture_tasks' in full_descriptor['task_features'], 'SDK lacks project task captures/replay')
         require('project_task_packages' in full_descriptor['task_features'], 'SDK lacks project package acceptance checks')

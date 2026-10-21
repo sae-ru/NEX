@@ -218,7 +218,7 @@ test('malformed project selections reject before any compiler call', async () =>
 });
 
 test('non-executable and foreign-host plans do not invoke project debug', async () => {
-  for (const kind of ['source', 'static_library', 'shared_library', 'server', 'web']) {
+  for (const kind of ['source', 'static_library', 'shared_library', 'web']) {
     const f = projectFixture();f.plan.components[1].kind = kind;
     await assert.rejects(prepareSession(f.config, f.options), /native executable/);assert.equal(f.calls.length, 1);
   }
@@ -312,6 +312,47 @@ test('project command respects cancellation and trust changes without starting a
 test('project command rejects oversized manifests and unavailable components', async () => {
   let h = projectCommandHost();h.options.stat = async () => ({isFile: () => true, size: 262145});
   assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.reads, 0);
-  h = projectCommandHost();h.metadata.components.app.kind = 'server';
+  h = projectCommandHost();h.metadata.components.app.kind = 'web';
   assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+});
+
+test('server project command keeps runtime settings explicit and observes cancellation and trust', async () => {
+  let h = projectCommandHost();h.metadata.components.app.kind = 'server';
+  h.vscode.window.showInputBox = async () => JSON.stringify({args: ['--auth', 'private auth.json', '--port', '0'], foreign: 'operator.json'});
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), true);
+  assert.deepEqual(h.launches[0][1].args, ['--auth', 'private auth.json', '--port', '0']);
+  assert.equal(h.launches[0][1].foreign, 'operator.json');
+  h = projectCommandHost();h.metadata.components.app.kind = 'server';h.vscode.window.showInputBox = async () => undefined;
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+  h = projectCommandHost();h.metadata.components.app.kind = 'server';h.vscode.window.showInputBox = async () => {h.vscode.workspace.isTrusted=false;return '{"args":[]}';};
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+  h = projectCommandHost();h.metadata.components.app.kind = 'server';h.vscode.window.showInputBox = async () => '{"args":"shell string"}';
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+});
+
+test('checked server project launch preserves runtime args and reviews foreign catalogue only at debug preparation', async () => {
+  const f = projectFixture();f.plan.components[1].kind = 'server';f.response.artifacts[0].kind = 'server';
+  f.response.observation.application_kind = 'http_server';f.response.observation.host_compatible = true;
+  f.response.observation.launch.args = ['--foreign', '/operator/catalogue.json'];
+  const prepared = await prepareSession({...f.config, foreign: '/operator/catalogue.json', args: ['--auth', 'private auth.json']}, f.options);
+  assert.deepEqual(prepared.launch.args, ['--foreign', '/operator/catalogue.json', '--auth', 'private auth.json']);
+  assert.equal(f.calls.length, 3);
+  assert.equal(f.calls[0].args.includes('--foreign'), false);assert.equal(f.calls[2].args.includes('--foreign'), false);
+  assert.deepEqual(f.calls[1].args.slice(-3), ['--foreign', '/operator/catalogue.json', '--json']);
+});
+
+test('source server launch requests the HTTP target and refuses an unmarked artifact or conflicting authority', async () => {
+  let observed;const source = descriptor();source.application_kind='http_server';source.host_compatible=true;
+  await prepareSession({...configuration,target:'server',foreign:'operator.json',args:['--auth','private auth.json']}, {
+    readFile:emptyManifest,execute:async(...args)=>{observed=args;return {stdout:JSON.stringify(source)};}});
+  assert.deepEqual(observed[1].slice(-4), ['--target','server','--foreign','/project with spaces/operator.json']);
+  delete source.application_kind;
+  await assert.rejects(prepareSession({...configuration,target:'server'}, {readFile:emptyManifest,execute:async()=>({stdout:JSON.stringify(source)})}), /checked host HTTP/);
+  let calls=0;
+  for (const args of [['--foreign','different.json'],Array(129).fill('x'),['x'.repeat(4097)],['\ud800']]) {
+    await assert.rejects(prepareSession({...configuration,foreign:'operator.json',args}, {execute:async()=>{calls++;}}));
+  }
+  assert.equal(calls,0);
+  await assert.rejects(prepareSession({...configuration,foreign:'\ud800.json'}, {execute:async()=>{calls++;}}));
+  assert.equal(calls,0);
 });

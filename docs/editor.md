@@ -1,11 +1,16 @@
-# NEX editing and debugging: development toolchain 0.81
+# NEX editing and debugging: candidate toolchain0.85 / extension0.7
+
+Extension0.7 adds source/project HTTP-server launches with compiler0.85. Use the
+explicit `args` and optional `foreign` launch fields; see
+[server debugging](server-debugging.md). Runtime credentials/database belong to
+the application execution. Its request deadlines remain active while stopped.
 
 Extension0.6 adds project debugging above the existing source launch. Open a
 trusted physical workspace containing `nex.build.json`, then use **NEX: Debug
-Project Component**. Select a native executable and declared configuration.
+Project Component**. Select a native executable/server and declared configuration.
 The configured matching compiler prepares the real source/static/dynamic
-architecture. Server workloads, browser debugging and other project commands
-remain pending in this editor integration.
+architecture. Automatic workload-driven debugging, browser debugging and
+dedicated task editor commands remain pending in this editor integration.
 
 An explicit launch configuration provides the same workflow, including custom
 manifest filenames:

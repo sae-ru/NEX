@@ -3,7 +3,7 @@
   "displayName": "NEX Language Tools",
   "description": "NEX source diagnostics, type hints, navigation and native debugging from the installed compiler.",
   "publisher": "sae-ru",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"
@@ -96,7 +96,8 @@
                   "type": "string"
                 },
                 "default": [],
-                "description": "Program arguments, passed as individual values."
+                "description": "Individual runtime arguments: at most128,4 KiB each and64 KiB total, including compiler grant arguments.",
+                "maxItems": 128
               },
               "project": {
                 "type": "object",
@@ -120,7 +121,21 @@
                     "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
                   }
                 },
-                "description": "Debug the declared native executable and its real static/shared library dependencies."
+                "description": "Debug the declared native application or HTTP server using its actual static/shared dependencies."
+              },
+              "target": {
+                "enum": [
+                  "native",
+                  "server"
+                ],
+                "default": "native",
+                "description": "Source launch only: native application or HTTP server. Projects select their kind through the architecture."
+              },
+              "foreign": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "description": "Current trusted operator catalogue, resolved relative to cwd and checked by the compiler. Use this field instead of grant flags in args."
               }
             },
             "oneOf": [
@@ -173,6 +188,30 @@
               },
               "stopOnEntry": false,
               "args": []
+            }
+          },
+          {
+            "label": "NEX: project HTTP server",
+            "body": {
+              "type": "nex",
+              "request": "launch",
+              "name": "Debug NEX server",
+              "cwd": "${workspaceFolder}",
+              "project": {
+                "manifest": "nex.build.json",
+                "component": "service",
+                "configuration": "debug"
+              },
+              "args": [
+                "--auth",
+                "private/auth.json",
+                "--database",
+                "private/debug.sqlite",
+                "--port",
+                "0",
+                "--timeout-ms",
+                "60000"
+              ]
             }
           }
         ]

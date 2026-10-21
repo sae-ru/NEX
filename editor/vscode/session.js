@@ -10,6 +10,12 @@ function string(value, name) {
   if (typeof value !== 'string' || !value || value.includes('\0')) throw new Error(`Invalid ${name}.`);
   return value;
 }
+function programArguments(value = []) {
+  const scalarText = value => {for (const scalar of value) if (scalar.length === 1 && /[\uD800-\uDFFF]/.test(scalar)) return false;return true;};
+  if (!Array.isArray(value) || value.length > 128 || value.some(arg => typeof arg !== 'string' || arg.includes('\0') || !scalarText(arg) || Buffer.byteLength(arg, 'utf8') > 4096) ||
+      value.reduce((size, arg) => size + Buffer.byteLength(arg, 'utf8'), 0) > 65536) throw new Error('Program args require at most128 strings,4 KiB each and64 KiB total.');
+  return [...value];
+}
 
 function lldbArgument(value) {
   // LLDB's command parser accepts quoted newlines and Unicode literally.
@@ -26,14 +32,22 @@ function launchSettings(configuration, options, sourceRequired) {
   const source = sourceRequired ? path.resolve(cwd, string(configuration.source, 'NEX source')) : undefined;
   if (sourceRequired && path.extname(source) !== '.nex') throw new Error('Select a .nex entry source.');
   const compiler = string(options.compiler === undefined ? 'nex' : options.compiler, 'compiler executable');
-  const args = configuration.args === undefined ? [] : configuration.args;
-  if (!Array.isArray(args) || args.some(arg => typeof arg !== 'string' || arg.includes('\0'))) throw new Error('Program args must be strings.');
+  const args = programArguments(configuration.args);
+  const target = configuration.target === undefined ? 'native' : configuration.target;
+  if (!['native', 'server'].includes(target)) throw new Error('Source debugging target must be native or server.');
+  if (configuration.foreign !== undefined && Buffer.byteLength(string(configuration.foreign, 'operator foreign catalogue'), 'utf8') > 4096) throw new Error('Operator foreign catalogue path exceeds4 KiB.');
+  if (configuration.foreign !== undefined) programArguments([configuration.foreign]);
+  const foreign = configuration.foreign === undefined ? undefined : path.resolve(cwd, configuration.foreign);
+  if ((foreign !== undefined || configuration.project !== undefined) && args.some(arg => ['--foreign', '--nex-foreign'].includes(arg))) {
+    throw new Error('Use the foreign launch field for a reviewed operator catalogue.');
+  }
   if (configuration.stopOnEntry !== undefined && typeof configuration.stopOnEntry !== 'boolean') throw new Error('stopOnEntry must be a boolean.');
-  return {cwd, source, compiler, args};
+  return {cwd, source, compiler, args, target, foreign};
 }
 
 async function prepareSourceSession(configuration, options = {}, freshObservation, physicalSourceBeforeCompilation, projectSpelling) {
-  const {cwd, source, compiler, args} = launchSettings(configuration, options, true);
+  const {cwd, source, compiler, args, target, foreign} = launchSettings(configuration, options, true);
+  if (foreign !== undefined) programArguments([target === 'server' ? '--foreign' : '--nex-foreign', foreign, ...args]);
   // The compiler records physical paths. Keep the editor's selected spelling
   // for breakpoints, while matching its identity before compilation (including
   // macOS /var aliases and symlinked workspace entries).
@@ -49,7 +63,8 @@ async function prepareSourceSession(configuration, options = {}, freshObservatio
   }
   let output;
   try {
-    const result = freshObservation === undefined ? await (options.execute || execute)(compiler, ['debug', source, '--kind', 'nex-dap', '--json'],
+    const result = freshObservation === undefined ? await (options.execute || execute)(compiler, ['debug', source, '--kind', 'nex-dap', '--json',
+      ...(target === 'server' ? ['--target', 'server'] : []), ...(foreign === undefined ? [] : ['--foreign', foreign])],
       {cwd, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 180000, windowsHide: true, shell: false})
       : {stdout: JSON.stringify(freshObservation)};
     output = result.stdout;
@@ -65,6 +80,9 @@ async function prepareSourceSession(configuration, options = {}, freshObservatio
   if (session.schema !== 'nex.debug-session/1' || session.ok !== true || session.adapter !== 'nex-dap' ||
       session.nex_adapter?.schema !== 'nex.dap-adapter/1' || session.nex_adapter.available !== true) {
     throw new Error('NEX requires its matching native SDK, Python and an available lldb-dap backend.');
+  }
+  if (target === 'server' && (session.application_kind !== 'http_server' || session.host_compatible !== true)) {
+    throw new Error('Server debugging requires a compiler with checked host HTTP-server sessions.');
   }
   const command = session.adapter_command;
   if (!Array.isArray(command) || !command.length || command.some(arg => typeof arg !== 'string' || !arg || arg.includes('\0'))) throw new Error('NEX returned an invalid adapter command.');
@@ -118,7 +136,7 @@ async function prepareSourceSession(configuration, options = {}, freshObservatio
     launch: {...frozenLaunch, name: configuration.name || 'NEX', stopOnEntry: configuration.stopOnEntry || false,
       preRunCommands,
       // Compiler-provided arguments carry explicit foreign execution grants.
-      args: [...(launch.args || []), ...args]}};
+      args: programArguments([...(launch.args || []), ...args])}};
 }
 
 function projectIdentifier(value, name) {
@@ -144,7 +162,7 @@ function projectPlan(plan, selection) {
       !Array.isArray(plan.components) || plan.components.length > 128) throw new Error('NEX returned an invalid checked project plan.');
   if (!path.isAbsolute(string(plan.root, 'project root')) || !path.isAbsolute(string(plan.manifest, 'architecture manifest'))) throw new Error('NEX returned relative project paths.');
   const selected = plan.components.filter(row => row?.name === selection.component);
-  if (selected.length !== 1 || selected[0].kind !== 'executable') throw new Error('Project editor debugging requires one native executable component.');
+  if (selected.length !== 1 || !['executable', 'server'].includes(selected[0].kind)) throw new Error('Project editor debugging requires one native executable/server component.');
   if (selected[0].native_toolchain?.host_compatible === false) throw new Error('Project editor debugging requires a matching native host.');
   const entry = string(selected[0].entry, 'component entry');
   const relative = path.relative(plan.root, path.resolve(plan.root, entry));
@@ -153,8 +171,9 @@ function projectPlan(plan, selection) {
 }
 
 async function prepareProjectSession(configuration, options) {
-  const {cwd, compiler} = launchSettings(configuration, options, false);
+  const {cwd, compiler, args, foreign} = launchSettings(configuration, options, false);
   if (configuration.source !== undefined) throw new Error('Choose either a source launch or a project launch.');
+  if (configuration.target !== undefined) throw new Error('Project debugging selects its target through the architecture.');
   const selection = configuration.project;
   if (!selection || typeof selection !== 'object' || Array.isArray(selection) ||
       Object.keys(selection).some(key => !['manifest', 'component', 'configuration'].includes(key))) throw new Error('Invalid project launch selection.');
@@ -163,7 +182,7 @@ async function prepareProjectSession(configuration, options) {
   const manifest = path.resolve(cwd, string(selection.manifest, 'architecture manifest'));
   const physicalManifest = await physicalPath(manifest, options);
   const argumentsFor = kind => ['project', manifest, '--kind', kind, '--component', component, '--configuration', selectedConfiguration,
-    ...(kind === 'debug' ? ['--adapter', 'nex-dap'] : []), '--json'];
+    ...(kind === 'debug' ? ['--adapter', 'nex-dap', ...(foreign === undefined ? [] : ['--foreign', foreign])] : []), '--json'];
   async function request(kind) {
     let output;
     try {output = (await (options.execute || execute)(compiler, argumentsFor(kind),
@@ -184,6 +203,7 @@ async function prepareProjectSession(configuration, options) {
   }
   const before = await request('plan');
   const selected = projectPlan(before, selection);await checkPaths(before);
+  if (foreign !== undefined) programArguments([selected.kind === 'server' ? '--foreign' : '--nex-foreign', foreign, ...args]);
   const physicalSourceBeforeCompilation = await physicalPath(path.resolve(before.root, selected.entry), options);
   const prepared = await request('debug');
   if (prepared?.schema !== 'nex.project-session/1' || prepared.ok !== true || prepared.action !== 'debug' ||
@@ -192,7 +212,7 @@ async function prepareProjectSession(configuration, options) {
   projectPlan(prepared.plan, selection);await checkPaths(prepared.plan);
   const artifacts = Array.isArray(prepared.artifacts) ? prepared.artifacts.filter(row => row?.component === component) : [];
   const session = prepared.observation;
-  if (artifacts.length !== 1 || artifacts[0].kind !== 'executable' || artifacts[0].host_compatible !== true ||
+  if (artifacts.length !== 1 || artifacts[0].kind !== selected.kind || artifacts[0].host_compatible !== true ||
       artifacts[0].artifact !== session?.launch?.program || artifacts[0].build_key !== session?.build_key ||
       session?.launch?.cwd !== before.root) throw new Error('NEX project session does not match its final native artifact.');
   const after = await request('plan');projectPlan(after, selection);await checkPaths(after);
@@ -208,7 +228,7 @@ async function prepareProjectSession(configuration, options) {
     if (root !== before.root) break;
   }
   const {project: ignoredProject, ...sourceConfiguration} = configuration;
-  const result = await prepareSourceSession({...sourceConfiguration, source: path.resolve(root, selected.entry)}, options, session, physicalSourceBeforeCompilation,
+  const result = await prepareSourceSession({...sourceConfiguration, target: selected.kind === 'server' ? 'server' : 'native', source: path.resolve(root, selected.entry)}, options, session, physicalSourceBeforeCompilation,
     {physical: before.root, original: root});
   return {...result, project: {manifest, component, configuration: selectedConfiguration,
     architectureHash: before.architecture_hash, planHash: before.plan_hash}};
@@ -218,4 +238,4 @@ async function prepareSession(configuration, options = {}) {
   return configuration.project === undefined ? prepareSourceSession(configuration, options) : prepareProjectSession(configuration, options);
 }
 
-module.exports = {prepareSession};
+module.exports = {prepareSession, programArguments};

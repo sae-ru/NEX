@@ -66,9 +66,10 @@ class SourceFFI(harness.ToolchainCase):
     def test_project_actions_require_current_operator_grants_and_execute_effectful_tests_once(self):
         self.program('''module actionffi;
 server extern fn echo(value:str)->str !{ffi}=foreign("test","echo","@PIN@");
+server extern fn other(value:str)->str !{ffi}=foreign("test","other","@PIN@");
 pub server fn exported(value:str)->str !{ffi}{return echo(value);}
 server fn main()->unit !{ffi,io}{print(exported("unused"));}
-''', {'echo':'echo'})
+''', {'echo':'echo','other':'echo'})
         core=self.root/'core';core.mkdir();self.file.rename(core/'main.nex')
         app=self.root/'app';app.mkdir();(app/'main.nex').write_text('''module actionconsumer;
 import "../core/main.nex" as c;
@@ -96,6 +97,9 @@ server test fn granted()->unit !{ffi}{assert(c::exported("test")=="test");}
         self.assertEqual((self.root/'relative-events').read_text().count('C'),1);self.assertFalse((outside/'relative-events').exists())
         self.catalogue['libraries']['test']['exports']=[];self.host.write_text(json.dumps(self.catalogue))
         action('run','--foreign',self.host,ok=False);self.assertEqual(self.events().count('C'),3)
+        self.catalogue['libraries']['test']['exports']=['other'];self.host.write_text(json.dumps(self.catalogue))
+        denied=action('test','--symbol','granted','--foreign',self.host,ok=False)
+        self.assertEqual(denied['code'],'E_TASK_FOREIGN_BINDING');self.assertEqual(self.events().count('C'),3)
 
     def test_static_archive_calls_foreign_module_through_one_consumer_runtime(self):
         self.program('''module archiveffi;

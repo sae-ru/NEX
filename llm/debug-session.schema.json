@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/debug-session-1.json",
+  "title": "Fresh checked native debugger session (toolchain0.85+)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "ok",
+    "revision",
+    "build_key",
+    "application_kind",
+    "host_compatible",
+    "manifest",
+    "adapter",
+    "launch",
+    "nex_adapter"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.debug-session/1"
+    },
+    "ok": {
+      "const": true
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "build_key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "application_kind": {
+      "enum": [
+        "executable",
+        "http_server"
+      ]
+    },
+    "host_compatible": {
+      "const": true
+    },
+    "manifest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapter": {
+      "enum": [
+        "nex-dap",
+        "lldb-dap"
+      ]
+    },
+    "launch": {
+      "$ref": "#/$defs/launch"
+    },
+    "nex_adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "available",
+        "command",
+        "launch"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.dap-adapter/1"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\u0000]*$"
+          }
+        },
+        "launch": {
+          "$ref": "#/$defs/launch"
+        }
+      }
+    },
+    "adapter_command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\u0000]*$"
+      }
+    }
+  },
+  "$defs": {
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "request",
+        "name",
+        "program",
+        "cwd",
+        "stopOnEntry",
+        "initCommands"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "nex",
+            "lldb-dap"
+          ]
+        },
+        "request": {
+          "const": "launch"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[^\\u0000]*$"
+        },
+        "program": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cwd": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stopOnEntry": {
+          "type": "boolean"
+        },
+        "initCommands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\u0000]*$"
+          }
+        },
+        "sourceMap": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "string",
+              "pattern": "^[^\\u0000]*$"
+            }
+          }
+        },
+        "args": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "type": "string",
+            "maxLength": 4096,
+            "pattern": "^[^\\u0000]*$"
+          }
+        }
+      }
+    }
+  },
+  "description": "A fresh compiler response selects the checked executable/server and matching captured adapter. Paths are absolute compiler metadata, not authority from a saved receipt. Preparing this descriptor does not start the application, read runtime credentials or create its database. Runtime args are UTF-8 without NUL,4 KiB per member and64 KiB total. Project/server debugging preserves declared binary edges and request limits."
+}

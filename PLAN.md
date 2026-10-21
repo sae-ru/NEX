@@ -1,3 +1,17 @@
+# Current0.85 server debugging
+
+- [x] Prepare host HTTP debug sessions from actual declared binary providers.
+- [x] Add explicit source/project server editor launch metadata and runtime args.
+- [x] Exercise real worker/provider watches, source deletion, deadline rollback
+  and original-source editor breakpoints in focused macOS prototype checks.
+- [x] Verify new argument limits and the frozen0.84 private FFI test-plan fix.
+- [x] Exercise actual installed extension0.7 project/server commands, original
+  source breakpoint/watch and HTTP response in two private prototype hosts.
+- [ ] Complete installed SDK, installed extension0.7, frozen full91 and Linux
+  live/server/source-free verification for a coherent backed-up source.
+- [ ] Continue task/editor debugging, source concurrency, general CPU/GPU/NPU
+  interfaces and remaining platform/device delivery; the full objective is open.
+
 # Current0.84 project foreign packages
 
 - [x] Implement exact project-wide source projection and per-app foreign grants.

@@ -1,4 +1,5 @@
 #include "nex/debug_session.h"
+#include "nex/native_toolchain.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Error.h"
 #include "nex_json.h"
@@ -22,6 +23,14 @@ std::string readBoundedText(const std::string &path,size_t limit,const std::stri
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
   return text;
 }
+}
+void validateNativeDebugArguments(const std::vector<std::string> &arguments){
+  if(arguments.size()>128)throw Error("E_OPTION","native debug accepts at most128 runtime arguments");
+  size_t bytes=0;for(const auto &argument:arguments){
+    if(argument.size()>4096||argument.find('\0')!=std::string::npos||!llvm::json::isUTF8(argument)||argument.size()>65536-bytes)
+      throw Error("E_OPTION","native debug runtime arguments require UTF-8 without NUL,4 KiB per argument and64 KiB total");
+    bytes+=argument.size();
+  }
 }
 std::string nativeDebugBuildDirectory(const std::string &directory){
 #ifdef __APPLE__
@@ -58,7 +67,13 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   const std::string &directory,const std::string &compiler,const std::string &kind,
   const std::vector<std::string> &arguments){
   if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug adapter must be lldb, dap or nex-dap");
+  requireNativeHost(built);
+  validateNativeDebugArguments(arguments);
   auto folder=fs::path(built.executable).parent_path(),manifest=folder/"debug.json";
+  auto metadata=parseJSON(readFile((folder/"build.json").string()));auto build=metadata.getAsObject();
+  if(!build||build->getString("key")!=built.key||build->getString("revision")!=revision(p)||build->getString("compiler_build")!=NEX_BUILD_ID||
+     (build->getString("kind")!="executable"&&build->getString("kind")!="http_server"))
+    throw Error("E_DEBUG","debug launch requires its matching checked native application or HTTP server artifact");
   llvm::json::Array commands{
     "command script import "+json((folder/"debugger/lldb_nex.py").string(),false),
     "nex-load-debug "+json(manifest.string(),false)+" --compiler "+json(compiler,false)};
@@ -81,6 +96,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(!arguments.empty()){llvm::json::Array values;for(const auto &argument:arguments)values.push_back(argument);launch["args"]=std::move(values);}
   auto nexLaunch=launch;nexLaunch["type"]="nex";
   llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",built.key},
+    {"application_kind",build->getString("kind")->str()},{"host_compatible",built.hostCompatible},
     {"manifest",manifest.string()},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
     {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};
   if(kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);

@@ -539,3 +539,20 @@ with source, copy another app's authority, or claim packaging executes the outpu
 Native/server task package checks with reachable externals require `foreign_hash`
 and a current trusted catalogue on run/replay. Debug/core metadata for rewritten
 deployment images and cross-target foreign packaging remain pending.
+
+For toolchains advertising `project_server_debug_descriptors`, select a server
+component with `project --kind debug --adapter nex-dap --json -- ARGS`. Use its
+actual `observation.adapter_command` and returned launch, manifest and final
+server artifact. The editor0.7 also accepts source `target: server`, or a project
+server selection, plus `args` and optional `foreign`. Source launches compile
+source directly; use project launches to preserve declared archive/shared edges.
+A descriptor prepares code without starting a listener or reading runtime auth.
+Supply current operator grants explicitly and keep runtime credentials private.
+At startup, parse the loopback listener, send an authenticated request from a
+separate client, and inspect the reported stopped worker thread. Preserve all
+compiler/editor source maps and init/pre-run commands. Watch expressions read
+stopped values without inferior execution. Stopped time counts toward the normal
+request deadline; a resumed expired request rolls back its transaction. Do not
+disable budgets or claim a completed response from a breakpoint alone.
+Discover the schema/guide via `native_debug_session`; automatic workload-driven
+debugger/task replay and other pending capabilities remain separate.

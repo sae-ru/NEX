@@ -40,9 +40,11 @@ Client/web tests use the reachable TypeScript projection. Pure tests additionall
 compare interpreter observations; pure shared tests also compare TypeScript; effectful tests execute once in their selected
 backend, preserving explicit runtime capabilities. A failed assertion remains a
 failed test even when both backends reject it. At most256 tests are selected. Each returned row is bounded to32KiB. Larger observations retain a full private result file at `report`; the response includes UTF-8-safe output prefixes and byte counts.
-Full UI/API workloads and project package task checks remain pending.
+Full UI/API workloads retain separate validation. Project package task checks
+and workload profile captures/replay are supported; see project-tasks.md.
 
-Debug/profile select native executable components. Toolchain0.82 also supports
+Debug selects native executable or server components (server support0.85).
+Profile selects native executables; toolchain0.82 also supports
 server profile with an explicit bounded [workload](server-workload.md) and a
 profile configuration. Debug emits the
 same `nex.debug-session/1` descriptor as a source command, nested under
@@ -59,8 +61,10 @@ persistent graph IDs are null with `identity_scope:"captured_project"`.
 debug/profile/native-diagnostic reports retain their stated contracts. Explicit
 `--foreign HOST.json` grants are checked before execution and around commands;
 receipts and environment variables do not grant foreign authority. Browser
-preview accepts no foreign catalogue. Source-foreign project packaging, server debugging, workload task capture/replay and dedicated task editor commands
-remain pending.
+preview accepts no foreign catalogue. Project foreign packaging and captured
+workload profile tasks are supported. Automatic workload debugger/task replay
+and dedicated task editor commands remain pending. See server-debugging.md
+for actual worker frames, runtime inputs and preserved request deadlines.
 
 Toolchain0.71 adds `nex project`. This is external build metadata, separate from
 the existing source/language/library manifest `nex.json` (`nex.project/1`). It
@@ -196,7 +200,7 @@ locally compiled functions, including nested imports through package aliases.
 Use the complete projection path from its `debug.json` when placing a library
 source breakpoint. A matching captured LLDB formatter can inspect the same
 locals and pure watches after original source deletion; keep the retained build
-workspace or export a checked core capsule. Candidate0.77 project actions use these actual artifacts for native run/test/debug/profile. Project task/replay integration remains pending.
+workspace or export a checked core capsule. Candidate0.77 project actions use these actual artifacts for native run/test/debug/profile. Project task/replay integration preserves these binary edges; see project-tasks.md.
 
 Retained builds declare `nex.native-completion/2` and an ordered bounded
 `completion_inputs` list: the ABI record, then captured dependency archives.
