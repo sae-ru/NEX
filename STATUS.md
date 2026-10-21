@@ -1,3 +1,17 @@
+# Mutable0.88 error-propagation draft (not integrated)
+
+Compiler-private function ownership boundaries are being implemented so a future
+propagation operation can release unnamed argument/constructor temporaries and
+preserve its returned value. Scope/request/application/worker cleanup is coordinated.
+Source `?` is not implemented; language remains0.16 until a coherent0.17 checker,
+all backends, specification and migration exist. See the pending
+[design journal](docs/error-propagation-design.md). The first19-case runtime
+prototype passes, including complete files/quotas, source diagnostics, allocation
+faults, stale/cross-thread/context tokens, worker reuse and failure cleanup. Six
+focused CTest groups pass1.21seconds. The same19 cases pass ASan/UBSan and TSan;
+source operator integration and broad/SDK/platform validation remain pending.
+Frozen085/086/087 and approved primary081 remain unchanged.
+
 # Development cohort0.87 (not integrated)
 
 Readonly capability index and dotted-field projections bind exact descriptor

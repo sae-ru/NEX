@@ -24,8 +24,25 @@ extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{
 namespace nexrt {
 namespace {
 thread_local RequestScope *currentRequest=nullptr;
-struct ApplicationState {Handle *head=nullptr;};
+struct ApplicationState {
+  Handle *head=nullptr;ApplicationState *parent=nullptr;int64_t token=0;
+  RequestScope *request=nullptr;ApplicationState *application=nullptr;
+};
 thread_local ApplicationState *currentApplication=nullptr;
+struct FunctionOwners {
+  ApplicationState *current=nullptr,*available=nullptr;size_t depth=0;
+  ~FunctionOwners(){while(available){auto *next=available->parent;delete available;available=next;}}
+  int64_t enter();
+  void leave(Handle *kept)noexcept;
+  void unwind(size_t baseline)noexcept{while(depth>baseline)leave(nullptr);}
+};
+thread_local FunctionOwners functionOwners;
+std::atomic<int64_t> nextFunctionOwner{1};
+ApplicationState *ownershipState(){
+  auto *state=functionOwners.current;
+  if(state&&state->request==currentRequest&&state->application==currentApplication)return state;
+  return currentRequest?nullptr:currentApplication;
+}
 std::atomic<int64_t> liveHandles{0};
 thread_local std::vector<void(*)() noexcept> resourceCleanups;
 }
@@ -38,7 +55,7 @@ void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=res
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
-  ApplicationState *applicationOwner=owner?nullptr:currentApplication;
+  ApplicationState *applicationOwner=ownershipState();
   Handle *previous=nullptr,*next=nullptr;
   explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){
     // Profiling and request registration can allocate. Never leave a failed
@@ -46,25 +63,56 @@ struct Handle {
     profileAllocate(this,sizeof(Handle),0);
     try{if(owner)owner->track(this);}
     catch(...){profileFree(this);throw;}
-    if(applicationOwner){next=applicationOwner->head;if(next)next->previous=this;applicationOwner->head=this;}
+    if(applicationOwner)attach(applicationOwner);
     ++liveHandles;
   }
   ~Handle(){
     profileFree(this);if(owner)owner->untrack(this);
-    if(applicationOwner){if(previous)previous->next=next;else applicationOwner->head=next;if(next)next->previous=previous;}
+    detach();
     --liveHandles;
+  }
+  void detach()noexcept{
+    if(applicationOwner){if(previous)previous->next=next;else applicationOwner->head=next;if(next)next->previous=previous;}
+    applicationOwner=nullptr;previous=next=nullptr;
+  }
+  void attach(ApplicationState *state)noexcept{
+    applicationOwner=state;previous=nullptr;next=state?state->head:nullptr;
+    if(state){if(next)next->previous=this;state->head=this;}
   }
 };
 namespace {
+int64_t FunctionOwners::enter(){
+  if(!currentRequest&&!currentApplication)throw DataError("E_CONTEXT","function ownership requires an application or request scope");
+  if(depth>=4096)throw DataError("E_LIMIT","function ownership depth exceeds 4096");
+  auto token=nextFunctionOwner.load(std::memory_order_relaxed);
+  while(token<std::numeric_limits<int64_t>::max()&&!nextFunctionOwner.compare_exchange_weak(token,token+1,std::memory_order_relaxed)){}
+  if(token==std::numeric_limits<int64_t>::max())throw DataError("E_LIMIT","function ownership identities exhausted");
+  // Reuse frames by depth. Enter may allocate; leave/unwind never allocate and
+  // no extra field or per-value registry is added to managed Handle objects.
+  auto *state=available;if(state)available=state->parent;else state=new ApplicationState;
+  state->parent=current;state->head=nullptr;state->token=token;
+  state->request=currentRequest;state->application=currentApplication;
+  current=state;++depth;return token;
+}
+void FunctionOwners::leave(Handle *kept)noexcept{
+  auto *state=current;bool transfer=kept&&kept->applicationOwner==state;
+  if(transfer)kept->detach();
+  current=state->parent;--depth;
+  while(state->head)delete state->head;
+  if(transfer)kept->attach(ownershipState());
+  state->token=0;state->parent=available;available=state;
+}
 // This ownership boundary does not grant request capabilities, budgets or
 // cancellation. CLI file/foreign authorization and hosted RequestScope behavior
 // remain independent. Intrusive tracking allocates no per-handle registry node.
 struct ApplicationScope {
   ApplicationState state;
+  size_t functionBaseline=functionOwners.depth;
   ApplicationState *previous=currentApplication;
   ApplicationScope(){currentApplication=&state;}
   ~ApplicationScope(){
     profileUnwind();
+    functionOwners.unwind(functionBaseline);
     while(state.head)delete state.head;
     cleanupRuntimeResources();currentApplication=previous;
   }
@@ -85,6 +133,7 @@ struct RequestScope::Impl {
   std::shared_ptr<Control> control;
   std::function<bool()> cancellation;
   bool worker=false;
+  size_t functionBaseline=functionOwners.depth;
   const std::atomic<bool> *workerStop=nullptr;
   explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
 };
@@ -100,7 +149,7 @@ RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bo
 }
 RequestScope::~RequestScope(){
   if(!impl->worker)impl->control->active=false;
-  profileUnwind();impl->resources.revoke();while(!impl->handles.empty())delete *impl->handles.begin();
+  profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
   if(impl->worker)cleanupRuntimeResources();
   currentRequest=nullptr;resource_detail::requestBinder=nullptr;
 }
@@ -314,6 +363,21 @@ Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
 }
 }
 extern "C" {
+static int64_t impl_nex_owned_enter(nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{return nexrt::functionOwners.enter();});
+}
+int64_t nex_owned_enter(){return impl_nex_owned_enter(nexrt::SourceLocation{});}
+int64_t nex_owned_enter_at(const nexrt::NativeSite *site){return impl_nex_owned_enter(nexrt::SourceLocation{0,site});}
+static void impl_nex_owned_leave(int64_t token,Handle *kept,nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    auto *frame=nexrt::functionOwners.current;
+    if(!frame||frame->token!=token||frame->request!=nexrt::currentRequest||frame->application!=nexrt::currentApplication)
+      throw nexrt::DataError("E_CONTEXT","function ownership token does not match the current scope");
+    nexrt::functionOwners.leave(kept);
+  });
+}
+void nex_owned_leave(int64_t token,Handle *kept){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{});}
+void nex_owned_leave_at(int64_t token,Handle *kept,const nexrt::NativeSite *site){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{0,site});}
 static int64_t impl_nex_add(int64_t a,int64_t b,nexrt::SourceLocation line){
   return nexrt::hostOperation(line,[&]() -> int64_t {int64_t r;if(__builtin_add_overflow(a,b,&r))fail("E_OVERFLOW","i64 arithmetic overflow",line);return r;});
 }
@@ -589,7 +653,10 @@ static void impl_nex_print_heap(Handle *p, nexrt::SourceLocation location){
 void nex_print_heap(Handle *p){return impl_nex_print_heap(p, nexrt::SourceLocation{});}
 void nex_print_heap_at(Handle *p, const nexrt::NativeSite *nex_site){return impl_nex_print_heap(p, nexrt::SourceLocation{0,nex_site});}
 static void impl_nex_runtime_finish(nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> void {nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);});
+  return nexrt::hostOperation(location,[&]() -> void {
+    if(nexrt::functionOwners.depth)fail("E_INTERNAL_SCOPE","compiler did not close every function ownership scope",location);
+    nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);
+  });
 }
 void nex_runtime_finish(){return impl_nex_runtime_finish(nexrt::SourceLocation{});}
 void nex_runtime_finish_at(const nexrt::NativeSite *nex_site){return impl_nex_runtime_finish(nexrt::SourceLocation{0,nex_site});}

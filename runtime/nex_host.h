@@ -66,6 +66,13 @@ template<class F> Handle *hostValue(SourceLocation line,F operation){
 }
 }
 extern "C" {
+// Compiler-private owned-function boundary. It preserves caller values, moves
+// the kept result to the parent owner and cleans all other function temporaries.
+// A trusted application or RequestScope must enclose every boundary.
+int64_t nex_owned_enter();
+int64_t nex_owned_enter_at(const nexrt::NativeSite *site);
+void nex_owned_leave(int64_t token,nexrt::Handle *kept);
+void nex_owned_leave_at(int64_t token,nexrt::Handle *kept,const nexrt::NativeSite *site);
 void nex_release(nexrt::Handle *handle);
 void nex_runtime_finish();
 // Compiler-generated application thunk: i64(argc, argv), returning process code.

@@ -1,3 +1,16 @@
+# Mutable0.88 core error-propagation work
+
+- [x] Prototype native function-owned temporaries on normal/error returns, nested
+  requests, allocation faults, actual file resources and worker/thread exits.
+- [ ] Complete full regression and platform validation of the exact runtime.
+- [ ] Implement postfix result propagation across parser/checker/interpreter,
+  native MLIR and TypeScript, including unnamed temporary cleanup and source maps.
+- [ ] Add explicit language0.17 migration from actual0.16 archives and preserve
+  historical sources, graph IDs, reviewed acceptance intent and matching SDKs.
+- [ ] Coordinate language/grammar/discovery/pack/prompts/examples and rejected
+  programs; run full regression/SDK/platform/debug/profile checks before support.
+  This draft currently remains language0.16 and advertises no new source syntax.
+
 # Quality target and current0.87 scoped discovery
 
 - [x] Define [production-quality acceptance](docs/quality.md): correctness,
