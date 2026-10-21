@@ -3,7 +3,7 @@
   "displayName": "NEX Language Tools",
   "description": "NEX source diagnostics, type hints, navigation and native debugging from the installed compiler.",
   "publisher": "sae-ru",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"
@@ -19,7 +19,8 @@
   "activationEvents": [
     "onLanguage:nex",
     "onDebug:nex",
-    "onCommand:nex.restartLanguageServer"
+    "onCommand:nex.restartLanguageServer",
+    "onCommand:nex.debugProject"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -76,9 +77,6 @@
         ],
         "configurationAttributes": {
           "launch": {
-            "required": [
-              "source"
-            ],
             "properties": {
               "source": {
                 "type": "string",
@@ -99,15 +97,51 @@
                 },
                 "default": [],
                 "description": "Program arguments, passed as individual values."
+              },
+              "project": {
+                "type": "object",
+                "required": [
+                  "manifest",
+                  "component",
+                  "configuration"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "manifest": {
+                    "type": "string",
+                    "description": "Explicit architecture manifest, resolved relative to cwd."
+                  },
+                  "component": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+                  },
+                  "configuration": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+                  }
+                },
+                "description": "Debug the declared native executable and its real static/shared library dependencies."
               }
-            }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "source"
+                ]
+              },
+              {
+                "required": [
+                  "project"
+                ]
+              }
+            ]
           }
         },
         "initialConfigurations": [
           {
             "type": "nex",
             "request": "launch",
-            "name": "Debug NEX",
+            "name": "Debug NEX source",
             "source": "${file}",
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false
@@ -123,6 +157,23 @@
               "source": "${file}",
               "cwd": "${workspaceFolder}"
             }
+          },
+          {
+            "label": "NEX: project architecture launch",
+            "description": "Debug a declared native component with its actual library images.",
+            "body": {
+              "type": "nex",
+              "request": "launch",
+              "name": "Debug NEX project",
+              "cwd": "${workspaceFolder}",
+              "project": {
+                "manifest": "nex.build.json",
+                "component": "app",
+                "configuration": "debug"
+              },
+              "stopOnEntry": false,
+              "args": []
+            }
           }
         ]
       }
@@ -132,6 +183,11 @@
         "command": "nex.restartLanguageServer",
         "title": "Restart Language Server",
         "category": "NEX",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "nex.debugProject",
+        "title": "NEX: Debug Project Component",
         "enablement": "isWorkspaceTrusted"
       }
     ]
@@ -146,7 +202,8 @@
     "language-configuration.json",
     "README.md",
     "language.js",
-    "lsp-client.js"
+    "lsp-client.js",
+    "project-command.js"
   ],
   "scripts": {
     "test": "node --test test.js language.test.js",

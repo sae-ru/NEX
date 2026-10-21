@@ -151,7 +151,8 @@
     "project_action_schema": "llm/project-action.schema.json",
     "project_tasks": "docs/project-tasks.md",
     "project_capture_schema": "llm/project-capture.schema.json",
-    "task_package_notices_schema": "llm/task-package-notices.schema.json"
+    "task_package_notices_schema": "llm/task-package-notices.schema.json",
+    "editor_project_command_source": "editor/vscode/project-command.js"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -612,6 +613,24 @@
         "ancestor_project_lookup": false,
         "history_command": "nex task NEW_RUN/state/task.json --kind history --json"
       }
+    },
+    "editor_project_debug": {
+      "minimum_toolchain": "0.81.0",
+      "extension_version": "0.6.0",
+      "command": "nex.debugProject",
+      "launch_field": "project",
+      "fields": [
+        "manifest",
+        "component",
+        "configuration"
+      ],
+      "native_executable_only": true,
+      "source_static_dynamic_dependencies": true,
+      "checked_plans_before_and_after_compilation": true,
+      "source_entry_identity_pinned": true,
+      "dirty_compiled_buffers_rejected": true,
+      "project_alias_source_mapping": true,
+      "guide": "docs/editor.md"
     }
   },
   "native_application_lifetime": {

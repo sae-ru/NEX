@@ -1,6 +1,44 @@
-# NEX editing and debugging: development toolchain 0.70
+# NEX editing and debugging: development toolchain 0.81
 
-Extension 0.5 activates when a physical .nex document opens in a trusted
+Extension0.6 adds project debugging above the existing source launch. Open a
+trusted physical workspace containing `nex.build.json`, then use **NEX: Debug
+Project Component**. Select a native executable and declared configuration.
+The configured matching compiler prepares the real source/static/dynamic
+architecture. Server workloads, browser debugging and other project commands
+remain pending in this editor integration.
+
+An explicit launch configuration provides the same workflow, including custom
+manifest filenames:
+
+```json
+{
+  "type":"nex", "request":"launch", "name":"Debug NEX project",
+  "cwd":"${workspaceFolder}",
+  "project":{"manifest":"nex.build.json","component":"app","configuration":"debug"},
+  "stopOnEntry":false, "args":[]
+}
+```
+
+Choose either `source` or `project`. The source workflow compiles an independent
+entry; use the project workflow to preserve binary dependencies. Save participating
+source buffers first: dirty compiled documents prevent launch registration.
+The project plans before and after native debug preparation must agree, including
+architecture/configuration and source identities. The final artifact/build key
+and captured source manifest must match the fresh session. Retargeted entry or
+manifest aliases require a new launch. Workspace spellings, including macOS
+`/var` aliases, are retained for byte-matching project/provider breakpoints.
+
+The compiler's captured adapter, initialization and source maps supply the
+debugger. Saved `program` or adapter fields cannot select an executable independently
+of a fresh checked session. Stop and relaunch after source/architecture edits;
+these preparation checks are not a continuous editor revision lock. The command
+reads a manifest of at most256KiB, up to128 components and32 configurations.
+An explicit foreign runtime catalogue is still configured through the CLI;
+this launch selection does not infer FFI authority.
+
+The historical editing/source-debug contracts below retain their original scope.
+
+Extension 0.6 activates when a physical .nex document opens in a trusted
 workspace. Set `nex.compilerPath` to the matching installed compiler. The
 extension starts `nex lsp`, sends unsaved document versions and displays compiler
 diagnostics, checked type hover, source definitions, declaration outlines and checked references.

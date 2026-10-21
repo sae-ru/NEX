@@ -12,6 +12,56 @@ import support as harness
 
 
 class Editor(harness.ToolchainCase):
+    def session_module(self):
+        compiler=Path(harness.NEX);installed=compiler.parent.parent/'share/nex/editor/vscode/session.js'
+        return installed if compiler.parent.name=='bin' and installed.is_file() else harness.REPO/'editor/vscode/session.js'
+    def project_session(self):
+        project=self.root/'project "quoted" \\ % 🧠';shutil.copytree(harness.REPO/'examples/project-tasks',project)
+        (project/'task.json').unlink()
+        (project/'core/value.nex').write_text('''module project_task::core;
+pub fn make(offset:i64)->(fn(i64)->i64){
+ let base:i64=offset;
+ return fn(value:i64)->i64{return value+base;};
+}
+pub fn decorate(value:str)->str{return value+" 🧠";}
+''')
+        before=self.cli('project',project/'nex.build.json','--kind','plan','--component','app','--configuration','debug',cwd=project)
+        script='''const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]}).then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});'''
+        config={'type':'nex','request':'launch','cwd':str(project),'project':{'manifest':'nex.build.json','component':'app','configuration':'debug'}}
+        process=subprocess.run([self.node(),'-e',script,str(self.session_module()),json.dumps(config),harness.NEX],cwd=project,capture_output=True,text=True,timeout=240)
+        self.assertEqual(process.returncode,0,process.stdout+process.stderr);prepared=json.loads(process.stdout)
+        cache=Path(prepared['launch']['program']).parent.parent
+        if cache.name.startswith('nex-debug-'):self.addCleanup(shutil.rmtree,cache)
+        self.assertEqual(prepared['project']['planHash'],before['plan_hash']);self.assertEqual(prepared['project']['architectureHash'],before['architecture_hash'])
+        compilation=json.loads((Path(prepared['launch']['program']).parent/'compilation.json').read_text())
+        self.assertEqual(len(compilation['owned_images']),2);self.assertTrue(all(u['identity'].startswith('project_task::app::') for u in compilation['units']))
+        self.assertTrue(any(Path(row[1]).resolve()==(project/'core/value.nex').resolve() for row in prepared['originalSourceMappings']))
+        self.assertFalse((project/'.nex/graph.db').exists());return project,prepared
+
+    def test_project_session_keeps_shared_provider_and_frozen_artifact_identity(self):
+        self.project_session()
+
+    @unittest.skipUnless(LIVE, 'use --live for actual project editor breakpoints')
+    def test_project_original_provider_breakpoint_and_watch(self):
+        from debugging import DAP
+        project,prepared=self.project_session();source=project/'core/value.nex';client=DAP(prepared['command'],project)
+        try:
+            client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True})
+            pending=client.send('launch',dict(prepared['launch'],disableASLR=False));client.event('initialized')
+            client.request('setBreakpoints',{'source':{'path':str(source)},'breakpoints':[{'line':4}]})
+            client.request('configurationDone');client.response(pending);stop=client.event('stopped');self.assertEqual(stop['reason'],'breakpoint')
+            placed=client.request('setBreakpoints',{'source':{'path':str(source)},'breakpoints':[{'line':4}]});self.assertTrue(placed['breakpoints'][0]['verified'])
+            frame=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames'][0]
+            self.assertIn('make',frame['name']);self.assertEqual(Path(frame['source']['path']).resolve(),source.resolve())
+            value=client.request('evaluate',{'expression':'base+2','frameId':frame['id'],'context':'watch'});self.assertEqual(value['nex']['value'],'42')
+            # The same line also defines the returned closure. This observation
+            # is complete; avoid stopping again when that closure is called.
+            client.request('setBreakpoints',{'source':{'path':str(source)},'breakpoints':[]})
+            client.request('continue',{'threadId':stop['threadId']});self.assertEqual(client.event('exited')['exitCode'],0);client.event('terminated')
+            stdout=''.join(m.get('body',{}).get('output','') for m in client.pending if m.get('event')=='output' and m.get('body',{}).get('category')=='stdout')
+            self.assertEqual(stdout.replace('\r\n','\n'),'42 🧠\n');self.assertFalse((project/'.nex/graph.db').exists())
+        finally:client.close()
+
     def node(self):
         node=os.environ.get('NEX_NODE') or shutil.which('node')
         self.assertTrue(node, 'Node is required for the editor integration checks')
@@ -27,7 +77,7 @@ class Editor(harness.ToolchainCase):
         descriptor=self.cli('debug',self.file,'--kind','nex-dap')
         if not descriptor['nex_adapter']['available']:self.skipTest('matching native LLDB DAP backend unavailable')
         script='''const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]}).then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});'''
-        command=[self.node(),'-e',script,str(harness.REPO/'editor/vscode/session.js'),json.dumps({'type':'nex','request':'launch','source':str(self.file),'cwd':str(self.root)}),harness.NEX]
+        command=[self.node(),'-e',script,str(self.session_module()),json.dumps({'type':'nex','request':'launch','source':str(self.file),'cwd':str(self.root)}),harness.NEX]
         process=subprocess.run(command,cwd=self.root,capture_output=True,text=True,timeout=60)
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
         prepared=json.loads(process.stdout)
@@ -49,7 +99,7 @@ class Editor(harness.ToolchainCase):
         descriptor=self.cli('debug',source,'--kind','nex-dap',cwd=project)
         if not descriptor['nex_adapter']['available']:self.skipTest('matching native LLDB DAP backend unavailable')
         script='''const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]}).then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});'''
-        process=subprocess.run([self.node(),'-e',script,str(harness.REPO/'editor/vscode/session.js'),json.dumps({'type':'nex','request':'launch','source':str(source),'cwd':str(project)}),harness.NEX],cwd=project,capture_output=True,text=True,timeout=60)
+        process=subprocess.run([self.node(),'-e',script,str(self.session_module()),json.dumps({'type':'nex','request':'launch','source':str(source),'cwd':str(project)}),harness.NEX],cwd=project,capture_output=True,text=True,timeout=60)
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
         prepared=json.loads(process.stdout)
         self.assertEqual(prepared['revision'],descriptor['revision'])

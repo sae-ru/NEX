@@ -1,3 +1,15 @@
+# Current0.81 project editor debugging
+
+- Validate explicit project launch configuration and component/configuration UI.
+- Preserve actual binary edges, selected entry identity, original source aliases,
+  dirty-buffer/trust gates and fresh adapter commands.
+- Verify actual installed VSIX source/provider breakpoints, watches and completion.
+- Verify owned reference error strings and corrected notice fixture on Linux/SDK.
+- Run full87/installed SDK/Linux checks for the exact final frozen source.
+- Keep primary source/compiler promotion separate until explicitly approved.
+- Continue server workloads, task/editor commands, concurrency, accelerators and
+  remaining language/development-chain delivery.
+
 # Current0.80 replay isolation
 
 - Validate private preflight/output graph state and preserved local IDs.

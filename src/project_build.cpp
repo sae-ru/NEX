@@ -404,7 +404,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(function.effects.empty()){
         row["reference"]=true;
         try{expected=evaluate(program,test.function).output;}
-        catch(const Error &error){referenceOK=false;row["reference_error"]=Object{{"code",error.code},{"message",error.what()}};}
+        catch(const Error &error){referenceOK=false;row["reference_error"]=Object{{"code",error.code},{"message",std::string(error.what())}};}
       }else row["reference_skip_reason"]="effectful test executes once in its selected backend";
       verifyGrant();llvm::json::Value observation=nullptr;
       if(test.web){

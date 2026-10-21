@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {prepareSession} = require('./session');
 const {createLanguageIntegration} = require('./language');
+const {createProjectDebugCommand} = require('./project-command');
 let languageIntegration;
 
 function createIntegration(vscode, prepare = prepareSession, onPrepared = () => {}) {
@@ -17,6 +18,14 @@ function createIntegration(vscode, prepare = prepareSession, onPrepared = () => 
         const compiler = vscode.workspace.getConfiguration('nex', folder?.uri).get('compilerPath', 'nex');
         const prepared = await prepare(config, {folder: folder?.uri.fsPath, compiler});
         if (!vscode.workspace.isTrusted) throw new Error('Workspace trust changed during NEX compilation.');
+        if (prepared.project) {
+          const physical = name => {try {return fs.realpathSync(name);} catch (_) {return path.resolve(name);}};
+          const sources = new Set([...(prepared.originalSourceMappings || []).map(row => physical(row[1])),
+            ...(prepared.frozenSourceFallbacks || []).map(physical)]);
+          if ((vscode.workspace.textDocuments || []).some(document => document.isDirty && document.uri.scheme === 'file' && sources.has(physical(document.uri.fsPath)))) {
+            throw new Error('Save the project sources before starting a NEX project debug session.');
+          }
+        }
         onPrepared(prepared);
         const now = Date.now();
         for (const [key, value] of pending) if (now - value.created > 300000) pending.delete(key);
@@ -54,7 +63,8 @@ function activate(context) {
   languageIntegration = createLanguageIntegration(vscode, {isFrozenDocument: uri => frozen.has(key(uri.fsPath))});
   languageIntegration.register();
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('nex', integration.provider),
-    vscode.debug.registerDebugAdapterDescriptorFactory('nex', integration.factory), integration, languageIntegration);
+    vscode.debug.registerDebugAdapterDescriptorFactory('nex', integration.factory),
+    vscode.commands.registerCommand('nex.debugProject', createProjectDebugCommand(vscode)), integration, languageIntegration);
 }
 
 async function deactivate() {await languageIntegration?.dispose(); languageIntegration = undefined;}

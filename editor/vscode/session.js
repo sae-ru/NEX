@@ -19,16 +19,21 @@ function lldbArgument(value) {
 
 // Only a fresh, successful compiler response can select a frozen executable and
 // adapter. No saved manifest or launch.json adapter command authorizes a process.
-async function prepareSession(configuration, options = {}) {
+function launchSettings(configuration, options, sourceRequired) {
   if (configuration.request !== 'launch' || configuration.type !== 'nex') throw new Error('Only a NEX launch request is supported.');
   const base = path.resolve(options.folder || process.cwd());
   const cwd = path.resolve(base, configuration.cwd === undefined ? '.' : string(configuration.cwd, 'project directory'));
-  const source = path.resolve(cwd, string(configuration.source, 'NEX source'));
-  if (path.extname(source) !== '.nex') throw new Error('Select a .nex entry source.');
+  const source = sourceRequired ? path.resolve(cwd, string(configuration.source, 'NEX source')) : undefined;
+  if (sourceRequired && path.extname(source) !== '.nex') throw new Error('Select a .nex entry source.');
   const compiler = string(options.compiler === undefined ? 'nex' : options.compiler, 'compiler executable');
   const args = configuration.args === undefined ? [] : configuration.args;
   if (!Array.isArray(args) || args.some(arg => typeof arg !== 'string' || arg.includes('\0'))) throw new Error('Program args must be strings.');
   if (configuration.stopOnEntry !== undefined && typeof configuration.stopOnEntry !== 'boolean') throw new Error('stopOnEntry must be a boolean.');
+  return {cwd, source, compiler, args};
+}
+
+async function prepareSourceSession(configuration, options = {}, freshObservation, physicalSourceBeforeCompilation, projectSpelling) {
+  const {cwd, source, compiler, args} = launchSettings(configuration, options, true);
   // The compiler records physical paths. Keep the editor's selected spelling
   // for breakpoints, while matching its identity before compilation (including
   // macOS /var aliases and symlinked workspace entries).
@@ -38,10 +43,15 @@ async function prepareSession(configuration, options = {}) {
     if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
     physicalSource = source; // Let the compiler diagnose a missing entry.
   }
+  if (physicalSourceBeforeCompilation !== undefined) {
+    if (physicalSource !== physicalSourceBeforeCompilation) throw new Error('The selected source changed after compilation. Start a fresh project launch.');
+    physicalSource = physicalSourceBeforeCompilation;
+  }
   let output;
   try {
-    const result = await (options.execute || execute)(compiler, ['debug', source, '--kind', 'nex-dap', '--json'],
-      {cwd, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 180000, windowsHide: true, shell: false});
+    const result = freshObservation === undefined ? await (options.execute || execute)(compiler, ['debug', source, '--kind', 'nex-dap', '--json'],
+      {cwd, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 180000, windowsHide: true, shell: false})
+      : {stdout: JSON.stringify(freshObservation)};
     output = result.stdout;
   } catch (error) {
     let detail = '';
@@ -71,13 +81,16 @@ async function prepareSession(configuration, options = {}) {
   if (manifest.schema !== 'nex.debug/1' || manifest.revision !== session.revision || manifest.build_key !== session.build_key || !Array.isArray(manifest.sources)) {
     throw new Error('NEX debug manifest differs from its fresh session.');
   }
+  if (physicalSourceBeforeCompilation !== undefined && !manifest.sources.some(row => row.original === physicalSource)) throw new Error('The selected source identity differs from its captured project session.');
   const originals = [], frozenFallbacks = [];
   for (const row of manifest.sources) {
     if (!['original', 'projection', 'debug_path'].every(key => typeof row[key] === 'string' && !row[key].includes('\0') && path.isAbsolute(row[key]))) {
       throw new Error('NEX debug manifest contains an invalid source mapping.');
     }
     const selected = row.original === physicalSource;
-    const destination = selected ? source : row.original;
+    const relative = projectSpelling ? path.relative(projectSpelling.physical, row.original) : undefined;
+    const inProject = relative !== undefined && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
+    const destination = selected ? source : inProject ? path.resolve(projectSpelling.original, relative) : row.original;
     let same = false;
     // Read through the selected spelling again: a symlink may have changed
     // while the compiler was preparing its frozen source.
@@ -106,6 +119,103 @@ async function prepareSession(configuration, options = {}) {
       preRunCommands,
       // Compiler-provided arguments carry explicit foreign execution grants.
       args: [...(launch.args || []), ...args]}};
+}
+
+function projectIdentifier(value, name) {
+  if (typeof value !== 'string' || !/^[A-Za-z_][A-Za-z_0-9]{0,63}$/.test(value)) throw new Error(`Invalid project ${name}.`);
+  return value;
+}
+
+function digest(value) {return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);}
+
+async function physicalPath(name, options) {
+  try {return await (options.realpath || fs.realpath)(name);}
+  catch (error) {
+    if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+    return name; // Preserve a useful compiler diagnostic for missing inputs.
+  }
+}
+
+function projectPlan(plan, selection) {
+  if (!plan || plan.schema !== 'nex.project-plan/1' || plan.ok !== true || plan.source_checked !== true ||
+      plan.graph_store_opened !== false || plan.external_tools_invoked !== false ||
+      plan.selected_component !== selection.component || plan.configuration?.name !== selection.configuration ||
+      !digest(plan.plan_hash) || !digest(plan.architecture_hash) ||
+      !Array.isArray(plan.components) || plan.components.length > 128) throw new Error('NEX returned an invalid checked project plan.');
+  if (!path.isAbsolute(string(plan.root, 'project root')) || !path.isAbsolute(string(plan.manifest, 'architecture manifest'))) throw new Error('NEX returned relative project paths.');
+  const selected = plan.components.filter(row => row?.name === selection.component);
+  if (selected.length !== 1 || selected[0].kind !== 'executable') throw new Error('Project editor debugging requires one native executable component.');
+  if (selected[0].native_toolchain?.host_compatible === false) throw new Error('Project editor debugging requires a matching native host.');
+  const entry = string(selected[0].entry, 'component entry');
+  const relative = path.relative(plan.root, path.resolve(plan.root, entry));
+  if (path.isAbsolute(entry) || relative === '..' || relative.startsWith('..' + path.sep) || path.extname(entry) !== '.nex') throw new Error('NEX returned an invalid component source entry.');
+  return selected[0];
+}
+
+async function prepareProjectSession(configuration, options) {
+  const {cwd, compiler} = launchSettings(configuration, options, false);
+  if (configuration.source !== undefined) throw new Error('Choose either a source launch or a project launch.');
+  const selection = configuration.project;
+  if (!selection || typeof selection !== 'object' || Array.isArray(selection) ||
+      Object.keys(selection).some(key => !['manifest', 'component', 'configuration'].includes(key))) throw new Error('Invalid project launch selection.');
+  const component = projectIdentifier(selection.component, 'component');
+  const selectedConfiguration = projectIdentifier(selection.configuration, 'configuration');
+  const manifest = path.resolve(cwd, string(selection.manifest, 'architecture manifest'));
+  const physicalManifest = await physicalPath(manifest, options);
+  const argumentsFor = kind => ['project', manifest, '--kind', kind, '--component', component, '--configuration', selectedConfiguration,
+    ...(kind === 'debug' ? ['--adapter', 'nex-dap'] : []), '--json'];
+  async function request(kind) {
+    let output;
+    try {output = (await (options.execute || execute)(compiler, argumentsFor(kind),
+      {cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 180000, windowsHide: true, shell: false})).stdout;}
+    catch (error) {
+      for (const text of [error.stdout, error.stderr]) {
+        try {const diagnostic = JSON.parse(text); if (diagnostic.message) throw Object.assign(new Error(`${diagnostic.code || 'NEX'}: ${diagnostic.message}`), {structured: true});}
+        catch (parsed) {if (parsed.structured) throw parsed;}
+      }
+      throw new Error(`NEX project debug preparation failed: ${String(error.message).slice(0, 2048)}`);
+    }
+    try {return JSON.parse(output);} catch (_) {throw new Error('NEX returned an invalid project response.');}
+  }
+  async function checkPaths(plan) {
+    if (await physicalPath(manifest, options) !== physicalManifest ||
+        await physicalPath(plan.manifest, options) !== physicalManifest ||
+        await physicalPath(plan.root, options) !== plan.root) throw new Error('The architecture manifest or project root changed during preparation.');
+  }
+  const before = await request('plan');
+  const selected = projectPlan(before, selection);await checkPaths(before);
+  const physicalSourceBeforeCompilation = await physicalPath(path.resolve(before.root, selected.entry), options);
+  const prepared = await request('debug');
+  if (prepared?.schema !== 'nex.project-session/1' || prepared.ok !== true || prepared.action !== 'debug' ||
+      prepared.component !== component || prepared.graph_store_opened !== false || prepared.plan_hash !== before.plan_hash ||
+      prepared.plan?.plan_hash !== before.plan_hash || prepared.plan?.architecture_hash !== before.architecture_hash) throw new Error('The project inputs changed while compiling the debug session.');
+  projectPlan(prepared.plan, selection);await checkPaths(prepared.plan);
+  const artifacts = Array.isArray(prepared.artifacts) ? prepared.artifacts.filter(row => row?.component === component) : [];
+  const session = prepared.observation;
+  if (artifacts.length !== 1 || artifacts[0].kind !== 'executable' || artifacts[0].host_compatible !== true ||
+      artifacts[0].artifact !== session?.launch?.program || artifacts[0].build_key !== session?.build_key ||
+      session?.launch?.cwd !== before.root) throw new Error('NEX project session does not match its final native artifact.');
+  const after = await request('plan');projectPlan(after, selection);await checkPaths(after);
+  if (after.plan_hash !== before.plan_hash || after.architecture_hash !== before.architecture_hash) throw new Error('The project inputs changed after compilation. Start a fresh launch.');
+  // Preserve the editor's physical workspace spelling, including /var aliases.
+  let root = before.root;
+  for (const start of [path.dirname(manifest), cwd]) {
+    let candidate = start;
+    for (let count = 0; count < 128; count++) {
+      if (await physicalPath(candidate, options) === before.root) {root = candidate; break;}
+      const parent = path.dirname(candidate);if (parent === candidate) break;candidate = parent;
+    }
+    if (root !== before.root) break;
+  }
+  const {project: ignoredProject, ...sourceConfiguration} = configuration;
+  const result = await prepareSourceSession({...sourceConfiguration, source: path.resolve(root, selected.entry)}, options, session, physicalSourceBeforeCompilation,
+    {physical: before.root, original: root});
+  return {...result, project: {manifest, component, configuration: selectedConfiguration,
+    architectureHash: before.architecture_hash, planHash: before.plan_hash}};
+}
+
+async function prepareSession(configuration, options = {}) {
+  return configuration.project === undefined ? prepareSourceSession(configuration, options) : prepareProjectSession(configuration, options);
 }
 
 module.exports = {prepareSession};

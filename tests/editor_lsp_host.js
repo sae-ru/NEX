@@ -29,7 +29,7 @@ async function run() {
   assert.equal(vscode.workspace.isTrusted, true);
   const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');
   assert.ok(extension && extension.extensionPath.startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
-  assert.equal(extension.packageJSON.version, '0.5.0');
+  assert.equal(extension.packageJSON.version, '0.6.0');
   await vscode.workspace.getConfiguration('nex', folder.uri).update('compilerPath', process.env.NEX_EDITOR_COMPILER, vscode.ConfigurationTarget.Workspace);
   await extension.activate();
   const source = vscode.Uri.joinPath(folder.uri, 'main with spaces.nex');

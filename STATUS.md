@@ -1,3 +1,40 @@
+# Development cohort0.81 (not integrated)
+
+Extension0.6 adds explicit project launches and NEX: Debug Project Component.
+Metadata/configuration choices delegate to fresh plan/debug/plan compiler calls.
+The final executable/build identity and captured sources must agree; source
+entry aliases are pinned, project file mappings preserve workspace spelling and
+dirty compiled buffers prevent launch registration. Runtime npm dependencies
+remain empty. Node launch/command contracts pass22 cases.
+
+Real0.80-backed preparation passes, with actual DSO source breakpoint/watch and
+clean continuation in11.772seconds after correcting /var provider source maps.
+The earlier two cases retain mismatched manifest-path spelling assertions, and
+a later case retains the expected second stop on a closure defined on the same
+source line. The corrected observation removes the breakpoint before continuing.
+Matching0.81 editor/project-action CTest groups pass126.81seconds and all five
+live editor cases pass27.106seconds. An installed prototype VSIX0.6 executes
+NEX: Debug Project Component and the configuration picker in an isolated real
+VS Code profile: an original provider breakpoint, typed watch42, DSO execution,
+exact Unicode output and exit0 pass12.255seconds. Its SDK/compiler bytes match
+the prototype. Linux ARM64 builds this compiler and passes the exact owned
+assertion diagnostic regression in54.007seconds. Complete frozen macOS/Linux
+regressions, installed SDK and final frozen VSIX validation remain pending.
+
+Frozen0.80 Macfull87 passes1282.18seconds. Linuxfull87 passes86/87: a deferred
+reference_error.message borrowed exception.what() after exception destruction.
+This source stores an owned string and checks the exact assertion message.
+MacSDK24 reaches the last phase but fails on an unused notice-fixture root
+inside the deleted source project. The fixture now names the current compiler
+file, which remains available during replay; provenance rules are unchanged.
+These are retained failures, not accepted0.80 platform/SDK results.
+
+Primary0.77 source/compiler/Git and original47 revisions/all16tables/schema/IDs
+remain preserved. All new work is isolated. Primary promotion requires explicit
+approval after automatic approval review rejected that separate action. No
+source concurrency, general accelerator API, broader platform delivery or full
+objective completion is claimed.
+
 # Development cohort0.80 (not integrated)
 
 Replay no longer searches ancestor project manifests. Frozen-input preflight

@@ -1,3 +1,7 @@
+Toolchain0.81 adds external editor project-debug preparation and owns persisted
+reference error text. Language0.16 syntax, canonical formats and semantics stay
+unchanged; no migration is performed.
+
 Toolchain0.80 isolates replay graph/cache/history as external development state.
 It changes no language0.16 syntax, semantics, canonical identity or migration.
 

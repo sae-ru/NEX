@@ -1,4 +1,23 @@
-# NEX Language Tools 0.5
+# NEX Language Tools 0.6
+
+For a declared architecture, use **NEX: Debug Project Component** in a trusted
+physical workspace with `nex.build.json`. Choose the executable component and
+configuration. This uses the project's actual static/shared dependencies.
+Save participating source buffers before launching.
+
+```json
+{"type":"nex","request":"launch","name":"Debug NEX project",
+ "cwd":"${workspaceFolder}",
+ "project":{"manifest":"nex.build.json","component":"app","configuration":"debug"}}
+```
+
+Choose either `source` or `project` in a launch. Project preparation checks plans
+around compilation, pins the entry identity and uses only the fresh compiler's
+artifact, adapter and captured sources. Original project/provider breakpoints
+retain the workspace path spelling after byte checks. Trust changes and dirty
+compiled buffers prevent launch registration. Use the matching0.81 SDK.
+Native executables are supported; server/browser debugging and other project
+commands remain pending. CLI foreign catalogues are not inferred by this UI.
 
 Open a .nex file in a trusted physical workspace. Select an matching installed NEX0.70
 compiler with `nex.compilerPath`; its matching resources provide `nex lsp`.

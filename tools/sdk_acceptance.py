@@ -384,7 +384,7 @@ test fn examples() -> unit {
         node = os.environ.get('NEX_NODE') or shutil.which('node')
         require(node, 'editor acceptance requires the SDK Node development prerequisite')
         directory = resources / 'editor/vscode'
-        names = ['package.json', 'package-lock.json', 'extension.js', 'session.js',
+        names = ['package.json', 'package-lock.json', 'extension.js', 'session.js', 'project-command.js',
                  'language-configuration.json', 'README.md', 'test.js', 'language.js', 'lsp-client.js', 'language.test.js', 'lsp-acceptance.js']
         hashes = {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in names}
         package = json.loads((directory / 'package.json').read_text())
@@ -2197,6 +2197,15 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         debug_artifact=next(a for a in action_debug['artifacts'] if a['component']=='app')
         require(action_debug['observation']['launch']['program']==debug_artifact['artifact'] and
                 action_debug['observation']['build_key']==debug_artifact['build_key'], 'project debugger independently rebuilt source')
+        node=os.environ.get('NEX_NODE') or shutil.which('node');require(node,'project editor preparation requires Node')
+        code=('const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]})'
+              '.then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});')
+        project_editor=json.loads(run([node,'-e',code,resources/'editor/vscode/session.js',json.dumps({'type':'nex','request':'launch','cwd':str(shared_project),
+            'project':{'manifest':'nex.build.json','component':'app','configuration':shared_description['default_configuration']}}),compiler],cwd=shared_project,timeout=300))
+        require(project_editor['launch']['program']==debug_artifact['artifact'] and project_editor['buildKey']==debug_artifact['build_key'] and
+                project_editor['command']==action_debug['observation']['adapter_command'] and
+                any(Path(pair[1]).resolve()==bridge.resolve() for pair in project_editor['originalSourceMappings']), 'project editor lost its actual binary artifact/provider sources')
+        report['evidence']['editor'].update(project_session_preparation=True,project_actual_binary_dependencies=True)
         action_profile=cli('project','--kind','profile','--component','app','--configuration','profile',cwd=shared_project,timeout=300)
         actual_profile=action_profile['observation']
         require(actual_profile['stdout']=='42 🧠\n' and any(f['name']=='sdk_shared::bridge::render' for f in actual_profile['functions']) and
@@ -2206,7 +2215,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         notice_fixture=task_project/'fixture-notice.txt';notice_fixture.write_text('SDK acceptance notice-capture data fixture; not a dependency redistribution notice.\n')
         (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':[
             {'name':'sdk-notice-capture-fixture','version':'test','url':'https://github.com/sae-ru/NEX',
-             'roots':['core/value.nex'],'license_files':['fixture-notice.txt']}]}))
+             'roots':[str(compiler)],'license_files':['fixture-notice.txt']}]}))
         notice_pin=cli('task','notices.json','--kind','notices',cwd=task_project)
         require(not notice_pin['graph_store_opened'] and not notice_pin['external_tools_invoked'] and not (task_project/'.nex').exists(), 'notice inspector executed tools or opened a graph')
         task_contract=json.loads((task_project/'task.json').read_text())

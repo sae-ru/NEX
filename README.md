@@ -12,13 +12,13 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated development source is **toolchain0.80.0 / language0.16**. It adds
-isolated task replay state above0.79 project package checks. It preserves the
-input receipt and enclosing project graphs. Validation is in progress. Frozen
-0.79 Mac/Linux full87 both retain one obsolete resource-count test failure;
-0.78 SDK24 passed but its post-workflow guard exposed the replay isolation bug.
-The unintended SDK revision is preserved separately and the original root47
-revisions/all16tables are restored exactly. Actual0.77 root remains separate.
+This isolated development source is **toolchain0.81.0 / language0.16**. It adds
+project debugging in extension0.6 above0.80 isolated task replay. It checks the
+architecture around preparation and uses actual native library images. New
+editor validation is in progress. Frozen0.80 Macfull87 passes; its Linux run
+retains a diagnostic-string lifetime failure fixed here, and its SDK retains
+a stale notice-fixture dependency root corrected here. Primary0.77 and its
+original47 graph revisions/all16tables/schema/IDs remain preserved separately.
 The language includes checked numbers, Unicode strings, immutable data,
 matching, generics, traits, constructor parameters, function values and
 snapshot closures. Types, effects and realms are checked. Native output uses

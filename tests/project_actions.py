@@ -81,7 +81,7 @@ client test fn browser_values()->unit{assert(initial()==42);}
         self.assertTrue(all(d['status']=='mapped' and d['operation_id'] is None and d['function_id'] is None and d['identity_scope']=='captured_project' for d in mapped))
         self.assertTrue(any(d['symbol']=='core::divide' for d in mapped))
         result=self.action('test','--component','app','--symbol','failed',ok=False);test,=result['tests'];self.assertFalse(test['ok']);self.assertEqual(test['observation']['exit_code'],70)
-        self.assertEqual(test['reference_error']['code'],'E_ASSERT');self.assertEqual(test['observation']['native_diagnostics']['diagnostics'][0]['status'],'mapped')
+        self.assertEqual(test['reference_error'],{'code':'E_ASSERT','message':'assertion failed'});self.assertEqual(test['observation']['native_diagnostics']['diagnostics'][0]['status'],'mapped')
         self.assertFalse((self.root/'.nex/graph.db').exists())
     def test_profile_uses_actual_final_image_and_attributes_both_library_and_application(self):
         output=self.root/'measured.json'

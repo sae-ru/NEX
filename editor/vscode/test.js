@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const {prepareSession} = require('./session');
 const {createIntegration} = require('./extension');
+const {createProjectDebugCommand} = require('./project-command');
 
 function descriptor() {
   return {schema: 'nex.debug-session/1', ok: true, adapter: 'nex-dap', revision: 'frozen-revision', build_key: 'frozen-build',
@@ -164,4 +165,153 @@ test('compiler pre-run commands survive source-map configuration and malformed m
     response.launch.preRunCommands = value;
     await assert.rejects(prepareSession(configuration, options), /invalid pre-run commands/);
   }
+});
+
+function projectFixture() {
+  const root = '/project with spaces', source = root + '/app/main.nex', projection = '/frozen app/source.nex';
+  const selection = {manifest: 'architecture $(literal).json', component: 'app', configuration: 'debug'};
+  const config = {type: 'nex', request: 'launch', cwd: root, project: selection, args: ['two words', '$(literal)']};
+  const plan = {schema: 'nex.project-plan/1', ok: true, source_checked: true, graph_store_opened: false, external_tools_invoked: false,
+    root, manifest: path.join(root, selection.manifest), selected_component: 'app', configuration: {name: 'debug'},
+    plan_hash: 'a'.repeat(64), architecture_hash: 'b'.repeat(64),
+    components: [{name: 'core', kind: 'shared_library', entry: 'core/value.nex'}, {name: 'app', kind: 'executable', entry: 'app/main.nex', native_toolchain: {host_compatible: true}}]};
+  const observation = descriptor();observation.launch.cwd = root;
+  const response = {schema: 'nex.project-session/1', ok: true, action: 'debug', component: 'app', graph_store_opened: false,
+    plan_hash: plan.plan_hash, plan, observation,
+    artifacts: [{component: 'app', kind: 'executable', host_compatible: true, artifact: observation.launch.program, build_key: observation.build_key}]};
+  const files = new Map([[observation.manifest, JSON.stringify({schema: 'nex.debug/1', revision: observation.revision, build_key: observation.build_key,
+    sources: [{original: source, projection, debug_path: '/anchor/app.nex'}]})], [source, Buffer.from('exact app 🧠')], [projection, Buffer.from('exact app 🧠')]]);
+  const calls = [];
+  const options = {compiler: '/sdk with spaces/bin/nex', realpath: async name => name, readFile: async name => files.get(name),
+    execute: async (compiler, args, processOptions) => {calls.push({compiler, args, processOptions});return {stdout: JSON.stringify(args[args.indexOf('--kind') + 1] === 'debug' ? response : plan)};}};
+  return {root, source, config, plan, response, files, calls, options};
+}
+
+test('project launch uses only its actual architecture session and checks plans around compilation', async () => {
+  const f = projectFixture();
+  const result = await prepareSession(f.config, f.options);
+  assert.deepEqual(f.calls.map(c => c.args[c.args.indexOf('--kind') + 1]), ['plan', 'debug', 'plan']);
+  for (const call of f.calls) {
+    assert.equal(call.compiler, f.options.compiler);assert.equal(call.processOptions.shell, false);assert.equal(call.processOptions.cwd, f.root);
+    assert.deepEqual(call.args.slice(0, 2), ['project', path.join(f.root, f.config.project.manifest)]);
+    assert.deepEqual(call.args.slice(4, 8), ['--component', 'app', '--configuration', 'debug']);
+    assert.equal(call.args.includes('--revision'), false);
+  }
+  assert.deepEqual(f.calls[1].args.slice(-3), ['--adapter', 'nex-dap', '--json']);
+  assert.deepEqual(result.command, f.response.observation.adapter_command);
+  assert.equal(result.launch.program, f.response.artifacts[0].artifact);
+  assert.equal(result.project.architectureHash, f.plan.architecture_hash);
+  assert.equal(result.project.planHash, f.plan.plan_hash);
+  assert.deepEqual(result.launch.args, ['--nex-grant', 'exact-manifest', 'two words', '$(literal)']);
+  assert.ok(result.originalSourceMappings.some(row => row[1] === f.source));
+});
+
+test('malformed project selections reject before any compiler call', async () => {
+  const f = projectFixture();
+  for (const project of [null, [], {}, {...f.config.project, component: 'bad;name'}, {...f.config.project, configuration: ''},
+    {...f.config.project, manifest: 'bad\0manifest'}, {...f.config.project, adapter_command: ['untrusted']}]) {
+    await assert.rejects(prepareSession({...f.config, project}, f.options));
+  }
+  await assert.rejects(prepareSession({...f.config, source: 'main.nex'}, f.options), /either/);
+  await assert.rejects(prepareSession({...f.config, args: 'shell string'}, f.options));
+  assert.equal(f.calls.length, 0);
+});
+
+test('non-executable and foreign-host plans do not invoke project debug', async () => {
+  for (const kind of ['source', 'static_library', 'shared_library', 'server', 'web']) {
+    const f = projectFixture();f.plan.components[1].kind = kind;
+    await assert.rejects(prepareSession(f.config, f.options), /native executable/);assert.equal(f.calls.length, 1);
+  }
+  const f = projectFixture();f.plan.components[1].native_toolchain.host_compatible = false;
+  await assert.rejects(prepareSession(f.config, f.options), /matching native host/);assert.equal(f.calls.length, 1);
+});
+
+test('a different project artifact, configuration or architecture cannot supply the adapter', async () => {
+  for (const mutate of [f => {f.response.schema = 'other';}, f => {f.response.component = 'core';}, f => {f.response.plan_hash = 'c'.repeat(64);},
+    f => {f.response.artifacts[0].artifact = '/other/app';}, f => {f.response.artifacts[0].build_key = 'different';},
+    f => {f.response.observation.launch.cwd = '/different';}, f => {f.response.graph_store_opened = true;},
+    f => {f.response.observation.adapter_command = ['untrusted\0adapter'];}]) {
+    const f = projectFixture();mutate(f);await assert.rejects(prepareSession(f.config, f.options));
+  }
+});
+
+test('source and architecture changes during project preparation require a fresh launch', async () => {
+  const f = projectFixture(), original = f.options.execute;
+  f.options.execute = async (...args) => {const value = await original(...args);if (f.calls.length === 3) return {stdout: JSON.stringify({...f.plan, plan_hash: 'c'.repeat(64)})};return value;};
+  await assert.rejects(prepareSession(f.config, f.options), /changed after compilation/);
+  for (const retarget of [false, true]) {
+    const f = projectFixture(), execute = f.options.execute;let changed = false;
+    f.options.realpath = async name => changed && retarget && name === f.source ? '/other/entry.nex' : name;
+    f.options.execute = async (...args) => {const value = await execute(...args);if (f.calls.length === 3) {changed = true;f.files.set(f.source, Buffer.from('changed source'));}return value;};
+    await assert.rejects(prepareSession(f.config, f.options), /selected source changed after compilation/);
+  }
+});
+
+test('retargeted architecture aliases and structured project errors do not register a launch', async () => {
+  const f = projectFixture(), execute = f.options.execute;let changed = false;
+  f.options.realpath = async name => changed && name === f.plan.manifest ? '/other/architecture.json' : name;
+  f.options.execute = async (...args) => {const value = await execute(...args);if (f.calls.length === 2) changed = true;return value;};
+  await assert.rejects(prepareSession(f.config, f.options), /manifest or project root changed/);
+  const g = projectFixture();g.options.execute = async () => {throw Object.assign(new Error('exit 1'), {stdout: JSON.stringify({code: 'E_PROJECT_BOUNDARY', message: 'undeclared component edge'})});};
+  await assert.rejects(prepareSession(g.config, g.options), /E_PROJECT_BOUNDARY: undeclared component edge/);
+});
+
+test('project aliases map provider source breakpoints through the editor workspace spelling', async () => {
+  const f = projectFixture(), alias = '/workspace alias';f.config.cwd = alias;
+  f.options.realpath = async name => name === alias || name.startsWith(alias + '/') ? f.root + name.slice(alias.length) : name;
+  const provider = f.root + '/core/value.nex', projection = '/frozen core/source.nex';
+  const manifest = JSON.parse(f.files.get(f.response.observation.manifest));manifest.sources.push({original: provider, projection, debug_path: '/anchor/core.nex'});
+  f.files.set(f.response.observation.manifest, JSON.stringify(manifest));f.files.set(projection, Buffer.from('core source'));
+  f.files.set(alias + '/app/main.nex', f.files.get(f.source));f.files.set(alias + '/core/value.nex', Buffer.from('core source'));
+  const result = await prepareSession(f.config, f.options);
+  assert.ok(result.originalSourceMappings.some(row => row[1] === alias + '/core/value.nex'));
+  assert.ok(result.originalSourceMappings.some(row => row[1] === alias + '/app/main.nex'));
+});
+
+test('dirty compiled project documents prevent launch registration without saving buffers', async () => {
+  const vscode = host();vscode.workspace.textDocuments = [{isDirty: true, uri: {scheme: 'file', fsPath: '/project/app/main.nex'}}];
+  const prepared = {project: {component: 'app'}, launch: descriptor().launch, command: descriptor().adapter_command,
+    originalSourceMappings: [['/anchor/main.nex', '/project/app/main.nex']]};
+  const integration = createIntegration(vscode, async () => prepared);
+  assert.equal(await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(undefined, {}), undefined);
+  assert.match(vscode.errors[0], /Save the project sources/);
+  vscode.workspace.textDocuments[0].uri.fsPath = '/unrelated/project.nex';
+  const selected = await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(undefined, {});
+  assert.ok(selected._nexSession);
+  integration.dispose();
+});
+
+function projectCommandHost() {
+  const vscode = host(), launches = [], choices = [];
+  vscode.workspace.workspaceFolders = [{name: 'Project', uri: {scheme: 'file', fsPath: '/project with spaces'}}];
+  vscode.debug = {startDebugging: async (...args) => {launches.push(args);return true;}};
+  vscode.window.showQuickPick = async items => {choices.push(items);return items[0];};
+  const metadata = {schema: 'nex.project-build/1', default_configuration: 'release',
+    components: {app: {kind: 'executable'}, core: {kind: 'shared_library'}}, configurations: {debug: {profile: 'debug'}, release: {profile: 'release'}}};
+  let reads = 0;
+  const options = {stat: async () => ({isFile: () => true, size: 100}), readFile: async () => {reads++;return JSON.stringify(metadata);}};
+  return {vscode, launches, choices, metadata, options, get reads() {return reads;}};
+}
+
+test('project command chooses declared configurations and delegates to the fresh launch provider', async () => {
+  const h = projectCommandHost();assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), true);
+  assert.equal(h.launches.length, 1);assert.equal(h.choices.length, 1);
+  assert.deepEqual(h.launches[0][1].project, {manifest: 'nex.build.json', component: 'app', configuration: 'release'});
+  assert.equal(h.launches[0][1].source, undefined);assert.equal(h.launches[0][1].cwd, '/project with spaces');
+});
+
+test('project command respects cancellation and trust changes without starting a debug session', async () => {
+  let h = projectCommandHost();h.vscode.workspace.isTrusted = false;
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.reads, 0);assert.equal(h.launches.length, 0);
+  h = projectCommandHost();h.vscode.window.showQuickPick = async () => undefined;
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+  h = projectCommandHost();h.vscode.window.showQuickPick = async items => {h.vscode.workspace.isTrusted = false;return items[0];};
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
+});
+
+test('project command rejects oversized manifests and unavailable components', async () => {
+  let h = projectCommandHost();h.options.stat = async () => ({isFile: () => true, size: 262145});
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.reads, 0);
+  h = projectCommandHost();h.metadata.components.app.kind = 'server';
+  assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), false);assert.equal(h.launches.length, 0);
 });

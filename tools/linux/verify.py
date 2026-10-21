@@ -46,6 +46,8 @@ def main():
                 'NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images'])
             run('live-project-actions',['python3','/src/tests/project_actions.py','/build/sdk/bin/nex','--live',
                 'Actions.test_live_project_debugger_and_built_web_preview'])
+            run('live-project-editor',['python3','/src/tests/editor.py','/build/sdk/bin/nex','--live',
+                'Editor.test_project_original_provider_breakpoint_and_watch'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

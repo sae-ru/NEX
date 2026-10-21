@@ -7,6 +7,15 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+When editor_features advertises project_architecture_debug_launch, use extension
+0.6 and read docs/editor.md. NEX: Debug Project Component or a launch.project
+object selects manifest/component/configuration. Preserve source/static/dynamic
+dependencies with that project path; save compiled source buffers first. Plans
+are checked around native preparation; only its fresh artifact/adapter and
+byte-checked source maps authorize the launch. A source launch independently
+compiles an entry. Native executable project debugging does not imply server,
+browser, foreign-catalogue UI or remaining Studio support.
+
 When `project_architecture_tasks` is advertised, read `docs/project-tasks.md`.
 Scaffold with `nex task nex.build.json --kind init --component NAME
 --configuration CONFIG`, then review the task. Its optional program.project pins
