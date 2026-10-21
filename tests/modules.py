@@ -79,9 +79,15 @@ class Modules(harness.ToolchainCase):
         self.assertEqual(context["callees"][0]["name"], "example::model::normalize")
         self.assertEqual(context["structures"][0]["name"], "example::model::Item")
         if shutil.which("lldb"):
+            session = self.cli("debug")
+            manifest = json.loads(Path(session["manifest"]).read_text())
+            imported = next(s for s in manifest["sources"]
+                            if s["original"] == str((self.root / "model.nex").resolve()))
             debug = self.cli("debug", "--", "-b", "-o",
                              "image lookup --verbose --name " + context["native_symbol"], machine=False)
-            self.assertIn("model.nex", debug.stdout)
+            self.assertIn(imported["debug_path"], debug.stdout)
+            self.assertEqual(Path(imported["projection"]).read_text(),
+                             (self.root / "model.nex").read_text())
 
     def test_saved_revision_does_not_reload_modified_or_missing_files(self):
         self.example()
