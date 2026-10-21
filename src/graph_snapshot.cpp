@@ -43,7 +43,7 @@ struct Output {
   }
   ~Output(){if(retained)return;struct stat info{};if(!::lstat(path.c_str(),&info)&&S_ISDIR(info.st_mode)&&info.st_dev==device&&info.st_ino==inode){std::error_code error;fs::remove_all(path,error);}}
 };
-void failure(int code,const std::string &operation,Deadline &deadline){deadline.check();throw Error("E_SNAPSHOT",operation+" failed (SQLite "+std::to_string(code)+": "+sqlite3_errstr(code)+")");}
+void failure(int code,const std::string &operation,Deadline &deadline,std::string detail={}){deadline.check();if(detail.size()>1024)detail.resize(1024);throw Error("E_SNAPSHOT",operation+" failed (SQLite "+std::to_string(code)+": "+sqlite3_errstr(code)+(detail.empty()?"":"; "+detail)+")");}
 struct Database {
   sqlite3 *db=nullptr;Deadline &deadline;
   Database(const fs::path &path,bool writable,Deadline &deadline):deadline(deadline){
@@ -57,7 +57,9 @@ struct Database {
     sqlite3_progress_handler(db,1000,[](void *p){return static_cast<Deadline*>(p)->expired()?1:0;},&deadline);
     sqlite3_set_authorizer(db,[](void*,int action,const char *first,const char *second,const char*,const char*){
       if(action==SQLITE_ATTACH||action==SQLITE_DETACH||action==SQLITE_CREATE_VTABLE||action==SQLITE_DROP_VTABLE)return SQLITE_DENY;
-      if(action==SQLITE_FUNCTION){std::string name=second?second:first?first:"";if(name!="count"&&name!="length"&&name!="typeof")return SQLITE_DENY;}
+      // SQLite3.54 authorizes timestamp defaults during quick_check. The
+      // graph's own created defaults use this read-only builtin.
+      if(action==SQLITE_FUNCTION){std::string name=second?second:first?first:"";if(name!="count"&&name!="length"&&name!="typeof"&&name!="strftime")return SQLITE_DENY;}
       return SQLITE_OK;
     },nullptr);
   }
@@ -67,7 +69,7 @@ struct Database {
 };
 struct Query {
   Database &connection;sqlite3_stmt *statement=nullptr;
-  Query(Database &db,const std::string &sql):connection(db){for(;;){db.deadline.check();auto rc=sqlite3_prepare_v2(db.db,sql.c_str(),-1,&statement,nullptr);if(rc==SQLITE_OK)break;if(statement){sqlite3_finalize(statement);statement=nullptr;}if(rc==SQLITE_BUSY||rc==SQLITE_LOCKED){sqlite3_sleep(10);continue;}failure(rc,"prepare graph snapshot query",db.deadline);}}
+  Query(Database &db,const std::string &sql):connection(db){for(;;){db.deadline.check();auto rc=sqlite3_prepare_v2(db.db,sql.c_str(),-1,&statement,nullptr);if(rc==SQLITE_OK)break;std::string detail=sqlite3_errmsg(db.db);if(statement){sqlite3_finalize(statement);statement=nullptr;}if(rc==SQLITE_BUSY||rc==SQLITE_LOCKED){sqlite3_sleep(10);continue;}failure(rc,"prepare graph snapshot query",db.deadline,detail);}}
   ~Query(){sqlite3_finalize(statement);}
   void bind(int index,const std::string &text){auto rc=sqlite3_bind_text(statement,index,text.data(),int(text.size()),SQLITE_TRANSIENT);if(rc!=SQLITE_OK)failure(rc,"bind snapshot metadata",connection.deadline);}
   bool row(){for(;;){connection.deadline.check();auto rc=sqlite3_step(statement);if(rc==SQLITE_ROW)return true;if(rc==SQLITE_DONE)return false;if(rc==SQLITE_BUSY||rc==SQLITE_LOCKED){sqlite3_sleep(10);continue;}failure(rc,"read graph snapshot",connection.deadline);}}

@@ -69,6 +69,17 @@ class GraphSnapshots(harness.ToolchainCase):
             self.assertEqual(self.cli('eval','--revision','HEAD',cwd=recovered)['stdout'],'42\n')
         finally:held.close()
 
+    def test_timestamp_defaults_preserve_schema_and_stored_values(self):
+        self.ready()
+        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+            db.execute("CREATE TABLE timestamp_probe(value TEXT DEFAULT(strftime('%s','now'))) STRICT")
+            db.execute('INSERT INTO timestamp_probe DEFAULT VALUES')
+            schema=db.execute("SELECT sql FROM sqlite_schema WHERE name='timestamp_probe'").fetchone()[0]
+        before=self.rows();archive,_,_=self.snapshot();recovered,_=self.recover(archive)
+        self.assertEqual(self.rows(),before);self.assertEqual(self.rows(recovered),before)
+        with sqlite3.connect(recovered/'.nex/graph.db') as db:
+            self.assertEqual(db.execute("SELECT sql FROM sqlite_schema WHERE name='timestamp_probe'").fetchone()[0],schema)
+
     def test_current_writer_and_snapshot_observe_one_coherent_database(self):
         self.ready()
         def writer():
