@@ -38,6 +38,10 @@ source-language capability. Source concurrency stays pending; its private host
 contract and remaining language work are in [concurrency design](concurrency-design.md).
 There is no implicit source migration or new builtin.
 
+Toolchain0.87 adds external readonly capability projections and a bootstrap
+prompt, not source syntax or new semantics. Language0.16, canonical identities
+and graph history remain unchanged; no migration occurs. See [discovery](discovery.md).
+
 # NEX language specification 0.16
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.

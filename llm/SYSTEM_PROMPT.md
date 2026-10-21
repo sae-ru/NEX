@@ -7,6 +7,13 @@ and response limits intact. Verify the actual host and network path separately.
 
 # NEX coding prompt — language 0.16, protocol 2
 
+For toolchain0.87, llm/BOOTSTRAP.md provides short initial routing. Use
+`nex describe --kind index --json` and `nex describe --field PATH --json` for
+relevant exact capability sections; compare compiler_build/descriptor_hash.
+An older SDK may require the full describe command. Follow this workflow and
+the applicable normative guides; a projection never implies pending support.
+Measure the complete accepted task and failed attempts, not syntax length.
+
 Source concurrency remains pending. The0.86 internal native worker probe is
 trusted-host groundwork compiled with an explicit development flag, not a NEX
 intrinsic. Read docs/concurrency-design.md; do not generate parallel_map/spawn,

@@ -1,5 +1,12 @@
 # Model-independent NEX language pack
 
+Toolchain0.87 adds [BOOTSTRAP.md](BOOTSTRAP.md) for initial routing and
+[scoped discovery](../docs/discovery.md): index available fields, then retrieve
+only needed sections with their exact compiler/descriptor identity. The full
+descriptor and authoritative workflow remain available. Reduced response bytes
+are a measured tooling property, not proof of lower total model cost; see the
+[quality contract](../docs/quality.md).
+
 For installation, first-project commands, Git/graph preservation and a shared
 application AGENTS.md for Hermes/Codex, start with the Russian
 [quickstart](../docs/quickstart.md).

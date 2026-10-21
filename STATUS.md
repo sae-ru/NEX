@@ -1,3 +1,22 @@
+# Development cohort0.87 (not integrated)
+
+Readonly capability index and dotted-field projections bind exact descriptor
+values to language/toolchain/compiler-build/hash identity. Default full describe
+remains available. A short bootstrap routes models to relevant guides/context;
+all source syntax and language0.16 identities remain unchanged. The
+[quality contract](docs/quality.md) defines large-system, correctness,
+performance and full-task LLM-cost targets; those targets are not achieved claims.
+Focused and broad0.87 verification are pending.
+
+The frozen0.85 Mac full91 and installed SDK24 pass. Four final installed editor
+profiles pass; its independently generated source-server fixture incorrectly
+asserted project owned-image metadata and failed. Its original failure remains;
+the corrected owned fixture checks the actual inlined source-provider contract.
+Linux full91/all21 live suites pass, but source-free SDK foreign project task
+packaging correctly rejects missing Crypto provenance. This cohort captures the
+installed Debian provider's complete reviewed license inputs before the task;
+it does not relax provenance or silently grant --dpkg-notices during replay.
+
 # Development cohort0.86 (not integrated)
 
 Internal native structured-worker groundwork shares the parent request budget,

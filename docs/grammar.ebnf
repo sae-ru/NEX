@@ -1,3 +1,4 @@
+(* Toolchain0.87 scoped discovery is external metadata, with no grammar or migration. *)
 (* Toolchain0.86 internal worker probes add no source builtin or grammar;
    source concurrency and its explicit language migration remain pending. *)
 (* Toolchain0.81 editor project launches add no source syntax or migration. *)

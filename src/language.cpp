@@ -969,6 +969,10 @@ std::string revision(const Program &p) {
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
+    {"scoped_discovery",llvm::json::Object{{"schema","nex.discovery/1"},{"schema_file","llm/discovery.schema.json"},
+      {"index_command","nex describe --kind index --json"},{"field_command","nex describe --field PATH --json"},
+      {"full_command","nex describe --json"},{"guide","docs/discovery.md"},{"bootstrap_prompt","llm/BOOTSTRAP.md"},
+      {"field_bytes",256},{"path_components",8},{"graph_store_opened",false},{"source_read",false}}},
     {"source_concurrency",llvm::json::Object{{"status","pending"},{"guide","docs/concurrency-design.md"},
       {"source_operations",false},{"internal_runtime_prototype",true},{"emitted_runtime_enabled",false},
       {"stable_host_abi",false},{"development_compile_definition","NEX_STRUCTURED_WORKERS"}}},

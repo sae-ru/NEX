@@ -1,3 +1,17 @@
+# Quality target and current0.87 scoped discovery
+
+- [x] Define [production-quality acceptance](docs/quality.md): correctness,
+  errors/cleanup, source concurrency, large projects, native performance and
+  complete LLM token cost compared with fixed C++/Python baselines.
+- [x] Add exact readonly capability index/field queries and a short routing
+  prompt; retain the full descriptor and language0.16 behavior.
+- [ ] Complete frozen full93, installed SDK, editor and platform acceptance.
+- [ ] Measure actual model/tokenizer usage and successful tasks across at least
+  three models; payload bytes alone are not a token-efficiency result.
+- [ ] Complete ergonomic error propagation/catch boundaries, safe source
+  concurrency and the remaining platform/accelerator/development-chain work.
+  No C++/Python maturity or universal performance parity is claimed.
+
 # Current0.86 structured native worker groundwork
 
 - [x] Implement shared request budgets/deadlines/cancellation and per-job owners

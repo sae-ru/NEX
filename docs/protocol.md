@@ -1,5 +1,11 @@
 # NEX CLI and graph protocol 2
 
+Toolchain0.87 adds external readonly `describe --kind index` and
+`describe --field PATH` responses (`nex.discovery/1`). See [scoped discovery](discovery.md)
+and `llm/discovery.schema.json`. They project exact values from the complete
+descriptor and open no graph/source. Existing full `describe` remains
+`nex.language/1`; source language0.16 and graph/canonical identities are unchanged.
+
 Commands are local and model-independent. The compiler handles parsing, checking and transactions; the invoking LLM produces source or a patch. JSON is ordinary UTF-8 with no provider-specific tool format.
 
 The current source language is0.16, graph/context protocol 2 and graph database

@@ -39,6 +39,29 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def external_crypto_components(sdk, crypto_path):
+    """Review external provider metadata before capturing package task inputs."""
+    sdk = Path(sdk).resolve(strict=True)
+    crypto = Path(crypto_path).resolve(strict=True)
+    if sdk in crypto.parents:
+        return []
+    if platform.system() == 'Linux':
+        from sdk_bundle import DebianNotices
+        installed = []
+        DebianNotices(installed).component(crypto)
+        # Task notice inputs intentionally accept only these reviewed fields.
+        return [{name: component[name] for name in
+                 ('name', 'version', 'url', 'roots', 'license_files')}
+                for component in installed]
+    prefix = crypto.parent.parent
+    license_file = next((prefix / name for name in ('LICENSE.txt', 'LICENSE')
+                         if (prefix / name).is_file()), None)
+    require(license_file is not None, 'development Crypto installation needs its complete vendor license')
+    return [{'name': 'acceptance-crypto', 'version': 'installed-vendor',
+             'url': 'https://openssl-library.org', 'roots': [str(prefix)],
+             'license_files': [str(license_file)]}]
+
+
 def lldb_script_import(script):
     # LLDB parses command arguments, not JSON Unicode escape sequences. Keep
     # UTF-8 path characters literal while quoting spaces, quotes and slashes.
@@ -337,7 +360,26 @@ test fn examples() -> unit {
             require(not path.exists(), 'source mount must be absent: ' + str(path))
         report['absent_source_probes'] = list(map(str, args.forbid_source))
         doctor = cli('doctor')
+        full_command = len(report['commands'])
         descriptor = cli('describe')
+        if 'scoped_discovery' in descriptor:
+            index_command = len(report['commands'])
+            index = cli('describe', '--kind', 'index')
+            field_command = len(report['commands'])
+            selected = cli('describe', '--field', 'scoped_discovery')
+            require(index['fields'] == sorted(descriptor), 'scoped discovery index differs from full capabilities')
+            require(selected['value'] == descriptor['scoped_discovery'], 'scoped field changed its capability value')
+            require(index['language'] == doctor['language'] and index['toolchain'] == doctor['version'],
+                    'scoped discovery language/toolchain differs from installed SDK')
+            require(all(selected[key] == index[key] for key in ('compiler_build', 'descriptor_hash')),
+                    'scoped discovery identities changed between requests')
+            sizes = {name: Path(report['commands'][number]['stdout']).stat().st_size for name, number in
+                     [('full_bytes', full_command), ('index_bytes', index_command), ('field_bytes', field_command)]}
+            require(sizes['index_bytes'] < sizes['full_bytes'] and sizes['field_bytes'] < sizes['full_bytes'],
+                    'scoped discovery failed to reduce its response payload')
+            report['evidence']['scoped_discovery'] = {'ok': True, **sizes,
+                'descriptor_hash': index['descriptor_hash'], 'fields': len(index['fields']),
+                'metric': 'response_bytes_only', 'model_token_savings_measured': False}
         require(Path(doctor['runtime']).resolve() == (resources / 'runtime/runtime.cpp').resolve(),
                 'compiler selected resources outside this SDK')
         require('typed_nested_patterns' in descriptor['match_features'], 'SDK lacks checked nested patterns')
@@ -1526,21 +1568,10 @@ int main() {
         notice_components = [{'name': 'acceptance-module', 'version': 'fixture',
             'url': 'https://example.invalid/nex-sdk-acceptance', 'roots': [str(package_bundle)],
             'license_files': [str(package_bundle / 'NOTICE')]}]
-        package_flags = []
-        if platform.system() == 'Linux':
-            package_flags.append('--dpkg-notices')
-        else:
-            crypto = Path(report['doctor']['native_openssl_crypto']).resolve(strict=True)
-            if sdk not in crypto.parents:
-                # A development SDK can use the explicit vendor installation.
-                # Preserve its complete license rather than inventing a notice.
-                prefix = crypto.parent.parent
-                license_file = next((prefix / name for name in ('LICENSE.txt', 'LICENSE')
-                                     if (prefix / name).is_file()), None)
-                require(license_file is not None, 'development Crypto installation needs its complete vendor license')
-                notice_components.append({'name': 'acceptance-crypto', 'version': 'installed-vendor',
-                    'url': 'https://openssl-library.org', 'roots': [str(prefix)],
-                    'license_files': [str(license_file)]})
+        # Direct packaging can resolve installed metadata, but replay consumes
+        # captured reviewed inputs and cannot inherit a command-line switch.
+        notice_components += external_crypto_components(sdk, report['doctor']['native_openssl_crypto'])
+        package_flags = ['--dpkg-notices'] if platform.system() == 'Linux' else []
         package_notices = directory / 'package-notices.json'
         package_notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': notice_components}))
         package = directory / 'before-package'
