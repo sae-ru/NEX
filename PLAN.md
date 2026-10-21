@@ -1,6 +1,15 @@
-<!-- Isolated0.72 candidate: actual static archive edges, concrete exports,
-private ABI checks and explicit template instantiation are being validated.
-Shared libraries, resolved OS dependencies and full-static policy remain open. -->
+# Checkpoint0.72: consumed native archives and reproducible tools
+
+- [x] Consume checked static archives, explicit export closures and transitive binary dependencies with one final runtime.
+- [x] Preserve module origins across entry/import/package aliases, source-deleted watches and moved core capsules.
+- [x] Handle old-glibc child cwd, SQLite timestamp defaults, private GNU runtime provenance and executable-tool aliases.
+- [x] Pass actual root full80/SDK24/348/213, current Linux80/17live/source-free SDK, installed IDE,6cross configurations/15artifacts/3iOS links/x64 Wine,3browser static-model API and genuine071/072 compatibility.
+- [x] Preserve all47 revisions/all16 tables/schema/IDs and normal Git HEAD/index; keep old SDKs and original failures.
+- [ ] Integrate general shared-library output/consumption, one shared runtime, dynamic debug/core/profile/package bindings and explicit binary dependency reports.
+- [ ] Add combined project run/debug/test/profile/package/task/replay using selected architecture artifacts.
+- [ ] Implement source concurrency and general CPU/GPU/NPU interfaces; keep research and fixed hardware FFI tests separate.
+- [ ] Continue native platform delivery, IDE completion/rename, Studio and all remaining full-language/development-chain work.
+
 # Checkpoint0.71: checked project architecture
 
 - [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.
@@ -8,7 +17,8 @@ Shared libraries, resolved OS dependencies and full-static policy remain open. -
 - [x] Pass actual root full79 and installed SDK24/344/209; retain original macOS/Linux735 scopes and16 Linux live suites.
 - [x] Verify9 project cross artifacts,3 iOS final links, project x64 Wine and12 real-browser full-stack/restart cases.
 - [x] Preserve genuine0.70/0.71 wire/canonical/store compatibility, actual installed IDE,9 fresh root PE builds/17 Wine cases and47 revisions/all16 root tables/schema/Git.
-- [ ] Implement actual archive/shared dependency consumption, shared-library output and explicit resolved dependency reports.
+- [x] Implement actual archive consumption (delivered in0.72; absent in0.71).
+- [ ] Implement shared dependency consumption/output and explicit resolved dependency reports.
 - [ ] Implement source task scheduling and general CPU/GPU/NPU APIs; retain fixed CIX0.70 FFI evidence separately.
 - [ ] Continue broader platform delivery, IDE completion/rename and the remaining full development-chain requirements.
 

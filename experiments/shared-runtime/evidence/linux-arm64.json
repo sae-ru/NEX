@@ -1,0 +1,25 @@
+{
+  "schema": "nex.shared-runtime-mechanism/1",
+  "ok": true,
+  "host": "Linux-7.0.12-linuxkit-aarch64-with-glibc2.39",
+  "compiler_sha256": "7cd52b045449676139fd817cd9e19a49974d6f06e1b4e5f16edfcedcab4421a2",
+  "probe_script_sha256": "8313fd3881b9780c062d7c66d9330733bc5413138e3e4a18a66e2c613e4e9d51",
+  "language": "0.16",
+  "one_runtime_symbol_address_for_both_dsos": true,
+  "reference_native_typescript_tests": true,
+  "managed_value_roundtrips": 64,
+  "file_capability_crosses_two_dsos": true,
+  "checked_failure_exit": 70,
+  "file_bytes": "d0aff09fa7a0",
+  "scope": "Experimental relink of checked NEX IR; compiler-supported shared_library output, provenance integration, debug/core bindings and packaging remain pending.",
+  "published_script_sha256": "8313fd3881b9780c062d7c66d9330733bc5413138e3e4a18a66e2c613e4e9d51",
+  "image_hashes": {
+    "runtime": "2f92de6b416640d3731cb2e89da69b2c90223bcd0a0167d5682597c00c4cb3d3",
+    "producer": "b9eb4b7014de3f8c573bc02703f519cb7f571f926f351f6a2d93ab3a5ece7d7b",
+    "consumer": "4f8aee0a4a7d34c52517ef08694992f21bbf0ebe7dd94dded2155e354d8b453d",
+    "app": "22fbdaeb163c865aa8683de1fd6cc6903c2173a80dafbb1fc789d30b11b5f860"
+  },
+  "commands": 31,
+  "strict_source_access_denial": false,
+  "compiler_shared_library_mode": false
+}

@@ -1,8 +1,44 @@
-# Isolated0.72 native-library candidate
+# Verified root development checkpoint0.72 / language0.16
 
-Checked static archive consumption is under validation in this candidate.
-Do not read the historical integrated0.71 evidence below as0.72 coverage.
-Shared-library output and consumption remain required work.
+Implementation source `1f24a09cd71ee7cf203359b7a70d03e243505669` (756 files) builds and passes
+all80 CTest groups in747.94 seconds. Its installed SDK passes24 phases,
+348 commands and213 indexed resources; compiler SHA-256 is
+`ae7db3947b533f0b84d90fbf1bb1904b1210214a87e15174def414674ff7e83d`.
+[Machine-readable evidence](docs/evidence/toolchain-0.72.0.json) separates actual
+root, source candidates, Linux, SSH compatibility and research scopes. Final
+overview/quickstart/research evidence changes no compiler, runtime, grammar or
+indexed resource. Exact test sources and original failures remain retained.
+
+Project `static` edges consume real code-only archives under checked private
+compiler/toolchain/runtime contracts, with concrete exports, consumer generic
+instantiations and one runtime in the final application. Retained completion
+records bind ABI data and captured archives. Module-based frozen source origins
+cover provider entry/import aliases; live source-deleted library watches and
+moved core capsules pass. Historical capsule basenames remain readable.
+
+The current source passes Linux ARM64 full80,17 live groups and source-free,
+network-disabled SDK24/348. Mac candidate full80 initially had one old temporary
+filename assertion; the stronger manifest-origin test passes all13 module cases
+with unchanged production code. Actual root then passes a fresh complete80 run.
+The Mac candidate SDK's omitted optional Wasm-linker selection is retained as a
+configuration failure; explicit LLVM22.1.8 selection and actual root defaults pass.
+
+Actual root-SDK checks produce15 cross artifacts in6 configurations and3 final
+iOS links; an archive-dependent x64 application runs under Wine. A static-model
+HTTP server and source-model browser client pass12 cases across3 browser engines.
+Installed VSIX0.5 passes fresh-profile language/debug checks. Genuine0.71/0.72
+checks preserve strict analysis1/2/3 responses apart from compiler identity and
+all isolated store rows/schema/IDs. All47 primary revisions/all16 tables/schema,
+local identities and normal Git HEAD/index remain unchanged.
+
+Separate Astra Linux1.7.4/old-glibc development checks include a complete SDK24
+and targeted native toolchain groups. Their hashes are distinct from this root.
+Manual Mac/Linux two-DSO probes establish one runtime, managed callbacks/values,
+file aliases, checked failure cleanup and relative relocation. General compiler
+DLL mode, dynamic debug/core/profile/package integration, source concurrency,
+accelerators and the remaining development chain are still pending.
+
+The following historical statements retain their original source/compiler scope.
 
 # Verified root development checkpoint0.71 / language0.16
 

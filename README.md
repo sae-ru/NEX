@@ -12,60 +12,47 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated0.72 candidate adds checked static archive consumption; it is not
-the integrated0.71 checkpoint described below. General shared-library output
-and source concurrency remain pending.
-
-The integrated source is **toolchain0.71.0 / language0.16**, under development.
+The current source is **toolchain0.72.0 / language0.16**, under development.
 The language includes checked numbers, Unicode strings, immutable data,
-matching, generics, traits/associated types, constructor parameters, function
-values and snapshot closures. The checker enforces types, effects and realms.
-Native output uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
+matching, generics, traits, constructor parameters, function values and
+snapshot closures. Types, effects and realms are checked. Native output uses
+MLIR/LLVM; browser applications use TypeScript/React/Vite.
 
-[Project builds](docs/project-build.md) add an explicit `nex.build.json` beside
-existing `nex.json`. Components declare disjoint roots, direct source dependencies,
-entry contracts and configurations. `nex project --kind plan` checks the selected
-architecture without opening the graph store or invoking build tools.
-`--kind build` produces native executables, static archives, HTTP servers and
-browser assets. Source edges compile reachable source into consumers; they do
-not consume a separately built archive. DLL/shared-library output/consumption,
-full-static policies and resolved binary dependency reports remain pending.
+[Project builds](docs/project-build.md) describe components, direct dependencies,
+exports and configurations in `nex.build.json`. Readonly plans check the selected
+architecture. A `static` dependency consumes its actual separately built archive,
+with checked contracts and one final application runtime. Consumers can add
+explicitly reported generic instantiations. Source remains available to the
+checker. A static edge does not request a fully static executable; general
+DLL/shared-library output and resolved binary dependency reports remain pending.
 
-The actual root passes all79 CTest groups and installed SDK acceptance of
-24 phases/344 commands/209 indexed resources. The original735-file implementation
-candidate also passes full79/SDK24 on macOS and Linux ARM64, including16 live
-Linux suites and source-free/network-disabled SDK acceptance. The root750 source
-adds optional CIX fixtures and documentation; its two indexed-document deltas
-are retained separately. Exact scopes are in [the evidence](docs/evidence/toolchain-0.71.0.json).
+The actual root passes **80 CTest groups** and installed SDK acceptance of
+**24 phases/348 commands/213 indexed resources**. The same implementation also
+passes Linux ARM64 full80,17 live suites and source-free/network-disabled SDK24.
+See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashes,
+source cohorts and retained failures. The source language remains0.16; no implicit
+graph migration occurs, and all47 root revisions/all16 tables/schema/IDs remain.
 
-Six project configurations produce nine verified Intel/Windows/iOS cross
-artifacts and three final iOS linked images. A project-built x64 PE returns42
-under Wine. Cross-build/link success does not establish target-device execution.
-The actual root also builds a shared-model/API/browser project in one command:
-12 production UI/API/restart cases pass in Chromium, Firefox and WebKit.
+Six root-SDK configurations produce15 Intel/Windows/iOS artifacts and3 final iOS
+linked images. The x64 Windows archive application executes under isolated Wine.
+Cross-builds and Wine do not establish actual Windows/mobile device execution.
+A real native-server/static-model/browser-source project passes12 UI/API/restart
+cases in Chromium, Firefox and WebKit. The actual installed VSIX0.5 passes LSP,
+native debugger, watch and indexed-page checks in fresh private profiles.
+Genuine installed0.71/0.72 comparisons preserve strict analysis1/2/3 payloads
+apart from compiler identity and complete isolated store rows/schema/IDs.
 
-The development chain includes the SQLite/BLAKE3 graph, dependency locks,
-transactional patches, snapshots/recovery, task contracts, scalar Z3 checks,
-LLDB/DAP, native profiling and VS Code0.5. Actual installed-VSIX checks use
-private profiles and verify identifiers/references, unsaved imports, Unicode/
-CRLF, lifecycle, native breakpoints, pure watches and bounded value pages.
-Nine fresh root-SDK PE builds pass17 x64 Wine cases, with original fixture
-snapshots retained. Wine is distinct from actual Windows OS/ARM64 validation.
-Genuine installed0.70/root0.71 comparisons preserve all three analysis payloads
-apart from compiler identity, checked/evaluated results and complete store rows/
-schema/IDs on five examples. Language0.16 requires no migration for this change.
+The development chain includes the SQLite/BLAKE3 graph, locks, transactional
+patches, snapshots, task contracts, scalar Z3 checks, LLDB/DAP and CPU profiling.
+Different LLMs use the same [language pack](llm/README.md) and bounded compiler
+context. Cross-provider coding/token measurements remain pending.
 
-Separate [physical CIX P1 evidence](docs/cix-p1.md) uses its private0.70 SDK:
-75 CPU commands and20 debug/release apps passed; an optional fixed trusted FFI
-fixture passed24 actual NEX GPU and16 NPU calls with CPU fallback forbidden.
-These checks do not provide general GPU compilation, a general NPU model API
-or source concurrency. They retain their original compiler/runtime scope.
-
-Different LLMs use the [language pack](llm/README.md), shared prompt and actual
-compiler tools. Cross-provider coding/token measurements remain pending.
-Experimental mobile/WebView and Wasm work retains its own scope. Native GUI
-adapters, DLL/archive consumption, source task scheduling, broader platform/
-device execution, completion/rename, Studio and other [PLAN.md](PLAN.md) work
+Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compiler
+scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
+APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
+tests real NEX code in two DSOs, but is not a supported compiler build mode.
+DLL integration, combined project execution/debug/task flows, source concurrency,
+general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
 remain open. This checkpoint does not complete the full objective.
 
 ## Build
@@ -269,11 +256,12 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 ## Current boundaries
 
 The complete language and development chain remain under development.
-macOS ARM64 and Linux ARM64 are the primary exercised hosts. Linux x86-64
-execution uses Docker emulation; it does not verify physical x86-64 hardware or
-live ptrace. macOS Intel binaries can be cross-built, but their execution is
-unverified. Windows, Android, iOS, native UI/GPU and WebAssembly integration
-remain pending.
+macOS ARM64 and Linux ARM64 are the primary exercised root hosts. Earlier0.72
+development candidates also ran on a separate Astra Linux1.7.4 x86-64 guest;
+those SDK/toolchain checks retain their exact compiler scopes. macOS Intel binaries can be cross-built, but their execution is
+unverified. Native Windows-hosted SDKs, mobile device execution and native UI/GPU remain
+pending. Experimental scalar Wasm and mobile project generation retain their
+specific guide limits.
 
 Source-level async, general external-resource kinds and callbacks, full
 pre/post-contract execution, optimized-PC/core attribution, browser profiling,
@@ -286,23 +274,3 @@ Older language archives require explicit history-preserving migration with
 `nex migrate`. Keep their matching SDKs for old debug sessions and receipts.
 The project is the language and its development tools; application products
 will be built afterwards using NEX.
-
-Development0.58 adds `nex core CORE --manifest BUILD/debug.json --json` for read-only retained-build core inspection. See [core reports](docs/core-debugging.md); full validation remains pending.
-
-Development0.58.1 corrects Linux LLDB minidump image binding and validates minidump input headers. Current validation is isolated; the preceding Linux wrong-image failure remains recorded.
-
-Development0.58.2 reads bounded ELF NT_FILE mapping metadata and requires a retained directory named by its build key. The real Linux ELF reader prototype passes; matching compiler/full SDK validation remains pending.
-
-Mobile native project generation is documented in [the mobile guide](docs/mobile.md).
-
-## Isolated development 0.66: checked editing
-
-The candidate adds `nex analyze` for unsaved sources and `nex lsp` for stdio compiler diagnostics, typed hover, definitions and document symbols. Root integration, current full/SDK/platform checks and a VS Code language client remain pending; see docs/lsp.md.
-
-## Isolated development0.67: VS Code editing
-
-The candidate extension0.2 connects unsaved-source diagnostics, type hover, definitions and outline to the installed nex lsp service. Provider/transport contracts and a real Node-to-compiler test pass during development; own0.67 build/full78/SDK and actual installed IDE acceptance remain required. See docs/editor.md.
-
-## Project architecture candidate
-
-Toolchain0.71 adds [checked component/build descriptions](docs/project-build.md) in `nex.build.json`, with read-only plans and selected native/static-archive/server/web artifacts. Source dependencies are checked against real import ownership, including configured-package aliases; current linkage is explicitly source compilation. General archive consumption, DLL output, full-static policy, source concurrency and GPU/NPU language adapters remain pending. Full candidate regression/SDK/platform gates must pass before root promotion. The [physical CIX P1 checks](docs/cix-p1.md) separately exercise toolchain0.70 native programs and installed accelerator APIs.
