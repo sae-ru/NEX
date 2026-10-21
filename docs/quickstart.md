@@ -44,7 +44,7 @@ nex describe --json
 ```sh
 git clone https://github.com/sae-ru/NEX.git nex-toolchain
 cd nex-toolchain
-git checkout --detach 99a2bc88d42005ce28ff818c088c6a0c76d98d8f
+git checkout --detach 0216bed1589f82e24cba0374ae9c61f9b623ce63
 ```
 
 Это проверенный снимок0.72, а не обещание, что `main` или случайная резервная

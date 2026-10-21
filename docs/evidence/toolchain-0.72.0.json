@@ -81,5 +81,11 @@
     "cross-provider quality/token measurements",
     "remaining full development-chain objective"
   ],
-  "final_documentation_delta": "Overview/quickstart/evidence and optional research files only; compiled implementation,grammar,canonical identities and all213 indexed resources remain unchanged."
+  "final_documentation_delta": "Overview/quickstart/evidence and optional research files only; compiled implementation,grammar,canonical identities and all213 indexed resources remain unchanged.",
+  "documented_source_checkpoint": {
+    "commit": "0216bed1589f82e24cba0374ae9c61f9b623ce63",
+    "tree": "4798e5e8e9857b1786cee8ab430ca85e2457d18a",
+    "branch": "codex/backup-nex-20261021-032145",
+    "scope": "Verified compiler source plus coherent0.72 documentation; quickstart pins this immutable source."
+  }
 }
