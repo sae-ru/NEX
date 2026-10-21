@@ -1,3 +1,10 @@
+Development toolchain0.89/language0.17 fixes a confirmed Python3.9 DAP adapter
+shutdown abort: wake and join both input readers before destroying stdio; SDK
+acceptance rejects abnormal adapter exits. Nine transport tests pass on the same
+Python3.9 interpreter. New full/installed/platform validation remains pending.
+The approved primary remains0.81/language0.16; earlier notes below are historical
+cohorts. Source result propagation is carried forward from the saved0.88 draft.
+
 Development toolchain0.88/language0.17 adds a **candidate** postfix result
 propagation operator `?`. Parsing, checking and all three execution backends are
 implemented in this isolated source; complete migration/platform/SDK/editor gates
@@ -817,3 +824,12 @@ Windows, физические мобильные/Intel-цели, Android NDK/nat
 - [ ] Add actual component archive consumption, shared-library exports/ownership ABI, explicit full-static policy and resolved binary dependency reports.
 - [ ] Add safe structured CPU tasks/channels and separate asynchronous I/O.
 - [ ] Implement GPU/NPU adapters callable from NEX and verify actual device placement/fallback policy. CIX P1 OpenCL and Zhouyi probes have passed separately; probes alone do not complete NEX integration.
+
+## Proposed C++/Python project porting tool (pending)
+
+See [the design](docs/project-porting-design.md). No converter command is
+implemented. Start with a defined typed subset, deterministic AST conversion,
+explicit unsupported diagnostics, optional reviewed native bridges and original
+vs NEX differential validation. LLM repairs require bounded context, compiler
+checks and unchanged acceptance criteria. Complete the language/development
+chain first; measure complete task cost rather than claim automatic full ports.

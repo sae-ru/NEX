@@ -7,7 +7,9 @@ native scopes. Computed values have independent, paged, read-only references.
 import argparse
 import base64
 import json
+import os
 import queue
+import select
 import signal
 import subprocess
 import sys
@@ -17,6 +19,51 @@ import time
 MAX_PACKET = 8 * 1024 * 1024
 MAX_REFERENCES = 100000
 MAX_VARIABLES_PAGE = 1000
+
+
+class ReaderStopped(Exception):
+    pass
+
+
+class InterruptibleReader:
+    """POSIX DAP pipe reader with a wake descriptor and no buffered-I/O lock.
+
+    One thread owns each input descriptor. The shared wake pipe remains readable
+    until both threads join, so stopping also interrupts an unfinished packet.
+    Native DAP hosting currently targets macOS/Linux.
+    """
+    def __init__(self, stream, stopped, wake):
+        self.descriptor = stream.fileno()
+        self.stopped, self.wake = stopped, wake
+        self.buffer = bytearray()
+
+    def fill(self):
+        if self.stopped.is_set():
+            raise ReaderStopped()
+        select.select([self.descriptor, self.wake], [], [])
+        if self.stopped.is_set():
+            raise ReaderStopped()
+        chunk = os.read(self.descriptor, 65536)
+        self.buffer.extend(chunk)
+        return bool(chunk)
+
+    def take(self, size):
+        value = bytes(self.buffer[:size])
+        del self.buffer[:size]
+        return value
+
+    def readline(self, limit):
+        while True:
+            newline = self.buffer.find(b'\n', 0, limit)
+            if newline >= 0:
+                return self.take(newline + 1)
+            if len(self.buffer) >= limit or not self.fill():
+                return self.take(min(limit, len(self.buffer)))
+
+    def read(self, size):
+        if not self.buffer:
+            self.fill()
+        return self.take(min(size, len(self.buffer)))
 
 
 def read_packet(stream):
@@ -375,20 +422,34 @@ def main():
     backend = subprocess.Popen([args.backend], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     events = queue.Queue(maxsize=8)
     stopped = [False]
+    readers_stopped = threading.Event()
+    wake_read, wake_write = os.pipe()
     def interrupted(*_):stopped[0] = True
     signal.signal(signal.SIGINT, interrupted); signal.signal(signal.SIGTERM, interrupted)
+    def publish(value):
+        while not readers_stopped.is_set():
+            try:
+                events.put(value, timeout=.1)
+                return True
+            except queue.Full:
+                pass
+        return False
     def reader(label, stream):
         try:
+            stream = InterruptibleReader(stream, readers_stopped, wake_read)
             while True:
                 message = read_packet(stream)
-                events.put((label, message))
-                if message is None:return
+                if not publish((label, message)) or message is None:return
+        except ReaderStopped:
+            return
         except Exception as error:
-            events.put(('error', error))
-    for label, stream in [('client', sys.stdin.buffer), ('server', backend.stdout)]:
-        threading.Thread(target=reader, args=(label, stream), daemon=True).start()
+            publish(('error', error))
+    readers = []
     bridge = Bridge(backend, sys.stdout.buffer)
     try:
+        for label, stream in [('client', sys.stdin.buffer), ('server', backend.stdout)]:
+            thread = threading.Thread(target=reader, args=(label, stream))
+            thread.start(); readers.append(thread)
         while not stopped[0]:
             try:label, message = events.get(timeout=.1)
             except queue.Empty:continue
@@ -401,19 +462,29 @@ def main():
                     bridge.response(message, error=error)
             else:bridge.server(message)
     finally:
-        if backend.poll() is None:
+        try:
+            if backend.poll() is None:
+                try:
+                    write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
+                    deadline = time.monotonic() + 5
+                    while backend.poll() is None and time.monotonic() < deadline:
+                        try:events.get(timeout=.1)
+                        except queue.Empty:pass
+                    if backend.poll() is None:raise subprocess.TimeoutExpired(args.backend,5)
+                except (BrokenPipeError, subprocess.TimeoutExpired):
+                    backend.terminate()
+                    try:backend.wait(timeout=2)
+                    except subprocess.TimeoutExpired:backend.kill();backend.wait(timeout=2)
+        finally:
+            readers_stopped.set()
+            os.write(wake_write, b'x')
             try:
-                write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
-                deadline = time.monotonic() + 5
-                while backend.poll() is None and time.monotonic() < deadline:
-                    try:events.get(timeout=.1)
-                    except queue.Empty:pass
-                if backend.poll() is None:raise subprocess.TimeoutExpired(args.backend,5)
-            except (BrokenPipeError, subprocess.TimeoutExpired):
-                backend.terminate()
-                try:backend.wait(timeout=2)
-                except subprocess.TimeoutExpired:backend.kill();backend.wait(timeout=2)
-        backend.stdin.close(); backend.stdout.close()
+                for thread in readers:thread.join(timeout=2)
+                if any(thread.is_alive() for thread in readers):
+                    raise RuntimeError('DAP input reader did not stop')
+            finally:
+                os.close(wake_read); os.close(wake_write)
+                backend.stdin.close(); backend.stdout.close()
 
 
 if __name__ == '__main__':

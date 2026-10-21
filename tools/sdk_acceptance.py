@@ -94,6 +94,14 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 89, 0):
+        propagation = report.get('evidence', {}).get('result_propagation', {})
+        require(all(propagation.get(key) is True for key in ('native_reference', 'typescript',
+                'profile_cleanup', 'source_deleted', 'standalone_without_resources')),
+                'SDK acceptance lacks complete result propagation evidence')
+        if report.get('evidence', {}).get('live_debugger'):
+            require(report.get('evidence', {}).get('dap_shutdown_checks', 0) >= 2,
+                    'SDK acceptance lacks checked normal DAP adapter shutdowns')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 59, 0):
         core = report.get('evidence', {}).get('core_reports', {})
         require(core.get('capsule_helper_input_rejected') is True,
@@ -126,6 +134,7 @@ def validate_completed_report(report):
 
 class DAP:
     """Small bounded client for the installed stdio adapter, with no test imports."""
+    successful_shutdowns = 0
     def __init__(self, command, directory, environment):
         self.log = (directory / 'dap-stderr.log').open('wb')
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE,
@@ -197,7 +206,8 @@ class DAP:
         try:
             if self.process.poll() is None:
                 try:
-                    self.request('disconnect', {'terminateDebuggee': True})
+                    self.send('disconnect', {'terminateDebuggee': True})
+                    self.process.stdin.close()
                     self.process.wait(timeout=5)
                 except (Exception, KeyboardInterrupt):
                     self.process.kill()
@@ -207,6 +217,10 @@ class DAP:
             self.reader.join(timeout=5)
             self.process.stdout.close()
             self.log.close()
+        require(not self.reader.is_alive(), 'DAP output reader failed to stop')
+        require(self.process.returncode == 0,
+                'DAP adapter failed during shutdown: exit ' + str(self.process.returncode))
+        DAP.successful_shutdowns += 1
 
 
 def main():
@@ -424,6 +438,7 @@ test fn examples() -> unit {
                 'SDK lacks frame-to-loaded-image identity binding')
         require(descriptor['native_core'] == pack['native_core'] and descriptor['native_core']['readonly'], 'SDK lacks checked read-only core reports')
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
+        state['descriptor'] = descriptor
         inventory = {}
         for name in [*pack['documents'].values(), *pack['examples'].values()]:
             path = (resources / name).resolve()
@@ -735,6 +750,40 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         report['evidence']['numeric_language'] = {'revision': number_revision,
             'native_profiles': ['debug', 'release'], 'typescript': True,
             'source_deleted_replay': True, 'standalone_without_resources': str(number_standalone)}
+        if state['descriptor'].get('result_propagation'):
+            directory = root / 'result-propagation'; directory.mkdir()
+            shutil.copyfile(resources / 'examples/propagation.nex', directory / 'main.nex')
+            (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+                'language': report['doctor']['language'], 'entry': 'main.nex'}))
+            saved_revision = cli('check', cwd=directory)['revision']
+            output = cli('eval', cwd=directory)['stdout']
+            require(output == '{"ok":"value=42"}\n{"error":{"code":"PARTIAL","message":"same error 🦊"}}\n{"ok":"outer:INNER"}\n',
+                    'result propagation SDK sample differs from its defined output')
+            for profile in ('debug', 'release'):
+                cli('test', '--profile', profile, cwd=directory)
+                require(cli('run', '--profile', profile, cwd=directory)['stdout'] == output,
+                        'result propagation native/reference disagreement')
+            cli('test', '--target', 'web', cwd=directory)
+            measured = cli('profile', '--scenario', 'result propagation SDK', cwd=directory)
+            profile = json.loads(Path(measured['output']).read_text())
+            require(measured['stdout'] == output and all(pool['live'] == 0 and
+                    pool['allocations'] == pool['frees'] for pool in profile['memory']) and
+                    all(f['calls'] == f['completed'] and f['aborted'] == 0 for f in profile['functions']),
+                    'result propagation profile has incomplete calls or managed ownership')
+            built = cli('build', '--profile', 'release', cwd=directory)
+            standalone = root / 'result-propagation-standalone'
+            shutil.copyfile(built['executable'], standalone); standalone.chmod(0o755)
+            (directory / 'main.nex').unlink()
+            require(cli('run', '--revision', saved_revision, cwd=directory)['stdout'] == output,
+                    'result propagation archived replay changed after source deletion')
+            try:
+                environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
+                require(run([standalone]) == output, 'standalone result propagation needs compiler resources')
+            finally:
+                environment['NEX_RESOURCE_DIR'] = unavailable
+            report['evidence']['result_propagation'] = {'native_reference': True, 'typescript': True,
+                'profile_cleanup': True, 'source_deleted': True, 'standalone_without_resources': True,
+                'revision': saved_revision}
         operation_project = root / 'operation-patches'
         operation_project.mkdir()
         for name in ('main.nex', 'nex.json'):
@@ -2534,6 +2583,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:
             phase(name, action)
+        report['evidence']['dap_shutdown_checks'] = DAP.successful_shutdowns
         report['ok'] = True
         validate_completed_report(report)
     except BaseException as error:

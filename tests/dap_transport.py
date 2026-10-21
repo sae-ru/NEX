@@ -3,8 +3,10 @@ import base64
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
+import signal
 import sys
 import threading
 import unittest
@@ -67,6 +69,73 @@ class Transport(harness.ToolchainCase):
         finally:
             timer.cancel()
             if process.poll() is None:process.terminate();process.communicate(timeout=10)
+
+    def backend(self, body):
+        backend=self.root/'backend'
+        backend.write_text('#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\n'+body)
+        backend.chmod(0o755)
+        return backend
+
+    def launch(self, backend):
+        return subprocess.Popen([sys.executable,str(harness.REPO/'debug/nex_dap.py'),'--backend',str(backend)],
+                                stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    def test_backend_eof_joins_client_reader_while_client_stdin_remains_open(self):
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\n')
+        for attempt in range(5):
+            process=self.launch(backend)
+            try:
+                self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+                process.wait(timeout=10)
+                self.assertFalse(process.stdin.closed)
+                error=process.stderr.read()
+                self.assertEqual(process.returncode,0,error)
+                self.assertNotIn(b'Fatal Python',error)
+            finally:
+                if process.poll() is None:process.kill();process.wait(timeout=5)
+                process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_signal_interrupts_partial_headers_and_bodies_and_joins_readers(self):
+        marker=self.root/'disconnect.json'
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\nwhile True:\n r=read_packet(sys.stdin.buffer)\n if r is None:break\n if r.get("command")=="disconnect":\n  Path('+repr(str(marker))+').write_text(json.dumps(r));break\n')
+        for incoming in [b'Content-Length: 100',b'Content-Length: 100\r\n\r\n{']:
+            for signum in [signal.SIGTERM,signal.SIGINT]:
+                with self.subTest(packet=incoming,signum=signum):
+                    process=self.launch(backend)
+                    try:
+                        self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+                        process.stdin.write(incoming);process.stdin.flush()
+                        process.send_signal(signum);process.wait(timeout=10)
+                        self.assertEqual(process.returncode,0,process.stderr.read())
+                        self.assertTrue(json.loads(marker.read_text())['arguments']['terminateDebuggee'])
+                    finally:
+                        if process.poll() is None:process.kill();process.wait(timeout=5)
+                        process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_bad_packet_exits_without_aborting_with_client_pipe_still_open(self):
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\nwhile True:\n r=read_packet(sys.stdin.buffer)\n if r is None or r.get("command")=="disconnect":break\n')
+        process=self.launch(backend)
+        try:
+            self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+            process.stdin.write(b'Content-Length: 0\r\nContent-Length: 0\r\n\r\n');process.stdin.flush()
+            process.wait(timeout=10);self.assertEqual(process.returncode,1)
+            error=process.stderr.read();self.assertIn(b'duplicate DAP content length',error);self.assertNotIn(b'Fatal Python',error)
+        finally:
+            if process.poll() is None:process.kill();process.wait(timeout=5)
+            process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_installed_sdk_client_rejects_adapter_failure_on_shutdown(self):
+        spec=importlib.util.spec_from_file_location('nex_sdk_acceptance',harness.REPO/'tools/sdk_acceptance.py')
+        sdk=importlib.util.module_from_spec(spec);spec.loader.exec_module(sdk)
+        client=sdk.DAP([sys.executable,'-c','raise SystemExit(70)'],self.root,os.environ.copy())
+        client.process.wait(timeout=10)
+        with self.assertRaisesRegex(RuntimeError,'exit 70'):client.close()
+        self.assertFalse(client.reader.is_alive())
+        from debugging import DAP as TestDAP
+        client=TestDAP([sys.executable,'-c','raise SystemExit(70)'],self.root)
+        client.process.wait(timeout=10)
+        with self.assertRaisesRegex(RuntimeError,'exit 70'):client.close()
+        self.assertFalse(client.reader.is_alive())
 
     def test_native_pages_bound_work_keep_requested_offsets_and_expire_on_resume(self):
         bridge=self.bridge()
