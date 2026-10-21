@@ -281,6 +281,81 @@ struct ParallelAccess {
 Value parallelValues(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
   return ParallelAccess::run(items,environment,workers,callback,location);
 }
+namespace {
+struct CompiledParallelResult {Value value;bool assigned=false;};
+thread_local CompiledParallelResult *activeParallelResult=nullptr;
+struct CompiledParallelCall {
+  const size_t baseline=functionOwners.depth;
+  CompiledParallelResult *previous=activeParallelResult;
+  explicit CompiledParallelCall(CompiledParallelResult &result){
+    functionOwners.enter();activeParallelResult=&result;
+  }
+  CompiledParallelCall(const CompiledParallelCall&)=delete;
+  CompiledParallelCall &operator=(const CompiledParallelCall&)=delete;
+  ~CompiledParallelCall(){activeParallelResult=previous;functionOwners.unwind(baseline);}
+};
+bool parallelKindValid(ParallelValueKind kind){
+  return kind==ParallelValueKind::I64||kind==ParallelValueKind::Bool||
+    kind==ParallelValueKind::F64||kind==ParallelValueKind::Heap;
+}
+void parallelKindCheck(const Value &value,ParallelValueKind kind){
+  bool valid=kind==ParallelValueKind::Heap?value.tag==Value::Object:
+    kind==ParallelValueKind::F64?value.tag==Value::Floating:
+    kind==ParallelValueKind::Bool?value.tag==Value::Boolean:value.tag==Value::Integer;
+  if(!valid)throw DataError("E_PARALLEL_VALUE","compiled worker value differs from its checked ABI kind");
+  if(value.tag==Value::Boolean&&(value.scalar<0||value.scalar>1))
+    throw DataError("E_PARALLEL_VALUE","compiled worker boolean is not canonical");
+  if(value.tag==Value::Floating)(void)value.floating();
+}
+void assignParallelResult(void *destination,Value value){
+  // Check thread/nesting identity before dereferencing the opaque destination.
+  if(!destination||destination!=activeParallelResult)
+    throw DataError("E_CONTEXT","compiled worker result is outside its callback");
+  if(activeParallelResult->assigned)
+    throw DataError("E_PARALLEL_RESULT","compiled worker returned more than one value");
+  activeParallelResult->value=std::move(value);activeParallelResult->assigned=true;
+}
+Value compiledParallelInvoke(const Value &item,const Value &context){
+  auto bridge=reinterpret_cast<CompiledParallelBridge>(context.object->code);
+  CompiledParallelResult result;
+  {
+    CompiledParallelCall call(result);
+    auto *environment=makeHandle(context.object->values[0]);
+    auto *heap=item.tag==Value::Object?makeHandle(item):nullptr;
+    bridge(environment,item.tag==Value::Object?0:item.scalar,heap,&result);
+    if(!result.assigned)throw DataError("E_PARALLEL_RESULT","compiled worker returned no value");
+    parallelKindCheck(result.value,ParallelValueKind(context.object->values[1].scalar));
+    // Result Value retains the immutable payload before job-local handles and
+    // every unfinished nested ownership frame are released on this scope exit.
+  }
+  return std::move(result.value);
+}
+}
+Value parallelCompiledValues(const Value &items,const Value &environment,int64_t workers,
+    CompiledParallelBridge bridge,ParallelValueKind input,ParallelValueKind output,SourceLocation location){
+  return hostOperation(location,[&]{
+    if(!currentRequest)throw DataError("E_CONTEXT","compiled workers require an active request scope");
+    if(!bridge||!parallelKindValid(input)||!parallelKindValid(output))
+      throw DataError("E_CONTEXT","invalid compiled worker bridge or ABI kind");
+    if(workers<1||workers>parallelMaximumWorkers)
+      throw DataError("E_RANGE","parallel worker count must be in 1..16");
+    if(environment.tag!=Value::Object||!environment.object||
+       environment.object->kind!=Data::Closure||!environment.object->code)
+      throw DataError("E_FUNCTION","compiled worker requires a callable environment");
+    if(items.tag!=Value::Object||!items.object||items.object->kind!=Data::List)
+      throw DataError("E_TYPE","compiled worker input must be a list");
+    if(items.object->values.size()>parallelMaximumItems)
+      throw DataError("E_LIMIT","parallel input exceeds 65536 items");
+    for(size_t i=0;i<items.object->values.size();++i){
+      parallelKindCheck(items.object->values[i],input);
+      if((i%64)==0)pollHostOperation(location);
+    }
+    auto context=std::make_shared<Data>(Data::Closure);
+    context->code=reinterpret_cast<void*>(bridge);
+    context->values={environment,Value(int64_t(output))};
+    return parallelValues(items,Value(std::move(context)),workers,compiledParallelInvoke,location);
+  });
+}
 #endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
@@ -363,6 +438,21 @@ Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
 }
 }
 extern "C" {
+#ifdef NEX_STRUCTURED_WORKERS
+static void impl_nex_parallel_return_i64(void *destination,int64_t value,int64_t tag,nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{nexrt::assignParallelResult(destination,nexrt::Value::taggedScalar(value,tag));});
+}
+void nex_parallel_return_i64(void *destination,int64_t value,int64_t tag){impl_nex_parallel_return_i64(destination,value,tag,{});}
+void nex_parallel_return_i64_at(void *destination,int64_t value,int64_t tag,const nexrt::NativeSite *site){impl_nex_parallel_return_i64(destination,value,tag,{0,site});}
+static void impl_nex_parallel_return_heap(void *destination,Handle *value,nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{
+    if(!value)throw nexrt::DataError("E_PARALLEL_RESULT","compiled worker returned a null heap handle");
+    nexrt::assignParallelResult(destination,nexrt::readHandle(value));
+  });
+}
+void nex_parallel_return_heap(void *destination,Handle *value){impl_nex_parallel_return_heap(destination,value,{});}
+void nex_parallel_return_heap_at(void *destination,Handle *value,const nexrt::NativeSite *site){impl_nex_parallel_return_heap(destination,value,{0,site});}
+#endif
 static int64_t impl_nex_owned_enter(nexrt::SourceLocation location){
   return nexrt::hostOperation(location,[&]{return nexrt::functionOwners.enter();});
 }

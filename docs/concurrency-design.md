@@ -1,6 +1,6 @@
 # Structured CPU worker development
 
-Source concurrency is **pending**. Language0.16 has no `parallel_map`, `spawn`,
+Source concurrency is **pending**. Language0.17 has no `parallel_map`, `spawn`,
 channel, async/await, GPU or NPU intrinsic. Ordinary native applications and the
 TypeScript/reference backends retain their existing source semantics. HTTP host
 worker concurrency is an independent implemented server configuration.
@@ -10,6 +10,26 @@ language operation. `runtime/nex_parallel.h` is a compiler-private trusted-host
 interface, compiled only with `NEX_STRUCTURED_WORKERS`; ordinary emitted runtimes
 do not enable it. It is not a stable FFI or an installed source capability.
 The checker, reference interpreter and TypeScript backend accept no new builtin.
+
+Toolchain0.91 adds a compiler-private compiled-call boundary to this substrate.
+`parallelCompiledValues` accepts a closure environment and a trusted pure bridge,
+checks scalar/heap ABI kinds, and creates environment/input handles inside each
+job. Scalar arguments travel as bits; a heap argument uses one local handle.
+The result helpers retain one immutable value without allocating an argument or
+result list/record. They reject missing/duplicate returns and a destination from
+another thread or nested call. Per-call ownership frames clean temporaries and
+unfinished nested frames before handoff, including on exceptions. Returned heap
+aliases and closure captures survive through retained values. No caller-owned
+handle is handed to a worker. File-bearing graphs remain prohibited.
+
+This boundary requires an existing request and does not grant new capabilities,
+refresh a budget/deadline or define a source-language operation. It is compiled
+only with `NEX_STRUCTURED_WORKERS`. Native source lowering, checked capture rules,
+interpreter/TypeScript semantics and explicit source migration remain pending.
+The additional `compiled_workers_native` test builds a code-only archive from
+actual NEX functions, then calls its i64/f64/bool/heap/closure targets through the
+private bridge. Its host exercises the ABI, not replacement function bodies.
+This is separate from SDK or source-concurrency acceptance.
 
 ## Internal contract
 
@@ -68,7 +88,7 @@ Before a source operation can be supported, implement and review all of:
 - A bounded native callback ABI, generated ownership transfers, request and
   application integration, nested work and cleanup on every checked native exit.
 - An explicit language-version and history-preserving migration path if source
-  semantics or reserved intrinsic names change; retain the language0.16 SDK.
+  semantics or reserved intrinsic names change; retain matching historical SDKs, including language0.16 and0.17.
 - Specification/grammar, capability discovery, provider-independent prompt,
   language-pack examples, SDK/platform execution and profiling/debugger evidence.
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.90.0 LANGUAGES C CXX)
+project(NEX VERSION 0.91.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -202,6 +202,9 @@ target_compile_options(nex_structured_workers_probe PRIVATE -Wall -Wextra -Wpeda
 target_link_libraries(nex_structured_workers_probe PRIVATE Threads::Threads)
 add_test(NAME structured_workers_runtime COMMAND nex_structured_workers_probe)
 set_tests_properties(structured_workers_runtime PROPERTIES TIMEOUT 30)
+add_test(NAME compiled_workers_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/compiled_workers.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
+set_tests_properties(compiled_workers_native PROPERTIES TIMEOUT 300)
 if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_executable(nex_task_process_probe tests/task_process.cpp src/task_process.cpp)
   target_link_libraries(nex_task_process_probe PRIVATE nex_frontend Threads::Threads)

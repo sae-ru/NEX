@@ -12,6 +12,8 @@
 #include <thread>
 
 extern "C" nexrt::Handle *nex_string_new(const char*,int64_t,int64_t);
+extern "C" nexrt::Handle *nex_collection_get_heap(nexrt::Handle*,int64_t,int64_t);
+extern "C" void *nex_closure_code(nexrt::Handle*);
 namespace {
 using nexrt::Value;using nexrt::Data;
 std::mutex allocationsMutex,threadsMutex;
@@ -85,6 +87,63 @@ std::atomic<unsigned> cleanups{0};
 void cleanup()noexcept{++cleanups;}
 Value registeredCleanup(const Value &item,const Value &){
   Running active;++calls;nexrt::registerRuntimeCleanup(cleanup);return item;
+}
+using K=nexrt::ParallelValueKind;
+Value callable(void *code,std::vector<Value> captures={}){
+  auto data=std::make_shared<Data>(Data::Closure);data->code=code;data->values=std::move(captures);return Value(std::move(data));
+}
+nexrt::Handle *capturedTarget(nexrt::Handle *environment,int64_t input){
+  Running active;++calls;rendezvous->arrive_and_wait();
+  auto *prefix=nex_collection_get_heap(environment,0,31);
+  (void)nex_string_new("unnamed temporary",17,31);
+  auto text=nexrt::readHandle(prefix).object->text+std::to_string(input);
+  return nex_string_new(text.data(),int64_t(text.size()),31);
+}
+void capturedBridge(nexrt::Handle *environment,int64_t input,nexrt::Handle *heap,void *result){
+  require(heap==nullptr,"scalar argument unexpectedly allocated a heap handle");
+  auto target=reinterpret_cast<nexrt::Handle*(*)(nexrt::Handle*,int64_t)>(nex_closure_code(environment));
+  nex_parallel_return_heap(result,target(environment,input));
+}
+void floatBridge(nexrt::Handle *,int64_t input,nexrt::Handle *heap,void *result){
+  ++calls;require(!heap,"float argument unexpectedly allocated a heap handle");
+  nex_parallel_return_i64(result,nexrt::floatBits(nexrt::floatValue(input)+0.5),2);
+}
+void boolBridge(nexrt::Handle *,int64_t input,nexrt::Handle *heap,void *result){
+  ++calls;require(!heap,"boolean argument unexpectedly allocated a heap handle");nex_parallel_return_i64(result,!input,1);
+}
+void heapAliasBridge(nexrt::Handle *,int64_t input,nexrt::Handle *heap,void *result){
+  ++calls;require(input==0&&heap,"heap argument crossed as scalar bits");nex_parallel_return_heap(result,heap);
+}
+void scalarBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){++calls;nex_parallel_return_i64(result,input+1,0);}
+void nestedCompiledBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){
+  ++calls;auto closure=callable(reinterpret_cast<void*>(scalarBridge));
+  auto nested=nexrt::parallelCompiledValues(integers(3),closure,16,scalarBridge,K::I64,K::I64);
+  require(nested.object->values[2].scalar==3,"nested compiled result changed");
+  nex_parallel_return_i64(result,input+int64_t(nested.object->values.size()),0);
+}
+void missingBridge(nexrt::Handle *,int64_t,nexrt::Handle *,void *){++calls;}
+void duplicateBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){
+  ++calls;nex_parallel_return_i64(result,input,0);nex_parallel_return_i64(result,input+1,0);
+}
+void unfinishedOwnerBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){
+  ++calls;(void)nex_owned_enter();(void)nex_string_new("nested temporary",16,32);
+  if(input==0)throw nexrt::Trap("E_COMPILED","compiled callback failed",32);
+  nex_parallel_return_i64(result,input,0);
+}
+void heapFaultBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){
+  ++calls;(void)nex_string_new("before fault",12,33);if(input==1)failHandleAllocation=true;
+  auto *value=nex_string_new("after fault",11,33);nex_parallel_return_heap(result,value);
+}
+void forbiddenResultBridge(nexrt::Handle *,int64_t,nexrt::Handle *,void *result){
+  ++calls;auto *value=nexrt::makeHandle(Value(nexrt::diagnosticFile(17)));nex_parallel_return_heap(result,value);
+}
+std::atomic<void*> compiledDestination{nullptr};
+std::atomic<bool> foreignDestinationRejected{false};
+void foreignDestinationBridge(nexrt::Handle *,int64_t input,nexrt::Handle *,void *result){
+  ++calls;if(input==0)compiledDestination=result;rendezvous->arrive_and_wait();
+  if(input==1){try{nex_parallel_return_i64(compiledDestination.load(),41,0);}
+    catch(const nexrt::Trap &error){foreignDestinationRejected=error.code=="E_CONTEXT";}}
+  rendezvous->arrive_and_wait();nex_parallel_return_i64(result,input,0);
 }
 }
 // Fail each coordinator allocation in turn, including native thread creation's
@@ -243,6 +302,65 @@ int main(){
       clean();
     }
     require(failed>=8&&completed>0,"allocation sweep did not cover failure and success");
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;std::barrier barrier(4);rendezvous=&barrier;
+    auto environment=callable(reinterpret_cast<void*>(capturedTarget),{Value(nexrt::string("Я🧠:"))});
+    auto *parent=nex_string_new("parent",6,30);
+    auto output=nexrt::parallelCompiledValues(integers(16),environment,4,capturedBridge,K::I64,K::Heap);
+    require(calls==16&&threads.size()==4&&maximumRunning==4,"compiled bridge did not execute on four overlapping workers");
+    for(size_t i=0;i<16;++i)require(output.object->values[i].object->text=="Я🧠:"+std::to_string(i),"compiled result retained freed storage or changed order");
+    require(nexrt::readHandle(parent).object->text=="parent","compiled worker cleanup revoked coordinator handles");
+    nex_release(parent);scope.poll();
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto environment=callable(reinterpret_cast<void*>(floatBridge));
+    auto output=nexrt::parallelCompiledValues(list({Value::floating(-1.25),Value::floating(0.0)}),environment,2,floatBridge,K::F64,K::F64);
+    require(output.object->values[0].floating()==-0.75&&output.object->values[1].floating()==0.5,"f64 bridge confused raw bits with i64");
+    auto booleans=nexrt::parallelCompiledValues(list({Value(0,true),Value(1,true)}),environment,2,boolBridge,K::Bool,K::Bool);
+    require(booleans.object->values[0].tag==Value::Boolean&&booleans.object->values[0].scalar==1&&booleans.object->values[1].scalar==0,"boolean bridge changed tags or values");
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto original=nexrt::string("borrowed Я🧠");auto environment=callable(reinterpret_cast<void*>(heapAliasBridge));
+    auto output=nexrt::parallelCompiledValues(list({Value(original),Value(original)}),environment,2,heapAliasBridge,K::Heap,K::Heap);
+    require(output.object->values[0].object==original&&output.object->values[1].object==original,"returning a borrowed input lost immutable identity");
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto environment=callable(reinterpret_cast<void*>(nestedCompiledBridge));
+    auto output=nexrt::parallelCompiledValues(integers(4),environment,2,nestedCompiledBridge,K::I64,K::I64);
+    require(calls==16&&output.object->values[3].scalar==6,"nested compiled result destination or ownership scope leaked");
+    expect("E_CONTEXT",[&]{nex_parallel_return_i64(reinterpret_cast<void*>(1),1,0);});
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto environment=callable(reinterpret_cast<void*>(scalarBridge));
+    expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelCompiledValues(list({Value(0,true)}),environment,2,scalarBridge,K::I64,K::I64);});
+    expect("E_CONTEXT",[&]{(void)nexrt::parallelCompiledValues(integers(1),environment,2,nullptr,K::I64,K::I64);});
+    expect("E_CONTEXT",[&]{(void)nexrt::parallelCompiledValues(integers(1),environment,2,scalarBridge,K(9),K::I64);});
+    expect("E_FUNCTION",[&]{(void)nexrt::parallelCompiledValues(integers(1),Value(0),2,scalarBridge,K::I64,K::I64);});
+    auto invalid=callable(reinterpret_cast<void*>(scalarBridge),{Value(nexrt::diagnosticFile(8))});
+    expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelCompiledValues(integers(1),invalid,2,scalarBridge,K::I64,K::I64);});
+    require(calls==0,"invalid compiled ABI/capture reached a callback");
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto environment=callable(reinterpret_cast<void*>(scalarBridge));
+    expect("E_PARALLEL_RESULT",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,missingBridge,K::I64,K::I64);});
+    expect("E_PARALLEL_RESULT",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,duplicateBridge,K::I64,K::I64);});
+    expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,scalarBridge,K::I64,K::Heap);});
+    auto valid=nexrt::parallelCompiledValues(integers(4),environment,2,scalarBridge,K::I64,K::I64);
+    require(valid.object->values[3].scalar==4,"failed compiled result poisoned later calls");
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;auto environment=callable(reinterpret_cast<void*>(unfinishedOwnerBridge));
+    expect("E_COMPILED",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,unfinishedOwnerBridge,K::I64,K::I64);});
+    expect("E_MEMORY",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,heapFaultBridge,K::I64,K::Heap);});
+    expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelCompiledValues(integers(4),environment,2,forbiddenResultBridge,K::I64,K::Heap);});
+    scope.poll();
+  }clean();++cases;
+  {
+    nexrt::RequestScope scope;std::barrier barrier(2);rendezvous=&barrier;
+    auto environment=callable(reinterpret_cast<void*>(foreignDestinationBridge));
+    auto output=nexrt::parallelCompiledValues(integers(2),environment,2,foreignDestinationBridge,K::I64,K::I64);
+    require(foreignDestinationRejected&&output.object->values[0].scalar==0&&output.object->values[1].scalar==1,"foreign-thread result destination was accepted or corrupted");
   }clean();++cases;
   require(poolAllocations[0]>0&&poolAllocations[1]>0,"ownership instrumentation did not observe both pools");
   require(poolAllocations[0]==poolFrees[0]&&poolAllocations[1]==poolFrees[1],"managed allocations were not balanced");

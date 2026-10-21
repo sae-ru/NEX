@@ -1,3 +1,13 @@
+# Development 0.91 / language 0.17 — compiled worker boundary
+
+The compiler-private CPU bridge creates job-local handles, passes scalar bits,
+checks result ABI kinds, retains heap/callable outputs and unwinds owned frames
+on all exits. It is enabled only by NEX_STRUCTURED_WORKERS. Ordinary emitted
+runtimes and the frontend/reference/TypeScript source capabilities are unchanged;
+source concurrency is pending. Actual NEX closure bodies are built into a
+code-only archive for the new native integration test. Full final acceptance of
+this source remains pending. Previous 0.90 platform gates retain their own scope.
+
 # Isolated candidate 0.90 / language 0.17 — validation pending
 
 The 0.89 full95 regression failed the same four groups on macOS and Linux:
