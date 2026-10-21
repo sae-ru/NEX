@@ -1,257 +1,34 @@
-Development toolchain0.89/language0.17 fixes a confirmed Python3.9 DAP adapter
-shutdown abort: wake and join both input readers before destroying stdio; SDK
-acceptance rejects abnormal adapter exits. Nine transport tests pass on the same
-Python3.9 interpreter. New full/installed/platform validation remains pending.
-The approved primary remains0.81/language0.16; earlier notes below are historical
-cohorts. Source result propagation is carried forward from the saved0.88 draft.
-
-Development toolchain0.88/language0.17 adds a **candidate** postfix result
-propagation operator `?`. Parsing, checking and all three execution backends are
-implemented in this isolated source; complete migration/platform/SDK/editor gates
-remain pending. See [the contract](docs/error-propagation.md). Earlier cohort
-notes below refer to their original versions. General source try/catch/throw,
-source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
-or complete LLM-token saving is claimed.
-
-# Mutable0.88 core error-propagation work
-
-- [x] Prototype native function-owned temporaries on normal/error returns, nested
-  requests, allocation faults, actual file resources and worker/thread exits.
-- [ ] Complete full regression and platform validation of the exact runtime.
-- [ ] Implement postfix result propagation across parser/checker/interpreter,
-  native MLIR and TypeScript, including unnamed temporary cleanup and source maps.
-- [ ] Add explicit language0.17 migration from actual0.16 archives and preserve
-  historical sources, graph IDs, reviewed acceptance intent and matching SDKs.
-- [ ] Coordinate language/grammar/discovery/pack/prompts/examples and rejected
-  programs; run full regression/SDK/platform/debug/profile checks before support.
-  This draft currently remains language0.16 and advertises no new source syntax.
-
-# Quality target and current0.87 scoped discovery
-
-- [x] Define [production-quality acceptance](docs/quality.md): correctness,
-  errors/cleanup, source concurrency, large projects, native performance and
-  complete LLM token cost compared with fixed C++/Python baselines.
-- [x] Add exact readonly capability index/field queries and a short routing
-  prompt; retain the full descriptor and language0.16 behavior.
-- [ ] Complete frozen full93, installed SDK, editor and platform acceptance.
-- [ ] Measure actual model/tokenizer usage and successful tasks across at least
-  three models; payload bytes alone are not a token-efficiency result.
-- [ ] Complete ergonomic error propagation/catch boundaries, safe source
-  concurrency and the remaining platform/accelerator/development-chain work.
-  No C++/Python maturity or universal performance parity is claimed.
-
-# Current0.86 structured native worker groundwork
-
-- [x] Implement shared request budgets/deadlines/cancellation and per-job owners
-  in an explicitly enabled compiler-private runtime prototype.
-- [x] Join workers on failures and preserve ordered results and diagnostics;
-  bound workers and prevent nested operating-system thread multiplication.
-- [ ] Complete sanitizer, platform, regression and installed-SDK acceptance.
-- [ ] Expose a checked source operation with type/effect/capture rules, backend
-  agreement, explicit language migration and actual debugger/profile coverage.
-  Source concurrency, async I/O and CPU/GPU/NPU language APIs remain pending.
-
-# Current0.85 server debugging
-
-- [x] Prepare host HTTP debug sessions from actual declared binary providers.
-- [x] Add explicit source/project server editor launch metadata and runtime args.
-- [x] Exercise real worker/provider watches, source deletion, deadline rollback
-  and original-source editor breakpoints in focused macOS prototype checks.
-- [x] Verify new argument limits and the frozen0.84 private FFI test-plan fix.
-- [x] Exercise actual installed extension0.7 project/server commands, original
-  source breakpoint/watch and HTTP response in two private prototype hosts.
-- [ ] Complete installed SDK, installed extension0.7, frozen full91 and Linux
-  live/server/source-free verification for a coherent backed-up source.
-- [ ] Continue task/editor debugging, source concurrency, general CPU/GPU/NPU
-  interfaces and remaining platform/device delivery; the full objective is open.
-
-# Current0.84 project foreign packages
-
-- [x] Implement exact project-wide source projection and per-app foreign grants.
-- [x] Preserve actual archive/shared providers and executable-relative defaults.
-- [x] Guard source aliases, metadata, catalogues and trusted helpers during build.
-- [x] Add pinned package tasks and exact-member captured provenance projection.
-- [ ] Finish focused task/deployment/ownership/negative checks and coherent
-  full90, installed SDK and source-free Linux acceptance for a frozen backup.
-- [ ] Continue server/task-editor debugging, source concurrency, general CPU/GPU/
-  NPU interfaces and the remaining platform delivery. Full objective stays open.
-
-# Current0.83 workload tasks
-
-- [x] Pin/capture HTTP workload inputs and current trusted runner for project profiles.
-- [x] Isolate synthetic credentials/database per check and repeat after source deletion.
-- [x] Validate hardware-bound request budgets with overflow-safe integer comparisons.
-- [x] Verify task cancellation, explicit FFI grants, fork cleanup, bad responses
-  and captured-input tampering; broad and exact-limit regressions remain required.
-- [ ] Complete coherent frozen89/installed SDK/Linux validation before integration.
-- [ ] Continue server/editor debugging, source concurrency, general accelerators,
-  source-foreign packages and remaining platform delivery; the objective is open.
-
-# Current portable0.82 fixture verification
-
-- [x] Verify POSIX200809L/nanosleep heartbeat fixture on macOS and Linux ARM64.
-- [ ] Freeze/back up this revision and repeat complete88/SDK/platform gates.
-- [ ] Keep failed first0.82 Linux evidence and verified primary0.81 separately.
-
-# Current isolated0.82 workload verification
-
-- [x] Implement strict readonly workload planning and actual final-server profiles.
-- [x] Check response expectations, provider identities, managed pools, timeout,
-  SIGINT, forked descendants, sealed FFI snapshots and pre-existing graph rows.
-- [ ] Complete frozen full88, installed SDK24 and Linux checks, preserving errors.
-- [ ] Add workload task capture/replay and remaining server/editor capabilities.
-- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
-  project packaging and remaining platform delivery; the full objective is open.
-
-# Current verified checkpoint and next work
-
-- [x] Integrate explicitly approved0.81 and verify primary full87, SDK24/375,
-  actual installed extension0.6 and strict0.77/0.81 compatibility.
-- [x] Preserve original47 graph revisions/all16tables/schema/IDs, Git HEAD/index,
-  frozen source backup and recoverable0.77 source/compiler.
-- [ ] Complete isolated bounded native server workload profile command, schemas,
-  SDK acceptance and cancellation/temporary-file cleanup; validate before integration.
-- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
-  project packaging, remaining task/editor commands and broader platform delivery.
-
-[Recorded0.81 evidence](docs/evidence/toolchain-0.81.0.json) supersedes the earlier
-pending integration steps below. This plan is not an implemented-feature list.
-
-# Current0.81 project editor debugging
-
-- Validate explicit project launch configuration and component/configuration UI.
-- Preserve actual binary edges, selected entry identity, original source aliases,
-  dirty-buffer/trust gates and fresh adapter commands.
-- Verify actual installed VSIX source/provider breakpoints, watches and completion.
-- Verify owned reference error strings and corrected notice fixture on Linux/SDK.
-- Run full87/installed SDK/Linux checks for the exact final frozen source.
-- Keep primary source/compiler promotion separate until explicitly approved.
-- Continue server workloads, task/editor commands, concurrency, accelerators and
-  remaining language/development-chain delivery.
-
-# Current0.80 replay isolation
-
-- Validate private preflight/output graph state and preserved local IDs.
-- Keep enclosing/source/input graphs untouched and support readonly receipts.
-- Verify source/project/package replay, exact8192-file inventory and SDK boundary.
-- Run full87/installed SDK/Linux on one frozen source cohort.
-- Primary integration requires the explicit approval requested by automatic
-  approval review; do not retry that rejected automatic promotion indirectly.
-- Continue server workloads, task/editor tooling, concurrency, accelerators and
-  remaining language/development delivery after the corrected gates.
-
-# Current0.79 project package tasks
-
-- Complete and verify native/server/web package acceptance checks with captured
-  resources, source-free replay, current provenance and confined package aliases.
-- Preserve build-only semantics: package success does not establish app execution.
-- Complete frozen0.78 full/SDK/Linux checks before root integration.
-- Continue server workloads, task/editor tooling, source concurrency, general
-  accelerators and the remaining language/development chain.
-
-# Current0.78 development chain
-
-- Complete and validate architecture-preserving task check/run/replay with
-  reviewed test/context hashes and current operator catalogues.
-- Verify direct native run/test/profile supervision, forced termination and
-  descendant/private-snapshot cleanup; preserve original failing evidence.
-- Integrate only after full regression, installed SDK and platform checks.
-- Continue package task checks, server workloads, editor/Studio integration,
-  source concurrency, general accelerators and remaining platform delivery.
-- Preserve language history, semantic invariants and prior SDKs/source recoveries.
-
-# Current0.73 implementation work
-
-- Integrate verified PIC object staging into final dynamic project linking.
-- Complete0.73 application failure cleanup and shared-profiler identity gates,
-  preserving normal outputs, process codes, diagnostics, grants and no added
-  request budget. Keep old SDKs/source/history and original failed reports.
-- Then finish shared-image provenance, debugger/core/packaging and selected
-  project execution flows; concurrency/accelerator/platform work remains open.
-
-# Checkpoint0.72: consumed native archives and reproducible tools
-
-- [x] Consume checked static archives, explicit export closures and transitive binary dependencies with one final runtime.
-- [x] Preserve module origins across entry/import/package aliases, source-deleted watches and moved core capsules.
-- [x] Handle old-glibc child cwd, SQLite timestamp defaults, private GNU runtime provenance and executable-tool aliases.
-- [x] Pass actual root full80/SDK24/348/213, current Linux80/17live/source-free SDK, installed IDE,6cross configurations/15artifacts/3iOS links/x64 Wine,3browser static-model API and genuine071/072 compatibility.
-- [x] Preserve all47 revisions/all16 tables/schema/IDs and normal Git HEAD/index; keep old SDKs and original failures.
-- [ ] Integrate general shared-library output/consumption, one shared runtime, dynamic debug/core/profile/package bindings and explicit binary dependency reports.
-- [ ] Complete project task/replay/editor and server workloads above0.76 package and0.77 application run/debug/test/profile candidates; validate exact installed SDKs.
-- [ ] Implement source concurrency and general CPU/GPU/NPU interfaces; keep research and fixed hardware FFI tests separate.
-- [ ] Continue native platform delivery, IDE completion/rename, Studio and all remaining full-language/development-chain work.
-
-# Checkpoint0.71: checked project architecture
-
-- [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.
-- [x] Build executable/archive/server/web outputs using explicit source dependencies; keep binary linkage limits visible.
-- [x] Pass actual root full79 and installed SDK24/344/209; retain original macOS/Linux735 scopes and16 Linux live suites.
-- [x] Verify9 project cross artifacts,3 iOS final links, project x64 Wine and12 real-browser full-stack/restart cases.
-- [x] Preserve genuine0.70/0.71 wire/canonical/store compatibility, actual installed IDE,9 fresh root PE builds/17 Wine cases and47 revisions/all16 root tables/schema/Git.
-- [x] Implement actual archive consumption (delivered in0.72; absent in0.71).
-- [ ] Implement shared dependency consumption/output and explicit resolved dependency reports.
-- [ ] Implement source task scheduling and general CPU/GPU/NPU APIs; retain fixed CIX0.70 FFI evidence separately.
-- [ ] Continue broader platform delivery, IDE completion/rename and the remaining full development-chain requirements.
-
-# Verified0.70 identifier-description checkpoint
-
-- [x] Add explicit analysis/3 with exact word descriptions and null builtin targets.
-- [x] Keep source language0.16, canonical formats and strict analysis/1-/2 shapes.
-- [x] Finish scoped full regression, installed SDK and actual private IDE/platform gates.
-- [x] Integrate after checks while preserving Git and all47 graph revisions/all16 tables.
-- [ ] Continue completion/rename, recovery/indexing and the remaining development chain.
-
-# Current0.69 editor checkpoint
-
-- [x] Validate precise parser/binder type, trait, member and import reference projection.
-- [x] Run full regression, installed SDK and actual private IDE acceptance for this source.
-- [x] Promote only after gates, preserving normal Git and all47 graph revisions/all16 tables.
-- [ ] Keep untested platforms and the remaining full development-chain objective pending.
-
-# Текущее состояние: toolchain0.68 / язык0.16
-
-- [x] Добавить точные семантические ссылки для функций, значений/присваиваний,
-  полей структур и конструкторов/образцов; сохранить строгий analysis/1, а новый
-  индекс выдавать явно как analysis/2. Wildcard `_` не объявляет переменную.
-- [x] Подключить VS Code0.3: поиск ссылок, версии всех подключённых буферов,
-  немедленный запрос после правки импорта и защита от смены манифеста.
-- [x] Проверить собственный root full78/SDK23/332/197, настоящий установленный
-  VSIX и свежие9PE/17Wine. Отдельно сохранить candidate Mac/Linux и16live Linux
-  с явной границей между14 первоначальными и2 возобновлёнными проверками.
-- [x] Сохранить все47 ревизий, все16 таблиц/схему и обычный Git HEAD/index.
-- [ ] Дополнить ссылки в аннотациях типов, trait/impl и import-alias синтаксисе,
-  межпроектные буферы и закрытые недостижимые файлы с точными границами контекста.
-- [ ] Добавить completion/rename, восстановление после синтаксических ошибок
-  и инкрементальный индекс; продолжить оставшуюся работу над языком/runtime/
-  платформами ниже. Фактические области проверок — STATUS.md и
-  docs/evidence/toolchain-0.68.0.json.
-
-# Language contract status: 20 October 2026
-
-- The language 0.16 pack describes implemented graph patches/aliases, stopped
-  pure expressions, streaming files, source FFI and target restrictions.
-- Matching macOS/Linux installed SDKs pass 23 phases/329 commands/180 resources;
-  41 focused documented commands cover transactional rejection and genuine
-  history-preserving migration. Exact evidence is in
-  docs/evidence/language-contract-0.65.0.json.
-- Cross-provider coding evaluation, identity-preserving source rename and the
-  platform/development integrations below remain future work.
-
-# Toolchain0.65 Windows runtime progress
-
-- Unicode environment and explicit target SQLite are verified by real PE/archive
-  cross-builds, cache/source replay, root76/SDK23 and17 fresh x86-64 Wine cases.
-- Windows filesystem/resource calls remain unavailable until actual Windows/NTFS
-  validates reparse boundaries, protected ACLs, pinned roots/parents, opened-reader
-  replacement and cancellation cleanup. Wine failures remain recorded.
-- Windows-hosted development, HTTP/foreign/plugin adapters, packaging/distribution
-  and the broader language/development-chain objective remain pending.
-
 # План разработки NEX
 
-Обновлён: 20 октября 2026 года.
+Обновлён: 22 октября 2026 года.
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
+
+## Текущий шаг: toolchain 0.90 / язык 0.17
+
+- [x] Реализовать типизированный `?` во frontend, interpreter, native и TypeScript,
+  правила cleanup и явную миграцию из настоящих архивов 0.16.
+- [x] Проверить на прототипе полную копию основного графа: все 47 исторических
+  ревизий и строки всех 16 таблиц сохранены; четыре ревизии 0.16 явно мигрированы.
+- [x] Исправить подтверждённое падение Python DAP при завершении; проверять
+  нормальный exit адаптера в SDK и тестовых клиентах.
+- [x] Исправить повторный обход statement-match и актуализировать учебный patch.
+  Пять целевых групп 0.90 прошли; полный прогон 0.89 сохранил четыре отказа.
+- [x] Проверить frontend/interpreter/историю/контекст проекта из 100 модулей
+  и 10 000 функций. Нативная сборка такого проекта ещё не проверена.
+- [ ] Заморозить и сохранить точный 0.90; выполнить full95, installed SDK24,
+  Linux live/source-free, установленный редактор и повтор миграции через SDK.
+- [ ] Проверить cold/warm/edit нативную сборку крупного проекта и реальные
+  baseline C++/Python; измерить полную стоимость задач для нескольких LLM.
+- [ ] Подключить безопасную source concurrency ко всем backend'ам; завершить
+  необходимые границы обработки ошибок, общие CPU/GPU/NPU и платформы.
+- [ ] После готовности языка реализовать [конвертер C++/Python](docs/project-porting-design.md)
+  для явного подмножества с отчётом о неподдержанных конструкциях.
+
+Одобренный основной проект 0.81 / язык 0.16 сохранён отдельно. Его историческая
+приёмка не проверяла нормальный shutdown DAP и не закрывает найденный дефект.
+Нижележащие этапы — дорожная карта и исторические записи; актуальный набор
+возможностей нужно получать от фактического `nex describe`.
 
 ## 1. Цель проекта
 

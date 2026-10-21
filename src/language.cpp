@@ -121,7 +121,13 @@ bool propagatesResult(const Function &function){
   std::function<void(const std::vector<S>&)> block;
   expression=[&](E e){if(!e||found)return;if(e->kind==Expr::Propagate){found=true;return;}
     for(auto a:e->args)expression(a);for(auto arm:e->arms)block(arm->body);};
-  block=[&](const std::vector<S> &body){for(auto s:body){expression(s->expr);childBlocks(s,block);}};
+  block=[&](const std::vector<S> &body){for(auto s:body){
+    if(found)return;
+    expression(s->expr);
+    // A statement match aliases its arms through Expr::Match as well. The
+    // expression traversal already visited them; visiting both is exponential.
+    if(s->kind!=Stmt::Match)childBlocks(s,block);
+  }};
   block(function.body);return found;
 }
 std::string Program::location(const Span &span)const {

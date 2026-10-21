@@ -1,3 +1,16 @@
+# Isolated candidate 0.90 / language 0.17 — validation pending
+
+The 0.89 full95 regression failed the same four groups on macOS and Linux:
+exponential duplicate statement-match traversal; two fresh-fixture copies of an
+already-used example graph; and an example patch pinned to language 0.16.
+Version 0.90 fixes those causes without relaxing their assertions or timeouts.
+Five focused groups pass, including the 30-deep match/native/TypeScript case.
+Two unchanged test methods also pass with the actual used 0.89 example as input.
+Full95/SDK24, Linux live/source-free, installed editor and migration validation
+for this exact frozen source remain pending. Earlier receipts below keep their
+original source scopes. Primary 0.81 is preserved separately and retains the
+known DAP shutdown defect. This candidate is not an accepted release.
+
 Development toolchain0.89/language0.17 fixes a confirmed Python3.9 DAP adapter
 shutdown abort: wake and join both input readers before destroying stdio; SDK
 acceptance rejects abnormal adapter exits. Nine transport tests pass on the same

@@ -1,99 +1,62 @@
-Development toolchain0.89/language0.17 fixes a confirmed Python3.9 DAP adapter
-shutdown abort: wake and join both input readers before destroying stdio; SDK
-acceptance rejects abnormal adapter exits. Nine transport tests pass on the same
-Python3.9 interpreter. New full/installed/platform validation remains pending.
-The approved primary remains0.81/language0.16; earlier notes below are historical
-cohorts. Source result propagation is carried forward from the saved0.88 draft.
-
-Development toolchain0.88/language0.17 adds a **candidate** postfix result
-propagation operator `?`. Parsing, checking and all three execution backends are
-implemented in this isolated source; complete migration/platform/SDK/editor gates
-remain pending. See [the contract](docs/error-propagation.md). Earlier cohort
-notes below refer to their original versions. General source try/catch/throw,
-source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
-or complete LLM-token saving is claimed.
-
-Development source0.85/language0.16 adds candidate HTTP-server project/source
-debugging and extension0.7 launch support. It also corrects the deployment-only
-FFI annotation that made frozen0.84 reject its private test-entry plan. Focused
-and full platform/installed SDK evidence are separate; the approved primary
-checkout remains0.81. See STATUS.md and PLAN.md.
-
 # NEX
 
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
-**Главная идея:** минимальное количество токенов для передачи максимального количества точного смысла при максимальной производительности и безопасности исполняемой системы.
+**Главная идея:** минимальное количество токенов для передачи максимального
+количества точного смысла при максимальной производительности и безопасности
+исполняемой системы.
 
-**Критерии качества:** [крупные системы, производительность и стоимость LLM](docs/quality.md).
-Это проверяемые цели; текущая версия ещё не подтверждает зрелость C++/Python.
-Кандидат0.87 добавляет [краткое discovery](docs/discovery.md) и
-[bootstrap для моделей](llm/BOOTSTRAP.md); его полная приёмка остаётся отдельной.
+This isolated development source is **toolchain 0.90.0 / language 0.17**.
+Full platform, installed SDK and editor acceptance for this exact source remains
+pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
+Historical receipts in `STATUS.md` retain their original compiler/source scopes;
+they do not establish acceptance of this candidate.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
-первый проект, запуск и веб-сборка, что хранить в Git, резервная копия графа,
-работа через Hermes/Codex и общий AGENTS.md для LLM.
+первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.
+[Критерии качества](docs/quality.md) задают требования к крупным системам,
+производительности и совокупной стоимости LLM. Паритет с C++/Python и экономия
+токенов пока не доказаны. [Конвертер проектов C++/Python](docs/project-porting-design.md)
+описан как будущий инструмент; команды конвертации ещё нет.
 
 NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
+Use the [model-independent bootstrap](llm/BOOTSTRAP.md), the
+[language pack](llm/README.md), actual capability discovery and bounded context.
 
-This isolated source is **toolchain0.83.0 / language0.16**. It adds pinned
-[server workload acceptance tasks](docs/task-workloads.md), fresh synthetic local
-credentials/databases, captured source-free replay and hardware-bound request
-budgets. Readonly preflight, actual dynamic-provider measurement, readonly
-source-deleted replay and impossible budget rejection pass focused checks.
-Complete frozen89/installed SDK/Linux validation remains pending. The verified
-primary0.81 remains preserved separately; [its evidence](docs/evidence/toolchain-0.81.0.json)
-records that accepted checkpoint. Earlier0.82 platform/SDK observations retain
-their separate source cohorts and failures.
 The language includes checked numbers, Unicode strings, immutable data,
-matching, generics, traits, constructor parameters, function values and
-snapshot closures. Types, effects and realms are checked. Native output uses
-MLIR/LLVM; browser applications use TypeScript/React/Vite.
+matching, generics, traits, constructor parameters, function values and snapshot
+closures. Types, effects and realms are checked. Language 0.17 adds typed postfix
+[result propagation `?`](docs/error-propagation.md) in the checker, interpreter,
+native and TypeScript backends, with explicit history-preserving migration.
+Native output uses MLIR/LLVM; browser applications use TypeScript/React/Vite.
 
+The development chain includes the SQLite/BLAKE3 graph, transactional patches,
+locks, snapshots, task contracts, scalar Z3 checks, LLDB/DAP and CPU profiling.
 [Project builds](docs/project-build.md) describe components, direct dependencies,
-exports and configurations in `nex.build.json`. Readonly plans check the selected
-architecture. A `static` dependency consumes its actual separately built archive,
-with checked contracts and one final application runtime. Consumers can add
-explicitly reported generic instantiations. Source remains available to the
-checker. A static edge does not request a fully static executable; general
-Windows DLL output and resolved binary dependency reports remain pending.
-Toolchain0.74 accepts `shared_library`/`dynamic` for macOS/Linux builds,
-captures the linked images and supplies one shared runtime. Toolchain0.75 adds
-manual LLDB/core/capsule workflows for these images;0.76 adds `project --kind
-package` for binary edges and browser distributions. The verified0.77 also
-preserves these edges in project run/test/debug/profile. Toolchain0.78 adds
-[acceptance tasks and captured replay](docs/project-tasks.md) for the architecture.
+exports and configurations in `nex.build.json`. Source, static and dynamic edges
+have distinct checked behavior. macOS/Linux shared libraries use one application
+runtime; a static dependency consumes a separately built archive and does not
+request a fully static executable. Captured project run/test/debug/profile,
+[acceptance tasks](docs/project-tasks.md), [server workloads](docs/task-workloads.md)
+and source-deleted replay preserve the declared architecture.
 
-The historical integrated0.72 checkpoint passes **80 CTest groups** and installed SDK acceptance of
-**24 phases/348 commands/213 indexed resources**. Its0.72 implementation also
-passes Linux ARM64 full80,17 live suites and source-free/network-disabled SDK24.
-See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashes,
-source cohorts and retained failures. The source language remains0.16; no implicit
-graph migration occurs, and all47 root revisions/all16 tables/schema/IDs remain.
+This candidate carries forward HTTP-server project/source debugging and the
+editor 0.7 launch contract. It fixes a confirmed Python 3.9 DAP shutdown abort by
+waking and joining input readers before interpreter shutdown; SDK acceptance now
+rejects abnormal adapter exits. The preserved primary 0.81 still has that defect.
+Version 0.90 also fixes duplicate traversal of statement-match arms and isolates
+fresh test fixtures from local example caches. Focused checks are separate from
+complete acceptance.
 
-Six verified0.77 root-SDK configurations produce15 Intel/Windows/iOS artifacts and3 final iOS
-linked images. The x64 Windows archive application executes under isolated Wine.
-Cross-builds and Wine do not establish actual Windows/mobile device execution.
-A verified0.77 native-server/dynamic-model/browser-source project passes12 UI/API/restart
-cases in Chromium, Firefox and WebKit. The actual installed VSIX0.5 passes LSP,
-native debugger, watch and indexed-page checks in fresh private profiles.
-Genuine installed0.71/0.72 comparisons preserve strict analysis1/2/3 payloads
-apart from compiler identity and complete isolated store rows/schema/IDs.
-
-The development chain includes the SQLite/BLAKE3 graph, locks, transactional
-patches, snapshots, task contracts, scalar Z3 checks, LLDB/DAP and CPU profiling.
-Different LLMs use the same [language pack](llm/README.md) and bounded compiler
-context. Cross-provider coding/token measurements remain pending.
-
-Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compiler
-scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
-APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
-tests real NEX code in two DSOs, but is not a supported compiler build mode.
-Windows DLL integration, server debugging, dedicated task/editor debugging, source concurrency,
-general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
-remain open. This checkpoint does not complete the full objective.
+Platform coverage is bounded. Linux/macOS execution, Windows cross-build/Wine,
+iOS archives and mobile WebView generation have separate receipts and remaining
+delivery work. Cross-builds are not evidence of actual device execution.
+[CIX P1](docs/cix-p1.md) fixed trusted FFI experiments do not provide general
+GPU/NPU language APIs. Source concurrency, general accelerators, source
+try/catch/throw, broader native targets and cross-model cost measurements remain
+pending in [PLAN.md](PLAN.md). This checkpoint does not complete the objective.
 
 ## Build
 

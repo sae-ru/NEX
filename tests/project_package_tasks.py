@@ -7,7 +7,7 @@ import packaging as native_packaging
 class ProjectPackageTasks(harness.ToolchainCase):
     def setUp(self):
         super().setUp();self.base=self.root;self.root=self.base/'project % 🧠'
-        shutil.copytree(harness.REPO/'examples/project-tasks',self.root)
+        shutil.copytree(harness.REPO/'examples/project-tasks',self.root,ignore=shutil.ignore_patterns('.nex'))
         self.architecture=json.loads((self.root/'nex.build.json').read_text())
     def save_architecture(self):
         (self.root/'nex.build.json').write_text(json.dumps(self.architecture))
