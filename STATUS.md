@@ -1,3 +1,26 @@
+# Development cohort0.79 (not integrated)
+
+Project-backed tasks can request package checks under declared configurations.
+The task parent captures deployable native/server/web output without executing
+the application. Package helpers are current trusted resources; Python bytecode
+caches cannot mutate saved inputs. Relative file aliases are accepted only
+inside the saved package; ordinary task inputs still reject symlinks. Existing
+8192-file/256MiB artifact limits remain. Reviewed custom notice catalogues and project-confined license text can be
+captured and pinned through a readonly inspector. Source-foreign package
+projection and broader delivery remain pending.
+
+The first3 focused cases pass64.042seconds. A server case retains a
+missing-external-notices failure; the new pinned-notice implementation addresses
+that integration and passes the server/source-deleted-replay plus readonly,
+changed-license and escaping-path cases (2tests,53.095seconds). Frozen0.78 source
+ab95fbeed959a87f3688aa225554dd65c614c5ad (785files) is backed up and running
+macOS full86 in1296.35seconds; installed SDK checks are running and it is not
+integrated. Its first Linux run
+passes85/86groups; the new cancellation fixture fails to compile dprintf under
+strict Linux C headers. This source uses snprintf/write for that fixture; renewed
+Linux cancellation and full87/SDK checks remain pending. Actual0.77 remains
+verified separately. No full-objective completion is claimed.
+
 # Development cohort0.78 (not integrated)
 
 Optional project-backed nex.task/1 programs pin architecture and configuration,

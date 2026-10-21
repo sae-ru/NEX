@@ -259,7 +259,7 @@ class TaskForeign(harness.ToolchainCase):
 
     def project_process_fixture(self):
         original=fixture.C;shutil.rmtree(self.root/'bundle')
-        loop='''mark('C');pid_t child=fork();if(child==0){for(;;)pause();}const char *path=getenv("NEX_TASK_CHILDREN");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd>=0){dprintf(fd,"%ld %ld %ld\\n",(long)getpid(),(long)getpgrp(),(long)child);close(fd);}}for(;;)pause();'''
+        loop='''mark('C');pid_t child=fork();if(child==0){for(;;)pause();}const char *path=getenv("NEX_TASK_CHILDREN");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd>=0){char line[128];int count=snprintf(line,sizeof(line),"%ld %ld %ld\\n",(long)getpid(),(long)getpgrp(),(long)child);if(count>0&&count<(int)sizeof(line))write(fd,line,(size_t)count);close(fd);}}for(;;)pause();'''
         source='''module tasklib;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");pub server fn invoke()->i64!{ffi}{return echo(42);}'''
         try:
             fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>').replace("mark('C');",loop,1)

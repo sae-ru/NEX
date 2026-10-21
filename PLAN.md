@@ -1,3 +1,12 @@
+# Current0.79 project package tasks
+
+- Complete and verify native/server/web package acceptance checks with captured
+  resources, source-free replay, current provenance and confined package aliases.
+- Preserve build-only semantics: package success does not establish app execution.
+- Complete frozen0.78 full/SDK/Linux checks before root integration.
+- Continue server workloads, task/editor tooling, source concurrency, general
+  accelerators and the remaining language/development chain.
+
 # Current0.78 development chain
 
 - Complete and validate architecture-preserving task check/run/replay with

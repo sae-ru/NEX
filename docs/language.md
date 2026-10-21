@@ -1,3 +1,6 @@
+Toolchain0.79 package acceptance checks are external task/build metadata.
+They preserve language0.16, effects, realms, canonical identity and history.
+
 Toolchain0.78 project task captures/replay and test build actions are external
 development metadata. They change no source syntax, language0.16 canonical
 identities, effect/realm/ownership semantics or graph migration requirements.

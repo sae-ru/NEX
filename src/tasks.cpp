@@ -4,6 +4,7 @@
 #include "nex/native_toolchain.h"
 #include "nex/foreign_catalogue.h"
 #include "nex/project_capture.h"
+#include "nex/task_package.h"
 #include "nex/native_diagnostics.h"
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Host.h"
@@ -41,7 +42,7 @@ void atomic(const fs::path &path,const JSON &value){auto temporary=path;temporar
 void atomic(const fs::path &path,const Object &value){atomic(path,JSON(Object(value)));}
 bool ok(const JSON &v){auto o=v.getAsObject();return o&&o->getBoolean("ok").value_or(false);}
 struct Candidate {Program program;JSON bundle,graph;std::string revision,sourceHash;};
-struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts,projects;Object linkage;std::map<std::string,NativeToolchainSnapshot> toolchains;std::map<std::string,std::string> checkTools;std::optional<ForeignCatalogueSnapshot> foreign;std::set<std::string> foreignChecks;};
+struct Prepared {JSON task=nullptr;std::string taskHash,id;std::map<std::string,Candidate> programs;std::map<std::string,JSON> contracts,projects,packageNotices;Object linkage;std::map<std::string,NativeToolchainSnapshot> toolchains;std::map<std::string,std::string> checkTools;std::optional<ForeignCatalogueSnapshot> foreign;std::set<std::string> foreignChecks;};
 const Object &projectComponent(const JSON &capture,const std::string &configuration){
   const auto &c=object(capture);auto entries=c.getObject("expectations")->getArray(configuration);if(!entries)throw Error("E_TASK_PROJECT","unknown captured project configuration");
   for(const auto &v:*entries)if(object(v).getString("name")==c.getString("component"))return object(v);
@@ -57,6 +58,8 @@ bool supported(const Prepared &p,const Object &c){
   if(auto project=p.projects.find(text(c,"program"));project!=p.projects.end()){
     auto configuration=text(c,"configuration");const auto &component=projectComponent(project->second,configuration),&native=*object(project->second).getObject("toolchains")->getObject(configuration);
     auto componentKind=text(component,"kind");
+    if(kind=="package")return componentKind=="web"?target=="web":
+      (componentKind=="executable"||componentKind=="server")&&native.getBoolean("host_compatible").value_or(false)&&target==(componentKind=="server"?"server":"native");
     if(kind=="build")return componentKind=="web"?target=="web":componentKind=="server"?target=="server":componentKind!="source"&&(target=="native"||target==text(native,"target"));
     if(kind=="test"){
       for(const auto &value:array(c,"tests")){
@@ -93,13 +96,15 @@ void validateShape(const JSON &task){
   for(const auto &value:array(t,"checks")){
     const auto &c=object(value);auto kind=text(c,"kind");bool project=projectPrograms.contains(text(c,"program"));std::set<std::string> names={"id","kind","program","target","timeout_seconds"};
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
-    if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="api"){}else invalid("unknown check kind: "+kind);
+    if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="package"){if(!project)invalid("package checks require a declared project architecture");}else if(kind=="api"){}else invalid("unknown check kind: "+kind);
     if(project)add({"configuration"});
+    if(kind=="package")add({"notices","notices_hash"});
     if(project||kind=="build"||kind=="test"||kind=="run"||kind=="profile")add({"toolchain","toolchain_hash"});
     if(kind=="test"||kind=="run"||kind=="profile")add({"foreign_hash"});
     fields(c,names);if(!checks.insert(identifier(c,"id")).second)invalid("duplicate check");if(!programs.contains(text(c,"program")))invalid("unknown check program");text(c,"target");number(c,"timeout_seconds",60);
     if(bool(c.get("toolchain"))!=bool(c.get("toolchain_hash")))invalid("toolchain and toolchain_hash must be supplied together");
     if(project){identifier(c,"configuration");if(c.get("profile"))invalid("project checks select a configuration, without overriding its profile");}
+    if(kind=="package"){if(bool(c.get("notices"))!=bool(c.get("notices_hash")))invalid("package notices and notices_hash must be supplied together");if(c.get("notices")){pathName(text(c,"notices"));digest(c,"notices_hash");}}
     if(c.get("toolchain")){identifier(c,"toolchain");digest(c,"toolchain_hash");if(!project&&(text(c,"target")=="web"||(kind!="build"&&text(c,"target")!="native")))invalid("toolchain requires a native check target");}
     if(c.get("foreign_hash")){digest(c,"foreign_hash");if(text(c,"target")!="native")invalid("foreign_hash requires a native execution check");}
     if(kind=="test"){std::set<std::string> seen;for(const auto &v:array(c,"tests")){const auto &pin=object(v);fields(pin,{"symbol","content_hash"});if(!seen.insert(text(pin,"symbol")).second)invalid("duplicate test");digest(pin,"content_hash");}}
@@ -176,6 +181,12 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
   std::map<std::string,std::set<std::string>> covered,structures;std::map<std::string,const Object*> checks;
   for(const auto &value:array(t,"checks")){
     const auto &c=object(value);auto id=text(c,"id"),kind=text(c,"kind");checks[id]=&c;const auto &p=result.programs.at(text(c,"program")).program;std::set<std::string> roots;
+    if(kind=="package"&&c.get("notices")){
+      auto base=frozen/"inputs/package-notices"/id;
+      auto snapshot=frozen.empty()?captureTaskPackageNotices(inside(options.root,text(c,"notices")).string(),options.root):readJSON(base/"snapshot.json",16*1048576);
+      if(taskPackageNoticesHash(snapshot)!=digest(c,"notices_hash"))throw Error("E_TASK_NOTICES","reviewed package notice inputs changed: "+id);
+      if(!frozen.empty())verifyTaskPackageNotices(snapshot,base.string());result.packageNotices.emplace(id,std::move(snapshot));
+    }
     if(c.get("toolchain")){
       auto name=text(c,"toolchain");auto selected=options.toolchains.find(name);
       if(selected==options.toolchains.end())throw Error("E_TASK_TOOLCHAIN","missing trusted toolchain '"+name+"'; supply --toolchains CATALOG.json");
@@ -219,7 +230,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       result.contracts.emplace(id,std::move(contract));
     }else if(kind=="effects")for(const auto &name:strings(c,"symbols"))function(name);
     else if(kind=="api")for(const auto &e:p.endpoints)function(e.target);
-    else if(kind=="build"&&text(c,"target")=="web"&&optional(c,"mode","application")=="application"){
+    else if((kind=="package"||kind=="build")&&text(c,"target")=="web"&&optional(c,"mode","application")=="application"){
       for(const auto &f:p.functions)if(f.owner==p.module&&(f.localName=="initial"||f.localName=="update"||f.localName=="view"||f.localName=="title"||f.localName=="route"||f.localName=="commands"))function(f.name);
     }else{
       auto fallback=p.module+"::"+(text(c,"target")=="server"?"handle":"main");
@@ -290,13 +301,32 @@ std::map<std::string,std::string> resources(){
       if(!i->is_regular_file())continue;bytes+=i->file_size();if(bytes>64*1048576||files.size()>=4096)invalid("compiler resource snapshot limit exceeded");
       auto key=i->path().lexically_relative(root).generic_string();files.emplace(key,readFile(i->path().string()));
     }
+  }
+  for(const auto &name:{"tools/app_bundle.py","tools/sdk_bundle.py"}){
+    auto path=root/name;if(fs::is_symlink(path)||!fs::is_regular_file(path))throw Error("E_TASK_RESOURCE","missing trusted package resource");
+    auto data=readFile(path.string());bytes+=data.size();if(bytes>64*1048576||files.size()>=4096)invalid("compiler resource snapshot limit exceeded");files.emplace(name,std::move(data));
+  }
+  return files;
+}
+Object fileIndex(const fs::path &root,size_t maximumFiles=8192,const fs::path &linkRoot={}){
+  Object files;uint64_t bytes=0;
+  for(const auto &e:fs::recursive_directory_iterator(root)){
+    if(e.is_symlink()){
+      if(linkRoot.empty())throw Error("E_TASK_INTEGRITY","symlink in saved artifact");
+      auto target=fs::read_symlink(e.path()),resolved=fs::canonical(e.path()),relative=resolved.lexically_relative(fs::canonical(linkRoot));
+      if(target.is_absolute()||relative.is_absolute()||std::any_of(relative.begin(),relative.end(),[](const auto &part){return part=="..";})||!fs::is_regular_file(resolved))throw Error("E_TASK_INTEGRITY","package symlink escapes its saved package");
+      auto value=target.generic_string();bytes+=value.size();if(bytes>256*1048576||files.size()>=maximumFiles)invalid("artifact size/count limit exceeded");
+      files[e.path().lexically_relative(root).generic_string()]=Object{{"symlink",value},{"hash",hash(value)},{"bytes",int64_t(value.size())}};continue;
+    }
+    if(!e.is_regular_file())continue;bytes+=e.file_size();if(bytes>256*1048576||files.size()>=maximumFiles)invalid("artifact size/count limit exceeded");
+    auto data=readFile(e.path().string());files[e.path().lexically_relative(root).generic_string()]=Object{{"hash",hash(data)},{"bytes",int64_t(data.size())}};
   }return files;
 }
-Object fileIndex(const fs::path &root,size_t maximumFiles=8192){Object files;uint64_t bytes=0;for(const auto &e:fs::recursive_directory_iterator(root)){if(e.is_symlink())throw Error("E_TASK_INTEGRITY","symlink in saved artifact");if(!e.is_regular_file())continue;bytes+=e.file_size();if(bytes>256*1048576||files.size()>=maximumFiles)invalid("artifact size/count limit exceeded");auto data=readFile(e.path().string());files[e.path().lexically_relative(root).generic_string()]=Object{{"hash",hash(data)},{"bytes",int64_t(data.size())}};}return files;}
 void saveInputs(const Prepared &p,const fs::path &directory,const TaskOptions &options){
   writeFile((directory/"inputs/task.json").string(),json(p.task)+"\n");
   for(const auto &[id,candidate]:p.programs)writeFile((directory/("inputs/programs/"+id+".json")).string(),json(candidate.bundle)+"\n");
   for(const auto &[id,capture]:p.projects)writeFile((directory/"inputs/projects"/(id+".json")).string(),json(capture)+"\n");
+  for(const auto &[id,notices]:p.packageNotices)saveTaskPackageNotices(notices,(directory/"inputs/package-notices"/id).string());
   for(const auto &[id,contract]:p.contracts)writeFile((directory/("inputs/contracts/"+id+".json")).string(),json(contract)+"\n");
   for(const auto &[id,snapshot]:p.toolchains){writeFile((directory/"inputs/toolchains"/id/"config.json").string(),json(snapshot.manifest)+"\n");writeFile((directory/"inputs/toolchains"/id/"identity.json").string(),json(snapshot.inputs)+"\n");}
   if(p.foreign)saveForeignCatalogue(*p.foreign,directory/"inputs/foreign");
@@ -360,6 +390,7 @@ struct Runner {
     auto root=directory/"workspaces"/program;auto found=p.projects.find(program);return found==p.projects.end()?root:root/text(object(found->second),"project_root");
   }
   void verifyProject(const std::string &program){auto found=p.projects.find(program);if(found!=p.projects.end())validateProjectCapturePlans(found->second,(directory/"workspaces"/program).string());}
+  void verifyNotices(const std::string &id){auto found=p.packageNotices.find(id);if(found!=p.packageNotices.end())verifyTaskPackageNotices(found->second,(directory/"inputs/package-notices"/id).string());}
   void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id))verifyForeignCatalogue(*p.foreign,directory/"inputs/foreign");}
   void verifyToolchain(const std::string &id){
     auto selected=p.checkTools.find(id);if(selected==p.checkTools.end())return;
@@ -378,7 +409,7 @@ struct Runner {
     return observeCommand(id,program,command,timeout,label,true);
   }
   JSON observeCommand(const std::string &id,const std::string &program,const std::vector<std::string> &command,unsigned timeout,const std::string &label,bool structured,const Program *native=nullptr,const std::string &manifest=""){
-    std::map<std::string,std::string> environment{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"}};
+    std::map<std::string,std::string> environment{{"NEX_RESOURCE_DIR",(directory/"inputs/resources").string()},{"NEX_TRACY","0"},{"PYTHONDONTWRITEBYTECODE","1"}};
     std::unique_ptr<ForeignTemporary> temporary;
     if(p.foreignChecks.contains(id)){temporary=std::make_unique<ForeignTemporary>();environment["TMPDIR"]=temporary->directory().string();}
     auto relative="logs/"+id+"/"+label;auto process=runTaskProcess(command,workspace(program).string(),environment,timeout,(directory/relative).string());
@@ -410,7 +441,7 @@ struct Runner {
     if(!supported(p,c)){row["status"]="unsupported";row["reason"]="target is not configured on this host";return row;}
     auto started=std::chrono::steady_clock::now();auto timeout=number(c,"timeout_seconds",60);auto artifact=directory/"artifacts"/id;fs::create_directories(artifact);
     auto remaining=[&](){auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");return timeout-unsigned(elapsed);};
-    auto invoke=[&](std::vector<std::string> args,const std::string &label,const std::string &revision=""){verifyToolchain(id);verifyForeign(id);verifyProject(program);auto value=command(id,program,args,remaining(),label,revision);verifyToolchain(id);verifyForeign(id);verifyProject(program);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
+    auto invoke=[&](std::vector<std::string> args,const std::string &label,const std::string &revision=""){verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);auto value=command(id,program,args,remaining(),label,revision);verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
     auto successful=[&](const JSON &v){return object(v).getInteger("exit_code")==0&&object(v).get("response")&&ok(*object(v).get("response"));};
     auto response=[&](const JSON &v)->const Object&{auto result=object(v).get("response");if(!result||!result->getAsObject())throw Error("E_TASK_PROCESS","compiler did not produce a JSON response");return object(*result);};
     bool project=p.projects.contains(program);
@@ -516,6 +547,14 @@ struct Runner {
       }
     }else if(kind=="api"){
       auto value=invoke({"api","--directory",(artifact/"generated").string()},"api");passed=successful(value);row["receipt"]=text(object(value),"receipt");
+    }else if(kind=="package"){
+      auto destination=artifact/"package";auto args=projectArguments("package");args.insert(args.end(),{"--directory",destination.string()});
+      if(p.packageNotices.contains(id)){args.insert(args.end(),{"--notices",(directory/"inputs/package-notices"/id/"notices.json").string()});row["notices_hash"]=taskPackageNoticesHash(p.packageNotices.at(id));}
+      auto value=invoke(args,"package");passed=successful(value);row["receipt"]=text(object(value),"receipt");
+      if(passed){
+        const auto &r=response(value);if(r.getString("schema")!="nex.project-package/1"||r.getBoolean("application_execution").value_or(true))throw Error("E_TASK_ARTIFACT","invalid project package response");
+        row["package"]=destination.lexically_relative(directory).generic_string();row["components"]=*r.get("components");row["application_execution"]=false;
+      }
     }else if(kind=="build"){
       auto mode=optional(c,"mode","application");if(target=="web"&&mode=="library")invalid("web libraries use mode module");if(target!="web"&&mode=="module")invalid("module output requires target web");
       std::vector<std::string> args;
@@ -537,7 +576,7 @@ struct Runner {
         }row["components"]=std::move(outputs);
       }else if(passed&&mode!="module"){const auto &r=response(value);if(target=="web")copyArtifact(text(r,"dist"),artifact/"dist");else {auto exe=fs::path(text(r,"executable"));copyArtifact(exe,artifact/exe.filename());auto notices=r.getString("notices").value_or("").str();if(!notices.empty())copyArtifact(notices,artifact/"THIRD_PARTY_NOTICES.txt");for(auto k:{"metadata","compilation","debug_manifest"})if(auto path=r.getString(k))if(fs::is_regular_file(path->str()))copyArtifact(path->str(),artifact/(std::string(k)+".json"));}}
     }
-    row["status"]=passed?"passed":"failed";row["artifacts"]=fileIndex(artifact);return row;
+    row["status"]=passed?"passed":"failed";row["artifacts"]=fileIndex(artifact,8192,kind=="package"?artifact/"package":fs::path{});return row;
   }
   void checkpoint(Store &store){auto output=directory/"receipt.json";atomic(output,report);store.recordTask(text(report,"run_id"),p.id,p.taskHash,text(report,"status"),output.string(),hash(readFile(output.string())));}
   JSON run(const std::string &replayOf=""){

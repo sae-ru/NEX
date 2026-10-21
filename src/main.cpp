@@ -12,6 +12,7 @@
 #include "nex/profiling.h"
 #include "nex/verification.h"
 #include "nex/tasks.h"
+#include "nex/task_package.h"
 #include "nex/foreign_catalogue.h"
 #include "nex/debugging.h"
 #include "nex/debug_session.h"
@@ -270,7 +271,7 @@ int run(const Options &o) {
       "  nex core CORE_FILE --manifest DEBUG.json [--export NEW_DIRECTORY] [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n  nex core --capsule DIRECTORY [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n"
       "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
-      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
+      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task NOTICES.json --kind notices\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server|wasm --toolchain FILE\n"
       "         --foreign HOST.json (eval/run/test/debug/profile/task check/run/replay)\n         --kind mlir|llvm|typescript --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
@@ -305,6 +306,7 @@ int run(const Options &o) {
     if(!o.get("--candidates").empty()){auto file=o.get("--candidates");if(!fs::is_regular_file(file)||fs::file_size(file)>1048576)throw Error("E_OPTION","candidate map requires a bounded JSON file");auto map=parseJSON(readFile(file));auto object=map.getAsObject();if(!object||object->size()>8)throw Error("E_OPTION","candidate file must map program IDs to archived revisions");for(const auto &[id,v]:*object){auto revision=v.getAsString();if(!revision)throw Error("E_OPTION","candidate revision must be a string");options.candidates[id.str()]=revision->str();}}
     auto kind=o.get("--kind","check");
     if(o.values.contains("--foreign")&&(options.foreign.empty()||(kind!="check"&&kind!="run"&&kind!="replay")))throw Error("E_OPTION","task --foreign requires a nonempty catalogue for check/run/replay");
+    if(kind=="notices"){print(describeTaskPackageNotices(captureTaskPackageNotices(path.string(),root.string())));return 0;}
     if(kind=="init"){
       if(!o.get("--component").empty()){
         auto task=projectTaskTemplate(root.string(),path.string(),o.get("--component"),o.get("--configuration"));auto output=o.get("--output");
@@ -316,7 +318,7 @@ int run(const Options &o) {
     if(kind=="replay"){auto result=replayTask(path.string(),options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;}
     if(!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_TASK","missing or oversized task JSON");auto task=parseJSON(readFile(path));
     if(kind=="history"){auto object=task.getAsObject();if(!object)throw Error("E_TASK","task must be an object");Store store(root/".nex");print(store.taskHistory(required(*object,"id")));return 0;}
-    if(kind!="check"&&kind!="run")throw Error("E_OPTION","task kind must be init, check, run, replay or history");
+    if(kind!="check"&&kind!="run")throw Error("E_OPTION","task kind must be init, notices, check, run, replay or history");
     auto result=kind=="run"?runTask(task,options):checkTask(task,options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;
   }
   if(o.command=="token"){

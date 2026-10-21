@@ -12,9 +12,11 @@ NEX is a language and development toolchain built around a checked semantic
 graph. People and different LLMs use the same versioned specification, prompt
 and compiler tools. Compiled applications run independently of an LLM.
 
-This isolated development source is **toolchain0.78.0 / language0.16**. It adds
-project-backed acceptance tasks and captured replay above0.77 project actions.
-Validation of the new task implementation is in progress. Frozen0.77 and the
+This isolated development source is **toolchain0.79.0 / language0.16**. It adds
+project package acceptance checks above0.78 captured architecture tasks.
+Validation of package checks is in progress; frozen0.78 full86/SDK/platform gates
+retain separate evidence; its first Linux run passes85/86, with one
+C test-fixture declaration failure corrected in this source. Frozen0.77 and the
 actual0.77 root pass85 groups and installed SDK24/369/215; Linux0.77 also passes
 19live suites. Candidate and primary-root gates retain separate evidence.
 The language includes checked numbers, Unicode strings, immutable data,
@@ -43,10 +45,10 @@ See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashe
 source cohorts and retained failures. The source language remains0.16; no implicit
 graph migration occurs, and all47 root revisions/all16 tables/schema/IDs remain.
 
-Six root-SDK configurations produce15 Intel/Windows/iOS artifacts and3 final iOS
+Six verified0.77 root-SDK configurations produce15 Intel/Windows/iOS artifacts and3 final iOS
 linked images. The x64 Windows archive application executes under isolated Wine.
 Cross-builds and Wine do not establish actual Windows/mobile device execution.
-A real native-server/static-model/browser-source project passes12 UI/API/restart
+A verified0.77 native-server/dynamic-model/browser-source project passes12 UI/API/restart
 cases in Chromium, Firefox and WebKit. The actual installed VSIX0.5 passes LSP,
 native debugger, watch and indexed-page checks in fresh private profiles.
 Genuine installed0.71/0.72 comparisons preserve strict analysis1/2/3 payloads

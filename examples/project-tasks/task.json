@@ -47,6 +47,14 @@
         }
       },
       "program": "app"
+    },
+    {
+      "id": "package",
+      "kind": "package",
+      "program": "app",
+      "target": "native",
+      "configuration": "release",
+      "timeout_seconds": 300
     }
   ],
   "goal": "Build and test shared closure values, print exactly 42 🧠, and measure one make call under the declared architecture.",
@@ -131,6 +139,23 @@
       ],
       "checks": [
         "measure"
+      ]
+    },
+    {
+      "id": "delivery",
+      "text": "Produce the declared native application package with its shared provider, runtime and notices without executing it",
+      "targets": [
+        "native"
+      ],
+      "checks": [
+        "package"
+      ],
+      "bindings": [
+        {
+          "program": "app",
+          "kind": "function",
+          "symbol": "project_task::app::main"
+        }
       ]
     }
   ],

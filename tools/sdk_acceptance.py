@@ -2060,6 +2060,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
     def project_build():
         full_descriptor = cli('describe'); description = full_descriptor['project_build']
         require('project_architecture_tasks' in full_descriptor['task_features'], 'SDK lacks project task captures/replay')
+        require('project_task_packages' in full_descriptor['task_features'], 'SDK lacks project package acceptance checks')
         require(description['manifest_schema'] == 'nex.project-build/1' and
                 description['dependency_linkage'] == ['source', 'static', 'dynamic'] and
                 'shared_library' in description['artifact_kinds'] and
@@ -2198,6 +2199,15 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 all(f['node_id'] is None and f['identity_scope']=='captured_project' for f in actual_profile['functions']) and
                 not (shared_project/'.nex/graph.db').exists(), 'project profile lost provider attribution or created graph IDs')
         task_project=root/'project-task-example';shutil.copytree(resources/'examples/project-tasks',task_project)
+        notice_fixture=task_project/'fixture-notice.txt';notice_fixture.write_text('SDK acceptance notice-capture data fixture; not a dependency redistribution notice.\n')
+        (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':[
+            {'name':'sdk-notice-capture-fixture','version':'test','url':'https://github.com/sae-ru/NEX',
+             'roots':['core/value.nex'],'license_files':['fixture-notice.txt']}]}))
+        notice_pin=cli('task','notices.json','--kind','notices',cwd=task_project)
+        require(not notice_pin['graph_store_opened'] and not notice_pin['external_tools_invoked'] and not (task_project/'.nex').exists(), 'notice inspector executed tools or opened a graph')
+        task_contract=json.loads((task_project/'task.json').read_text())
+        next(c for c in task_contract['checks'] if c['kind']=='package').update(notices='notices.json',notices_hash=notice_pin['inputs_hash'])
+        (task_project/'task.json').write_text(json.dumps(task_contract))
         task_checked=cli('task','task.json','--kind','check',cwd=task_project,timeout=300)
         task_run=cli('task','task.json','--kind','run','--task-hash',task_checked['task_hash'],'--directory',root/'project-task-run',cwd=task_project,timeout=600)
         require(task_run['ok'] and all(c['status']=='passed' for c in task_run['checks']), 'project acceptance task failed')
@@ -2208,11 +2218,18 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         require(len(task_compilation['owned_images'])==2 and all(u['identity'].startswith('project_task::app::') for u in task_compilation['units']), 'task recompiled its shared provider')
         task_native=json.loads((task_receipt.parent/'artifacts/output/commands/native.json').read_text())
         require(task_native['command'][0]!=str(compiler) and '--revision' not in task_native['command'], 'task did not supervise the actual native image directly')
+        task_package=next(c for c in saved_task['checks'] if c['kind']=='package')
+        require(task_package['notices_hash']==notice_pin['inputs_hash'] and (task_receipt.parent/'inputs/package-notices/package/licenses/0.txt').is_file(), 'task did not capture its reviewed notice data')
+        task_deployment=task_receipt.parent/task_package['package']
+        require(not task_package['application_execution'] and (task_deployment/'apps/app/THIRD_PARTY_NOTICES.txt').is_file(), 'task package is missing build-only deployment evidence')
         shutil.rmtree(task_project)
+        packaged_task_stdout=run([task_deployment/'apps/app/bin/app'],cwd=root,timeout=30)
+        require(packaged_task_stdout=='42 🧠\n', 'task package failed after source deletion')
         task_replay=cli('task',task_receipt,'--kind','replay','--directory',root/'project-task-replay',cwd=root,timeout=600)
         require(task_replay['ok'] and task_replay['programs']==task_run['programs'], 'project task replay fell back to deleted source')
         report['evidence']['project_architecture_task']={'ok':True,'source_deleted_replay':True,'original':str(task_receipt),'replay':task_replay['output'],
-            'task_hash':task_checked['task_hash'],'actual_shared_provider':True,'native_execution_supervised_directly':True,'checks':len(saved_task['checks'])}
+            'task_hash':task_checked['task_hash'],'actual_shared_provider':True,'native_execution_supervised_directly':True,
+            'deployment_package_after_source_deletion':True,'pinned_notice_source_deleted_replay':True,'checks':len(saved_task['checks'])}
         deployment = root/'shared-project-package'
         packaged = cli('project', '--kind', 'package', '--configuration', 'release', '--component', 'app',
                        '--directory', deployment, cwd=shared_project, timeout=300)

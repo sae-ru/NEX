@@ -1,6 +1,6 @@
 # Project task example
 
-Requires the project_architecture_tasks capability (toolchain0.78 candidate).
+Requires project_architecture_tasks and project_task_packages (toolchain0.79 candidate).
 The app consumes a real shared core library and one shared runtime.
 
 ```sh
@@ -10,8 +10,10 @@ nex task /absolute/run/receipt.json --kind replay --json
 ```
 
 The reviewed example task pins the architecture and test body, checks output
-42 🧠, builds actual images and measures one call to core::make. It is an example
+42 🧠, builds actual images, measures one call to core::make and captures a
+deployment package without executing it. It is an example
 acceptance contract, not a claim that natural-language goals can be proven from
 placeholders. Use the current operator catalogues if configuring custom native
-compilers or FFI. Deployment packages and task/editor debugger commands remain
-separate workflows. See the project task guide.
+compilers or FFI. Inspect the package check's relative `package` directory in
+the receipt for deployable output. Package generation does not verify target
+execution; task/editor debugger commands remain separate. See the project task guide.

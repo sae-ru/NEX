@@ -17,8 +17,16 @@ Pure shared tests compare native/TypeScript/interpreter observations; effectful
 project tests/entries execute once in the selected backend. Captured namespaces
 and code candidates do not rewrite original working files. Use the saved receipt
 for source-free replay and inspect failures, unsupported checks and signals.
-Package task checks, server workloads and dedicated editor task debugging remain
-pending; passing a task proves only its reviewed criteria.
+When project_task_packages is also advertised, a project check can use kind
+package with the declared configuration and native/server/web target. Read the
+package section of the guide. It captures deployment output without executing
+the application; runtime acceptance still needs separate observations. For
+external notice inputs, query `nex task NOTICES.json --kind notices --json`,
+review inputs_hash and pin notices/notices_hash in the check. Complete license
+text must stay inside the project and is captured for replay. Inspect catalogue
+changes explicitly; notice data grants no execution authority. Server
+workloads and dedicated editor task debugging remain pending; passing a task
+proves only its reviewed criteria.
 
 When `project_binary_execution` is advertised inside `project_build.features`,
 use `nex project --kind run|test|debug|profile` for a declared architecture.

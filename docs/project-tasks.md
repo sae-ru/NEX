@@ -88,6 +88,73 @@ Inputs retain the existing task bound of128MiB and8192 indexed files. A project
 capture is bounded to64MiB,8192 files/aliases,32 configurations and128 components.
 Source candidates retain their ordinary16MiB bundle limit. Native build artifacts
 retain first-party images beside their executable; web artifacts retain `dist`.
-These copies are build evidence, not dependency-bundled deployment packages or
-relocated debugger sessions. Project package checks, server workloads and
-dedicated task/editor debugging remain pending.
+Build copies are distinct from deployment packages and relocated debugger
+sessions. Server workloads and dedicated task/editor debugging remain pending.
+
+## Package acceptance
+
+When the compiler advertises `project_task_packages` (toolchain0.79), a check can
+package a project-backed executable, server or browser component:
+
+```json
+{"id":"delivery","program":"app","kind":"package","target":"native",
+ "configuration":"release","timeout_seconds":300}
+```
+
+Link it to a reviewed requirement and its component entry functions as usual.
+Use `target:"server"` for a server or `target:"web"` for a browser component.
+The declared configuration supplies profile and toolchain; check-level entry,
+profile, mode and shell steps are not accepted.
+Native packaging requires a matching host. Libraries and source-only components
+are not standalone application packages. Source tasks keep their existing kinds.
+
+The check calls the compiler's package action in its captured architecture. Its
+receipt records a relative `package` directory, component entries, command report
+and indexed artifact files. The package includes deployment libraries and notices
+under the existing project-packaging rules. Packaging never runs the application;
+it cannot satisfy a runtime expectation without a separate execution observation.
+The example task in `examples/project-tasks` requests both kinds of evidence.
+
+Package helpers are copied from the compiler's current trusted resources and
+verified during replay. The compiler's current SDK inventory and host packaging
+tools supply provenance; a receipt cannot select replacement executable helpers.
+Python helpers do not write bytecode into immutable captured inputs. Relative
+file aliases are indexed only if they resolve inside the same saved package;
+all ordinary input inventories still reject symlinks. Artifacts retain the task
+limit of8192 files and256MiB per check, narrower than standalone package limits.
+
+Source-deleted replay rebuilds and packages captured code under the required
+current toolchain. It is not a promise of byte-for-byte package identity, platform
+signing, target execution or complete external notice coverage. Native dependency
+licensing failures remain failed checks. Source foreign-call package projection
+remains pending.
+
+### Reviewed notice inputs
+
+For external dependencies not covered by the current SDK inventory, place their
+complete license texts inside the project and create a `nex.sdk-notices/1`
+catalogue using the ordinary packaging format. Task notice components accept
+`name`, `version`, `url`, `roots` and `license_files`. Root paths identify the
+actual native dependencies; license paths resolve relative to the catalogue and
+must remain inside the project after symlink resolution.
+
+```sh
+nex task licenses/notices.json --kind notices --json
+```
+
+This readonly query returns `inputs_hash`, component names and license counts;
+it invokes no compiler/packager tools and opens no graph Store. Add
+`"notices":"licenses/notices.json"` and `"notices_hash":"RETURNED_INPUTS_HASH"`
+to the package check. The hash covers normalized dependency roots, component
+metadata and complete license text. Re-review changes explicitly. A changed
+license fails check/run before packaging. A data catalogue grants no permission
+to execute a driver or native module.
+
+The run captures `snapshot.json`, normalized `notices.json` and license text in
+`inputs/package-notices/CHECK/`, all under the ordinary input hash index. Replay
+uses those checked files after original catalogues/licenses have been deleted.
+The package helper receives this explicit captured catalogue; inputs are checked
+before and after its command. Bounds are128 components,128 roots/64 licenses per
+component,256 distinct license files,1MiB per text and8MiB total license text;
+the formatted catalogue is limited to1MiB and snapshot to16MiB. This mechanism
+records the supplied provenance; operators remain responsible for its accuracy.

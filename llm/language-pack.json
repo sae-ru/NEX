@@ -150,7 +150,8 @@
     "project_package_schema": "llm/project-package.schema.json",
     "project_action_schema": "llm/project-action.schema.json",
     "project_tasks": "docs/project-tasks.md",
-    "project_capture_schema": "llm/project-capture.schema.json"
+    "project_capture_schema": "llm/project-capture.schema.json",
+    "task_package_notices_schema": "llm/task-package-notices.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -575,7 +576,34 @@
       "declared_binary_dependencies": true,
       "trusted_current_toolchain_and_foreign_catalogues": true,
       "source_free_replay": true,
-      "native_process_supervision": "direct from the task parent, compilation separated from native execution"
+      "native_process_supervision": "direct from the task parent, compilation separated from native execution",
+      "packages": {
+        "minimum_toolchain": "0.79.0",
+        "capability": "project_task_packages",
+        "check_kind": "package",
+        "targets": [
+          "native",
+          "server",
+          "web"
+        ],
+        "application_execution": false,
+        "artifact_files": 8192,
+        "artifact_bytes": 268435456,
+        "custom_notice_overrides": true,
+        "notice_capture": {
+          "command": "nex task notices.json --kind notices --json",
+          "schema": "nex.task-package-notices/1",
+          "description_schema": "nex.task-package-notices-description/1",
+          "hash_field": "inputs_hash",
+          "check_fields": [
+            "notices",
+            "notices_hash"
+          ],
+          "project_confined_license_sources": true,
+          "snapshot_license_files": 256,
+          "snapshot_license_bytes": 8388608
+        }
+      }
     }
   },
   "native_application_lifetime": {

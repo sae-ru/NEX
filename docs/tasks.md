@@ -88,6 +88,7 @@ contracts do not inject runtime pre/postconditions or remove runtime guards.
 | --- | --- | --- |
 | `test` | `native`, `web` | Named, hash-pinned tests pass in interpreter and native/TypeScript execution; excluded realms cannot pass. |
 | `build` | `native`, configured triple, `server`, `web` | Requested application, native library or web module is generated successfully. Foreign artifacts do not certify execution. |
+| `package` | Project-backed `native`, `server`, `web` | The declared architecture produces a deployment package with libraries/notices, without executing the application; requires `project_task_packages`. |
 | `run` | `native` | Native and reference stdout match the exact expected text; exit status and an optional runtime error code agree. |
 | `verify` | `source` | All functions in a property-pinned scalar contract are proven. |
 | `effects` | `source` | Every function in the selected transitive call closure stays within allowed declared effects and realms. |
