@@ -30,3 +30,8 @@ runtime, exact final-image provenance, incremental PIC objects, bound provider
 debug/core images, profiling host identity, notices/packaging, project execution
 flows and target-platform validation. Existing compiler capability descriptors
 remain authoritative. No new third-party source is vendored here.
+
+The current development cohort additionally tests a compiler-private PIC
+object-archive stage. See [the implementation design](../../docs/shared-runtime-design.md).
+It consumes cached verified function objects directly; it is not a supported
+shared-library project command and does not replace this historical IR experiment.

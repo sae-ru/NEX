@@ -14,6 +14,10 @@ struct BuildOptions {
   // Set only by native application packaging, never by ambient environment.
   std::string foreignCatalogue;
   bool projectLibraryABI = false, codeOnlyLibrary = false;
+  // Compiler-private staging for a separately linked image. Keep executable
+  // entry validation/main emission, but retain only PIC NEX objects; a final
+  // linker owns runtime, bridge and application/profile identity exactly once.
+  bool positionIndependent = false, deferredLink = false;
   std::vector<std::string> libraryExports;
   std::vector<NativeLibraryInput> libraries;
 };
