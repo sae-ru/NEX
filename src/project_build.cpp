@@ -26,6 +26,12 @@
 #include <functional>
 
 namespace nex {
+struct ProjectPackageProjection {
+  std::function<void()> verify;
+  std::map<std::string,std::string> sourceHashes,toolchains;
+  std::map<std::string,ForeignPackageArtifact> applications;
+  llvm::json::Value report=nullptr;
+};
 namespace {
 namespace fs=std::filesystem;
 using Object=llvm::json::Object;
@@ -285,8 +291,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       validateNativeBuildEntry(program,native);
       if(options.kind=="package"&&(c.kind=="executable"||c.kind=="server")){
         if(!imageABI.isMacOSX()&&!imageABI.isOSLinux())fail("project native packages currently require macOS or Linux targets","E_PROJECT_CAPABILITY");
-        for(const auto &unit:planNative(program,native.entry).units)if(program.function(unit.identity).foreign)
-          fail("project source-foreign package projection remains pending; package an explicitly reviewed source entry with its operator catalogue","E_PROJECT_CAPABILITY");
+        if(options.packageProjection&&options.packageProjection->applications.contains(name))native.foreignCatalogue="../foreign/host.json";
       }
       if((c.kind=="static_library"||c.kind=="shared_library")&&owner(program.units.at(program.function(c.function).unit).path)!=name)fail("library entry must be owned by "+name,"E_PROJECT_EXPORT");
       for(const auto &entry:c.exports){const auto &f=program.function(entry);if(!f.exported||owner(program.units.at(f.unit).path)!=name)fail("library exports must be public concrete functions owned by "+name,"E_PROJECT_EXPORT");}
@@ -340,6 +345,39 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     llvm::json::Array instances;for(const auto &name:instantiated)instances.push_back(name);(*item.description.getAsObject())["consumer_instantiations"]=std::move(instances);
   }
   for(const auto &item:prepared)descriptions.push_back(item.description);
+  if(options.packageProjection){
+    options.packageProjection->verify();
+    if(prepared.size()!=options.packageProjection->sourceHashes.size())fail("project projection component set changed","E_PROJECT_INPUT_CHANGED");
+    for(const auto &item:prepared){
+      if(hash(json(sourceBundle(item.program),false))!=options.packageProjection->sourceHashes.at(item.name))fail("project projection source differs: "+item.name,"E_PROJECT_INPUT_CHANGED");
+      auto expected=options.packageProjection->toolchains.find(item.name);
+      if(expected!=options.packageProjection->toolchains.end()&&item.description.getAsObject()->getObject("native_toolchain")->getString("hash")!=expected->second)
+        fail("project projection toolchain differs: "+item.name,"E_PROJECT_INPUT_CHANGED");
+    }
+  }
+  std::map<std::string,ForeignSelection> applicationForeign;
+  ForeignSelection selectedForeign;
+  std::set<std::tuple<std::string,size_t,size_t>> physicalBindings;
+  for(const auto &item:prepared){
+    const auto &kind=components.at(item.name).kind;if(kind!="executable"&&kind!="server")continue;
+    for(const auto &unit:planNative(item.program,item.options.entry).units){
+      const auto &function=item.program.function(unit.identity);if(!function.foreign)continue;
+      const auto &binding=*function.foreign;
+      applicationForeign[item.name][binding.library].insert(binding.symbol);selectedForeign[binding.library].insert(binding.symbol);
+      physicalBindings.emplace(item.program.units.at(function.unit).path,binding.manifestSpan.begin,binding.manifestSpan.end);
+    }
+  }
+  std::optional<ForeignCatalogueSnapshot> packageForeign;
+  if(!options.packageProjection&&(options.kind=="package"||options.kind=="plan")&&!options.foreign.empty()){
+    if(selectedForeign.empty())fail("selected native applications have no reachable external calls","E_FFI_PACKAGE");
+    packageForeign=inspectForeignCatalogue(options.foreign);
+    for(const auto &item:prepared)if(applicationForeign.contains(item.name)){
+      if(options.kind=="package")requireNativeHost(item.options);
+      for(const auto &unit:planNative(item.program,item.options.entry).units)checkForeignBinding(*packageForeign,item.program,item.program.function(unit.identity));
+    }
+  }
+  if(options.kind=="package"&&!selectedForeign.empty()&&!packageForeign&&!options.packageProjection)
+    fail("project packaging external calls requires an explicit --foreign HOST.json operator catalogue","E_FFI_PACKAGE");
   if(readFile((root/"nex.json").string())!=sourceManifest||
      (fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt)!=sourceLock)
     fail("project metadata or dependency lock changed while planning","E_PROJECT_INPUT_CHANGED");
@@ -349,11 +387,88 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     {"configuration",Object{{"name",configuration.name},{"profile",configuration.profile},{"target",configuration.target},{"toolchain",configuration.toolchain.empty()?llvm::json::Value(nullptr):llvm::json::Value(configuration.toolchain)}}},
     {"selected_component",selectedComponent.empty()?llvm::json::Value(nullptr):llvm::json::Value(selectedComponent)},{"components",std::move(descriptions)},
     {"source_checked",true},{"graph_store_opened",false},{"external_tools_invoked",false},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+  if(packageForeign){
+    Object applications;for(const auto &[name,selection]:applicationForeign){Object libraries;for(const auto &[library,exports]:selection){llvm::json::Array values;for(const auto &value:exports)values.push_back(value);libraries[library]=std::move(values);}applications[name]=std::move(libraries);}
+    plan["foreign_packaging"]=Object{{"schema","nex.project-foreign-plan/1"},{"catalogue_hash",packageForeign->hash},{"applications",std::move(applications)},
+      {"module_initialization",false},{"pin_projection",false},{"native_dependencies_inspected",false}};
+  }
+  if(options.packageProjection)plan["foreign_projection"]=options.packageProjection->report;
   if(workload){verifyServerWorkloadInputs(*workload);auto details=Object(workload->plan);details["definition_file"]=workload->selection;details["runner_sha256"]=workload->helperSha256;plan["server_workload"]=std::move(details);}
   auto serialized=json(llvm::json::Value(Object(plan)),false);if(serialized.size()>8*1048576)fail("project plan exceeds8MiB","E_PROJECT_LIMIT");
   auto planHash=hash(serialized);plan["plan_hash"]=planHash;
   if(!options.expectedPlanHash.empty()&&planHash!=options.expectedPlanHash)fail("project test inputs changed after preflight","E_PROJECT_INPUT_CHANGED");
   if(options.kind=="plan")return plan;
+  if(options.kind=="package"&&packageForeign){
+    // Validate the original locked project first, then compile one consistent
+    // source projection. All apps sharing a binary provider use the same new
+    // literal pins; each deployed catalogue retains only that app's exports.
+    auto context=std::make_shared<ProjectPackageProjection>();
+    std::map<std::string,std::string> aliases;std::map<std::string,std::optional<std::string>> metadata;
+    auto alias=[&](const fs::path &input){auto logical=fs::absolute(input).lexically_normal().string();aliases[logical]=fs::weakly_canonical(input).string();};
+    auto captureMetadata=[&](const fs::path &input){alias(input);metadata[input.string()]=fs::is_regular_file(input)?std::optional<std::string>(readFile(input.string())):std::nullopt;};
+    alias(directory);captureMetadata(root/"nex.json");captureMetadata(root/"nex.lock.json");captureMetadata(manifest);
+    captureMetadata(fs::absolute(options.foreign));
+    auto rootMetadata=llvm::json::parse(sourceManifest);auto packageRoots=rootMetadata->getAsObject()->getObject("libraries");
+    for(const auto &[name,c]:components){(void)name;alias(root/c.root);alias(root/c.entry);}
+    for(const auto &item:prepared)for(const auto &[key,unit]:item.program.units){
+      if(!key.starts_with("@"))alias(root/key);
+      else{
+        auto standard=key.starts_with("@std/");auto split=key.find('/',5);auto name=standard?"std":key.substr(5,split-5);
+        if(packageRoots&&packageRoots->getString(name)){
+          auto base=root/packageRoots->getString(name)->str();alias(base);captureMetadata(base/"nex.json");alias(base/key.substr(standard?5:split+1));
+        }else alias(unit.path);
+      }
+    }
+    for(const auto &item:prepared)if(auto value=item.description.getAsObject()->getObject("native_toolchain")){
+      context->toolchains[item.name]=value->getString("hash")->str();
+      if(!item.options.toolchain.empty())captureMetadata(item.options.toolchain);
+    }
+    std::map<std::string,std::string> helpers;
+    for(const auto &name:{"tools/foreign_bundle.py","tools/app_bundle.py","tools/sdk_bundle.py"})helpers[name]=hash(readFile(resourceFile(name)));
+    if(!options.package.notices.empty()){
+      auto notice=fs::absolute(options.package.notices);captureMetadata(notice);
+      auto parsedNotices=llvm::json::parse(readFile(notice.string()));
+      if(parsedNotices){if(auto value=parsedNotices->getAsObject())if(auto components=value->getArray("components"))for(const auto &component:*components)
+        if(auto record=component.getAsObject())if(auto files=record->getArray("license_files"))for(const auto &file:*files)
+          if(auto value=file.getAsString())captureMetadata(notice.parent_path()/value->str());
+      }else llvm::consumeError(parsedNotices.takeError());
+    }
+    auto originalSources=capturedSources;auto catalogue=options.foreign,catalogueHash=packageForeign->hash;
+    context->verify=[aliases=std::move(aliases),metadata=std::move(metadata),helpers=std::move(helpers),originalSources=std::move(originalSources),catalogue,catalogueHash](){
+      for(const auto &[logical,physical]:aliases)if(fs::weakly_canonical(logical).string()!=physical)fail("project package input alias changed: "+logical,"E_PROJECT_INPUT_CHANGED");
+      for(const auto &[path,bytes]:metadata)if((fs::is_regular_file(path)?std::optional<std::string>(readFile(path)):std::nullopt)!=bytes)fail("project package metadata changed: "+path,"E_PROJECT_INPUT_CHANGED");
+      for(const auto &[path,bytes]:originalSources)if(readFile(path)!=bytes)fail("project package source changed: "+path,"E_PROJECT_INPUT_CHANGED");
+      for(const auto &[name,digest]:helpers)if(hash(readFile(resourceFile(name)))!=digest)fail("project package helper changed: "+name,"E_PROJECT_INPUT_CHANGED");
+      if(inspectForeignCatalogue(catalogue).hash!=catalogueHash)fail("project package operator catalogue changed","E_PROJECT_INPUT_CHANGED");
+    };
+    context->verify();auto temporary=fs::path(createTemporaryDirectory("nex-project-foreign"));
+    auto package=options.package;package.foreign=options.foreign;
+    auto unionPackage=prepareForeignPackage(package,selectedForeign,temporary.string());context->verify();
+    auto projected=options;projected.archivedSources=true;projected.expectedPlanHash.clear();projected.sourceOverlays=capturedSources;
+    Object projections;
+    for(const auto &item:prepared){
+      std::set<std::string> bindings;
+      for(const auto &function:item.program.functions)if(function.foreign&&physicalBindings.contains({item.program.units.at(function.unit).path,function.foreign->manifestSpan.begin,function.foreign->manifestSpan.end}))bindings.insert(function.name);
+      auto projection=projectForeignProgram(item.program,bindings,unionPackage,root.string());
+      context->sourceHashes[item.name]=hash(json(sourceBundle(projection.program),false));
+      for(const auto &[key,unit]:projection.program.units){
+        auto physical=item.program.units.at(key).path;auto &previous=projected.sourceOverlays.at(physical);
+        if(previous!=capturedSources.at(physical)&&previous!=unit.source)fail("inconsistent physical pin projection","E_FFI_PACKAGE");previous=unit.source;
+      }
+      auto report=Object(*projection.report.getAsObject());report["scope"]="project";report["source_plan_hash"]=planHash;
+      Object identity;for(const auto *key:{"source_revision","packaged_revision","source_hash","packaged_source_hash","changes"})identity[key]=*report.get(key);
+      projections[item.name]=std::move(identity);
+      if(applicationForeign.contains(item.name)){
+        auto subset=selectForeignPackage(unionPackage,applicationForeign.at(item.name),(temporary/"applications"/item.name).string());
+        report["catalogue_hash"]=subset.snapshot.hash;report["preparation"]=std::move(subset.report);
+        context->applications.emplace(item.name,ForeignPackageArtifact{subset.directory,std::move(report),std::move(subset.files)});
+      }
+    }
+    context->report=Object{{"schema","nex.project-foreign-projection/1"},{"source_plan_hash",planHash},{"source_catalogue_hash",catalogueHash},
+      {"components",std::move(projections)},{"preparation",unionPackage.report},{"source_files_modified",false},{"graph_store_opened",false},{"module_initialization",false}};
+    projected.packageProjection=context;projected.foreign.clear();projected.package.foreign.clear();context->verify();
+    auto result=buildProject(directory,manifest,source,projected);context->verify();fs::remove_all(temporary);return result;
+  }
   auto cache=fs::absolute(options.directory.empty()?(root/".nex/build").string():options.directory);
   if(options.kind=="debug")cache=nativeDebugBuildDirectory(cache.string());
   std::optional<ForeignCatalogueSnapshot> foreign;
@@ -448,6 +563,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::map<std::string,llvm::json::Value> webResults;
   for(auto &item:prepared) {
     const auto &c=components.at(item.name);if(c.kind=="source")continue;
+    if(options.packageProjection)options.packageProjection->verify();
     if(c.kind=="web"){webResults.emplace(item.name,buildWebApp(item.program,cache.string(),configuration.profile));continue;}
     auto expected=item.description.getAsObject()->getObject("native_toolchain")->getString("hash")->str();
     if(inspectNativeToolchain(item.options).hash!=expected)fail("native toolchain changed after project planning","E_PROJECT_INPUT_CHANGED");
@@ -458,6 +574,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       item.options.libraries.push_back({dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts});
     }
     nativeResults[item.name]=build(item.program,cache.string(),item.options);
+    if(options.packageProjection)options.packageProjection->verify();
   }
   std::map<std::string,std::vector<std::string>> staticFrontiers,dynamicImages;
   std::set<std::string> imageStages;
@@ -473,7 +590,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   }
   std::vector<NativeImageInput> imageInputs;
   for(const auto &item:prepared)if(imageStages.contains(item.name))imageInputs.push_back({item.name,components.at(item.name).kind,&item.program,item.options,nativeResults.at(item.name),staticFrontiers[item.name],dynamicImages[item.name]});
+  if(options.packageProjection)options.packageProjection->verify();
   NativeImageResults images;if(!imageInputs.empty())images=buildNativeImages(cache.string(),imageInputs);
+  if(options.packageProjection)options.packageProjection->verify();
   for(const auto &item:prepared){
     const auto &c=components.at(item.name);if(c.kind=="source")continue;
     if(c.kind=="web"){artifacts.push_back(Object{{"component",item.name},{"kind","web"},{"result",llvm::json::Value(webResults.at(item.name))}});continue;}
@@ -545,7 +664,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else if(c.kind=="executable"||c.kind=="server"){
           const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);
           auto package=options.package;package.directory=(stage/"apps"/item.name).string();
-          auto result=packageNativeArtifact(item.program,built,package);auto data=result.getAsObject();
+          const ForeignPackageArtifact *foreign=nullptr;
+          if(options.packageProjection){options.packageProjection->verify();auto found=options.packageProjection->applications.find(item.name);if(found!=options.packageProjection->applications.end())foreign=&found->second;}
+          auto result=packageNativeArtifact(item.program,built,package,foreign);auto data=result.getAsObject();
+          if(options.packageProjection)options.packageProjection->verify();
           packaged.push_back(Object{{"component",item.name},{"kind",c.kind},{"directory","apps/"+item.name},{"entry","apps/"+item.name+"/bin/app"},{"manifest","apps/"+item.name+"/application.json"},{"revision",revision(item.program)},{"build_key",data->getString("build_key")->str()}});
           nativeInspected=true;
         }
@@ -566,7 +688,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       }
       auto result=Object{{"schema","nex.project-package/1"},{"ok",true},{"plan_hash",planHash},{"compiler_version",options.compilerVersion},{"compiler_build",options.compilerBuild},{"language",languageVersion},
         {"configuration",configuration.name},{"profile",configuration.profile},{"components",std::move(packaged)},{"files",std::move(inventory)},{"graph_store_opened",false},{"application_execution",false},{"target_execution_verified",false},{"native_dependencies_inspected",nativeInspected}};
+      if(options.packageProjection)result["foreign_projection"]=options.packageProjection->report;
       writeFile((stage/"project.json").string(),json(llvm::json::Value(Object(result)))+"\n");
+      if(options.packageProjection)options.packageProjection->verify();
 #ifdef __APPLE__
       int published=::renameatx_np(AT_FDCWD,stage.c_str(),AT_FDCWD,packageOutput.c_str(),RENAME_EXCL);
 #elif defined(__linux__) && defined(SYS_renameat2)

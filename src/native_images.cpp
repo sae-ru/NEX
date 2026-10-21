@@ -121,11 +121,18 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   bool darwin=triple.isMacOSX();if(!darwin&&!triple.isOSLinux())fail("shared native images currently require macOS or Linux");
   std::map<std::string,Captured> stages;std::map<std::string,std::string> sources;std::set<std::string> components,notices;
   bool storage=false,foreign=false,profiling=false,wire=false,files=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
+  std::string foreignDefault;
   auto toolchainFingerprint=inspectNativeToolchain(inputs.front().options).hash;
   auto verifyToolchain=[&](){if(inspectNativeToolchain(inputs.front().options).hash!=toolchainFingerprint)fail("native image toolchain changed while linking");};
   for(const auto &input:inputs){
     if(input.stage.libraryABI!=abi||input.options.profile!=profile||configureNative(input.options).identity!=tools.identity)fail("shared image stages have different target/runtime/toolchain ABIs");
     auto stage=capture(input);if(text(stage.build,"toolchain_fingerprint")!=toolchainFingerprint)fail("captured stage toolchain differs from image linker");
+    auto selectedDefault=text(stage.build,"foreign_catalogue");
+    if(selectedDefault!=input.options.foreignCatalogue)fail("captured foreign default differs from its image stage");
+    if(!selectedDefault.empty()){
+      if(selectedDefault!="../foreign/host.json"||input.kind=="shared_library"||input.kind=="static_library")fail("invalid application foreign default");
+      foreignDefault=selectedDefault;
+    }
     auto requirements=stage.build.getObject("runtime_requirements");if(!requirements)fail("missing shared runtime requirements");
     storage|=requirements->getBoolean("storage").value_or(false);foreign|=requirements->getBoolean("foreign").value_or(false);profiling|=requirements->getBoolean("profiling").value_or(false);
     wire|=requirements->getBoolean("wire").value_or(false);files|=requirements->getBoolean("files").value_or(false);
@@ -143,7 +150,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   Object requirements{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling}};
   Object runtimeSeed{{"schema","nex.native-runtime-input/1"},{"compiler_build",NEX_BUILD_ID},{"abi",abi},{"toolchain",tools.identity},{"toolchain_fingerprint",toolchainFingerprint},{"profile",profile},
     {"cache",root.string()},{"cwd",fs::current_path().string()},{"inputs",std::move(runtimeInputs)},{"components",std::move(componentNames)},
-    {"shared_profile_identity",profiling},{"foreign",foreign},{"storage",storage}};
+    {"shared_profile_identity",profiling},{"foreign",foreign},{"storage",storage},{"foreign_catalogue",foreignDefault}};
   auto runtimeText=json(JSON(Object(runtimeSeed)),false),runtimeKey=hash(runtimeText);auto runtimeFolder=root/("runtime-"+runtimeKey);
   auto extension=darwin?".dylib":".so";auto runtime=runtimeFolder/("libnex_runtime_"+runtimeKey+extension);auto projection=runtimeFolder/"runtime-inputs";
   for(const auto &[name,data]:sources)writeFile((projection/name).string(),data);
@@ -155,6 +162,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   }catch(const std::exception &){return false;}};
   if(!runtimeIntact()){
     std::vector<std::string> objects;auto runtimeFlags=flags(tools,projection,profile,foreign,true);
+    if(!foreignDefault.empty())runtimeFlags.push_back("-DNEX_FOREIGN_DEFAULT="+json(foreignDefault,false));
     for(const auto &component:components){auto object=runtimeFolder/("runtime-"+std::to_string(objects.size())+".o");compile(tools,projection/component,object,runtimeFlags);objects.push_back(object.string());}
     if(storage)objects.push_back(tools.sqliteLibrary);
     if(foreign){objects.insert(objects.end(),{tools.opensslCrypto,"-pthread"});if(!darwin)objects.push_back("-ldl");}
@@ -223,7 +231,10 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     if(!intact()){
       auto compileFlags=flags(tools,projection,profile,foreign,false);
       if(server){
-        auto args=compileFlags;args.insert(args.end(),{"-I",tools.opensslInclude,"-pthread"});auto object=folder/"http_main.o";compile(tools,projection/"http_main.cpp",object,args);linkInputs.push_back(object.string());
+        // The common runtime supports the union of all images. This server
+        // entry only configures foreign authority when its own closure needs it.
+        auto args=flags(tools,projection,profile,stage.build.getObject("runtime_requirements")->getBoolean("foreign").value_or(false),false);
+        args.insert(args.end(),{"-I",tools.opensslInclude,"-pthread"});auto object=folder/"http_main.o";compile(tools,projection/"http_main.cpp",object,args);linkInputs.push_back(object.string());
         auto bridge=folder/"server-bridge.cpp";auto symbol=nativeSymbol(input.program->function(input.options.entry).name);
         writeFile(bridge.string(),"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+symbol+"(nexrt::Handle*);extern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *p){return "+symbol+"(p);}\n");compile(tools,bridge,folder/"server-bridge.o",compileFlags);linkInputs.push_back((folder/"server-bridge.o").string());linkInputs.insert(linkInputs.end(),{tools.opensslSSL,tools.opensslCrypto,"-pthread"});
       }

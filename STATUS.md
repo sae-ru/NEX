@@ -1,3 +1,29 @@
+# Development cohort0.84 (not integrated)
+
+Project foreign packaging prepares selected app exports once, projects exact
+literal pins across physical shared/source/archive components, reloads/rechecks
+binary contracts and consumes the actual native images. Each deployed app gets
+only its reachable grants; foreign-free HTTP entries skip common-runtime foreign
+configuration. Original source/lock/Store stay untouched. Input aliases, metadata,
+catalogue, helper and toolchain identities are checked around native tools.
+Package tasks pin current operator trust and retain captured inventories; exact
+member provenance mappings preserve reviewed notice roots and license bytes.
+Language0.16 is unchanged. Prototype focused5 checks pass200.940seconds, including direct deployment,
+per-app grants, profile ownership, module integrity, same-byte alias rejection
+and source-deleted task package replay. Earlier prototype foreign/task/project
+package regression4 groups pass699.07seconds; full final-source90/installed SDK/
+Linux validation is still required before considering promotion. Earlier focused failures retain
+test fixture glob/lock/static-index/API-path mistakes and a genuine captured
+module provenance refusal; the new mapping does not grant directory-wide trust.
+
+Frozen portable0.82 2953e041 passes Mac/Linux full88, installed SDK24/379 commands/
+230 resources, plus Linux20 live suites. Initial0.82 C11/core-reader failures
+remain separate. Frozen0.83 cd3c89d8 passes Mac/Linux full89; Linux20 live and
+source-free/network-disabled SDK24/384 commands/232 resources pass. Its matching
+Mac installed SDK24/384 commands/232 resources also passes. Both completed
+cohorts are recorded in build/server-workload-082-083-complete-evidence-v1.json
+of the primary workspace. Approved primary0.81 remains unchanged.
+
 # Development cohort0.83 (not integrated)
 
 Project server profile checks pin SHA-256 workload bytes, preserve actual binary

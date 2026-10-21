@@ -39,7 +39,6 @@
     },
     "changes": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "type": "object",
         "required": [
@@ -72,7 +71,35 @@
     },
     "preparation": {
       "$ref": "https://nex.dev/schemas/foreign-package-1.json"
+    },
+    "scope": {
+      "const": "project"
+    },
+    "source_plan_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
-  "description": "The compiled revision changes only reachable external manifest literal tokens. Both revisions are retained without editing materialized sources or moving HEAD. The derived revision, build key and binary hash identify the artifact actually compiled."
+  "description": "Only exact external manifest literal tokens change. Source packages retain original/derived graph revisions without moving HEAD. Project scope preserves source files, locks and the Store, and projects the same physical declarations across all selected components; changes may be empty for an unaffected component. Actual per-application grants remain limited to its reachable exports.",
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "required": [
+          "source_plan_hash"
+        ]
+      },
+      "else": {
+        "properties": {
+          "changes": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
 }

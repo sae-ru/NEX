@@ -159,7 +159,8 @@
     "server_workload_runner": "tools/server_workload.py",
     "server_workload_example": "examples/server-workload/README.md",
     "task_workloads": "docs/task-workloads.md",
-    "task_workload_state_schema": "llm/task-workload-state.schema.json"
+    "task_workload_state_schema": "llm/task-workload-state.schema.json",
+    "project_foreign_projection_schema": "llm/project-foreign-projection.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -240,7 +241,8 @@
     "project_task_contract": "examples/project-tasks/task.json",
     "project_task_core": "examples/project-tasks/core/value.nex",
     "project_task_app": "examples/project-tasks/app/main.nex",
-    "project_task_guide": "examples/project-tasks/README.md"
+    "project_task_guide": "examples/project-tasks/README.md",
+    "foreign_project_package": "examples/ffi/project/README.md"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -534,11 +536,9 @@
     "shared_pending": [
       "windows_dll",
       "dedicated_project_editor_commands",
-      "project_foreign_pin_projection",
       "packaged_debug_provenance",
-      "server_workload_profile_and_debug",
       "project_editor_commands",
-      "project_package_task_checks"
+      "server_workload_debug"
     ],
     "project_package": {
       "command": "nex project --kind package --directory NEW_DIRECTORY --json",
@@ -547,7 +547,19 @@
       "native_and_web": true,
       "preserves_configuration": true,
       "opens_graph_store": false,
-      "executes_application": false
+      "executes_application": false,
+      "foreign": {
+        "minimum_toolchain": "0.84.0",
+        "operator_option": "--foreign HOST.json",
+        "projection_schema": "llm/project-foreign-projection.schema.json",
+        "project_wide_literal_projection": true,
+        "per_application_export_grants": true,
+        "module_initialization": false,
+        "source_and_store_writes": false,
+        "task_capture_replay": true,
+        "matching_host_target_only": true,
+        "verification": "candidate; full platform and installed SDK gates pending"
+      }
     },
     "project_actions": {
       "minimum_toolchain": "0.77.0",

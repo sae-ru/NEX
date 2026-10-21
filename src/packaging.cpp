@@ -36,6 +36,8 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
   if(info->getString("compiler_build")!=NEX_BUILD_ID||info->getString("revision")!=revision(candidate)||
      (info->getString("kind")!="executable"&&info->getString("kind")!="http_server"))
     throw Error("E_PACKAGE","packaging requires its matching checked native application artifact");
+  if(!foreignDirectory.empty()&&info->getString("foreign_catalogue")!="../foreign/host.json")
+    throw Error("E_FFI_PACKAGE","foreign package artifact lacks its executable-relative catalogue default");
   auto buildFolder=fs::path(built.executable).parent_path();std::string complete=built.key;
   for(const auto &file:{fs::path(built.executable),buildFolder/"program.mlir",buildFolder/"program.ll",buildFolder/"compilation.json",buildFolder/"build.json",buildFolder/"source-bundle.json"})complete+=hash(readFile(file.string()));
   for(const auto &name:nativeCompletionInputs(*info))complete+=hash(readFile((buildFolder/name).string()));
@@ -81,29 +83,13 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
 }
 
 }
-llvm::json::Value packageApplication(const Program &program,BuildOptions buildOptions,
-    const std::string &buildDirectory,const std::string &root,Store &store,
-    const PackageOptions &options) {
-  namespace fs=std::filesystem;
-  if(llvm::Triple(configureNative(buildOptions).target).isOSWindows())throw Error("E_TARGET","Windows application packages are not configured; build the explicit GNU/UCRT core artifact");
-  auto output=fs::absolute(options.directory).lexically_normal();
-  if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
-  auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";
-  const char *python=std::getenv("NEX_PYTHON");
-  auto candidate=program;llvm::json::Value projection=nullptr;llvm::json::Object foreignFiles;
-  std::set<std::string> reachable;std::function<void(const Function&)> visit=[&](const Function &function){
-    if(reachable.insert(function.name).second)for(const auto &name:function.dependencies)visit(program.function(name));
-  };visit(program.function(buildOptions.entry));
-  std::vector<const Function*> bindings;llvm::json::Object selection;
-  std::map<std::string,std::set<std::string>> exports;
-  for(const auto &name:reachable){const auto &function=program.function(name);if(function.foreign){bindings.push_back(&function);exports[function.foreign->library].insert(function.foreign->symbol);}}
-  if(!bindings.empty()){
-    if(options.foreign.empty())throw Error("E_FFI_PACKAGE","packaging external calls requires an explicit --foreign HOST.json operator catalogue");
-    // The host inspector and native dependency tools describe this execution
-    // host. Cross-target module preparation needs a separate target SDK path.
-    requireNativeHost(buildOptions);
-    for(const auto &[library,names]:exports){llvm::json::Array values;for(const auto &name:names)values.push_back(name);selection[library]=std::move(values);}
-    auto selected=folder/"selection.json";writeFile(selected.string(),json(llvm::json::Value(std::move(selection)))+"\n");
+ForeignPackagePreparation prepareForeignPackage(const PackageOptions &options,
+  const ForeignSelection &selection,const std::string &workingDirectory){
+  namespace fs=std::filesystem;auto folder=fs::path(workingDirectory),request=folder/"request.json";
+  fs::create_directories(folder);const char *python=std::getenv("NEX_PYTHON");
+  if(selection.empty())throw Error("E_FFI_PACKAGE","foreign preparation requires selected exports");
+  llvm::json::Object selectionObject;for(const auto &[name,exports]:selection){llvm::json::Array values;for(const auto &value:exports)values.push_back(value);selectionObject[name]=std::move(values);}
+    auto selected=folder/"selection.json";writeFile(selected.string(),json(llvm::json::Value(std::move(selectionObject)))+"\n");
     auto prepared=folder/"prepared";
     std::vector<std::string> command={python?python:"python3",resourceFile("tools/foreign_bundle.py"),
       "--nex",options.compiler,"--foreign",fs::absolute(options.foreign).string(),
@@ -115,34 +101,8 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     auto libraries=report?report->getObject("libraries"):nullptr;
     if(!report||report->getString("schema")!="nex.foreign-package/1"||report->getBoolean("assembly_passed")!=true||!libraries)
       throw Error("E_PACKAGE","invalid foreign preparation report; inputs retained at "+folder.string());
-    struct Edit{size_t begin,end;std::string replacement;};std::map<std::string,std::vector<Edit>> edits;
-    auto bundle=sourceBundle(program);auto files=bundle.getAsObject()->getObject("files");
-    llvm::json::Array changes;
-    for(const auto *function:bindings){
-      const auto &binding=*function->foreign;auto library=libraries->getObject(binding.library);
-      auto pin=library?library->getString("manifest_sha256"):std::nullopt;
-      if(!pin||library->getString("source_manifest_sha256")!=binding.manifest)
-        throw Error("E_FFI_PACKAGE","source external pin differs from the operator-selected original bundle: "+function->name,function->span);
-      const auto &span=binding.manifestSpan;const auto &source=program.units.at(function->unit).source;
-      if(span.begin<function->span.begin||span.end>function->span.end||span.begin>=span.end||span.end>source.size())
-        throw Error("E_PACKAGE","external source pin has no valid token location",function->span);
-      edits[function->unit].push_back({span.begin,span.end,json(pin->str(),false)});
-      for(auto &expected:candidate.functions)if(expected.name==function->name)expected.foreign->manifest=pin->str();
-      changes.push_back(llvm::json::Object{{"function",function->name},{"library",binding.library},{"export",binding.symbol},
-        {"source_manifest_sha256",binding.manifest},{"manifest_sha256",pin->str()}});
-    }
-    for(auto &[unit,values]:edits){
-      std::sort(values.begin(),values.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
-      auto source=program.units.at(unit).source;size_t previous=source.size();
-      for(const auto &edit:values){if(edit.end>previous)throw Error("E_PACKAGE","overlapping external pin projection");source.replace(edit.begin,edit.end-edit.begin,edit.replacement);previous=edit.begin;}(*files)[unit]=source;
-    }
-    auto derived=loadBundle(bundle,root);check(derived);
-    if(revision(derived)!=revision(candidate))throw Error("E_PACKAGE","packaged projection changed semantics outside reachable manifest pins");
+  llvm::json::Object foreignFiles;
     auto snapshot=inspectForeignCatalogue((prepared/"host.json").string());
-    for(const auto *function:bindings){
-      try{checkForeignBinding(snapshot,derived,derived.function(function->name));}
-      catch(const Error &error){throw Error("E_FFI_PACKAGE",error.what(),error.span);}
-    }
     if(report->getString("notices_root")=="catalogue"){
       size_t bytes=0;for(const auto &[name,data]:snapshot.files){(void)name;bytes+=data.size();}
       for(const auto &[name,value]:*libraries){
@@ -175,10 +135,111 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
       if(entry.is_symlink())throw Error("E_PACKAGE","symlink in prepared foreign input");
       if(entry.is_regular_file())foreignFiles[fs::relative(entry.path(),foreign).generic_string()]=sha256(readFile(entry.path().string()));
     }
-    projection=llvm::json::Object{{"schema","nex.foreign-projection/1"},{"source_revision",revision(program)},
+  return {foreign.string(),std::move(snapshot),std::move(preparedReport),std::move(foreignFiles)};
+}
+ForeignProgramProjection projectForeignProgram(const Program &program,
+  const std::set<std::string> &functions,const ForeignPackagePreparation &prepared,const std::string &root){
+  auto candidate=program;std::vector<const Function*> bindings;
+  for(const auto &name:functions){const auto &f=program.function(name);if(!f.foreign)throw Error("E_FFI_PACKAGE","projection requires an external binding: "+name);bindings.push_back(&f);}
+  const auto *libraries=prepared.report.getAsObject()->getObject("libraries");
+    struct Edit{size_t begin,end;std::string replacement;};std::map<std::string,std::vector<Edit>> edits;
+    auto bundle=sourceBundle(program);auto files=bundle.getAsObject()->getObject("files");
+    llvm::json::Array changes;
+    for(const auto *function:bindings){
+      const auto &binding=*function->foreign;auto library=libraries->getObject(binding.library);
+      auto pin=library?library->getString("manifest_sha256"):std::nullopt;
+      if(!pin||library->getString("source_manifest_sha256")!=binding.manifest)
+        throw Error("E_FFI_PACKAGE","source external pin differs from the operator-selected original bundle: "+function->name,function->span);
+      const auto &span=binding.manifestSpan;const auto &source=program.units.at(function->unit).source;
+      if(span.begin<function->span.begin||span.end>function->span.end||span.begin>=span.end||span.end>source.size())
+        throw Error("E_PACKAGE","external source pin has no valid token location",function->span);
+      edits[function->unit].push_back({span.begin,span.end,json(pin->str(),false)});
+      for(auto &expected:candidate.functions)if(expected.name==function->name)expected.foreign->manifest=pin->str();
+      changes.push_back(llvm::json::Object{{"function",function->name},{"library",binding.library},{"export",binding.symbol},
+        {"source_manifest_sha256",binding.manifest},{"manifest_sha256",pin->str()}});
+    }
+    for(auto &[unit,values]:edits){
+      std::sort(values.begin(),values.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
+      auto source=program.units.at(unit).source;size_t previous=source.size();
+      for(const auto &edit:values){if(edit.end>previous)throw Error("E_PACKAGE","overlapping external pin projection");source.replace(edit.begin,edit.end-edit.begin,edit.replacement);previous=edit.begin;}(*files)[unit]=source;
+    }
+    auto derived=loadBundle(bundle,root);check(derived);
+    if(revision(derived)!=revision(candidate))throw Error("E_PACKAGE","packaged projection changed semantics outside reachable manifest pins");
+    for(const auto *function:bindings){
+      try{checkForeignBinding(prepared.snapshot,derived,derived.function(function->name));}
+      catch(const Error &error){throw Error("E_FFI_PACKAGE",error.what(),error.span);}
+    }
+  auto report=llvm::json::Object{{"schema","nex.foreign-projection/1"},{"source_revision",revision(program)},
       {"packaged_revision",revision(derived)},{"source_hash",hash(json(sourceBundle(program),false))},
       {"packaged_source_hash",hash(json(sourceBundle(derived),false))},{"changes",std::move(changes)},
-      {"catalogue_hash",snapshot.hash},{"preparation",std::move(preparedReport)}};
+      {"catalogue_hash",prepared.snapshot.hash},{"preparation",prepared.report}};
+  return {std::move(derived),std::move(report)};
+}
+ForeignPackagePreparation selectForeignPackage(const ForeignPackagePreparation &prepared,
+    const ForeignSelection &selection,const std::string &directory){
+  if(selection.empty())throw Error("E_FFI_PACKAGE","application foreign selection is empty");
+  ForeignCatalogueSnapshot subset;subset.platform=prepared.snapshot.platform;
+  auto manifest=llvm::json::Object(*prepared.snapshot.manifest.getAsObject());
+  llvm::json::Object grants,libraries;std::set<std::string> retained;
+  auto copy=[&](const std::string &name){
+    auto found=prepared.snapshot.files.find(name);
+    if(found==prepared.snapshot.files.end())throw Error("E_FFI_PACKAGE","selected foreign package input is missing: "+name);
+    retained.insert(name);
+  };
+  for(const auto &[name,exports]:selection){
+    auto original=prepared.snapshot.grants.find(name);
+    if(original==prepared.snapshot.grants.end()||exports.empty()||
+       !std::includes(original->second.exports.begin(),original->second.exports.end(),exports.begin(),exports.end()))
+      throw Error("E_FFI_PACKAGE","application foreign selection exceeds prepared authority: "+name);
+    auto grant=original->second;grant.exports=exports;subset.grants.emplace(name,grant);
+    llvm::json::Array names;for(const auto &value:exports)names.push_back(value);
+    auto record=llvm::json::Object(*prepared.snapshot.manifest.getAsObject()->getObject("libraries")->getObject(name));
+    record["exports"]=llvm::json::Array(names);grants[name]=std::move(record);
+    auto library=llvm::json::Object(*prepared.report.getAsObject()->getObject("libraries")->getObject(name));
+    library["exports"]=std::move(names);
+    for(const auto &value:*library.getArray("components"))for(const auto &notice:*value.getAsObject()->getArray("license_files"))
+      copy(notice.getAsObject()->getString("path")->str());
+    libraries[name]=std::move(library);
+    auto prefix="bundles/"+grant.pin+"/";
+    for(const auto &[path,data]:prepared.snapshot.files){(void)data;if(path.starts_with(prefix))copy(path);}
+  }
+  manifest["libraries"]=std::move(grants);subset.manifest=std::move(manifest);
+  subset.identity=llvm::json::Object{{"schema","nex.foreign-catalogue/1"},{"platform",subset.platform},{"catalogue",subset.manifest}};
+  subset.hash=hash(json(subset.identity,false));
+  for(const auto &name:retained)subset.files.emplace(name,prepared.snapshot.files.at(name));
+  auto report=llvm::json::Object(*prepared.report.getAsObject());report["libraries"]=std::move(libraries);report["catalogue_hash"]=subset.hash;
+  saveForeignCatalogue(subset,directory);writeFile((std::filesystem::path(directory)/"foreign-package.json").string(),json(llvm::json::Value(llvm::json::Object(report)))+"\n");
+  llvm::json::Object files;
+  for(const auto &entry:std::filesystem::recursive_directory_iterator(directory))if(entry.is_regular_file())
+    files[entry.path().lexically_relative(directory).generic_string()]=sha256(readFile(entry.path().string()));
+  if(inspectForeignCatalogue((std::filesystem::path(directory)/"host.json").string()).hash!=subset.hash)
+    throw Error("E_FFI_PACKAGE","application foreign subset differs after capture");
+  return {directory,std::move(subset),std::move(report),std::move(files)};
+}
+llvm::json::Value packageApplication(const Program &program,BuildOptions buildOptions,
+    const std::string &buildDirectory,const std::string &root,Store &store,
+    const PackageOptions &options) {
+  namespace fs=std::filesystem;
+  if(llvm::Triple(configureNative(buildOptions).target).isOSWindows())throw Error("E_TARGET","Windows application packages are not configured; build the explicit GNU/UCRT core artifact");
+  auto output=fs::absolute(options.directory).lexically_normal();
+  if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
+  auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";
+  auto candidate=program;llvm::json::Value projection=nullptr;llvm::json::Object foreignFiles;
+  std::set<std::string> reachable;std::function<void(const Function&)> visit=[&](const Function &function){
+    if(reachable.insert(function.name).second)for(const auto &name:function.dependencies)visit(program.function(name));
+  };visit(program.function(buildOptions.entry));
+  std::vector<const Function*> bindings;
+  std::map<std::string,std::set<std::string>> exports;
+  for(const auto &name:reachable){const auto &function=program.function(name);if(function.foreign){bindings.push_back(&function);exports[function.foreign->library].insert(function.foreign->symbol);}}
+  if(!bindings.empty()){
+    if(options.foreign.empty())throw Error("E_FFI_PACKAGE","packaging external calls requires an explicit --foreign HOST.json operator catalogue");
+    // The host inspector and native dependency tools describe this execution
+    // host. Cross-target module preparation needs a separate target SDK path.
+    requireNativeHost(buildOptions);
+    auto prepared=prepareForeignPackage(options,exports,folder.string());
+    std::set<std::string> selectedFunctions;for(const auto *f:bindings)selectedFunctions.insert(f->name);
+    auto projected=projectForeignProgram(program,selectedFunctions,prepared,root);auto derived=std::move(projected.program);
+    projection=std::move(projected.report);foreignFiles=std::move(prepared.files);
     store.save(program,"",false);store.save(derived,"",false);candidate=std::move(derived);
     buildOptions.foreignCatalogue="../foreign/host.json";
   }else if(!options.foreign.empty())throw Error("E_FFI_PACKAGE","selected native entry has no reachable external calls");
@@ -187,13 +248,14 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
       projection.getAsObject()?(folder/"foreign").string():"",std::move(projection),std::move(foreignFiles));
   fs::remove_all(folder);return parsed;
 }
-llvm::json::Value packageNativeArtifact(const Program &program,const BuildResult &built,const PackageOptions &options){
+llvm::json::Value packageNativeArtifact(const Program &program,const BuildResult &built,const PackageOptions &options,const ForeignPackageArtifact *foreign){
   namespace fs=std::filesystem;
-  if(built.foreignCalls||!options.foreign.empty())throw Error("E_PROJECT_CAPABILITY","project packaging of source foreign calls requires project-wide pin projection, which remains pending");
+  if(built.foreignCalls!=bool(foreign))throw Error("E_FFI_PACKAGE","checked native foreign requirements differ from the captured application grant");
   auto output=fs::absolute(options.directory).lexically_normal();
   if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   auto folder=fs::path(createTemporaryDirectory("nex-project-application-package"));
-  auto result=packageCapturedArtifact(program,built,options,folder/"request.json","",nullptr,{});
+  auto result=packageCapturedArtifact(program,built,options,folder/"request.json",foreign?foreign->directory:"",
+    foreign?foreign->projection:llvm::json::Value(nullptr),foreign?llvm::json::Object(foreign->files):llvm::json::Object{});
   fs::remove_all(folder);return result;
 }
 

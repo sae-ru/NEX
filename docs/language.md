@@ -1,3 +1,8 @@
+Toolchain0.84 adds external project foreign packaging: one checked literal-pin
+projection across components, per-application grants and captured package tasks.
+It changes no language0.16 syntax, effects, realms or canonical formats and
+performs no graph migration. Platform acceptance remains separate.
+
 Toolchain0.83 task workload captures, synthetic local server state and request
 budgets are external development metadata. Language0.16 grammar, canonical
 identity, effect/realm/ownership semantics and migration policy are unchanged.

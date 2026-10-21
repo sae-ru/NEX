@@ -104,7 +104,7 @@ void validateShape(const JSON &task){
     if(project&&kind=="profile")add({"workload","workload_hash","server_workers"});
     if(kind=="package")add({"notices","notices_hash"});
     if(project||kind=="build"||kind=="test"||kind=="run"||kind=="profile")add({"toolchain","toolchain_hash"});
-    if(kind=="test"||kind=="run"||kind=="profile")add({"foreign_hash"});
+    if(kind=="test"||kind=="run"||kind=="profile"||kind=="package")add({"foreign_hash"});
     fields(c,names);if(!checks.insert(identifier(c,"id")).second)invalid("duplicate check");if(!programs.contains(text(c,"program")))invalid("unknown check program");text(c,"target");number(c,"timeout_seconds",60);
     if(bool(c.get("toolchain"))!=bool(c.get("toolchain_hash")))invalid("toolchain and toolchain_hash must be supplied together");
     if(project){identifier(c,"configuration");if(c.get("profile"))invalid("project checks select a configuration, without overriding its profile");}
@@ -113,7 +113,7 @@ void validateShape(const JSON &task){
     if(bool(c.get("workload"))!=bool(c.get("workload_hash")))invalid("workload and workload_hash must be supplied together");
     if(c.get("workload")){if(!project||kind!="profile"||text(c,"target")!="server")invalid("workload requires a project server profile check");pathName(text(c,"workload"));digest(c,"workload_hash");number(c,"server_workers",8,1,64);}
     else if(c.get("server_workers")||(project&&kind=="profile"&&text(c,"target")=="server"))invalid("server profile requires a pinned workload");
-    if(c.get("foreign_hash")){digest(c,"foreign_hash");if(text(c,"target")!="native"&&!(project&&kind=="profile"&&c.get("workload")&&text(c,"target")=="server"))invalid("foreign_hash requires native execution or a server workload");}
+    if(c.get("foreign_hash")){digest(c,"foreign_hash");if(text(c,"target")!="native"&&!(project&&text(c,"target")=="server"&&(kind=="package"||(kind=="profile"&&c.get("workload")))))invalid("foreign_hash requires native execution, native/server packaging or a server workload");}
     if(kind=="test"){std::set<std::string> seen;for(const auto &v:array(c,"tests")){const auto &pin=object(v);fields(pin,{"symbol","content_hash"});if(!seen.insert(text(pin,"symbol")).second)invalid("duplicate test");digest(pin,"content_hash");}}
     if(kind=="build"||kind=="run"){auto profile=optional(c,"profile","debug");if(profile!="debug"&&profile!="release"&&profile!="profile")invalid("unknown build profile");if(kind=="build"){auto mode=optional(c,"mode","application");if(mode!="application"&&mode!="library"&&mode!="module")invalid("unknown build mode");}if(c.get("entry"))text(c,"entry");}
     if(kind=="run"){auto e=c.getObject("expect");if(!e)invalid("run requires expect");fields(*e,{"stdout","exit_code","runtime_code"});text(*e,"stdout",true,true);number(*e,"exit_code",999,0,255);if(!e->get("exit_code"))invalid("run requires exit_code");if(e->get("runtime_code"))text(*e,"runtime_code");}
@@ -254,7 +254,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
     covered[id]=reach(p,roots);structures[id]=types(p,covered[id]);
     bool executes=kind=="run"||kind=="profile"||(kind=="test"&&text(c,"target")=="native");
     bool external=false;for(const auto &name:covered[id])external|=p.function(name).foreign.has_value();
-    if(executes&&external&&!c.get("foreign_hash"))throw Error("E_TASK_FOREIGN","external execution check must pin foreign_hash: "+id);
+    if((executes||kind=="package")&&external&&!c.get("foreign_hash"))throw Error("E_TASK_FOREIGN","external execution or package check must pin foreign_hash: "+id);
     if(c.get("foreign_hash")){
       if(options.foreign.empty())throw Error("E_TASK_FOREIGN","supply a current trusted --foreign HOST.json for check: "+id);
       if(!result.foreign)result.foreign=inspectForeignCatalogue(options.foreign);
@@ -263,7 +263,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       result.foreignChecks.insert(id);
     }
   }
-  if(!options.foreign.empty()&&!result.foreign)throw Error("E_TASK_FOREIGN","no task execution check pins the supplied operator catalogue");
+  if(!options.foreign.empty()&&!result.foreign)throw Error("E_TASK_FOREIGN","no task execution or package check pins the supplied operator catalogue");
   if(result.foreign&&!frozen.empty())verifyForeignCatalogue(*result.foreign,frozen/"inputs/foreign");
   for(const auto &[id,capture]:result.projects){
     auto temporary=fs::path(createTemporaryDirectory("nex-task-project"));
@@ -316,7 +316,7 @@ std::map<std::string,std::string> resources(){
       auto key=i->path().lexically_relative(root).generic_string();files.emplace(key,readFile(i->path().string()));
     }
   }
-  for(const auto &name:{"tools/app_bundle.py","tools/sdk_bundle.py","tools/server_workload.py"}){
+  for(const auto &name:{"tools/app_bundle.py","tools/sdk_bundle.py","tools/foreign_bundle.py","tools/server_workload.py"}){
     auto path=root/name;if(fs::is_symlink(path)||!fs::is_regular_file(path))throw Error("E_TASK_RESOURCE","missing trusted package resource");
     auto data=readFile(path.string());bytes+=data.size();if(bytes>64*1048576||files.size()>=4096)invalid("compiler resource snapshot limit exceeded");files.emplace(name,std::move(data));
   }
@@ -413,7 +413,41 @@ struct Runner {
       throw Error("E_TASK_INTEGRITY","captured workload or trusted runner changed: "+id);return selected;
   }
   void verifyWorkload(const std::string &id){if(p.workloads.contains(id))(void)checkedWorkload(id);}
-  void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id))verifyForeignCatalogue(*p.foreign,directory/"inputs/foreign");}
+  void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id)){
+    verifyForeignCatalogue(*p.foreign,directory/"inputs/foreign");
+    if(inspectForeignCatalogue(options.foreign).hash!=p.foreign->hash)throw Error("E_TASK_FOREIGN","current operator catalogue changed during acceptance");
+  }}
+  fs::path packageNotices(const std::string &id,const fs::path &artifact,Object &row){
+    auto original=directory/"inputs/package-notices"/id;
+    if(!p.foreignChecks.contains(id))return original/"notices.json";
+    verifyForeign(id);verifyNotices(id);
+    auto catalogue=JSON(*object(p.packageNotices.at(id)).get("catalogue"));
+    auto current=readJSON(fs::absolute(options.foreign));
+    auto libraries=object(current).getObject("libraries");if(!libraries)throw Error("E_TASK_FOREIGN","current operator libraries changed during provenance projection");
+    auto within=[](const fs::path &file,const fs::path &root){auto relative=file.lexically_relative(root);return !relative.is_absolute()&&std::none_of(relative.begin(),relative.end(),[](auto part){return part=="..";});};
+    size_t projected=0;
+    for(auto &value:*catalogue.getAsObject()->getArray("components")){
+      auto &component=*value.getAsObject();auto &roots=*component.getArray("roots");Array additions;std::set<std::string> seen;
+      for(const auto &[name,grant]:p.foreign->grants){
+        auto selected=libraries->get(name);if(!selected)throw Error("E_TASK_FOREIGN","current operator grant disappeared during provenance projection");
+        const auto &library=object(*selected);
+        if(text(library,"manifest_sha256")!=grant.pin)throw Error("E_TASK_FOREIGN","current operator pin changed during provenance projection");
+        auto source=fs::canonical(fs::absolute(options.foreign).parent_path()/text(library,"directory"));
+        auto prefix="bundles/"+grant.pin+"/";
+        for(const auto &[path,bytes]:p.foreign->files){
+          (void)bytes;if(!path.starts_with(prefix))continue;auto member=path.substr(prefix.size());
+          bool covered=false;for(const auto &root:roots)covered|=within(source/member,fs::path(root.getAsString()->str()));
+          auto captured=(directory/"inputs/foreign"/path).string();
+          if(covered&&seen.insert(captured).second){if(++projected>8192)throw Error("E_TASK_NOTICES","foreign provenance projection exceeds8192 exact members");additions.push_back(captured);}
+        }
+      }
+      for(auto &path:additions)roots.push_back(std::move(path));
+      for(auto &path:*component.getArray("license_files"))path=(original/path.getAsString()->str()).string();
+    }
+    auto bytes=json(catalogue);if(bytes.size()+1>16*1048576)throw Error("E_TASK_NOTICES","foreign provenance projection exceeds16MiB");
+    auto output=artifact/"foreign-notices.json";writeFile(output.string(),bytes+"\n");
+    row["foreign_notice_projection_hash"]=hash(json(catalogue,false));verifyForeign(id);verifyNotices(id);return output;
+  }
   void verifyToolchain(const std::string &id){
     auto selected=p.checkTools.find(id);if(selected==p.checkTools.end())return;
     BuildOptions native;native.toolchain=inside(directory,"inputs/toolchains/"+selected->second+"/config.json").string();
@@ -424,7 +458,7 @@ struct Runner {
     const auto &candidate=p.programs.at(program);bool project=!args.empty()&&args[0]=="project";
     std::vector<std::string> command{options.compiler};command.insert(command.end(),args.begin(),args.end());
     if(p.checkTools.contains(id)&&!args.empty()&&(args[0]=="build"||args[0]=="test"||args[0]=="run"||args[0]=="profile"))command.insert(command.end(),{"--toolchain",(directory/"inputs/toolchains"/p.checkTools.at(id)/"config.json").string()});
-    bool projectExec=false;if(project)for(size_t i=1;i+1<args.size();++i)if(args[i]=="--kind")projectExec=args[i+1]=="test"||args[i+1]=="run"||args[i+1]=="profile";
+    bool projectExec=false;if(project)for(size_t i=1;i+1<args.size();++i)if(args[i]=="--kind")projectExec=args[i+1]=="test"||args[i+1]=="run"||args[i+1]=="profile"||args[i+1]=="package";
     if(p.foreignChecks.contains(id)&&!args.empty()&&(projectExec||args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="profile"))command.insert(command.end(),{"--foreign",(directory/"inputs/foreign/host.json").string()});
     if(!project)command.insert(command.end(),{"--revision",selectedRevision.empty()?candidate.revision:selectedRevision});
     command.insert(command.end(),{"--build-directory",(fs::path(options.root)/".nex/build").string(),"--json"});
@@ -587,7 +621,7 @@ struct Runner {
       auto value=invoke({"api","--directory",(artifact/"generated").string()},"api");passed=successful(value);row["receipt"]=text(object(value),"receipt");
     }else if(kind=="package"){
       auto destination=artifact/"package";auto args=projectArguments("package");args.insert(args.end(),{"--directory",destination.string()});
-      if(p.packageNotices.contains(id)){args.insert(args.end(),{"--notices",(directory/"inputs/package-notices"/id/"notices.json").string()});row["notices_hash"]=taskPackageNoticesHash(p.packageNotices.at(id));}
+      if(p.packageNotices.contains(id)){args.insert(args.end(),{"--notices",packageNotices(id,artifact,row).string()});row["notices_hash"]=taskPackageNoticesHash(p.packageNotices.at(id));}
       auto value=invoke(args,"package");passed=successful(value);row["receipt"]=text(object(value),"receipt");
       if(passed){
         const auto &r=response(value);if(r.getString("schema")!="nex.project-package/1"||r.getBoolean("application_execution").value_or(true))throw Error("E_TASK_ARTIFACT","invalid project package response");

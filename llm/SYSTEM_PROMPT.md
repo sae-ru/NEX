@@ -524,3 +524,18 @@ Store. Pass complete native dependency notices as required; compiler-owned exact
 image inventories do not grant provenance to unrelated libraries. Project-wide
 source-foreign pin projection, packaged-image debug provenance, Windows packages
 and combined project execution/task/DAP/editor flows remain pending.
+
+For toolchains advertising `project_foreign_pin_projection`, package the declared
+architecture with `nex project --kind package --foreign HOST.json --directory NEW
+--json` and the reviewed notice inputs. First inspect `project --kind plan
+--foreign HOST.json --json`; it checks grants without preparing or initializing
+native modules. The compiler derives one consistent physical literal-pin
+projection for selected shared/archive/source components and checks binary
+contracts again. Actual app catalogues contain only their reachable exports.
+The original files, dependency lock and graph Store stay unchanged. Record both
+source/derived identities from `foreign_projection`; its `scope: project` may
+include pin changes needed by another selected app. Never replace a binary edge
+with source, copy another app's authority, or claim packaging executes the output.
+Native/server task package checks with reachable externals require `foreign_hash`
+and a current trusted catalogue on run/replay. Debug/core metadata for rewritten
+deployment images and cross-target foreign packaging remain pending.

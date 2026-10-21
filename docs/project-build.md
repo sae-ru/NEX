@@ -352,6 +352,47 @@ on its intended host before treating execution as verified.
 Credentials, keys, databases and operator runtime settings are supplied after
 packaging. Serve a web directory from its matching configured server/static
 host; browser route fallback and API configuration retain their existing rules.
-Project foreign-pin projection, debug/core provenance for rewritten packaged
-images, Windows installers and project task/replay/editor flows remain pending. Use source packaging for the existing explicitly reviewed foreign
-catalogue workflow; do not silently replace a binary project edge with source.
+Debug/core provenance for rewritten packaged images, Windows installers and
+dedicated task/editor debugging remain pending. Project package task/replay is
+described in project-tasks.md; it preserves actual binary edges.
+
+## Foreign project packages (candidate0.84)
+
+```sh
+nex project --kind plan --foreign /operator/host.json --json
+nex project --kind package --foreign /operator/host.json \
+  --notices notices.json --directory /new/deployment --json
+```
+
+The original locked project, every selected source closure, direct dependency
+edge, concrete export, private binary contract and toolchain fingerprint are
+checked before preparation. The readonly plan checks source signatures and
+current operator grants; it invokes no native tool and initializes no module.
+Packaging currently requires a matching macOS/Linux host target for foreign
+module dependency discovery. The normal native provenance/notice rules apply.
+
+The compiler prepares the union of actually reachable app/server exports once.
+Only exact external manifest literal tokens are projected in memory across all
+selected components sharing those physical declarations. It reloads/checks the
+projection and revalidates the declared binary contracts, then consumes the
+actual archives and shared images. Original sources, lock and Store stay
+unchanged. Input aliases, source/metadata bytes, catalogue and compiler helpers
+are checked around preparation, compilation and final publication.
+
+Each application receives a separate `foreign/host.json` containing only that
+application's reachable libraries/exports and the original operator module
+quota. Shared providers use the same projected pins. Apps without reachable
+externals receive no catalogue, including HTTP companions linked to a common
+foreign-enabled runtime. The runtime resolves the default relative to the
+actual executable, including a shared runtime loaded from `lib/`.
+
+`project.json.foreign_projection` records `nex.project-foreign-projection/1`,
+the original plan/catalogue and source/derived identities for every selected
+component. Per-app `application.json.foreign_projection` has `scope: project`
+and a narrowed preparation/catalogue. A source closure can include changes
+needed by another selected application; these do not grant authority to call
+those exports. The manifest inventories bind the actual relocated native bytes.
+No module constructor, application, database or runtime credential is executed
+or created during packaging. Verify relocated output on its destination host.
+Candidate focused checks and full platform/installed SDK acceptance have
+separate evidence; do not infer a completed release from this design contract.

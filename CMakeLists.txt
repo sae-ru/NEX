@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.83.0 LANGUAGES C CXX)
+project(NEX VERSION 0.84.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -97,6 +97,9 @@ install(DIRECTORY editor DESTINATION share/nex PATTERN node_modules EXCLUDE PATT
 enable_testing()
 add_test(NAME project_packaging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_packaging.py $<TARGET_FILE:nex>)
 set_tests_properties(project_packaging PROPERTIES COST 100 TIMEOUT 1200)
+add_test(NAME project_foreign_packaging COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_foreign_packaging.py $<TARGET_FILE:nex>)
+set_tests_properties(project_foreign_packaging PROPERTIES COST 180 TIMEOUT 1800)
 add_test(NAME native_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_images.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
 set_tests_properties(native_images PROPERTIES COST 100 TIMEOUT 1200)
 add_test(NAME native_staging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_staging.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)

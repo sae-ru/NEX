@@ -1,3 +1,14 @@
+# Current0.84 project foreign packages
+
+- [x] Implement exact project-wide source projection and per-app foreign grants.
+- [x] Preserve actual archive/shared providers and executable-relative defaults.
+- [x] Guard source aliases, metadata, catalogues and trusted helpers during build.
+- [x] Add pinned package tasks and exact-member captured provenance projection.
+- [ ] Finish focused task/deployment/ownership/negative checks and coherent
+  full90, installed SDK and source-free Linux acceptance for a frozen backup.
+- [ ] Continue server/task-editor debugging, source concurrency, general CPU/GPU/
+  NPU interfaces and the remaining platform delivery. Full objective stays open.
+
 # Current0.83 workload tasks
 
 - [x] Pin/capture HTTP workload inputs and current trusted runner for project profiles.

@@ -86,6 +86,11 @@ def validate_completed_report(report):
                 'input_rejection', 'resource_stop', 'post_trap_recovery', 'module_integrity',
                 'source_deleted', 'independent_runtime', 'cache_integrity', 'server_exclusion')),
                 'SDK acceptance lacks complete installed scalar Wasm evidence')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 84, 0):
+        foreign = report.get('evidence', {}).get('foreign_boundary', {}).get('source_external', {}).get('project_package', {})
+        require(all(foreign.get(key) is True for key in ('actual_shared_provider', 'task_package',
+                'source_deleted_replay', 'module_inputs_deleted', 'environment_without_sdk', 'nominal_contract_agreement')),
+                'SDK acceptance lacks complete installed foreign project packaging evidence')
 
 
 class DAP:
@@ -1544,6 +1549,54 @@ int main() {
                 require(path.is_symlink() and str(path.readlink()) == record['symlink'], 'packaged alias differs')
             else:
                 require(hashlib.sha256(path.read_bytes()).hexdigest() == record['sha256'], 'packaged file hash differs')
+        project = directory/'foreign-project'
+        for name in ('core','app','licenses'):
+            (project/name).mkdir(parents=True)
+        (project/'core/main.nex').write_text((resources/'examples/ffi/source.nex.in').read_text().replace('@MANIFEST_SHA256@',manifest_pin))
+        (project/'app/main.nex').write_text('''module packaged_consumer;
+import "../core/main.nex" as c;
+server fn main()->unit!{ffi,io}{print(encode_json(c::contract(unwrap(bytes([0,255,128,1])))));}
+''')
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':report['doctor']['language'],'entry':'app/main.nex'}))
+        (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'release',
+            'configurations':{'release':{'profile':'release'}},'components':{
+                'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'contract'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'dynamic'}}}}))
+        components = []
+        for i, component in enumerate(notice_components):
+            licenses = []
+            for j, source_license in enumerate(component['license_files']):
+                target = project/'licenses'/('%d-%d.txt' % (i,j))
+                shutil.copyfile(source_license,target)
+                licenses.append(str(target.relative_to(project)))
+            components.append({**component,'license_files':licenses})
+        (project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':components}))
+        readonly = cli('project','--foreign',package_host,cwd=project)
+        require(not readonly['external_tools_invoked'] and readonly['foreign_packaging']['applications']=={'app':{'example':['contract']}},
+                'foreign project readonly selection differs')
+        deployment = directory/'foreign-project-package'
+        captured = cli('project','--kind','package','--foreign',package_host,'--notices','notices.json',
+            '--directory',deployment,*package_flags,cwd=project,timeout=300)
+        require(captured['foreign_projection']['source_files_modified'] is False and not (project/'.nex/graph.db').exists(),
+                'project packaging modified its source or opened a graph')
+        app_manifest=json.loads((deployment/'apps/app/application.json').read_text())
+        require(sum(row.get('owned_image_kind')=='library' for row in app_manifest['files'].values())==1,
+                'foreign project did not consume its actual shared provider')
+        task=cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=project)
+        notice_pin=cli('task','notices.json','--kind','notices',cwd=project)['inputs_hash']
+        package_catalogue=cli('foreign',package_host,cwd=project)
+        task.update(checks=[{'id':'package','kind':'package','target':'native','program':'app','configuration':'release',
+            'timeout_seconds':300,'foreign_hash':package_catalogue['hash'],'notices':'notices.json','notices_hash':notice_pin}],
+            requirements=[{'id':'delivery','text':'Capture the actual checked foreign project package',
+                'targets':['native'],'checks':['package'],'bindings':[{'program':'app','kind':'function','symbol':'packaged_consumer::main'}]}])
+        (project/'task.json').write_text(json.dumps(task))
+        cli('task','task.json','--kind','check','--foreign',package_host,cwd=project)
+        task_run=cli('task','task.json','--kind','run','--foreign',package_host,'--directory',directory/'foreign-project-task',cwd=project,timeout=480)
+        require(task_run['ok'],'installed foreign project package task failed')
+        shutil.rmtree(project)
+        task_replay=cli('task',task_run['output'],'--kind','replay','--foreign',package_host,
+            '--directory',directory/'foreign-project-replayed',cwd=directory,timeout=480)
+        require(task_replay['ok'],'source-deleted foreign project package task replay failed')
         shutil.rmtree(package_bundle)
         package_host.unlink()
         package_notices.unlink()
@@ -1555,6 +1608,12 @@ int main() {
             environment.update(PATH='/usr/bin:/bin', NEX_RESOURCE_DIR=str(root / 'absent-packaged-resources'))
             require(run([moved_package / 'bin/app'], cwd=moved_package) == expected_typed,
                     'independent packaged nominal foreign application differs')
+            require(run([deployment/'apps/app/bin/app'],cwd=directory)==expected_typed,
+                    'independent project shared foreign application differs')
+            replay_receipt=Path(task_replay['output'])
+            row=json.loads(replay_receipt.read_text())['checks'][0]
+            require(run([replay_receipt.parent/row['package']/'apps/app/bin/app'],cwd=directory)==expected_typed,
+                    'independent replayed project foreign application differs')
         finally:
             environment.clear()
             environment.update(saved_environment)
@@ -1563,6 +1622,10 @@ int main() {
             'source_deleted': True, 'module_inputs_deleted': True, 'moved': True,
             'environment_without_sdk': True, 'exact_file_inventory': True,
             'nominal_contract_agreement': True, 'manifest': str(moved_package / 'application.json')}
+        report['evidence']['foreign_boundary']['source_external']['project_package'] = {
+            'actual_shared_provider':True,'task_package':True,'source_deleted_replay':True,
+            'module_inputs_deleted':True,'environment_without_sdk':True,'nominal_contract_agreement':True,
+            'manifest':str(deployment/'project.json'),'receipt':task_run['output'],'replay':task_replay['output']}
 
     def binary_values():
         directory = root / 'binary-values'

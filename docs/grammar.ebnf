@@ -200,3 +200,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.83 workload tasks/budgets use external JSON, with no source
    syntax, canonical language0.16 identity or migration change. *)
+
+(* Toolchain0.84 project-wide foreign package projection is external build/task
+   metadata. Source syntax and language0.16 semantics remain unchanged. *)

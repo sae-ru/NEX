@@ -736,7 +736,7 @@
           },
           {
             "type": "object",
-            "description": "Package a project-backed program using its declared configuration. Compiler requires program.project and an executable, server or web component. This builds/captures but never executes the application.",
+            "description": "Package a project-backed program using its declared configuration. Compiler requires program.project and an executable, server or web component. This builds/captures but never executes the application. Reachable native/server external bindings require foreign_hash and a current operator catalogue; preparation never initializes the module.",
             "properties": {
               "id": {
                 "$ref": "#/$defs/id"
@@ -773,6 +773,9 @@
               },
               "notices_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "foreign_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -796,7 +799,26 @@
               "notices_hash": [
                 "notices"
               ]
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "foreign_hash"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       },

@@ -121,7 +121,7 @@ int run(const Options &o) {
     const auto kind=o.get("--kind","plan");const bool packaging=kind=="package",execution=kind=="run"||kind=="test"||kind=="profile"||kind=="debug";
     for(const auto &[key,value]:o.values){(void)value;
       bool allowed=((kind=="plan"||kind=="profile")&&key=="--workload")||key=="--kind"||key=="--component"||key=="--configuration"||key=="--build-directory"||key=="--output"||
-        (packaging&&(key=="--directory"||key=="--notices"))||(execution&&key=="--foreign")||
+        (packaging&&(key=="--directory"||key=="--notices"))||((execution||packaging||kind=="plan")&&key=="--foreign")||
         ((kind=="run"||kind=="test"||kind=="profile")&&key=="--timeout")||((kind=="test"||kind=="build-test")&&key=="--symbol")||
         (kind=="debug"&&key=="--adapter")||(kind=="profile"&&(key=="--profile-output"||key=="--events"||key=="--scenario"));
       if(!allowed)throw Error("E_OPTION","unsupported project option: "+key);
@@ -140,7 +140,8 @@ int run(const Options &o) {
       if(n<minimum||n>maximum)throw Error("E_OPTION",key+" is outside its supported integer range");return unsigned(n);
     };
     project.compiler=o.compiler;project.machine=o.has("--json");project.adapter=o.get("--adapter","lldb");project.arguments=o.extra;
-    project.foreign=o.get("--foreign");project.selectedTest=o.get("--symbol");project.timeout=count("--timeout",30,1,3600);project.explicitTimeout=o.values.contains("--timeout");
+    project.foreign=o.get("--foreign");if(packaging)project.package.foreign=project.foreign;
+    project.selectedTest=o.get("--symbol");project.timeout=count("--timeout",30,1,3600);project.explicitTimeout=o.values.contains("--timeout");
     if(o.values.contains("--workload")&&o.get("--workload").empty())throw Error("E_OPTION","--workload requires a nonempty project file");
     project.workload=o.get("--workload");
     project.profiling={o.get("--profile-output"),o.get("--scenario"),count("--events",100000,0,1000000),project.timeout,{}};
@@ -264,7 +265,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|project-task|server-workload|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|project-task|server-workload|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
