@@ -12,6 +12,11 @@ python3 /absolute/nex-sdk/share/nex/tools/sdk_acceptance.py /absolute/nex-sdk \
   --output /absolute/new-evidence --browser --live
 ```
 
+For private compiler runtime libraries, add `--package-notices FILE` containing
+operator `nex.sdk-notices/1` components with their full local license texts.
+Acceptance merges these with its application/foreign fixture notices; only
+components actually used by each package are copied.
+
 The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
@@ -258,8 +263,10 @@ The bundle includes Clang/llvm-ar/LLD and Clang resources, SQLite/OpenSSL header
 (including the architecture-specific OpenSSL configuration) and all non-platform
 ELF dependencies. Copied images get `$ORIGIN` RUNPATH entries; SONAME aliases are
 retained and absolute DT_NEEDED entries are normalized. Each direct library
-resolution must stay within the bundle. GNU glibc/loader, libstdc++/libgcc and the
-GCC development headers/CRT stay part of the external platform SDK. This is a
+resolution must stay within the bundle. GNU glibc/loader and GCC development
+headers/CRT stay part of the external platform SDK. libstdc++/libgcc resolved
+from OS library directories remain external; private compiler copies are
+captured with their component notices. This is a
 supported-platform development bundle, not a libc-independent Linux executable.
 The manifest records the build distribution, observed GLIBC/GLIBCXX requirements,
 platform prerequisites and the actual patchelf version. Broader Linux distributions,

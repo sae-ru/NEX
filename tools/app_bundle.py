@@ -156,7 +156,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             glibc, glibcxx = collector.relocate_elf(patchelf)
             details = {'platform': 'linux', 'host_glibc': run(['getconf', 'GNU_LIBC_VERSION']).strip(),
                        'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx),
-                       'external_prerequisites': ['matching GNU loader/glibc/libstdc++/libgcc runtime'],
+                       'external_prerequisites': ['matching GNU loader/glibc runtime; system C++/GCC runtimes listed in system_libraries'],
                        'packager_patchelf': run([patchelf, '--version']).strip()}
         used_components = collector.copy_notices('licenses')
         foreign, foreign_components, foreign_system = copy_foreign(request, stage)

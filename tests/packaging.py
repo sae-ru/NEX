@@ -137,6 +137,44 @@ server fn main() -> unit !{db,io} {
         child = subprocess.run([moved / 'bin/app'], env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent', **env}, capture_output=True, text=True)
         self.assertEqual((child.returncode, child.stdout), (0, 'Я🧠\n'), child.stderr)
 
+    @unittest.skipUnless(platform.system() == 'Linux', 'ELF private GNU C++ runtime')
+    def test_private_cxx_runtime_is_captured_with_notices_and_relocates(self):
+        self.source('module private_runtime; fn main()->unit!{io}{print(42);}')
+        built=self.cli('build', '--profile', 'release')
+        listing=subprocess.check_output(['ldd', built['executable']], text=True)
+        selected=dict(re.findall(r'^\s*(libstdc\+\+\.so\.6|libgcc_s\.so\.1)\s*=>\s*(.*?)\s+\(0x',listing,re.M))
+        if 'libstdc++.so.6' not in selected:self.skipTest('compiler uses no dynamic GNU C++ runtime')
+        private=self.root/'private C++ runtime 🧠';private.mkdir()
+        for soname,filename in selected.items():
+            origin=Path(filename).resolve();target=private/origin.name;shutil.copy2(origin,target)
+            subprocess.run(['patchelf','--set-rpath','$ORIGIN',target],check=True)
+            if target.name!=soname:(private/soname).symlink_to(target.name)
+        doctor=self.cli('doctor');wrapper=self.root/'private-driver.py'
+        wrapper.write_text('#!/usr/bin/env python3\nimport subprocess,sys\nfrom pathlib import Path\n'
+            'args=sys.argv[1:]\nr=subprocess.run(['+repr(doctor['native_compiler'])+ ',*args])\n'
+            'if r.returncode==0 and "-o" in args and not any(x in args for x in ["-c","-###","-E","-S"]):\n'
+            ' p=Path(args[args.index("-o")+1])\n'
+            ' if p.is_file() and p.read_bytes()[:4]==b"\\x7fELF":\n'
+            '  r=subprocess.run(["patchelf","--set-rpath",'+repr(str(private))+',str(p)])\n'
+            'raise SystemExit(r.returncode)\n')
+        wrapper.chmod(0o755)
+        config=self.root/'private-toolchain.json';config.write_text(json.dumps({
+            'schema':'nex.toolchain/1','target':doctor['host'],'compiler':str(wrapper)}))
+        output=self.root/'private-package'
+        failure=self.cli('package','--toolchain',config,'--directory',output,ok=False,timeout=180)
+        self.assertEqual(failure['code'],'E_PACKAGE');self.assertIn('provenance',failure['message'])
+        self.assertFalse(output.exists())
+        self.cli('package','--toolchain',config,'--directory',output,
+                 '--notices',self.notice([private]),timeout=180)
+        report=self.validate_inventory(output)
+        self.assertTrue(any('libstdc++.so.6' in name for name in report['files']))
+        self.assertFalse(any(Path(name).name in selected for name in report['system_libraries']))
+        self.assertEqual([c['name'] for c in report['components']],['test-inputs'])
+        shutil.rmtree(private);shutil.rmtree(self.root/'.nex');self.file.unlink()
+        moved=self.root/'moved private application';output.rename(moved)
+        child=subprocess.run([moved/'bin/app'],env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent'},capture_output=True,text=True)
+        self.assertEqual((child.returncode,child.stdout),(0,'42\n'),child.stderr)
+
     def test_existing_output_and_unsupported_modes_are_rejected(self):
         self.source('module rejected; fn main() -> unit {}')
         output = self.root / 'occupied';output.mkdir()

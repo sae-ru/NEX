@@ -27,7 +27,11 @@ replacing an existing destination. The package contains:
 
 No compiler, LLVM, Python, Node, source tree or development SDK is needed to
 execute a completed package. macOS system libraries or the matching Linux GNU
-loader/glibc/libstdc++/libgcc runtime remain host prerequisites. Recorded symbol
+loader/glibc remain host prerequisites. GNU C++/GCC runtimes resolved from
+`/lib`, `/lib64`, `/usr/lib` or `/usr/lib64` remain platform prerequisites.
+Copies resolved from private compiler prefixes are captured with their complete
+notices and origin-relative paths, including SONAME aliases. Their version
+definitions are not reported as version requirements. Recorded symbol
 requirements are diagnostic data; they do not establish compatibility with an
 untested distribution/OS. macOS copies receive ad hoc signatures; Developer ID
 signing, notarization, GUI application bundles and installers remain pending.

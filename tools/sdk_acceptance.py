@@ -179,6 +179,8 @@ def main():
     parser.add_argument('--output', required=True, type=Path, help='New or empty evidence directory')
     parser.add_argument('--live', action='store_true', help='Require actual LLDB and NEX DAP child launches')
     parser.add_argument('--browser', action='store_true', help='Require a real locked TypeScript/Vite release build')
+    parser.add_argument('--package-notices', type=Path,
+                        help='Additional operator nex.sdk-notices/1 provenance for private application/module runtime dependencies')
     parser.add_argument('--forbid-source', action='append', type=Path, default=[],
                         help='Require this source mount path to be absent (repeatable)')
     args = parser.parse_args()
@@ -201,10 +203,41 @@ def main():
               'phases': [], 'commands': [], 'evidence': {}}
     started = time.monotonic()
 
+    def notice_components(path):
+        path = path.resolve(strict=True)
+        document = json.loads(path.read_text())
+        require(document.get('schema') == 'nex.sdk-notices/1', 'expected nex.sdk-notices/1')
+        components = []
+        for component in document['components']:
+            item = dict(component)
+            for field in ('roots', 'license_files'):
+                item[field] = [str((path.parent / value).resolve(strict=True)) for value in item[field]]
+            components.append(item)
+        return components
+
+    extra_notices = notice_components(args.package_notices) if args.package_notices else []
+    if args.package_notices:
+        report['package_notices'] = {'path': str(args.package_notices.resolve()),
+            'sha256': hashlib.sha256(args.package_notices.read_bytes()).hexdigest()}
+
     def save():
         (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
 
     def run(command, cwd=root, expected_success=True, timeout=180):
+        command = list(map(str, command))
+        packaging = (len(command) > 1 and
+                     ((command[0] == str(compiler) and command[1] == 'package') or
+                      command[1] == str(resources / 'tools/foreign_bundle.py')))
+        if extra_notices and packaging:
+            components = list(extra_notices)
+            if '--notices' in command:
+                index = command.index('--notices')
+                components += notice_components(Path(command[index + 1]))
+                del command[index:index + 2]
+            directory = root / 'package-notices'; directory.mkdir(exist_ok=True)
+            path = directory / ('%03d.json' % len(report['commands']))
+            path.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}) + '\n')
+            command += ['--notices', str(path)]
         number = len(report['commands'])
         row = {'command': list(map(str, command)), 'cwd': str(cwd),
                'stdout': str(logs / ('%03d.stdout' % number)),

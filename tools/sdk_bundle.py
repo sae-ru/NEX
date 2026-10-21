@@ -344,11 +344,12 @@ def elf_image(path):
 
 
 class LinuxBundle(Bundle):
-    # GNU platform runtime belongs to the external C/C++ SDK. Keeping it outside
-    # the bundle also preserves its loader/NSS/locale integration on the host.
+    # Known runtime SONAMEs also serve the core capsule's matching-host guard.
+    # Collection resolves C++ libraries below before classifying private copies.
     HOST_LIBRARIES = {'libc.so.6', 'libm.so.6', 'libpthread.so.0', 'libdl.so.2', 'librt.so.1',
                       'libresolv.so.2', 'libutil.so.1', 'libstdc++.so.6', 'libgcc_s.so.1',
                       'ld-linux-aarch64.so.1', 'ld-linux-x86-64.so.2'}
+    CXX_LIBRARIES = {'libstdc++.so.6', 'libgcc_s.so.1'}
 
     def collect_elf(self, source, destination):
         source = source.resolve(strict=True)
@@ -370,12 +371,16 @@ class LinuxBundle(Bundle):
         image = {'destination': destination, 'dependencies': {}, 'dependency_targets': {}}
         self.images[key] = image
         for name in needed:
-            if Path(name).name in self.HOST_LIBRARIES:
+            if Path(name).name in self.HOST_LIBRARIES - self.CXX_LIBRARIES:
                 self.system_libraries.add(name)
                 continue
             original = Path(name).resolve() if Path(name).is_absolute() else resolved.get(name)
             if original is None or not original.is_file():
                 raise ValueError('unresolved ELF dependency ' + name + ' of ' + str(source))
+            if (Path(name).name in self.CXX_LIBRARIES and
+                    any(Path(root).resolve() in original.parents for root in ('/lib', '/lib64', '/usr/lib', '/usr/lib64'))):
+                self.system_libraries.add(name)
+                continue
             target = self.dependency_target(original)
             self.external(original, target)
             alias = name if '/' not in name else original.name
@@ -456,10 +461,10 @@ class LinuxBundle(Bundle):
             'required_glibc_symbols': sorted(required_glibc), 'required_glibcxx_symbols': sorted(required_glibcxx),
             'host_cxx_sdk': run(['g++', '--version']).splitlines()[0],
             'packager_patchelf': run([patchelf, '--version']).strip(),
-            'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT/libstdc++/libgcc)',
+            'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT); system C++/GCC runtimes listed in system_libraries',
                                        'Python 3.9+', 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
                                        'host LLDB/lldb-dap for live debugging'],
-            'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. GNU platform runtime remains external. Source installations unchanged.'})
+            'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. Private C++/GCC runtimes are captured; GNU platform runtime remains external. Source installations unchanged.'})
 
     def relocate_elf(self, patchelf):
         required_glibc, required_glibcxx = set(), set()
@@ -476,9 +481,10 @@ class LinuxBundle(Bundle):
             run([patchelf, '--set-rpath', rpath, target])
             if run([patchelf, '--print-rpath', target]).strip() != rpath:
                 raise ValueError('ELF runtime path was not retained: ' + str(target))
-            versions = run(['readelf', '--version-info', target])
-            required_glibc.update(re.findall(r'\bGLIBC_[A-Za-z0-9_.]+', versions))
-            required_glibcxx.update(re.findall(r'\bGLIBCXX_[0-9.]+', versions))
+            versions = run(['readelf', '--version-info', target], env={**self.environment, 'LC_ALL': 'C'})
+            needs = versions.split('Version needs section', 1)[1] if 'Version needs section' in versions else ''
+            required_glibc.update(re.findall(r'\bGLIBC_[A-Za-z0-9_.]+', needs))
+            required_glibcxx.update(re.findall(r'\bGLIBCXX_[0-9.]+', needs))
             # ldd uses the new origin paths, with no loader environment override.
             dependencies = run(['ldd', target], env=self.environment)
             for old, alias in image['dependencies'].items():
