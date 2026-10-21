@@ -147,14 +147,16 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 }
 int run(const Options &o) {
   if(o.command=="project"){
-    for(const auto &[key,value]:o.values){(void)value;if(key!="--kind"&&key!="--component"&&key!="--configuration"&&key!="--build-directory"&&key!="--output")throw Error("E_OPTION","unsupported project option: "+key);}
-    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported project flag: "+flag);
+    const bool packaging=o.get("--kind","plan")=="package";
+    for(const auto &[key,value]:o.values){(void)value;if(key!="--kind"&&key!="--component"&&key!="--configuration"&&key!="--build-directory"&&key!="--output"&&!(packaging&&(key=="--directory"||key=="--notices")))throw Error("E_OPTION","unsupported project option: "+key);}
+    for(const auto &flag:o.flags)if(flag!="--json"&&!(packaging&&flag=="--dpkg-notices"))throw Error("E_OPTION","unsupported project flag: "+flag);
     if(!o.extra.empty())throw Error("E_OPTION","project does not execute application arguments");
     auto selected=fs::absolute(o.positional.empty()?projectRoot(fs::current_path())/"nex.build.json":fs::path(o.positional[0]));
     if(fs::is_directory(selected))selected/="nex.build.json";
     auto source=readBoundedText(selected.string(),262144,"project build manifest","E_PROJECT_LIMIT");
     try{nexrt::validateJSONText(source);}catch(const nexrt::DataError &e){throw Error("E_PROJECT_BUILD",e.what());}
     ProjectBuildOptions project{o.get("--kind","plan"),o.get("--component"),o.get("--configuration"),o.get("--build-directory"),NEX_VERSION,NEX_BUILD_ID};
+    project.package.directory=o.get("--directory");project.package.notices=o.get("--notices");project.package.compiler=o.compiler;project.package.dpkgNotices=o.has("--dpkg-notices");
     auto result=buildProject(selected.parent_path().string(),selected.string(),source,project);
     if(o.values.contains("--output"))writeFile(o.get("--output"),json(result)+"\n");
     print(std::move(result));return 0;
@@ -272,7 +274,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build] [--component NAME] [--configuration NAME] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package] [--component NAME] [--configuration NAME] [--json]\n  nex describe [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind project|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"

@@ -6,6 +6,16 @@
 #include "llvm/TargetParser/Triple.h"
 #include "nex/web.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/SHA256.h"
+#include "llvm/ADT/StringExtras.h"
+#include <cstdio>
+#include <cstdlib>
+#include <fcntl.h>
+#include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#include <linux/fs.h>
+#endif
 #include <algorithm>
 #include <filesystem>
 #include <functional>
@@ -55,7 +65,16 @@ const Object &object(const Object &o,const std::string &key) {
 
 llvm::json::Value buildProject(const std::string &directory,const std::string &manifest,
                               const std::string &source,const ProjectBuildOptions &options) {
-  if(options.kind!="plan"&&options.kind!="build")fail("project kind must be plan or build","E_OPTION");
+  if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package")fail("project kind must be plan, build or package","E_OPTION");
+  fs::path packageOutput;
+  if(options.kind=="package"){
+    if(options.package.directory.empty())fail("project package requires --directory NEW_DIRECTORY","E_OPTION");
+    packageOutput=fs::absolute(options.package.directory).lexically_normal();std::error_code error;
+    if(fs::exists(fs::symlink_status(packageOutput,error)))fail("project package destination already exists","E_EXISTS");
+    auto parent=fs::canonical(packageOutput.parent_path(),error);
+    if(error||!fs::is_directory(parent))fail("project package destination requires an existing parent directory","E_PROJECT_PACKAGE");
+    packageOutput=parent/packageOutput.filename();
+  }
   auto parsed=llvm::json::parse(source);if(!parsed)throw Error("E_JSON",llvm::toString(parsed.takeError()));
   auto top=parsed->getAsObject();if(!top)fail("project build manifest must be an object");
   keys(*top,{"schema","components","configurations","default_configuration"});
@@ -130,6 +149,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::set<std::string> selected;
   std::function<void(const std::string&)> select=[&](const auto &name){if(!selected.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){(void)link;select(dep);}};
   if(options.component.empty())for(const auto &[name,c]:components){(void)c;select(name);}else select(options.component);
+  if(options.kind=="package"&&std::none_of(selected.begin(),selected.end(),[&](const auto &name){const auto &kind=components.at(name).kind;return kind=="executable"||kind=="server"||kind=="web";}))
+    fail("project package selection requires an executable, server or web application","E_PROJECT_CAPABILITY");
+  if(options.kind=="package"&&std::none_of(selected.begin(),selected.end(),[&](const auto &name){const auto &kind=components.at(name).kind;return kind=="executable"||kind=="server";})&&
+     (!options.package.notices.empty()||options.package.dpkgNotices))fail("native notice options require a selected native application","E_OPTION");
   bool sharedSelected=false;
   for(const auto &name:selected)sharedSelected|=components.at(name).kind=="shared_library";
   std::map<std::string,bool> dynamicClosure;
@@ -184,6 +207,11 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(declared.target!=actual.target)fail("server target requires a matching explicit toolchain for this configuration","E_TARGET");
       auto captured=inspectNativeToolchain(native);toolchain=Object{{"hash",captured.hash},{"target",captured.target},{"host_compatible",captured.hostCompatible}};
       validateNativeBuildEntry(program,native);
+      if(options.kind=="package"&&(c.kind=="executable"||c.kind=="server")){
+        if(!imageABI.isMacOSX()&&!imageABI.isOSLinux())fail("project native packages currently require macOS or Linux targets","E_PROJECT_CAPABILITY");
+        for(const auto &unit:planNative(program,native.entry).units)if(program.function(unit.identity).foreign)
+          fail("project source-foreign package projection remains pending; package an explicitly reviewed source entry with its operator catalogue","E_PROJECT_CAPABILITY");
+      }
       if((c.kind=="static_library"||c.kind=="shared_library")&&owner(program.units.at(program.function(c.function).unit).path)!=name)fail("library entry must be owned by "+name,"E_PROJECT_EXPORT");
       for(const auto &entry:c.exports){const auto &f=program.function(entry);if(!f.exported||owner(program.units.at(f.unit).path)!=name)fail("library exports must be public concrete functions owned by "+name,"E_PROJECT_EXPORT");}
     }
@@ -281,11 +309,69 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   NativeImageResults images;if(!imageInputs.empty())images=buildNativeImages(cache.string(),imageInputs);
   for(const auto &item:prepared){
     const auto &c=components.at(item.name);if(c.kind=="source")continue;
-    if(c.kind=="web"){artifacts.push_back(Object{{"component",item.name},{"kind","web"},{"result",std::move(webResults.at(item.name))}});continue;}
+    if(c.kind=="web"){artifacts.push_back(Object{{"component",item.name},{"kind","web"},{"result",llvm::json::Value(webResults.at(item.name))}});continue;}
     const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);
     artifacts.push_back(Object{{"component",item.name},{"kind",c.kind},{"artifact",built.executable},{"cached",built.cached},{"build_key",built.key},
       {"target",built.target},{"compiler_target",built.compilerTarget},{"host_compatible",built.hostCompatible},{"metadata",(fs::path(built.executable).parent_path()/"build.json").string()},
       {"debug_manifest",(fs::path(built.executable).parent_path()/"debug.json").string()},{"notices",built.notices},{"compilation",built.compilation}});
+  }
+  if(options.kind=="package"){
+    // Publish the whole architecture only after every selected application and
+    // browser distribution has been captured successfully.
+    auto model=(packageOutput.parent_path()/".nex-project-package-XXXXXX").string();
+    auto created=::mkdtemp(model.data());if(!created)fail("cannot create sibling project package staging directory","E_PROJECT_PACKAGE");
+    auto stage=fs::path(created);
+    try{
+      llvm::json::Array packaged;bool nativeInspected=false;
+      for(const auto &item:prepared){
+        const auto &c=components.at(item.name);
+        if(c.kind=="web"){
+          const auto &web=*webResults.at(item.name).getAsObject();auto dist=web.getString("dist");
+          if(!dist)fail("web build has no completed distribution","E_PROJECT_PACKAGE");
+          auto destination=stage/"web"/item.name;fs::create_directories(destination);
+          for(const auto &entry:fs::recursive_directory_iterator(dist->str())){
+            auto relative=entry.path().lexically_relative(dist->str());
+            if(entry.is_symlink()||(!entry.is_directory()&&!entry.is_regular_file()))fail("unsupported web distribution input","E_PROJECT_PACKAGE");
+            if(entry.is_directory())fs::create_directories(destination/relative);
+            else{fs::create_directories((destination/relative).parent_path());copyFile(entry.path().string(),(destination/relative).string(),false);}
+          }
+          if(!fs::is_regular_file(destination/"index.html")||!fs::is_regular_file(destination/"THIRD_PARTY_NOTICES.txt"))fail("web distribution lacks its entry/notices","E_PROJECT_PACKAGE");
+          packaged.push_back(Object{{"component",item.name},{"kind","web"},{"directory","web/"+item.name},{"entry","web/"+item.name+"/index.html"},{"revision",revision(item.program)}});
+        }else if(c.kind=="executable"||c.kind=="server"){
+          const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);
+          auto package=options.package;package.directory=(stage/"apps"/item.name).string();
+          auto result=packageNativeArtifact(item.program,built,package);auto data=result.getAsObject();
+          packaged.push_back(Object{{"component",item.name},{"kind",c.kind},{"directory","apps/"+item.name},{"entry","apps/"+item.name+"/bin/app"},{"manifest","apps/"+item.name+"/application.json"},{"revision",revision(item.program)},{"build_key",data->getString("build_key")->str()}});
+          nativeInspected=true;
+        }
+      }
+      Object inventory;uint64_t total=0;
+      for(const auto &entry:fs::recursive_directory_iterator(stage)){
+        if(entry.is_directory()&&!entry.is_symlink())continue;
+        auto relative=entry.path().lexically_relative(stage).generic_string();
+        if(inventory.size()>=16384||(!entry.is_regular_file()&&!entry.is_symlink()))fail("project package inventory limit/type exceeded","E_PROJECT_LIMIT");
+        if(entry.is_symlink()){
+          auto resolved=fs::canonical(entry.path());if(!inside(resolved,stage)||!fs::is_regular_file(resolved))fail("escaping/non-file project package symlink","E_PROJECT_PACKAGE");
+          inventory[relative]=Object{{"symlink",fs::read_symlink(entry.path()).generic_string()}};continue;
+        }
+        auto size=entry.file_size();if(size>512ULL*1048576||size>4ULL*1024*1024*1024-total)fail("project package byte limit exceeded","E_PROJECT_LIMIT");total+=size;
+        auto bytes=readFile(entry.path().string());
+        auto sha=llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(bytes)),true);
+        inventory[relative]=Object{{"bytes",int64_t(bytes.size())},{"sha256",sha},{"executable",(entry.status().permissions()&fs::perms::owner_exec)!=fs::perms::none}};
+      }
+      auto result=Object{{"schema","nex.project-package/1"},{"ok",true},{"plan_hash",planHash},{"compiler_version",options.compilerVersion},{"compiler_build",options.compilerBuild},{"language",languageVersion},
+        {"configuration",configuration.name},{"profile",configuration.profile},{"components",std::move(packaged)},{"files",std::move(inventory)},{"graph_store_opened",false},{"application_execution",false},{"target_execution_verified",false},{"native_dependencies_inspected",nativeInspected}};
+      writeFile((stage/"project.json").string(),json(llvm::json::Value(Object(result)))+"\n");
+#ifdef __APPLE__
+      int published=::renameatx_np(AT_FDCWD,stage.c_str(),AT_FDCWD,packageOutput.c_str(),RENAME_EXCL);
+#elif defined(__linux__) && defined(SYS_renameat2)
+      int published=int(::syscall(SYS_renameat2,AT_FDCWD,stage.c_str(),AT_FDCWD,packageOutput.c_str(),RENAME_NOREPLACE));
+#else
+      int published=-1;
+#endif
+      if(published!=0)fail("cannot publish project package without replacing an existing destination","E_PROJECT_PACKAGE");
+      result["directory"]=packageOutput.string();result["manifest"]=(packageOutput/"project.json").string();return result;
+    }catch(const std::exception &error){throw Error("E_PROJECT_PACKAGE",std::string(error.what())+"; partial project package retained at "+stage.string());}
   }
   return Object{{"schema","nex.project-build-result/1"},{"ok",true},{"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},
     {"native_runtime_image",std::move(images.runtime)},{"graph_store_opened",false},{"external_tools_invoked",true},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};

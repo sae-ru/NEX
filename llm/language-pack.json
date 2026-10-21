@@ -146,7 +146,8 @@
     "project_build_schema": "llm/project-build.schema.json",
     "cix_hardware": "docs/cix-p1.md",
     "cix_gpu_probe": "tools/accelerators/cix_opencl_probe.py",
-    "cix_npu_probe": "tools/accelerators/cix_onnx_probe.py"
+    "cix_npu_probe": "tools/accelerators/cix_onnx_probe.py",
+    "project_package_schema": "llm/project-package.schema.json"
   },
   "document_access": "nex guide --kind prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -513,10 +514,20 @@
     "minimum_shared_toolchain": "0.74.0",
     "shared_pending": [
       "windows_dll",
-      "shared_image_packaging",
       "combined_project_execution",
-      "shared_image_dap_editor_sessions"
-    ]
+      "shared_image_dap_editor_sessions",
+      "project_foreign_pin_projection",
+      "packaged_debug_provenance"
+    ],
+    "project_package": {
+      "command": "nex project --kind package --directory NEW_DIRECTORY --json",
+      "schema": "nex.project-package/1",
+      "schema_file": "llm/project-package.schema.json",
+      "native_and_web": true,
+      "preserves_configuration": true,
+      "opens_graph_store": false,
+      "executes_application": false
+    }
   },
   "native_application_lifetime": {
     "capability": "native_application_lifetime",

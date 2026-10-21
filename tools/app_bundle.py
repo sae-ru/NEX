@@ -8,6 +8,7 @@ import platform
 import shutil
 import sys
 import tempfile
+import re
 
 from sdk_bundle import Bundle, LinuxBundle, elf_image, macho, run, sha256
 
@@ -15,12 +16,17 @@ from sdk_bundle import Bundle, LinuxBundle, elf_image, macho, run, sha256
 class ApplicationInputs:
     def external(self, source, destination):
         source = source.resolve(strict=True)
-        if self.sdk_inventory and self.sdk in source.parents:
+        owned = getattr(self, 'owned_inputs', {}).get(source)
+        if owned and sha256(source) != owned['sha256']:
+            raise ValueError('compiler-owned image changed before collection')
+        if not owned and self.sdk_inventory and self.sdk in source.parents:
             relative = str(source.relative_to(self.sdk))
             record = self.sdk_inventory.get(relative)
             if not record or not record.get('component') or record.get('sha256') != sha256(source):
                 raise ValueError('SDK library integrity/provenance mismatch: ' + relative)
         super().external(source, destination)
+        if owned and sha256(destination) != owned['sha256']:
+            raise ValueError('compiler-owned image changed during capture')
 
 
 class MacApplication(ApplicationInputs, Bundle):
@@ -110,6 +116,32 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
     binary = Path(request['binary']).resolve(strict=True)
     if sha256(binary) != request['binary_sha256']:
         raise ValueError('application binary changed after compilation')
+    owned_inputs = {}
+    owned = request.get('owned_images', [])
+    if not isinstance(owned, list) or len(owned) > 129:
+        raise ValueError('invalid compiler-owned image inventory')
+    for image in owned:
+        if not isinstance(image, dict) or set(image) != {'path', 'sha256', 'key', 'abi', 'kind', 'uuid'}:
+            raise ValueError('invalid compiler-owned image fields')
+        source = Path(image['path'])
+        if (source.is_symlink() or source.resolve(strict=True).parent != (binary.parent/'images').resolve(strict=True) or
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_'+re.escape(image['key'])+r'\.(so|dylib)', source.name) or
+                image['kind'] not in ('runtime', 'library') or
+                any(not isinstance(image[k], str) or not re.fullmatch('[0-9a-f]{64}', image[k]) for k in ('sha256', 'key', 'abi')) or
+                not isinstance(image['uuid'], str) or not re.fullmatch('[0-9a-f]{16,128}', image['uuid']) or
+                sha256(source) != image['sha256']):
+            raise ValueError('compiler-owned image path/identity/bytes differ')
+        source = source.resolve(strict=True)
+        if source in owned_inputs:
+            raise ValueError('duplicate compiler-owned image')
+        owned_inputs[source] = image
+    if owned_inputs and sum(i['kind'] == 'runtime' for i in owned_inputs.values()) != 1:
+        raise ValueError('compiler-owned image closure requires exactly one runtime')
+    runtime_notices = Path(request['runtime_notices'])
+    if ('runtime_notices_sha256' in request and sha256(runtime_notices) != request['runtime_notices_sha256']):
+        raise ValueError('captured runtime notices changed')
+    if owned_inputs and 'runtime_notices_sha256' not in request:
+        raise ValueError('owned image provenance requires captured runtime notices')
     sdk = Path(request['sdk_root']).resolve(strict=True)
     output = Path(os.path.abspath(output))
     if os.path.lexists(output):
@@ -127,6 +159,10 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                 for key in ('roots', 'license_files'):
                     item[key] = [str((notices.parent / name).resolve(strict=True)) for name in component[key]]
                 components.append(item)
+        if owned_inputs:
+            components.append({'name': 'nex-generated-project-images', 'version': request['toolchain'],
+                'url': 'https://github.com/sae-ru/NEX', 'roots': [str(p) for p in owned_inputs],
+                'license_files': [str(runtime_notices.resolve(strict=True))]})
         selection = stage / '.notices.json'
         selection.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}))
         system = platform.system()
@@ -142,17 +178,28 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         else:
             raise ValueError('application packaging requires a matching macOS Mach-O or Linux ELF host')
         collector.sdk_inventory = sdk_inventory
+        collector.owned_inputs = owned_inputs
         application = stage / 'bin/app'
         application.parent.mkdir()
         shutil.copy2(binary, application)
+        if sha256(application) != request['binary_sha256']:
+            raise ValueError('application bytes changed during capture')
         if system == 'Darwin':
             collector.collect(binary, application, binary)
+            for source in owned_inputs:
+                target = collector.dependency_target(source)
+                collector.external(source, target); collector.destinations[source] = target
+                collector.collect(source, target, binary)
             collector.relocate_macho()
             details = {'platform': 'macos', 'minimum_macos': '.'.join(map(str, collector.minimum_os)),
                        'external_prerequisites': ['compatible macOS system libraries'],
                        'signing': 'ad-hoc; Developer ID signing/notarization not performed'}
         else:
             collector.collect_elf(binary, application)
+            for source in owned_inputs:
+                target = collector.dependency_target(source)
+                collector.external(source, target); collector.destinations[source] = target
+                collector.collect_elf(source, target)
             glibc, glibcxx = collector.relocate_elf(patchelf)
             details = {'platform': 'linux', 'host_glibc': run(['getconf', 'GNU_LIBC_VERSION']).strip(),
                        'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx),
@@ -170,12 +217,15 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             else:
                 for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
                     details[key] = sorted(set(details[key]).union(*(module[key] for module in modules)))
-        runtime_notices = Path(request['runtime_notices'])
         runtime_notices.read_text()  # Preserve complete UTF-8 runtime notices.
         shutil.copy2(runtime_notices, stage / 'THIRD_PARTY_NOTICES.txt')
         selection.unlink()
         # The package records input hashes, not local SDK/source installation paths.
         for origin in collector.origins.values():
+            owned = owned_inputs.get(Path(origin['source']))
+            if owned:
+                origin.update(owned_image_kind=owned['kind'], owned_image_key=owned['key'],
+                              owned_image_abi=owned['abi'], input_uuid=owned['uuid'])
             origin.pop('source', None)
         report = {'schema': 'nex.application-package/1', 'assembly_passed': True,
                   'execution_verified': False, 'entry': 'bin/app',

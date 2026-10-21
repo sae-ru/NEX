@@ -158,3 +158,13 @@ Python is the test driver; applications run with an environment containing no
 NEX/SDK configuration. Record the image ID, architecture and emulation status
 with the resulting report. This verifies those fixtures on that runtime, not
 arbitrary applications or other operating-system versions.
+
+## Checked multi-component projects (candidate0.76)
+
+`nex project --kind package --configuration NAME --directory NEW_DIRECTORY`
+packages declared native binary edges and browser distributions together. See
+[project builds](project-build.md). A plain file `nex package` retains its source
+workflow. Project packages have relative entries and file inventories in
+`project.json`; shared images use exact compiler-owned provenance while external
+libraries still require their real notices. Assembly remains separate from
+execution, graph history and deployment.

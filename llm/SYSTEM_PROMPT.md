@@ -106,7 +106,7 @@ selected configuration. The compiler consumes separately built PIC objects and
 links one shared runtime; source remains required to check contracts. Preserve
 the application's complete `images/` closure and matching metadata/symbols when
 moving retained output. Do not replace binary edges with source compilation or
-infer Windows DLL, fully static, shared-image packaging or combined
+infer Windows DLL, fully static, combined
 project run/test/task support. Query the actual descriptor and project guide.
 
 For `frontend_diagnostic_features`, retrieve `nex guide --kind frontend --json`. A compiler error can include a versioned captured-input context with phase, source hashes, diagnostic byte span and a bounded UTF-8/base64 preview. A failed apply/import/migrate can refer to an uncommitted assembled candidate rather than the physical file. Distinguish project/unit/fragment scope, partial source closure, missing locations and truncation. Diagnostic IDs are content references, not committed graph operations/revisions or execution authority. Keep the original request and actual compiler/frame identity. Never reuse the per-file source hash as apply's whole-bundle expected_source_hash. Refresh source/context before repairing stale input. Watch frame hashes refer to supplied data and do not authenticate a live recording.
@@ -436,3 +436,18 @@ never add private relocation fields to a manifest. First-party shared capsules
 record `captured_first_party_and_matching_host_system`; other external native
 dependencies, source foreign declarations, cross-host relocation, automatic
 shared-image packages and combined project/editor execution remain pending.
+
+When `project_build` advertises `project_application_packages`, package a checked
+architecture with `nex project --kind package --configuration NAME --component NAME
+--directory NEW_DIRECTORY --json`. Omit component to include all selected native
+applications and web distributions. The declared configuration keeps its actual
+profile/target; packaging does not silently choose release. Use entries from
+`project.json` after moving the package. Native packages consume actual compiled
+archives/images and their runtime; normal source `nex package FILE` does not
+preserve a separate project architecture. Web packages contain the built dist
+and notices. Runtime credentials/databases remain explicit configuration.
+Verify execution separately; assembly never runs applications or opens the graph
+Store. Pass complete native dependency notices as required; compiler-owned exact
+image inventories do not grant provenance to unrelated libraries. Project-wide
+source-foreign pin projection, packaged-image debug provenance, Windows packages
+and combined project execution/task/DAP/editor flows remain pending.

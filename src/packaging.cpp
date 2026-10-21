@@ -1,6 +1,7 @@
 #include "nex/packaging.h"
 #include "nex/foreign_catalogue.h"
 #include "nex/native_toolchain.h"
+#include "nex/native_images.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/SHA256.h"
@@ -22,6 +23,63 @@ llvm::json::Value checkedTool(const std::vector<std::string> &command,const std:
   if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_PACKAGE","invalid package report; inputs retained at "+request.parent_path().string());}
   return std::move(*parsed);
 }
+llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildResult &built,
+    const PackageOptions &options,const std::filesystem::path &request,
+    const std::string &foreignDirectory,llvm::json::Value projection,llvm::json::Object foreignFiles){
+  namespace fs=std::filesystem;auto output=fs::absolute(options.directory).lexically_normal();
+  const char *python=std::getenv("NEX_PYTHON");
+  auto bytes=readFile(built.executable);
+  auto metadata=llvm::json::parse(readFile((fs::path(built.executable).parent_path()/"build.json").string()));
+  if(!metadata){llvm::consumeError(metadata.takeError());throw Error("E_PACKAGE","invalid native build metadata");}
+  auto info=metadata->getAsObject();
+  if(!info||info->getString("key")!=built.key)throw Error("E_PACKAGE","native build metadata does not match its artifact");
+  if(info->getString("compiler_build")!=NEX_BUILD_ID||info->getString("revision")!=revision(candidate)||
+     (info->getString("kind")!="executable"&&info->getString("kind")!="http_server"))
+    throw Error("E_PACKAGE","packaging requires its matching checked native application artifact");
+  auto buildFolder=fs::path(built.executable).parent_path();std::string complete=built.key;
+  for(const auto &file:{fs::path(built.executable),buildFolder/"program.mlir",buildFolder/"program.ll",buildFolder/"compilation.json",buildFolder/"build.json",buildFolder/"source-bundle.json"})complete+=hash(readFile(file.string()));
+  for(const auto &name:nativeCompletionInputs(*info))complete+=hash(readFile((buildFolder/name).string()));
+  if(readFile((buildFolder/"complete").string())!=hash(complete)+"\n")throw Error("E_PACKAGE","native artifact completion differs before packaging");
+  llvm::json::Array owned;
+  if(info->getString("completion_schema")=="nex.native-completion/3"){
+    auto link=llvm::json::parse(readFile((buildFolder/"image-inputs.json").string()));
+    auto inventory=link&&link->getAsObject()?link->getAsObject()->getArray("images"):nullptr;
+    if(!inventory||inventory->empty()||inventory->size()>129)throw Error("E_PACKAGE","invalid compiler-owned native image inventory");
+    std::set<std::string> expected,seen;
+    for(const auto &entry:*info->getArray("completion_inputs"))if(entry.getAsObject()->getString("kind")=="owned_image")expected.insert(entry.getAsObject()->getString("path")->str());
+    for(const auto &entry:*inventory){
+      auto record=entry.getAsObject();if(!record)throw Error("E_PACKAGE","invalid compiler-owned image record");
+      auto path=record->getString("path"),digest=record->getString("sha256"),key=record->getString("key"),abi=record->getString("abi"),kind=record->getString("kind"),uuid=record->getString("uuid");
+      if(!path||!digest||!key||!abi||!kind||!uuid)throw Error("E_PACKAGE","missing compiler-owned image identity");
+      auto relative=(fs::path("images")/fs::path(path->str()).filename()).generic_string();
+      if(fs::path(path->str())!=buildFolder/relative||!expected.contains(relative)||!seen.insert(relative).second||
+         sha256(readFile(path->str()))!=*digest||nativeImageUUID(path->str())!=*uuid||*abi!=built.libraryABI)
+        throw Error("E_PACKAGE","compiler-owned native image bytes/UUID/path differ");
+      owned.push_back(llvm::json::Object{{"path",path->str()},{"sha256",digest->str()},{"key",key->str()},{"abi",abi->str()},{"kind",kind->str()},{"uuid",uuid->str()}});
+    }
+    if(seen!=expected)throw Error("E_PACKAGE","compiler-owned image inventory is incomplete");
+  }
+  writeFile(request.string(),json(llvm::json::Object{{"schema","nex.application-request/1"},
+    {"binary",built.executable},{"binary_sha256",sha256(bytes)},{"owned_images",std::move(owned)},
+    {"runtime_notices",built.notices},{"runtime_notices_sha256",sha256(readFile(built.notices))},{"sdk_root",fs::path(options.compiler).parent_path().parent_path().string()},
+    {"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(candidate)},
+    {"foreign_directory",foreignDirectory},
+    {"foreign_files",std::move(foreignFiles)},{"foreign_projection",std::move(projection)},
+    {"build_key",built.key},{"target",built.target},{"compiler_target",built.compilerTarget},
+    {"compiler_build",info->getString("compiler_build").value_or("")},
+    {"profile",info->getString("profile").value_or("")},{"kind",info->getString("kind").value_or("")},
+    {"host_compatible",built.hostCompatible}})+"\n");
+  std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),
+    "--request",request.string(),"--output",output.string()};
+  if(!options.notices.empty())command.insert(command.end(),{"--notices",fs::absolute(options.notices).string()});
+  if(options.dpkgNotices)command.push_back("--dpkg-notices");
+  auto parsed=checkedTool(command,request);
+  auto object=parsed.getAsObject();
+  if(!object||object->getString("schema")!="nex.package/1"||object->getBoolean("ok")!=true||object->getString("build_key")!=built.key)
+    throw Error("E_PACKAGE","package report does not match the selected native build");
+  return parsed;
+}
+
 }
 llvm::json::Value packageApplication(const Program &program,BuildOptions buildOptions,
     const std::string &buildDirectory,const std::string &root,Store &store,
@@ -125,29 +183,18 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     buildOptions.foreignCatalogue="../foreign/host.json";
   }else if(!options.foreign.empty())throw Error("E_FFI_PACKAGE","selected native entry has no reachable external calls");
   auto built=build(candidate,buildDirectory,buildOptions);
-  auto bytes=readFile(built.executable);
-  auto metadata=llvm::json::parse(readFile((fs::path(built.executable).parent_path()/"build.json").string()));
-  if(!metadata){llvm::consumeError(metadata.takeError());throw Error("E_PACKAGE","invalid native build metadata");}
-  auto info=metadata->getAsObject();
-  if(!info||info->getString("key")!=built.key)throw Error("E_PACKAGE","native build metadata does not match its artifact");
-  writeFile(request.string(),json(llvm::json::Object{{"schema","nex.application-request/1"},
-    {"binary",built.executable},{"binary_sha256",sha256(bytes)},
-    {"runtime_notices",built.notices},{"sdk_root",fs::path(options.compiler).parent_path().parent_path().string()},
-    {"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(candidate)},
-    {"foreign_directory",projection.getAsObject()?(folder/"foreign").string():""},
-    {"foreign_files",std::move(foreignFiles)},{"foreign_projection",std::move(projection)},
-    {"build_key",built.key},{"target",built.target},{"compiler_target",built.compilerTarget},
-    {"compiler_build",info->getString("compiler_build").value_or("")},
-    {"profile",info->getString("profile").value_or("")},{"kind",info->getString("kind").value_or("")},
-    {"host_compatible",built.hostCompatible}})+"\n");
-  std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),
-    "--request",request.string(),"--output",output.string()};
-  if(!options.notices.empty())command.insert(command.end(),{"--notices",fs::absolute(options.notices).string()});
-  if(options.dpkgNotices)command.push_back("--dpkg-notices");
-  auto parsed=checkedTool(command,request);
-  auto object=parsed.getAsObject();
-  if(!object||object->getString("schema")!="nex.package/1"||object->getBoolean("ok")!=true||object->getString("build_key")!=built.key)
-    throw Error("E_PACKAGE","package report does not match the selected native build");
+  auto parsed=packageCapturedArtifact(candidate,built,options,request,
+      projection.getAsObject()?(folder/"foreign").string():"",std::move(projection),std::move(foreignFiles));
   fs::remove_all(folder);return parsed;
 }
+llvm::json::Value packageNativeArtifact(const Program &program,const BuildResult &built,const PackageOptions &options){
+  namespace fs=std::filesystem;
+  if(built.foreignCalls||!options.foreign.empty())throw Error("E_PROJECT_CAPABILITY","project packaging of source foreign calls requires project-wide pin projection, which remains pending");
+  auto output=fs::absolute(options.directory).lexically_normal();
+  if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
+  auto folder=fs::path(createTemporaryDirectory("nex-project-application-package"));
+  auto result=packageCapturedArtifact(program,built,options,folder/"request.json","",nullptr,{});
+  fs::remove_all(folder);return result;
+}
+
 }

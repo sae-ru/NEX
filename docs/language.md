@@ -58,6 +58,9 @@ Toolchain0.75 extends external native frame/core metadata to captured shared ima
 It changes no source syntax, canonical identity, language0.16 semantics or graph
 history; [core debugging](core-debugging.md) states the matching-SDK/host limits.
 
+Toolchain0.76 packages checked project architectures as external artifacts.
+This changes no language0.16 syntax, semantics or canonical identity.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external

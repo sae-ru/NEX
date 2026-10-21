@@ -186,5 +186,5 @@
       "pattern": "^[^\\\\:\\u0000]+$"
     }
   },
-  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume checked native archives. Dynamic edges consume separately linked shared libraries and one common runtime on macOS/Linux. All binary edges require exact compiler/toolchain/runtime ABI, checked source and explicit generic instantiation. Shared-image packaging/core relocation, Windows DLLs, source GPU/NPU adapters, binary-only packages and full-static executable policy remain pending."
+  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume checked native archives. Dynamic edges consume separately linked shared libraries and one common runtime on macOS/Linux. All binary edges require exact compiler/toolchain/runtime ABI, checked source and explicit generic instantiation. Project foreign-pin projection, packaged debug provenance, Windows DLLs, source GPU/NPU adapters, binary-only packages and full-static executable policy remain pending."
 }

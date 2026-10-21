@@ -2180,9 +2180,35 @@ pub fn render(x:i64)->str{
         require(measured['build']['build_key'] == profiled['app']['build_key'] and measured['memory'] and
                 all(p['live'] == 0 and p['allocations'] == p['frees'] for p in measured['memory']),
                 'shared profile is unbound or retains owned values')
+        deployment = root/'shared-project-package'
+        packaged = cli('project', '--kind', 'package', '--configuration', 'release', '--component', 'app',
+                       '--directory', deployment, cwd=shared_project, timeout=300)
+        require(packaged['schema'] == 'nex.project-package/1' and not packaged['application_execution'] and
+                not packaged['graph_store_opened'], 'project package executed/synchronized its source')
+        package_app = next(c for c in packaged['components'] if c['component'] == 'app')
+        native_package = json.loads((deployment/package_app['manifest']).read_text())
+        owned = [r for r in native_package['files'].values() if 'owned_image_kind' in r]
+        require(len(owned) == 3 and sum(r['owned_image_kind'] == 'runtime' for r in owned) == 1,
+                'project package did not retain its two libraries and common runtime')
+        hidden = root/'source-hidden-during-package-run'; shared_project.rename(hidden)
+        moved_deployment = root/'moved project package % 🧠'; deployment.rename(moved_deployment)
+        try:
+            require(run([moved_deployment/package_app['entry']]) == '42 🧠\n', 'relocated project package needs its original build')
+        finally:
+            hidden.rename(shared_project)
+        architecture_package = root/'architecture-package'
+        package_selection = [] if args.browser else ['--component', 'app']
+        architecture_deployment = cli('project', '--kind', 'package', '--configuration', 'release',
+            '--directory', architecture_package, *package_selection, cwd=architecture, timeout=300)
+        require(run([architecture_package/'apps/app/bin/app']) == '22\n', 'source-architecture package differs')
+        if args.browser:
+            require((architecture_package/'web/browser/index.html').is_file() and
+                    (architecture_package/'web/browser/THIRD_PARTY_NOTICES.txt').is_file(), 'project package lost browser assets/notices')
         shared_evidence = {'separate_shared_libraries': 2, 'one_runtime': True, 'consumer_did_not_recompile_providers': True,
             'moved_application': str(moved_app/'app'), 'provider_reuse_after_app_edit': True,
             'profile_identity_checked': True, 'profile_cleanup_checked': True, 'actual_shared_core': False}
+        shared_evidence.update(project_package=str(moved_deployment), relocated_project_package_executed=True,
+            package_preserved_shared_edges=True, architecture_package=str(architecture_package), native_and_web_packaged=args.browser)
         if args.live:
             debug_images = {a['component']: a for a in shared_build('debug')['artifacts']}
             debug_app = debug_images['app']; manifest = Path(debug_app['debug_manifest'])

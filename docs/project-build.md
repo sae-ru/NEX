@@ -190,12 +190,12 @@ language history.
 
 Build output is not a deployment package. Keep the full `images/` directory
 beside its executable; external system dependencies retain their platform/notice
-requirements. Automatic shared-image packaging,
+requirements.
 Windows DLLs and combined project run/test/debug/task commands remain pending.
 Do not pass a project app through an ordinary source command expecting the
 declared binary architecture to survive that independent compilation.
 
-Candidate0.75 adds manual LLDB frames and read-only core/capsule workflows for
+Toolchain0.75 adds manual LLDB frames and read-only core/capsule workflows for
 these images; see [core debugging](core-debugging.md). The final app manifest
 covers reachable provider code and binds selected images by bytes and UUID.
 Explicit export retains the complete image/symbol inventory for matching-host
@@ -256,3 +256,43 @@ nex project --kind build --configuration release --json
 
 Execute the app artifact reported by the build. It prints `22` and `NEX 🧠`;
 the consumer compilation lists its archive instead of recompiling math functions.
+
+## Project packages (candidate0.76)
+
+```sh
+nex project --kind package --configuration release --directory /new/deployment --json
+nex project --kind package --component app --configuration debug --directory /new/app --json
+```
+
+The command builds the same checked architecture/configuration and consumes its
+actual artifacts. Native executable/server components become `apps/NAME/bin/app`
+with application manifests, required shared images/dependencies and complete
+notices. Web components become `web/NAME/` with Vite dist, maps and runtime notices.
+Libraries enter their consumers; they are not standalone deployment entries. A
+selection containing only libraries is rejected before invoking build tools.
+The configuration keeps its declared debug/release/profile policy.
+
+The output must be absent and its parent must exist. A private sibling stage
+collects all selected outputs, then publishes without replacing an existing
+destination. Failures retain the partial stage and tool inputs for inspection.
+`project.json` follows `nex.project-package/1`, recording plan/configuration,
+relative component entries and a SHA-256/file-mode inventory. Limits are16384
+files,512MiB per regular file and4GiB total. Internal regular-file SONAME aliases
+are recorded; escaping or directory symlinks reject. Assembly executes no app,
+creates no graph Store and does not deploy to a host.
+
+The native collector checks compiler-owned images against their captured hashes,
+UUIDs and completion/3 inventory. Only those exact files receive generated-code
+provenance and matching runtime notices. Other native dependencies retain the
+SDK inventory or explicit `--notices FILE` / Linux `--dpkg-notices` requirements.
+The application author's source licensing remains their choice. Copies receive
+relative loader paths; original artifacts stay unchanged. Run relocated output
+on its intended host before treating execution as verified.
+
+Credentials, keys, databases and operator runtime settings are supplied after
+packaging. Serve a web directory from its matching configured server/static
+host; browser route fallback and API configuration retain their existing rules.
+Project foreign-pin projection, debug/core provenance for rewritten packaged
+images, Windows installers and combined project run/test/debug/task flows remain
+pending. Use source packaging for the existing explicitly reviewed foreign
+catalogue workflow; do not silently replace a binary project edge with source.

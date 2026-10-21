@@ -1,24 +1,28 @@
-# Development cohort0.75 (not integrated)
+# Development cohort0.76 (not integrated)
 
-Shared project frames bind path/SHA-256/native UUID before typed reads. Core
-inspection verifies completion/3 image/symbol inventories, preloads matching
-modules and keeps historical PC mappings distinct from current loader paths.
-Capsules retain the first-party closure and support alias export, source/image
-deletion and relocation on the matching host. Focused macOS shared-frame/core
-cases and legacy capsule tests pass; Linux/full/installed-SDK gates are pending.
+`project --kind package` consumes the declared configuration and actual built
+artifacts, capturing native applications/shared images/runtime/dependencies and
+browser dist/notices in one exclusively published package. Exact compiler-owned
+image provenance leaves external native licensing requirements intact. A sibling
+mkdtemp stage handles literal percent paths without crossing filesystems.
 
-Cohort0.74 passes83 CTest groups on macOS and Linux ARM64. Its actual installed
-VSIX, strict0.72/0.74 analysis/store comparisons and6cross configurations
-(15artifacts,3iOS final links, x64Wine execution) pass. Its SDK workflow reaches
-23passed stages, then rejects the newly advertised dynamic linkage because the
-old test expects only source/static. The retained failure is not an accepted
-SDK24 result. This0.75 source updates that exact contract and adds actual shared
-project/reuse/relocation/profile/live-core checks to the installed SDK workflow.
+The initial prototype passes five focused groups in184.62seconds, including four
+new package cases: moved/source-build-deleted native+browser output, shared
+profile identity/cleanup, preflight output/selection rejection and private SQLite
+provenance/relocation. Legacy ordinary/foreign packaging and project/shared-image
+groups also pass. Final descriptor/schema/SDK additions require fresh validation.
+Full84, installed SDK and Linux validation of0.76 remain pending.
 
-The verified integrated0.72 root and graph history remain intact. Shared-image
-packaging, combined project execution/DAP/editor/task flows, Windows DLLs,
-source concurrency, general accelerators and broader platform delivery remain
-pending. No full-objective completion is claimed.
+Candidate0.75 passed83 groups and SDK24/361/213 on macOS/Linux ARM64,18Linux live
+suites, actual installed VSIX, strict072/075 analysis/store compatibility,
+6cross configurations/15artifacts/3iOS links/x64Wine, and12real browser/API/restart
+cases with a dynamic model in Chromium/Firefox/WebKit. Root0.75 integration has
+started with old0.72 source/SDK recovery and a complete graph snapshot; actual
+root checks remain separate. Goal completion is not claimed.
+
+Project foreign-pin projection, packaged-image debug provenance, combined
+project execution/DAP/editor/task flows, Windows packages, source concurrency,
+general accelerators and broader delivery remain pending.
 
 # Verified root development checkpoint0.72 / language0.16
 

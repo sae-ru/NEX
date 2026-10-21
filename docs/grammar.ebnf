@@ -186,3 +186,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.75 owned-image frame/core/capsule metadata adds no source grammar
    or canonical-format change and requires no language0.16 migration. *)
+
+(* Toolchain0.76 project packages are external deployment metadata; source
+   grammar/canonical language0.16 and graph history are unchanged. *)
