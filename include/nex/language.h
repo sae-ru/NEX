@@ -9,6 +9,8 @@
 #include <vector>
 #include "llvm/Support/JSON.h"
 
+namespace nexrt { struct TaskExecutionLimits; }
+
 namespace nex {
 inline constexpr const char *languageVersion = "0.19";
 inline constexpr const char *taskCandidateLanguageVersion = "0.19";
@@ -230,7 +232,8 @@ llvm::json::Value foreignSignature(const Program &program,const Function &functi
 llvm::json::Value foreignBinding(const Program &program,const Function &function);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",
-                    uint64_t stepLimit = 1000000);
+                    uint64_t stepLimit = 1000000,
+                    const nexrt::TaskExecutionLimits *taskLimits = nullptr);
 // Typed wire values are decoded lazily, preserving short-circuit behavior when
 // a referenced stopped-frame value is unavailable. No target process is called.
 llvm::json::Value evaluateExpression(const Program &program,E expression,const std::map<std::string,Type> &types,

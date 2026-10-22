@@ -1,4 +1,6 @@
 #include "nex/tasks.h"
+#include "nex/task_limits.h"
+#include "nex/task_frontend.h"
 #include "nex/task_process.h"
 #include "nex/verification.h"
 #include "nex/native_toolchain.h"
@@ -100,6 +102,7 @@ void validateShape(const JSON &task){
     const auto &c=object(value);auto kind=text(c,"kind");bool project=projectPrograms.contains(text(c,"program"));std::set<std::string> names={"id","kind","program","target","timeout_seconds"};
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
     if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="package"){if(!project)invalid("package checks require a declared project architecture");}else if(kind=="api"){}else invalid("unknown check kind: "+kind);
+    if(!project&&(kind=="build"||kind=="run"||kind=="test"))add({"task_limits"});
     if(project)add({"configuration"});
     if(project&&kind=="profile")add({"workload","workload_hash","server_workers"});
     if(kind=="package")add({"notices","notices_hash"});
@@ -114,6 +117,7 @@ void validateShape(const JSON &task){
     if(c.get("workload")){if(!project||kind!="profile"||text(c,"target")!="server")invalid("workload requires a project server profile check");pathName(text(c,"workload"));digest(c,"workload_hash");number(c,"server_workers",8,1,64);}
     else if(c.get("server_workers")||(project&&kind=="profile"&&text(c,"target")=="server"))invalid("server profile requires a pinned workload");
     if(c.get("foreign_hash")){digest(c,"foreign_hash");if(text(c,"target")!="native"&&!(project&&text(c,"target")=="server"&&(kind=="package"||(kind=="profile"&&c.get("workload")))))invalid("foreign_hash requires native execution, native/server packaging or a server workload");}
+    if(auto limits=c.get("task_limits")){(void)parseTaskLimitsJSON(*limits,"E_TASK");if(kind=="build"&&text(c,"target")=="web")invalid("task_limits applies to native task builds, not an emitted web module/application");}
     if(kind=="test"){std::set<std::string> seen;for(const auto &v:array(c,"tests")){const auto &pin=object(v);fields(pin,{"symbol","content_hash"});if(!seen.insert(text(pin,"symbol")).second)invalid("duplicate test");digest(pin,"content_hash");}}
     if(kind=="build"||kind=="run"){auto profile=optional(c,"profile","debug");if(profile!="debug"&&profile!="release"&&profile!="profile")invalid("unknown build profile");if(kind=="build"){auto mode=optional(c,"mode","application");if(mode!="application"&&mode!="library"&&mode!="module")invalid("unknown build mode");}if(c.get("entry"))text(c,"entry");}
     if(kind=="run"){auto e=c.getObject("expect");if(!e)invalid("run requires expect");fields(*e,{"stdout","exit_code","runtime_code"});text(*e,"stdout",true,true);number(*e,"exit_code",999,0,255);if(!e->get("exit_code"))invalid("run requires exit_code");if(e->get("runtime_code"))text(*e,"runtime_code");}
@@ -252,6 +256,16 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       function(optional(c,"entry",fallback));
     }
     covered[id]=reach(p,roots);structures[id]=types(p,covered[id]);
+    if(c.get("task_limits"))for(const auto &root:roots)if(!usesTaskEffects(p,root))invalid("task_limits requires task entry/test: "+root);
+    if(!result.projects.contains(text(c,"program"))&&kind=="build"&&text(c,"target")!="web"){
+      for(const auto &root:roots)if(usesTaskEffects(p,root)||optional(c,"mode","application")=="library"){
+        BuildOptions native;native.entry=root;native.target=text(c,"target");native.profile=optional(c,"profile","debug");native.libraryEntry=optional(c,"mode","application")=="library";
+        if(auto limits=c.get("task_limits")){native.taskLimits=parseTaskLimitsJSON(*limits,"E_TASK");native.taskLimitsSpecified=true;}
+        if(c.get("toolchain"))native.toolchain=options.toolchains.at(text(c,"toolchain"));
+        try{configureNative(native);}catch(const Error &error){if(error.code=="E_TARGET")continue;throw;}
+        validateNativeBuildEntry(p,native);
+      }
+    }
     bool executes=kind=="run"||kind=="profile"||(kind=="test"&&text(c,"target")=="native");
     bool external=false;for(const auto &name:covered[id])external|=p.function(name).foreign.has_value();
     if((executes||kind=="package")&&external&&!c.get("foreign_hash"))throw Error("E_TASK_FOREIGN","external execution or package check must pin foreign_hash: "+id);
@@ -496,10 +510,15 @@ struct Runner {
     Object row{{"id",id},{"kind",kind},{"program",program},{"target",target},{"status","failed"}};
     if(p.checkTools.contains(id)){const auto &snapshot=p.toolchains.at(p.checkTools.at(id));row["toolchain"]=p.checkTools.at(id);row["toolchain_hash"]=snapshot.hash;row["native_target"]=snapshot.target;row["host_compatible"]=snapshot.hostCompatible;}
     if(p.foreignChecks.contains(id))row["foreign_hash"]=p.foreign->hash;
+    if(auto limits=c.get("task_limits"))row["task_limits"]=taskLimitsJSON(parseTaskLimitsJSON(*limits,"E_TASK"));
     if(!supported(p,c)){row["status"]="unsupported";row["reason"]="target is not configured on this host";return row;}
     auto started=std::chrono::steady_clock::now();auto timeout=number(c,"timeout_seconds",60);auto artifact=directory/"artifacts"/id;fs::create_directories(artifact);
     auto remaining=[&](){auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");return timeout-unsigned(elapsed);};
-    auto invoke=[&](std::vector<std::string> args,const std::string &label,const std::string &revision=""){verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);auto value=command(id,program,args,remaining(),label,revision);verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
+    auto invoke=[&](std::vector<std::string> args,const std::string &label,const std::string &revision=""){
+      if(auto limits=c.get("task_limits")){
+        if(!args.empty()&&(args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="build"))appendTaskLimitArguments(args,parseTaskLimitsJSON(*limits,"E_TASK"));
+      }
+      verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);auto value=command(id,program,args,remaining(),label,revision);verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
     auto successful=[&](const JSON &v){return object(v).getInteger("exit_code")==0&&object(v).get("response")&&ok(*object(v).get("response"));};
     auto response=[&](const JSON &v)->const Object&{auto result=object(v).get("response");if(!result||!result->getAsObject())throw Error("E_TASK_PROCESS","compiler did not produce a JSON response");return object(*result);};
     bool project=p.projects.contains(program);
@@ -510,6 +529,10 @@ struct Runner {
     auto builtArtifact=[&](const Object &build,const std::string &component)->const Object&{for(const auto &value:array(build,"artifacts",0,128))if(object(value).getString("component")==component)return object(value);throw Error("E_TASK_ARTIFACT","project build did not produce its requested artifact");};
     auto executeNative=[&](const Object &built,const Program &scope,const std::string &label){
       std::vector<std::string> arguments{text(built,"artifact")};if(p.foreignChecks.contains(id))arguments.insert(arguments.end(),{"--nex-foreign",(directory/"inputs/foreign/host.json").string()});
+      auto metadata=readJSON(text(built,"metadata"),16*1048576);
+      if(auto limits=object(metadata).get("task_limits");limits&&limits->getAsObject()){
+        auto configured=parseTaskLimitsJSON(*limits,"E_TASK_INTEGRITY");row["task_execution"]=taskExecutionJSON(configured,configured,"native",timeout);
+      }
       verifyToolchain(id);verifyForeign(id);verifyProject(program);
       auto value=observeCommand(id,program,arguments,remaining(),label,false,&scope,text(built,"debug_manifest"));
       verifyToolchain(id);verifyForeign(id);verifyProject(program);

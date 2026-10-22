@@ -22,6 +22,7 @@ struct Returned { V value; };
 class Interpreter {
   nexrt::FileScope files;
   E atomRoot;unsigned outerDepth=0;
+  const TaskControlPoll *controlPoll=nullptr;
   const Program &p; uint64_t limit; Evaluation result;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
@@ -29,7 +30,7 @@ class Interpreter {
   std::unique_ptr<WatchValues> watch;
   std::map<const void*,std::string> sites;
   V full(const V &value){return watch?watch->concrete(value):value;}
-  void step(Span s){if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
+  void step(Span s){if(controlPoll&&*controlPoll)(*controlPoll)(s);if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
   V &local(const std::string &name,Span span={}) {
     for(auto i=frames.back().rbegin();i!=frames.back().rend();++i){if(auto lazy=i->lazy.find(name);lazy!=i->lazy.end()){auto value=lazy->second();i->values[name]=std::move(value);i->lazy.erase(lazy);}if(i->values.contains(name))return i->values.at(name);}
     if(watchTypes&&frames.size()==1&&watchTypes->contains(name)){
@@ -224,7 +225,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false):p(p),limit(limit){if(!atoms&&(!p.taskPrototype||p.sourceLanguage==SourceLanguage::Tasks019))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&(!p.taskPrototype||p.sourceLanguage==SourceLanguage::Tasks019))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
@@ -250,17 +251,21 @@ public:
   }
 };
 }
-TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth){
+TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth,const TaskControlPoll *controlPoll){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
-  return Interpreter(p,limit,true).atom(std::move(atom),values,depth);
+  return Interpreter(p,limit,true,controlPoll).atom(std::move(atom),values,depth);
 }
-Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){
+Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit,const nexrt::TaskExecutionLimits *taskLimits){
   rejectUnloweredTasks(p,"reference execution");
   const auto &function=p.function(entry);
-  if(p.sourceLanguage==SourceLanguage::Tasks019&&function.effects.contains("task")){
+  if(taskLimits&&!nexrt::validTaskExecutionLimits(*taskLimits))throw Error("E_OPTION","invalid task execution limits",function.span);
+  const bool taskExecution=p.sourceLanguage==SourceLanguage::Tasks019&&usesTaskEffects(p,entry);
+  if(taskLimits&&!taskExecution)
+    throw Error("E_OPTION","task execution limits require a task-effect entry",function.span);
+  if(taskExecution){
     if(!function.typeParameters.empty()||std::any_of(function.typeArguments.begin(),function.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be concrete",function.span);
     if(!function.params.empty())throw Error("E_ENTRY","entry must take no arguments",function.span);
-    auto actual=evaluateTaskReference(p,entry,{},stepLimit);Evaluation result;
+    auto actual=evaluateTaskReference(p,entry,{},stepLimit,{},taskLimits);Evaluation result;
     result.output=std::move(actual.output);result.steps=actual.steps;
     if(function.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(actual.value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}
     return result;

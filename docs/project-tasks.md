@@ -184,3 +184,6 @@ operator grants and captured module/notice bytes are checked around this step.
 At most8192 member mappings and16MiB of derived notice JSON are accepted. Current
 operator bundle locations must still match the reviewed provenance roots;
 relocating those roots requires a reviewed notice/task update.
+
+
+The development toolchain0.106 adds [explicit task execution limits](task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.

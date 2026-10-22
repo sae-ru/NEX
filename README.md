@@ -307,3 +307,6 @@ Older language archives require explicit history-preserving migration with
 `nex migrate`. Keep their matching SDKs for old debug sessions and receipts.
 The project is the language and its development tools; application products
 will be built afterwards using NEX.
+
+
+The development toolchain0.106 adds [explicit task execution limits](docs/task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.

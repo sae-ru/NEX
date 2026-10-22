@@ -112,6 +112,20 @@ try:
     (folder/'package.json').write_text('{"type":"module"}\n')
     (folder/'run.mjs').write_text("import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';const controller=new AbortController();let ticks=0,polls=0,statistics,error;const timer=setInterval(()=>++ticks,1),cancel=setTimeout(()=>controller.abort(),15);try{await task.run(task.call(()=>entry()),{steps:10000000,signal:controller.signal,observe:(_job,r)=>{if(r.operation==='$poll')++polls;},complete:s=>{statistics=s;}});}catch(e){error=e;}finally{clearInterval(timer);clearTimeout(cancel);}if(error?.code!=='E_CANCELLED'||!ticks||!polls||!statistics?.completed||statistics.activeCalls||statistics.retainedFrames)throw new Error('pure helper starved cancellation or retained frames');process.stdout.write(JSON.stringify({ticks,polls,clean:true})+'\\n');\n")
     host = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'run.mjs']))
+    (folder/'limits.mjs').write_text((source/'tests/task_typescript_limits.mjs').read_text())
+    limits_host = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'limits.mjs']))
+    # Exercise the actual C++ runner's immutable decimal limit forwarding, not
+    # only trusted host calls to task.run. The supervisor remains a separate
+    # outer process timeout.
+    for name, steps, timeout_ms, workers, expected in [
+        ('runner-step-limit', 100, 5000, 1, 'E_LIMIT'),
+        ('runner-time-limit', 9007199254740991, 20, 3, 'E_TIMEOUT'),
+    ]:
+        target = out/name
+        actual = json.loads(run([probe, path, target, 'test', 'main', steps, timeout_ms, workers]))
+        assert actual['exit_code'] != 0 and expected in actual['stderr'], actual
+        text = (target/'test.ts').read_text()
+        assert f'steps: {steps}, timeoutMs: {timeout_ms}, workers: {workers}' in text, text
 
     pure = out/'pure.nex'; pure.write_text('module pure;fn main()->i64{return 42;}fn unused()->unit !{task}{task_yield();}')
     folder = out/'pure'; result = emit(pure, folder); assert not result['asynchronous']; mapping(folder, result)
@@ -152,7 +166,7 @@ try:
     tsc = Path(os.environ['NEX_TSC']).resolve()
     assert json.loads((tsc.parent.parent/'package.json').read_text())['version'] == json.loads((source/'web/package.json').read_text())['devDependencies']['typescript']
     run([node, tsc, '--noEmit', '--strict', '--target', 'ES2022', '--module', 'ESNext', '--moduleResolution', 'bundler', '--allowImportingTsExtensions', '--lib', 'ES2022,DOM', *programs])
-    report = {'ok': True, 'public019': True, 'independent_asynchronous_ast_agreement': len(records), 'native_cli_agreement': bool(args.compiler), 'strict_typecheck': True, 'pure_helper_cancellation': host, 'records': records}
+    report = {'ok': True, 'public019': True, 'independent_asynchronous_ast_agreement': len(records), 'native_cli_agreement': bool(args.compiler), 'strict_typecheck': True, 'pure_helper_cancellation': host, 'task_limits': limits_host, 'records': records}
     (out/'report.json').write_text(json.dumps(report, indent=2)+'\n'); print(json.dumps(report))
 except BaseException:
     print('Public TypeScript fixtures retained at '+str(out)); raise

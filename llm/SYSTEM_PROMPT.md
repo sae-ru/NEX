@@ -1,6 +1,13 @@
 # NEX coding prompt — language 0.19, protocol 2
 
 Query `nex describe --json` for the actual language and structured task support.
+For explicit task host budgets, query `nex describe --field task_execution_limits --json`
+and read `docs/task-limits.md`. Use --task-steps/--task-timeout-ms/--task-workers
+for eval/build/run/test/package; projects declare configuration.task_limits.
+Acceptance checks capture their own nonproject task_limits or the reviewed project
+configuration. A copied launcher can lower embedded ceilings with --nex-task-*;
+environment variables grant no controls. Steps count backend-specific work;
+reference/TypeScript execute serially. Outer process timeout remains separate.
 For0.19 tasks, read `docs/language.md`, `docs/task-lifetimes.md` and
 `docs/task-migration.md` alongside the grammar. Source types are `task_scope`,
 `task<T>` (including `task<unit>`) and `channel<T>` with non-unit payload T.
@@ -34,7 +41,7 @@ source-function-local result propagation across suspension.
 Native task applications/source-only project linkage target macOS/Linux with
 compiled continuations. The native request defaults are1000000 steps,5000ms and
 an executor pool of16; scopes request1..16 workers and inherit ancestor caps.
-Per-app CLI controls remain pending. Reference and generated TypeScript task
+Explicit host controls are described in docs/task-limits.md; check the actual compiler descriptor. Reference and generated TypeScript task
 execution are independent cooperative schedulers, with no OS CPU-overlap claim.
 Standalone TypeScript task exports return task.Step<T> and need the generated
 scheduler host; pure modules stay synchronous. UI/worker adapters retain pure

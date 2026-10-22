@@ -9,6 +9,7 @@ struct TaskAstMachine::Impl {
   uint64_t limit,used=0,sequence=0;
   size_t pending=0,maximumActions;
   unsigned outerDepth;
+  TaskControlPoll controlPoll;
   bool waiting=false,done=false,failed=false;
   Span activeSpan;
   Type response;
@@ -36,6 +37,7 @@ struct TaskAstMachine::Impl {
 
   void charge(Span span,uint64_t count=1){
     activeSpan=span;
+    if(controlPoll)controlPoll(span);
     if(count>limit-used)throw Error("E_LIMIT","AST continuation step budget exceeded",span);
     used+=count;
   }
@@ -199,7 +201,7 @@ struct TaskAstMachine::Impl {
             child->kind=Expr::Name;child->text=name;child->type=e->args[i]->type;
             atom->args.push_back(child);inputs.emplace(std::move(name),std::move(args[i]));
           }
-          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,outerDepth+unsigned(frames.size()-1));
+          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,outerDepth+unsigned(frames.size()-1),&controlPoll);
           charge(e->span,result.steps);output+=result.output;frame.values.push_back(std::move(result.value));break;
         }
         case Action::Bind:{auto value=pop();frame.scopes.back()[s->name]=std::move(value);break;}
@@ -252,7 +254,7 @@ struct TaskAstMachine::Impl {
     }catch(...){failed=true;frames.clear();pending=0;throw;}
   }
   Impl(const Program &program,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
-       const AV &closure,unsigned outerDepth,size_t maximumActions):program(program),limit(limit),maximumActions(maximumActions),outerDepth(outerDepth){
+       const AV &closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll):program(program),limit(limit),maximumActions(maximumActions),outerDepth(outerDepth),controlPoll(std::move(controlPoll)){
     if(!program.taskPrototype)throw Error("E_TASK_STATE","AST continuation requires private checked source");
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
     if(maximumActions>262144)throw Error("E_LIMIT","AST action allowance exceeds262144");
@@ -260,8 +262,8 @@ struct TaskAstMachine::Impl {
   }
 };
 TaskAstMachine::TaskAstMachine(const Program &p,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
-    AV closure,unsigned outerDepth,size_t maximumActions)
-  :impl(std::make_unique<Impl>(p,entry,args,limit,closure,outerDepth,maximumActions)){}
+    AV closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll)
+  :impl(std::make_unique<Impl>(p,entry,args,limit,closure,outerDepth,maximumActions,std::move(controlPoll))){}
 TaskAstMachine::~TaskAstMachine()=default;
 TaskTransition TaskAstMachine::advance(){return impl->advance();}
 void TaskAstMachine::restrictBudget(uint64_t remaining){impl->limit=impl->used+std::min(remaining,impl->limit-impl->used);}

@@ -392,3 +392,6 @@ Native modules remain trusted code with ordinary OS actions and dependency
 lookup. Capturing inventoried members does not freeze the OS, all transitive
 libraries or external state, and does not provide a sandbox. Automatic dependency
 closure packaging and callbacks into NEX remain pending.
+
+
+The development toolchain0.106 adds [explicit task execution limits](task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.

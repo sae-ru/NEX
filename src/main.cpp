@@ -1,5 +1,6 @@
 #include "nex/backend.h"
 #include "nex/task_frontend.h"
+#include "nex/task_limits.h"
 #include "nex/discovery.h"
 #include "nex/wasm.h"
 #include "nex/frontend_diagnostics.h"
@@ -52,7 +53,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices"};
-  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
+  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--task-steps","--task-timeout-ms","--task-workers","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -62,7 +63,7 @@ Options options(int argc,char **argv) {
     else if(a=="--references"){if(o.command!="analyze")throw Error("E_OPTION","--references requires analyze");o.flags.insert(a);}
     else if(a=="--capsule"||a=="--export"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--capsule/--export require core and a directory");o.values[a]=argv[++i];}
     else if(a=="--thread"||a=="--frame"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--thread/--frame require core and an index");o.values[a]=argv[++i];}
-    else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);o.values[a]=argv[++i];}
+    else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);if(a.starts_with("--task-")&&o.values.contains(a))throw Error("E_OPTION","duplicate option "+a);o.values[a]=argv[++i];}
     else if(a.starts_with("-"))throw Error("E_OPTION","unknown option "+a);
     else o.positional.push_back(a);
   }
@@ -119,6 +120,22 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 int run(const Options &o) {
+  nexrt::TaskExecutionLimits taskLimits;bool taskLimitsSpecified=false;
+  for(const auto &[flag,maximum]:std::vector<std::pair<std::string,uint64_t>>{{"--task-steps",nexrt::maximumTaskExecutionSteps},{"--task-timeout-ms",nexrt::maximumTaskExecutionTimeoutMs},{"--task-workers",nexrt::maximumTaskExecutionWorkers}}){
+    if(!o.values.contains(flag))continue;
+    if(o.command!="eval"&&o.command!="build"&&o.command!="run"&&o.command!="test"&&o.command!="package")
+      throw Error("E_OPTION","task limits require eval/build/run/test/package; project limits belong in configuration.task_limits");
+    auto value=nexrt::parseTaskLimitDecimal(o.get(flag),maximum);
+    if(!value)throw Error("E_OPTION","invalid positive decimal value for "+flag);
+    taskLimitsSpecified=true;if(flag=="--task-steps")taskLimits.steps=*value;
+    else if(flag=="--task-timeout-ms")taskLimits.timeoutMs=*value;else taskLimits.workers=unsigned(*value);
+  }
+  if(taskLimitsSpecified&&o.command=="build"&&(o.get("--target")=="web"||o.get("--target")=="wasm"))
+    throw Error("E_OPTION","task limits require a native task application build");
+  if(o.values.contains("--steps")&&(o.command=="run"||o.command=="test"||o.command=="build"||o.command=="package"))
+    throw Error("E_OPTION","--steps is an interpreter option; use --task-steps for task applications");
+  if(o.command=="eval"&&taskLimitsSpecified&&o.values.contains("--steps"))
+    throw Error("E_OPTION","use either --steps or --task-steps for task evaluation");
   if(o.command=="project"){
     const auto kind=o.get("--kind","plan");const bool packaging=kind=="package",execution=kind=="run"||kind=="test"||kind=="profile"||kind=="debug";
     for(const auto &[key,value]:o.values){(void)value;
@@ -269,7 +286,7 @@ int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
-      "  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
+      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
@@ -361,9 +378,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -650,11 +667,18 @@ int run(const Options &o) {
     std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     uint64_t limit=1000000;
     if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
+    auto entry=o.get("--entry","main");bool taskEntry=usesTaskEffects(p,entry);
+    if(taskLimitsSpecified&&!taskEntry)throw Error("E_OPTION","task limits require an entry with the task effect");
+    if(taskLimitsSpecified)limit=taskLimits.steps;
     Evaluation result;
-    try{result=evaluate(p,o.get("--entry","main"),limit);}catch(Error &error){
+    try{result=evaluate(p,entry,limit,taskLimitsSpecified?&taskLimits:nullptr);}catch(Error &error){
       if(!error.operationSite.empty()){auto mapped=store.operations(p,"",error.operationSite,0,1);error.operationId=(*mapped.getAsObject()->getArray("nodes"))[0].getAsObject()->getString("id")->str();}throw;
     }
-    if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"value",result.value},{"stdout",result.output},{"steps",int64_t(result.steps)}});else std::cout<<result.output;return 0;
+    if(o.has("--json")){
+      llvm::json::Object response{{"ok",true},{"value",result.value},{"stdout",result.output},{"steps",int64_t(result.steps)}};
+      if(taskEntry){auto configured=taskLimits;configured.steps=limit;response["task_execution"]=taskExecutionJSON(configured,configured,"reference");}
+      print(std::move(response));
+    }else std::cout<<result.output;return 0;
   }
   if(o.command=="emit"&&o.get("--kind")=="typescript"){
     auto module=emitTypeScript(p,{{"entry",o.get("--entry","main")}});auto directory=o.get("--directory"),output=o.get("--output");
@@ -666,6 +690,13 @@ int run(const Options &o) {
   std::vector<std::string> foreignArguments;if(!o.get("--foreign").empty()){foreignArguments={o.get("--target")=="server"?"--foreign":"--nex-foreign",fs::absolute(o.get("--foreign")).string()};}
   auto executionArguments=[&](const std::string &executable){std::vector<std::string> result{executable};result.insert(result.end(),foreignArguments.begin(),foreignArguments.end());return result;};
   BuildOptions buildOptions{o.get("--profile",o.command=="package"?"release":"debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library"),o.get("--toolchain")};
+  buildOptions.taskLimits=taskLimits;buildOptions.taskLimitsSpecified=taskLimitsSpecified;
+  auto supervisorTimeout=[&](const nexrt::TaskExecutionLimits &limits){
+    if(o.values.contains("--timeout")){
+      auto value=nexrt::parseTaskLimitDecimal(o.get("--timeout"),3600);if(!value)throw Error("E_OPTION","--timeout requires 1..3600 seconds");return unsigned(*value);
+    }
+    return std::max(30u,unsigned((limits.timeoutMs+999)/1000+5));
+  };
   if((o.command=="run"||o.command=="test"||o.command=="debug"||o.command=="profile")&&o.get("--target")!="web"&&!o.has("--interpreter-only"))requireNativeHost(buildOptions);
   ProfileOptions profiling;
   if(o.command=="profile"){
@@ -687,20 +718,26 @@ int run(const Options &o) {
     std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
     int count=0;llvm::json::Array tests;
     auto selected=o.get("--symbol");if(!selected.empty()){const auto &f=p.function(selected);if(!f.test)throw Error("E_TEST","--symbol must select a test function");selected=f.name;}
+    if(taskLimitsSpecified)for(const auto &f:p.functions)if(f.test&&(selected.empty()||selected==f.name)&&!usesTaskEffects(p,f.name))
+      throw Error("E_OPTION","select a task test with --symbol when specifying task limits",f.span);
     for(const auto &f:p.functions)if(f.test&&(selected.empty()||selected==f.name)){
       bool web=o.get("--target")=="web";
       if(web&&f.realm=="server"){tests.push_back(llvm::json::Object{{"name",f.name},{"skipped",true},{"reason","server test excluded from web target"}});continue;}
-      auto expected=evaluate(p,f.name);bool native=!o.has("--interpreter-only");
+      bool taskTest=usesTaskEffects(p,f.name);
+      if(taskLimitsSpecified&&!taskTest)throw Error("E_OPTION","select a task test with --symbol when specifying task limits",f.span);
+      auto expected=evaluate(p,f.name,taskLimits.steps,taskTest?&taskLimits:nullptr);bool native=!o.has("--interpreter-only");
       if(native){
         ProcessResult actual;
         if(web){
           auto module=emitTypeScript(p,{{"entry",f.name}});auto runtimeInputs=readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"));
           if(module.asynchronous)runtimeInputs+=readFile(resourceFile("web/nex-task-runtime.ts"));
           auto key=hash(module.source+runtimeInputs+NEX_BUILD_ID);
-          actual=runTypeScriptTest(module,(fs::path(directory)/key/"typescript").string());
-        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable));}
+          actual=runTypeScriptTest(module,(fs::path(directory)/key/"typescript").string(),supervisorTimeout(taskLimits),taskTest?&taskLimits:nullptr);
+        }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable),taskTest?supervisorTimeout(taskLimits):30);}
         if(actual.code!=0||actual.output!=expected.output)throw Error("E_DIFFERENTIAL",std::string(web?"TypeScript":"native")+" test disagrees with interpreter: "+f.name+"\n"+actual.errors,f.span);}
-      ++count;tests.push_back(llvm::json::Object{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}});
+      ++count;llvm::json::Object observed{{"name",f.name},{"ok",true},{"native",native&&!web},{"web",native&&web}};
+      if(taskTest)observed["task_execution"]=taskExecutionJSON(taskLimits,taskLimits,native?(web?"typescript":"native"):"reference",native?supervisorTimeout(taskLimits):0);
+      tests.push_back(std::move(observed));
     }
     if(!count)throw Error("E_TEST","no tests found");
     if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"tests",std::move(tests)}});else std::cout<<count<<" tests passed ("<<(o.has("--interpreter-only")?"interpreter":o.get("--target")=="web"?"interpreter + TypeScript":"interpreter + native")<<")\n";return 0;
@@ -722,9 +759,13 @@ int run(const Options &o) {
   if(o.command=="emit") {auto text=readFile(result.llvm);auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;}
   if(o.command=="run") {
     if(!o.has("--json")){std::vector<std::string> arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());return execute(arguments);}
-    auto arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());auto child=capture(arguments);
+    auto arguments=executionArguments(result.executable);arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());
+    bool taskEntry=usesTaskEffects(p,buildOptions.entry);auto effective=taskEntry?taskEffectiveLimits(taskLimits,arguments):taskLimits;
+    auto timeout=taskEntry?supervisorTimeout(effective):30u;auto child=capture(arguments,timeout);
     auto manifest=parseJSON(readFile((fs::path(result.executable).parent_path()/"debug.json").string()));
-    print(llvm::json::Object{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key},{"native_diagnostics",nativeDiagnostics(p,manifest,store,child.errors)}});return child.code;
+    llvm::json::Object observed{{"ok",child.code==0},{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors},{"build_key",result.key},{"native_diagnostics",nativeDiagnostics(p,manifest,store,child.errors)}};
+    if(taskEntry)observed["task_execution"]=taskExecutionJSON(taskLimits,effective,"native",timeout);
+    print(std::move(observed));return child.code;
   }
   if(o.command=="debug") {
     auto kind=o.get("--kind","lldb");if(kind!="lldb"&&kind!="dap"&&kind!="nex-dap")throw Error("E_OPTION","debug kind must be lldb, dap or nex-dap");
@@ -737,7 +778,7 @@ int run(const Options &o) {
   auto output=o.get("--output");if(!output.empty()){copyFile(result.executable,output,true);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}
   auto notices=result.notices;
   if(!output.empty()&&!notices.empty()){notices=fs::absolute(output).string()+".THIRD_PARTY_NOTICES.txt";copyFile(result.notices,notices,true);}
-  if(o.has("--json"))print(llvm::json::Object{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"target",result.target},{"compiler_target",result.compilerTarget},{"host_compatible",result.hostCompatible},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{ "compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions}});
+  if(o.has("--json")){llvm::json::Object observed{{"ok",true},{"executable",output.empty()?result.executable:fs::absolute(output).string()},{"kind",buildOptions.target=="server"?"http_server":buildOptions.libraryEntry?"static_library":"executable"},{"cached",result.cached},{"target",result.target},{"compiler_target",result.compilerTarget},{"host_compatible",result.hostCompatible},{"revision",revision(p)},{"build_key",result.key},{"mlir",result.mlir},{"llvm",result.llvm},{"notices",notices},{"metadata",(fs::path(result.executable).parent_path()/"build.json").string()},{"debug_manifest",(fs::path(result.executable).parent_path()/"debug.json").string()},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{ "compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions}};if(usesTaskEffects(p,buildOptions.entry))observed["task_limits"]=taskLimitsJSON(taskLimits);print(std::move(observed));}
   else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
 }
 }

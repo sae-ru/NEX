@@ -11,7 +11,8 @@ class TaskAstMachine {
 public:
   TaskAstMachine(const Program &,const std::string &entry,
     const std::vector<nexrt::Value> &arguments={},uint64_t limit=1000000,
-    nexrt::Value closure={},unsigned outerDepth=0,size_t maximumActions=262144);
+    nexrt::Value closure={},unsigned outerDepth=0,size_t maximumActions=262144,
+    TaskControlPoll controlPoll={});
   ~TaskAstMachine();
   TaskAstMachine(const TaskAstMachine&)=delete;
   TaskAstMachine &operator=(const TaskAstMachine&)=delete;

@@ -1,6 +1,7 @@
 #include "nex/web.h"
 #include "nex/backend.h"
 #include "nex/task_process.h"
+#include "nex_task_limits.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <cstdlib>
@@ -141,12 +142,15 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
   return result;
 }
 }
-ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout){
+ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout,const nexrt::TaskExecutionLimits *limits){
   namespace fs=std::filesystem;
+  if(limits&&!nexrt::validTaskExecutionLimits(*limits))throw Error("E_OPTION","invalid TypeScript task execution limits");
+  std::string taskOptions;
+  if(limits)taskOptions=", {steps: "+std::to_string(limits->steps)+", timeoutMs: "+std::to_string(limits->timeoutMs)+", workers: "+std::to_string(limits->workers)+"}";
   auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
   writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
   writeFile((folder/"test.ts").string(),module.asynchronous?
-    "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\nawait task.run(task.call(() => entry()));\n":
+    "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\nawait task.run(task.call(() => entry())"+taskOptions+");\n":
     "import { entry } from './program.ts';\nentry();\n");
   ToolDirectory runner(folder);
   if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})

@@ -105,8 +105,19 @@ type Region = {
   members: number[]; children: number[]; pipes: number[]; failure?: Error; capability?: WeakRef<Scope>;
 };
 type Pipe = { scope: number; capacity: number; closed: boolean; buffer: Ring<nex.Value>; senders: Waiters; receivers: Waiters; capability?: WeakRef<Channel<nex.Value>> };
-export type Options = { steps?: number; signal?: AbortSignal; observe?: (job: number, request: Request) => void; complete?: (statistics: Statistics) => void };
-export type Statistics = { steps: number; tasks: number; scopes: number; channels: number; completed: boolean; retainedFrames: number; activeCalls: number };
+export type ExecutionLimits = Readonly<{ steps: number; timeoutMs: number; workers: number }>;
+export type Options = { steps?: number; timeoutMs?: number; workers?: number; signal?: AbortSignal; observe?: (job: number, request: Request) => void; complete?: (statistics: Statistics) => void };
+export type Statistics = { steps: number; tasks: number; scopes: number; channels: number; completed: boolean; retainedFrames: number; activeCalls: number; limits: ExecutionLimits; actualWorkers: 1 };
+function validatedOptions(options: Options): Readonly<Options & ExecutionLimits> {
+  if (typeof options !== 'object' || options === null) fail('E_RANGE', 'task options must be an object');
+  const steps = options.steps === undefined ? 1000000 : options.steps;
+  const timeoutMs = options.timeoutMs === undefined ? 5000 : options.timeoutMs;
+  const workers = options.workers === undefined ? 16 : options.workers;
+  if (!Number.isSafeInteger(steps) || steps < 1) fail('E_RANGE', 'task budget must be in1..9007199254740991');
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3600000) fail('E_RANGE', 'task timeoutMs must be in1..3600000');
+  if (!Number.isSafeInteger(workers) || workers < 1 || workers > 16) fail('E_RANGE', 'task workers must be in1..16');
+  return Object.freeze({...options, steps, timeoutMs, workers});
+}
 function resource(error: Error): boolean { return error instanceof nex.NexError && ['E_LIMIT', 'E_MEMORY', 'E_TIMEOUT', 'E_CANCELLED'].includes(error.code); }
 function prefer(selected: Error | undefined, candidate: Error | undefined): Error | undefined {
   return candidate && (!selected || (!resource(selected) && resource(candidate))) ? candidate : selected;
@@ -118,15 +129,30 @@ class Driver {
   readonly regions: Region[] = [];
   readonly pipes: Pipe[] = [];
   readonly ready = new Ring<number>(4096);
-  readonly options: Options;
+  readonly options: Readonly<Options & ExecutionLimits>;
   readonly limit: number;
+  readonly deadline: number;
+  private expired?: nex.NexError;
   used = 0; slots = 0; closed = false;
   private rootDone(): boolean { return this.jobs[0].state === 'done'; }
   constructor(options: Options) {
-    this.options = options; this.limit = options.steps ?? 1000000;
-    if (!Number.isSafeInteger(this.limit) || this.limit < 1) fail('E_RANGE', 'task budget must be a positive safe integer');
+    this.options = validatedOptions(options); this.limit = this.options.steps;
+    this.deadline = performance.now() + this.options.timeoutMs;
   }
-  charge(site?: nex.Site): void { if (this.used >= this.limit) fail('E_LIMIT', 'shared generator task budget exceeded', site); ++this.used; }
+  checkDeadline(site?: nex.Site): void {
+    if (!this.expired && performance.now() >= this.deadline) this.expired = new nex.NexError('E_TIMEOUT', 'shared generator task deadline exceeded', site);
+    if (this.expired) throw this.expired;
+  }
+  charge(site?: nex.Site): void { this.checkDeadline(site); if (this.used >= this.limit) fail('E_LIMIT', 'shared generator task budget exceeded', site); ++this.used; }
+  stop(failure: Error): void {
+    // A root deadline ends the entire execution, even if the timed-out child
+    // was unobserved or its enclosing callback returned an error result.
+    for (let i = 0; i < this.jobs.length; ++i) {
+      const job = this.jobs[i];
+      if (job.state === 'finishing') job.failure = prefer(job.failure, failure);
+      else if (job.state !== 'done') this.finish(i, failure);
+    }
+  }
   within(ancestor: number, scope: number): boolean {
     for (let s = scope; s !== none; s = this.regions[s].parent) if (s === ancestor) return true; return false;
   }
@@ -321,7 +347,9 @@ class Driver {
     const tick = () => new Promise<void>(resolve => { wake = resolve; channel.port2.postMessage(null); });
     try {
       while (!this.rootDone()) {
+        if (this.expired) this.stop(this.expired);
         this.settle(); if (this.rootDone()) break;
+        try { this.checkDeadline(); } catch (error) { this.stop(asError(error)); continue; }
         let ran = false;
         while (this.ready.length) {
           const index = this.ready.shift()!, job = this.jobs[index]; job.queued = false;
@@ -334,7 +362,11 @@ class Driver {
     } finally {
       this.closed = true; this.options.signal?.removeEventListener('abort', cancel); channel.port1.close(); channel.port2.close();
       for (let i = 0; i < this.jobs.length; ++i) { const previous = active; active = {driver: this, job: i}; try { this.finish(i, new nex.NexError('E_CANCELLED', 'task scheduler ended')); } finally { active = previous; } }
-      const statistics: Statistics = {steps: this.used, tasks: this.jobs.length, scopes: this.regions.length, channels: this.pipes.length, completed: this.jobs[0].state === 'done', retainedFrames: this.jobs.reduce((n, job) => n + job.stack.length, 0), activeCalls: this.jobs.reduce((n, job) => n + job.calls, 0)};
+      this.settle();
+      const limits = Object.freeze({steps: this.options.steps, timeoutMs: this.options.timeoutMs, workers: this.options.workers});
+      // This cooperative host has one serial executor. workers is a validated
+      // execution ceiling, not a claim that worker threads were created.
+      const statistics: Statistics = {steps: this.used, tasks: this.jobs.length, scopes: this.regions.length, channels: this.pipes.length, completed: this.jobs[0].state === 'done', retainedFrames: this.jobs.reduce((n, job) => n + job.stack.length, 0), activeCalls: this.jobs.reduce((n, job) => n + job.calls, 0), limits, actualWorkers: 1};
       this.pipes.length = this.regions.length = this.jobs.length = 0;this.ready.clear();
       this.options.complete?.(Object.freeze(statistics));
     }

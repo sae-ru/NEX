@@ -1,6 +1,7 @@
 #include "nex/task_reference.h"
 #include "nex_task_reference_value.h"
 #include <algorithm>
+#include <chrono>
 #include <deque>
 #include <unordered_set>
 
@@ -68,16 +69,47 @@ struct Reference {
   std::vector<Region> regions;
   std::vector<Pipe> pipes;
   std::deque<size_t> ready;
+  using Clock=std::chrono::steady_clock;
+  nexrt::TaskExecutionLimits limits;
   uint64_t limit,used=0;
+  Clock::time_point deadline;
+  std::shared_ptr<Error> controlFailure;
+  TaskControlPoll controlPoll;
   size_t channelSlots=0;
   std::string output;
+  Span rootSpan;
   TaskReferenceObserver observer;
 
-  Reference(const Program &p,uint64_t limit,TaskReferenceObserver observer):program(p),limit(limit),observer(std::move(observer)){}
-  void charge(uint64_t amount,Span span={}){
-    if(amount>limit-used)throw Error("E_LIMIT","reference scheduler step budget exceeded",span);
+  static nexrt::TaskExecutionLimits selectedLimits(uint64_t legacy,const nexrt::TaskExecutionLimits *requested){
+    if(requested){
+      if(!nexrt::validTaskExecutionLimits(*requested))throw Error("E_OPTION","invalid task execution limits");
+      return *requested;
+    }
+    // Existing numeric probes retain their step semantics, including zero.
+    // Public explicit configurations use the canonical positive/range checks.
+    nexrt::TaskExecutionLimits result;result.steps=legacy;return result;
+  }
+  Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested)
+    :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
+     deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)){
+    controlPoll=[this](Span span){checkControl(span);};
+  }
+  void checkControl(Span span={}){
+    if(controlFailure)throw *controlFailure;
+    if(Clock::now()>=deadline){
+      if(span.file.empty())span=rootSpan;
+      controlFailure=std::make_shared<Error>("E_TIMEOUT","reference task deadline exceeded",span);
+      throw *controlFailure;
+    }
+  }
+  void account(uint64_t amount,Span span={}){
+    if(amount>limit-used){
+      if(!controlFailure)controlFailure=std::make_shared<Error>("E_LIMIT","reference scheduler step budget exceeded",span);
+      throw *controlFailure;
+    }
     used+=amount;
   }
+  void charge(uint64_t amount,Span span={}){checkControl(span);account(amount,span);}
   bool within(size_t ancestor,size_t scope)const{
     for(;scope!=none;scope=regions.at(scope).parent)if(scope==ancestor)return true;
     return false;
@@ -132,8 +164,9 @@ struct Reference {
     if(candidate&&(!selected||(!resource(selected)&&resource(candidate))))selected=candidate;
   }
   void beginFinish(size_t i,std::shared_ptr<Error> failure={},RV result={}){
-    auto &j=*jobs[i];if(j.state==Done||j.state==Finishing)return;
-    j.state=Finishing;j.failure=std::move(failure);j.result=std::move(result);
+    auto &j=*jobs[i];if(j.state==Done)return;
+    if(j.state==Finishing)prefer(j.failure,failure);
+    else{j.state=Finishing;j.failure=std::move(failure);j.result=std::move(result);}
     // No completion is published until every retained frame and owned scope
     // has been released. Single-thread cleanup needs no native coroutine lock.
     j.stack.clear();j.request={};j.pending={};
@@ -152,9 +185,10 @@ struct Reference {
   // A dependency node is a job or (maximumTasks + region). Channel readiness
   // is external to this graph; a fully stalled channel program is diagnosed
   // separately rather than pretending it is a future/scope cycle.
-  bool cycle(size_t waiter,size_t target,bool scope)const{
+  bool cycle(size_t waiter,size_t target,bool scope){
     std::vector<size_t> work{scope?maximumTasks+target:target};std::unordered_set<size_t> seen;
     while(!work.empty()){
+      checkControl();
       auto node=work.back();work.pop_back();if(node==waiter)return true;if(!seen.insert(node).second)continue;
       if(node>=maximumTasks){const auto &r=regions.at(node-maximumTasks);if(r.closed)continue;
         for(auto member:r.members)if(jobs[member]->state!=Done)work.push_back(member);
@@ -227,7 +261,7 @@ struct Reference {
     size_t s=regions.size();Region region;region.owner=i;region.parent=parent;region.depth=depth;regions.push_back(std::move(region));
     if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
-    a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending);
+    a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll);
     j.stack.push_back(std::move(a));j.request={};enqueue(i);
   }
   void spawn(size_t i,const TaskTransition &r){
@@ -235,7 +269,7 @@ struct Reference {
     auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current);
     if(jobs.size()>=maximumTasks||parent.depth>=256)throw Error("E_LIMIT","reference task slot/nesting limit exceeded",r.span);
     auto job=std::make_unique<Job>();job->member=job->current=s;job->parent=i;job->depth=parent.depth+1;
-    Activation a;a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{},limit-used,closure);job->stack.push_back(std::move(a));
+    Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll);job->stack.push_back(std::move(a));
     auto id=jobs.size();jobs.push_back(std::move(job));regions[s].members.push_back(id);enqueue(id);answer(i,value(RD::Task,id));
   }
   void dispatch(size_t i){
@@ -288,10 +322,14 @@ struct Reference {
     Span operationSpan;
     try{
       auto &a=j.stack.back();a.machine->restrictBudget(limit-used);auto before=a.machine->steps();TaskTransition r;
-      try{r=a.machine->advance();}catch(...){charge(a.machine->steps()-before);absorb(a);throw;}
-      charge(a.machine->steps()-before);absorb(a);
+      // Account and preserve produced output even if a deadline poll threw.
+      // Cleanup/observation must not renew or repoll an already failed budget.
+      try{r=a.machine->advance();}catch(...){absorb(a);account(a.machine->steps()-before);throw;}
+      absorb(a);account(a.machine->steps()-before);
       operationSpan=r.kind==TaskTransition::Done?a.scopeSpan:r.span;
+      checkControl(operationSpan);
       if(observer)observer(i,r);
+      checkControl(operationSpan);
       if(r.kind==TaskTransition::Done){
         auto target=a.region==none?j.member:a.parent;snapshot(r.value,target,j.current);
         if(a.region==none){beginFinish(i,{},std::move(r.value));return;}
@@ -301,14 +339,33 @@ struct Reference {
         if(failed)cancelRegion(s);j.target=s;j.state=Drain;return;
       }
       j.request=std::move(r);dispatch(i);
-    }catch(const Error &e){auto located=std::make_shared<Error>(e);if(located->span.file.empty())located->span=operationSpan;beginFinish(i,std::move(located));}
+    }catch(const Error &e){
+      auto located=std::make_shared<Error>(e);
+      // An ordinary failure cannot hide shared resource exhaustion discovered
+      // at the same source/host boundary. Already chosen resource errors keep
+      // their established precedence during cancellation cleanup.
+      try{checkControl(operationSpan);}catch(const Error &control){prefer(located,std::make_shared<Error>(control));}
+      if(located->span.file.empty())located->span=operationSpan;beginFinish(i,std::move(located));
+    }
     catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.what(),j.request.span));}
   }
+  void finishControl(){
+    // No source continuation is resumed after a shared control failure. This
+    // independent coordinator owns no physical IO; destroying all activations
+    // and settling their scope ledgers drains every retained owned value.
+    for(size_t i=0;i<jobs.size();++i)beginFinish(i,controlFailure);
+    for(auto &region:regions)if(!region.closed){region.closing=true;region.abort=true;}
+    settle();
+    if(jobs[0]->state!=Done)throw Error("E_TASK_STATE","reference control cleanup did not drain all scopes");
+    prefer(jobs[0]->failure,controlFailure);jobs[0]->result={};
+  }
   TaskReferenceResult run(const std::string &entry,const std::vector<RV> &arguments){
-    if(!program.taskPrototype)throw Error("E_TASK_STATE","reference scheduler requires private checked source");
+    if(!program.taskPrototype)throw Error("E_TASK_STATE","reference scheduler requires checked task source");
+    rootSpan=program.function(entry).span;
     for(const auto &v:arguments)snapshot(v,none,none);
-    auto root=std::make_unique<Job>();Activation a;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used);root->stack.push_back(std::move(a));jobs.push_back(std::move(root));enqueue(0);
+    auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));jobs.push_back(std::move(root));enqueue(0);
     while(jobs[0]->state!=Done){
+      try{checkControl();}catch(const Error &){finishControl();break;}
       settle();if(jobs[0]->state==Done)break;
       bool ran=false;
       while(!ready.empty()){
@@ -316,16 +373,20 @@ struct Reference {
         if(j.state!=Ready||j.cancelled)continue;
         turn(i);ran=true;break;
       }
-      if(!ran&&!settle())throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
+      if(!ran&&!settle()){
+        try{checkControl();}catch(const Error &){finishControl();break;}
+        throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
+      }
     }
+    try{checkControl();}catch(const Error &){finishControl();}
     if(jobs[0]->failure){auto error=*jobs[0]->failure;error.output=output;throw error;}
     TaskReferenceResult result;result.value=jobs[0]->result;result.output=output;result.steps=used;
-    result.tasks=jobs.size();result.scopes=regions.size();result.channels=pipes.size();return result;
+    result.tasks=jobs.size();result.scopes=regions.size();result.channels=pipes.size();result.limits=limits;result.executionWorkers=1;return result;
   }
 };
 }
-TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer){
-  Reference scheduler(p,limit,std::move(observer));
+TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
+  Reference scheduler(p,limit,std::move(observer),taskLimits);
   try{return scheduler.run(entry,arguments);}catch(Error &e){e.output=scheduler.output;throw;}
 }
 }

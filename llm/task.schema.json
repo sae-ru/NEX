@@ -91,6 +91,9 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -185,6 +188,9 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -285,6 +291,9 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -979,6 +988,28 @@
         "checks"
       ],
       "additionalProperties": false
+    },
+    "task_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      }
     }
   }
 }

@@ -1,4 +1,6 @@
 #include "nex/project_build.h"
+#include "nex/task_limits.h"
+#include "nex/task_frontend.h"
 #include "nex/server_workload.h"
 #include "nex/backend.h"
 #include "nex/incremental.h"
@@ -41,7 +43,7 @@ struct Component {
   std::map<std::string,std::string> dependencies;
   std::vector<std::string> exports;
 };
-struct Configuration {std::string name,profile,target,toolchain;};
+struct Configuration {std::string name,profile,target,toolchain;nexrt::TaskExecutionLimits taskLimits;bool taskLimitsSpecified=false;};
 struct Prepared {std::string name;Program program;BuildOptions options;llvm::json::Value description;};
 [[noreturn]] void fail(const std::string &message,const std::string &code="E_PROJECT_BUILD") {throw Error(code,message);}
 void keys(const Object &o,const std::set<std::string> &allowed) {
@@ -181,10 +183,11 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   std::map<std::string,Configuration> configurations;
   for(const auto &[name,value]:settings) {
     if(!identifier(name.str()))fail("invalid configuration name");auto o=value.getAsObject();if(!o)fail("configuration must be an object");
-    keys(*o,{"profile","target","toolchain"});Configuration c;c.name=name.str();c.profile=text(*o,"profile","debug");c.target=text(*o,"target","native");
+    keys(*o,{"profile","target","toolchain","task_limits"});Configuration c;c.name=name.str();c.profile=text(*o,"profile","debug");c.target=text(*o,"target","native");
     if(c.profile!="debug"&&c.profile!="profile"&&c.profile!="release")fail("configuration profile must be debug, profile or release");
     if(c.target=="web"||c.target=="server"||c.target=="wasm")fail("configuration target selects a native CPU ABI; component kind selects web/server");
     if(o->get("toolchain"))c.toolchain=path(root,text(*o,"toolchain"),false).string();
+    if(auto limits=o->get("task_limits")){c.taskLimits=parseTaskLimitsJSON(*limits,"E_PROJECT_BUILD");c.taskLimitsSpecified=true;}
     configurations.emplace(c.name,std::move(c));
   }
   auto defaultConfiguration=text(*top,"default_configuration","",true);
@@ -278,6 +281,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(!f.test||owner(program.units.at(f.unit).path)!=name)fail("test entry must be a test owned by the selected component","E_TEST");
       native.testEntry=true;
     }
+    if(!native.entry.empty()&&usesTaskEffects(program,native.entry)){native.taskLimits=configuration.taskLimits;native.taskLimitsSpecified=configuration.taskLimitsSpecified;}
     native.libraryExports=c.exports;native.projectLibraryABI=c.kind!="source"&&c.kind!="web";
     native.codeOnlyLibrary=binaryProviders.contains(name)||c.kind=="shared_library"||(c.kind=="static_library"&&dynamicClosure.at(name));
     native.positionIndependent=sharedSelected;
@@ -323,6 +327,8 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     const auto &c=components.at(item.name);if(c.kind=="source"||c.kind=="web")continue;
     std::set<std::string> binaries,walked;
     std::function<void(const std::string&)> gather=[&](const auto &name){if(!walked.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="static"||link=="dynamic")binaries.insert(dep);gather(dep);}};gather(item.name);
+    if(!binaries.empty()&&usesTaskEffects(item.program,item.options.entry))
+      fail("task applications require one source-only native image; binary provider lifetime/ABI remains pending","E_TASK_PROVIDER");
     std::map<std::string,fs::path> moduleOrigins;
     auto origins=[&](const Program &p){for(const auto &[key,u]:p.units){(void)key;auto physical=fs::weakly_canonical(u.path);auto [found,inserted]=moduleOrigins.emplace(u.module,physical);if(!inserted&&found->second!=physical)fail("linked module identity resolves to different files: "+u.module,"E_PROJECT_ABI");}};
     origins(item.program);for(const auto &name:binaries)origins(byName.at(name)->program);
@@ -394,6 +400,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     {"configuration",Object{{"name",configuration.name},{"profile",configuration.profile},{"target",configuration.target},{"toolchain",configuration.toolchain.empty()?llvm::json::Value(nullptr):llvm::json::Value(configuration.toolchain)}}},
     {"selected_component",selectedComponent.empty()?llvm::json::Value(nullptr):llvm::json::Value(selectedComponent)},{"components",std::move(descriptions)},
     {"source_checked",true},{"graph_store_opened",false},{"external_tools_invoked",false},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+  if(configuration.taskLimitsSpecified)(*plan.getObject("configuration"))["task_limits"]=taskLimitsJSON(configuration.taskLimits);
   if(packageForeign){
     Object applications;for(const auto &[name,selection]:applicationForeign){Object libraries;for(const auto &[library,exports]:selection){llvm::json::Array values;for(const auto &value:exports)values.push_back(value);libraries[library]=std::move(values);}applications[name]=std::move(libraries);}
     plan["foreign_packaging"]=Object{{"schema","nex.project-foreign-plan/1"},{"catalogue_hash",packageForeign->hash},{"applications",std::move(applications)},
@@ -538,7 +545,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       verifyGrant();llvm::json::Value observation=nullptr;
       if(test.web){
         auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"))+(module.asynchronous?readFile(resourceFile("web/nex-task-runtime.ts")):std::string())+NEX_BUILD_ID);
-        auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout);
+        auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout,module.asynchronous?&configuration.taskLimits:nullptr);
         observation=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
       }else{
         auto buildOptions=options;buildOptions.kind="build";buildOptions.component=test.item->name;buildOptions.testFunction=test.function;buildOptions.expectedPlanHash=test.planHash;
@@ -560,6 +567,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         row["typescript_observation"]=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
         ok&=child.code==0&&child.output==expected;
       }
+      if(usesTaskEffects(program,test.function))row["task_execution"]=taskExecutionJSON(configuration.taskLimits,configuration.taskLimits,test.web?"typescript":"native",options.timeout);
       row["ok"]=ok;row["observation"]=std::move(observation);success&=ok;boundTestResult(row,cache);results.push_back(std::move(row));
     }
     return Object{{"schema","nex.project-test/1"},{"ok",success},{"exit_code",success?0:1},{"plan_hash",planHash},{"configuration",configuration.name},
@@ -610,13 +618,16 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   }
   if(execution){
     auto &item=*byName.at(selectedComponent);const auto &kind=components.at(selectedComponent).kind;
-    llvm::json::Value observation=nullptr;
+    llvm::json::Value observation=nullptr;std::optional<nexrt::TaskExecutionLimits> effectiveTaskLimits;
     verifyGrant();
     if(kind=="web"){
       observation=previewWebApp(webResults.at(selectedComponent).getAsObject()->getString("directory")->str(),options.arguments,options.timeout,options.machine);
     }else{
       const auto &built=images.images.contains(selectedComponent)?images.images.at(selectedComponent):nativeResults.at(selectedComponent);
       requireNativeHost(built);auto arguments=runtimeArguments(kind);
+      if(kind=="executable"&&usesTaskEffects(item.program,item.options.entry)){
+        auto argv=arguments;argv.insert(argv.begin(),built.executable);effectiveTaskLimits=taskEffectiveLimits(configuration.taskLimits,argv);
+      }
       if(options.kind=="profile"){
         llvm::json::Array nodes;
         for(const auto &function:item.program.functions)nodes.push_back(Object{{"name",function.name},{"hash",hash(json(canonical(function),false))},{"file",function.unit},{"id",nullptr}});
@@ -641,6 +652,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else{auto code=runInteractive(arguments,root);observation=Object{{"ok",code==0},{"exit_code",code}};}
       }
     }
+    if(effectiveTaskLimits)(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.machine?options.timeout:0);
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
       {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",std::move(images.runtime)},

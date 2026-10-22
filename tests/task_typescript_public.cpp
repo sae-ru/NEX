@@ -1,6 +1,7 @@
 #include "nex/web.h"
 #include "nex/task_frontend.h"
 #include "nex/operations.h"
+#include "nex_task_limits.h"
 #include <filesystem>
 #include <iostream>
 
@@ -8,7 +9,15 @@
 // This probe also retains the raw018 staging rejection as a separate boundary.
 int main(int argc,char **argv)try{
   using namespace nex;
-  if(argc!=5)throw Error("E_OPTION","expected source, output, mode and entry");
+  if(argc!=5&&argc!=8)throw Error("E_OPTION","expected source, output, mode, entry and optional steps/timeoutMs/workers");
+  nexrt::TaskExecutionLimits limits;
+  if(argc==8){
+    auto steps=nexrt::parseTaskLimitDecimal(argv[5],nexrt::maximumTaskExecutionSteps);
+    auto timeout=nexrt::parseTaskLimitDecimal(argv[6],nexrt::maximumTaskExecutionTimeoutMs);
+    auto workers=nexrt::parseTaskLimitDecimal(argv[7],nexrt::maximumTaskExecutionWorkers);
+    if(!steps||!timeout||!workers)throw Error("E_OPTION","invalid probe task limits");
+    limits={*steps,*timeout,static_cast<unsigned>(*workers)};
+  }
   auto path=std::filesystem::absolute(argv[1]),directory=std::filesystem::absolute(argv[2]);
   std::string mode=argv[3],entry=argv[4];
   Program p=mode=="private"?loadTaskPrototype(path.string(),path.parent_path().string()):loadProgram(path.string(),path.parent_path().string(),false);
@@ -25,7 +34,7 @@ int main(int argc,char **argv)try{
     {"source_hash",hash(json(sourceBundle(p),false))},{"asynchronous",module.asynchronous},
     {"operation_sites",std::move(sites)}};
   if(mode=="test"){
-    auto actual=runTypeScriptTest(module,directory.string());
+    auto actual=runTypeScriptTest(module,directory.string(),30,argc==8?&limits:nullptr);
     result["exit_code"]=actual.code;result["stdout"]=actual.output;result["stderr"]=actual.errors;
   }else writeWebModule(module,directory.string());
   std::cout<<json(std::move(result))<<'\n';return 0;

@@ -1,5 +1,6 @@
 #pragma once
 #include "nex/language.h"
+#include "nex_task_limits.h"
 namespace nex {
 // Compiler-private NEX ABI inputs, produced by a checked project build. Source
 // remains available to the checker; machine definitions come from this archive.
@@ -24,6 +25,8 @@ struct BuildOptions {
   bool functionsOnly = false;
   std::vector<std::string> libraryExports;
   std::vector<NativeLibraryInput> libraries;
+  nexrt::TaskExecutionLimits taskLimits;
+  bool taskLimitsSpecified=false;
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;
