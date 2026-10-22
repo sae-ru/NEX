@@ -1,3 +1,8 @@
+Working101 adds a private compiled continuation stage: MLIR/LLVM step functions
+retain owned frame values across scheduler yield. General task calls, scoped
+capabilities/channels, independent async reference/TypeScript, migration and
+public source builds remain pending. Existing public guards stay enabled.
+
 Toolchain0.98 development source adds an internal C++20 coroutine task/channel
 scheduler, enabled only in a private runtime probe. NEX source async/tasks/channels
 and their MLIR/reference/TypeScript integrations remain pending; ordinary

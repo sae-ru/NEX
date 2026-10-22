@@ -844,6 +844,16 @@
       "native debugger and async profile attribution",
       "asynchronous IO",
       "full current platform SDK validation"
-    ]
+    ],
+    "private_native_steps": {
+      "entry_point": "emitTaskNativeStep",
+      "probe": "nex_task_native_emit_probe",
+      "scheduler_request": "task_yield",
+      "frame_values": "owned snapshots; resume-local Handle leases",
+      "public_build_enabled": false,
+      "task_calls": false,
+      "task_scope_channels": false,
+      "debug_profile": false
+    }
   }
 }

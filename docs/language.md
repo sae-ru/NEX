@@ -1,3 +1,7 @@
+Working101 privately compiles cooperative-yield continuation steps to MLIR/LLVM.
+This is not a public source-task feature: logical task calls, scoped capabilities,
+channels, async reference/TypeScript and explicit migration remain pending.
+
 Working100 adds private continuation IR and a semantic lowering harness, not
 native source-task execution. Public0.18 types/effects/canonical identities and
 all unlowered-task execution/archive guards stay unchanged.

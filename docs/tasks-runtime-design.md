@@ -1,3 +1,17 @@
+Working101 adds private native yield steps through emitTaskNativeStep and
+nex_task_native_emit_probe. Typed slots own Values across suspension; temporary
+Handles are enclosed in a generated owned-function boundary on every resume.
+The step saves its program counter and returns to the existing coroutine executor.
+MLIR/LLVM verification stays enabled. Branches, loops, guarded patterns, pure
+helpers/closures, Unicode values, f64 and result propagation use existing checked
+operations. A generated bad-PC branch rejects invalid retained state.
+
+This private stage rejects task calls, other task operations, task/file authority
+slots, task closures, captured task entries and client task entries. It provides
+no native source-task debugger/profile contract. Public parsing/build/archival
+guards and language0.18 identities stay unchanged; migration and the complete
+logical scope/channel/call bridge remain required.
+
 # Structured task runtime — internal0.98 prototype
 
 This is a development runtime foundation, not a NEX source feature. Compile the

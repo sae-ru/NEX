@@ -34,7 +34,7 @@ class Tree {
     if(e->kind==Expr::Floating)definition["literal"]=floatLiteral(e->number);
     auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get(),e->sourceRange,"expression");
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
-    if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
+    if(e->kind==Expr::Call&&!builtinNames(p.taskPrototype).contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::Match){expression(e->args[0],path,"argument",0);arms(e,path);}
     else for(unsigned i=0;i<e->args.size();++i)expression(e->args[i],path,"argument",i);

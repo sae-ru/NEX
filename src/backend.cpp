@@ -1,4 +1,5 @@
 #include "nex/task_frontend.h"
+#include "nex/task_native.h"
 #include "nex/backend.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
@@ -521,9 +522,74 @@ class Emitter {
     if(located)runtimeCalls.insert(name);
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
+  void taskStep(const TaskFunctionIR &ir){
+    const auto &function=p.function(ir.name);selectFunction(function);debug.scope.clear();
+    declaration("nex_task_frame_pc","!llvm.ptr","i64");
+    declaration("nex_task_frame_set_pc","!llvm.ptr, i64");
+    declaration("nex_task_frame_get_i64","!llvm.ptr, i64, i64","i64");
+    declaration("nex_task_frame_get_heap","!llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_task_frame_put_i64","!llvm.ptr, i64, i64, i64");
+    declaration("nex_task_frame_put_heap","!llvm.ptr, i64, !llvm.ptr");
+    declaration("nex_task_frame_drop","!llvm.ptr, i64");
+    declaration("nex_task_frame_return_i64","!llvm.ptr, i64, i64");
+    declaration("nex_task_frame_return_heap","!llvm.ptr, !llvm.ptr");
+    declaration("nex_task_frame_return_unit","!llvm.ptr");
+    declaration("nex_task_frame_bad_pc","!llvm.ptr");
+    out<<"  func.func @"<<nativeSymbol(ir.name)<<"__task_step(%task_frame: !llvm.ptr) -> i64 {\n";
+    scopes.clear();scopes.emplace_back();patternSlots.clear();ownedToken={};
+    ownedToken=call("nex_owned_enter",{},Type::I64,function.span);
+    for(const auto &op:ir.code)if(op.kind==TaskInstruction::Pattern)visitPattern(op.pattern,[&](P pat){if(pat->kind!=Pattern::Wildcard){auto slot=allocateSlot(pat->type,pat->span);patternSlots[pat.get()]=slot;if(pat->type.heap())writeSlot(null(pat->type,pat->span),slot,pat->span);}});
+    Value frame{"%task_frame",Type::Str};
+    auto c=[&](int64_t n,Span span){return constant(n,Type::I64,span);};
+    auto read=[&](TaskSlotId id,Span span){auto type=ir.slots.at(id).type;return type.heap()?call("nex_task_frame_get_heap",{frame,c(id,span)},type,span):fromScalar(call("nex_task_frame_get_i64",{frame,c(id,span),c(scalarTag(type),span)},Type::I64,span),type,span);};
+    auto put=[&](TaskSlotId id,Value value,Span span){if(id==noTaskSlot)return;if(value.type.heap())call("nex_task_frame_put_heap",{frame,c(id,span),value},Type::Unit,span);else call("nex_task_frame_put_i64",{frame,c(id,span),asI64(value,span),c(scalarTag(value.type),span)},Type::Unit,span);};
+    auto finish=[&](int64_t transition,Span span){leaveOwned({},span);line("func.return "+c(transition,span).name+" : i64",span);};
+    auto pc=call("nex_task_frame_pc",{frame},Type::I64,function.span);
+    std::string dispatch="cf.switch "+pc.name+" : i64, [default: ^task_invalid";
+    for(size_t i=0;i<ir.code.size();++i)dispatch+=", "+std::to_string(i)+": ^task_"+std::to_string(i);
+    dispatch+="]";line(dispatch,function.span);
+    blockLabel("task_invalid");call("nex_task_frame_bad_pc",{frame},Type::Unit,function.span);line("llvm.unreachable",function.span);
+    for(size_t i=0;i<ir.code.size();++i){
+      const auto &op=ir.code[i];blockLabel("task_"+std::to_string(i));
+      auto site=sites.find(op.source);SiteScope taskSite(activeSite,site==sites.end()?pathSites.at("body"):site->second);
+      auto next=[&]{line("cf.br ^task_"+std::to_string(i+1),op.span);};
+      switch(op.kind){
+      case TaskInstruction::Eval:{
+        std::vector<Value> leases;scopes.back().clear();
+        for(auto id:op.inputs){auto value=read(id,op.span);leases.push_back(value);scopes.back()[taskSlotName(id)]=value;}
+        std::function<void(E)> assign=[&](E e){ownedSites[e.get()]=activeSite;for(auto child:e->args)assign(child);};assign(op.atom);
+        auto value=expression(op.atom);put(op.output,value,op.span);release(value,op.span);for(auto lease:leases)release(lease,op.span);next();break;
+      }
+      case TaskInstruction::Copy:{auto value=read(op.inputs[0],op.span);put(op.output,value,op.span);release(value,op.span);next();break;}
+      case TaskInstruction::Drop:call("nex_task_frame_drop",{frame,c(op.inputs[0],op.span)},Type::Unit,op.span);next();break;
+      case TaskInstruction::Jump:line("cf.br ^task_"+std::to_string(op.yes),op.span);break;
+      case TaskInstruction::Branch:{auto value=read(op.inputs[0],op.span);line("cf.cond_br "+value.name+", ^task_"+std::to_string(op.yes)+", ^task_"+std::to_string(op.no),op.span);break;}
+      case TaskInstruction::Poll:call("nex_poll",{c(op.span.line,op.span)},Type::Unit,op.span);next();break;
+      case TaskInstruction::Pause:call("nex_task_frame_set_pc",{frame,c(i+1,op.span)},Type::Unit,op.span);finish(1,op.span);break;
+      case TaskInstruction::Return:{
+        if(op.inputs.empty())call("nex_task_frame_return_unit",{frame},Type::Unit,op.span);
+        else {auto value=read(op.inputs[0],op.span);if(value.type.heap())call("nex_task_frame_return_heap",{frame,value},Type::Unit,op.span);else call("nex_task_frame_return_i64",{frame,asI64(value,op.span),c(scalarTag(value.type),op.span)},Type::Unit,op.span);release(value,op.span);}
+        finish(0,op.span);break;
+      }
+      case TaskInstruction::Pattern:{
+        auto failed=label(),matched=label(),end=label();std::map<std::string,Value> local;
+        bool canFail=false;visitPattern(op.pattern,[&](P pat){if(pat->kind==Pattern::Integer||pat->kind==Pattern::Boolean||pat->kind==Pattern::String||pat->kind==Pattern::List||(pat->kind==Pattern::Constructor&&(pat->type.kind==Type::Result||p.structure(pat->type.name).enumeration)))canFail=true;});
+        visitPattern(op.pattern,[&](P pat){if(pat->kind!=Pattern::Wildcard){auto slot=patternSlots.at(pat.get());local[slot]={slot,pat->type,true};}});
+        for(auto id:op.bindings)call("nex_task_frame_drop",{frame,c(id,op.span)},Type::Unit,op.span);
+        pattern(op.pattern,read(op.inputs[0],op.span),failed);line("cf.br ^"+matched,op.span);
+        blockLabel(matched);visitPattern(op.pattern,[&](P pat){if(pat->kind==Pattern::Binding){auto value=load({patternSlots.at(pat.get()),pat->type,true},op.span);put(TaskSlotId(pat->binding),value,op.span);release(value,op.span);}});
+        put(op.output,constant(1,Type::Bool,op.span),op.span);cleanup(local,op.span);line("cf.br ^"+end,op.span);
+        if(canFail){blockLabel(failed);put(op.output,constant(0,Type::Bool,op.span),op.span);cleanup(local,op.span);line("cf.br ^"+end,op.span);}blockLabel(end);next();break;
+      }
+      case TaskInstruction::Fail:call("nex_match_fail",{c(op.span.line,op.span)},Type::Unit,op.span);line("llvm.unreachable",op.span);break;
+      case TaskInstruction::Call:throw Error("E_TASK_UNIMPLEMENTED","compiled task calls require the logical frame stack bridge",op.span);
+      }
+    }
+    out<<"  }\n";ownedToken={};
+  }
 public:
   explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
-  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false){
+  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const TaskFunctionIR *task=nullptr){
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
     const auto computedNames=closure?std::set<std::string>{}:reachable(p,entry);
     const auto &completeNames=closure?*closure:computedNames;
@@ -612,6 +678,7 @@ public:
       }else if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);if(wasm)call("nex_wasm_leave",{},Type::Unit,f.span);if(parallelEnabled)call("nex_parallel_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
       if(!f.closure&&bridges.contains(f.name)){debug.scope.clear();out<<"  func.func @"<<closureSymbol(f)<<"(%closure_environment: !llvm.ptr";std::vector<Value> args;for(const auto &param:f.params){auto name=fresh();out<<", "<<name<<": "<<ty(param.type);args.push_back({name,param.type});}out<<")"<<(f.result==Type::Unit?"":" -> "+ty(f.result))<<" {\n";auto value=call(nativeSymbol(f.name),args,f.result,f.span);line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),f.span);out<<"  }\n";}
     }
+    if(task)taskStep(*task);
     for(const auto &[name,thunk]:parallelThunks){
       selectFunction(*thunk.owner);debug.scope.clear();auto e=thunk.expression;SiteScope site(activeSite,sites.at(e.get()));
       out<<"  func.func private @"<<name<<"(%parallel_environment: !llvm.ptr, %parallel_scalar: i64, %parallel_heap: !llvm.ptr, %parallel_result: !llvm.ptr) {\n";
@@ -787,6 +854,21 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
     if(failed||status<0)throw Error("E_PROCESS",error.empty()?"child process failed or timed out":error);
     ProcessResult result{status,readFile(stdoutPath),readFile(stderrPath)};std::filesystem::remove_all(folder);return result;
   }catch(...){std::filesystem::remove_all(folder);throw;}
+}
+TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){
+  if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
+  const auto &function=p.function(entry);auto ir=lowerTaskFunction(p,function);
+  if(!function.captures.empty()||function.realm=="client")throw Error("E_TASK_UNIMPLEMENTED","compiled task step entry cannot have captures or client realm",function.span);
+  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no host resource bridge",function.span);
+  for(const auto &slot:ir.slots)if(containsTaskAuthority(p,slot.type)||containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step cannot yet retain task/file capabilities",slot.span);
+  for(const auto &op:ir.code){
+    if(op.kind==TaskInstruction::Call||(op.kind==TaskInstruction::Pause&&op.operation!="task_yield"))throw Error("E_TASK_UNIMPLEMENTED","compiled task step currently supports yield only",op.span);
+    if(op.atom&&(op.atom->kind==Expr::Lambda||op.atom->kind==Expr::FunctionRef)&&op.atom->type.effects.contains("task"))throw Error("E_TASK_UNIMPLEMENTED","task closures require a distinct native descriptor ABI",op.span);
+  }
+  auto complete=reachable(p,entry),pure=complete;for(const auto &name:complete)if(p.function(name).effects.contains("task"))pure.erase(name);
+  TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.parameters=ir.parameters;
+  for(const auto &slot:ir.slots)result.slotKinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
+  result.mlir=Emitter(p).run(entry,function.test,true,&pure,&complete,false,false,&ir);return result;
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){rejectUnloweredTasks(p,"MLIR emission");return Emitter(p).run(entry,testEntry,libraryEntry);}
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){rejectUnloweredTasks(p,"Wasm emission");return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}
