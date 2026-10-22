@@ -471,6 +471,7 @@ struct Reference {
         try{request=externalHost->prepare(i,r.span);}
         catch(const Error &){throw;}
         catch(const nexrt::DataError &){throw;}
+        catch(const std::bad_alloc &){throw Error("E_MEMORY","reference external host preparation allocation failed",r.span);}
         catch(...){throw Error("E_TASK_HOST","reference external host preparation failed",r.span);}
         checkControl(r.span);
         if(request){
@@ -587,6 +588,7 @@ struct Reference {
         try{externalHost->admit(i,raw);}
         catch(const Error &){throw;}
         catch(const nexrt::DataError &){throw;}
+        catch(const std::bad_alloc &){throw Error("E_MEMORY","reference external host admission allocation failed",span);}
         catch(...){throw Error("E_TASK_HOST","reference external host admission failed",span);}
         checkControl(span);answer(i);
       }catch(const Error &error){auto selected=std::make_shared<Error>(error);prefer(selected,physicalFailure);beginFinish(i,std::move(selected));}

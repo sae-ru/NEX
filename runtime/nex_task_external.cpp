@@ -74,9 +74,7 @@ TaskExternalPool::TaskExternalPool(TaskExternalLimits limits,Notification notifi
             base.checkpoint();
           });
           control.checkpoint();result=operation->run(control);
-          if(result.bytes.capacity()>owned->limits.maximumResultBytes||result.bytes.capacity()>reservation||result.errorCode.capacity()>taskExternalErrorCodeCapacity||result.errorMessage.capacity()>taskExternalErrorMessageCapacity)
-            throw DataError("E_LIMIT","external result exceeds its reserved payload or protocol limit");
-          if(result.errorCode=="E_MEMORY"||result.errorCode=="E_LIMIT"||result.errorCode=="E_TIMEOUT")throw DataError(result.errorCode,result.errorMessage);
+          validateTaskExternalResult(result,reservation,owned->limits.maximumResultBytes);
           control.checkpoint();
         }catch(...){
           failure=task_external_detail::checkedFailure();

@@ -1,3 +1,18 @@
+# Working115: external-completion ownership correction
+
+Toolchain0.108 / language0.19 corrects independently reproduced private114
+failures: normal parent scope drain consumed a live child's external ticket;
+post-operation cancellation masked a returned fatal error; a late physical
+failure replaced an already-selected fatal error at native join. Coordinator
+admission allocation failures also require preserved fatal priority. Frozen114 and
+its reproducing probes are retained. It is not an accepted release.
+
+Current115 shared build, focused/full regression, sanitizers, installed SDK and
+platform checks are pending. Public source async IO remains disabled. The exact
+previous113 passed118 regression groups and installedSDK24/438 commands.
+Primary081 and its complete history remain preserved; the full objective is
+still active. The records below refer to their own historical source stages.
+
 # Working114: private external completion transport
 
 Toolchain0.107 / language0.19 adds experimental native, independent reference

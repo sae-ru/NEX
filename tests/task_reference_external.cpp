@@ -159,7 +159,7 @@ void mailboxTests(){
 Program source(const std::string &body){auto p=parse("module reference_external;\n"+body,"reference_external.nex");check(p);return p;}
 struct Host:TaskReferenceExternalHost {
   std::shared_ptr<Gate> gate=std::make_shared<Gate>();
-  bool cooperative=true,holdOnCancel=false,badAllocation=false,skip=false,throwPrepare=false,throwAdmit=false;
+  bool cooperative=true,holdOnCancel=false,badAllocation=false,skip=false,throwPrepare=false,throwAdmit=false,badPrepare=false,badAdmit=false;
   nexrt::TaskExternalResult raw;
   std::string thrown;
   size_t prepared=0,admitted=0;
@@ -167,6 +167,7 @@ struct Host:TaskReferenceExternalHost {
   std::thread::id coordinator=std::this_thread::get_id();
   std::optional<TaskReferenceExternalRequest> prepare(size_t,Span)override{
     require(std::this_thread::get_id()==coordinator,"host preparation escaped coordinator");++prepared;
+    if(badPrepare)throw std::bad_alloc();
     if(throwPrepare)throw std::runtime_error("controlled prepare failure");
     if(skip)return {};
     auto op=std::make_shared<Operation>(gate,cooperative,holdOnCancel);op->result=raw;op->thrown=thrown;op->badAllocation=badAllocation;
@@ -175,7 +176,29 @@ struct Host:TaskReferenceExternalHost {
   void admit(size_t,const nexrt::TaskExternalResult &)override{
     require(std::this_thread::get_id()==coordinator,"host admission escaped coordinator");
     require(gate->retired.load()>0,"host admitted before physical lease retirement");++admitted;
+    if(badAdmit)throw std::bad_alloc();
     if(throwAdmit)throw std::runtime_error("controlled admission failure");
+  }
+  void scopeRetired(size_t)noexcept override{++scopesRetired;}
+};
+struct BoundaryHost:TaskReferenceExternalHost {
+  std::shared_ptr<Gate> slow=std::make_shared<Gate>(),fast=std::make_shared<Gate>();
+  bool preparation,memory;
+  std::atomic<bool> failed{false};
+  std::atomic<size_t> scopesRetired{0};
+  size_t admitted=0;
+  std::thread::id coordinator=std::this_thread::get_id();
+  BoundaryHost(bool preparation,bool memory):preparation(preparation),memory(memory){fast->release();}
+  [[noreturn]]void fail(){failed=true;if(memory)throw std::bad_alloc();throw std::runtime_error("controlled boundary decoder failure");}
+  std::optional<TaskReferenceExternalRequest> prepare(size_t owner,Span)override{
+    require(std::this_thread::get_id()==coordinator,"boundary preparation escaped coordinator");
+    require(owner==1||owner==2,"unexpected boundary operation owner");
+    if(owner==2&&preparation)fail();
+    return TaskReferenceExternalRequest{std::make_shared<Operation>(owner==1?slow:fast,owner==1,owner==1),16};
+  }
+  void admit(size_t owner,const nexrt::TaskExternalResult &)override{
+    require(std::this_thread::get_id()==coordinator&&owner==2&&fast->retired==1,"boundary admission preceded retirement or admitted cancelled slow owner");
+    ++admitted;fail();
   }
   void scopeRetired(size_t)noexcept override{++scopesRetired;}
 };
@@ -307,9 +330,38 @@ fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
   {Host host;host.throwPrepare=true;
     sourceRejected("E_TASK_HOST",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});
     require(!host.gate->started&&!host.gate->retired,"failed preparation created a physical operation");}
+  {Host host;host.badPrepare=true;
+    sourceRejected("E_MEMORY",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});
+    require(!host.gate->started&&!host.gate->retired,"preparation allocation failure admitted physical work");}
   {Host host;host.throwAdmit=true;host.gate->release();
     sourceRejected("E_TASK_HOST",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});
     require(host.gate->retired==1,"failed admission retained a physical lease");}
+  {Host host;host.badAdmit=true;host.gate->release();
+    sourceRejected("E_MEMORY",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});
+    require(host.gate->retired==1&&host.admitted==1,"admission allocation failure escaped the physical retirement fence");}
+  for(bool preparation:{false,true})for(bool memory:{false,true}){
+    BoundaryHost host(preparation,memory);std::atomic<bool> returned=false,premature=false;
+    auto boundary=source(std::string(R"(
+fn main()->result<i64> !{task}{return with_tasks(2,fn(scope:task_scope)->result<i64> !{task}{
+ let slow:task<unit>=task_spawn(scope,fn()->unit !{task}{let held:list<str>=["physical","owned"];task_yield();assert(false);});
+ let broken:task<unit>=task_spawn(scope,fn()->unit !{task}{task_yield();});
+)")+(preparation?"":"task_wait(broken);")+"return err<i64>(\"E_ORIGINAL\",\"original scope result\");});}");
+    std::jthread release([&]{eventually([&]{return host.failed.load();},"boundary failure fixture did not reach host callback");
+      eventually([&]{return host.slow->cancelSeen.load()==1;},"boundary failure did not cancel its pending physical sibling");
+      std::this_thread::sleep_for(25ms);premature=returned.load()||host.scopesRetired.load()!=0||host.slow->retired.load()!=0;host.slow->release();});
+    auto execute=[&]{return evaluateTaskReference(boundary,"main",{},1000000,[&](size_t owner,const TaskTransition &transition){
+      if(owner==2&&transition.operation=="task_yield")eventually([&]{return host.slow->started.load()==1;},"boundary failure raced before physical slow work");
+    },nullptr,&host);};
+    if(memory||!preparation)sourceRejected(memory?"E_MEMORY":"E_TASK_HOST",execute);
+    else{
+      auto result=execute();require(result.value.object&&result.value.object->kind==nexrt::Data::Failure&&result.value.object->text=="E_ORIGINAL",
+        "ordinary preparation error replaced the original aborted-scope error result");++cases;
+    }
+    returned=true;
+    require(!premature&&host.slow->retired==1&&host.scopesRetired==1&&host.admitted==size_t(!preparation),
+      "boundary error masked priority or returned before physical/scope cleanup");
+    require(host.fast->retired==size_t(!preparation),"boundary failure retained or invented fast physical work");
+  }
   {Host host;host.thrown="E_IO";host.gate->release();
     sourceRejected("E_IO",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});require(host.admitted==0,"raw host failure reached unit admission");}
   {Host host;host.raw.bytes={1};host.gate->release();
@@ -328,5 +380,6 @@ int main()try{
     {"independent_reference_coordinator",true},{"source_execution_workers",1},
     {"bounded_raw_mailbox",true},{"owner_generation_single_use",true},
     {"cancel_deadline_physical_retirement_fence",true},{"empty_owned_region_retirement_fence",true},
-    {"retained_capacity_quotas",true},{"fatal_resource_cleanup_priority",true},{"public_source_async_io",false}})<<'\n';return 0;
+    {"retained_capacity_quotas",true},{"fatal_resource_cleanup_priority",true},
+    {"host_boundary_allocation_errors",true},{"public_source_async_io",false}})<<'\n';return 0;
 }catch(const std::exception &error){std::cerr<<"after "<<cases<<" checks: "<<error.what()<<'\n';return 1;}

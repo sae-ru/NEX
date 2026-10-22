@@ -326,13 +326,23 @@ class Driver {
           this.checkDeadline(value.site);
           if (value.rejected) fail('E_HOST', 'trusted host operation rejected', value.site);
           let admitted: unknown;
-          try { admitted = this.outside(() => value.admit!(value.raw)); } catch { fail('E_HOST_VALUE', 'trusted host completion failed admission', value.site); }
+          try { admitted = this.outside(() => value.admit!(value.raw)); }
+          catch (error) {
+            if (fatalResource(error)) throw new nex.NexError(error.code, 'trusted host resource failure', value.site);
+            fail('E_HOST_VALUE', 'trusted host completion failed admission', value.site);
+          }
           if (!job.cancelled) {
             const owned = this.copyHost(admitted, value.bytes, value.site); this.checkDeadline(value.site);
             if (!job.cancelled) { this.retireHost(value); this.answer(stamp.job, owned); continue; }
           }
         }
-      } catch (error) { this.finish(stamp.job, asError(error)); }
+      } catch (error) {
+        const failure = asError(error);
+        // An admitted host completion can exhaust validation/copy resources or
+        // its decoder's explicit resource budget. Keep that known fatal outcome
+        // sticky across a later ordinary callback result or cancellation drain.
+        if (fatalResource(failure)) this.stopHost(failure); else this.finish(stamp.job, failure);
+      }
       this.retireHost(value);
     }
   }

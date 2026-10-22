@@ -1,17 +1,17 @@
 # Private external completion kernels
 
-Development toolchain0.107 / language0.19 introduces experimental trusted-host
-completion kernels in working114. Discover their exact scope with
+Development toolchain0.108 / language0.19 introduces experimental trusted-host
+completion kernels in working115. Discover their exact scope with
 `nex describe --field task_external_completion --json`. Public source asynchronous
 IO remains unsupported. There is no new source operation, effect, syntax,
 canonical format or history migration. Existing task effects, result propagation,
 realm boundaries and the [task execution limits](task-limits.md) still apply.
 
-Current114 full regression, installed-SDK and platform acceptance remain pending.
+Current115 full regression, installed-SDK and platform acceptance remain pending.
 The preceding113 full gate passed118 tests and its matching installed SDK
 passed24 phases/438 commands. Earlier receipts and individual kernel checks
-do not establish114
-acceptance, Linux114/Windows114 delivery or an accepted release.
+do not establish115
+acceptance, Linux115/Windows115 delivery or an accepted release.
 
 ## Transport and scheduling
 

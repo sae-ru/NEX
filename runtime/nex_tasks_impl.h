@@ -241,13 +241,17 @@ struct TaskGroup::Impl {
     }
     if(entry.scope!=none){auto &scope=*regions[entry.scope];if(!scope.externalPending)std::terminate();--scope.externalPending;closeRegion(entry.scope);}
   }
+  bool canRetireExternal(size_t index,const External &entry)const{
+    const auto &job=*jobs[index];if(job.finishing)return true;
+    return entry.scope!=none&&regions[entry.scope]->owner==index&&regions[entry.scope]->closing&&job.wait==ScopeDrain&&job.target==entry.scope;
+  }
   void retireExternalCompletions(){
     // Only task scheduler workers accept/discard raw completions or publish a
     // finished source task. IO notification threads merely mark/wake tickets.
     if(!externalRetirementReady)return;
     externalRetirementReady=false;
     for(size_t index=0;index<jobs.size();++index){auto &job=*jobs[index];
-      for(auto &entry:job.external)if(entry.physical&&!entry.consumed&&(job.finishing||(entry.scope!=none&&regions[entry.scope]->closing)))retireExternal(job,entry);
+      for(auto &entry:job.external)if(entry.physical&&!entry.consumed&&canRetireExternal(index,entry))retireExternal(job,entry);
       tryComplete(index);
     }
   }
@@ -370,7 +374,7 @@ struct TaskGroup::Impl {
     // scheduler lock; they cannot deadlock by acquiring another runtime lock.
     for(auto &job:jobs){if(job->body){job->body.destroy();job->body={};}job->pending={};}
     pipes.clear();
-    if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal&&(!coordinatorFailure||!fatalFailure(coordinatorFailure)))coordinatorFailure=job->externalFatal;
+    if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal){preferFailure(coordinatorFailure,job->failure);preferFailure(coordinatorFailure,job->externalFatal);}
     if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);
     if(!abort)TaskAccess::poll(control);
     for(const auto &job:jobs)if(!abort&&!job->observed&&job->failure&&!cancelled.load()&&!job->cancellation->stopped())try{std::rethrow_exception(job->failure);}
@@ -454,7 +458,7 @@ Value TaskGroup::join(const Ticket &ticket){
   for(;;){
     if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;}
     std::unique_lock lock(impl->mutex);impl->interrupt();auto &job=*impl->jobs[index];
-    if(job.done){job.observed=true;if(job.externalFatal&&(!coordinatorFailure||!Impl::fatalFailure(coordinatorFailure)))std::rethrow_exception(job.externalFatal);if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);if(job.failure)std::rethrow_exception(job.failure);return job.result;}
+    if(job.done){job.observed=true;Impl::preferFailure(coordinatorFailure,job.failure);Impl::preferFailure(coordinatorFailure,job.externalFatal);if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);return job.result;}
     impl->changed.wait_for(lock,std::chrono::milliseconds(2));
   }
 }
@@ -509,10 +513,10 @@ bool TaskGroup::cancel(const Ticket &ticket){
 void TaskGroup::cancel(){impl->require();std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
 namespace {
 struct ControlledExternalOperation final:TaskExternalOperation {
-  std::shared_ptr<TaskExternalOperation> operation;TaskExternalControl request;
-  ControlledExternalOperation(std::shared_ptr<TaskExternalOperation> operation,TaskExternalControl request):operation(std::move(operation)),request(std::move(request)){}
+  std::shared_ptr<TaskExternalOperation> operation;TaskExternalControl request;size_t reservation,maximumResultBytes;
+  ControlledExternalOperation(std::shared_ptr<TaskExternalOperation> operation,TaskExternalControl request,size_t reservation,size_t maximumResultBytes):operation(std::move(operation)),request(std::move(request)),reservation(reservation),maximumResultBytes(maximumResultBytes){}
   TaskExternalResult run(const TaskExternalControl &stop)override{
-    TaskExternalControl control([&]{stop.checkpoint();request.checkpoint();});control.checkpoint();auto result=operation->run(control);control.checkpoint();return result;
+    TaskExternalControl control([&]{stop.checkpoint();request.checkpoint();});control.checkpoint();auto result=operation->run(control);validateTaskExternalResult(result,reservation,maximumResultBytes);control.checkpoint();return result;
   }
 };
 }
@@ -529,7 +533,7 @@ TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperati
           if(ticket.owner()>=state->jobs.size())std::terminate();auto &job=*state->jobs[ticket.owner()];
           for(size_t i=0;i<job.external.size();++i){auto &entry=job.external[i];if(entry.ticket==ticket){
             if(entry.physical||!job.externalPending)std::terminate();entry.physical=true;--job.externalPending;
-            if(job.finishing||(entry.scope!=none&&state->regions[entry.scope]->closing))state->externalRetirementReady=true;
+            if(state->canRetireExternal(ticket.owner(),entry))state->externalRetirementReady=true;
             if(!job.finishing&&job.wait==Impl::WaitExternal&&job.target==i)state->wake(ticket.owner());
             state->changed.notify_all();return;
           }}
@@ -539,7 +543,7 @@ TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperati
       std::lock_guard lock(impl->mutex);impl->externalPool=std::move(pool);
     });
     auto control=TaskAccess::externalControl(impl->control,impl->jobs[activeTaskIndex]->cancellation);
-    control.checkpoint();auto wrapped=std::make_shared<ControlledExternalOperation>(std::move(operation),std::move(control));
+    control.checkpoint();auto wrapped=std::make_shared<ControlledExternalOperation>(std::move(operation),std::move(control),reservation,impl->externalLimits.maximumResultBytes);
     std::lock_guard lock(impl->mutex);auto &job=*impl->jobs[activeTaskIndex];
     if(impl->finished||impl->cancelled.load()||job.cancellation->stopped())throw Trap("E_CANCELLED","external admission was cancelled",0);
     size_t reusable=job.external.size();for(size_t i=0;i<job.external.size();++i)if(job.external[i].consumed){reusable=i;break;}

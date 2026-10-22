@@ -116,6 +116,52 @@ const scopeRun=launch(function*(){return yield task.request('with_tasks',[1n,cal
 await childStarted.promise;await childCancel.promise;await hostTurn();require(!scopeRun.done&&childFinal===1&&scopeFinal===1,'scope error did not wait for child physical drain');
 childPhysical.resolve(42n);const scopeResult=await scopeRun.promise;require(nex.errorCode(scopeResult)==='E_SCOPE_STOP','drain cancellation replaced ordinary scope result');passed('scope-error-physical-drain');
 
+// A fulfilled Promise still crosses checked decoder/copy admission. A known
+// fatal failure there must stop the root before its enclosing callback can hide
+// it behind a subsequent ordinary error result.
+for(const mode of ['copy-budget','decoder-E_LIMIT','decoder-E_MEMORY','decoder-E_TIMEOUT','copy-deadline']){
+ const originalClock=globalThis.performance;let admissionClock=0;
+ if(mode==='copy-deadline')globalThis.performance={now:()=>admissionClock};
+ try{
+  let admissions=0,deliveries=0,parentReturned=0;
+  const run=launch(function*(){return yield task.request('with_tasks',[1n,callback([],function*(scope){
+   yield task.request('task_spawn',[scope,callback([],function*(){
+    const value=yield*task.hostAwait(task.hostPending(()=>({settled:Promise.resolve('x'.repeat(100)),cancel:()=>{}}),raw=>{
+     ++admissions;
+     if(mode.startsWith('decoder-'))throw new nex.NexError(mode.slice(8),'HOST_SECRET fatal decoder payload');
+     if(mode==='copy-deadline'){admissionClock=26;return 42n;}
+     return raw;
+    },8));++deliveries;return value;
+   })]);
+   ++parentReturned;return nex.err('E_ORIGINAL','ordinary callback result');
+  })]);},{timeoutMs:mode==='copy-deadline'?25:5000});
+  const expected=mode.startsWith('decoder-')?mode.slice(8):mode==='copy-deadline'?'E_TIMEOUT':'E_LIMIT';
+  const error=await rejects(expected,run.promise);
+  require(admissions===1&&!deliveries&&!parentReturned&&!error.message.includes('HOST_SECRET'),'fatal fulfilled admission was hidden, leaked host error or resumed source');
+  passed('fulfilled-admission-fatal',{mode,code:expected});
+ }finally{globalThis.performance=originalClock;}
+}
+// An ordinary decoder failure retains ordinary abort-result semantics.
+let ordinaryDecoderCalls=0;
+const ordinaryDecoder=launch(function*(){return yield task.request('with_tasks',[1n,callback([],function*(scope){
+ yield task.request('task_spawn',[scope,callback([],function*(){return yield*task.hostAwait(task.hostPending(()=>({settled:Promise.resolve(42n),cancel:()=>{}}),()=>{++ordinaryDecoderCalls;throw new Error('ordinary decoder rejection');},64));})]);
+ return nex.err('E_ORIGINAL','ordinary callback result');
+})]);});
+require(nex.errorCode(await ordinaryDecoder.promise)==='E_ORIGINAL'&&ordinaryDecoderCalls===1,'ordinary decoder rejection acquired fatal priority');passed('ordinary-decoder-failure-preserved');
+// Fatal admission closes logical scopes but still waits for unrelated inflight
+// physical work. A later resource rejection must not replace the first E_LIMIT.
+const copyPhysical=deferred(),heldPhysical=deferred(),copyStarted=deferred(),heldStarted=deferred(),heldCancelled=deferred();
+let copyAdmissions=0,heldAdmissions=0,copyDeliveries=0;
+const copyDrain=launch(function*(){return yield task.request('with_tasks',[2n,callback([],function*(scope){
+ yield task.request('task_spawn',[scope,callback([],function*(){return yield*task.hostAwait(task.hostPending(()=>{heldStarted.resolve();return {settled:heldPhysical.promise,cancel:()=>heldCancelled.resolve()};},value=>{++heldAdmissions;return value;},1024));})]);
+ yield task.request('task_spawn',[scope,callback([],function*(){const value=yield*task.hostAwait(task.hostPending(()=>{copyStarted.resolve();return {settled:copyPhysical.promise,cancel:()=>{}};},raw=>{++copyAdmissions;return raw;},8));++copyDeliveries;return value;})]);
+ while(true)yield task.request('task_yield',[]);
+})]);});
+await heldStarted.promise;await copyStarted.promise;copyPhysical.resolve('x'.repeat(100));await heldCancelled.promise;await hostTurn();
+require(!copyDrain.done&&!copyDrain.statistics&&copyAdmissions===1&&!heldAdmissions&&!copyDeliveries,'copy failure released inflight owner or resumed/admitted cancelled source');
+heldPhysical.reject(new nex.NexError('E_MEMORY','late physical failure'));await rejects('E_LIMIT',copyDrain.promise);
+require(copyDrain.statistics.externalStarted===2&&copyDrain.statistics.externalSettled===2,'copy failure did not physically drain every operation');passed('fulfilled-copy-fatal-physical-drain');
+
 // A fatal host/transport resource failure discovered during physical drain
 // outranks cleanup cancellation and an ordinary callback result. It must still
 // suppress admission/source delivery, retain credits until settlement and close

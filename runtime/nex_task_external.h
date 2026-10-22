@@ -15,6 +15,13 @@ struct TaskExternalResult {
   std::string errorCode,errorMessage;
 };
 inline constexpr size_t taskExternalErrorCodeCapacity=128,taskExternalErrorMessageCapacity=4096;
+// Classify raw storage/protocol failures before a later cancellation checkpoint
+// can replace them. Both the request wrapper and the transport enforce this.
+inline void validateTaskExternalResult(const TaskExternalResult &result,size_t reservation,size_t maximumResultBytes){
+  if(result.bytes.capacity()>maximumResultBytes||result.bytes.capacity()>reservation||result.errorCode.capacity()>taskExternalErrorCodeCapacity||result.errorMessage.capacity()>taskExternalErrorMessageCapacity)
+    throw DataError("E_LIMIT","external result exceeds its reserved payload or protocol limit");
+  if(result.errorCode=="E_MEMORY"||result.errorCode=="E_LIMIT"||result.errorCode=="E_TIMEOUT")throw DataError(result.errorCode,result.errorMessage);
+}
 class TaskExternalControl {
   std::function<void()> check;
 public:

@@ -41,6 +41,12 @@ struct CapacityOnly final:TaskExternalOperation {
     return result;
   }
 };
+struct GatedCapacity final:TaskExternalOperation {
+  std::shared_ptr<Gate> gate;int field;
+  GatedCapacity(std::shared_ptr<Gate> gate,int field):gate(std::move(gate)),field(field){}
+  ~GatedCapacity(){++gate->destroyed;}
+  TaskExternalResult run(const TaskExternalControl &control)override{gate->wait();++gate->retired;return CapacityOnly(field).run(control);}
+};
 struct FaultOperation final:TaskExternalOperation {
   std::shared_ptr<Gate> gate;std::string code;bool payload;
   FaultOperation(std::shared_ptr<Gate> gate,std::string code,bool payload=false):gate(std::move(gate)),code(std::move(code)),payload(payload){}
@@ -177,6 +183,19 @@ void scopeDrain(){
   std::thread controller([&]{until([&]{return frameDestroyed==1;});require(afterScope==0&&currentGate->retired==0,"scope closed before physical retirement");currentGate->release();});
   require(group.join(root).scalar==42,"scope cancellation failed");controller.join();require(afterScope==1&&currentGate->destroyed==1,"scope did not drain external ownership");group.finish();
 }
+void awaitedChildDrain(){
+  for(unsigned workers:{1u,2u}){
+    RequestScope request;TaskGroup group(workers);currentGate=std::make_shared<Gate>();frameDestroyed=0;
+    auto root=group.spawn([](TaskGroup &group,Value,Value)->TaskBody{
+      auto scope=group.openScope(1);(void)group.spawn(scope,external);
+      co_await group.leaveScope(scope);co_return Value(42);
+    });
+    until([&]{return currentGate->started==1;});currentGate->release();
+    require(group.join(root).scalar==42,"parent scope consumed a live child's awaited ticket");group.finish();
+    require(frameDestroyed==1&&currentGate->destroyed==1&&group.externalStats().tickets==0,"awaited child scope did not retire ownership");
+  }
+  clean();
+}
 TaskBody ownerScope(TaskGroup &group,Value input,Value){
   auto scope=group.openScope(1);
   (void)group.submitExternal(std::make_shared<Operation>(currentGate),1024*1024);
@@ -219,8 +238,8 @@ TaskBody faultWait(TaskGroup &group,Value,Value){
   (void)co_await group.awaitExternal(ticket);++afterScope;co_return Value(42);
 }
 void fatalScopePriority(){
-  for(auto code:{"E_MEMORY","E_LIMIT","E_TIMEOUT","E_ITEM","E_CANCELLED"}){
-    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();currentFault=code;currentPayload=false;ownerLeaving=afterScope=0;
+  for(auto code:{"E_MEMORY","E_LIMIT","E_TIMEOUT","E_ITEM","E_CANCELLED"})for(bool payload:{false,true}){
+    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();currentFault=code;currentPayload=payload;ownerLeaving=afterScope=0;
     auto owner=group.spawn(ownerFaultScope);until([&]{return ownerLeaving==1;});group.join(group.spawn(sibling));
     require(afterScope==0&&group.externalStats().reservedBytes==8,"aborted lexical fault scope escaped physical drain");currentGate->release();
     bool fatal=currentFault=="E_MEMORY"||currentFault=="E_LIMIT"||currentFault=="E_TIMEOUT";
@@ -228,12 +247,43 @@ void fatalScopePriority(){
     require(afterScope==(fatal?0u:1u)&&currentGate->destroyed==1,"abort failure priority or cleanup differs");group.finish();
   }
   clean();
-  {
-    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();currentFault="E_MEMORY";currentPayload=false;frameDestroyed=afterScope=0;
+  for(bool payload:{false,true}){
+    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();currentFault="E_MEMORY";currentPayload=payload;frameDestroyed=afterScope=0;
     auto owner=group.spawn(faultWait);until([&]{return currentGate->started==1;});
     request.setCancellation([]{return true;});
     std::thread controller([&]{until([&]{return frameDestroyed==1;});currentGate->release();});
     rejected("E_MEMORY",[&]{group.join(owner);});controller.join();require(afterScope==0,"cancelled source resumed for fatal completion");rejected("E_CANCELLED",[&]{group.finish();});
+  }
+  clean();
+}
+TaskBody selectedFatal(TaskGroup &group,Value,Value){
+  FrameFinally finally;
+  (void)group.submitExternal(std::make_shared<FaultOperation>(currentGate,"E_MEMORY"),8);
+  while(!currentGate->started)co_await group.yield();
+  throw Trap(currentFault,"fatal selected before physical host failure",91);co_return Value();
+}
+void firstFatalPriority(){
+  for(auto code:{"E_LIMIT","E_TIMEOUT"})for(bool finishOnly:{false,true}){
+    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();currentFault=code;frameDestroyed=0;
+    auto root=group.spawn(selectedFatal);
+    std::thread controller([&]{until([&]{return frameDestroyed==1;});currentGate->release();});
+    rejected(code,[&]{if(finishOnly)group.finish();else group.join(root);});controller.join();
+    require(currentGate->retired==1&&currentGate->destroyed==1,"fatal selection escaped physical drain");
+    if(!finishOnly)group.finish();
+  }
+  clean();
+}
+void cancelledCapacityPriority(){
+  for(int field=0;field<3;++field){
+    RequestScope request;TaskGroup group(1);currentGate=std::make_shared<Gate>();ownerLeaving=afterScope=0;
+    auto root=group.spawn([](TaskGroup &group,Value input,Value)->TaskBody{
+      auto scope=group.openScope(1);(void)group.submitExternal(std::make_shared<GatedCapacity>(currentGate,int(input.scalar)),8);
+      while(!currentGate->started)co_await group.yield();
+      ownerLeaving=1;co_await group.leaveScope(scope,true);++afterScope;co_return Value(42);
+    },Value(field));
+    until([&]{return ownerLeaving==1;});group.join(group.spawn(sibling));currentGate->release();
+    rejected("E_LIMIT",[&]{group.join(root);});group.finish();
+    require(afterScope==0&&currentGate->destroyed==1&&group.externalStats().tickets==0,"cancellation masked raw storage limit");
   }
   clean();
 }
@@ -271,9 +321,9 @@ void realRead(){
 #endif
 }
 int main(){
-  poolCases();cancelledPoolPriority();overlap();clean();progressAndIdentity();clean();failureCleanup();clean();cancellationDrain();clean();scopeDrain();clean();lexicalOwnerDrain();fatalScopePriority();deadlineAndDestructor();
+  poolCases();cancelledPoolPriority();overlap();clean();progressAndIdentity();clean();failureCleanup();clean();cancellationDrain();clean();scopeDrain();clean();awaitedChildDrain();lexicalOwnerDrain();fatalScopePriority();firstFatalPriority();cancelledCapacityPriority();deadlineAndDestructor();
 #ifndef _WIN32
   realRead();
 #endif
-  std::puts("external native kernel: bounds, tickets, real worker overlap/read, park/wake races, cancellation/physical drain and owned cleanup passed");
+  std::puts("external native kernel: bounds, tickets, real IO, child ownership, first fatal, cancelled raw payload/capacity, physical drain and owned cleanup passed");
 }

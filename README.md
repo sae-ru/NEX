@@ -6,14 +6,14 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.107.0 / language 0.19**.
-Working114 adds experimental private native, reference and TypeScript
+This isolated development source is **toolchain 0.108.0 / language 0.19**.
+Working115 adds experimental private native, reference and TypeScript
 [external-completion kernels](docs/task-external.md), bounded host transport and
 revocable file-read leases. Public source asynchronous IO remains unsupported;
 no source syntax, builtin or canonical-format migration is introduced.
-Current114 full regression, installed-SDK and platform acceptance remain pending.
+Current115 full regression, installed-SDK and platform acceptance remain pending.
 The preceding113 full gate passed118 tests and its matching installed SDK
-passed24 phases/438 commands. Those receipts do not validate114 or establish
+passed24 phases/438 commands. Those receipts do not validate115 or establish
 an accepted release.
 
 Checked source tasks retain native compiled continuations, an independent
@@ -30,7 +30,7 @@ Their private external-completion experiments do not enable source filesystem,
 network or UI task adapters. Task callbacks accept pure/task effects. Task debugger
 and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
 full current installed SDK/platform validation and complete static region
-inference remain pending. Linux114, Windows114 and complete114 delivery have no
+inference remain pending. Linux115, Windows115 and complete115 delivery have no
 acceptance claim here. The approved primary checkout remains 0.81 / 0.16.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
