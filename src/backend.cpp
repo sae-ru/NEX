@@ -132,6 +132,7 @@ class Emitter {
   const NativeEmissionContext *context;
   Value ownedToken;
   bool parallelEnabled=false;
+  std::map<std::string,std::string> taskCodes;
   const Function *selectedFunction=nullptr;
   struct ParallelThunk {const Function *owner;E expression;};
   std::map<std::string,ParallelThunk> parallelThunks;
@@ -351,8 +352,11 @@ class Emitter {
     SiteScope site(activeSite,sites.at(e.get()));
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){
       const auto &target=p.function(e->text);auto function=fresh(),pointer=fresh();auto signature=callableType(e->type);
-      line(function+" = func.constant @"+closureSymbol(target)+" : "+signature,e->span);line(pointer+" = builtin.unrealized_conversion_cast "+function+" : "+signature+" to !llvm.ptr",e->span);
-      auto count=[&](int64_t value){return constant(value,Type::I64,e->span);};auto closure=call("nex_closure_new",{{pointer,Type::Str},count(e->args.size())},e->type,e->span);
+      bool taskClosure=e->type.effects.contains("task");
+      if(taskClosure)line(pointer+" = llvm.mlir.addressof @"+taskCodes.at(target.name)+" : !llvm.ptr",e->span);
+      else{line(function+" = func.constant @"+closureSymbol(target)+" : "+signature,e->span);line(pointer+" = builtin.unrealized_conversion_cast "+function+" : "+signature+" to !llvm.ptr",e->span);}
+      auto count=[&](int64_t value){return constant(value,Type::I64,e->span);};auto closure=call(taskClosure?"nex_task_closure_new":"nex_closure_new",{{pointer,Type::Str},count(e->args.size())},e->type,e->span);
+      if(!taskClosure&&taskCodes.contains(target.name)){auto descriptor=fresh();line(descriptor+" = llvm.mlir.addressof @"+taskCodes.at(target.name)+" : !llvm.ptr",e->span);call("nex_task_closure_bind",{closure,{descriptor,Type::Str}},Type::Unit,e->span);}
       auto name=rawBytes(e->text,e->span);call("nex_record_name",{closure,name,count(e->text.size())},Type::Unit,e->span);
       for(size_t i=0;i<e->args.size();++i){auto value=expression(e->args[i]);auto name=rawBytes(target.captures[i].name,e->span);call("nex_record_field_name",{closure,count(i),name,count(target.captures[i].name.size())},Type::Unit,e->span);
         if(value.type.heap())call("nex_record_init_heap",{closure,count(i),value},Type::Unit,e->span);else call("nex_record_init_i64",{closure,count(i),asI64(value,e->span),count(scalarTag(value.type))},Type::Unit,e->span);release(value,e->span);
@@ -522,8 +526,13 @@ class Emitter {
     if(located)runtimeCalls.insert(name);
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
-  void taskStep(const TaskFunctionIR &ir){
-    const auto &function=p.function(ir.name);selectFunction(function);debug.scope.clear();
+  std::string taskArray(const std::vector<int64_t> &values){
+    auto symbol="nex_task_array_"+std::to_string(serial++);auto count=std::max(size_t(1),values.size());auto type="!llvm.array<"+std::to_string(count)+" x i64>";
+    globals<<"  llvm.mlir.global private constant @"<<symbol<<"() : "<<type<<" {\n    %a0 = llvm.mlir.undef : "<<type<<"\n";
+    for(size_t i=0;i<count;++i)globals<<"    %v"<<i<<" = llvm.mlir.constant("<<(i<values.size()?values[i]:0)<<" : i64) : i64\n    %a"<<i+1<<" = llvm.insertvalue %v"<<i<<", %a"<<i<<"["<<i<<"] : "<<type<<"\n";
+    globals<<"    llvm.return %a"<<count<<" : "<<type<<"\n  }\n";return symbol;
+  }
+  void taskDeclarations(){
     declaration("nex_task_frame_pc","!llvm.ptr","i64");
     declaration("nex_task_frame_set_pc","!llvm.ptr, i64");
     declaration("nex_task_frame_get_i64","!llvm.ptr, i64, i64","i64");
@@ -535,15 +544,24 @@ class Emitter {
     declaration("nex_task_frame_return_heap","!llvm.ptr, !llvm.ptr");
     declaration("nex_task_frame_return_unit","!llvm.ptr");
     declaration("nex_task_frame_bad_pc","!llvm.ptr");
-    out<<"  func.func @"<<nativeSymbol(ir.name)<<"__task_step(%task_frame: !llvm.ptr) -> i64 {\n";
+    runtimeDeclarations=true;
+    declaration("nex_task_frame_call","!llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, i64, i64");
+    declaration("nex_task_closure_new","!llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_task_closure_bind","!llvm.ptr, !llvm.ptr");
+    runtimeDeclarations=false;
+  }
+  void taskStep(const TaskFunctionIR &ir){
+    const auto &function=p.function(ir.name);selectFunction(function);debug.scope.clear();
+    out<<"  llvm.func @"<<nativeSymbol(ir.name)<<"__task_step(%task_frame: !llvm.ptr) -> i64 {\n";
     scopes.clear();scopes.emplace_back();patternSlots.clear();ownedToken={};
     ownedToken=call("nex_owned_enter",{},Type::I64,function.span);
+    call("nex_parallel_enter",{},Type::Unit,function.span);
     for(const auto &op:ir.code)if(op.kind==TaskInstruction::Pattern)visitPattern(op.pattern,[&](P pat){if(pat->kind!=Pattern::Wildcard){auto slot=allocateSlot(pat->type,pat->span);patternSlots[pat.get()]=slot;if(pat->type.heap())writeSlot(null(pat->type,pat->span),slot,pat->span);}});
     Value frame{"%task_frame",Type::Str};
     auto c=[&](int64_t n,Span span){return constant(n,Type::I64,span);};
     auto read=[&](TaskSlotId id,Span span){auto type=ir.slots.at(id).type;return type.heap()?call("nex_task_frame_get_heap",{frame,c(id,span)},type,span):fromScalar(call("nex_task_frame_get_i64",{frame,c(id,span),c(scalarTag(type),span)},Type::I64,span),type,span);};
     auto put=[&](TaskSlotId id,Value value,Span span){if(id==noTaskSlot)return;if(value.type.heap())call("nex_task_frame_put_heap",{frame,c(id,span),value},Type::Unit,span);else call("nex_task_frame_put_i64",{frame,c(id,span),asI64(value,span),c(scalarTag(value.type),span)},Type::Unit,span);};
-    auto finish=[&](int64_t transition,Span span){leaveOwned({},span);line("func.return "+c(transition,span).name+" : i64",span);};
+    auto finish=[&](int64_t transition,Span span){leaveOwned({},span);call("nex_parallel_leave",{},Type::Unit,span);line("llvm.return "+c(transition,span).name+" : i64",span);};
     auto pc=call("nex_task_frame_pc",{frame},Type::I64,function.span);
     std::string dispatch="cf.switch "+pc.name+" : i64, [default: ^task_invalid";
     for(size_t i=0;i<ir.code.size();++i)dispatch+=", "+std::to_string(i)+": ^task_"+std::to_string(i);
@@ -582,14 +600,23 @@ class Emitter {
         if(canFail){blockLabel(failed);put(op.output,constant(0,Type::Bool,op.span),op.span);cleanup(local,op.span);line("cf.br ^"+end,op.span);}blockLabel(end);next();break;
       }
       case TaskInstruction::Fail:call("nex_match_fail",{c(op.span.line,op.span)},Type::Unit,op.span);line("llvm.unreachable",op.span);break;
-      case TaskInstruction::Call:throw Error("E_TASK_UNIMPLEMENTED","compiled task calls require the logical frame stack bridge",op.span);
+      case TaskInstruction::Call:{
+        auto arguments=call("nex_list_new",{},Type::list(Type::I64),op.span);
+        for(size_t j=op.indirect?1:0;j<op.inputs.size();++j){auto value=read(op.inputs[j],op.span);if(value.type.heap())call("nex_list_append_heap",{arguments,value},Type::Unit,op.span);else call("nex_list_append_i64",{arguments,asI64(value,op.span),c(scalarTag(value.type),op.span)},Type::Unit,op.span);release(value,op.span);}
+        Value descriptor=null(Type::Str,op.span),environment=null(Type::Str,op.span);
+        if(op.indirect)environment=read(op.inputs[0],op.span);
+        else{auto pointer=fresh();line(pointer+" = llvm.mlir.addressof @"+taskCodes.at(op.operation)+" : !llvm.ptr",op.span);descriptor={pointer,Type::Str};}
+        call("nex_task_frame_call",{frame,descriptor,environment,arguments,c(op.output==noTaskSlot?-1:int64_t(op.output),op.span),c(op.span.line,op.span)},Type::Unit,op.span);
+        release(arguments,op.span);if(op.indirect)release(environment,op.span);
+        call("nex_task_frame_set_pc",{frame,c(i+1,op.span)},Type::Unit,op.span);finish(2,op.span);break;
+      }
       }
     }
     out<<"  }\n";ownedToken={};
   }
 public:
   explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
-  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const TaskFunctionIR *task=nullptr){
+  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr){
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
     const auto computedNames=closure?std::set<std::string>{}:reachable(p,entry);
     const auto &completeNames=closure?*closure:computedNames;
@@ -635,6 +662,15 @@ public:
     for(auto name:{"file_close","file_is_open"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","i64");
     for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
     runtimeDeclarations=false;
+    if(tasks){
+      taskDeclarations();
+      for(const auto &ir:*tasks){
+        std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
+        for(const auto &slot:ir.slots)kinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
+        taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures)},
+          {INT64_C(0x4e45585400000001),int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result)});
+      }
+    }
     const auto &names=selected?*selected:completeNames;
     auto ownedBridges=context?std::set<std::string>{}:nativeFunctionBridges(p,completeNames);
     if(!context&&allCallableBridges)for(const auto &name:completeNames)if(!p.function(name).closure)ownedBridges.insert(name);
@@ -678,7 +714,12 @@ public:
       }else if(!statements(f.body,false)){if(profiling)call("nex_profile_leave",{},Type::Unit,f.span);if(wasm)call("nex_wasm_leave",{},Type::Unit,f.span);if(parallelEnabled)call("nex_parallel_leave",{},Type::Unit,f.span);line("func.return",f.span);}out<<"  }"<<loc(f.span)<<"\n";
       if(!f.closure&&bridges.contains(f.name)){debug.scope.clear();out<<"  func.func @"<<closureSymbol(f)<<"(%closure_environment: !llvm.ptr";std::vector<Value> args;for(const auto &param:f.params){auto name=fresh();out<<", "<<name<<": "<<ty(param.type);args.push_back({name,param.type});}out<<")"<<(f.result==Type::Unit?"":" -> "+ty(f.result))<<" {\n";auto value=call(nativeSymbol(f.name),args,f.result,f.span);line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),f.span);out<<"  }\n";}
     }
-    if(task)taskStep(*task);
+    if(tasks){
+      for(const auto &ir:*tasks)taskStep(ir);
+      selectFunction(main);debug.scope.clear();auto pointer=fresh();
+      out<<"  func.func @"<<nativeSymbol(main.name)<<"__task_code_address() -> !llvm.ptr {\n";
+      line(pointer+" = llvm.mlir.addressof @"+taskCodes.at(main.name)+" : !llvm.ptr",main.span);line("func.return "+pointer+" : !llvm.ptr",main.span);out<<"  }\n";
+    }
     for(const auto &[name,thunk]:parallelThunks){
       selectFunction(*thunk.owner);debug.scope.clear();auto e=thunk.expression;SiteScope site(activeSite,sites.at(e.get()));
       out<<"  func.func private @"<<name<<"(%parallel_environment: !llvm.ptr, %parallel_scalar: i64, %parallel_heap: !llvm.ptr, %parallel_result: !llvm.ptr) {\n";
@@ -859,16 +900,19 @@ TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
   const auto &function=p.function(entry);auto ir=lowerTaskFunction(p,function);
   if(!function.captures.empty()||function.realm=="client")throw Error("E_TASK_UNIMPLEMENTED","compiled task step entry cannot have captures or client realm",function.span);
-  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no host resource bridge",function.span);
-  for(const auto &slot:ir.slots)if(containsTaskAuthority(p,slot.type)||containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step cannot yet retain task/file capabilities",slot.span);
-  for(const auto &op:ir.code){
-    if(op.kind==TaskInstruction::Call||(op.kind==TaskInstruction::Pause&&op.operation!="task_yield"))throw Error("E_TASK_UNIMPLEMENTED","compiled task step currently supports yield only",op.span);
-    if(op.atom&&(op.atom->kind==Expr::Lambda||op.atom->kind==Expr::FunctionRef)&&op.atom->type.effects.contains("task"))throw Error("E_TASK_UNIMPLEMENTED","task closures require a distinct native descriptor ABI",op.span);
+  auto complete=reachable(p,entry),pure=complete;std::vector<TaskFunctionIR> tasks;
+  for(const auto &name:complete){
+    const auto &f=p.function(name);
+    for(const auto &effect:f.effects)if(effect!="task"&&effect!="io")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no host resource bridge",f.span);
+    auto body=lowerTaskFunction(p,f,true);
+    for(const auto &slot:body.slots)if(containsTaskAuthority(p,slot.type)||containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step cannot yet retain task/file capabilities",slot.span);
+    for(const auto &op:body.code)if(op.kind==TaskInstruction::Pause&&op.operation!="task_yield")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no scope/channel scheduler bridge",op.span);
+    if(f.effects.contains("task"))pure.erase(name);
+    tasks.push_back(std::move(body));
   }
-  auto complete=reachable(p,entry),pure=complete;for(const auto &name:complete)if(p.function(name).effects.contains("task"))pure.erase(name);
-  TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.parameters=ir.parameters;
+  TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.descriptorSymbol=nativeSymbol(function.name)+"__task_code_address";result.parameters=ir.parameters;
   for(const auto &slot:ir.slots)result.slotKinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
-  result.mlir=Emitter(p).run(entry,function.test,true,&pure,&complete,false,false,&ir);return result;
+  result.mlir=Emitter(p).run(entry,function.test,true,&pure,&complete,false,true,&tasks);return result;
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){rejectUnloweredTasks(p,"MLIR emission");return Emitter(p).run(entry,testEntry,libraryEntry);}
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){rejectUnloweredTasks(p,"Wasm emission");return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}

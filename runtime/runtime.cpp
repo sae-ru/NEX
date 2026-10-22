@@ -207,6 +207,12 @@ void parallelValueCheck(const Value &value){
   validateParallelValue(value,[]{pollHostOperation(0);});
 }
 }
+#ifdef NEX_ASYNC_TASKS
+size_t exchangeCompiledTaskDepth(size_t depth){
+  if(depth>256)throw DataError("E_LIMIT","compiled task call depth exceeds 256");
+  auto previous=parallelCallDepth;parallelCallDepth=depth;return previous;
+}
+#endif
 struct ParallelAccess {
   static Value applicationCompiled(const Value &items,const Value &environment,int64_t workers,CompiledParallelBridge bridge,ParallelValueKind input,ParallelValueKind output,SourceLocation location){
     RequestScope scope;scope.impl->preserveParentProfile=true;

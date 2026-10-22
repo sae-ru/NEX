@@ -1,16 +1,40 @@
-Working101 adds private native yield steps through emitTaskNativeStep and
-nex_task_native_emit_probe. Typed slots own Values across suspension; temporary
-Handles are enclosed in a generated owned-function boundary on every resume.
-The step saves its program counter and returns to the existing coroutine executor.
-MLIR/LLVM verification stays enabled. Branches, loops, guarded patterns, pure
-helpers/closures, Unicode values, f64 and result propagation use existing checked
-operations. A generated bad-PC branch rejects invalid retained state.
+# Private compiled continuation stage (working103)
 
-This private stage rejects task calls, other task operations, task/file authority
-slots, task closures, captured task entries and client task entries. It provides
-no native source-task debugger/profile contract. Public parsing/build/archival
-guards and language0.18 identities stay unchanged; migration and the complete
-logical scope/channel/call bridge remain required.
+`emitTaskNativeStep` compiles checked source through verified MLIR/LLVM. The
+private probe links actual native programs, without enabling public task builds.
+Each step retains owned Value slots and closes its temporary Handle boundary
+before returning to the coroutine bridge. Yield parks the coroutine. A direct
+or indirect task call pushes a separate logical frame; return copies its owned
+result to the caller and pops the frame. Calls do not use native stack recursion.
+
+Task callables have an immutable, versioned TaskCodeDescriptor with a distinct
+step pointer and typed slot/parameter/capture tables. The compiler emits these
+as constant globals. A closure records the descriptor separately from its
+ordinary native code pointer; task-only closures have no ordinary code pointer.
+Pure closures may carry both explicitly. Ordinary invocation rejects a task-only
+callable. Only the monolithic private native experiment is supported; descriptors
+must outlive retained values, and shared-image unloading is not integrated.
+
+The logical stack has at most256 frames. During each resume, its depth contributes
+to the existing checked pure-helper call depth. Generated step/helper entry and
+exit guards enforce the combined budget; an RAII baseline restores worker state
+on traps. This fixes a reproduced101 defect where a finite300-level pure helper
+inside a task bypassed the guard. Limit traps retain rich operation/function
+source records, even when their legacy reported_line is0.
+
+Checked expressions, left-to-right arguments, short circuit, immutable closure
+captures, Unicode, f64, guarded patterns and result propagation keep their
+ordinary semantics. Scope/channel operations and task/file capability slots,
+client entries and captured root entries are rejected. Native source-task
+profiling/debugging, independent asynchronous AST/TypeScript execution, the
+complete scope/channel bridge and explicit history-preserving migration remain
+pending. Language0.18 public syntax and archive/build guards are unchanged.
+
+Native checks support `tests/task_native.py NEX PROBE --sanitizer address`
+(ASan/UBSan/LSan) or `--sanitizer thread` (TSan). They instrument compiled source
+modules, runtime and the C++ driver. Ordinary yield-erased AST/TypeScript mirrors
+are independent value/output checks, not asynchronous scheduling evidence and
+not sanitizer-instrumented.
 
 # Structured task runtime — internal0.98 prototype
 

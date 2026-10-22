@@ -25,7 +25,7 @@ struct TaskFunctionIR {
 // Private checked-source lowering. Slots contain owned Values, never raw native
 // Handles. Pure atoms have only slot-reference children. Suspension/calls are
 // explicit boundaries; branch arms, loop state and lexical cleanup survive them.
-TaskFunctionIR lowerTaskFunction(const Program &,const Function &);
+TaskFunctionIR lowerTaskFunction(const Program &,const Function &,bool liftPure=false);
 std::string taskSlotName(TaskSlotId);
 void validateTaskIR(const TaskFunctionIR &);
 }

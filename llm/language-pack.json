@@ -839,7 +839,7 @@
     "pending": [
       "source async/task/channel types and scoped effects",
       "explicit history-preserving language migration",
-      "MLIR continuation lowering",
+      "complete scoped task/channel continuation lowering",
       "reference and TypeScript scheduling",
       "native debugger and async profile attribution",
       "asynchronous IO",
@@ -851,9 +851,11 @@
       "scheduler_request": "task_yield",
       "frame_values": "owned snapshots; resume-local Handle leases",
       "public_build_enabled": false,
-      "task_calls": false,
+      "task_calls": true,
       "task_scope_channels": false,
-      "debug_profile": false
+      "debug_profile": false,
+      "task_closure_descriptors": true,
+      "combined_call_depth": 256
     }
   }
 }

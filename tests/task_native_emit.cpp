@@ -16,7 +16,7 @@ int main(int argc,char **argv){
     stage="lower";writeFile((out/"program.ll").string(),lowerMLIRToLLVM(step.mlir,source.string(),argv[3],argv[4]));
     llvm::json::Array slots,parameters;
     for(auto kind:step.slotKinds)slots.push_back(kind);for(auto id:step.parameters)parameters.push_back(int64_t(id));
-    std::cout<<json(llvm::json::Object{{"symbol",step.symbol},{"slots",std::move(slots)},{"parameters",std::move(parameters)},{"public_source_tasks",false}})<<'\n';return 0;
+    std::cout<<json(llvm::json::Object{{"symbol",step.symbol},{"descriptor",step.descriptorSymbol},{"slots",std::move(slots)},{"parameters",std::move(parameters)},{"public_source_tasks",false}})<<'\n';return 0;
   }catch(const Error &e){std::cout<<json(llvm::json::Object{{"code",e.code},{"message",e.what()},{"stage",stage}})<<'\n';return 1;}
   catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 2;}
 }

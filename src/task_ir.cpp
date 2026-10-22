@@ -125,8 +125,8 @@ public:
   TaskFunctionIR take(){return std::move(result);}
 };
 }
-TaskFunctionIR lowerTaskFunction(const Program &program,const Function &function){
-  if(!program.taskPrototype||!function.effects.contains("task")||function.foreign||!function.typeParameters.empty()||containsParameter(function.result)||std::any_of(function.params.begin(),function.params.end(),[](const auto &p){return containsParameter(p.type);})||std::any_of(function.captures.begin(),function.captures.end(),[](const auto &p){return containsParameter(p.type);}))throw Error("E_TASK_STATE","continuation lowering requires a concrete private task function",function.span);
+TaskFunctionIR lowerTaskFunction(const Program &program,const Function &function,bool liftPure){
+  if(!program.taskPrototype||(!liftPure&&!function.effects.contains("task"))||function.foreign||!function.typeParameters.empty()||containsParameter(function.result)||std::any_of(function.params.begin(),function.params.end(),[](const auto &p){return containsParameter(p.type);})||std::any_of(function.captures.begin(),function.captures.end(),[](const auto &p){return containsParameter(p.type);}))throw Error("E_TASK_STATE","continuation lowering requires a concrete private task function",function.span);
   return Lowering(program,function).take();
 }
 void validateTaskIR(const TaskFunctionIR &function){

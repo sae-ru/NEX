@@ -38,6 +38,7 @@ struct Data {
   std::vector<Value> values;
   std::vector<std::string> names;
   void *code=nullptr;
+  const void *taskCode=nullptr;
 private:
   friend struct ByteData;
   friend struct FileData;
@@ -50,7 +51,7 @@ public:
   explicit Data(Kind kind):Data(kind,sizeof(Data)){
     if(kind==Bytes||kind==File)throw DataError("E_RUNTIME","value requires an owned payload");
   }
-  Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
   Data &operator=(const Data&)=delete;
   ~Data(){profileFree(this);--liveObjects;}
 };
