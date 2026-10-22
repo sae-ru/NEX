@@ -1,5 +1,5 @@
 """Execute real MLIR/LLVM compiled continuation steps through the OS scheduler."""
-import argparse,contextlib,json,os,re,shutil,subprocess,sys,tempfile
+import argparse,contextlib,hashlib,json,os,re,shutil,subprocess,sys,tempfile
 from pathlib import Path
 
 parser=argparse.ArgumentParser();parser.add_argument('nex');parser.add_argument('probe');parser.add_argument('reference');parser.add_argument('--sanitizer',choices=('address','thread'));parser.add_argument('--case',action='append',dest='selected_cases')
@@ -117,6 +117,8 @@ int main(){
 }
 '''
 cases=[
+ ('scope-spawn-depth-boundary','fn descend(s:task_scope,n:i64)->i64 !{task}{if n==0{return 42;}let next:task<i64>=task_spawn(s,fn()->i64 !{task}{return descend(s,n-1);});return task_wait(next);}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return descend(s,255);});}','42','',1),
+ ('scope-spawn-depth-limit','fn descend(s:task_scope,n:i64)->i64 !{task}{if n==0{return 42;}let next:task<i64>=task_spawn(s,fn()->i64 !{task}{return descend(s,n-1);});return task_wait(next);}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return descend(s,256);});}','TRAP:E_LIMIT:0','',1),
  ('unit','''fn main()->unit !{task}{task_yield();}''','0','',2),
  ('parameter','''fn main(value:i64)->i64 !{task}{task_yield();return value*2;}''','42','',2),
  ('loop','''fn main()->i64 !{task}{var n:i64=0;var total:i64=0;while n<7{total=total+n;task_yield();n=n+1;}return total*2;}''','42','',8),
@@ -193,9 +195,10 @@ with compiled_output() as tmp:
  for name in ('runtime.cpp','nex_files.cpp','nex_task_frame.cpp'):
   obj=root/(name+'.o')
   run([clang,'-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,'-c',runtime/name,'-o',obj]);objects.append(obj)
- mirrors=0;typescript_mirrors=0;asynchronous_ast=0
+ mirrors=0;typescript_mirrors=0;asynchronous_ast=0;fixture_hashes={}
  for name,body,result,prefix,minimum in cases:
   path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
+  fixture_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
   reference=json.loads(run([args.reference,path,'parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'ordinary']))
   assert reference['stdout']==prefix,(name,reference)
   if result.startswith('TRAP:'):
@@ -236,4 +239,4 @@ with compiled_output() as tmp:
   path=root/'rejected.nex';path.write_text('module rejected;'+body)
   rejected=subprocess.run([probe,str(path),str(root/'rejected'),triple,layout,'main'],capture_output=True,text=True,env=env)
   assert rejected.returncode==1 and json.loads(rejected.stdout)['code']=='E_TASK_UNIMPLEMENTED',rejected.stdout+rejected.stderr
- print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'independent_asynchronous_ast_scenarios':asynchronous_ast,'reference_scheduler':'independent cooperative checked AST','ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':2,'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))
+ print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'source_fixture_sha256':fixture_hashes,'independent_asynchronous_ast_scenarios':asynchronous_ast,'reference_scheduler':'independent cooperative checked AST','ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':max(2 if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else 1 for name,*_ in cases),'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))

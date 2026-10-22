@@ -1,3 +1,49 @@
+# Private generated TypeScript tasks (working107)
+
+emitTaskTypeScript emits only reachable shared/client checked functions as
+resumable generators. Ordinary public emitTypeScript still rejects taskPrototype.
+All source calls, including pure helpers, are generated resumable code rather
+than an AST/TaskIR interpreter. The independent web/nex-task-runtime.ts scheduler
+owns ready/future/scope/FIFO state and returns control through MessageChannel.
+Ready jobs and reserved channel buffers use fixed rings with constant-time FIFO
+operations; consumed references are cleared immediately. Waiter-index queues
+use amortized constant-time operations without reserving4096 entries per channel.
+Statement/loop checkpoints charge the shared budget and yield internally every64
+polls, so even a pure helper can receive host cancellation. Source task_yield and
+the other nine staged operations retain real suspension. No OS parallelism is
+claimed. The ordinary parallel_map value validation primitive is reused, while
+its private generated callbacks and scheduling remain independently executed.
+
+Generated function try/catch handles only its own result-propagation sentinel;
+traps/resource failures propagate. Synthetic match-expression generators have no
+extra source return/call boundary. Call depth is limited to256 across callbacks.
+Native cancellation ancestry counts the root task as level1. Working107 fixes
+the prior AST root level0 and uses the same1..256 limit in TypeScript; checked
+depth255/256 descendant fixtures test the last valid nesting and first rejection
+against native O0/O2. Earlier106 gates did not include this boundary. The owned
+family discriminator is packed next to Data::kind in existing header alignment
+space; layout/sanitizer evidence must be recorded for the current source.
+
+Task/scope/channel objects have private owner brands, weak driver references and
+canonical WeakRef caches. They have opaque equality/printing semantics without
+granting authority through ordinary record tags. Hidden aggregate/closure graphs
+are validated at spawn/send/return; closed scopes and ended/foreign drivers
+cannot authorize operations. Requests are branded, checked for operation/arity
+and consumed once. Cancellation unwinds generator finally boundaries and drains
+owned descendants before completion. Logical frame/call cleanup is checked;
+JavaScript heap reclamation remains garbage collected, not native pool accounting.
+
+Private source maps use nex.private-typescript-task-map/1 with source coordinates
+and ephemeral location/entry-text hashes. They never call public018 revision
+canonicalization or promise historical graph IDs. Node strict type checking and
+AST/native source comparisons, and production Chromium/Firefox/WebKit timer,
+animation and button cancellation probes have separate evidence. The browser
+probe is one standalone generated program, not all-language browser conformance
+or an asynchronous NEX UI adapter. npm pins and bundled dependency notices are
+unchanged. Complete static lifetime/effect contracts,019 migration, async IO,
+source debugger/profile, provider lifetime and full current SDK/platform delivery
+remain pending. Public source_support stays false.
+
 # Private independent AST scheduler (working106)
 
 evaluateTaskReference drives TaskAstMachine on one coordinator with its own
@@ -31,7 +77,7 @@ authorize a later scheduler. No reference scope extends native TaskGroup lifetim
 The private reference probe checks cleanup, capability-family rejection and
 source results/errors. The native continuation suite also executes each complete
 program through this reference, retaining task_yield and all structured requests.
-TypeScript scheduling, complete region typing, explicit019 history-preserving
+Public task integration, complete region typing, explicit019 history-preserving
 migration, async IO/debug/profile and full target/SDK delivery remain pending.
 Public source support stays false and language0.18 identities/grammar are unchanged.
 
@@ -273,7 +319,8 @@ reuse this IR while retaining only state needed across suspension. Native code
 must execute compiled expressions, not invoke the compiler/interpreter. The
 bridge must provide logical nested scopes on the existing worker pool, genuine
 capability values, scoped cleanup/cancellation and strict result validation.
-Independent reference/TypeScript scheduling and explicit migration still follow.
+At that earlier stage independent reference/TypeScript scheduling still followed.
+Working106/107 implement those private schedulers; explicit migration remains pending.
 
 The working099 integration adds private parseTaskPrototype/loadTaskPrototype
 entry points and a typed frontend probe. These are not public CLI commands or a

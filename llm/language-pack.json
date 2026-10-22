@@ -837,13 +837,14 @@
     "request_control": "shared atomic budget/deadline/cancellation; coordinator-only host callback",
     "task_input_output": "owned immutable Value snapshots; scoped task authority checked by owner ancestry; no raw Handle across suspension",
     "pending": [
-      "source async/task/channel types and scoped effects",
-      "explicit history-preserving language migration",
-      "independent asynchronous backend semantics and complete region typing",
-      "TypeScript scheduling",
-      "native debugger and async profile attribution",
+      "public source task types/effects/execution",
+      "complete static scope/lifetime typing and callback effect contract",
+      "explicit history-preserving019 migration",
       "asynchronous IO",
-      "full current platform SDK validation"
+      "source-level async debugger and profile attribution",
+      "provider ABI/lifetime",
+      "full current installed SDK and platform delivery",
+      "NEX UI adapter task integration"
     ],
     "private_native_steps": {
       "entry_point": "emitTaskNativeStep",
@@ -870,7 +871,8 @@
         "task_close",
         "task_cancel",
         "current_task_scope"
-      ]
+      ],
+      "root_task_depth": 1
     },
     "private_ast_steps": {
       "entry_point": "TaskAstMachine",
@@ -881,7 +883,8 @@
       "transport": "TaskTransition",
       "scheduler_integrated": true,
       "public_build_enabled": false,
-      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected"
+      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected",
+      "maximum_pending_actions": 262144
     },
     "private_ast_scheduler": {
       "entry_point": "evaluateTaskReference",
@@ -900,7 +903,35 @@
       "maximum_pending_actions_per_task": 262144,
       "public_build_enabled": false,
       "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected",
-      "stalled_channels": "E_TASK_DEADLOCK private diagnostic"
+      "stalled_channels": "E_TASK_DEADLOCK private diagnostic",
+      "root_task_depth": 1
+    },
+    "private_typescript_tasks": {
+      "entry_point": "emitTaskTypeScript",
+      "probe": "nex_task_typescript_emit_probe",
+      "runtime": "web/nex-task-runtime.ts",
+      "execution": "checked source generators and independent cooperative queue",
+      "source_requests": 10,
+      "internal_checkpoint_request": "$poll",
+      "checkpoint_interval": 64,
+      "pure_helpers_resumable": true,
+      "maximum_call_depth": 256,
+      "root_task_depth": 1,
+      "maximum_task_nesting": 256,
+      "maximum_tasks": 4096,
+      "maximum_scopes": 1024,
+      "maximum_channels": 1024,
+      "maximum_channel_slots": 65536,
+      "owned_values": "immutable snapshots; private weak owner brands; canonical opaque identities",
+      "scope_graph_validation": true,
+      "event_loop": "MessageChannel turns; statement/loop compiler checkpoints",
+      "result_propagation": "current generated source function boundary",
+      "source_map": "nex.private-typescript-task-map/1; no public018 revision",
+      "public_build_enabled": false,
+      "nex_ui_adapter_tasks": false,
+      "host_effects": "shared/client pure and io atoms; server/file/foreign rejected",
+      "debug_profile": false,
+      "physical_cpu_overlap": false
     }
   }
 }

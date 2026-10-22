@@ -1,3 +1,8 @@
+Working107 has a separate compiler-private generator task backend and standalone
+event-loop host. It does not alter the pure synchronous title/initial/update/view
+application contract or enable public018 task source. See tasks-runtime-design.md;
+the private browser responsiveness probe is distinct from NEX UI integration.
+
 Toolchain0.97 adds [typed browser worker jobs](browser-workers.md) through
 ordinary worker_compute/worker_commands entries. Actual worker execution has
 separate production-engine and installed-SDK evidence. Synchronous parallel_map

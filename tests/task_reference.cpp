@@ -25,6 +25,9 @@ void check(const std::string &body,const std::string &expected,const std::string
   require(nexrt::liveObjects.load()==before,"reference execution leaked owned values");++cases;
 }
 void selfTest(){
+  const std::string descend="fn descend(s:task_scope,n:i64)->i64 !{task}{if n==0{return 42;}let next:task<i64>=task_spawn(s,fn()->i64 !{task}{return descend(s,n-1);});return task_wait(next);}";
+  check(descend+"fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return descend(s,255);});}","42");
+  rejects("E_LIMIT",[&]{evaluateTaskReference(source(descend+"fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return descend(s,256);});}"));});
   check("fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}","42");
   for(int n:{0,1,7})check("fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<i64>=channel_new<i64>(s,"+std::to_string(n)+");let writer:task<i64>=task_spawn(s,fn()->i64 !{task}{var n:i64=0;while n<20{assert(task_send(q,n));n=n+1;}assert(task_close(q));return n;});var total:i64=0;var open:bool=true;while open{let r:result<i64>=task_recv(q);if is_ok(r){total=total+unwrap(r);}else{open=false;}}assert(task_wait(writer)==20);assert(!task_close(q));return total;});}","190");
   check("fn main()->result<i64> !{task}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<unit>=task_spawn(s,fn()->unit !{task}{while true{task_yield();}});task_yield();return err<i64>(\"E_STOP\",\"stop\");});}","{\"error\":{\"code\":\"E_STOP\",\"message\":\"stop\"}}");

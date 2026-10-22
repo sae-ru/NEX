@@ -39,7 +39,7 @@ struct Reference {
   struct Job {
     std::vector<Activation> stack;
     State state=Ready;
-    size_t member=none,current=none,parent=none,depth=0,target=none;
+    size_t member=none,current=none,parent=none,depth=1,target=none;
     bool queued=false,cancelled=false,observed=false;
     TaskTransition request;
     RV result,pending;

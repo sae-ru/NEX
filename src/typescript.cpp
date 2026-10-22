@@ -1,5 +1,5 @@
 #include "nex/task_frontend.h"
-#include "nex/web.h"
+#include "nex/task_typescript.h"
 #include "nex/operations.h"
 #include <algorithm>
 #include <functional>
@@ -11,7 +11,7 @@ namespace nex {
 namespace {
 std::string quote(const std::string &text){return json(llvm::json::Value(text),false);}
 std::string symbol(const std::string &name){return nativeSymbol(name);}
-std::string type(const Type &t){
+std::string typescriptType(const Type &t,bool tasks){
   switch(t.kind){
   case Type::I64:return "bigint";
   case Type::F64:return "number";
@@ -20,15 +20,20 @@ std::string type(const Type &t){
   case Type::Bytes:return "nex.ByteBuffer";
   case Type::File:throw Error("E_REALM","file resources cannot enter a browser module");
   case Type::Unit:return "void";
-  case Type::List:return "ReadonlyArray<"+type(*t.element)+">";
-  case Type::Result:return "nex.Result<"+type(*t.element)+">";
+  case Type::List:return "ReadonlyArray<"+typescriptType(*t.element,tasks)+">";
+  case Type::Result:return "nex.Result<"+typescriptType(*t.element,tasks)+">";
   case Type::Record:return "T_"+symbol(t.name);
-  case Type::Function:{std::string result="((";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+="argument"+std::to_string(i)+": "+type(t.arguments[i]);}return result+") => "+type(*t.element)+")";}
+  case Type::Function:{std::string result="((";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=", ";result+="argument"+std::to_string(i)+": "+typescriptType(t.arguments[i],tasks);}auto output=typescriptType(*t.element,tasks);return result+") => "+(tasks?"task.Call<"+output+">":output)+")";}
+  case Type::TaskScope:if(tasks)return "task.Scope";break;
+  case Type::Task:if(tasks)return "task.Future<"+typescriptType(*t.element,tasks)+">";break;
+  case Type::Channel:if(tasks)return "task.Channel<"+typescriptType(*t.element,tasks)+">";break;
   default:throw Error("E_INTERNAL","unresolved TypeScript type");
   }
+  throw Error("E_INTERNAL","task type requires a private TypeScript backend");
 }
 class Generator {
   const Program &p;
+  bool taskMode=false;
   std::set<std::string> functions,structures;
   std::vector<std::map<std::string,std::string>> scopes;
   unsigned unique=0,depth=0,line=1;
@@ -36,9 +41,11 @@ class Generator {
   std::ostringstream out;
   llvm::json::Array mappings;
   std::map<const void*,std::string> sites;
+  std::string type(const Type &t){return typescriptType(t,taskMode);}
   void write(const std::string &text){out<<text;line+=std::count(text.begin(),text.end(),'\n');}
   void statement(const std::string &text){write(std::string(depth*2,' ')+text+"\n");}
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
+  std::string site(S statement){const auto &s=statement->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(statement.get()))+"]";}
   void needed(const Type &t){
     if(t.element)needed(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)needed(argument);
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
@@ -81,9 +88,9 @@ class Generator {
     std::string code;for(size_t i=0;i<p->args.size();++i)code+=patternBindings(p->args[i],patternChild(p,i,subject,location),location);return code;
   }
   std::string matchExpression(E e){
-    auto subject="match_"+std::to_string(++unique),location=site(e);std::string code="((): "+type(e->type)+" => { const "+subject+" = "+expr(e->args[0])+"; ";
+    auto subject="match_"+std::to_string(++unique),location=site(e);std::string code=taskMode?"(yield* (function* (): task.Step<"+type(e->type)+"> { const ":"((): "+type(e->type)+" => { const ";code+=subject+" = "+expr(e->args[0])+"; ";
     for(auto arm:e->arms){scopes.emplace_back();code+="if ("+patternCondition(arm->pattern,subject,location)+") { "+patternBindings(arm->pattern,subject,location);if(arm->guard)code+="if ("+expr(e->args[arm->guard])+") { ";code+="return "+expr(e->args[arm->value])+"; ";if(arm->guard)code+="} ";code+="} ";scopes.pop_back();}
-    return code+"return nex.invalidEnum("+location+"); })()";
+    return code+"return nex.invalidEnum("+location+"); })()"+(taskMode?")":"");
   }
   std::string expr(E e){
     switch(e->kind){
@@ -91,9 +98,11 @@ class Generator {
       const auto &fn=p.function(e->text);std::string captureParams,captureValues,parameters,arguments,captures;
       for(size_t i=0;i<e->args.size();++i){auto name="capture_"+std::to_string(++unique);if(i){captureParams+=", ";captureValues+=", ";arguments+=", ";captures+=", ";}captureParams+=name+": "+type(fn.captures[i].type);captureValues+=expr(e->args[i]);arguments+=name;captures+=name;}
       for(size_t i=0;i<fn.params.size();++i){auto name="argument_"+std::to_string(++unique);if(i)parameters+=", ";if(!arguments.empty())arguments+=", ";parameters+=name+": "+type(fn.params[i].type);arguments+=name;}
-      return "(("+captureParams+"): "+type(e->type)+" => nex.captured(["+captures+"], ("+parameters+"): "+type(fn.result)+" => "+symbol(fn.name)+"("+arguments+")))("+captureValues+")";
+      auto invocation=symbol(fn.name)+"("+arguments+")";
+      if(taskMode)invocation="task.call(() => "+invocation+")";
+      return "(("+captureParams+"): "+type(e->type)+" => nex.captured(["+captures+"], ("+parameters+"): "+(taskMode?"task.Call<"+type(fn.result)+">":type(fn.result))+" => "+invocation+"))("+captureValues+")";
     }
-    case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}return text+")";}
+    case Expr::Invoke:{auto text="("+expr(e->args[0])+")(";for(size_t i=1;i<e->args.size();++i){if(i>1)text+=", ";text+=expr(e->args[i]);}text+=")";return taskMode?"(yield* task.invoke("+text+", "+site(e)+"))":text;}
     case Expr::Propagate:return "nex.propagate("+expr(e->args[0])+")";
     case Expr::Match:return matchExpression(e);
     case Expr::Integer:return "("+std::to_string(e->number)+"n)";
@@ -117,7 +126,11 @@ class Generator {
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
-      if(e->text=="parallel_map")return "nex.parallelMap("+expr(e->args[0])+", "+expr(e->args[1])+", "+expr(e->args[2])+", "+site(e)+")";
+      if(taskMode&&taskBuiltins().contains(e->text)){
+        std::string args="[";for(size_t i=0;i<e->args.size();++i){if(i)args+=", ";args+=expr(e->args[i]);}
+        return "((yield task.request("+quote(e->text)+", "+args+"], "+site(e)+")) as "+type(e->type)+")";
+      }
+      if(e->text=="parallel_map")return (taskMode?"(yield* task.parallelMap(":"nex.parallelMap(")+expr(e->args[0])+", "+expr(e->args[1])+", "+expr(e->args[2])+", "+site(e)+")"+(taskMode?")":"");
       const std::map<std::string,std::string> binary={{"bytes","bytesFromIntegers"},{"utf8_bytes","utf8Bytes"},{"decode_utf8","decodeUTF8"},{"encode_base64","encodeBase64"},{"decode_base64","decodeBase64"}};
       if(binary.contains(e->text))return "nex."+binary.at(e->text)+"("+expr(e->args[0])+(e->text=="utf8_bytes"?", "+site(e):"")+")";
       if((e->text=="push"||e->text=="set"||e->text=="slice")&&e->args[0]->type==Type::Bytes){
@@ -139,7 +152,8 @@ class Generator {
       std::string text=(builtins.contains(e->text)?"nex."+builtins.at(e->text):symbol(e->text))+"(";
       for(size_t i=0;i<e->args.size();++i){if(i)text+=", ";text+=expr(e->args[i]);}
       if(e->text=="assert"||e->text=="set"||e->text=="slice"||e->text=="unwrap"||e->text=="encode_json")text+=", "+site(e);
-      return text+")";
+      text+=")";
+      return taskMode&&!builtins.contains(e->text)?"(yield* "+text+")":text;
     }
     }
     throw Error("E_INTERNAL","unsupported TypeScript expression");
@@ -148,6 +162,7 @@ class Generator {
     if(scoped)scopes.emplace_back();
     for(auto s:body){
       auto start=line;
+      if(taskMode)statement("yield* task.checkpoint("+site(s)+");");
       switch(s->kind){
       case Stmt::Let:case Stmt::Var:{auto value=expr(s->expr);auto name=declare(s->name);statement(std::string(s->kind==Stmt::Let?"const ":"let ")+name+": "+type(s->type)+" = "+value+";");break;}
       case Stmt::Assign:statement(local(s->name)+" = "+expr(s->expr)+";");break;
@@ -162,14 +177,20 @@ class Generator {
           block(arm->body,false);statement("break "+end+";");if(arm->guard){--depth;statement("}");}scopes.pop_back();--depth;statement("}");}
         statement("nex.invalidEnum("+location+");");--depth;statement("}");break;
       }
-      case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;if(parallelEnabled)statement("nex.parallelPoll("+site(s->expr)+");");block(s->body);--depth;statement("}");break;
+      case Stmt::While:statement("while ("+expr(s->expr)+") {");++depth;if(taskMode)statement("yield* task.checkpoint("+site(s)+");");else if(parallelEnabled)statement("nex.parallelPoll("+site(s->expr)+");");block(s->body);--depth;statement("}");break;
       }
       mappings.push_back(llvm::json::Object{{"site",sites.at(s.get())},{"generated_line",int64_t(start)},{"file",s->span.file},{"line",int64_t(s->span.line)},{"column",int64_t(s->span.column)}});
     }
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p):p(p){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  explicit Generator(const Program &p,bool tasks=false):p(p),taskMode(tasks){
+    if(!taskMode){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
+    size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
+    body=[&](const auto &statements){for(auto s:statements){sites.try_emplace(s.get(),"private-"+std::to_string(++sequence));expression(s->expr);childBlocks(s,body);}};
+    expression=[&](E e){if(!e)return;sites.try_emplace(e.get(),"private-"+std::to_string(++sequence));for(auto a:e->args)expression(a);for(auto arm:e->arms)body(arm->body);};
+    for(const auto &f:p.functions)body(f.body);
+  }
   WebModule run(const std::map<std::string,std::string> &entries){
     if(entries.empty())throw Error("E_ENTRY","TypeScript requires at least one entry");
     for(const auto &[alias,name]:entries){
@@ -177,6 +198,7 @@ public:
       visit(p.function(name));
     }
     write("// Generated from checked NEX "+std::string(languageVersion)+"; edit NEX sources.\nimport * as nex from './nex-runtime.ts';\n\n");
+    if(taskMode)write("// Private staging only; this module is not an archived language0.18 program.\nimport * as task from './nex-task-runtime.ts';\n\n");
     for(const auto &name:functions)if(usesParallelMap(p.function(name)))parallelEnabled=true;
     for(const auto &name:structures){
       const auto &s=p.structure(name);
@@ -187,30 +209,38 @@ public:
     llvm::json::Array included;
     for(const auto &name:functions){
       const auto &f=p.function(name);scopes.clear();scopes.emplace_back();unique=0;
-      auto start=line;std::string signature="export function "+symbol(f.name)+"(";
+      auto start=line;std::string signature=std::string("export function")+(taskMode?"* ":" ")+symbol(f.name)+"(";
       for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
       for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
-      write(signature+"): "+type(f.result)+" {\n");depth=1;
-      if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
+      write(signature+"): "+(taskMode?"task.Step<"+type(f.result)+">":type(f.result))+" {\n");depth=1;
+      if(taskMode){statement("task.enter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
+      else if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       bool propagation=propagatesResult(f);
-      if(propagation){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
+      if(propagation&&!taskMode){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
       block(f.body,false);
-      if(propagation){--depth;statement("});");}
-      if(parallelEnabled){--depth;statement("} finally { nex.parallelLeave(); }");}
+      if(propagation&&!taskMode){--depth;statement("});");}
+      if(taskMode){--depth;if(propagation){statement("} catch (error) {");++depth;statement("const failure = nex.propagatedFailure(error);");statement("if (failure !== undefined) return failure;");statement("throw error;");--depth;}statement("} finally { task.leave(); }");}
+      else if(parallelEnabled){--depth;statement("} finally { nex.parallelLeave(); }");}
       depth=0;write("}\n\n");
-      included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
+      if(taskMode)included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"private_location_hash",hash(name+":"+f.span.file+":"+std::to_string(f.span.begin)+":"+std::to_string(f.span.end))}});
+      else included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
+    if(taskMode)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",languageVersion},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}}};
     return {out.str(),llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",languageVersion},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)}}};
   }
 };
 }
 WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){rejectUnloweredTasks(p,"TypeScript emission");return Generator(p).run(entries);}
+WebModule emitTaskTypeScript(const Program &p,const std::map<std::string,std::string> &entries){if(!p.taskPrototype)throw Error("E_TASK_STATE","private TypeScript tasks require checked prototype source");return Generator(p,true).run(entries);}
 void writeWebModule(const WebModule &module,const std::string &directory){
   auto output=std::filesystem::path(directory);
   writeFile((output/"program.ts").string(),module.source);
   writeFile((output/"nex-runtime.ts").string(),readFile(resourceFile("web/nex-runtime.ts")));
   writeFile((output/"nex-bytes.ts").string(),readFile(resourceFile("web/nex-bytes.ts")));
   writeFile((output/"nex-map.json").string(),json(module.mapping)+"\n");
+}
+void writeTaskTypeScriptModule(const WebModule &module,const std::string &directory){
+  writeWebModule(module,directory);writeFile((std::filesystem::path(directory)/"nex-task-runtime.ts").string(),readFile(resourceFile("web/nex-task-runtime.ts")));
 }
 }

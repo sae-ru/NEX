@@ -1,11 +1,12 @@
 # NEX
 
-Working106 adds a private cooperative AST task scheduler with independent
-scope/future/channel dispatch, weak owned capabilities and aggregate action
-budgets. It executes checked private programs without TaskIR or native
-TaskGroup scheduling. Public language0.18 task source remains disabled;
-TypeScript scheduling, region typing, migration and delivery remain pending.
-See [the private task contract](docs/tasks-runtime-design.md).
+Working107 adds a private TypeScript generator backend with an independent
+event-loop scheduler. Direct/indirect calls, guarded matches, result propagation,
+scopes/futures/channels and cancellation preserve actual suspension. Shared/client
+code is emitted by reachability; private maps do not invent public018 revisions.
+Node/source agreement and standalone browser responsiveness have separate
+evidence. Public task execution, complete lifetime typing,019 migration,
+async IO/debug/profile and delivery remain pending.
 
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
@@ -13,31 +14,20 @@ See [the private task contract](docs/tasks-runtime-design.md).
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.102.0 / language 0.18**.
-It fixes operator runtime notice propagation in installed SDK acceptance,
-including captured project packaging tasks. Complete acceptance of this exact
-source is pending. The approved primary checkout is preserved at 0.81 / 0.16.
-Historical receipts retain their original compiler/source scopes.
+This isolated development source is **toolchain 0.103.0 / language 0.18**.
+It includes native compiled continuations and independent AST and generated
+TypeScript task schedulers as private integration stages. Complete acceptance
+of this exact source is pending. The approved primary checkout is preserved at
+0.81 / 0.16; historical receipts retain their original compiler/source scopes.
 
-Working105 adds a separate private checked-AST continuation machine. Its owned
-action/call/value stacks traverse checked expressions and statements directly,
-without lowering or executing TaskIR. Thirty source scenarios and240 protocol
-checks pass, including suspension, recursion, closures, guarded matching,
-short circuit, result propagation, checked traps and abandoned frame cleanup.
-The reference scheduler/capability bridge is implemented privately in106;
-TypeScript remains pending. Public asynchronous task execution is still disabled.
-Frozen105 passed full107 and strict AST/IR sanitizer checks;106 full-suite,
-sanitizer, installed-SDK and platform acceptance need their own evidence.
-
-The private native prototype compiles resumable calls, structured task scopes,
-futures and bounded channels to MLIR/LLVM. Nested scopes share the executor and
-limit concurrent resumes through every ancestor. Owner failure cancels/drains
-children before publication; retained frame values and scoped capabilities use
-owned payloads and checked ancestry. Fifty-three source scenarios pass two native
-profiles; additional pure-callback/unit-task cases also pass. Complete acceptance
-of this exact source remains pending. Independent asynchronous reference and
-TypeScript, complete region typing, migration and public source builds remain
-pending. See [the design](docs/tasks-runtime-design.md).
+Native scopes share an executor and bound every descendant through ancestor
+worker limits. Owned capability graphs, cancellation/drain and source-call
+cleanup are checked independently in AST and TypeScript. Public asynchronous
+task execution remains disabled until complete lifetime/effect rules, explicit
+019 migration and current delivery/debug/IO acceptance are verified. See
+[the private task contract](docs/tasks-runtime-design.md). Frozen106 passed
+full108, strict AST/reference/IR sanitizers and six targeted Linux gates; those
+receipts do not substitute for current107 acceptance.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.
@@ -55,8 +45,9 @@ Use the [model-independent bootstrap](llm/BOOTSTRAP.md), the
 Language 0.18 adds candidate ordered CPU mapping through
 `parallel_map(items, callback, workers)`. Native macOS/Linux uses bounded joined
 threads, pure available-realm callbacks and checked resource-free captures.
-Reference and current TypeScript execute serially; browser workers and general
-async tasks remain pending. See [the contract](docs/concurrency-design.md) and
+Reference and current public TypeScript execute this operation serially. The
+dedicated browser-worker adapter is separate; public general async tasks remain
+pending. See [the contract](docs/concurrency-design.md) and
 [example](examples/parallel.nex). Explicit migration preserves genuine 0.17
 history; a declaration named `parallel_map` requires a reviewed repair.
 
@@ -94,6 +85,12 @@ try/catch/throw, broader native targets and cross-model cost measurements remain
 pending in [PLAN.md](PLAN.md). This checkpoint does not complete the objective.
 
 ## Build
+
+Private TypeScript task tests also require Node22.18+ and the pinned TypeScript
+compiler. Set `NEX_TSC=/path/to/node_modules/typescript/bin/tsc`, or set
+`NEX_NPM_CACHE` to a populated cache for the exact `web/package-lock.json`.
+The test installs missing tools offline with lifecycle scripts disabled in its
+owned temporary output; it never creates a cache inside the checked source.
 
 Dependencies: CMake 3.25+, a C++20 compiler, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3 and Z3 development headers/libraries, and Python 3 for integration tests. A native Clang++ driver and platform SDK are needed when building NEX programs. CMake detects the existing Homebrew llvm@22/OpenSSL locations on this machine; elsewhere set `LLVM_DIR`, `MLIR_DIR` and `OPENSSL_ROOT_DIR` explicitly. HTTP tests open local sockets and create a temporary TLS certificate with the `openssl` CLI.
 

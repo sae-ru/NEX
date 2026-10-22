@@ -1,3 +1,25 @@
+# Working107 private generated TypeScript task execution
+
+This separate toolchain0.103.0/language0.18 source emits checked client/shared
+functions as generators with an independent event-loop scope/future/channel
+scheduler. Node67 source scenarios agree with independent AST, including58
+native-suite fixture inputs; strict TypeScript7.0.2 checking and16 trusted-host
+protocol/lifetime/cleanup guards pass. Host timers cancel a checked pure helper
+through compiler checkpoints. Standalone production Chromium/Firefox/WebKit
+responsiveness has separate one-program evidence and does not enable the NEX UI
+task adapter. Current full109/sanitizer/platform/installed-SDK acceptance remains
+pending. Public source tasks stay disabled pending complete lifetime/effect
+contracts,019 migration, async IO/debug/profile/provider lifetime and delivery.
+
+A boundary discrepancy was reproduced: earlier AST and initial TS counted the
+root at depth0 and allowed257 total task levels. Native counts root at1.
+Working107 aligns both; checked255-descendant success and256-descendant rejection
+pass native O0/O2. Data's immutable owner-family tag now occupies header alignment
+space: measured macOS ARM64 sizeof(Data) returns from106's112 to104 bytes, matching
+105. This is a layout measurement, not broad performance evidence. Frozen106
+passed full108, strict AST/reference/IR sanitizers and six Linux groups; its exact
+receipts remain scoped to its old source and tests. Primary081 is preserved.
+
 Toolchain0.98 development source adds an internal C++20 coroutine task/channel
 scheduler, enabled only in a private runtime probe. NEX source async/tasks/channels
 and their MLIR/reference/TypeScript integrations remain pending; ordinary

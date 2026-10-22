@@ -34,6 +34,9 @@ inline std::atomic<int64_t> liveObjects{0};
 struct Data {
   enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel } kind;
   enum class TaskOwnerFamily { None, Native, Reference };
+private:
+  const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
+public:
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
@@ -45,7 +48,6 @@ private:
   friend struct FileData;
   friend struct TaskData;
   friend struct ReferenceTaskData;
-  const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
   Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),taskFamily(family){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
     if(other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");

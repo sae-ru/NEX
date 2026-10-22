@@ -1,7 +1,13 @@
+Working107 adds a private generated TypeScript task backend and event-loop
+scheduler. It preserves reachable client/shared emission, source function result
+boundaries and checked values. It also counts the root task as nesting level1
+in AST/TypeScript, matching native cancellation ancestry. Public018 execution
+and archival guards remain; complete lifetime typing and019 migration are pending.
+
 Working106 connects independent checked-AST continuations to a private
 cooperative scope/future/channel scheduler. It does not use TaskIR or native
 TaskGroup dispatch. Public0.18 syntax, identities and task execution guards
-remain unchanged; TypeScript scheduling, region typing and explicit migration
+remain unchanged; public scheduling, region typing and explicit migration
 remain pending. See tasks-runtime-design.md.
 
 Working104 privately executes structured scopes, futures and bounded channels

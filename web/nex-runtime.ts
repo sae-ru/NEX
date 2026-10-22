@@ -38,6 +38,10 @@ export function resultScope<T extends Value>(body: () => Result<T>): Result<T> {
   try { return body(); }
   catch (error) { if (error instanceof ResultPropagation) return error.failure; throw error; }
 }
+// Private generated generator functions use the same source return boundary.
+export function propagatedFailure(error: unknown): Failure | undefined {
+  return error instanceof ResultPropagation ? error.failure : undefined;
+}
 export type Site = readonly [file: string, line: number, column: number, operationSite?: string];
 export class NexError extends Error {
   readonly code: string;
@@ -50,6 +54,11 @@ function fail(code: string, message: string, site?: Site): never { throw new Nex
 // The synchronous TypeScript backend evaluates ordered CPU maps serially. It
 // provides the same pure value/error contract, not browser worker parallelism.
 const callableCaptures = new WeakMap<Callable, ReadonlyArray<Value>>();
+const privateTaskValues = new WeakMap<object, 'task_scope' | 'task' | 'channel'>();
+// These annotations classify values for ordinary equality/printing/map guards;
+// they never grant authority in the private task scheduler's separate owner map.
+export function annotateTaskValue(value: RecordValue, kind: 'task_scope' | 'task' | 'channel'): void { privateTaskValues.set(value, kind); }
+export function captureValues(callback: Callable): ReadonlyArray<Value> | undefined { return callableCaptures.get(callback); }
 export function captured<F extends Callable>(values: ReadonlyArray<Value>, callback: F): F {
   callableCaptures.set(callback, Object.freeze([...values])); return callback;
 }
@@ -72,6 +81,7 @@ function parallelValue(value: Value, site?: Site): void {
     const next = pending.pop()!;
     if (next === null || next === undefined) fail('E_PARALLEL_VALUE', 'parallel value is not a NEX value', site);
     if (typeof next !== 'object' && typeof next !== 'function') continue;
+    if (privateTaskValues.has(next)) fail('E_PARALLEL_VALUE', 'parallel value cannot contain task authority', site);
     if (seen.has(next)) continue; seen.add(next);
     if (seen.size > 262144) fail('E_LIMIT', 'parallel value graph exceeds its object limit', site);
     if (seen.size % 64 === 0) parallelPoll(site);
@@ -86,6 +96,7 @@ function parallelValue(value: Value, site?: Site): void {
     members += children.length; for (const child of children) pending.push(child);
   }
 }
+export function validateParallelValue(value: Value, site?: Site): void { parallelValue(value, site); }
 export function parallelMap<T extends Value, U extends Value>(items: ReadonlyArray<T>, callback: (item: T) => U, workers: bigint, site?: Site): ReadonlyArray<U> {
   if (workers < 1n || workers > 16n) fail('E_RANGE', 'parallel worker count must be in 1..16', site);
   if (items.length > 65536) fail('E_LIMIT', 'parallel input exceeds 65536 items', site);
@@ -219,6 +230,7 @@ function isList(value: Value): value is ReadonlyArray<Value> { return Array.isAr
 export function equal(a: Value, b: Value): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (privateTaskValues.has(a) || privateTaskValues.has(b)) return false;
   if (a instanceof ByteBuffer || b instanceof ByteBuffer) return a instanceof ByteBuffer && b instanceof ByteBuffer && a.equals(b);
   if (isList(a)) return isList(b) && a.length === b.length && a.every((item, i) => equal(item, b[i]));
   if (isList(b) || a[TYPE] !== b[TYPE] || a[CASE] !== b[CASE]) return false;
@@ -233,6 +245,8 @@ export function representation(value: Value): string {
   if (typeof value === 'function') return quoted('<function>');
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
+  const taskKind = privateTaskValues.get(value);
+  if (taskKind !== undefined) return quoted('<' + taskKind + '>');
   if (value instanceof ByteBuffer) return quoted(value.base64());
   if (isList(value)) return '[' + value.map(representation).join(',') + ']';
   const fields = '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';
