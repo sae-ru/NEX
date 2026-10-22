@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/language.h"
 #include "nex/traits.h"
 #include <functional>
@@ -51,7 +52,7 @@ bool satisfiesConstraint(const Program &program,const Type &type,const std::stri
   if(type.kind==Type::Projection){auto sep=type.name.rfind("::");const auto &owner=traitDefinition(program,type.name.substr(0,sep));auto found=owner.associated.find(type.name.substr(sep+2));
     if(found!=owner.associated.end()){const auto &bounds=found->second;return bounds.contains(constraint)||((constraint=="add"||constraint=="ordered"||constraint=="wire")&&(bounds.contains("integer")||bounds.contains("number")))||(constraint=="number"&&bounds.contains("integer"))||(constraint=="wire"&&bounds.contains("ordered"));}return false;}
   if(constraint=="wire"){
-    if(containsFile(program,type))return false;
+    if(containsFile(program,type)||containsTaskAuthority(program,type))return false;
     std::set<std::string> seen;std::function<bool(const Type&)> visit=[&](const Type &value){
       if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes)return true;
       if(value.kind==Type::Projection)return satisfiesConstraint(program,value,"wire");
@@ -85,7 +86,7 @@ Type substituteType(Type type,const std::map<std::string,Type> &arguments){
     auto constructor=found->second;
     if(constructor.kind==Type::Parameter&&constructor.arguments.empty()){constructor.arguments=type.arguments;return constructor;}
     if(constructor.kind!=Type::Constructor||constructor.constructorArity!=type.arguments.size())throw Error("E_GENERIC_KIND","cannot apply a substituted value type as a constructor");
-    if(constructor.name=="list")return Type::list(type.arguments.at(0));if(constructor.name=="result")return Type::result(type.arguments.at(0));auto value=Type::record(constructor.name);value.arguments=std::move(type.arguments);return value;
+    if(constructor.name=="list")return Type::list(type.arguments.at(0));if(constructor.name=="result")return Type::result(type.arguments.at(0));if(constructor.name=="task")return Type::task(type.arguments.at(0));if(constructor.name=="channel")return Type::channel(type.arguments.at(0));auto value=Type::record(constructor.name);value.arguments=std::move(type.arguments);return value;
   }
   if(type.element)type.element=std::make_shared<Type>(substituteType(*type.element,arguments));
   for(auto &argument:type.arguments)argument=substituteType(argument,arguments);return type;
@@ -102,6 +103,7 @@ void prepareGenerics(Program &p){
 }
 Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(depth>64)throw Error("E_GENERIC_LIMIT","generic type expansion exceeds depth limit",span);
+  if(!p.taskPrototype&&(type.kind==Type::Task||type.kind==Type::Channel||type.kind==Type::TaskScope))throw Error("E_TASK_UNIMPLEMENTED","task types are not part of language0.18",span);
   if(type.kind==Type::Record){
     auto sep=type.name.rfind("::");
     if(sep!=std::string::npos)for(const auto &trait:p.traits)if(trait.name==type.name.substr(0,sep)&&trait.associated.contains(type.name.substr(sep+2)))type.kind=Type::Projection;
@@ -117,12 +119,12 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
     if(!type.arguments.empty()&&type.arguments.size()!=found->second)throw Error("E_GENERIC_KIND","wrong constructor parameter arity",span);return type;
   }
   if(type.kind==Type::Constructor){argumentKind(p,type,span);return type;}
-  if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
+  if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function&&type.kind!=Type::Task)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
   for(auto &argument:type.arguments)argument=resolveType(p,argument,span,depth+1);
   if(type.kind==Type::Function){
     if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);
     for(const auto &argument:type.arguments)if(argument==Type::Unit||argument==Type::Unknown)throw Error("E_TYPE","function parameters require non-unit types",span);
-    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi")throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
+    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task"))throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
     if(type.effects.contains("db")&&type.realm!="server")throw Error("E_REALM","db callable effect requires server realm",span);
     if(type.effects.contains("ffi")&&type.realm!="server")throw Error("E_REALM","ffi callable effect requires server realm",span);
     if(type.effects.contains("fs")&&type.realm!="server")throw Error("E_REALM","fs callable effect requires server realm",span);

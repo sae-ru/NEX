@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/traits.h"
@@ -29,6 +30,9 @@ std::string typeName(Type t) {
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
+    case Type::Task:return "task<"+typeName(*t.element)+">";
+    case Type::Channel:return "channel<"+typeName(*t.element)+">";
+    case Type::TaskScope:return "task_scope";
     case Type::Function:{std::string result=t.realm=="shared"?"fn(":t.realm+" fn(";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=",";result+=typeName(t.arguments[i]);}result+=")->"+(t.element->kind==Type::Function?"("+typeName(*t.element)+")":typeName(*t.element));if(!t.effects.empty()){result+="!{";for(const auto &effect:t.effects){if(result.back()!='{')result+=",";result+=effect;}result+="}";}return result;}
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     case Type::Parameter:return t.arguments.empty()?"$"+t.name:genericName("$"+t.name,t.arguments);
@@ -36,12 +40,13 @@ std::string typeName(Type t) {
     case Type::Constructor:return t.name;
     default: return "unknown"; }
 }
-const std::set<std::string> &builtinNames(){
+const std::set<std::string> &builtinNames(bool tasks){
   static const std::set<std::string> names=[] {
     std::set<std::string> result={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes","file"};
     result.insert("parallel_map");result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
   }();
-  return names;
+  static const std::set<std::string> extended=[&]{auto result=names;result.insert(taskBuiltins().begin(),taskBuiltins().end());result.insert({"task","channel","task_scope"});return result;}();
+  return tasks?extended:names;
 }
 const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
@@ -255,7 +260,7 @@ class Parser {
   std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false){
     if(!keep)clearParameters();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
     do{auto parameter=name();auto arity=constructorArity();
-      if(parameter.text=="bytes"||parameter.text=="file"||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
+      if(parameter.text=="bytes"||parameter.text=="file"||(p.taskPrototype&&std::set<std::string>{"task","channel","task_scope"}.contains(parameter.text))||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
       if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most64 parameters",parameter.span);
       if(captureNames){parameterOrigins[parameter.text]=parameter.span;editorName("parameter_declaration",parameter.text,parameter.span,parameter.span);}
       result.push_back(parameter.text);arities.push_back(arity);bounds.emplace_back();if(accept(":"))bounds.back()=constraintNames();
@@ -277,6 +282,12 @@ class Parser {
     if(t.text=="f64")return Type::F64;
     if(t.text=="bytes"&&peek().text!="::")return Type::Bytes;
     if(t.text=="file"&&peek().text!="::")return Type::File;
+    if(p.taskPrototype&&t.text=="task_scope"&&peek().text!="::")return Type::TaskScope;
+    if(p.taskPrototype&&(t.text=="task"||t.text=="channel")&&peek().text!="::"){
+      if(peek().text!="<")return Type::constructor(t.text,1);
+      expect("<");auto item=type();typeEnd();
+      return t.text=="task"?Type::task(std::move(item)):Type::channel(std::move(item));
+    }
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       if(t.text=="list"&&peek().text!="<")return Type::constructor("list",1);
       expect("<");auto item=type();
@@ -425,8 +436,8 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
-    p.source=std::move(source);p.path=std::move(path);
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
+    p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
@@ -540,7 +551,7 @@ class Checker {
     if(formal.kind==Type::Projection){auto resolved=resolveType(p,substituteType(formal,bound),span);if(resolved==actual)return;if(resolved.kind==Type::Projection)throw Error("E_GENERIC_INFER","associated projections do not infer their Self type",span);unify(resolved,actual,bound,span);return;}
     if(formal.kind==Type::Parameter&&!formal.arguments.empty()){
       auto shape=constructorPattern(p,actual);Type head;std::vector<Type> args;
-      if(shape.kind==Type::List||shape.kind==Type::Result){head=Type::constructor(shape.kind==Type::List?"list":"result",1);args={*shape.element};}
+      if(shape.kind==Type::List||shape.kind==Type::Result||shape.kind==Type::Task||shape.kind==Type::Channel){head=Type::constructor(shape.kind==Type::List?"list":shape.kind==Type::Result?"result":shape.kind==Type::Task?"task":"channel",1);args={*shape.element};}
       else if(shape.kind==Type::Record&&!shape.arguments.empty()){head=Type::constructor(shape.name,shape.arguments.size());args=shape.arguments;}
       else if(shape.kind==Type::Parameter&&!shape.arguments.empty()){head=shape;head.arguments.clear();args=shape.arguments;}
       else throw Error("E_GENERIC_INFER","cannot infer an applied constructor from this type",span);
@@ -625,6 +636,70 @@ class Checker {
     if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
     fn.checked=true;e->text=fn.name;e->type=signatureType;p.functions.push_back(fn);f->dependencies.insert(fn.name);return e->type;
   }
+  Type taskCallback(E callback,const std::vector<Type> &parameters,Type expected){
+    Type hint;
+    if(callback->kind==Expr::Name&&callback->typeArguments.empty()&&
+        !hasLocal(callback->localName.empty()?callback->text:callback->localName)){
+      const auto &target=p.function(callback->text,callback->span);
+      if(!target.typeParameters.empty()&&target.params.size()==parameters.size()){
+        std::map<std::string,Type> bound;
+        for(size_t i=0;i<parameters.size();++i)unify(target.params[i].type,parameters[i],bound,callback->span);
+        if(expected!=Type::Unknown)unify(target.result,expected,bound,callback->span);
+        if(std::all_of(target.typeParameters.begin(),target.typeParameters.end(),[&](const auto &name){return bound.contains(name);}))
+          hint=substituteType(signature(target),bound);
+      }
+    }
+    auto type=expr(callback,hint);
+    if(type.kind!=Type::Function||type.arguments.size()!=parameters.size())
+      throw Error("E_TASK_TYPE","task callback has an incorrect function signature",callback->span);
+    for(size_t i=0;i<parameters.size();++i)same(type.arguments[i],parameters[i],callback->span);
+    callableRealm(type,callback->span);
+    for(const auto &effect:type.effects)if(effect!="task")
+      throw Error("E_EFFECT","task callbacks may declare only the task effect",callback->span);
+    if(containsFile(p,type))throw Error("E_TASK_TYPE","task callback signatures cannot carry file resources",callback->span);
+    if(callback->kind==Expr::Lambda||callback->kind==Expr::FunctionRef){
+      const auto &target=p.function(callback->text,callback->span);
+      for(const auto &capture:target.captures)if(containsFile(p,capture.type))
+        throw Error("E_TASK_TYPE","task callbacks cannot capture file resources",callback->span);
+    }
+    return *type.element;
+  }
+  Type taskCall(E e,Type expected){
+    if(!f->effects.contains("task"))throw Error("E_EFFECT",e->text+" requires declared effect task",e->span);
+    auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+    if(e->text=="with_tasks"){
+      arity(2);same(expr(e->args[0],Type::I64),Type::I64,e->args[0]->span);
+      return taskCallback(e->args[1],{Type::TaskScope},expected);
+    }
+    if(e->text=="task_spawn"){
+      arity(2);same(expr(e->args[0],Type::TaskScope),Type::TaskScope,e->args[0]->span);
+      return Type::task(taskCallback(e->args[1],{},expected.kind==Type::Task?*expected.element:Type()));
+    }
+    if(e->text=="current_task_scope"){arity(0);return Type::TaskScope;}
+    if(e->text=="task_yield"){arity(0);return Type::Unit;}
+    if(e->text=="channel_new"){
+      arity(2);same(expr(e->args[0],Type::TaskScope),Type::TaskScope,e->args[0]->span);
+      same(expr(e->args[1],Type::I64),Type::I64,e->args[1]->span);
+      if(e->typeArguments.size()>1)throw Error("E_GENERIC_ARITY","channel_new accepts one payload type",e->span);
+      auto item=e->typeArguments.empty()?(expected.kind==Type::Channel?*expected.element:Type()):e->typeArguments[0];
+      if(item==Type::Unknown)throw Error("E_INFER","channel_new needs a payload type or channel<T> context",e->span);
+      validType(item,e->span);
+      if(containsFile(p,item))throw Error("E_TASK_TYPE","channel payloads cannot carry file resources",e->span);
+      return Type::channel(std::move(item));
+    }
+    arity(e->text=="task_send"?2:1);
+    auto value=expr(e->args[0]);
+    if(e->text=="task_wait"||e->text=="task_cancel"){
+      if(value.kind!=Type::Task)throw Error("E_TASK_TYPE",e->text+" requires task<T>",e->args[0]->span);
+      return e->text=="task_cancel"?Type(Type::Bool):*value.element;
+    }
+    if(value.kind!=Type::Channel)throw Error("E_TASK_TYPE",e->text+" requires channel<T>",e->args[0]->span);
+    if(e->text=="task_send"){
+      same(expr(e->args[1],*value.element),*value.element,e->args[1]->span);return Type::Bool;
+    }
+    if(e->text=="task_recv")return Type::result(*value.element);
+    return Type::Bool;
+  }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
     case Expr::FunctionRef:reference(e,expected);break;
@@ -693,8 +768,9 @@ class Checker {
         if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","function values do not accept type arguments at invocation",e->span);
         auto callee=std::make_shared<Expr>();callee->kind=Expr::Name;callee->text=local;callee->span=e->span;e->args.insert(e->args.begin(),std::move(callee));e->kind=Expr::Invoke;e->text.clear();return expr(e,expected);
       }
-      if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
+      if(!e->typeArguments.empty()&&builtinNames(p.taskPrototype).contains(e->text)&&!(p.taskPrototype&&e->text=="channel_new"))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+      if(p.taskPrototype&&taskBuiltins().contains(e->text)){e->type=taskCall(e,expected);break;}
       if(e->text=="parallel_map"){
         arity(3);Type items,callback;bool callbackTyped=false;
         auto checkCallback=[&](Type value){
@@ -702,7 +778,7 @@ class Checker {
             throw Error("E_PARALLEL_TYPE","parallel_map needs a one-argument value-returning callback",e->args[1]->span);
           callableRealm(value,e->args[1]->span);
           if(!value.effects.empty())throw Error("E_EFFECT","parallel_map callback must have no declared effects",e->args[1]->span);
-          if(containsFile(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file resources",e->args[1]->span);
+          if(containsFile(p,value)||containsTaskAuthority(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file or task resources",e->args[1]->span);
         };
         try{items=expr(e->args[0]);}catch(const Error &error){
           if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;
@@ -710,7 +786,7 @@ class Checker {
           items=expr(e->args[0],Type::list(callback.arguments[0]));
         }
         if(items.kind!=Type::List)throw Error("E_TYPE","parallel_map input must be a list",e->args[0]->span);
-        if(containsFile(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file resources",e->args[0]->span);
+        if(containsFile(p,items)||containsTaskAuthority(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file or task resources",e->args[0]->span);
         if(!callbackTyped){
           Type hint;
           if(e->args[1]->kind==Expr::Name&&!hasLocal(e->args[1]->localName.empty()?e->args[1]->text:e->args[1]->localName)&&e->args[1]->typeArguments.empty()){
@@ -722,6 +798,11 @@ class Checker {
             }
           }
           callback=expr(e->args[1],hint);checkCallback(callback);
+        }
+        if(p.taskPrototype&&(e->args[1]->kind==Expr::Lambda||e->args[1]->kind==Expr::FunctionRef)){
+          const auto &target=p.function(e->args[1]->text,e->args[1]->span);
+          for(const auto &capture:target.captures)if(containsTaskAuthority(p,capture.type))
+            throw Error("E_PARALLEL_TYPE","parallel_map callbacks cannot capture task or channel authority",e->args[1]->span);
         }
         same(*items.element,callback.arguments[0],e->args[0]->span);
         same(expr(e->args[2],Type::I64),Type::I64,e->args[2]->span);
@@ -887,7 +968,7 @@ public:
   void run() {
     prepareTraits(p);prepareGenerics(p);
     std::set<std::string> names;
-    const auto &builtins=builtinNames();
+    const auto &builtins=builtinNames(p.taskPrototype);
     for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
       auto fields=[&](auto &members){std::set<std::string> seen;for(auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
@@ -903,9 +984,10 @@ public:
         auto identifier=[](const std::string &v){auto letter=[](char c){return(c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_';};return !v.empty()&&v.size()<=128&&letter(v.front())&&std::all_of(v.begin(),v.end(),[&](char c){return letter(c)||(c>='0'&&c<='9');});};
         const auto &binding=*fn.foreign;if(!identifier(binding.library)||!identifier(binding.symbol)||binding.manifest.size()!=64||binding.manifest.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_FFI_BINDING","external binding requires logical ASCII library/export names and a lowercase SHA-256 manifest pin",fn.span);
       }
+      if(fn.foreign&&(fn.effects.contains("task")||containsTaskAuthority(p,fn.result)||std::any_of(fn.params.begin(),fn.params.end(),[&](const auto &param){return containsTaskAuthority(p,param.type);})))throw Error("E_TASK_TYPE","foreign declarations cannot carry task authority or suspend",fn.span);
       validType(fn.result,fn.span,true);
       for(auto &parameter:fn.params)validType(parameter.type,parameter.span);
-      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task"))throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
       if(fn.effects.contains("ffi")&&fn.realm!="server")throw Error("E_REALM","ffi effect requires a server function",fn.span);
       if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
       if(fn.effects.contains("fs")&&fn.realm!="server")throw Error("E_REALM","fs effect requires a server function",fn.span);
@@ -981,6 +1063,7 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 }
 }
 Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails).run();}
+Program parseTaskPrototype(std::string source,std::string path,bool names,bool details){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",names,details,true).run();}
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
   sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
   for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
@@ -1032,6 +1115,7 @@ llvm::json::Value canonical(const Implementation &value){
   return llvm::json::Object{{"format","nex.implementation/1"},{"name",value.name},{"owner",value.owner},{"public",value.exported},{"trait",value.trait},{"self",typeName(value.self)},{"type_parameters",std::move(parameters)},{"type_parameter_kinds",canonicalKinds(value.typeParameters,value.typeArities)},{"type_bounds",canonicalBounds(value.typeParameters,value.typeBounds)},{"associated_types",std::move(aliases)},{"methods",std::move(methods)}};
 }
 std::string revision(const Program &p) {
+  rejectUnloweredTasks(p,"revision storage");
   std::map<std::string,std::string> ordered;
   for(const auto &f:p.functions)if(f.templateName.empty()&&!f.closure&&!f.traitSignature)ordered[f.name]=json(canonical(f),false);
   llvm::json::Object functions;for(const auto &[name,text]:ordered)functions[name]=text;

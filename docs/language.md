@@ -1,3 +1,8 @@
+Working099 has private task typing entry points, separately guarded from public
+language0.18 parsing/execution/archival. No public task source feature is enabled;
+continuation lowering and explicit history-preserving migration remain required.
+See [the integration contract](tasks-runtime-design.md#required-source-integration).
+
 Toolchain0.98 adds a private coroutine scheduler probe only. Language0.18,
 source types/effects, canonical identities and migration are unchanged.
 Source async/task/channel syntax is still unsupported.

@@ -1,0 +1,14 @@
+#pragma once
+#include "nex/language.h"
+
+namespace nex {
+// Private source integration entry points. Public language0.18 parsing, stored
+// revisions and emitted programs must not accidentally acquire task semantics.
+Program parseTaskPrototype(std::string source,std::string path,
+    bool editorNames=false,bool editorDetails=false);
+Program loadTaskPrototype(const std::string &entry,const std::string &root,
+    const std::map<std::string,std::string> &overlays={});
+const std::set<std::string> &taskBuiltins();
+bool containsTaskAuthority(const Program &program,const Type &type);
+void rejectUnloweredTasks(const Program &program,const char *operation);
+}

@@ -24,7 +24,7 @@ struct Error : std::runtime_error {
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor, Projection } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor, Projection, Task, Channel, TaskScope } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   unsigned constructorArity=0;
   std::string realm="shared";std::set<std::string> effects;
@@ -32,12 +32,14 @@ struct Type {
   Type(Kind kind) : kind(kind) {}
   static Type list(Type item) { Type t(List); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type result(Type item) { Type t(Result); t.element=std::make_shared<Type>(std::move(item)); return t; }
+  static Type task(Type item) { Type t(Task); t.element=std::make_shared<Type>(std::move(item)); return t; }
+  static Type channel(Type item) { Type t(Channel); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type record(std::string name) { Type t(Record); t.name=std::move(name); return t; }
   static Type constructor(std::string name,unsigned arity) { Type t(Constructor);t.name=std::move(name);t.constructorArity=arity;return t; }
   static Type function(std::vector<Type> parameters,Type result,std::string realm="shared",std::set<std::string> effects={}) {
     Type t(Function);t.arguments=std::move(parameters);t.element=std::make_shared<Type>(std::move(result));t.realm=std::move(realm);t.effects=std::move(effects);return t;
   }
-  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File; }
+  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File||kind==Task||kind==Channel||kind==TaskScope; }
   bool operator==(const Type &other) const {
     return kind==other.kind && name==other.name && constructorArity==other.constructorArity && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
@@ -116,7 +118,7 @@ struct Endpoint {
   std::string name,localName,owner,unit,method,path,target;
   int64_t successStatus=200; Span span;
 };
-struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; };
+struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; bool taskPrototype=false; };
 struct Trait {
   std::string name,localName,owner,unit;Span span;bool exported=false;
   unsigned selfArity=0;
@@ -146,6 +148,7 @@ struct Program {
   std::vector<Implementation> implementations;
   std::vector<EditorName> editorNames;
   bool traitsPrepared=false;
+  bool taskPrototype=false; // Private frontend staging; never persist as language0.18.
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
   std::map<std::string,Function> functionTemplates;
@@ -205,7 +208,7 @@ std::string json(const llvm::json::Value &value, bool pretty = true);
 std::string hash(const std::string &text);
 std::string revision(const Program &program);
 llvm::json::Value describe();
-const std::set<std::string> &builtinNames();
+const std::set<std::string> &builtinNames(bool tasks=false);
 const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);

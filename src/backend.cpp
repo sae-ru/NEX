@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/backend.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
@@ -787,10 +788,11 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
     ProcessResult result{status,readFile(stdoutPath),readFile(stderrPath)};std::filesystem::remove_all(folder);return result;
   }catch(...){std::filesystem::remove_all(folder);throw;}
 }
-std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){return Emitter(p).run(entry,testEntry,libraryEntry);}
-std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}
+std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){rejectUnloweredTasks(p,"MLIR emission");return Emitter(p).run(entry,testEntry,libraryEntry);}
+std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){rejectUnloweredTasks(p,"Wasm emission");return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);}
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,const std::string &triple,const std::string &layout){return lower(source,path,triple,layout);}
 void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
+  rejectUnloweredTasks(p,"native entry preparation");
   bool server=options.target=="server";
   if(options.deferredLink&&(!options.positionIndependent||!options.projectLibraryABI))
     throw Error("E_OPTION","deferred native linking requires PIC and the checked project ABI");
@@ -869,6 +871,7 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
   return result;
 }
 BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
+  rejectUnloweredTasks(p,"native build");
   if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");
   auto host=llvm::sys::getDefaultTargetTriple();
   auto toolchain=configureNative(options);auto target=toolchain.target;

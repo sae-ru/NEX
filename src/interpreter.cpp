@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/language.h"
 #include "nex/watch_values.h"
 #include <algorithm>
@@ -241,8 +242,9 @@ public:
   }
 };
 }
-Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){return Interpreter(p,stepLimit).run(entry);}
+Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){rejectUnloweredTasks(p,"reference execution");return Interpreter(p,stepLimit).run(entry);}
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
+  rejectUnloweredTasks(p,"reference inspection");
   try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
 }
 }

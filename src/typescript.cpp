@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/web.h"
 #include "nex/operations.h"
 #include <algorithm>
@@ -204,7 +205,7 @@ public:
   }
 };
 }
-WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){return Generator(p).run(entries);}
+WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){rejectUnloweredTasks(p,"TypeScript emission");return Generator(p).run(entries);}
 void writeWebModule(const WebModule &module,const std::string &directory){
   auto output=std::filesystem::path(directory);
   writeFile((output/"program.ts").string(),module.source);

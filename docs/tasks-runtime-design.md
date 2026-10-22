@@ -77,6 +77,47 @@ This runner requires the source tests and is not an installed SDK source feature
 
 ## Required source integration
 
+The working099 integration adds private parseTaskPrototype/loadTaskPrototype
+entry points and a typed frontend probe. These are not public CLI commands or a
+language release. Program provenance keeps this mode separate from language0.18:
+native/Wasm/TypeScript emission, reference execution/inspection, source archival,
+revision identity and dependency locking reject it with E_TASK_UNIMPLEMENTED
+before creating executable output. describe.source_support remains false.
+
+The staged types are task<T>, channel<T> and task_scope. task<unit> is allowed;
+channel payloads and ordinary generic type arguments remain non-unit values.
+All three capability kinds are opaque heap identities, excluded from wire
+constraints/JSON even through phantom generic arguments or callable signatures.
+They also cannot cross foreign declarations or synchronous parallel_map input,
+callback signatures or known closure captures. Actual hidden capture graphs and
+scope ownership must additionally be checked by the eventual runtime bridge.
+
+Suspension uses the explicit task effect, propagating through existing direct
+and indirect call checking. No redundant async declaration marker is introduced;
+ordinary names async/await/spawn/send/recv/cancel/close/yield retain their meaning.
+Only the new intrinsic and contextual type names will need explicit migration.
+This typing contract is still private and must not be used in ordinary0.18 code.
+
+| Staged operation | Checked contract; each requires task effect |
+| --- | --- |
+| with_tasks(workers,callback) | i64, fn(task_scope)->T -> T |
+| task_spawn(scope,callback) | task_scope, fn()->T -> task<T> |
+| task_wait(pending) | task<T> -> T |
+| channel_new<T>(scope,capacity) | task_scope, i64 -> channel<T>; T can come from expected channel type |
+| task_send(queue,value) | channel<T>, T -> bool |
+| task_recv(queue) | channel<T> -> result<T> |
+| task_close(queue) | channel<T> -> bool |
+| task_cancel(pending) | task<T> -> bool |
+| task_yield() | unit |
+| current_task_scope() | task_scope |
+
+Callbacks must have an available realm and only pure/task effects, with no file
+types or known file captures. Existing generic inference, constructor matching,
+result propagation, lambda boundaries and effect diagnostics apply. Scope escape,
+structured cleanup, scheduling, runtime bounds and cancellation outcomes are
+not established by these typing tests. They require the continuation bridge and
+independent native/reference/TypeScript execution before public source support.
+
 The next language revision must define scoped Task<T>/Channel<T> capabilities
 and explicit task effects; they cannot masquerade as pure serializable data.
 Resource traversal must inspect generic aggregates and closure captures, and

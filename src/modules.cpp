@@ -1,3 +1,4 @@
+#include "nex/task_frontend.h"
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/traits.h"
@@ -74,7 +75,7 @@ bool inside(const fs::path &path,const fs::path &base){
 }
 struct Symbols{std::map<std::string,bool> functions,structures,variants,traits,projections;std::set<std::string> enumerations,traitMethods;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
-  if(!type&&builtinNames().contains(name))return name;
+  if(!type&&builtinNames(units.at(key).taskPrototype).contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
   if(external&&(symbols.at(key).enumerations.contains(name.substr(0,separator))||symbols.at(key).traits.contains(name.substr(0,separator)))){external=false;}
   else if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
@@ -102,11 +103,11 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
   const auto &name=expression->text;bool qualified=name.find("::")!=std::string::npos;
   if(!qualified)expression->localName=name;
   const auto &local=symbols.at(key);
-  if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames().contains(name)||local.structures.contains(name)||local.variants.contains(name))))
+  if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames(units.at(key).taskPrototype).contains(name)||local.structures.contains(name)||local.variants.contains(name))))
     expression->text=resolveSymbol(units,symbols,key,name,false,expression->span);
 }
 class Loader {
-  fs::path root;bool frozen,captureNames,captureDetails;std::string entry;size_t capturedNames=0;
+  fs::path root;bool frozen,captureNames,captureDetails,taskPrototype;std::string entry;size_t capturedNames=0;
   std::map<std::string,std::string> overlays;
   std::map<std::string,std::string> texts;
   std::map<std::string,fs::path> packages;
@@ -116,7 +117,7 @@ class Loader {
   std::vector<std::string> stack;
   std::map<std::string,Symbols> symbols;
   std::set<std::string> checkedPackages;
-  const std::set<std::string> &builtins=builtinNames();
+  const std::set<std::string> &builtins;
   fs::path physical(const std::string &key){
     if(frozen)return root/(key.starts_with("@")?fs::path(".nex/snapshot")/key:fs::path(key));
     fs::path base=root;std::string relative=key;
@@ -149,7 +150,7 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=parse(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
+    try{unit=taskPrototype?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails):parse(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
     capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
@@ -230,8 +231,8 @@ class Loader {
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false)
-      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)){
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false)
+      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json");
@@ -246,9 +247,9 @@ public:
     safeKey(entry);if(entry.starts_with("@"))throw Error("E_BUNDLE","entry must be a project source path");visit(entry);
     if(frozen&&parsed.size()!=texts.size())throw Error("E_BUNDLE","snapshot contains unreachable source files");
     complete=true;phase="bind";bind();
-    Program p;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
+    Program p;p.taskPrototype=taskPrototype;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
-    for(const auto &key:order){auto &unit=parsed.at(key);if(p.editorNames.size()+unit.editorNames.size()>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries");for(auto &name:unit.editorNames)p.editorNames.push_back(std::move(name));p.units[key]={key,unit.module,unit.source,unit.path,unit.imports};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
+    for(const auto &key:order){auto &unit=parsed.at(key);if(p.editorNames.size()+unit.editorNames.size()>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries");for(auto &name:unit.editorNames)p.editorNames.push_back(std::move(name));p.units[key]={key,unit.module,unit.source,unit.path,unit.imports,taskPrototype};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
     p.imports=p.units.at(entry).imports;if(validate){phase="check";check(p);}return p;
     }catch(Error &error){
       if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
@@ -303,11 +304,18 @@ void bindExpression(const Program &p,const std::string &function,E expression){
   block=[&](const auto &body){for(auto statement:body){type(statement->type,statement->span);if(statement->expr)visit(statement->expr);childBlocks(statement,block);}};
   visit=[&](E e){type(e->annotation,e->span);for(auto &argument:e->typeArguments)type(argument,e->span);for(auto &argument:e->methodArguments)type(argument,e->span);bindValueName(p.units,symbols,f.unit,e);if(!e->methodArguments.empty()){const auto &method=p.function(e->text,e->span);if(!method.traitSignature)throw Error("E_GENERIC_ARITY","second argument list requires a trait method",e->span);e->typeArguments.insert(e->typeArguments.end(),e->methodArguments.begin(),e->methodArguments.end());e->methodArguments.clear();}if(e->lambda){type(e->lambda->result,e->span);for(auto &param:e->lambda->params)type(param.type,param.span);block(e->lambda->body);}for(auto arm:e->arms)visitPattern(arm->pattern,[&](P pattern){if(pattern->kind==Pattern::Constructor)pattern->text=resolveSymbol(p.units,symbols,f.unit,pattern->text,false,pattern->span);});for(auto a:e->args)visit(a);};visit(expression);
 }
+Program loadTaskPrototype(const std::string &entry,const std::string &root,const std::map<std::string,std::string> &overlays){
+  auto base=fs::weakly_canonical(root),path=fs::weakly_canonical(entry);
+  if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
+  return Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,false,false,true).run();
+}
 llvm::json::Value sourceBundle(const Program &p){
+  rejectUnloweredTasks(p,"source archival");
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;
   return llvm::json::Object{{"schema","nex.sources/1"},{"entry",p.entryUnit},{"files",std::move(files)}};
 }
 llvm::json::Value dependencyLock(const Program &p){
+  rejectUnloweredTasks(p,"dependency locking");
   llvm::json::Object dependencies;
   for(const auto &[key,unit]:p.units)if(key.starts_with("@"))dependencies[key]=llvm::json::Object{{"module",unit.module},{"source_hash",hash(unit.source)}};
   return llvm::json::Object{{"schema","nex.lock/1"},{"language",languageVersion},{"dependencies",std::move(dependencies)}};
