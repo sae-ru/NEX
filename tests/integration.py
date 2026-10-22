@@ -16,6 +16,21 @@ REPO = harness.REPO
 
 
 class Toolchain(harness.ToolchainCase):
+    def test_private_external_completion_descriptor_and_pack_agree(self):
+        descriptor = self.cli('describe')
+        pack = json.loads((REPO/'llm/language-pack.json').read_text())
+        external = descriptor['task_external_completion']
+        self.assertEqual(external, pack['task_external_completion'])
+        self.assertEqual(external['status'], 'experimental_private_trusted_host_kernel')
+        for field in ('source_support', 'public_source_async_io', 'source_syntax_changed', 'canonical_formats_changed', 'stable_host_abi'):
+            self.assertIs(external[field], False)
+        self.assertEqual(external['guide'], pack['documents']['task_external_completion'])
+        self.assertTrue((REPO/external['guide']).is_file())
+        self.assertEqual(self.cli('guide', '--kind', 'task-external')['text'], (REPO/external['guide']).read_text())
+        self.assertEqual(external['typescript']['executor_workers'], 1)
+        self.assertFalse(external['file_read_lease']['source_lowering'])
+        self.assertFalse(external['reference']['source_io_lowering'])
+
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
         descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())
         self.assertEqual(descriptor['source_concurrency'],pack['source_concurrency'])

@@ -96,20 +96,22 @@ struct TextFiles::Impl {
     root=Descriptor(::open(path.c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC));
     if(root.get()<0)throw DataError("CAPABILITY","configured file root is unavailable");
   }
-  template<class Content> Content read(const std::string &relative,const Poll &poll) const;
+  template<class Content> Content read(const std::string &relative,const Poll &poll,size_t reservedBytes=0) const;
   template<class Validate> void write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const;
 };
 TextFiles::TextFiles(const std::string &root,bool writable):impl(std::make_shared<Impl>(root,writable)){}
 TextFiles::~TextFiles()=default;
 std::unique_ptr<TextFiles> TextFiles::retain() const {return std::unique_ptr<TextFiles>(new TextFiles(impl));}
-template<class Content> Content TextFiles::Impl::read(const std::string &relative,const Poll &poll) const {
+template<class Content> Content TextFiles::Impl::read(const std::string &relative,const Poll &poll,size_t reservedBytes) const {
   check(poll);auto parts=components(relative);auto directory=parent(root.get(),parts,poll);
   Descriptor file(::openat(directory.get(),parts.back().c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK));
   if(file.get()<0)ioError(errno);
   struct stat info{};if(::fstat(file.get(),&info))ioError(errno);
   if(!S_ISREG(info.st_mode))throw DataError("VALIDATION","only regular files are supported");
   if(info.st_size<0 || uint64_t(info.st_size)>byteLimit)throw DataError("LIMIT","file exceeds byte limit");
-  Content content;content.reserve(size_t(info.st_size));std::array<char,65536> buffer{};
+  Content content;content.reserve(reservedBytes?reservedBytes:size_t(info.st_size));
+  if(reservedBytes&&content.capacity()>reservedBytes)throw DataError("LIMIT","file read storage exceeds its reservation");
+  std::array<char,65536> buffer{};
   for(;;){
     check(poll);auto count=::read(file.get(),buffer.data(),buffer.size());
     if(count<0){if(errno==EINTR)continue;ioError(errno);}
@@ -118,6 +120,43 @@ template<class Content> Content TextFiles::Impl::read(const std::string &relativ
     content.insert(content.end(),buffer.data(),buffer.data()+size_t(count));
   }
   return content;
+}
+struct FileReadLease::State {
+  struct Pin {
+    std::shared_ptr<TextFiles::Impl> files;
+    std::string relative;
+    Pin(std::shared_ptr<TextFiles::Impl> files,std::string relative)
+      :files(std::move(files)),relative(std::move(relative)){}
+  };
+  ResourceLease<Pin> physical;
+  uint64_t id;
+  State(ResourceLease<Pin> physical,uint64_t id):physical(std::move(physical)),id(id){}
+};
+FileReadLease TextFiles::readLeaseIn(const ResourceAccess &grant,const std::string &relative)const {
+  // Validate before admission; no per-operation open/read occurs here.
+  (void)components(relative);
+  auto retained=impl;auto path=relative;
+  auto owner=grant.make<FileReadLease::State::Pin>([&](const ResourcePermit &permit){
+    permit.check();return std::make_unique<FileReadLease::State::Pin>(retained,path);
+  });
+  return FileReadLease(std::make_shared<FileReadLease::State>(owner.acquire(),owner.identity()));
+}
+uint64_t FileReadLease::identity()const noexcept{return state?state->id:0;}
+void FileReadLease::check()const {
+  auto retained=state;
+  if(!retained)throw DataError("E_RESOURCE_CLOSED","file read lease is unavailable");
+  retained->physical.check();
+}
+std::vector<uint8_t> FileReadLease::read(const TextFiles::Poll &poll)const {
+  auto retained=state;
+  if(!retained)throw DataError("E_RESOURCE_CLOSED","file read lease is unavailable");
+  auto physical=retained->physical;
+  const auto &pin=physical.value();auto callback=poll;
+  auto checkpoint=[physical,callback](){physical.check();if(callback)callback();physical.check();};
+  auto result=pin.files->read<std::vector<uint8_t>>(pin.relative,checkpoint,TextFiles::byteLimit);
+  // The coordinator must also check before admitting a completion. A domain
+  // can be revoked after this worker's last poll or after physical retirement.
+  checkpoint();return result;
 }
 template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
   if(!writable)throw DataError("CAPABILITY","file capability does not permit writes");
@@ -310,6 +349,13 @@ struct FileScope::Impl {
 FileScope::FileScope(bool allowed):impl(std::make_unique<Impl>(allowed)){}
 FileScope::FileScope(TextFiles &capability):impl(std::make_unique<Impl>(capability.retain())){}
 FileScope::~FileScope()=default;
+FileReadLease captureFileReadLease(const std::string &relative,bool environmentAllowed){
+  auto &current=access(environmentAllowed);auto &files=current.capability();
+  if(!current.resources)current.resources=std::make_unique<ResourceDomain>(files.resourceScope());
+  if(auto bind=resource_detail::requestBinder)if(auto *request=bind(*current.resources))
+    return files.readLeaseIn(request->access(),relative);
+  return files.readLeaseIn(current.resources->access(),relative);
+}
 Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().read(relative,poll);}
   catch(const DataError &error){return failure(error.code,error.what());}

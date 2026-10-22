@@ -6,26 +6,32 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.105.0 / language 0.19**.
-The current correction restores ordinary source error operation IDs and rejects
-unsupported task authority/callable ABI exports. The shared build and18 focused groups pass; full regression and delivery
-acceptance remain pending. The previous integration has separate evidence.
-The current integration connects checked source tasks to native compiled
-continuations, an independent reference scheduler and generated TypeScript.
+This isolated development source is **toolchain 0.107.0 / language 0.19**.
+Working114 adds experimental private native, reference and TypeScript
+[external-completion kernels](docs/task-external.md), bounded host transport and
+revocable file-read leases. Public source asynchronous IO remains unsupported;
+no source syntax, builtin or canonical-format migration is introduced.
+Current114 full regression, installed-SDK and platform acceptance remain pending.
+The preceding113 full gate passed118 tests and its matching installed SDK
+passed24 phases/438 commands. Those receipts do not validate114 or establish
+an accepted release.
+
+Checked source tasks retain native compiled continuations, an independent
+reference scheduler and generated TypeScript.
 `task_scope`, `task<T>`, `channel<T>` and the `task` effect share one contract.
 Known capability escapes are diagnosed before execution; uncertain flows retain
 mandatory runtime owner checks. A [rendezvous example](examples/structured-tasks.nex)
 can be checked and tested in native and web targets. See [the language](docs/language.md),
 [lifetimes](docs/task-lifetimes.md) and [explicit migration](docs/task-migration.md).
 
-Native task applications use bounded joined workers on macOS/Linux; source-only
-component projects are supported. Reference and TypeScript scheduling are
-cooperative. Task callbacks accept pure/task effects. Async IO, task debugger
+Native task applications use bounded joined workers; source-only component
+projects are supported. Reference and TypeScript scheduling are cooperative.
+Their private external-completion experiments do not enable source filesystem,
+network or UI task adapters. Task callbacks accept pure/task effects. Task debugger
 and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
 full current installed SDK/platform validation and complete static region
-inference remain pending. The preceding integration passed its shared build and focused checks; its full
-regression exposed the corrections described above. Current regression and
-delivery validation remain pending. This is not an accepted release. The approved primary checkout remains 0.81 / 0.16.
+inference remain pending. Linux114, Windows114 and complete114 delivery have no
+acceptance claim here. The approved primary checkout remains 0.81 / 0.16.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.

@@ -25,6 +25,17 @@ struct TaskAccess {
   static bool healthy(const std::shared_ptr<Control> &control){
     return control->active.load()&&!control->cancelled.load()&&!control->exhausted.load()&&std::chrono::steady_clock::now()<control->deadline;
   }
+  static TaskExternalControl externalControl(const std::shared_ptr<Control> &control,const std::shared_ptr<const task_detail::Cancellation> &cancel){
+    return TaskExternalControl([control,cancel]{
+      if(!control->active.load()||control->cancelled.load())throw DataError("E_CANCELLED","external request was cancelled or ended");
+      auto steps=control->steps.load();
+      while(steps<control->budget&&!control->steps.compare_exchange_weak(steps,steps+1)){}
+      if(steps>=control->budget)control->exhausted=true;
+      if(control->exhausted.load())throw DataError("E_LIMIT","external request execution budget exceeded");
+      if(std::chrono::steady_clock::now()>=control->deadline)throw DataError("E_TIMEOUT","external request deadline exceeded");
+      if(cancel->stopped())throw DataError("E_CANCELLED","external task was cancelled");
+    });
+  }
   static void resume(const std::shared_ptr<Control> &control,const std::atomic<bool> &stop,
       const std::shared_ptr<const task_detail::Cancellation> &cancel,TaskBody::Handle handle,TaskGroup &group,TaskGroup::Scope resultScope,SourceLocation location){
     RequestScope scope(control,&stop);scope.impl->taskStop=cancel;ParallelDepth depth;
@@ -39,14 +50,16 @@ struct TaskAccess {
   }
 };
 struct TaskGroup::Impl {
-  enum Wait { None, Future, Send, Receive, ScopeDrain };
+  enum Wait { None, Future, Send, Receive, ScopeDrain, WaitExternal };
+  struct External {TaskExternalTicket ticket;size_t scope=none;bool physical=false,consumed=false;};
   struct Job {
     TaskBody::Handle body;Value result,pending;TaskGroup *group=nullptr;std::weak_ptr<Data> capability;SourceLocation location;TaskEvent event;
-    std::exception_ptr failure;
+    std::exception_ptr failure,externalFatal;
     std::shared_ptr<task_detail::Cancellation> cancellation;
     Wait wait=None;size_t target=none,previous=none,next=none,head=none,tail=none;
     size_t scope=none,memberScope=none;
     std::vector<size_t> ownedScopes;
+    std::vector<External> external;size_t externalPending=0;
     bool running=false,queued=false,again=false,done=false,observed=false,finishing=false,cleanupDone=false;
     ~Job(){if(body)body.destroy();}
   };
@@ -59,10 +72,10 @@ struct TaskGroup::Impl {
     Value pop(){auto value=std::move(*buffer[start]);buffer[start].reset();start=(start+1)%buffer.size();--count;return value;}
   };
   struct Region {
-    size_t parent=none,owner=none,limit=1,active=0,pending=0,nested=0,depth=1,head=none,tail=none;
+    size_t parent=none,owner=none,limit=1,active=0,pending=0,nested=0,externalPending=0,depth=1,head=none,tail=none;
     bool closing=false,closed=false,abort=false;
     std::vector<size_t> members,pipes,children;
-    std::exception_ptr failure;std::weak_ptr<Data> capability;
+    std::exception_ptr failure,externalFatal;std::weak_ptr<Data> capability;
   };
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
@@ -75,7 +88,8 @@ struct TaskGroup::Impl {
   std::atomic<bool> cancelled{false};
   bool started=false,stop=false,sealed=false,finished=false;
   std::vector<std::jthread> threads;
-  Impl(size_t workers,size_t maximum):control(TaskAccess::control()),ready(maximum){
+  TaskExternalLimits externalLimits;std::once_flag externalInit;std::unique_ptr<TaskExternalPool> externalPool;bool externalRetirementReady=false;
+  Impl(size_t workers,size_t maximum,TaskExternalLimits limits):control(TaskAccess::control()),ready(maximum),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
     try{
@@ -86,10 +100,13 @@ struct TaskGroup::Impl {
       for(auto &thread:threads)thread.join();throw;
     }
   }
-  void require(bool coordinatorOnly=false){
+  void requireContext(bool coordinatorOnly=false){
     bool worker=activeTaskState==this;
     if((!worker&&std::this_thread::get_id()!=coordinator)||(coordinatorOnly&&worker)||!TaskAccess::same(control))
       throw Trap("E_TASK_SCOPE","task operation belongs to another scope or thread",0);
+  }
+  void require(bool coordinatorOnly=false){
+    requireContext(coordinatorOnly);bool worker=activeTaskState==this;
     TaskAccess::poll(control);
     if(cancelled.load()&&worker)throw Trap("E_CANCELLED","task group was cancelled",0);
   }
@@ -105,7 +122,9 @@ struct TaskGroup::Impl {
     return job.wait==Send?std::pair{&pipe.sendHead,&pipe.sendTail}:std::pair{&pipe.receiveHead,&pipe.receiveTail};
   }
   void unlink(size_t index){
-    auto &job=*jobs[index];if(job.wait==None)return;auto [head,tail]=ends(job);
+    auto &job=*jobs[index];if(job.wait==None)return;
+    if(job.wait==WaitExternal){job.wait=None;job.previous=job.next=job.target=none;return;}
+    auto [head,tail]=ends(job);
     if(job.previous==none)*head=job.next;else jobs[job.previous]->next=job.next;
     if(job.next==none)*tail=job.previous;else jobs[job.next]->previous=job.previous;
     job.wait=None;job.previous=job.next=job.target=none;
@@ -118,7 +137,12 @@ struct TaskGroup::Impl {
   void wake(size_t index){unlink(index);enqueue(index);}
   void interrupt(){
     const bool global=cancelled.load()||!TaskAccess::healthy(control);
-    for(size_t i=0;i<jobs.size();++i){auto &job=*jobs[i];if(!job.done&&job.wait!=None&&(global||job.cancellation->stopped())){job.pending={};wake(i);}}
+    for(size_t i=0;i<jobs.size();++i){auto &job=*jobs[i];
+      if(!job.done&&(global||job.cancellation->stopped())){
+        if(externalPool)for(auto &entry:job.external)if(!entry.consumed)externalPool->cancel(entry.ticket);
+        if(job.wait!=None){job.pending={};wake(i);}
+      }
+    }
   }
   bool within(size_t ancestor,size_t descendant)const{
     for(size_t next=descendant;next!=none;next=regions[next]->parent)if(next==ancestor)return true;
@@ -133,8 +157,12 @@ struct TaskGroup::Impl {
     try{std::rethrow_exception(failure);}catch(const Trap &e){return e.code=="E_MEMORY"||e.code=="E_LIMIT"||e.code=="E_TIMEOUT"||e.code=="E_CANCELLED";}
     catch(const std::bad_alloc &){return true;}catch(...){return false;}
   }
+  static bool cancellationFailure(const std::exception_ptr &failure){
+    if(!failure)return false;try{std::rethrow_exception(failure);}catch(const Trap &error){return error.code=="E_CANCELLED";}catch(...){return false;}
+  }
+  static bool fatalFailure(const std::exception_ptr &failure){return resourceFailure(failure)&&!cancellationFailure(failure);}
   static void preferFailure(std::exception_ptr &selected,const std::exception_ptr &candidate){
-    if(candidate&&(!selected||(!resourceFailure(selected)&&resourceFailure(candidate))))selected=candidate;
+    if(candidate&&(!selected||(fatalFailure(candidate)&&!fatalFailure(selected))||(!resourceFailure(selected)&&resourceFailure(candidate))))selected=candidate;
   }
   bool dependencyCycle(size_t index,size_t target,bool scopeRoot){
     // All graph storage is reserved before workers start. Completion/cleanup
@@ -161,6 +189,8 @@ struct TaskGroup::Impl {
   bool scopeCycle(size_t index,size_t scope){return dependencyCycle(index,scope,true);}
   void cancelRegion(size_t scope){
     for(auto &job:jobs)if(!job->done&&within(scope,job->memberScope))job->cancellation->cancelled=true;
+    if(externalPool)for(auto &job:jobs)for(auto &entry:job->external)
+      if(!entry.consumed&&entry.scope!=none&&within(scope,entry.scope))externalPool->cancel(entry.ticket);
     interrupt();changed.notify_all();
   }
   void closePipe(size_t index){
@@ -169,8 +199,9 @@ struct TaskGroup::Impl {
     while(pipe.receiveHead!=none){auto receiver=pipe.receiveHead;jobs[receiver]->event=pipe.count?TaskEvent{true,pipe.pop()}:TaskEvent{};wake(receiver);}
   }
   void closeRegion(size_t index){
-    auto &scope=*regions[index];if(scope.closed||!scope.closing||scope.pending||scope.nested)return;
+    auto &scope=*regions[index];if(scope.closed||!scope.closing||scope.pending||scope.nested||scope.externalPending)return;
     scope.closed=true;
+    if(scope.externalFatal)preferFailure(scope.failure,scope.externalFatal);
     for(auto member:scope.members){auto &job=*jobs[member];
       if(!scope.abort&&!job.observed&&!job.cancellation->stopped())preferFailure(scope.failure,job.failure);
       job.observed=true;job.result={};job.capability.reset();
@@ -178,20 +209,47 @@ struct TaskGroup::Impl {
     scope.capability.reset();
     for(auto pipe:scope.pipes){closePipe(pipe);auto &state=*pipes[pipe];reservedSlots-=state.buffer.size();std::vector<std::optional<Value>>().swap(state.buffer);state.count=state.start=0;}
     auto &owner=*jobs[scope.owner];
+    if(scope.externalFatal)preferFailure(owner.externalFatal,scope.externalFatal);
     if(owner.scope==index){if(owner.running){if(!scope.active)throw Trap("E_TASK_STATE","logical task lease is unbalanced",0);--scope.active;}owner.scope=scope.parent;}
     if(scope.active)throw Trap("E_TASK_STATE","closed logical task scope has active workers",0);
     if(owner.finishing)preferFailure(owner.failure,scope.failure);
     while(scope.head!=none)wake(scope.head);
-    if(scope.parent!=none){auto &parent=*regions[scope.parent];if(!parent.nested)throw Trap("E_TASK_STATE","logical nested scope count is unbalanced",0);--parent.nested;closeRegion(scope.parent);}
+    if(scope.parent!=none){auto &parent=*regions[scope.parent];if(scope.externalFatal){preferFailure(parent.externalFatal,scope.externalFatal);preferFailure(parent.failure,scope.externalFatal);}if(!parent.nested)throw Trap("E_TASK_STATE","logical nested scope count is unbalanced",0);--parent.nested;closeRegion(scope.parent);}
     tryComplete(scope.owner);changed.notify_all();
   }
   void tryComplete(size_t index){
     auto &job=*jobs[index];if(!job.finishing||!job.cleanupDone)return;
+    if(job.externalPending)return;
+    for(const auto &entry:job.external)if(!entry.consumed)return;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed)return;
     if(job.failure)job.result={};job.finishing=false;job.done=true;++completed;
     while(job.head!=none)wake(job.head);
     if(job.memberScope!=none){auto &scope=*regions[job.memberScope];if(!scope.pending)throw Trap("E_TASK_STATE","logical task count is unbalanced",0);--scope.pending;closeRegion(job.memberScope);}
     changed.notify_all();
+  }
+  void retireExternal(Job &job,External &entry){
+    entry.consumed=true;std::exception_ptr failure;
+    try{(void)externalPool->take(entry.ticket);}
+    catch(const DataError &error){try{throw Trap(error.code,error.what(),job.location);}catch(...){failure=std::current_exception();}}
+    catch(const std::bad_alloc &){try{throw Trap("E_MEMORY","external host allocation failed",job.location);}catch(...){failure=std::current_exception();}}
+    catch(...){failure=std::current_exception();}
+    bool fatal=fatalFailure(failure);
+    if(fatal){preferFailure(job.externalFatal,failure);if(entry.scope!=none)preferFailure(regions[entry.scope]->externalFatal,failure);}
+    if(failure&&(fatal||((entry.scope==none||!regions[entry.scope]->abort)&&!(job.failure&&cancellationFailure(failure))))){
+      if(job.finishing||entry.scope==none)preferFailure(job.failure,failure);
+      else preferFailure(regions[entry.scope]->failure,failure);
+    }
+    if(entry.scope!=none){auto &scope=*regions[entry.scope];if(!scope.externalPending)std::terminate();--scope.externalPending;closeRegion(entry.scope);}
+  }
+  void retireExternalCompletions(){
+    // Only task scheduler workers accept/discard raw completions or publish a
+    // finished source task. IO notification threads merely mark/wake tickets.
+    if(!externalRetirementReady)return;
+    externalRetirementReady=false;
+    for(size_t index=0;index<jobs.size();++index){auto &job=*jobs[index];
+      for(auto &entry:job.external)if(entry.physical&&!entry.consumed&&(job.finishing||(entry.scope!=none&&regions[entry.scope]->closing)))retireExternal(job,entry);
+      tryComplete(index);
+    }
   }
   void beginComplete(size_t index,std::exception_ptr failure){
     auto &job=*jobs[index];unlink(index);job.running=false;job.again=false;job.finishing=true;job.failure=std::move(failure);
@@ -203,6 +261,10 @@ struct TaskGroup::Impl {
       for(auto scope:job.ownedScopes)if(!regions[scope]->closed)regions[scope]->abort=true;
     }
     if(job.failure&&outer!=none)cancelRegion(outer);
+    if(externalPool)for(auto &entry:job.external)if(!entry.consumed){
+      if(job.failure)externalPool->cancel(entry.ticket);
+      if(entry.physical)retireExternal(job,entry);
+    }
     for(auto it=job.ownedScopes.rbegin();it!=job.ownedScopes.rend();++it)closeRegion(*it);
   }
   void lease(size_t scope,int delta){
@@ -223,7 +285,7 @@ struct TaskGroup::Impl {
       size_t index;Job *runningJob;
       {
         std::unique_lock lock(mutex);changed.wait(lock,[&]{return started||stop;});
-        while(!stop){interrupt();index=runnable();if(index!=none)break;changed.wait_for(lock,std::chrono::milliseconds(2));}
+        while(!stop){retireExternalCompletions();interrupt();index=runnable();if(index!=none)break;changed.wait_for(lock,std::chrono::milliseconds(2));}
         if(stop)return;
         runningJob=jobs[index].get();
       }
@@ -261,7 +323,8 @@ struct TaskGroup::Impl {
       if(!value.scalar&&scopeCycle(index,target))throw Trap("E_TASK_CYCLE","cyclic logical scope drain",0);
       scope.closing=true;scope.abort=bool(value.scalar);
       if(scope.abort)cancelRegion(target);
-      if(!scope.pending&&!scope.nested){closeRegion(target);return false;}
+      if(scope.externalPending)externalRetirementReady=true;
+      if(!scope.pending&&!scope.nested&&!scope.externalPending){closeRegion(target);return false;}
       link(index,ScopeDrain,target);return true;
     }
     if(kind==Awaiter::Future){
@@ -296,16 +359,18 @@ struct TaskGroup::Impl {
     for(;;){
       std::unique_lock lock(mutex);if(completed==jobs.size())break;
       lock.unlock();
-      if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();}
+      if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();cancelled=true;}
       lock.lock();interrupt();changed.wait_for(lock,std::chrono::milliseconds(2));
     }
     {std::lock_guard lock(mutex);stop=true;}changed.notify_all();
     for(auto &thread:threads)thread.join();
+    if(externalPool)externalPool->drain(abort);
     {std::lock_guard lock(mutex);finished=true;}
     // Workers are joined. Frame destructors and profiling hooks run outside the
     // scheduler lock; they cannot deadlock by acquiring another runtime lock.
     for(auto &job:jobs){if(job->body){job->body.destroy();job->body={};}job->pending={};}
     pipes.clear();
+    if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal&&(!coordinatorFailure||!fatalFailure(coordinatorFailure)))coordinatorFailure=job->externalFatal;
     if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);
     if(!abort)TaskAccess::poll(control);
     for(const auto &job:jobs)if(!abort&&!job->observed&&job->failure&&!cancelled.load()&&!job->cancellation->stopped())try{std::rethrow_exception(job->failure);}
@@ -314,9 +379,10 @@ struct TaskGroup::Impl {
     for(const auto &job:jobs)if(!abort&&!job->observed&&job->failure&&!cancelled.load()&&!job->cancellation->stopped())std::rethrow_exception(job->failure);
   }
 };
-TaskGroup::TaskGroup(size_t workers,size_t maximumTasks){impl=hostOperation({},[&]{
+TaskGroup::TaskGroup(size_t workers,size_t maximumTasks,TaskExternalLimits externalLimits){impl=hostOperation({},[&]{
   if(workers<1||workers>16||maximumTasks<1||maximumTasks>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
-  return std::make_shared<Impl>(workers,maximumTasks);
+  if(!validTaskExternalLimits(externalLimits))throw Trap("E_RANGE","invalid external kernel limits",0);
+  return std::make_shared<Impl>(workers,maximumTasks,externalLimits);
 });}
 TaskGroup::~TaskGroup(){try{impl->drain(true);}catch(...){/* Destruction cannot replace an active exception. */}}
 size_t TaskGroup::taskIndex(const Ticket &ticket)const{
@@ -384,10 +450,11 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
   });
 }
 Value TaskGroup::join(const Ticket &ticket){
-  impl->require(true);auto index=taskIndex(ticket);
+  impl->requireContext(true);auto index=taskIndex(ticket);std::exception_ptr coordinatorFailure;
   for(;;){
-    TaskAccess::poll(impl->control);std::unique_lock lock(impl->mutex);auto &job=*impl->jobs[index];
-    if(job.done){job.observed=true;if(job.failure)std::rethrow_exception(job.failure);return job.result;}
+    if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;}
+    std::unique_lock lock(impl->mutex);impl->interrupt();auto &job=*impl->jobs[index];
+    if(job.done){job.observed=true;if(job.externalFatal&&(!coordinatorFailure||!Impl::fatalFailure(coordinatorFailure)))std::rethrow_exception(job.externalFatal);if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);if(job.failure)std::rethrow_exception(job.failure);return job.result;}
     impl->changed.wait_for(lock,std::chrono::milliseconds(2));
   }
 }
@@ -440,4 +507,89 @@ bool TaskGroup::cancel(const Ticket &ticket){
   bool changed=!job.cancellation->cancelled.exchange(true);impl->interrupt();impl->changed.notify_all();return changed;
 }
 void TaskGroup::cancel(){impl->require();std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
-void TaskGroup::finish(){impl->require(true);impl->drain(false);}
+namespace {
+struct ControlledExternalOperation final:TaskExternalOperation {
+  std::shared_ptr<TaskExternalOperation> operation;TaskExternalControl request;
+  ControlledExternalOperation(std::shared_ptr<TaskExternalOperation> operation,TaskExternalControl request):operation(std::move(operation)),request(std::move(request)){}
+  TaskExternalResult run(const TaskExternalControl &stop)override{
+    TaskExternalControl control([&]{stop.checkpoint();request.checkpoint();});control.checkpoint();auto result=operation->run(control);control.checkpoint();return result;
+  }
+};
+}
+TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperation> operation,size_t reservation){
+  return hostOperation({},[&]{
+    impl->require();
+    if(!operation)throw Trap("E_TASK_STATE","external operation is absent",0);
+    if(activeTaskState!=impl.get())throw Trap("E_TASK_SCOPE","external admission requires a running task",0);
+    std::call_once(impl->externalInit,[&]{
+      std::weak_ptr<Impl> weak=impl;
+      auto pool=std::make_unique<TaskExternalPool>(impl->externalLimits,[weak](const TaskExternalTicket &ticket){
+        if(auto state=weak.lock()){
+          std::lock_guard lock(state->mutex);
+          if(ticket.owner()>=state->jobs.size())std::terminate();auto &job=*state->jobs[ticket.owner()];
+          for(size_t i=0;i<job.external.size();++i){auto &entry=job.external[i];if(entry.ticket==ticket){
+            if(entry.physical||!job.externalPending)std::terminate();entry.physical=true;--job.externalPending;
+            if(job.finishing||(entry.scope!=none&&state->regions[entry.scope]->closing))state->externalRetirementReady=true;
+            if(!job.finishing&&job.wait==Impl::WaitExternal&&job.target==i)state->wake(ticket.owner());
+            state->changed.notify_all();return;
+          }}
+          std::terminate();
+        }
+      });
+      std::lock_guard lock(impl->mutex);impl->externalPool=std::move(pool);
+    });
+    auto control=TaskAccess::externalControl(impl->control,impl->jobs[activeTaskIndex]->cancellation);
+    control.checkpoint();auto wrapped=std::make_shared<ControlledExternalOperation>(std::move(operation),std::move(control));
+    std::lock_guard lock(impl->mutex);auto &job=*impl->jobs[activeTaskIndex];
+    if(impl->finished||impl->cancelled.load()||job.cancellation->stopped())throw Trap("E_CANCELLED","external admission was cancelled",0);
+    size_t reusable=job.external.size();for(size_t i=0;i<job.external.size();++i)if(job.external[i].consumed){reusable=i;break;}
+    if(reusable==job.external.size()){
+      if(job.external.size()>=impl->externalLimits.tickets)throw Trap("E_LIMIT","external task ticket limit exceeded",0);
+      if(job.external.size()==job.external.capacity())job.external.reserve(std::min(impl->externalLimits.tickets,std::max(size_t(1),job.external.size()*2)));
+    }
+    // Default pool control has no callback. The retained request checkpoint is
+    // invoked by ControlledExternalOperation only outside scheduler/kernel locks.
+    auto ticket=impl->externalPool->submit(activeTaskIndex,wrapped,reservation);
+    if(reusable<job.external.size())job.external[reusable]={ticket,job.scope};else job.external.push_back({ticket,job.scope});
+    if(job.scope!=none)++impl->regions[job.scope]->externalPending;
+    ++job.externalPending;return ticket;
+  });
+}
+TaskGroup::ExternalAwaiter TaskGroup::awaitExternal(const TaskExternalTicket &ticket){return ExternalAwaiter(this,ticket);}
+bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
+  return hostOperation(location,[&]{
+    auto state=group->impl;state->require();std::lock_guard lock(state->mutex);
+    if(activeTaskState!=state.get()||activeTaskIndex>=state->jobs.size()||state->jobs[activeTaskIndex]->body!=handle||ticket.owner()!=activeTaskIndex)
+      throw Trap("E_TASK_SCOPE","external ticket belongs to another task or group",0);
+    auto &job=*state->jobs[activeTaskIndex];
+    for(size_t i=0;i<job.external.size();++i)if(job.external[i].ticket==ticket){
+      auto &entry=job.external[i];if(entry.consumed)throw Trap("E_TASK_STATE","external ticket was already consumed",0);
+      job.location=location;if(entry.physical)return false;
+      job.wait=Impl::WaitExternal;job.target=i;return true;
+    }
+    throw Trap("E_TASK_SCOPE","external ticket belongs to another or ended group",0);
+  });
+}
+TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
+  return hostOperation(location,[&]{
+    auto state=group->impl;state->require();
+    {std::lock_guard lock(state->mutex);
+      if(activeTaskState!=state.get()||activeTaskIndex>=state->jobs.size()||ticket.owner()!=activeTaskIndex)throw Trap("E_TASK_SCOPE","external completion resumed outside its owner",0);
+      auto &job=*state->jobs[activeTaskIndex];bool found=false;
+      for(auto &entry:job.external)if(entry.ticket==ticket){
+        if(entry.consumed||!entry.physical)throw Trap("E_TASK_STATE","external completion is absent or already consumed",0);
+        entry.consumed=true;found=true;break;
+      }
+      if(!found)throw Trap("E_TASK_SCOPE","external completion belongs to another or ended group",0);
+    }
+    TaskExternalResult result;std::exception_ptr failure;
+    try{result=state->externalPool->take(ticket);}catch(...){failure=std::current_exception();}
+    {
+      std::lock_guard lock(state->mutex);auto &job=*state->jobs[activeTaskIndex];
+      for(auto &entry:job.external)if(entry.ticket==ticket){if(entry.scope!=none){auto &scope=*state->regions[entry.scope];if(!scope.externalPending)std::terminate();--scope.externalPending;state->closeRegion(entry.scope);}break;}
+    }
+    if(failure)std::rethrow_exception(failure);return result;
+  });
+}
+TaskExternalStats TaskGroup::externalStats()const{std::lock_guard lock(impl->mutex);return impl->externalPool?impl->externalPool->stats():TaskExternalStats{};}
+void TaskGroup::finish(){impl->requireContext(true);impl->drain(false);}

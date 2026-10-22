@@ -3,11 +3,182 @@
 #include <algorithm>
 #include <chrono>
 #include <deque>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <unordered_set>
 
 namespace nex {
 using RV=nexrt::Value;
 using RD=nexrt::Data;
+struct TaskReferenceExternalMailbox::Impl {
+  struct Pending {
+    TaskReferenceExternalTicket ticket;
+    std::shared_ptr<nexrt::TaskExternalOperation> operation;
+    std::shared_ptr<std::atomic<bool>> cancelled=std::make_shared<std::atomic<bool>>(false);
+    size_t reservation=0;
+    bool done=false;
+    nexrt::TaskExternalResult result;
+  };
+  inline static std::atomic<uint64_t> identities{0};
+  const uint64_t identity=++identities;
+  const std::thread::id coordinator=std::this_thread::get_id();
+  Clock::time_point deadline;
+  std::stop_token cancellation;
+  nexrt::TaskExternalLimits limits;
+  mutable std::mutex mutex;
+  std::condition_variable changed;
+  std::vector<std::shared_ptr<Pending>> slots;
+  std::vector<uint64_t> generations;
+  std::deque<std::shared_ptr<Pending>> queue;
+  std::vector<std::thread> workers;
+  TaskReferenceExternalStats counts;
+  bool sealed=false,stopping=false;
+  std::optional<std::stop_callback<std::function<void()>>> stopWake;
+
+  Impl(Clock::time_point until,std::stop_token stop,nexrt::TaskExternalLimits bounds)
+      :deadline(until),cancellation(stop),limits(bounds){
+    if(!nexrt::validTaskExternalLimits(limits))
+      throw nexrt::DataError("E_OPTION","invalid reference external mailbox bounds");
+    slots.resize(limits.tickets);generations.resize(limits.tickets);
+    stopWake.emplace(cancellation,std::function<void()>([this]{
+      // Synchronize with the wait predicate/atomic unlock so a stop cannot
+      // notify between the predicate check and parking the coordinator.
+      {std::lock_guard lock(mutex);}changed.notify_all();
+    }));
+    try{for(size_t i=0;i<limits.workers;++i)workers.emplace_back([this]{worker();});}
+    catch(...){shutdown();throw;}
+  }
+  ~Impl(){shutdown();}
+  void coordinatorOnly()const{
+    if(std::this_thread::get_id()!=coordinator)
+      throw nexrt::DataError("E_TASK_STATE","reference external acceptance requires its creating coordinator");
+  }
+  std::shared_ptr<Pending> lookup(const TaskReferenceExternalTicket &ticket)const{
+    if(ticket.scheduler!=identity||ticket.slot>=slots.size()||!slots[ticket.slot]||
+       slots[ticket.slot]->ticket!=ticket)
+      throw nexrt::DataError("E_TASK_STATE","invalid, stale or foreign reference external ticket");
+    return slots[ticket.slot];
+  }
+  void cancelLocked(Pending &pending){
+    if(!pending.done&&!pending.cancelled->exchange(true))++counts.cancelRequests;
+  }
+  void closeLocked(){sealed=true;for(auto &pending:slots)if(pending)cancelLocked(*pending);}
+  bool hasReady()const{return std::any_of(slots.begin(),slots.end(),[](const auto &p){return p&&p->done;});}
+  static void boundedFailure(nexrt::TaskExternalResult &result,const char *code,const char *message){
+    nexrt::TaskExternalResult replacement{{},code,message};
+    // Assignment need not shrink a container's retained allocation. Swap with
+    // fresh bounded containers so rejected capacity is physically freed here.
+    result.bytes.swap(replacement.bytes);result.errorCode.swap(replacement.errorCode);
+    result.errorMessage.swap(replacement.errorMessage);
+  }
+  void worker()noexcept{
+    for(;;){
+      std::shared_ptr<Pending> pending;
+      {
+        std::unique_lock lock(mutex);changed.wait(lock,[&]{return stopping||!queue.empty();});
+        if(queue.empty()){if(stopping)return;continue;}
+        pending=std::move(queue.front());queue.pop_front();++counts.running;
+        counts.maximumRunning=std::max(counts.maximumRunning,counts.running);
+      }
+      nexrt::TaskExternalResult result;
+      // The worker closure contains only a cancellation flag and absolute
+      // deadline. It cannot reach the AST, scheduler, source values or TLS.
+      auto cancelled=pending->cancelled;auto until=deadline;
+      nexrt::TaskExternalControl control([cancelled,until]{
+        if(cancelled->load())throw nexrt::DataError("E_CANCELLED","reference external operation cancelled");
+        if(Clock::now()>=until)throw nexrt::DataError("E_TIMEOUT","reference external operation deadline exceeded");
+      });
+      auto operation=std::move(pending->operation);
+      try{
+        control.checkpoint();result=operation->run(control);
+      }catch(const nexrt::DataError &error){result={{},error.code,error.what()};}
+      catch(const std::bad_alloc &){result={{},"E_MEMORY","reference external host allocation failed"};}
+      catch(const std::exception &){result={{},"E_TASK_HOST","reference external host operation failed"};}
+      catch(...){result={{},"E_TASK_HOST","reference external host operation failed"};}
+      if(result.bytes.capacity()>limits.maximumResultBytes||result.bytes.capacity()>pending->reservation)
+        boundedFailure(result,"E_LIMIT","reference external result capacity exceeds its byte reservation");
+      // Diagnostic storage has a separate fixed per-ticket allowance. SSO
+      // capacity is included; no source/host diagnostic can retain a large
+      // allocation merely by shrinking its logical string length.
+      if(result.errorCode.capacity()>nexrt::taskExternalErrorCodeCapacity||
+         result.errorMessage.capacity()>nexrt::taskExternalErrorMessageCapacity)
+        boundedFailure(result,"E_LIMIT","reference external diagnostic capacity exceeds its bound");
+      // Retirement is a physical fence: even the operation/lease destructor
+      // finishes before publication, admission or reservation release.
+      operation.reset();
+      {
+        std::lock_guard lock(mutex);pending->result=std::move(result);pending->done=true;
+        --counts.running;++counts.ready;++counts.retired;
+      }
+      changed.notify_all();
+    }
+  }
+  void shutdown()noexcept{
+    {std::lock_guard lock(mutex);closeLocked();stopping=true;}
+    changed.notify_all();
+    for(auto &worker:workers)if(worker.joinable())worker.join();
+    workers.clear();stopWake.reset();
+  }
+};
+TaskReferenceExternalMailbox::TaskReferenceExternalMailbox(Clock::time_point until,
+    std::stop_token cancellation,nexrt::TaskExternalLimits limits)
+    :impl(std::make_unique<Impl>(until,cancellation,limits)){}
+TaskReferenceExternalMailbox::~TaskReferenceExternalMailbox()=default;
+TaskReferenceExternalTicket TaskReferenceExternalMailbox::submit(size_t owner,
+    std::shared_ptr<nexrt::TaskExternalOperation> operation,size_t reservation){
+  impl->coordinatorOnly();std::lock_guard lock(impl->mutex);
+  if(impl->sealed||impl->cancellation.stop_requested())throw nexrt::DataError("E_CANCELLED","reference external admission is closed");
+  if(Clock::now()>=impl->deadline)throw nexrt::DataError("E_TIMEOUT","reference external admission deadline exceeded");
+  if(!operation||owner==size_t(-1))throw nexrt::DataError("E_TASK_STATE","invalid reference external operation owner");
+  if(impl->counts.pending==impl->limits.tickets||reservation>impl->limits.reservedBytes-impl->counts.reservedBytes)
+    throw nexrt::DataError("E_LIMIT","reference external pending/byte capacity exceeded");
+  auto free=std::find(impl->slots.begin(),impl->slots.end(),nullptr);auto slot=size_t(free-impl->slots.begin());
+  if(impl->generations[slot]==UINT64_MAX)throw nexrt::DataError("E_LIMIT","reference external ticket generation exhausted");
+  auto pending=std::make_shared<Impl::Pending>();
+  pending->ticket={impl->identity,++impl->generations[slot],slot,owner};
+  pending->reservation=reservation;
+  // Register the authenticated slot and quota before a worker may start.
+  // Queue allocation also precedes transferring the host operation, so an
+  // allocation failure cannot invoke its lease destructor under this lock.
+  impl->queue.push_back(pending);pending->operation=std::move(operation);impl->slots[slot]=pending;
+  ++impl->counts.pending;impl->counts.reservedBytes+=reservation;++impl->counts.submitted;
+  impl->changed.notify_all();return pending->ticket;
+}
+bool TaskReferenceExternalMailbox::cancel(const TaskReferenceExternalTicket &ticket){
+  impl->coordinatorOnly();std::lock_guard lock(impl->mutex);auto pending=impl->lookup(ticket);
+  bool result=!pending->done&&!pending->cancelled->load();impl->cancelLocked(*pending);impl->changed.notify_all();return result;
+}
+std::optional<TaskReferenceExternalTicket> TaskReferenceExternalMailbox::ready()const{
+  impl->coordinatorOnly();std::lock_guard lock(impl->mutex);
+  for(const auto &pending:impl->slots)if(pending&&pending->done)return pending->ticket;
+  return {};
+}
+nexrt::TaskExternalResult TaskReferenceExternalMailbox::take(const TaskReferenceExternalTicket &ticket){
+  impl->coordinatorOnly();std::lock_guard lock(impl->mutex);auto pending=impl->lookup(ticket);
+  if(!pending->done)throw nexrt::DataError("E_TASK_STATE","reference external ticket has not physically retired");
+  auto result=std::move(pending->result);impl->slots[ticket.slot].reset();
+  --impl->counts.pending;--impl->counts.ready;impl->counts.reservedBytes-=pending->reservation;++impl->counts.consumed;return result;
+}
+void TaskReferenceExternalMailbox::close(){
+  impl->coordinatorOnly();{std::lock_guard lock(impl->mutex);impl->closeLocked();}impl->changed.notify_all();
+}
+void TaskReferenceExternalMailbox::wait(){
+  impl->coordinatorOnly();std::unique_lock lock(impl->mutex);
+  auto available=[&]{return impl->hasReady()||!impl->counts.pending||
+      (!impl->sealed&&(impl->cancellation.stop_requested()||Clock::now()>=impl->deadline));};
+  if(impl->sealed)impl->changed.wait(lock,available);
+  else impl->changed.wait_until(lock,impl->deadline,available);
+}
+void TaskReferenceExternalMailbox::drain(){
+  close();std::unique_lock lock(impl->mutex);
+  impl->changed.wait(lock,[&]{return impl->counts.retired==impl->counts.submitted;});
+  for(auto &pending:impl->slots)pending.reset();
+  impl->counts.pending=impl->counts.reservedBytes=impl->counts.ready=0;
+}
+TaskReferenceExternalStats TaskReferenceExternalMailbox::stats()const{
+  impl->coordinatorOnly();std::lock_guard lock(impl->mutex);return impl->counts;
+}
 struct TaskReferenceAccess {
   static RV create(RD::Kind kind,const std::shared_ptr<const void> &owner,size_t scope,size_t index){
     return RV(std::shared_ptr<RD>(new nexrt::ReferenceTaskData(kind,owner,scope,index)));
@@ -28,7 +199,7 @@ namespace {
 // states and FIFO deques. It shares neither native wait lists nor dispatch code.
 struct Reference {
   static constexpr size_t none=size_t(-1),maximumTasks=4096,maximumScopes=1024;
-  enum State {Ready,Future,Send,Receive,Drain,Finishing,Done};
+  enum State {Ready,Future,Send,Receive,Drain,External,Finishing,Done};
   struct Activation {
     std::unique_ptr<TaskAstMachine> machine;
     size_t region=none,parent=none,depth=0,outputRead=0;
@@ -47,10 +218,13 @@ struct Reference {
     std::shared_ptr<Error> failure;
     std::weak_ptr<RD> capability;
     std::vector<size_t> owned;
+    std::optional<TaskReferenceExternalTicket> external;
+    size_t externalScope=none;
   };
   struct Region {
     size_t parent=none,owner=none,depth=1;
     bool closing=false,closed=false,abort=false;
+    size_t external=0;
     std::vector<size_t> members,children,pipes;
     std::shared_ptr<Error> failure;
     std::weak_ptr<RD> capability;
@@ -79,6 +253,8 @@ struct Reference {
   std::string output;
   Span rootSpan;
   TaskReferenceObserver observer;
+  TaskReferenceExternalHost *externalHost;
+  std::unique_ptr<TaskReferenceExternalMailbox> external;
 
   static nexrt::TaskExecutionLimits selectedLimits(uint64_t legacy,const nexrt::TaskExecutionLimits *requested){
     if(requested){
@@ -89,13 +265,20 @@ struct Reference {
     // Public explicit configurations use the canonical positive/range checks.
     nexrt::TaskExecutionLimits result;result.steps=legacy;return result;
   }
-  Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested)
+  Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested,
+      TaskReferenceExternalHost *host)
     :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
-     deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)){
+     deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),externalHost(host){
     controlPoll=[this](Span span){checkControl(span);};
+    if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
   }
   void checkControl(Span span={}){
     if(controlFailure)throw *controlFailure;
+    if(externalHost&&externalHost->cancellation.stop_requested()){
+      if(span.file.empty())span=rootSpan;
+      controlFailure=std::make_shared<Error>("E_CANCELLED","reference host cancelled task execution",span);
+      throw *controlFailure;
+    }
     if(Clock::now()>=deadline){
       if(span.file.empty())span=rootSpan;
       controlFailure=std::make_shared<Error>("E_TIMEOUT","reference task deadline exceeded",span);
@@ -159,9 +342,12 @@ struct Reference {
     auto &j=*jobs[i];j.stack.back().machine->resume(j.request.ticket,std::move(result));
     j.request={};j.pending={};j.target=none;j.state=Ready;enqueue(i);
   }
-  static bool resource(const std::shared_ptr<Error> &e){return e&&(e->code=="E_LIMIT"||e->code=="E_MEMORY"||e->code=="E_TIMEOUT"||e->code=="E_CANCELLED");}
+  static bool fatal(const std::shared_ptr<Error> &e){return e&&(e->code=="E_LIMIT"||e->code=="E_MEMORY"||e->code=="E_TIMEOUT");}
+  static bool resource(const std::shared_ptr<Error> &e){return fatal(e)||(e&&e->code=="E_CANCELLED");}
   static void prefer(std::shared_ptr<Error> &selected,const std::shared_ptr<Error> &candidate){
-    if(candidate&&(!selected||(!resource(selected)&&resource(candidate))))selected=candidate;
+    // Cleanup cancellation cannot hide physical resource exhaustion. Once a
+    // fatal resource error is selected, retain that first fatal through drain.
+    if(candidate&&(!selected||(fatal(candidate)&&!fatal(selected))||(!resource(selected)&&resource(candidate))))selected=candidate;
   }
   void beginFinish(size_t i,std::shared_ptr<Error> failure={},RV result={}){
     auto &j=*jobs[i];if(j.state==Done)return;
@@ -169,7 +355,8 @@ struct Reference {
     else{j.state=Finishing;j.failure=std::move(failure);j.result=std::move(result);}
     // No completion is published until every retained frame and owned scope
     // has been released. Single-thread cleanup needs no native coroutine lock.
-    j.stack.clear();j.request={};j.pending={};
+    if(j.external)external->cancel(*j.external);
+    else{j.stack.clear();j.request={};j.pending={};}
     for(auto s:j.owned)if(!regions[s].closed){regions[s].closing=true;regions[s].abort=bool(j.failure);if(j.failure)cancelRegion(s);}
   }
   void cancelRegion(size_t scope){
@@ -217,16 +404,20 @@ struct Reference {
     bool any=false,changed=true;
     while(changed){changed=false;
       for(size_t i=0;i<jobs.size();++i){auto &j=*jobs[i];if(j.cancelled&&j.state!=Done&&j.state!=Finishing){beginFinish(i,std::make_shared<Error>("E_CANCELLED","reference task was cancelled"));changed=true;}}
-      for(size_t s=regions.size();s-->0;){auto &r=regions[s];if(!r.closing||r.closed)continue;
+      for(size_t s=regions.size();s-->0;){auto &r=regions[s];if(!r.closing||r.closed||r.external)continue;
         if(std::any_of(r.members.begin(),r.members.end(),[&](size_t i){return jobs[i]->state!=Done;})||
            std::any_of(r.children.begin(),r.children.end(),[&](size_t i){return !regions[i].closed;}))continue;
-        for(auto i:r.members){auto &j=*jobs[i];if(!r.abort&&!j.observed&&!j.cancelled)prefer(r.failure,j.failure);j.observed=true;j.result={};j.capability.reset();}
+        for(auto i:r.members){auto &j=*jobs[i];
+          if(fatal(j.failure)||(!r.abort&&!j.observed&&!j.cancelled))prefer(r.failure,j.failure);
+          j.observed=true;j.result={};j.capability.reset();
+        }
         for(auto p:r.pipes){closePipe(p);channelSlots-=pipes[p].capacity;pipes[p].capacity=0;pipes[p].buffer.clear();pipes[p].capability.reset();}
-        r.closed=true;r.capability.reset();if(jobs[r.owner]->state==Finishing)prefer(jobs[r.owner]->failure,r.failure);changed=true;
+        r.closed=true;r.capability.reset();if(jobs[r.owner]->state==Finishing)prefer(jobs[r.owner]->failure,r.failure);
+        if(externalHost)externalHost->scopeRetired(s);changed=true;
       }
       for(size_t i=0;i<jobs.size();++i){auto &j=*jobs[i];
-        if(j.state==Finishing&&std::all_of(j.owned.begin(),j.owned.end(),[&](size_t s){return regions[s].closed;})){
-          if(j.failure)j.result={};j.state=Done;changed=true;
+        if(j.state==Finishing&&!j.external&&std::all_of(j.owned.begin(),j.owned.end(),[&](size_t s){return regions[s].closed;})){
+          j.stack.clear();j.request={};j.pending={};if(j.failure)j.result={};j.state=Done;changed=true;
         }else if(j.state==Future&&jobs[j.target]->state==Done){
           auto &target=*jobs[j.target];target.observed=true;
           if(target.failure)beginFinish(i,target.failure);else answer(i,target.result);changed=true;
@@ -274,7 +465,22 @@ struct Reference {
   }
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
-    if(r.operation=="task_yield"){answer(i);return;}
+    if(r.operation=="task_yield"){
+      if(externalHost){
+        std::optional<TaskReferenceExternalRequest> request;
+        try{request=externalHost->prepare(i,r.span);}
+        catch(const Error &){throw;}
+        catch(const nexrt::DataError &){throw;}
+        catch(...){throw Error("E_TASK_HOST","reference external host preparation failed",r.span);}
+        checkControl(r.span);
+        if(request){
+          j.external=external->submit(i,std::move(request->operation),request->reservedBytes);
+          j.externalScope=j.current;if(j.externalScope!=none)++regions.at(j.externalScope).external;
+          j.state=External;return;
+        }
+      }
+      answer(i);return;
+    }
     if(r.operation=="with_tasks"){withTasks(i,r);return;}
     if(r.operation=="task_spawn"){spawn(i,r);return;}
     if(r.operation=="current_task_scope"){
@@ -349,13 +555,57 @@ struct Reference {
     }
     catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.what(),j.request.span));}
   }
+  bool collectExternal(bool discard=false){
+    if(!external)return false;
+    bool any=false;
+    while(auto ticket=external->ready()){
+      any=true;
+      if(ticket->owner>=jobs.size()||!jobs[ticket->owner]->external||*jobs[ticket->owner]->external!=*ticket)
+        throw Error("E_TASK_STATE","reference external completion has no matching source owner");
+      auto i=ticket->owner;auto &job=*jobs[i];auto span=job.request.span;
+      auto raw=external->take(*ticket);job.external.reset();
+      if(job.externalScope!=none){
+        auto &scope=regions.at(job.externalScope);
+        if(!scope.external||scope.closed)throw Error("E_TASK_STATE","reference external scope retirement ledger is invalid");
+        --scope.external;job.externalScope=none;
+      }
+      std::shared_ptr<Error> physicalFailure;
+      if(raw.errorCode=="E_MEMORY"||raw.errorCode=="E_LIMIT"||raw.errorCode=="E_TIMEOUT")
+        physicalFailure=std::make_shared<Error>(raw.errorCode,raw.errorMessage,span);
+      if(discard||job.cancelled||job.state==Finishing){
+        if(job.state!=Finishing)beginFinish(i,controlFailure?controlFailure:
+            std::make_shared<Error>("E_CANCELLED","reference task was cancelled",span));
+        prefer(job.failure,physicalFailure);
+        job.stack.clear();job.request={};job.pending={};continue;
+      }
+      try{
+        checkControl(span);
+        if(!raw.errorCode.empty())throw Error(raw.errorCode,raw.errorMessage,span);
+        // The synthetic bridge has only a unit response. Real filesystem
+        // values require a separately reviewed, lease-checked source adapter.
+        if(!raw.bytes.empty())throw Error("E_TASK_VALUE","reference yield completion requires an empty unit payload",span);
+        try{externalHost->admit(i,raw);}
+        catch(const Error &){throw;}
+        catch(const nexrt::DataError &){throw;}
+        catch(...){throw Error("E_TASK_HOST","reference external host admission failed",span);}
+        checkControl(span);answer(i);
+      }catch(const Error &error){auto selected=std::make_shared<Error>(error);prefer(selected,physicalFailure);beginFinish(i,std::move(selected));}
+      catch(const nexrt::DataError &error){beginFinish(i,std::make_shared<Error>(error.code,error.what(),span));}
+    }
+    return any;
+  }
   void finishControl(){
-    // No source continuation is resumed after a shared control failure. This
-    // independent coordinator owns no physical IO; destroying all activations
-    // and settling their scope ledgers drains every retained owned value.
+    // No source continuation is resumed after a shared control failure. Seal
+    // admissions first, then retain each external owner's frames/scope ledger
+    // until its physical operation and explicit host lease have retired.
+    if(external)external->close();
     for(size_t i=0;i<jobs.size();++i)beginFinish(i,controlFailure);
     for(auto &region:regions)if(!region.closed){region.closing=true;region.abort=true;}
-    settle();
+    for(;;){
+      collectExternal(true);settle();
+      if(!external||!external->stats().pending)break;
+      external->wait();
+    }
     if(jobs[0]->state!=Done)throw Error("E_TASK_STATE","reference control cleanup did not drain all scopes");
     prefer(jobs[0]->failure,controlFailure);jobs[0]->result={};
   }
@@ -366,6 +616,8 @@ struct Reference {
     auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));jobs.push_back(std::move(root));enqueue(0);
     while(jobs[0]->state!=Done){
       try{checkControl();}catch(const Error &){finishControl();break;}
+      collectExternal();
+      if(controlFailure){finishControl();break;}
       settle();if(jobs[0]->state==Done)break;
       bool ran=false;
       while(!ready.empty()){
@@ -375,18 +627,21 @@ struct Reference {
       }
       if(!ran&&!settle()){
         try{checkControl();}catch(const Error &){finishControl();break;}
+        if(external&&external->stats().pending){external->wait();continue;}
         throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
       }
     }
     try{checkControl();}catch(const Error &){finishControl();}
     if(jobs[0]->failure){auto error=*jobs[0]->failure;error.output=output;throw error;}
     TaskReferenceResult result;result.value=jobs[0]->result;result.output=output;result.steps=used;
-    result.tasks=jobs.size();result.scopes=regions.size();result.channels=pipes.size();result.limits=limits;result.executionWorkers=1;return result;
+    result.tasks=jobs.size();result.scopes=regions.size();result.channels=pipes.size();result.limits=limits;result.executionWorkers=1;
+    if(external){result.external=external->stats();if(result.external.pending)throw Error("E_TASK_STATE","reference root completed before physical retirement");}
+    return result;
   }
 };
 }
-TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
-  Reference scheduler(p,limit,std::move(observer),taskLimits);
+TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost){
+  Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost);
   try{return scheduler.run(entry,arguments);}catch(Error &e){e.output=scheduler.output;throw;}
 }
 }

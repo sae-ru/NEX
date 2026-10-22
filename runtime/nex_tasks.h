@@ -1,5 +1,6 @@
 #pragma once
 #include "nex_host.h"
+#include "nex_task_external.h"
 #include <coroutine>
 #include <exception>
 #include <optional>
@@ -73,10 +74,20 @@ public:
     bool await_suspend(TaskBody::Handle handle);
     TaskEvent await_resume();
   };
+  class ExternalAwaiter {
+    TaskGroup *group;TaskExternalTicket ticket;SourceLocation location;
+    friend class TaskGroup;
+    ExternalAwaiter(TaskGroup *group,TaskExternalTicket ticket):group(group),ticket(std::move(ticket)){}
+  public:
+    ExternalAwaiter at(SourceLocation where)&&{location=where;return std::move(*this);}
+    bool await_ready()const noexcept{return false;}
+    bool await_suspend(TaskBody::Handle);
+    TaskExternalResult await_resume();
+  };
   // Factories take snapshots by value, never borrowed Handle pointers. Bodies
   // may retain Value objects across suspension; raw runtime handles may not.
   using Factory=TaskBody (*)(TaskGroup&,Value,Value);
-  explicit TaskGroup(size_t workers=4,size_t maximumTasks=4096);
+  explicit TaskGroup(size_t workers=4,size_t maximumTasks=4096,TaskExternalLimits externalLimits={});
   ~TaskGroup();
   TaskGroup(const TaskGroup&)=delete;
   TaskGroup &operator=(const TaskGroup&)=delete;
@@ -98,6 +109,11 @@ public:
   bool close(const Channel &channel);
   bool cancel(const Ticket &ticket);
   void cancel();
+  // Private fixed host adapters only. Payload conversion to source Values must
+  // occur after await_resume, on the owning task's scheduler worker.
+  TaskExternalTicket submitExternal(std::shared_ptr<TaskExternalOperation>,size_t reservedBytes);
+  ExternalAwaiter awaitExternal(const TaskExternalTicket &);
+  TaskExternalStats externalStats()const;
   // Drain, join OS workers, destroy coroutine frames and surface unobserved
   // failures. Immutable results remain joinable while this group exists.
   void finish();

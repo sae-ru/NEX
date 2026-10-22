@@ -1,3 +1,26 @@
+# Working114: private external completion transport
+
+Toolchain0.107 / language0.19 adds experimental native, independent reference
+and TypeScript host-completion kernels. Tickets bind a scheduler, logical owner,
+slot generation and single acceptance. Physical operation retirement, rather
+than a cancellation request, releases transport reservations and permits owner
+completion. Separate native/reference host pools have at most two workers.
+The private file-read adapter captures a revocable physical lease explicitly;
+workers do not discover permissions from ambient TLS or create source Values.
+See [the exact contract](docs/task-external.md). No source asynchronous IO,
+source fs/db/ffi task lowering or stable host ABI is enabled.
+
+Individual kernel checks and an initial shared build have passed; the final
+frozen114 build, combined focused/full regression, sanitizers, installed SDK
+and platform acceptance are pending. Current source is not an accepted release.
+Frozen113 separately passed all118 regression groups in1034.269s; its matching
+installed SDK passed24 phases/438 commands. That evidence does not validate114.
+Primary081 and its history remain unchanged. Task debug/profile, provider/UI
+integration, general GPU/NPU, remaining platform delivery and cross-model
+quality/cost evidence remain required by the active objective.
+
+Previous entries below retain their original stage-specific status.
+
 # Public019 integration corrections (working110)
 
 This snapshot keeps toolchain0.105/language019. The previous integration's full
