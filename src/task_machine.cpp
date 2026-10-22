@@ -1,4 +1,5 @@
 #include "nex/task_machine.h"
+#include "nex/task_ir.h"
 #include "nex/task_frontend.h"
 #include <algorithm>
 

@@ -1,3 +1,29 @@
+# Private AST continuation stage (working105)
+
+TaskAstMachine traverses the checked AST through owned action, lexical-scope,
+evaluation and function stacks. It never calls lowerTaskFunction or executes
+TaskIR. Direct/indirect calls, branching, loops, guarded patterns, short circuit,
+returns and result propagation have independent control traversal. Ordinary
+already-evaluated atoms reuse checked data primitives through evaluateTaskAtom.
+All source user calls and suspension are handled outside that atom boundary.
+
+TaskTransition is a shared transport interface, separated from the IR machine.
+Requests contain owned arguments, source spans and one-use response tickets.
+A machine requires exclusive ownership while advancing/resuming; it can transfer
+between joined OS threads. It retains no native Handle. At most256 source call
+frames and262144 pending actions are permitted; a shared machine step budget
+charges traversal and atom work. Failure clears retained frames; abandoning a
+parked machine releases owned values. Responses and explicit call arguments have
+checked value kinds. File authority and fs/db/ffi execution are rejected.
+
+The first30 AST source scenarios and240 checks pass against the ordinary AST
+oracle where yield is erased. The reference scheduler/real scoped capability
+bridge is still absent: no scope/channel scheduling or physical CPU overlap is
+claimed by this machine. TypeScript scheduling, full region typing, explicit019
+history-preserving migration, async IO/debug/profile and target/SDK delivery stay
+pending. Public source support and language0.18 identities/grammar are unchanged.
+Current105 final build/full/sanitizer/SDK/platform validation is pending.
+
 # Private structured source execution (working104)
 
 The compiler-private probe now emits real native continuations for all ten

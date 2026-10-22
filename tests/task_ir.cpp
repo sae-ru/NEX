@@ -1,5 +1,6 @@
 #include "nex/task_frontend.h"
 #include "nex/task_machine.h"
+#include "nex/task_ir.h"
 #include <iostream>
 #include <chrono>
 #include <filesystem>

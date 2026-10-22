@@ -871,6 +871,17 @@
         "task_cancel",
         "current_task_scope"
       ]
+    },
+    "private_ast_steps": {
+      "entry_point": "TaskAstMachine",
+      "probe": "nex_task_ast_probe",
+      "control": "checked AST actions; no TaskIR lowering or execution",
+      "owned_values": true,
+      "maximum_call_depth": 256,
+      "transport": "TaskTransition",
+      "scheduler_integrated": false,
+      "public_build_enabled": false,
+      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected"
     }
   }
 }

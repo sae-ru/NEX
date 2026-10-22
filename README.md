@@ -6,11 +6,20 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.100.0 / language 0.18**.
+This isolated development source is **toolchain 0.101.0 / language 0.18**.
 It fixes operator runtime notice propagation in installed SDK acceptance,
 including captured project packaging tasks. Complete acceptance of this exact
 source is pending. The approved primary checkout is preserved at 0.81 / 0.16.
 Historical receipts retain their original compiler/source scopes.
+
+Working105 adds a separate private checked-AST continuation machine. Its owned
+action/call/value stacks traverse checked expressions and statements directly,
+without lowering or executing TaskIR. Thirty source scenarios and240 protocol
+checks pass, including suspension, recursion, closures, guarded matching,
+short circuit, result propagation, checked traps and abandoned frame cleanup.
+The reference scheduler/capability bridge and TypeScript remain pending; this
+machine is not public asynchronous reference execution. Exact-source full,
+sanitizer, installed-SDK and platform acceptance of105 remain pending.
 
 The private native prototype compiles resumable calls, structured task scopes,
 futures and bounded channels to MLIR/LLVM. Nested scopes share the executor and

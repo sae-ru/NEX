@@ -1,3 +1,7 @@
+Working105 adds an independent private AST continuation machine, without a
+reference scheduler or public task execution. Public0.18 syntax and identities
+remain unchanged; see tasks-runtime-design.md.
+
 Working104 privately executes structured scopes, futures and bounded channels
 through compiled continuations, with owned capability graphs and ancestor worker
 caps. Public language0.18 and archive/build guards remain unchanged. Independent
