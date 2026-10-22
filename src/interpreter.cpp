@@ -1,3 +1,4 @@
+#include "nex/task_machine.h"
 #include "nex/task_frontend.h"
 #include "nex/language.h"
 #include "nex/watch_values.h"
@@ -19,6 +20,7 @@ using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
   nexrt::FileScope files;
+  E atomRoot;unsigned outerDepth=0;
   const Program &p; uint64_t limit; Evaluation result;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
@@ -35,9 +37,9 @@ class Interpreter {
     throw Error("E_INTERNAL","checked local is missing");
   }
   V expression(E e) {
-    try{step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
-    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
-    catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
+    try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
+    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(!p.taskPrototype&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
+    catch(Error &error){if(!p.taskPrototype&&error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
   bool pattern(P p,const std::function<V()> &read){
     step(p->span);
@@ -207,12 +209,12 @@ class Interpreter {
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
       case Stmt::Match:matching(s->expr);break;
       }
-      }catch(Error &error){if(error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
+      }catch(Error &error){if(!p.taskPrototype&&error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }
     if(scoped)frames.back().pop_back();
   }
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
-    if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
+    if(frames.size()+outerDepth>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
     if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
     frames.emplace_back(1);struct PopFrame {decltype(frames)&stack;~PopFrame(){stack.pop_back();}} pop{frames};
     for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
@@ -221,7 +223,12 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){if(!p.taskPrototype)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
+    atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
+    try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
+    catch(Error &error){error.output=result.output;throw;}
+  }
   llvm::json::Value inspect(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
     watchTypes=&types;watch=std::make_unique<WatchValues>(p,types,values,captures,compiledCallables);frames.emplace_back(1);V value;
     llvm::json::Value wire=nullptr;std::string display="unit";bool truncated=false;
@@ -241,6 +248,10 @@ public:
     return result;
   }
 };
+}
+TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth){
+  if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
+  return Interpreter(p,limit).atom(std::move(atom),values,depth);
 }
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){rejectUnloweredTasks(p,"reference execution");return Interpreter(p,stepLimit).run(entry);}
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){

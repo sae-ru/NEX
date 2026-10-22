@@ -1,3 +1,7 @@
+Working100 adds private continuation IR and a semantic lowering harness, not
+native source-task execution. Public0.18 types/effects/canonical identities and
+all unlowered-task execution/archive guards stay unchanged.
+
 Working099 has private task typing entry points, separately guarded from public
 language0.18 parsing/execution/archival. No public task source feature is enabled;
 continuation lowering and explicit history-preserving migration remain required.

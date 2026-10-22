@@ -77,6 +77,49 @@ This runner requires the source tests and is not an installed SDK source feature
 
 ## Required source integration
 
+Working100 adds compiler-private TaskFunctionIR and TaskMachine as a lowering
+test harness. The public language is still0.18 and source_support remains false.
+No native task program or public reference/TypeScript scheduler is emitted.
+The ordinary native, TypeScript, reference and archival guards still apply.
+
+The IR splits expressions into typed slots and pure atoms. Atoms refer only to
+already evaluated slots. Direct and indirect task calls, all ten task intrinsics,
+returns and result-error exits have explicit instructions. Branches preserve
+short-circuiting, guarded/nested patterns and while loops. Source locals and
+captured values retain their lexical identities; temporary operands are dropped
+after consumption, and lexical locals at block exit. A return or trap releases
+the whole owning frame. Retained state uses Value objects, never raw Handles.
+Function entry/loop heads have explicit poll instructions for the eventual
+native cancellation/budget bridge. Compilation is bounded to65,536 slots and
+262,144 instructions per concrete function.
+
+The test harness executes this IR with a logical call stack (limit256), emitting
+owned wait descriptors and one-use response tickets. A parked machine cannot be
+advanced or resumed with an obsolete ticket. Pure atoms use the existing AST
+interpreter/data primitives; independent ordinary AST execution of the same
+program with yield statements removed checks lowering control flow and output.
+This is not an independent async reference implementation. Its resource effects
+are limited to pure/task/io semantics; fs/db/ffi require a later host bridge.
+Typed task/channel/scope operations are lowered, but their scheduler descriptors
+are not implemented by this harness. No fabricated task capability establishes
+actual channel, future or scope execution. The native runtime remains separate.
+
+Current source cases exercise recursion, captures/returned closures, generics,
+module-qualified calls, loops, left-to-right calls, Unicode/NUL, f64 state,
+result propagation across different payload types, guarded patterns, early
+failure during aggregate construction, traps and owned cleanup. Resume calls
+also transfer sequentially to real OS threads. These are continuation-state
+tests, not proof of parallel native NEX execution or async debugger/profile
+support. A real lost-output-on-trap bug in the new harness was caught by comparing
+the failed helper's output with the ordinary AST interpreter and corrected.
+
+The next step is MLIR step functions and runtime frame/descriptor helpers that
+reuse this IR while retaining only state needed across suspension. Native code
+must execute compiled expressions, not invoke the compiler/interpreter. The
+bridge must provide logical nested scopes on the existing worker pool, genuine
+capability values, scoped cleanup/cancellation and strict result validation.
+Independent reference/TypeScript scheduling and explicit migration still follow.
+
 The working099 integration adds private parseTaskPrototype/loadTaskPrototype
 entry points and a typed frontend probe. These are not public CLI commands or a
 language release. Program provenance keeps this mode separate from language0.18:
