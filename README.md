@@ -6,18 +6,21 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.99.0 / language 0.18**.
+This isolated development source is **toolchain 0.100.0 / language 0.18**.
 It fixes operator runtime notice propagation in installed SDK acceptance,
 including captured project packaging tasks. Complete acceptance of this exact
 source is pending. The approved primary checkout is preserved at 0.81 / 0.16.
 Historical receipts retain their original compiler/source scopes.
 
-The private native task prototype compiles yield continuations and resumable
-calls to MLIR/LLVM, with owned logical frames and a separate static task closure
-descriptor. Retained frames and ordinary pure helper calls share a depth limit
-of 256. Scoped capabilities/channels, independent asynchronous reference and
-TypeScript execution, migration and public source builds remain pending.
-Current validation is in progress. See [the design](docs/tasks-runtime-design.md).
+The private native prototype compiles resumable calls, structured task scopes,
+futures and bounded channels to MLIR/LLVM. Nested scopes share the executor and
+limit concurrent resumes through every ancestor. Owner failure cancels/drains
+children before publication; retained frame values and scoped capabilities use
+owned payloads and checked ancestry. Fifty-three source scenarios pass two native
+profiles; additional pure-callback/unit-task cases also pass. Complete acceptance
+of this exact source remains pending. Independent asynchronous reference and
+TypeScript, complete region typing, migration and public source builds remain
+pending. See [the design](docs/tasks-runtime-design.md).
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.

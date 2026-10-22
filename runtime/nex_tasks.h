@@ -6,7 +6,8 @@
 #include <utility>
 
 // Compiler-private development substrate, enabled only by NEX_ASYNC_TASKS.
-// NEX source types/lowering and asynchronous I/O are not implemented here.
+// Used by the private compiled source bridge. Public task source support and
+// asynchronous I/O remain pending.
 namespace nexrt {
 namespace task_detail {
 struct Cancellation {
@@ -38,27 +39,36 @@ struct TaskBody {
 };
 struct TaskEvent {bool present=false;Value value;};
 class TaskGroup {
+  friend struct TaskValueAccess;
   struct Impl;std::shared_ptr<Impl> impl;
   static constexpr size_t none=static_cast<size_t>(-1);
 public:
+  class Scope {
+    friend class TaskGroup;friend struct TaskValueAccess;friend struct Impl;
+    std::weak_ptr<Impl> owner;size_t index=none;
+    Scope(const std::shared_ptr<Impl> &owner,size_t index):owner(owner),index(index){}
+  public:Scope()=default;bool empty()const noexcept{return index==none;}
+  };
   class Ticket {
-    friend class TaskGroup;
+    friend class TaskGroup;friend struct TaskValueAccess;friend struct Impl;
     std::weak_ptr<Impl> owner;size_t index=none;
     Ticket(const std::shared_ptr<Impl> &owner,size_t index):owner(owner),index(index){}
   public:Ticket()=default;
   };
   class Channel {
-    friend class TaskGroup;
+    friend class TaskGroup;friend struct TaskValueAccess;friend struct Impl;
     std::weak_ptr<Impl> owner;size_t index=none;
     Channel(const std::shared_ptr<Impl> &owner,size_t index):owner(owner),index(index){}
   public:Channel()=default;
   };
   class Awaiter {
-    friend class TaskGroup;
-    enum Kind { Yield, Future, Send, Receive } kind;
+    friend class TaskGroup;friend struct TaskValueAccess;friend struct Impl;
+    enum Kind { Yield, Future, Send, Receive, DrainScope } kind;
     TaskGroup *group;size_t target;Value value;
+    SourceLocation location;
     Awaiter(Kind kind,TaskGroup *group,size_t target=none,Value value={}):kind(kind),group(group),target(target),value(std::move(value)){}
   public:
+    Awaiter at(SourceLocation where)&&{location=where;return std::move(*this);}
     bool await_ready()const noexcept{return false;}
     bool await_suspend(TaskBody::Handle handle);
     TaskEvent await_resume();
@@ -71,10 +81,18 @@ public:
   TaskGroup(const TaskGroup&)=delete;
   TaskGroup &operator=(const TaskGroup&)=delete;
   Ticket spawn(Factory factory,Value input={},Value captures={});
+  Ticket spawn(const Scope &,Factory,Value input={},Value captures={});
+  Scope openScope(size_t workers);
+  Scope currentScope()const;
+  Scope currentScopeOrEmpty()const;
+  Awaiter leaveScope(const Scope &,bool cancelChildren=false);
+  bool scopeContains(const Scope &ancestor,const Scope &descendant)const;
+  void requireScope(const Scope &)const;
   Value join(const Ticket &ticket);
   Awaiter await(const Ticket &ticket);
   Awaiter yield();
   Channel channel(size_t capacity);
+  Channel channel(const Scope &,size_t capacity);
   Awaiter send(const Channel &channel,Value value);
   Awaiter receive(const Channel &channel);
   bool close(const Channel &channel);
@@ -86,5 +104,8 @@ public:
 private:
   size_t taskIndex(const Ticket&)const;
   size_t channelIndex(const Channel&)const;
+  size_t scopeIndex(const Scope&)const;
+  Ticket spawnIn(size_t,Factory,Value,Value);
+  Channel channelIn(size_t,size_t);
 };
 }

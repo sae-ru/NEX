@@ -2,7 +2,7 @@
 import argparse,contextlib,json,os,re,shutil,subprocess,sys,tempfile
 from pathlib import Path
 
-parser=argparse.ArgumentParser();parser.add_argument('nex');parser.add_argument('probe');parser.add_argument('--sanitizer',choices=('address','thread'))
+parser=argparse.ArgumentParser();parser.add_argument('nex');parser.add_argument('probe');parser.add_argument('--sanitizer',choices=('address','thread'));parser.add_argument('--case',action='append',dest='selected_cases')
 args=parser.parse_args();nex,probe=map(lambda s:str(Path(s).resolve()),(args.nex,args.probe))
 sanitize=(['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'] if args.sanitizer=='address' else ['-fsanitize=thread','-fno-omit-frame-pointer'] if args.sanitizer=='thread' else [])
 source=Path(__file__).resolve().parents[1]
@@ -54,7 +54,7 @@ static int64_t step(void *frame){
  return SYMBOL(frame);
 }
 static void observe(const nexrt::NativeTaskFrame &frame,int64_t transition){
- if(frame.depth>1&&transition==1)deepYielded=true;
+ if(frame.depth>1&&(transition==1||(transition==3&&frame.pendingRequest&&frame.pendingRequest->operation==nexrt::TaskRequestKind::Yield)))deepYielded=true;
  ++resumes;std::lock_guard lock(mutex);for(auto [p,record]:objects)require(record.first!=0||record.second!=std::this_thread::get_id());
 }
 static const std::array<int64_t,SLOTCOUNT> kinds{KINDS};
@@ -148,7 +148,39 @@ cases=[
  ('mixed-depth-limit','fn pure(n:i64)->i64{if n==0{return 42;}return pure(n-1);}fn dive(n:i64)->i64 !{task}{if n==0{return pure(200);}return dive(n-1);}fn main()->i64 !{task}{return dive(100);}','TRAP:E_LIMIT:0','',101),
  ('mixed-depth-boundary','fn pure(n:i64)->i64{if n==0{return 42;}return pure(n-1);}fn dive(n:i64)->i64 !{task}{if n==0{return pure(153);}return dive(n-1);}fn main()->i64 !{task}{return dive(100);}','42','',203),
  ('cancel-call','fn wait(held:list<str>)->i64 !{task}{while true{task_yield();}return len(held);}fn main()->i64 !{task}{return wait(["retained🧠"]);}','TRAP:E_CANCELLED','',2),
+ ('scope-basic','fn main()->i64 !{task}{return with_tasks(2,fn(s:task_scope)->i64 !{task}{return 42;});}','42','',3),
+ ('scope-unit','fn main()->unit !{task}{with_tasks(1,fn(s:task_scope)->unit !{task}{task_yield();});}','0','',4),
+ ('scope-spawn','fn main()->i64 !{task}{return with_tasks(2,fn(s:task_scope)->i64 !{task}{let a:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});return task_wait(a)+task_wait(b);});}','42','',9),
+ ('scope-current','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{assert(current_task_scope()==s);return 42;});}','42','',4),
+ ('scope-ancestor','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{return s;});assert(borrowed==s);return 42;});}','42','',5),
+ ('scope-cancel','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{while true{task_yield();}return 0;});task_yield();assert(task_cancel(t));return 42;});}','42','',6),
+ ('scope-error-cancels','fn main()->result<i64> !{task}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{while true{task_yield();}return 0;});task_yield();let broken:result<str>=err<str>("E_STOP","stop");let value:str=broken?;return ok(len(value));});}','{"error":{"code":"E_STOP","message":"stop"}}','',5),
+ ('scope-escape','fn main()->task_scope !{task}{return with_tasks(1,fn(s:task_scope)->task_scope !{task}{return s;});}','TRAP:E_TASK_SCOPE:2','',1),
+ ('scope-box-escape','struct Box{scope:task_scope;}fn main()->Box !{task}{return with_tasks(1,fn(s:task_scope)->Box !{task}{return Box(s);});}','TRAP:E_TASK_SCOPE:2','',1),
+ ('scope-capture-escape','fn main()->(fn()->i64 !{task}) !{task}{return with_tasks(1,fn(s:task_scope)->(fn()->i64 !{task}) !{task}{return fn()->i64 !{task}{let same:bool=current_task_scope()==s;return 42;};});}','TRAP:E_TASK_SCOPE:2','',1),
+ ('scope-no-current','fn main()->task_scope !{task}{return current_task_scope();}','TRAP:E_TASK_SCOPE:0','',1),
+ ('scope-range','fn main()->i64 !{task}{return with_tasks(0,fn(s:task_scope)->i64 !{task}{return 42;});}','TRAP:E_RANGE:2','',1),
+ ('scope-cycle','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let qa:channel<task<i64>>=channel_new<task<i64>>(s,1);let qb:channel<task<i64>>=channel_new<task<i64>>(s,1);let a:task<i64>=task_spawn(s,fn()->i64 !{task}{let other:task<i64>=unwrap(task_recv(qa));return task_wait(other);});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{let other:task<i64>=unwrap(task_recv(qb));return task_wait(other);});assert(task_send(qa,b));assert(task_send(qb,a));return task_wait(a);});}','TRAP:E_TASK_CYCLE:0','',5),
+
+ ('scope-nested','fn main()->i64 !{task}{return with_tasks(1,fn(outer:task_scope)->i64 !{task}{return with_tasks(2,fn(inner:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(inner,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});});}','42','',7),
+ ('scope-unobserved','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 1/0;});return 42;});}','TRAP:E_DIV_ZERO:2','',3),
+ ('scope-await-cancelled','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{while true{task_yield();}return 0;});task_yield();assert(task_cancel(t));return task_wait(t);});}','TRAP:E_CANCELLED','',5),
+ ('scope-channel-escape','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return with_tasks(1,fn(inner:task_scope)->i64 !{task}{let q:channel<task_scope>=channel_new<task_scope>(s,1);task_send(q,inner);return 42;});});}','TRAP:E_TASK_SCOPE:0','',3),
+ ('scope-spawn-escape','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{return with_tasks(1,fn(inner:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{assert(current_task_scope()==inner);return 42;});return 42;});});}','TRAP:E_TASK_SCOPE:0','',3),
+ ('scope-channel-text','fn main()->str !{task}{return with_tasks(1,fn(s:task_scope)->str !{task}{let q:channel<str>=channel_new<str>(s,0);let t:task<i64>=task_spawn(s,fn()->i64 !{task}{assert(task_send(q,"A🧠\\u0000"));assert(task_close(q));return 1;});let value:str=unwrap(task_recv(q));assert(task_wait(t)==1);assert(!is_ok(task_recv(q)));return value;});}','"A🧠\\u0000"','',9),
+
+ ('scope-pure','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64{return 42;});}','42','',3),
+ ('scope-pure-spawn','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64{return 42;});return task_wait(t);});}','42','',6),
+ ('scope-unit-task','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<unit>=task_spawn(s,fn()->unit{});task_wait(t);return 42;});}','42','',6),
+
 ]
+for capacity in (0,1,7):
+ cases.append(('scope-channel-'+str(capacity),'''fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<i64>=channel_new<i64>(s,CAPACITY);let writer:task<i64>=task_spawn(s,fn()->i64 !{task}{var n:i64=0;while n<7{assert(task_send(q,n));n=n+1;}assert(task_close(q));return n;});var total:i64=0;var open:bool=true;while open{let item:result<i64>=task_recv(q);if is_ok(item){total=total+unwrap(item);}else{open=false;}}assert(task_wait(writer)==7);assert(!task_close(q));return total*2;});}'''.replace('CAPACITY',str(capacity)),'42','',10))
+available_cases=len(cases)
+if args.selected_cases:
+ requested=set(args.selected_cases);unknown=requested-{case[0] for case in cases}
+ if unknown:parser.error('unknown cases: '+','.join(sorted(unknown)))
+ cases=[case for case in cases if case[0] in requested]
 @contextlib.contextmanager
 def compiled_output():
  tmp=tempfile.mkdtemp(prefix='nex-native-task-')
@@ -166,13 +198,13 @@ with compiled_output() as tmp:
   path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
   folder=root/name;metadata=json.loads(run([probe,path,folder,triple,layout,'main']))
   assert metadata['public_source_tasks'] is False
-  cpp=folder/'driver.cpp';cpp.write_text(driver.replace('SYMBOL',metadata['symbol']).replace('DESCRIPTOR',metadata['descriptor']).replace('KINDS',','.join(map(str,metadata['slots']))).replace('PARAMETERS',','.join(map(str,metadata['parameters']))).replace('SLOTCOUNT',str(len(metadata['slots']))).replace('PARAMCOUNT',str(len(metadata['parameters']))).replace('MINIMUM',str(minimum)).replace('REPEATS','4' if name in ('parameter','direct','task-snapshot') else '2' if name=='loop' else '1').replace('WORKERS','2' if name in ('parameter','direct','task-snapshot') else '1').replace('CANCEL_CASE','1' if name=='cancel-call' else '0').replace('INPUTARGS','{nexrt::Value(21)}' if name=='parameter' else '{}'))
+  cpp=folder/'driver.cpp';cpp.write_text(driver.replace('SYMBOL',metadata['symbol']).replace('DESCRIPTOR',metadata['descriptor']).replace('KINDS',','.join(map(str,metadata['slots']))).replace('PARAMETERS',','.join(map(str,metadata['parameters']))).replace('SLOTCOUNT',str(len(metadata['slots']))).replace('PARAMCOUNT',str(len(metadata['parameters']))).replace('MINIMUM',str(minimum)).replace('REPEATS','4' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '2' if name=='loop' else '1').replace('WORKERS','2' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '1').replace('CANCEL_CASE','1' if name=='cancel-call' else '0').replace('INPUTARGS','{nexrt::Value(21)}' if name=='parameter' else '{}'))
   for optimize in ('-O0','-O2'):
    executable=folder/('program'+optimize)
    command=[clang,'-std=c++20',optimize,'-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,folder/'program.ll',cpp,*objects,'-pthread','-o',executable]
    if sys.platform.startswith('linux'):command.insert(1,'-fuse-ld=lld')
    run(command);actual=run([executable]);assert actual==prefix+'RESULT='+result+'\n',(name,optimize,actual)
-  if '-depth-' in name or name=='cancel-call':continue
+  if '-depth-' in name or name=='cancel-call' or name.startswith('scope-'):continue
   mirrors+=1
   # With no other concurrent effects, removing yield has the same observable
   # values/output. Execute an independent ordinary AST and TypeScript mirror;
@@ -192,9 +224,9 @@ with compiled_output() as tmp:
    web=json.loads(run([nex,'test',mirrored,'--symbol','observe','--target','web','--json']))
    assert len(web['tests'])==1 and web['tests'][0]['web'] is True,web
  for body in [
-  'fn main()->i64 !{task}{return with_tasks(2,fn(s:task_scope)->i64 !{task}{return 42;});}',
+  'server fn main()->str !{task,fs}{task_yield();return unwrap(file_read_text(\"file\"));}',
  ]:
   path=root/'rejected.nex';path.write_text('module rejected;'+body)
   rejected=subprocess.run([probe,str(path),str(root/'rejected'),triple,layout,'main'],capture_output=True,text=True,env=env)
   assert rejected.returncode==1 and json.loads(rejected.stdout)['code']=='E_TASK_UNIMPLEMENTED',rejected.stdout+rejected.stderr
- print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':2,'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':False,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))
+ print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':2,'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))

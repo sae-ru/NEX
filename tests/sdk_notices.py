@@ -67,4 +67,14 @@ class Notices(unittest.TestCase):
         internal=self.sdk/'crypto';internal.write_bytes(b'bundled')
         self.assertEqual(acceptance.external_crypto_components(self.sdk,internal),[])
 
+    def test_project_capture_owns_complete_notice_bytes(self):
+        project=self.root/'project';project.mkdir()
+        captured=acceptance.project_notice_components(project,[self.component])
+        self.assertEqual(captured[0]['roots'],self.component['roots'])
+        local=project/captured[0]['license_files'][0]
+        self.assertTrue(local.is_relative_to(project));self.assertEqual(local.read_bytes(),self.license.read_bytes())
+        self.assertFalse(Path(captured[0]['license_files'][0]).is_absolute())
+        self.license.unlink();self.assertEqual(local.read_text(),'Complete independent test fixture notice.\n')
+        with self.assertRaises(FileExistsError):acceptance.project_notice_components(project,[])
+
 if __name__=='__main__':unittest.main()

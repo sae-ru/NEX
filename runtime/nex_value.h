@@ -32,7 +32,7 @@ struct Value {
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
-  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File } kind;
+  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel } kind;
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
@@ -42,14 +42,15 @@ struct Data {
 private:
   friend struct ByteData;
   friend struct FileData;
+  friend struct TaskData;
   Data(Kind kind,size_t allocatedSize):kind(kind){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
-    if(other.kind==Bytes||other.kind==File)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
+    if(other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
   }
 public:
   explicit Data(Kind kind):Data(kind,sizeof(Data)){
-    if(kind==Bytes||kind==File)throw DataError("E_RUNTIME","value requires an owned payload");
+    if(kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel)throw DataError("E_RUNTIME","value requires an owned payload");
   }
   Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
   Data &operator=(const Data&)=delete;
@@ -204,7 +205,7 @@ inline bool equal(const Value &a,const Value &b) {
     return x.kind==y.kind&&fileIdentity(a.object)==fileIdentity(b.object);
   if(x.kind==Data::Bytes||y.kind==Data::Bytes)
     return x.kind==y.kind&&byteBuffer(a.object)==byteBuffer(b.object);
-  if(x.kind==Data::Closure||y.kind==Data::Closure)return false;
+  if(x.kind==Data::Closure||y.kind==Data::Closure||x.kind==Data::TaskScope||y.kind==Data::TaskScope||x.kind==Data::Task||y.kind==Data::Task||x.kind==Data::Channel||y.kind==Data::Channel)return false;
   if(x.kind!=y.kind||x.ordinal!=y.ordinal||x.text!=y.text||x.names!=y.names||x.values.size()!=y.values.size())return false;
   for(size_t i=0;i<x.values.size();++i)if(!equal(x.values[i],y.values[i]))return false;
   return true;
@@ -221,6 +222,9 @@ inline std::string representation(const Value &v) {
   const auto &d=*v.object;
   if(d.kind==Data::Closure)return quoted("<function>");
   if(d.kind==Data::File)return quoted("<file>");
+  if(d.kind==Data::TaskScope)return quoted("<task_scope>");
+  if(d.kind==Data::Task)return quoted("<task>");
+  if(d.kind==Data::Channel)return quoted("<channel>");
   if(d.kind==Data::String)return quoted(d.text);
   if(d.kind==Data::Bytes)return quoted(byteBuffer(v.object).base64());
   if(d.kind==Data::Success)return "{\"ok\":"+representation(d.values[0])+"}";

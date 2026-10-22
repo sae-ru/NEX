@@ -451,3 +451,11 @@ deduplicate; conflicting versions, roots or license bytes for one component name
 fail explicitly. This changes the validation workflow, not source language,
 compiler/runtime ABI or migration. Original0.94 Astra failures remain retained.
 
+
+Development0.100 also copies every reviewed license into the owned project
+before computing task notice pins. External library roots keep their reviewed
+identity; complete license bytes are captured within project bounds. This fixes
+a real last-phase installed102 acceptance failure with --package-notices.
+A separate reviewed corrected driver passes24phases/427commands on the exact
+installed102 compiler; the original102 driver remains unchanged. Matching
+installed acceptance of this source must still be run.

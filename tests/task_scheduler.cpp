@@ -1,5 +1,8 @@
 #include "nex_tasks.h"
+#include "nex_task_values.h"
+#include "nex_parallel_value.h"
 #include <barrier>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -20,6 +23,9 @@ thread_local bool failHandle=false;
 std::unique_ptr<std::barrier<>> rendezvous;
 TaskGroup::Channel pipe;
 TaskGroup::Ticket childTicket,cycleA,cycleB;
+TaskGroup::Scope expiredScope;
+std::array<TaskGroup::Scope,2> siblings;std::mutex siblingMutex;
+std::atomic<int> chunkActive{0},chunkMaximum{0},chunksStarted{0};
 void require(bool value,const char *message){if(!value){std::fprintf(stderr,"task scheduler: %s\n",message);std::abort();}}
 template<class F> void expect(const char *code,F action){
   bool caught=false;try{action();}catch(const nexrt::Trap &e){if(e.code!=code)std::fprintf(stderr,"expected%s got%s:%s\n",code,e.code.c_str(),e.what());require(e.code==code,"wrong checked error");caught=true;}require(caught,"expected checked error");
@@ -91,6 +97,102 @@ const char *zero="00000000000000000000000000000000000000000000000000000000000000
 const char *one="1111111111111111111111111111111111111111111111111111111111111111";
 const nexrt::NativeFunctionSite function{zero,zero,zero};const nexrt::NativeSite site{&function,one,"task_failure",1,2};
 TaskBody locatedFailure(TaskGroup &group,Value,Value){co_await group.yield();nexrt::runtimeFail("E_LOCATED","located task failure",nexrt::SourceLocation{25,&site});co_return Value();}
+TaskBody scopedChild(TaskGroup &group,Value,Value){Active active;co_await group.yield();advancePhase(4);co_return Value(42);}
+TaskBody scopeNormal(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);expiredScope=scope;childTicket=group.spawn(scope,scopedChild);
+  co_await group.leaveScope(scope);expect("E_TASK_SCOPE",[&]{group.requireScope(scope);});co_return Value(42);
+}
+TaskBody scopeAutomatic(TaskGroup &group,Value,Value){
+  expiredScope=group.openScope(1);group.spawn(scopedChild);co_return Value(42);
+}
+TaskBody scopeFailure(TaskGroup &group,Value,Value){
+  expiredScope=group.openScope(2);group.spawn(yielding);while(!resumes.load())co_await group.yield();
+  throw nexrt::Trap("E_OWNER","owner failed with live children",31);co_return Value();
+}
+TaskBody scopeCancel(TaskGroup &group,Value,Value){
+  Active active;expiredScope=group.openScope(1);auto child=group.spawn(yielding);auto result=co_await group.await(child);co_return result.value;
+}
+TaskBody scopeChildFailure(TaskGroup &group,Value observed,Value){
+  auto scope=group.openScope(1);auto child=group.spawn(ordinaryFailure);
+  if(observed.scalar){bool failed=false;try{co_await group.await(child);}catch(const nexrt::Trap &e){require(e.code=="E_ITEM","wrong observed scope failure");failed=true;}require(failed,"scope child failure disappeared");}
+  co_await group.leaveScope(scope);co_return Value(42);
+}
+TaskBody nestedScopeTask(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);auto first=group.spawn(increment,Value(20)),second=group.spawn(increment,Value(20));
+  auto a=co_await group.await(first),b=co_await group.await(second);co_await group.leaveScope(scope);co_return Value(a.value.scalar+b.value.scalar);
+}
+TaskBody scopeNested(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);auto child=group.spawn(nestedScopeTask);auto result=co_await group.await(child);
+  co_await group.leaveScope(scope);co_return result.value;
+}
+TaskBody scopeLateForkChild(TaskGroup &group,Value,Value){
+  co_await group.yield();auto child=group.spawn(scopedChild);auto result=co_await group.await(child);co_return result.value;
+}
+TaskBody scopeLateFork(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);group.spawn(scopeLateForkChild);co_await group.leaveScope(scope);require(phase==4,"late child did not finish before scope exit");co_return Value(42);
+}
+TaskBody scopeSibling(TaskGroup &group,Value input,Value){
+  auto outer=group.currentScope();auto scope=group.openScope(1);{std::lock_guard lock(siblingMutex);siblings[input.scalar]=scope;}rendezvous->arrive_and_wait();
+  TaskGroup::Scope sibling;{std::lock_guard lock(siblingMutex);sibling=siblings[1-input.scalar];}
+  require(group.scopeContains(outer,scope),"scope ancestry was lost");require(!group.scopeContains(scope,sibling),"sibling scope gained ancestry");
+  expect("E_TASK_SCOPE",[&]{group.requireScope(sibling);});rendezvous->arrive_and_wait();co_await group.leaveScope(scope);co_return Value(21);
+}
+TaskBody scopeSiblings(TaskGroup &group,Value,Value){
+  auto outer=group.openScope(2);group.spawn(scopeSibling,Value(0));group.spawn(scopeSibling,Value(1));co_await group.leaveScope(outer);co_return Value(42);
+}
+TaskBody scopedChunk(TaskGroup &group,Value expected,Value){
+  for(int i=0;i<3;++i){int now=++chunkActive,old=chunkMaximum.load();while(old<now&&!chunkMaximum.compare_exchange_weak(old,now)){};
+    if(i==0&&expected.scalar==2&&chunksStarted.fetch_add(1)<2)rendezvous->arrive_and_wait();
+    std::this_thread::yield();--chunkActive;co_await group.yield();}
+  co_return Value(1);
+}
+TaskBody scopeBound(TaskGroup &group,Value workers,Value nested){
+  auto outer=group.openScope(nested.scalar?1:size_t(workers.scalar));auto target=nested.scalar?group.openScope(2):outer;
+  for(int i=0;i<4;++i)group.spawn(target,scopedChunk,Value(nested.scalar?1:workers.scalar));
+  co_await group.leaveScope(target);if(nested.scalar)co_await group.leaveScope(outer);co_return Value(42);
+}
+TaskBody scopeAbort(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);group.spawn(yielding);while(!resumes.load())co_await group.yield();co_await group.leaveScope(scope,true);
+  require(running==0,"explicit scope abort published before child destruction");co_return Value(42);
+}
+TaskBody scopeQuota(TaskGroup &group,Value depth,Value){
+  if(depth.scalar){for(int i=0;i<257;++i)group.openScope(1);}
+  else for(int i=0;i<1025;++i){auto scope=group.openScope(1);co_await group.leaveScope(scope);}
+  co_return Value();
+}
+TaskBody scopeChannel(TaskGroup &group,Value,Value){
+  auto scope=group.openScope(1);pipe=group.channel(scope,1);auto writer=group.spawn(producer,Value(100));auto reader=group.spawn(consumer);
+  auto result=co_await group.await(reader);co_await group.await(writer);co_await group.leaveScope(scope);
+  expect("E_TASK_SCOPE",[&]{group.close(pipe);});co_return result.value;
+}
+TaskBody scopeOwnerWait(TaskGroup &group,Value,Value){auto result=co_await group.await(cycleA);co_return result.value;}
+TaskBody scopeCycle(TaskGroup &group,Value beforeDrain,Value){
+  while(!phase.load())co_await group.yield();auto scope=group.openScope(1);group.spawn(scopeOwnerWait);
+  if(beforeDrain.scalar)co_await group.yield();co_await group.leaveScope(scope);co_return Value();
+}
+TaskBody capInnerEscape(TaskGroup &group,Value,Value){auto inner=group.openScope(1);co_return nexrt::taskScopeValue(group,inner);}
+TaskBody capBorrow(TaskGroup &group,Value borrowed,Value){group.openScope(1);co_return borrowed;}
+TaskBody capIdentity(TaskGroup &group,Value,Value){
+  auto outer=group.openScope(1);auto first=nexrt::taskScopeValue(group,outer),second=nexrt::taskScopeValue(group,group.currentScope());require(nexrt::equal(first,second),"same scope lost opaque identity");
+  auto ticket=group.spawn(capBorrow,first);auto a=nexrt::taskTicketValue(group,ticket,3),b=nexrt::taskTicketValue(group,ticket,3);require(nexrt::equal(a,b),"same ticket lost identity");
+  auto channel=group.channel(1);auto x=nexrt::taskChannelValue(group,channel,3),y=nexrt::taskChannelValue(group,channel,3);require(nexrt::equal(x,y),"same channel lost identity");
+  auto borrowed=co_await group.await(ticket);require(nexrt::equal(first,borrowed.value),"ancestor authority could not return through inner scope");
+  co_await group.leaveScope(outer);co_return Value(42);
+}
+TaskBody capHiddenEscape(TaskGroup &group,Value,Value){
+  auto outer=group.openScope(1),inner=group.openScope(1);auto value=nexrt::taskScopeValue(group,inner);
+  auto record=std::make_shared<nexrt::Data>(nexrt::Data::Record);record->values={value};record->names={"scope"};
+  auto closure=std::make_shared<nexrt::Data>(nexrt::Data::Closure);closure->values={Value(record)};
+  expect("E_TASK_SCOPE",[&]{group.spawn(outer,checkpoint,{},Value(closure));});
+  auto channel=group.channel(outer,1);bool rejected=false;try{co_await group.send(channel,Value(closure));}catch(const nexrt::Trap &e){require(e.code=="E_TASK_SCOPE","hidden channel authority failure changed");rejected=true;}require(rejected,"descendant authority escaped through channel");
+  bool excluded=false;try{nexrt::validateParallelValue(Value(closure),[]{});}catch(const nexrt::DataError &e){require(e.code=="E_PARALLEL_VALUE","wrong task/parallel exclusion");excluded=true;}require(excluded,"hidden task capability crossed synchronous mapping boundary");
+  co_await group.leaveScope(inner);co_await group.leaveScope(outer);co_return Value(42);
+}
+TaskBody capResultEscape(TaskGroup &group,Value,Value){
+  auto outer=group.openScope(1);auto child=group.spawn(capInnerEscape);bool rejected=false;
+  try{co_await group.await(child);}catch(const nexrt::Trap &e){require(e.code=="E_TASK_SCOPE","wrong result authority failure");rejected=true;}
+  require(rejected,"child returned its own scope authority");co_await group.leaveScope(outer);co_return Value(42);
+}
 void run(){
   expect("E_TASK_SCOPE",[]{TaskGroup group;});clean();
   {nexrt::RequestScope request;expect("E_RANGE",[]{TaskGroup group(0);});expect("E_RANGE",[]{TaskGroup group(1,0);});expect("E_RANGE",[]{TaskGroup group(1,static_cast<size_t>(-1));});}clean();
@@ -131,6 +233,30 @@ void run(){
   }
   {nexrt::RequestScope request;TaskGroup group(4);auto task=group.spawn(deepSpawn,Value(300));expect("E_LIMIT",[&]{group.join(task);});group.finish();}clean();
   {nexrt::RequestScope request;TaskGroup group(1);auto task=group.spawn(nestedPool);expect("E_TASK_SCOPE",[&]{group.join(task);});group.finish();}clean();
+  {nexrt::RequestScope request;TaskGroup group(1);expect("E_TASK_SCOPE",[&]{group.openScope(1);});expect("E_TASK_SCOPE",[&]{group.currentScope();});group.finish();}clean();
+  for(size_t workers:{size_t(1),size_t(4)}){
+    {nexrt::RequestScope request;TaskGroup group(workers);require(group.join(group.spawn(scopeNormal)).scalar==42&&phase==4,"scope returned before child completion");expect("E_TASK_SCOPE",[&]{group.join(childTicket);});expect("E_TASK_SCOPE",[&]{group.requireScope(expiredScope);});group.finish();}clean();
+    {nexrt::RequestScope request;TaskGroup group(workers);require(group.join(group.spawn(scopeAutomatic)).scalar==42&&phase==4&&running==0,"automatic scope drain published before destruction");group.finish();}clean();
+    {nexrt::RequestScope request;TaskGroup group(workers);expect("E_OWNER",[&]{group.join(group.spawn(scopeFailure));});require(running==0&&destructors==1,"owner failure published before canceled child destruction");group.finish();}clean();
+    {nexrt::RequestScope request;TaskGroup group(workers);require(group.join(group.spawn(scopeNested)).scalar==42,"nested logical scopes deadlocked");group.finish();}clean();
+    {nexrt::RequestScope request;TaskGroup group(workers);require(group.join(group.spawn(scopeLateFork)).scalar==42,"late scoped spawn disappeared");group.finish();}clean();
+  }
+  for(int observed:{0,1}){
+    {nexrt::RequestScope request;TaskGroup group(1);auto root=group.spawn(scopeChildFailure,Value(observed));if(observed)require(group.join(root).scalar==42,"observed child failure escaped scope");else expect("E_ITEM",[&]{group.join(root);});group.finish();}clean();
+  }
+  {nexrt::RequestScope request;TaskGroup group(2);rendezvous=std::make_unique<std::barrier<>>(2);require(group.join(group.spawn(scopeSiblings)).scalar==42,"sibling scope check failed");group.finish();}clean();
+  for(int mode:{0,1,2}){
+    {chunkActive=0;chunkMaximum=0;chunksStarted=0;nexrt::RequestScope request;TaskGroup group(4);rendezvous=std::make_unique<std::barrier<>>(2);int expected=mode==1?2:1;
+     require(group.join(group.spawn(scopeBound,Value(mode==1?2:1),Value(mode==2))).scalar==42,"scope worker cap result failed");require(chunkActive==0&&chunkMaximum==expected,"logical scope concurrency cap changed");group.finish();}clean();
+  }
+  {nexrt::RequestScope request;TaskGroup group(1);require(group.join(group.spawn(scopeAbort)).scalar==42,"scope abort failed");group.finish();}clean();
+  {nexrt::RequestScope request;TaskGroup group(1);auto root=group.spawn(scopeCancel);auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(3);while(!resumes.load()){require(std::chrono::steady_clock::now()<deadline,"scope cancellation fixture did not start");std::this_thread::yield();}group.cancel(root);expect("E_CANCELLED",[&]{group.join(root);});require(running==0,"canceled scope owner published before child destruction");group.finish();}clean();
+  for(int depth:{0,1}){{nexrt::RequestScope request;TaskGroup group(1);expect("E_LIMIT",[&]{group.join(group.spawn(scopeQuota,Value(depth)));});group.finish();}clean();}
+  {nexrt::RequestScope request;TaskGroup group(1);require(group.join(group.spawn(scopeChannel)).scalar==4950,"scoped channel FIFO changed");group.finish();}clean();
+  for(int before:{0,1}){{nexrt::RequestScope request(100000,5000);TaskGroup group(1);cycleA=group.spawn(scopeCycle,Value(before));phase=1;expect("E_TASK_CYCLE",[&]{group.join(cycleA);});group.finish();}clean();}
+
+  for(auto factory:{capIdentity,capHiddenEscape,capResultEscape}){{nexrt::RequestScope request;TaskGroup group(1);require(group.join(group.spawn(factory)).scalar==42,"scope capability contract failed");group.finish();}clean();}
+
 }
 }
 extern "C" void nex_profile_enter(const char*,const char*,int64_t,const char*){}

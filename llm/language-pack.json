@@ -835,11 +835,11 @@
     "channel_rendezvous": true,
     "nested_task_depth": 256,
     "request_control": "shared atomic budget/deadline/cancellation; coordinator-only host callback",
-    "task_input_output": "immutable resource-free Value snapshots; no raw Handle across suspension",
+    "task_input_output": "owned immutable Value snapshots; scoped task authority checked by owner ancestry; no raw Handle across suspension",
     "pending": [
       "source async/task/channel types and scoped effects",
       "explicit history-preserving language migration",
-      "complete scoped task/channel continuation lowering",
+      "independent asynchronous backend semantics and complete region typing",
       "reference and TypeScript scheduling",
       "native debugger and async profile attribution",
       "asynchronous IO",
@@ -852,10 +852,25 @@
       "frame_values": "owned snapshots; resume-local Handle leases",
       "public_build_enabled": false,
       "task_calls": true,
-      "task_scope_channels": false,
+      "task_scope_channels": true,
       "debug_profile": false,
       "task_closure_descriptors": true,
-      "combined_call_depth": 256
+      "combined_call_depth": 256,
+      "logical_scope_worker_caps": true,
+      "authority_graph_validation": true,
+      "region_type_system_complete": false,
+      "scheduler_requests": [
+        "task_yield",
+        "with_tasks",
+        "task_spawn",
+        "task_wait",
+        "channel_new",
+        "task_send",
+        "task_recv",
+        "task_close",
+        "task_cancel",
+        "current_task_scope"
+      ]
     }
   }
 }

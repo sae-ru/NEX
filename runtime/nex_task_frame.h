@@ -1,5 +1,7 @@
 #pragma once
 #include "nex_tasks.h"
+#include "nex_task_values.h"
+#include "nex_task_protocol.h"
 #include <span>
 namespace nexrt {
 // A compiler-private ABI. Owned Values survive parking; Handles are only leases
@@ -19,6 +21,12 @@ struct TaskCodeDescriptor {
 };
 static_assert(sizeof(TaskCodeDescriptor)==72&&offsetof(TaskCodeDescriptor,abi)==32);
 inline constexpr int64_t taskCodeABI=INT64_C(0x4e45585400000001);
+struct NativeTaskRequest {
+  TaskRequestKind operation;
+  std::vector<Value> arguments;
+  int64_t destination=-1,kind=4;
+  SourceLocation location;
+};
 class NativeTaskFrame {
 public:
   TaskFrameDescriptor::Step step;
@@ -30,6 +38,10 @@ public:
   int64_t expectedResult=-1,returnDestination=-1;
   size_t depth=1;
   std::unique_ptr<NativeTaskFrame> pendingCall;
+  std::optional<NativeTaskRequest> pendingRequest;
+  std::optional<TaskGroup::Scope> closingScope;
+  TaskGroup::Scope parentScope;
+  SourceLocation scopeLocation;
   NativeTaskFrame(TaskFrameDescriptor,const std::vector<Value> &arguments);
   NativeTaskFrame(const TaskCodeDescriptor &,const std::vector<Value> &arguments,const Value &environment);
   Value read(int64_t id,int64_t kind)const;
@@ -57,4 +69,5 @@ void nex_task_frame_bad_pc(void *);
 void nex_task_frame_call_at(void *,void *,nexrt::Handle *,nexrt::Handle *,int64_t,int64_t,const nexrt::NativeSite *);
 nexrt::Handle *nex_task_closure_new_at(void *,int64_t,const nexrt::NativeSite *);
 void nex_task_closure_bind_at(nexrt::Handle *,void *,const nexrt::NativeSite *);
+void nex_task_frame_pause_at(void *,int64_t,nexrt::Handle *,int64_t,int64_t,int64_t,const nexrt::NativeSite *);
 }

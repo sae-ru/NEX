@@ -6,6 +6,7 @@
 #include "nex_io.h"
 #ifdef NEX_ASYNC_TASKS
 #include "nex_tasks.h"
+#include "nex_task_values.h"
 #endif
 #ifdef NEX_STRUCTURED_WORKERS
 #include "nex_parallel.h"
@@ -375,6 +376,7 @@ Value parallelCompiledValues(const Value &items,const Value &environment,int64_t
 #endif
 #ifdef NEX_ASYNC_TASKS
 #include "nex_tasks_impl.h"
+#include "nex_task_values_impl.h"
 #endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}

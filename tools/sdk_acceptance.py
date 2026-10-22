@@ -89,6 +89,23 @@ def external_crypto_components(sdk, crypto_path, reviewed=()):
              'license_files': [str(license_file)]}]
 
 
+def project_notice_components(project, *groups):
+    """Copy full reviewed license bytes inside the project before task capture."""
+    project = Path(project).resolve(strict=True)
+    components = merge_notice_components(*groups)
+    directory = project / 'reviewed-package-licenses'
+    directory.mkdir()
+    captured = []
+    for i, component in enumerate(components):
+        licenses = []
+        for j, original in enumerate(component['license_files']):
+            target = directory / ('%d-%d.txt' % (i, j))
+            shutil.copyfile(original, target)
+            licenses.append(str(target.relative_to(project)))
+        captured.append({**component, 'license_files': licenses})
+    return captured
+
+
 def lldb_script_import(script):
     # LLDB parses command arguments, not JSON Unicode escape sequences. Keep
     # UTF-8 path characters literal while quoting spaces, quotes and slashes.
@@ -2538,7 +2555,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 not (shared_project/'.nex/graph.db').exists(), 'project profile lost provider attribution or created graph IDs')
         task_project=root/'project-task-example';shutil.copytree(resources/'examples/project-tasks',task_project)
         notice_fixture=task_project/'fixture-notice.txt';notice_fixture.write_text('SDK acceptance notice-capture data fixture; not a dependency redistribution notice.\n')
-        (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':merge_notice_components([
+        (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':project_notice_components(task_project, [
             {'name':'sdk-notice-capture-fixture','version':'test','url':'https://github.com/sae-ru/NEX',
              'roots':[str(compiler)],'license_files':[str(notice_fixture)]}], extra_notices)}))
         notice_pin=cli('task','notices.json','--kind','notices',cwd=task_project)

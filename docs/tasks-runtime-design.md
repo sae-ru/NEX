@@ -1,4 +1,59 @@
-# Private compiled continuation stage (working103)
+# Private structured source execution (working104)
+
+The compiler-private probe now emits real native continuations for all ten
+staged operations below. Public source_support remains false and language0.18
+retains its existing syntax/identity/archive contracts. This is not a release.
+
+with_tasks(n,callback) creates a logical scope on the current executor, with a
+1..16 concurrency cap. Every ancestor cap applies to a resumed task. Nested
+scopes create no worker-owned pool. Normal callback return waits for all owned
+children; an error result cancels/drains them before returning that error.
+Checked traps and cancellation cancel/drain before the failed owner becomes
+joinable, including cancellation before its next coroutine resume. Coroutine
+frames are destroyed outside the scheduler mutex before completion publication.
+Existing descendants may fork during a normal drain. Scope/future dependency
+cycles fail with E_TASK_CYCLE; bounded graph-walk storage is reserved in advance.
+There are at most1024 logical scopes and256 nested scopes in one executor.
+
+Task/scope/channel values have real owned final payloads with weak owner
+identity. Canonical weak caches preserve opaque identity while aliases live.
+A capability can move into a descendant scope. Spawn captures, send payloads,
+callback returns and task results traverse actual hidden aggregate/closure
+graphs: a descendant capability cannot escape to an ancestor. Borrowed ancestor
+capabilities can return through an inner scope. File authority remains excluded,
+and synchronous parallel_map rejects task authority even through hidden values.
+Ending a scope revokes access, closes/frees its pipes and releases retained child
+outcomes. These runtime owner checks are not a complete formal region type
+system; phantom/lifetime semantics still require explicit cross-backend work.
+
+channel_new creates FIFO rendezvous(capacity0) or bounded queues. task_close is
+idempotent within its live scope. Queued values drain before receive returns
+err<T>("E_CHANNEL_CLOSED","channel is closed"); closed sends return false.
+Future wait returns its immutable outcome or propagates its checked failure.
+current_task_scope outside with_tasks fails with E_TASK_SCOPE. task_yield may
+also suspend the private root task. Source callbacks retain the existing
+pure/task-only effect contract, with no asynchronous I/O authority added.
+
+The compiler emits owned request arguments and saves the continuation PC;
+no raw Handle crosses suspension. Scheduler waits park the coroutine and carry
+rich NativeSite records. Some runtime guards retain legacy line0 while their
+operation/function source metadata remains precise. All callable descriptors
+currently require monolithic image lifetime; provider unload/reload is pending.
+
+Current validation includes53 complete native source scenarios atO0/O2, plus
+three subsequent pure-callback/task<unit> cases. The full maintained set now has56
+scenarios and needs final exact-source acceptance. Older ordinary AST24 and
+TypeScript21 mirrors erase yield; none is an independent asynchronous backend.
+The current C++ scheduler/capability probe has65 cases. An earlier62-case
+revision passed three strict ASan/UBSan/LSan and three TSan runs; final65/native56
+sanitizer/full/SDK/platform gates remain pending.
+
+Independent asynchronous AST/TypeScript, complete region semantics, explicit019
+history-preserving migration, async debugging/profiling and I/O, provider ABI,
+SDK delivery and target/quality acceptance remain required before enabling
+public source support. The following sections retain earlier stage contracts.
+
+# Prior compiled continuation stage (working103)
 
 `emitTaskNativeStep` compiles checked source through verified MLIR/LLVM. The
 private probe links actual native programs, without enabling public task builds.

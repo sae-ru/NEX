@@ -1,5 +1,6 @@
 #include "nex/task_frontend.h"
 #include "nex/task_native.h"
+#include "nex_task_protocol.h"
 #include "nex/backend.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
@@ -546,6 +547,7 @@ class Emitter {
     declaration("nex_task_frame_bad_pc","!llvm.ptr");
     runtimeDeclarations=true;
     declaration("nex_task_frame_call","!llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, i64, i64");
+    declaration("nex_task_frame_pause","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64");
     declaration("nex_task_closure_new","!llvm.ptr, i64","!llvm.ptr");
     declaration("nex_task_closure_bind","!llvm.ptr, !llvm.ptr");
     runtimeDeclarations=false;
@@ -583,7 +585,16 @@ class Emitter {
       case TaskInstruction::Jump:line("cf.br ^task_"+std::to_string(op.yes),op.span);break;
       case TaskInstruction::Branch:{auto value=read(op.inputs[0],op.span);line("cf.cond_br "+value.name+", ^task_"+std::to_string(op.yes)+", ^task_"+std::to_string(op.no),op.span);break;}
       case TaskInstruction::Poll:call("nex_poll",{c(op.span.line,op.span)},Type::Unit,op.span);next();break;
-      case TaskInstruction::Pause:call("nex_task_frame_set_pc",{frame,c(i+1,op.span)},Type::Unit,op.span);finish(1,op.span);break;
+      case TaskInstruction::Pause:{
+        static const std::map<std::string,nexrt::TaskRequestKind> requests={
+          {"task_yield",nexrt::TaskRequestKind::Yield},{"with_tasks",nexrt::TaskRequestKind::WithTasks},{"task_spawn",nexrt::TaskRequestKind::Spawn},{"task_wait",nexrt::TaskRequestKind::Wait},
+          {"channel_new",nexrt::TaskRequestKind::ChannelNew},{"task_send",nexrt::TaskRequestKind::Send},{"task_recv",nexrt::TaskRequestKind::Receive},{"task_close",nexrt::TaskRequestKind::Close},{"task_cancel",nexrt::TaskRequestKind::Cancel},{"current_task_scope",nexrt::TaskRequestKind::CurrentScope}};
+        auto arguments=call("nex_list_new",{},Type::list(Type::I64),op.span);
+        for(auto id:op.inputs){auto value=read(id,op.span);if(value.type.heap())call("nex_list_append_heap",{arguments,value},Type::Unit,op.span);else call("nex_list_append_i64",{arguments,asI64(value,op.span),c(scalarTag(value.type),op.span)},Type::Unit,op.span);release(value,op.span);}
+        auto type=op.operation=="channel_new"?*op.atom->type.element:op.atom->type;int64_t kind=type==Type::Unit?4:type.heap()?3:scalarTag(type);
+        call("nex_task_frame_pause",{frame,c(int64_t(requests.at(op.operation)),op.span),arguments,c(op.output==noTaskSlot?-1:int64_t(op.output),op.span),c(kind,op.span),c(op.span.line,op.span)},Type::Unit,op.span);
+        release(arguments,op.span);call("nex_task_frame_set_pc",{frame,c(i+1,op.span)},Type::Unit,op.span);finish(3,op.span);break;
+      }
       case TaskInstruction::Return:{
         if(op.inputs.empty())call("nex_task_frame_return_unit",{frame},Type::Unit,op.span);
         else {auto value=read(op.inputs[0],op.span);if(value.type.heap())call("nex_task_frame_return_heap",{frame,value},Type::Unit,op.span);else call("nex_task_frame_return_i64",{frame,asI64(value,op.span),c(scalarTag(value.type),op.span)},Type::Unit,op.span);release(value,op.span);}
@@ -905,8 +916,7 @@ TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){
     const auto &f=p.function(name);
     for(const auto &effect:f.effects)if(effect!="task"&&effect!="io")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no host resource bridge",f.span);
     auto body=lowerTaskFunction(p,f,true);
-    for(const auto &slot:body.slots)if(containsTaskAuthority(p,slot.type)||containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step cannot yet retain task/file capabilities",slot.span);
-    for(const auto &op:body.code)if(op.kind==TaskInstruction::Pause&&op.operation!="task_yield")throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no scope/channel scheduler bridge",op.span);
+    for(const auto &slot:body.slots)if(containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
     tasks.push_back(std::move(body));
   }

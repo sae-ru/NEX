@@ -1,7 +1,8 @@
-Working103 privately compiles cooperative yield and resumable direct/indirect
-calls with owned frames, distinct task closure descriptors and a combined depth
-limit. This is not a public source-task feature: scoped capabilities, channels,
-async reference/TypeScript and explicit migration remain pending.
+Working104 privately executes structured scopes, futures and bounded channels
+through compiled continuations, with owned capability graphs and ancestor worker
+caps. Public language0.18 and archive/build guards remain unchanged. Independent
+asynchronous reference/TypeScript, complete region typing and explicit migration
+remain pending. See tasks-runtime-design.md for this private contract.
 
 Working100 adds private continuation IR and a semantic lowering harness, not
 native source-task execution. Public0.18 types/effects/canonical identities and
