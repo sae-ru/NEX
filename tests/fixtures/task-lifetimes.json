@@ -1,0 +1,269 @@
+{
+  "schema": "nex.private-task-lifetime-fixtures/1",
+  "cases": [
+    {
+      "name": "scope-lifetime-borrow-alias",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let alias:task_scope=s;return alias;});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-generic",
+      "source": "fn identity<T>(v:T)->T{return v;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{return identity(s);});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-record-field",
+      "source": "struct Pair{inner:task_scope;outer:task_scope;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let pair:Pair=Pair(inner,s);return pair.outer;});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-list-index",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let scopes:list<task_scope>=[inner,s];return scopes[1];});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-result",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:result<task_scope>=with_tasks(1,fn(inner:task_scope)->result<task_scope> !{task}{return ok(s);});assert(unwrap(borrowed)==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-pattern",
+      "source": "struct Pair{own:task_scope;outer:task_scope;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let p:Pair=Pair(inner,s);return match p {Pair(own,outer)=>outer};});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-shadow",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let chosen:task_scope=s;if true{let chosen:task_scope=inner;assert(chosen==inner);}return chosen;});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-closure",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let callback:fn()->task_scope=with_tasks(1,fn(inner:task_scope)->(fn()->task_scope) !{task}{return fn()->task_scope{return s;};});assert(callback()==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-higher-order",
+      "source": "fn identity(v:task_scope)->task_scope{return v;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let factory:fn(task_scope)->task_scope=identity;return factory(s);});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-factory",
+      "source": "fn factory(v:task_scope)->(fn()->task_scope){return fn()->task_scope{return v;};}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let callback:fn()->task_scope=with_tasks(1,fn(inner:task_scope)->(fn()->task_scope) !{task}{return factory(s);});assert(callback()==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-task",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let pending:task<i64>=with_tasks(1,fn(inner:task_scope)->task<i64> !{task}{return task_spawn(s,fn()->i64{return 42;});});assert(task_wait(pending)==42);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-task-payload",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let pending:task<task_scope>=task_spawn(inner,fn()->task_scope{return s;});return task_wait(pending);});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-channel-send",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let q:channel<task_scope>=channel_new<task_scope>(inner,1);assert(task_send(q,s));return unwrap(task_recv(q));});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-mutable-snapshot",
+      "source": "fn selected_capture(f:fn()->task_scope)->unit{let held:fn()->task_scope=f;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{var selected:task_scope=s;let f:fn()->task_scope=fn()->task_scope{return selected;};let borrowed:task_scope=with_tasks(1,fn(inner:task_scope)->task_scope !{task}{selected_capture(f);return f();});assert(borrowed==s);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-dead-branch",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{if false{with_tasks(1,fn(inner:task_scope)->task_scope !{task}{return inner;});}return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-dead-short-circuit",
+      "source": "fn unsafe()->bool !{task}{with_tasks(1,fn(inner:task_scope)->task_scope !{task}{return inner;});return true;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{assert(true||unsafe());return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-generic",
+      "source": "fn identity<T>(v:T)->T{return v;}fn main()->task_scope !{task}{return with_tasks(1,fn(inner:task_scope)->task_scope !{task}{return identity(inner);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-factory",
+      "source": "fn factory(v:task_scope)->(fn()->i64){return fn()->i64{let keep:task_scope=v;return 42;};}fn main()->(fn()->i64) !{task}{return with_tasks(1,fn(inner:task_scope)->(fn()->i64) !{task}{return factory(inner);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-result-list",
+      "source": "fn main()->result<list<task_scope>> !{task}{return with_tasks(1,fn(inner:task_scope)->result<list<task_scope>> !{task}{return ok([inner]);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-list-push",
+      "source": "fn main()->list<task_scope> !{task}{return with_tasks(1,fn(inner:task_scope)->list<task_scope> !{task}{return push([],inner);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-list-set",
+      "source": "fn main()->list<task_scope> !{task}{return with_tasks(1,fn(inner:task_scope)->list<task_scope> !{task}{return set([inner],0,inner);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-task",
+      "source": "fn main()->task<i64> !{task}{return with_tasks(1,fn(inner:task_scope)->task<i64> !{task}{return task_spawn(inner,fn()->i64{return 42;});});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-task-payload",
+      "source": "fn main()->task_scope !{task}{return with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let t:task<task_scope>=task_spawn(inner,fn()->task_scope{return inner;});return task_wait(t);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-channel",
+      "source": "fn main()->channel<i64> !{task}{return with_tasks(1,fn(inner:task_scope)->channel<i64> !{task}{return channel_new<i64>(inner,1);});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-send-hidden",
+      "source": "struct Box{scopes:list<task_scope>;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{with_tasks(1,fn(inner:task_scope)->i64 !{task}{let q:channel<Box>=channel_new<Box>(s,1);assert(task_send(q,Box([inner])));return 42;});return 42;});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:0",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-spawn-factory",
+      "source": "fn factory(scope:task_scope)->(fn()->i64){return fn()->i64{let keep:task_scope=scope;return 42;};}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{with_tasks(1,fn(inner:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,factory(inner));return task_wait(t);});return 42;});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:0",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-through-match",
+      "source": "struct Box{scope:task_scope;}fn main()->task_scope !{task}{return with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let box:Box=Box(inner);return match box {Box(scope)=>scope};});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-own-through-loop",
+      "source": "fn main()->task_scope !{task}{return with_tasks(1,fn(inner:task_scope)->task_scope !{task}{var value:task_scope=inner;var n:i64=0;while n<2{value=inner;n=n+1;}return value;});}",
+      "analysis": "E_TASK_LIFETIME",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-dynamic-channel-escape",
+      "source": "fn main()->task_scope !{task}{return with_tasks(1,fn(inner:task_scope)->task_scope !{task}{let q:channel<task_scope>=channel_new<task_scope>(inner,1);assert(task_send(q,inner));return unwrap(task_recv(q));});}",
+      "analysis": "DYNAMIC:E_TASK_SCOPE",
+      "representation": "TRAP:E_TASK_SCOPE:2",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-empty-capability-list",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let values:list<task_scope>=with_tasks(1,fn(inner:task_scope)->list<task_scope>{return [];});assert(len(values)==0);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-borrow-phantom-type",
+      "source": "struct Phantom<T>{number:i64;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let value:Phantom<task_scope>=with_tasks(1,fn(inner:task_scope)->Phantom<task_scope>{return Phantom<task_scope>(42);});assert(value.number==42);return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-dynamic-correlated-true",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let outside:channel<task_scope>=channel_new<task_scope>(s,1);with_tasks(1,fn(inner:task_scope)->unit !{task}{let inside:channel<task_scope>=channel_new<task_scope>(inner,1);var selected:channel<task_scope>=outside;let choose:bool=1==1;if choose{selected=inside;}assert(task_send(selected,inner));});return 42;});}",
+      "analysis": null,
+      "representation": "42",
+      "stdout": "",
+      "minimum_resumes": 0
+    },
+    {
+      "name": "scope-lifetime-dynamic-correlated-false",
+      "source": "fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let outside:channel<task_scope>=channel_new<task_scope>(s,1);with_tasks(1,fn(inner:task_scope)->unit !{task}{let inside:channel<task_scope>=channel_new<task_scope>(inner,1);var selected:channel<task_scope>=outside;let choose:bool=1==2;if choose{selected=inside;}assert(task_send(selected,inner));});return 42;});}",
+      "analysis": "DYNAMIC:E_TASK_SCOPE",
+      "representation": "TRAP:E_TASK_SCOPE:0",
+      "stdout": "",
+      "minimum_resumes": 0
+    }
+  ]
+}

@@ -1,3 +1,23 @@
+# Working108 private authority-flow diagnostics
+
+Toolchain0.104.0/language0.18 adds early source diagnostics for known task
+capability escapes. Ancestor borrowing, helpers, callable factories and precise
+aggregate projections retain useful values. Unknown calls, channel payloads,
+recursion, joins and loop widening retain mandatory runtime obligations. This
+is not complete static region typing or public source integration. See
+[the lifetime contract](docs/task-lifetimes.md). Early analysis91source scenarios and33additional independent AST runs pass.
+These include borrowed/owned helpers, closures, empty capability containers,
+phantom types and conditionally selected channels. The first29new lifetime
+fixtures also agree on native O0/O2 and strict generated TypeScript7.0.2.
+Current native91/TS100/full110, sanitizers, installed SDK and platform acceptance
+remain pending; whole CMake build passes.
+
+Frozen107 completed full109 in1014.958s, strict ASan/UBSan/LSan and TSan gates
+with AST/IR/reference and native58xO0/O2, plus seven scoped LinuxARM64 groups.
+Linux container gates took136.38s; these are not a full Linux suite or installed
+SDK proof. Primary081 remains preserved.019 migration, complete lifetime/effect
+integration, asyncIO/debug/profile/provider lifetime and delivery remain required.
+
 # Working107 private generated TypeScript task execution
 
 This separate toolchain0.103.0/language0.18 source emits checked client/shared

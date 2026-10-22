@@ -1,3 +1,14 @@
+# Private authority-flow diagnostics (working108)
+
+The bounded analyzeTaskLifetimes pass follows known scope owners through helpers,
+aggregates, patterns, aliases and callable factories, diagnosing known escapes
+while preserving borrowed ancestor values. Unknown targets, channel payloads,
+recursion and loop widening retain mandatory runtime obligations; this is not
+complete static region inference. The [lifetime contract](task-lifetimes.md)
+defines ownership, effects, cleanup and diagnostic scope. Public source support
+stays false;019 migration is required. Invalid private runtime conformance
+fixtures remain checkable without running this separate diagnostic pass.
+
 # Private generated TypeScript tasks (working107)
 
 emitTaskTypeScript emits only reachable shared/client checked functions as

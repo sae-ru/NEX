@@ -23,6 +23,9 @@ assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(isinsta
 capacities=next(n for n in tree.body if isinstance(n,ast.For) and isinstance(n.target,ast.Name) and n.target.id=='capacity')
 namespace={};exec(compile(ast.Module(body=[assignment,capacities],type_ignores=[]),'literal-native-fixtures','exec'),{'__builtins__':{},'str':str},namespace)
 cases=namespace['cases']
+lifetime_cases=json.loads((source/'tests/fixtures/task-lifetimes.json').read_text())
+assert lifetime_cases['schema']=='nex.private-task-lifetime-fixtures/1'
+cases.extend((c['name'],c['source'],c['representation'],c['stdout'],c['minimum_resumes']) for c in lifetime_cases['cases'])
 extras=[
  ('large-fifo','fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<i64>=channel_new<i64>(s,5000);var i:i64=0;while i<5000{assert(task_send(q,i));i=i+1;}assert(task_close(q));i=0;var total:i64=0;while i<5000{let value:i64=unwrap(task_recv(q));assert(value==i);total=total+value;i=i+1;}assert(!is_ok(task_recv(q)));return total;});}','12497500','',0),
  ('generic','fn echo<T>(value:T)->T !{task}{task_yield();return value;}fn main()->i64 !{task}{return echo(42);}','42','',0),

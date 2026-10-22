@@ -1,5 +1,11 @@
 # NEX
 
+Working108 adds bounded private source diagnostics for task capability escapes.
+Known owners flow through helpers, aggregates and closures; returning a borrowed
+ancestor stays legal. Unknown flow retains mandatory runtime validation. See
+[task lifetimes](docs/task-lifetimes.md). Public tasks, complete static region
+inference and019 migration remain pending.
+
 Working107 adds a private TypeScript generator backend with an independent
 event-loop scheduler. Direct/indirect calls, guarded matches, result propagation,
 scopes/futures/channels and cancellation preserve actual suspension. Shared/client
@@ -14,7 +20,7 @@ async IO/debug/profile and delivery remain pending.
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.103.0 / language 0.18**.
+This isolated development source is **toolchain 0.104.0 / language 0.18**.
 It includes native compiled continuations and independent AST and generated
 TypeScript task schedulers as private integration stages. Complete acceptance
 of this exact source is pending. The approved primary checkout is preserved at

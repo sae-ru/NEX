@@ -1,3 +1,8 @@
+Working108 adds private bounded authority-flow diagnostics, including ancestor
+borrowing through helpers, aggregates and callable factories. Unresolved flow
+retains mandatory runtime checks; this is not complete static region typing.
+Public0.18 remains unchanged. See [task lifetimes](task-lifetimes.md).
+
 Working107 adds a private generated TypeScript task backend and event-loop
 scheduler. It preserves reachable client/shared emission, source function result
 boundaries and checked values. It also counts the root task as nesting level1

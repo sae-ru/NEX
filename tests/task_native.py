@@ -178,6 +178,9 @@ cases=[
 ]
 for capacity in (0,1,7):
  cases.append(('scope-channel-'+str(capacity),'''fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<i64>=channel_new<i64>(s,CAPACITY);let writer:task<i64>=task_spawn(s,fn()->i64 !{task}{var n:i64=0;while n<7{assert(task_send(q,n));n=n+1;}assert(task_close(q));return n;});var total:i64=0;var open:bool=true;while open{let item:result<i64>=task_recv(q);if is_ok(item){total=total+unwrap(item);}else{open=false;}}assert(task_wait(writer)==7);assert(!task_close(q));return total*2;});}'''.replace('CAPACITY',str(capacity)),'42','',10))
+lifetime_cases=json.loads((source/'tests/fixtures/task-lifetimes.json').read_text())
+assert lifetime_cases['schema']=='nex.private-task-lifetime-fixtures/1'
+cases.extend((c['name'],c['source'],c['representation'],c['stdout'],c['minimum_resumes']) for c in lifetime_cases['cases'])
 available_cases=len(cases)
 if args.selected_cases:
  requested=set(args.selected_cases);unknown=requested-{case[0] for case in cases}

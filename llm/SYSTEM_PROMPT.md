@@ -1,3 +1,8 @@
+When structured_tasks_runtime.private_lifetime_analysis is present,
+`nex guide --kind task-lifetime` explains its bounded early diagnostics. A
+successful private report retains mandatory runtime ownership guards; it is not
+a complete static proof or permission to use tasks when source_support is false.
+
 Use nex guide --kind tasks-runtime for the internal scheduler design, and
 nex guide --kind browser-worker for implemented browser jobs.
 structured_tasks_runtime is an internal development capability. When its
