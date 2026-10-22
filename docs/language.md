@@ -1,6 +1,8 @@
-Working105 adds an independent private AST continuation machine, without a
-reference scheduler or public task execution. Public0.18 syntax and identities
-remain unchanged; see tasks-runtime-design.md.
+Working106 connects independent checked-AST continuations to a private
+cooperative scope/future/channel scheduler. It does not use TaskIR or native
+TaskGroup dispatch. Public0.18 syntax, identities and task execution guards
+remain unchanged; TypeScript scheduling, region typing and explicit migration
+remain pending. See tasks-runtime-design.md.
 
 Working104 privately executes structured scopes, futures and bounded channels
 through compiled continuations, with owned capability graphs and ancestor worker

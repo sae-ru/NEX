@@ -1,6 +1,7 @@
 // Included inside namespace nexrt, after TaskGroup::Impl is complete.
 const TaskData &taskData(const Value &value,Data::Kind kind){
-  if(value.tag!=Value::Object||!value.object||value.object->kind!=kind)
+  if(value.tag!=Value::Object||!value.object||value.object->kind!=kind||
+     value.object->taskOwnerFamily()!=Data::TaskOwnerFamily::Native)
     throw DataError("E_TASK_VALUE","expected an owned task capability");
   return static_cast<const TaskData&>(*value.object);
 }

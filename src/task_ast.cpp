@@ -7,6 +7,8 @@ using AV=nexrt::Value;
 struct TaskAstMachine::Impl {
   const Program &program;
   uint64_t limit,used=0,sequence=0;
+  size_t pending=0,maximumActions;
+  unsigned outerDepth;
   bool waiting=false,done=false,failed=false;
   Span activeSpan;
   Type response;
@@ -39,8 +41,8 @@ struct TaskAstMachine::Impl {
   }
   void add(Action action){
     auto &actions=frames.back().actions;
-    if(actions.size()>=262144)throw Error("E_LIMIT","AST continuation action limit exceeded",activeSpan);
-    actions.push_back(std::move(action));
+    if(pending>=maximumActions)throw Error("E_LIMIT","AST continuation action limit exceeded",activeSpan);
+    actions.push_back(std::move(action));++pending;
   }
   void evaluate(E expression){add({Action::Expression,std::move(expression)});}
   AV pop(){
@@ -86,7 +88,7 @@ struct TaskAstMachine::Impl {
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation cannot carry file or foreign authority",function.span);
     if(!function.typeParameters.empty()||containsParameter(function.result))
       throw Error("E_GENERIC_ENTRY","AST continuation requires concrete functions",function.span);
-    if(frames.size()>=256)throw Error("E_LIMIT","AST continuation call depth exceeds256",function.span);
+    if(outerDepth+frames.size()>=256)throw Error("E_LIMIT","AST continuation call depth exceeds256",function.span);
     if(args.size()!=function.params.size())throw Error("E_TASK_STATE","AST call argument count differs",function.span);
     Frame frame{&function,{{}},{},{}};
     for(size_t i=0;i<args.size();++i){
@@ -107,7 +109,7 @@ struct TaskAstMachine::Impl {
   }
   void leave(AV value){
     if(!kind(frames.back().function->result,value))throw Error("E_TASK_TYPE","AST return kind differs",activeSpan);
-    frames.pop_back();
+    pending-=frames.back().actions.size();frames.pop_back();
     if(frames.empty()){returned=std::move(value);done=true;}
     else frames.back().values.push_back(std::move(value));
   }
@@ -142,7 +144,7 @@ struct TaskAstMachine::Impl {
       while(!done){
         auto &frame=frames.back();
         if(frame.actions.empty())throw Error("E_TASK_STATE","AST continuation has no pending action",activeSpan);
-        auto action=std::move(frame.actions.back());frame.actions.pop_back();
+        auto action=std::move(frame.actions.back());frame.actions.pop_back();--pending;
         auto e=action.expression;auto s=action.statement;
         charge(e?e->span:s?s->span:frame.function->span);
         switch(action.kind){
@@ -197,7 +199,7 @@ struct TaskAstMachine::Impl {
             child->kind=Expr::Name;child->text=name;child->type=e->args[i]->type;
             atom->args.push_back(child);inputs.emplace(std::move(name),std::move(args[i]));
           }
-          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,unsigned(frames.size()-1));
+          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,outerDepth+unsigned(frames.size()-1));
           charge(e->span,result.steps);output+=result.output;frame.values.push_back(std::move(result.value));break;
         }
         case Action::Bind:{auto value=pop();frame.scopes.back()[s->name]=std::move(value);break;}
@@ -244,21 +246,26 @@ struct TaskAstMachine::Impl {
       }
       TaskTransition next;next.kind=TaskTransition::Done;next.value=returned;next.pc=used;return next;
     }catch(Error &error){
-      output+=error.output;error.output=output;failed=true;frames.clear();throw;
+      output+=error.output;error.output=output;failed=true;frames.clear();pending=0;throw;
     }catch(const nexrt::DataError &error){
-      failed=true;frames.clear();Error located(error.code,error.what(),activeSpan);located.output=output;throw located;
-    }catch(...){failed=true;frames.clear();throw;}
+      failed=true;frames.clear();pending=0;Error located(error.code,error.what(),activeSpan);located.output=output;throw located;
+    }catch(...){failed=true;frames.clear();pending=0;throw;}
   }
-  Impl(const Program &program,const std::string &entry,const std::vector<AV> &args,uint64_t limit):program(program),limit(limit){
+  Impl(const Program &program,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
+       const AV &closure,unsigned outerDepth,size_t maximumActions):program(program),limit(limit),maximumActions(maximumActions),outerDepth(outerDepth){
     if(!program.taskPrototype)throw Error("E_TASK_STATE","AST continuation requires private checked source");
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
-    push(program.function(entry),args);
+    if(maximumActions>262144)throw Error("E_LIMIT","AST action allowance exceeds262144");
+    push(program.function(entry),args,closure.tag==AV::Object?&closure:nullptr);
   }
 };
-TaskAstMachine::TaskAstMachine(const Program &p,const std::string &entry,const std::vector<AV> &args,uint64_t limit)
-  :impl(std::make_unique<Impl>(p,entry,args,limit)){}
+TaskAstMachine::TaskAstMachine(const Program &p,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
+    AV closure,unsigned outerDepth,size_t maximumActions)
+  :impl(std::make_unique<Impl>(p,entry,args,limit,closure,outerDepth,maximumActions)){}
 TaskAstMachine::~TaskAstMachine()=default;
 TaskTransition TaskAstMachine::advance(){return impl->advance();}
+void TaskAstMachine::restrictBudget(uint64_t remaining){impl->limit=impl->used+std::min(remaining,impl->limit-impl->used);}
+size_t TaskAstMachine::pendingActions()const{return impl->pending;}
 void TaskAstMachine::resume(uint64_t ticket,AV value){
   if(!impl->waiting||ticket!=impl->ticket)throw Error("E_TASK_STATE","AST continuation response ticket differs");
   if(!Impl::kind(impl->response,value))throw Error("E_TASK_TYPE","AST continuation response kind differs",impl->activeSpan);

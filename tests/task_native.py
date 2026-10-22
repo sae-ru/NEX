@@ -2,7 +2,7 @@
 import argparse,contextlib,json,os,re,shutil,subprocess,sys,tempfile
 from pathlib import Path
 
-parser=argparse.ArgumentParser();parser.add_argument('nex');parser.add_argument('probe');parser.add_argument('--sanitizer',choices=('address','thread'));parser.add_argument('--case',action='append',dest='selected_cases')
+parser=argparse.ArgumentParser();parser.add_argument('nex');parser.add_argument('probe');parser.add_argument('reference');parser.add_argument('--sanitizer',choices=('address','thread'));parser.add_argument('--case',action='append',dest='selected_cases')
 args=parser.parse_args();nex,probe=map(lambda s:str(Path(s).resolve()),(args.nex,args.probe))
 sanitize=(['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'] if args.sanitizer=='address' else ['-fsanitize=thread','-fno-omit-frame-pointer'] if args.sanitizer=='thread' else [])
 source=Path(__file__).resolve().parents[1]
@@ -193,9 +193,16 @@ with compiled_output() as tmp:
  for name in ('runtime.cpp','nex_files.cpp','nex_task_frame.cpp'):
   obj=root/(name+'.o')
   run([clang,'-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,'-c',runtime/name,'-o',obj]);objects.append(obj)
- mirrors=0;typescript_mirrors=0
+ mirrors=0;typescript_mirrors=0;asynchronous_ast=0
  for name,body,result,prefix,minimum in cases:
   path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
+  reference=json.loads(run([args.reference,path,'parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'ordinary']))
+  assert reference['stdout']==prefix,(name,reference)
+  if result.startswith('TRAP:'):
+   expected=result.split(':');assert reference['ok'] is False and reference['code']==expected[1],(name,reference)
+   if len(expected)>2 and expected[2]!='0':assert reference['line']==int(expected[2]),(name,reference)
+  else:assert reference['ok'] is True and reference['representation']==result,(name,reference)
+  asynchronous_ast+=1
   folder=root/name;metadata=json.loads(run([probe,path,folder,triple,layout,'main']))
   assert metadata['public_source_tasks'] is False
   cpp=folder/'driver.cpp';cpp.write_text(driver.replace('SYMBOL',metadata['symbol']).replace('DESCRIPTOR',metadata['descriptor']).replace('KINDS',','.join(map(str,metadata['slots']))).replace('PARAMETERS',','.join(map(str,metadata['parameters']))).replace('SLOTCOUNT',str(len(metadata['slots']))).replace('PARAMCOUNT',str(len(metadata['parameters']))).replace('MINIMUM',str(minimum)).replace('REPEATS','4' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '2' if name=='loop' else '1').replace('WORKERS','2' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '1').replace('CANCEL_CASE','1' if name=='cancel-call' else '0').replace('INPUTARGS','{nexrt::Value(21)}' if name=='parameter' else '{}'))
@@ -229,4 +236,4 @@ with compiled_output() as tmp:
   path=root/'rejected.nex';path.write_text('module rejected;'+body)
   rejected=subprocess.run([probe,str(path),str(root/'rejected'),triple,layout,'main'],capture_output=True,text=True,env=env)
   assert rejected.returncode==1 and json.loads(rejected.stdout)['code']=='E_TASK_UNIMPLEMENTED',rejected.stdout+rejected.stderr
- print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':2,'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))
+ print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'independent_asynchronous_ast_scenarios':asynchronous_ast,'reference_scheduler':'independent cooperative checked AST','ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':2,'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))

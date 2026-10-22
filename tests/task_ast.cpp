@@ -191,5 +191,22 @@ fn main()->i64 !{task}{task_yield();return dive(300);}
   {
     auto p=source("server fn main()->unit !{task,fs}{task_yield();}");rejects("E_TASK_UNIMPLEMENTED",[&]{TaskAstMachine machine(p,"main");});++scenarios;
   }
-  std::cout<<"{\"ok\":true,\"source_scenarios\":"<<scenarios<<",\"checks_including_repeated_resume_protocol\":"<<cases<<",\"independent_ast_control\":true,\"scheduler_integrated\":false,\"native_task_execution\":false,\"public_source_tasks\":false}\n";return 0;
+  {
+    // Every source statement is valid and checked. A wide pending suffix at
+    // each call must exhaust the aggregate action allowance before call256.
+    std::string wide="fn work(n:i64)->i64 !{task}{if n==0{return 42;}let answer:i64=work(n-1);";
+    for(size_t i=0;i<8192;++i)wide+="task_yield();";
+    wide+="return answer;}fn main()->i64 !{task}{return work(40);}";
+    auto p=source(wide);TaskAstMachine machine(p,"main");
+    rejects("E_LIMIT",[&]{machine.advance();});
+    require(machine.pendingActions()==0,"failed aggregate action budget retained frames");++cases;++scenarios;
+  }
+  {
+    std::string wide="fn work(n:i64)->i64 !{task}{if n==0{return 42;}";
+    for(size_t i=0;i<8192;++i)wide+="task_yield();";
+    wide+="return 0;}fn main()->i64 !{task}{var i:i64=0;while i<64{assert(work(0)==42);i=i+1;}return 42;}";
+    auto p=source(wide);TaskAstMachine machine(p,"main");auto done=machine.advance();
+    require(done.kind==TaskTransition::Done&&done.value.scalar==42&&machine.pendingActions()==0,"early return did not release pending action allowance");++cases;++scenarios;
+  }
+  std::cout<<"{\"ok\":true,\"source_scenarios\":"<<scenarios<<",\"checks_including_repeated_resume_protocol\":"<<cases<<",\"independent_ast_control\":true,\"scheduler_integrated\":true,\"native_task_execution\":false,\"public_source_tasks\":false}\n";return 0;
 }catch(const std::exception &error){std::cerr<<"after "<<cases<<" cases: "<<error.what()<<'\n';return 1;}

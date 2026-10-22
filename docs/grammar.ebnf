@@ -1,3 +1,4 @@
+(* Working106 private cooperative AST task scheduler adds no public syntax. *)
 (* Working105 private AST continuations add no public syntax. *)
 (* Working104 private scoped task/channel continuations add no public syntax. *)
 (* Working100 private continuation IR adds no public source syntax. *)

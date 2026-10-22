@@ -1,4 +1,41 @@
-# Private AST continuation stage (working105)
+# Private independent AST scheduler (working106)
+
+evaluateTaskReference drives TaskAstMachine on one coordinator with its own
+ready queue, future dependencies, lexical scope records and FIFO channel deques.
+All ten private requests are dispatched here without TaskIR, native compiled
+frames or TaskGroup calls. Cooperative turns model asynchronous source effects;
+they do not establish OS thread overlap or execution of simultaneous IO.
+with_tasks still checks1..16 workers; a serial reference never exceeds that cap.
+
+Normal scope exit drains children, including descendants forked during drain.
+An error result, trap or cancellation aborts/drains owned scopes before completion
+is visible. Unobserved child failures propagate on normal scope exit. Future and
+scope-drain dependency cycles report E_TASK_CYCLE. If every task is parked on
+channels with no possible progress, this private reference reports
+E_TASK_DEADLOCK; native wall-clock timeout behavior remains a separate contract.
+Channels support rendezvous and bounded FIFO queues, closed-send false and
+closed-receive err(E_CHANNEL_CLOSED). There are4096 task slots,1024 scopes,
+1024 channels and65536 total reserved channel slots, with256 nested calls/scopes
+and262144 pending actions across all machines of one task. One shared step budget
+charges traversal, atoms, requests and snapshot validation across spawned jobs.
+
+Reference capabilities have private final owned payloads, an immutable reference
+family tag and weak scheduler identity. Canonical weak caches preserve equality
+while aliases remain. Native casts require the native family first. Both reject
+base slicing and forged ordinary Data tags. Independent graph traversal checks
+hidden aggregate/closure capabilities against current and destination scope
+ancestry on spawn, send, task completion and callback return. Files are rejected.
+Closing scopes revoke authority and release queued values; expired copies cannot
+authorize a later scheduler. No reference scope extends native TaskGroup lifetime.
+
+The private reference probe checks cleanup, capability-family rejection and
+source results/errors. The native continuation suite also executes each complete
+program through this reference, retaining task_yield and all structured requests.
+TypeScript scheduling, complete region typing, explicit019 history-preserving
+migration, async IO/debug/profile and full target/SDK delivery remain pending.
+Public source support stays false and language0.18 identities/grammar are unchanged.
+
+## Independent AST control machine
 
 TaskAstMachine traverses the checked AST through owned action, lexical-scope,
 evaluation and function stacks. It never calls lowerTaskFunction or executes
@@ -11,18 +48,17 @@ TaskTransition is a shared transport interface, separated from the IR machine.
 Requests contain owned arguments, source spans and one-use response tickets.
 A machine requires exclusive ownership while advancing/resuming; it can transfer
 between joined OS threads. It retains no native Handle. At most256 source call
-frames and262144 pending actions are permitted; a shared machine step budget
+frames and262144 aggregate pending actions are permitted; a shared machine step budget
 charges traversal and atom work. Failure clears retained frames; abandoning a
 parked machine releases owned values. Responses and explicit call arguments have
 checked value kinds. File authority and fs/db/ffi execution are rejected.
 
-The first30 AST source scenarios and240 checks pass against the ordinary AST
-oracle where yield is erased. The reference scheduler/real scoped capability
-bridge is still absent: no scope/channel scheduling or physical CPU overlap is
-claimed by this machine. TypeScript scheduling, full region typing, explicit019
-history-preserving migration, async IO/debug/profile and target/SDK delivery stay
-pending. Public source support and language0.18 identities/grammar are unchanged.
-Current105 final build/full/sanitizer/SDK/platform validation is pending.
+The original30 AST source scenarios and240 checks use an ordinary AST oracle
+where yield is erased. Two additional checked wide-function scenarios exercise
+aggregate pending-action exhaustion and early-return allowance release. This
+control-machine probe is distinct from the asynchronous scheduler/native
+comparison. Working105 full107 and strict AST/IR sanitizer gates passed before
+this separate106 work began;106 validation must use its own current sources.
 
 # Private structured source execution (working104)
 

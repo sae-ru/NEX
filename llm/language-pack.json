@@ -840,7 +840,7 @@
       "source async/task/channel types and scoped effects",
       "explicit history-preserving language migration",
       "independent asynchronous backend semantics and complete region typing",
-      "reference and TypeScript scheduling",
+      "TypeScript scheduling",
       "native debugger and async profile attribution",
       "asynchronous IO",
       "full current platform SDK validation"
@@ -879,9 +879,28 @@
       "owned_values": true,
       "maximum_call_depth": 256,
       "transport": "TaskTransition",
-      "scheduler_integrated": false,
+      "scheduler_integrated": true,
       "public_build_enabled": false,
       "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected"
+    },
+    "private_ast_scheduler": {
+      "entry_point": "evaluateTaskReference",
+      "probe": "nex_task_reference_probe",
+      "control": "independent checked AST scheduler; no TaskIR or native TaskGroup dispatch",
+      "scheduler_integrated": true,
+      "cooperative": true,
+      "physical_cpu_overlap": false,
+      "scope_future_channel_requests": 10,
+      "owned_capability_family": "reference; immutable family and weak scheduler identity",
+      "scope_graph_validation": true,
+      "maximum_tasks": 4096,
+      "maximum_scopes": 1024,
+      "maximum_channels": 1024,
+      "maximum_channel_slots": 65536,
+      "maximum_pending_actions_per_task": 262144,
+      "public_build_enabled": false,
+      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected",
+      "stalled_channels": "E_TASK_DEADLOCK private diagnostic"
     }
   }
 }

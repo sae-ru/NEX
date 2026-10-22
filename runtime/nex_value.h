@@ -33,6 +33,7 @@ struct Value {
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
   enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel } kind;
+  enum class TaskOwnerFamily { None, Native, Reference };
   int64_t ordinal=0;
   std::string text;
   std::vector<Value> values;
@@ -43,12 +44,15 @@ private:
   friend struct ByteData;
   friend struct FileData;
   friend struct TaskData;
-  Data(Kind kind,size_t allocatedSize):kind(kind){profileAllocate(this,allocatedSize,1);++liveObjects;}
+  friend struct ReferenceTaskData;
+  const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
+  Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),taskFamily(family){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
     if(other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
   }
 public:
+  TaskOwnerFamily taskOwnerFamily()const{return taskFamily;}
   explicit Data(Kind kind):Data(kind,sizeof(Data)){
     if(kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel)throw DataError("E_RUNTIME","value requires an owned payload");
   }

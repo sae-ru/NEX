@@ -1,12 +1,19 @@
 # NEX
 
+Working106 adds a private cooperative AST task scheduler with independent
+scope/future/channel dispatch, weak owned capabilities and aggregate action
+budgets. It executes checked private programs without TaskIR or native
+TaskGroup scheduling. Public language0.18 task source remains disabled;
+TypeScript scheduling, region typing, migration and delivery remain pending.
+See [the private task contract](docs/tasks-runtime-design.md).
+
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
 **Главная идея:** минимальное количество токенов для передачи максимального
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.101.0 / language 0.18**.
+This isolated development source is **toolchain 0.102.0 / language 0.18**.
 It fixes operator runtime notice propagation in installed SDK acceptance,
 including captured project packaging tasks. Complete acceptance of this exact
 source is pending. The approved primary checkout is preserved at 0.81 / 0.16.
@@ -17,9 +24,10 @@ action/call/value stacks traverse checked expressions and statements directly,
 without lowering or executing TaskIR. Thirty source scenarios and240 protocol
 checks pass, including suspension, recursion, closures, guarded matching,
 short circuit, result propagation, checked traps and abandoned frame cleanup.
-The reference scheduler/capability bridge and TypeScript remain pending; this
-machine is not public asynchronous reference execution. Exact-source full,
-sanitizer, installed-SDK and platform acceptance of105 remain pending.
+The reference scheduler/capability bridge is implemented privately in106;
+TypeScript remains pending. Public asynchronous task execution is still disabled.
+Frozen105 passed full107 and strict AST/IR sanitizer checks;106 full-suite,
+sanitizer, installed-SDK and platform acceptance need their own evidence.
 
 The private native prototype compiles resumable calls, structured task scopes,
 futures and bounded channels to MLIR/LLVM. Nested scopes share the executor and

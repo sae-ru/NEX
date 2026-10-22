@@ -2732,3 +2732,16 @@ root promotion, release or full objective completion claim.
 Isolated implementation adds `nex.project-build/1`, component ownership/import DAG checks, named build configurations, read-only plans and actual native/static-archive/server/web orchestration. Dependencies currently compile source; separately built archives are not consumed by those source edges. Full79/installed SDK/platform/root-integration gates remain pending. Earlier0.70 evidence retains its exact source and binary scopes.
 
 On a physical CIX P1 ARM64 board, a private patched0.70 Linux development SDK launches and builds/runs ten language examples in debug/release; all20 native outputs match the interpreter and copied binaries run without NEX/LLVM/MLIR/Z3 dependencies. Checked overflow traps in both profiles. Separately, Mali OpenCL checked196608 integer outputs and a fixed-shape3x2 ONNX fixture passed three Zhouyi NPU runs with CPU EP fallback disabled, actual Zhouyi profile placement and `/dev/aipu` open. Direct accelerator calls from NEX and broad hardware support remain pending.
+# Working106 private AST task scheduling
+
+This separate development source is toolchain0.102.0/language0.18. Its reference
+scheduler dispatches all ten staged task operations independently of TaskIR and
+native TaskGroup. The56 retained source scenarios match expected values/errors
+with actual yields/scopes/channels. The private control probe has32 source cases
+and243 checks, including aggregate action limits. Focused native scheduler,
+frontend, IR and reference checks pass. Current106 full108, sanitizer, installed
+SDK and platform gates need their own evidence. Frozen105 full107 and strict
+AST/IR sanitizer checks passed. Public task syntax/execution stays disabled;
+TypeScript scheduling, region typing,019 migration, asynchronous IO/debug/profile
+and delivery remain pending. Primary081 and graph history are preserved.
+

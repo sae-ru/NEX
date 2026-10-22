@@ -11,7 +11,7 @@ struct TaskData final:Data {
 private:
   friend struct TaskValueAccess;
   TaskData(TaskGroup::Scope scope,TaskGroup::Ticket ticket,TaskGroup::Channel channel,
-           Kind kind,int64_t payloadKind):Data(kind,sizeof(TaskData)),scope(scope),
+           Kind kind,int64_t payloadKind):Data(kind,sizeof(TaskData),TaskOwnerFamily::Native),scope(scope),
            ticket(ticket),channel(channel),payloadKind(payloadKind){}
 };
 const TaskData &taskData(const Value &,Data::Kind);

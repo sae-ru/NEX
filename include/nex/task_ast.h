@@ -10,11 +10,15 @@ class TaskAstMachine {
   std::unique_ptr<Impl> impl;
 public:
   TaskAstMachine(const Program &,const std::string &entry,
-    const std::vector<nexrt::Value> &arguments={},uint64_t limit=1000000);
+    const std::vector<nexrt::Value> &arguments={},uint64_t limit=1000000,
+    nexrt::Value closure={},unsigned outerDepth=0,size_t maximumActions=262144);
   ~TaskAstMachine();
   TaskAstMachine(const TaskAstMachine&)=delete;
   TaskAstMachine &operator=(const TaskAstMachine&)=delete;
   TaskTransition advance();
+  // Scheduler-wide work accounting can tighten, never extend, this budget.
+  void restrictBudget(uint64_t remaining);
+  size_t pendingActions()const;
   void resume(uint64_t ticket,nexrt::Value value={});
   bool finished()const;
   uint64_t steps()const;
