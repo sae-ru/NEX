@@ -666,8 +666,6 @@ int run(const Options &o) {
   std::vector<std::string> foreignArguments;if(!o.get("--foreign").empty()){foreignArguments={o.get("--target")=="server"?"--foreign":"--nex-foreign",fs::absolute(o.get("--foreign")).string()};}
   auto executionArguments=[&](const std::string &executable){std::vector<std::string> result{executable};result.insert(result.end(),foreignArguments.begin(),foreignArguments.end());return result;};
   BuildOptions buildOptions{o.get("--profile",o.command=="package"?"release":"debug"),o.get("--target"),o.get("--entry",o.get("--target")=="server"?"handle":"main"),false,o.has("--library"),o.get("--toolchain")};
-  if((o.command=="debug"||o.command=="profile")&&usesTaskEffects(p,buildOptions.entry))
-    throw Error("E_TASK_UNIMPLEMENTED","source task debugger/profile attribution is not integrated yet",p.function(buildOptions.entry).span);
   if((o.command=="run"||o.command=="test"||o.command=="debug"||o.command=="profile")&&o.get("--target")!="web"&&!o.has("--interpreter-only"))requireNativeHost(buildOptions);
   ProfileOptions profiling;
   if(o.command=="profile"){
@@ -681,6 +679,8 @@ int run(const Options &o) {
     profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600),foreignArguments};
     buildOptions.profile="profile";
   }
+  if((o.command=="debug"||o.command=="profile")&&usesTaskEffects(p,buildOptions.entry))
+    throw Error("E_TASK_UNIMPLEMENTED","source task debugger/profile attribution is not integrated yet",p.function(buildOptions.entry).span);
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
   if(o.command=="debug")directory=nativeDebugBuildDirectory(directory);
   if(o.command=="test") {

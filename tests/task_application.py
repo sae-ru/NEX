@@ -17,6 +17,7 @@ cases = [
     ('snapshot', 'fn main()->i64 !{task}{var base:i64=40;let f:fn(i64)->i64 !{task}=fn(n:i64)->i64 !{task}{task_yield();return base+n;};base=99;return f(2);}', 42, '', None),
     ('heap-return', 'fn text()->list<str> !{task}{let value:list<str>=["A🧠\\u0000"];task_yield();return value;}fn main()->i64 !{task,io}{print(text());return 42;}', 42, '["A🧠\\u0000"]\n', None),
     ('scope', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let a:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});return task_wait(a)+task_wait(b);});}', 42, '', None),
+    ('internal-task-signatures', 'fn keep_scope(s:task_scope)->task_scope{return s;}fn keep_callback(f:fn()->i64 !{task})->(fn()->i64 !{task}){return f;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{assert(keep_scope(s)==s);let callback:fn()->i64 !{task}=keep_callback(fn()->i64 !{task}{task_yield();return 42;});return callback();});}', 42, '', None),
     ('channel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<str>=channel_new<str>(s,0);let writer:task<unit>=task_spawn(s,fn()->unit !{task}{assert(task_send(q,"A🧠\\u0000"));assert(task_close(q));});let value:str=unwrap(task_recv(q));task_wait(writer);assert(!is_ok(task_recv(q)));assert(len(value)==3);return 42;});}', 42, '', None),
     ('cancel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{let held:list<str>=["retained🧠"];while true{task_yield();}return len(held);});task_yield();assert(task_cancel(t));return 42;});}', 42, '', None),
     ('propagate-cleanup', 'fn work()->result<i64> !{task}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<str>=task_spawn(s,fn()->str !{task}{let held:str="retained🧠";while true{task_yield();}return held;});task_yield();let bad:result<str>=err<str>("E_STOP","stop");let value:str=bad?;return ok(len(value));});}fn main()->i64 !{task}{return unwrap(work());}', 70, '', 'E_RESULT'),
@@ -77,6 +78,37 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     assert 'nex_task_application.cpp' not in metadata['runtime_components'], metadata
     assert '__task_step' not in Path(built['llvm']).read_text()
     assert cli(root, 'build', pure, '--library')['executable'].endswith('libnex.a')
+    boundary_types = [
+        ('scope', '', 'task_scope'),
+        ('future', '', 'task<i64>'),
+        ('channel', '', 'channel<str>'),
+        ('nested-container', '', 'result<list<task<i64>>>'),
+        ('nominal', 'pub struct Box{scope:task_scope;}', 'Box'),
+        ('function-result', '', '(fn()->task_scope)'),
+        ('function-parameter', '', '(fn(task_scope)->i64)'),
+        ('task-effect-callable', '', '(fn()->i64 !{task})'),
+        ('nested-task-effect-callable', '', '(fn((fn()->i64 !{task}))->i64)'),
+        ('nominal-task-effect-callable', 'pub struct Box{run:fn()->i64 !{task};}', 'result<list<Box>>'),
+    ]
+    for name, declaration, value_type in boundary_types:
+        source = root / ('binary-boundary-' + name + '.nex')
+        source.write_text('module boundary;' + declaration + 'pub fn identity(value:' + value_type + ')->' + value_type + '{return value;}fn main()->unit{}')
+        rejected = cli(root, 'build', source, '--library', '--entry', 'identity', success=False)
+        assert rejected['code'] == 'E_TASK_PROVIDER', (name, rejected)
+        rejected = cli(root, 'emit', source, '--kind', 'mlir', '--library', '--entry', 'identity', success=False)
+        assert rejected['code'] == 'E_TASK_PROVIDER', (name, rejected)
+    # A clean primary entry does not make an additional public ABI export safe.
+    exports = root / 'export-project'
+    (exports / 'library').mkdir(parents=True)
+    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.19', 'entry': 'library/main.nex'}))
+    (exports / 'nex.build.json').write_text(json.dumps({
+        'schema': 'nex.project-build/1', 'default_configuration': 'debug',
+        'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
+        'components': {'library': {'kind': 'static_library', 'root': 'library', 'entry': 'library/main.nex', 'entry_function': 'answer', 'exports': ['identity']}},
+    }))
+    (exports / 'library/main.nex').write_text('module exports;pub fn answer()->i64{return 42;}pub struct Box{run:fn()->i64 !{task};}pub fn identity(value:Box)->Box{return value;}')
+    rejected = cli(exports, 'project', '--kind', 'build', '--component', 'library', success=False)
+    assert rejected['code'] == 'E_TASK_PROVIDER', rejected
     project = root / 'source-project'
     (project / 'app').mkdir(parents=True)
     (project / 'core').mkdir()
@@ -99,4 +131,4 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     assert (actual.returncode, actual.stdout, actual.stderr) == (0, '42\n', ''), actual
     observed = cli(project, 'project', '--kind', 'run', '--component', 'app')
     assert observed['observation']['stdout'] == '42\n' and observed['observation']['exit_code'] == 0, observed
-    print(json.dumps({'ok': True, 'standalone_profiles': len(results), 'cases': len(cases), 'compiled_continuations': True, 'source_hidden_execution': True, 'warm_cache': True, 'pure_reachability_preserved': True, 'source_component_project': True}))
+    print(json.dumps({'ok': True, 'standalone_profiles': len(results), 'cases': len(cases), 'compiled_continuations': True, 'source_hidden_execution': True, 'warm_cache': True, 'pure_reachability_preserved': True, 'source_component_project': True, 'binary_boundary_signature_cases': len(boundary_types), 'additional_library_export_rejected': True}))

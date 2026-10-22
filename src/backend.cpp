@@ -59,6 +59,25 @@ const Function &nativeEntry(const Program &p,const std::string &entry,bool testE
 bool usesNativeTasks(const Program &p,const std::string &entry){
   return p.sourceLanguage==SourceLanguage::Tasks019&&usesTaskEffects(p,entry);
 }
+// A native provider boundary needs both authority lifetime and callable
+// suspension ABIs. Task effects alone do not grant authority, so this predicate
+// stays local to native image validation rather than changing owner analysis.
+bool unsupportedTaskBoundaryType(const Program &p,const Type &type){
+  std::set<std::string> seen;
+  std::function<bool(const Type&)> visit=[&](const Type &value){
+    if(value.kind==Type::Task||value.kind==Type::Channel||value.kind==Type::TaskScope)return true;
+    if(value.kind==Type::Function&&value.effects.contains("task"))return true;
+    if(value.element&&visit(*value.element))return true;
+    for(const auto &argument:value.arguments)if(visit(argument))return true;
+    if(value.kind==Type::Record&&p.hasStructure(value.name)&&seen.insert(value.name).second){
+      const auto &record=p.structure(value.name);
+      for(const auto &argument:record.typeArguments)if(visit(argument))return true;
+      for(auto field:record.members())if(visit(field->type))return true;
+    }
+    return false;
+  };
+  return visit(type);
+}
 using OperationIndex=std::map<const void*,std::string>;
 std::string ty(Type t){return t.heap()?"!llvm.ptr":t==Type::I64?"i64":t==Type::F64?"f64":t==Type::Bool?"i1":"()";}
 int64_t scalarTag(Type t){return t==Type::F64?2:t==Type::Bool?1:0;}
@@ -939,8 +958,8 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
   rejectUnloweredTasks(p,"MLIR emission");
+  BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;validateNativeBuildEntry(p,options);
   if(usesNativeTasks(p,entry)){
-    BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;validateNativeBuildEntry(p,options);
     return emitTaskNative(p,entry,true).mlir;
   }
   return Emitter(p).run(entry,testEntry,libraryEntry);
@@ -956,6 +975,16 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool server=options.target=="server";
   bool tasks=usesNativeTasks(p,options.entry);
   for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
+  // projectLibraryABI is also source-only application metadata. A real image
+  // boundary comes from library exports/staging or linked provider archives.
+  if(p.sourceLanguage==SourceLanguage::Tasks019&&(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty())){
+    auto entries=options.libraryExports;entries.push_back(options.entry);
+    for(const auto &entry:entries){
+      const auto &function=p.function(entry);
+      if(unsupportedTaskBoundaryType(p,function.result)||std::any_of(function.params.begin(),function.params.end(),[&](const auto &parameter){return unsupportedTaskBoundaryType(p,parameter.type);})||std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &capture){return unsupportedTaskBoundaryType(p,capture.type);}))
+        throw Error("E_TASK_PROVIDER","native binary entry signatures cannot carry task authority or task-effect callables; provider ABI/lifetime remains pending",function.span);
+    }
+  }
   if(tasks){
     if(server)throw Error("E_TASK_TARGET","task HTTP request integration remains pending; use a standalone native application",p.function(options.entry).span);
     if(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty())

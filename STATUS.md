@@ -1,3 +1,22 @@
+# Public019 integration corrections (working110)
+
+This snapshot keeps toolchain0.105/language019. The previous integration's full
+regression exposed reference diagnostic guards inherited from private018 mode:
+ordinary019 errors lost their operation sites/IDs. The site map now determines
+attribution, while raw private atoms retain their bounded no-map path.
+An additional boundary audit found pure nested task authority signatures could
+cross a native library ABI without a task effect. Provider lifetime support
+remains pending; those exports and task-effect callable signatures are rejected
+explicitly. Current shared build and18 focused CTest groups pass, including corrected
+operation sites, native/TypeScript agreement, migration and32 standalone native
+executions. Ten nested ABI signatures and an additional library export are
+rejected; internal task helpers and source-only projects still pass. The LSP
+acceptance fixtures and example patch pin now explicitly match019. Profile
+options/native-host checks retain their earlier diagnostic precedence. Full114
+and installed-SDK/platform acceptance are pending. Source109 and its
+raw failed regression (101/114 pass) and backup remain preserved. Primary081 and
+the full objective are unchanged.
+
 # Working109: public language0.19 integration
 
 Toolchain0.105.0 connects task types/effect and conservative lifetime checking to

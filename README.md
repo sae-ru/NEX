@@ -7,6 +7,9 @@
 исполняемой системы.
 
 This isolated development source is **toolchain 0.105.0 / language 0.19**.
+The current correction restores ordinary source error operation IDs and rejects
+unsupported task authority/callable ABI exports. The shared build and18 focused groups pass; full regression and delivery
+acceptance remain pending. The previous integration has separate evidence.
 The current integration connects checked source tasks to native compiled
 continuations, an independent reference scheduler and generated TypeScript.
 `task_scope`, `task<T>`, `channel<T>` and the `task` effect share one contract.
@@ -20,8 +23,9 @@ component projects are supported. Reference and TypeScript scheduling are
 cooperative. Task callbacks accept pure/task effects. Async IO, task debugger
 and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
 full current installed SDK/platform validation and complete static region
-inference remain pending. The shared build and focused native/TypeScript/migration checks pass; full
-regression and delivery validation remain pending. This is not an accepted release. The approved primary checkout remains 0.81 / 0.16.
+inference remain pending. The preceding integration passed its shared build and focused checks; its full
+regression exposed the corrections described above. Current regression and
+delivery validation remain pending. This is not an accepted release. The approved primary checkout remains 0.81 / 0.16.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.

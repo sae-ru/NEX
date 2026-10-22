@@ -39,8 +39,8 @@ class Interpreter {
   }
   V expression(E e) {
     try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
-    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(!p.taskPrototype&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
-    catch(Error &error){if(!p.taskPrototype&&error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
+    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
+    catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
   bool pattern(P p,const std::function<V()> &read){
     step(p->span);
@@ -210,7 +210,7 @@ class Interpreter {
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
       case Stmt::Match:matching(s->expr);break;
       }
-      }catch(Error &error){if(!p.taskPrototype&&error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
+      }catch(Error &error){if(error.operationSite.empty()&&sites.contains(s.get())){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }
     if(scoped)frames.back().pop_back();
   }
