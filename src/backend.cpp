@@ -114,11 +114,20 @@ public:
   }
   std::string str()const{return attributes.str();}
 };
+// The checked closure is identical for every function object in one build.
+// Keep its callable/worker analysis outside per-object IR generation. In
+// particular, repeatedly resolving every function through Program::function
+// made the old bridge discovery cubic on large source graphs.
+struct NativeEmissionContext {
+  const std::set<std::string> &bridges;
+  bool parallel;
+};
 class Emitter {
   const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false,wasm=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
+  const NativeEmissionContext *context;
   Value ownedToken;
   bool parallelEnabled=false;
   const Function *selectedFunction=nullptr;
@@ -512,12 +521,13 @@ class Emitter {
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false){
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
-    parallelEnabled=allCallableBridges||parallelScopes;
-    auto parallelNames=closure?*closure:reachable(p,entry);
-    for(const auto &fn:p.functions)if(parallelNames.contains(fn.name)&&usesParallelMap(fn))parallelEnabled=true;
+    const auto computedNames=closure?std::set<std::string>{}:reachable(p,entry);
+    const auto &completeNames=closure?*closure:computedNames;
+    parallelEnabled=allCallableBridges||parallelScopes||(context&&context->parallel);
+    if(!context)for(const auto &fn:p.functions)if(completeNames.contains(fn.name)&&usesParallelMap(fn))parallelEnabled=true;
     out<<"module {\n";runtimeDeclarations=true;
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_"+std::string(name),"i64, i64, i64","i64");
     for(auto name:{"add","sub","mul","div","mod"})declaration("nex_f64_"+std::string(name),"f64, f64, i64","f64");
@@ -558,11 +568,12 @@ public:
     for(auto name:{"file_close","file_is_open"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","i64");
     for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
     runtimeDeclarations=false;
-    auto names=closure?*closure:reachable(p,entry);
-    auto bridges=nativeFunctionBridges(p,names);
-    if(allCallableBridges)for(const auto &name:names)if(!p.function(name).closure)bridges.insert(name);
+    const auto &names=selected?*selected:completeNames;
+    auto ownedBridges=context?std::set<std::string>{}:nativeFunctionBridges(p,completeNames);
+    if(!context&&allCallableBridges)for(const auto &name:completeNames)if(!p.function(name).closure)ownedBridges.insert(name);
+    const auto &bridges=context?context->bridges:ownedBridges;
     if(selected){
-      names=*selected;std::set<std::string> external;
+      std::set<std::string> external;
       for(const auto &name:names)for(const auto &callee:p.function(name).dependencies)if(!names.contains(callee))external.insert(callee);
       for(const auto &name:external){
         const auto &f=p.function(name);std::string args;
@@ -1074,7 +1085,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(snapshot.units.empty()){captureFile(snapshot.path,snapshot.source);writeFile((folder/"source.nex").string(),snapshot.source);}
   writeFile(debugFile,debugText);writeFile(formatterFile,formatter);writeFile(adapterFile,dapAdapter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
-  auto mlir=Emitter(snapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
+  const NativeEmissionContext emissionContext{callableTargets,parallel};
+  auto mlir=Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -1083,7 +1095,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
+        artifact.mlir=Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");

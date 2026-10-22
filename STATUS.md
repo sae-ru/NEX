@@ -1,3 +1,30 @@
+# Development 0.93 / language 0.18 — native emission analysis
+
+A sample of the actual0.90 10,000-function build found repeated whole-closure
+callable analysis in every function emitter; linear name resolution made this
+work cubic. Native builds now share their already checked callable/CPU analysis
+across aggregate and per-function IR emission, with readonly selected sets.
+Standalone emit/Wasm paths retain their local analysis. No language, canonical
+format, runtime, ownership or explicit migration change is introduced.
+
+Twelve focused groups pass. A same-source20-module/2,000-function comparison
+compiled1,980 functions under each0.92/0.93 compiler:299.583s versus113.567s.
+All1,980 MLIR and LLVM units match after normalizing only the exact compiler
+build identity (including its encoded form) and DWARF compiler version. Source,
+semantic and operation identities remain exact. Warm reuse is0/1,980; editing
+one leaf compiles1/reuses1,979. Original/edited standalone outputs and archived
+source-deleted replay pass. Other verification ran concurrently; this single
+host observation does not prove isolated throughput, runtime parity or model
+cost. An initial comparison omitted the required compiler_build difference;
+its failed receipt is retained, and the corrected check verified those exact
+identities before reusing the completed cold artifacts and continuing checks.
+
+Complete10,000-function native scale and matching full97/SDK/platform/editor
+acceptance remain pending. Frozen0.92 has separate full gates in progress;
+frozen0.91 has passed Mac/Linux full96, SDK24, live Linux, five installed editor
+profiles and complete primary0.16 migration. Approved primary0.81 is unchanged.
+The broad language/development-chain objective remains incomplete.
+
 # Development 0.92 / language 0.18 — source CPU mapping candidate
 
 Source parallel_map has checker/reference/native/TypeScript implementations.

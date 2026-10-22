@@ -1,6 +1,6 @@
-# Native compilation and toolchains — toolchain 0.28
+# Native compilation and toolchains
 
-Current source language is 0.16. The native compiler produces a separate object
+Current source language is 0.18. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
 specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or
@@ -303,3 +303,20 @@ may skip cleanup and profile output. Language0.16 and graph histories need no
 migration; native objects use the new matching private runtime/compiler ABI.
 Fallible allocation/profiling/request registration completes before a handle is
 committed to its owner; a failed constructor cannot leave a dangling owner entry.
+
+## Shared emission analysis in development0.93
+
+One checked build computes its callable bridge targets and CPU runtime requirement
+once. Aggregate and per-function emitters read this immutable context and their
+selected function sets. This removes repeated whole-closure/name scans while
+retaining external declarations, callable bridges, worker call scopes, diagnostic
+operation sites, private project ABI and cache inputs. Normal IR verification
+remains enabled; standalone MLIR/Wasm generation computes its own analysis.
+The reference/TypeScript/runtime language semantics are unchanged.
+
+A20-module/2,000-function comparison compiled1,980 actual LLVM inputs for each
+compiler, compared every MLIR/LLVM unit after exact compiler-provenance handling,
+then checked zero warm compilations and one compiled/1,979 reused objects after
+a leaf edit. Cold wall times were299.583s and113.567s on one concurrently loaded
+macOS host. This is scoped build-work evidence; full10,000-function acceptance,
+isolated throughput, runtime/C++ comparisons and model cost remain pending.
