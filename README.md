@@ -6,15 +6,21 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.108.0 / language 0.19**.
-Working115 adds experimental private native, reference and TypeScript
-[external-completion kernels](docs/task-external.md), bounded host transport and
-revocable file-read leases. Public source asynchronous IO remains unsupported;
-no source syntax, builtin or canonical-format migration is introduced.
-Current115 full regression, installed-SDK and platform acceptance remain pending.
-The preceding113 full gate passed118 tests and its matching installed SDK
-passed24 phases/438 commands. Those receipts do not validate115 or establish
-an accepted release.
+This isolated development source is **toolchain 0.109.0 / language 0.19**.
+Working116 adds a private explicit root FileReadGrant to the experimental
+[external-completion kernels](docs/task-external.md). Per-path preparation
+retains the original lexical/request grant across task resumes and never
+uses worker TLS or environment discovery. The bounded retained path uses
+exact owned bytes. Public source asynchronous IO remains unsupported; this
+foundation adds no source syntax, semantic rule or canonical migration.
+
+Standalone grant checks pass45 scheduler cases and42 non-task compatibility
+cases, with independent code review. Current116 common regression, sanitizers,
+installed SDK and platform acceptance remain pending. Exact115 passed122 groups,
+strict sanitizers, three scoped browser kernels and21 Linux ARM64 groups; its
+installed SDK is still being checked. These are separate receipts and do not
+establish an accepted116 release. The preceding113 installedSDK24/438 also has
+its own passing receipt.
 
 Checked source tasks retain native compiled continuations, an independent
 reference scheduler and generated TypeScript.
@@ -30,7 +36,7 @@ Their private external-completion experiments do not enable source filesystem,
 network or UI task adapters. Task callbacks accept pure/task effects. Task debugger
 and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
 full current installed SDK/platform validation and complete static region
-inference remain pending. Linux115, Windows115 and complete115 delivery have no
+inference remain pending. Linux116, Windows116 and complete116 delivery have no
 acceptance claim here. The approved primary checkout remains 0.81 / 0.16.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,

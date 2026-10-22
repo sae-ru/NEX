@@ -567,8 +567,8 @@ Workers must be1..16. Every ancestor worker cap bounds its descendants; nested
 scopes share the executor. Capacity0 is rendezvous, positive capacities are
 bounded FIFO, and capacity must be0..65536 with at most65536 reserved slots
 across1024 channels. The ordinary native application executor has a pool of16,
-a shared1000000-step budget and5000ms deadline. Per-application CLI controls for
-these defaults remain pending. The reference and TypeScript schedulers are
+a shared1000000-step budget and5000ms deadline. Explicit per-application CLI controls and reviewed project/acceptance
+limits are specified in [task execution limits](task-limits.md). The reference and TypeScript schedulers are
 cooperative and do not claim OS CPU overlap; TypeScript returns control to its
 host event loop. Neither provides asynchronous IO through `task`.
 

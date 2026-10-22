@@ -1,17 +1,18 @@
 # Private external completion kernels
 
-Development toolchain0.108 / language0.19 introduces experimental trusted-host
-completion kernels in working115. Discover their exact scope with
+Development toolchain0.109 / language0.19 introduces experimental trusted-host
+completion kernels in working116, retaining the verified115 transport. Discover their exact scope with
 `nex describe --field task_external_completion --json`. Public source asynchronous
 IO remains unsupported. There is no new source operation, effect, syntax,
 canonical format or history migration. Existing task effects, result propagation,
 realm boundaries and the [task execution limits](task-limits.md) still apply.
 
-Current115 full regression, installed-SDK and platform acceptance remain pending.
+Current116 full regression, installed-SDK and platform acceptance remain pending.
+Frozen115 passed122 regression groups; its matching installed SDK is being checked.
 The preceding113 full gate passed118 tests and its matching installed SDK
 passed24 phases/438 commands. Earlier receipts and individual kernel checks
-do not establish115
-acceptance, Linux115/Windows115 delivery or an accepted release.
+do not establish116
+acceptance, Linux116/Windows116 delivery or an accepted release.
 
 ## Transport and scheduling
 
@@ -183,3 +184,25 @@ TypeScript still emits reachable shared/client code only and rejects server,
 filesystem and foreign dependencies. Browser filesystem support and task-facing
 network, UI and browser-worker adapters remain pending. Existing synchronous
 UI/worker and ordinary filesystem APIs retain their contracts.
+
+## Explicit root grant foundation (private116)
+
+`captureFileReadGrant(environmentAllowed)` runs once on the authorized root
+coordinator after its RequestScope exists and before task workers start. The
+resulting host-only FileReadGrant retains the pinned filesystem and revocation
+access. Its `lease(path)` and explicit PreparedTaskFileRead(grant,path,text)
+constructor never discover worker TLS, environment or a temporary resume
+RequestScope. Missing authority stays an unavailable snapshot and reports
+CAPABILITY only when a read is attempted. Revocation and fatal control errors
+remain terminating. A grant captured before a request is only bound to its
+original lexical lifetime; it must not stand in for a request-bound source host.
+
+The retained relative path uses an exact owned byte array up to4096 bytes,
+including the boundary where std::string capacity may exceed logical length.
+The existing whole-read transport reservation remains1MiB+4096, allowing seven
+maximum reservations in the default8MiB pool. Temporary parser allocations and
+allocator metadata are outside the declared retained-payload bound.
+
+This foundation adds no source fs lowering, callback permission or language
+semantics. Public task/fs integration requires a separate explicit version and
+history-preserving migration; language0.19 keeps its existing boundaries.

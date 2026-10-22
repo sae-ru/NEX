@@ -124,24 +124,30 @@ template<class Content> Content TextFiles::Impl::read(const std::string &relativ
 struct FileReadLease::State {
   struct Pin {
     std::shared_ptr<TextFiles::Impl> files;
-    std::string relative;
-    Pin(std::shared_ptr<TextFiles::Impl> files,std::string relative)
-      :files(std::move(files)),relative(std::move(relative)){}
+    // An exact owned array avoids std::string's rounded backing capacity at
+    // the4096-byte boundary. Allocator overhead is not declared path payload.
+    std::unique_ptr<char[]> relative;
+    size_t length;
+    Pin(std::shared_ptr<TextFiles::Impl> files,const std::string &path)
+      :files(std::move(files)),relative(std::make_unique<char[]>(path.size())),length(path.size()){
+      std::copy(path.begin(),path.end(),relative.get());
+    }
   };
   ResourceLease<Pin> physical;
-  uint64_t id;
-  State(ResourceLease<Pin> physical,uint64_t id):physical(std::move(physical)),id(id){}
+  uint64_t id;size_t pathBytes;
+  State(ResourceLease<Pin> physical,uint64_t id,size_t pathBytes):physical(std::move(physical)),id(id),pathBytes(pathBytes){}
 };
 FileReadLease TextFiles::readLeaseIn(const ResourceAccess &grant,const std::string &relative)const {
   // Validate before admission; no per-operation open/read occurs here.
   (void)components(relative);
-  auto retained=impl;auto path=relative;
+  auto retained=impl;
   auto owner=grant.make<FileReadLease::State::Pin>([&](const ResourcePermit &permit){
-    permit.check();return std::make_unique<FileReadLease::State::Pin>(retained,path);
+    permit.check();return std::make_unique<FileReadLease::State::Pin>(retained,relative);
   });
-  return FileReadLease(std::make_shared<FileReadLease::State>(owner.acquire(),owner.identity()));
+  return FileReadLease(std::make_shared<FileReadLease::State>(owner.acquire(),owner.identity(),relative.size()));
 }
 uint64_t FileReadLease::identity()const noexcept{return state?state->id:0;}
+size_t FileReadLease::retainedPathBytes()const noexcept{return state?state->pathBytes:0;}
 void FileReadLease::check()const {
   auto retained=state;
   if(!retained)throw DataError("E_RESOURCE_CLOSED","file read lease is unavailable");
@@ -153,10 +159,28 @@ std::vector<uint8_t> FileReadLease::read(const TextFiles::Poll &poll)const {
   auto physical=retained->physical;
   const auto &pin=physical.value();auto callback=poll;
   auto checkpoint=[physical,callback](){physical.check();if(callback)callback();physical.check();};
-  auto result=pin.files->read<std::vector<uint8_t>>(pin.relative,checkpoint,TextFiles::byteLimit);
+  auto result=pin.files->read<std::vector<uint8_t>>(std::string(pin.relative.get(),pin.length),checkpoint,TextFiles::byteLimit);
   // The coordinator must also check before admitting a completion. A domain
   // can be revoked after this worker's last poll or after physical retirement.
   checkpoint();return result;
+}
+struct FileReadGrant::State {
+  std::shared_ptr<TextFiles::Impl> files;
+  ResourceAccess resources;
+  std::string error;
+  State(std::shared_ptr<TextFiles::Impl> files,ResourceAccess resources)
+    :files(std::move(files)),resources(std::move(resources)){}
+  explicit State(std::string error):error(std::move(error)){}
+};
+void FileReadGrant::check()const {
+  auto retained=state;
+  if(!retained||!retained->files)
+    throw DataError("CAPABILITY",retained&&!retained->error.empty()?retained->error:"file read capability is not configured");
+  retained->resources.check();
+}
+FileReadLease FileReadGrant::lease(const std::string &relative)const {
+  check();
+  return TextFiles(state->files).readLeaseIn(state->resources,relative);
 }
 template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
   if(!writable)throw DataError("CAPABILITY","file capability does not permit writes");
@@ -355,6 +379,22 @@ FileReadLease captureFileReadLease(const std::string &relative,bool environmentA
   if(auto bind=resource_detail::requestBinder)if(auto *request=bind(*current.resources))
     return files.readLeaseIn(request->access(),relative);
   return files.readLeaseIn(current.resources->access(),relative);
+}
+FileReadGrant captureFileReadGrant(bool environmentAllowed){
+  try{
+    auto &current=access(environmentAllowed);auto &files=current.capability();
+    if(!current.resources)current.resources=std::make_unique<ResourceDomain>(files.resourceScope());
+    auto resources=current.resources->access();
+    if(auto bind=resource_detail::requestBinder)if(auto *request=bind(*current.resources))
+      resources=request->access();
+    resources.check();
+    return FileReadGrant(std::make_shared<FileReadGrant::State>(files.impl,std::move(resources)));
+  }catch(const DataError &error){
+    // A declaration or skipped conditional read must not require authority.
+    // Control/resource failures are never converted into a missing grant.
+    if(error.code!="CAPABILITY")throw;
+    return FileReadGrant(std::make_shared<FileReadGrant::State>(error.what()));
+  }
 }
 Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().read(relative,poll);}

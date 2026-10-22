@@ -1,3 +1,27 @@
+# Working116: private explicit root file-read grant
+
+Toolchain0.109 / language0.19 retains the verified115 transport and adds a
+host-only FileReadGrant captured once from the root coordinator. Per-path
+preparation survives temporary task-resume scopes, honors lexical/root request
+revocation and never discovers worker permissions. Missing authority reports
+CAPABILITY only at check/lease, not at entry; a future source driver must turn
+ordinary preparation errors into typed results before ticket admission. A retained
+4096-byte path now uses exactly4096 owned payload bytes; measured std::string
+storage at that boundary required4103 bytes on the checked platform.
+
+Standalone45 scheduler and42 non-task compatibility cases pass; independent
+review found no further actionable issue. Current common build/full regression,
+sanitizers, installed SDK and platform acceptance are pending. Public source
+async IO and task/fs callback widening remain unsupported in019. Their future
+integration requires explicit020 identity and019 history-preserving migration.
+No source keyword/type/canonical shape is changed by this private foundation.
+Writes, streaming/db/ffi/tasks-in-HTTP/providers/browser filesystem remain pending.
+
+Frozen115 separately passed122 groups, strict sanitizers, three production
+browser engines (87 private host cases each), and21 Linux ARM64 groups. Its
+matching installed SDK is being checked. Primary081 and history are unchanged.
+Historical entries below apply to their own source snapshots.
+
 # Working115: external-completion ownership correction
 
 Toolchain0.108 / language0.19 corrects independently reproduced private114

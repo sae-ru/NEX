@@ -26,6 +26,10 @@ class PreparedTaskFileRead {
     }
   };
 public:
+  PreparedTaskFileRead(const FileReadGrant &grant,const std::string &relative,bool text)
+    :lease(grant.lease(relative)),text(text){}
+  // Compatibility for private host probes only. Resumable source adapters must
+  // use the explicit coordinator-captured grant overload above.
   PreparedTaskFileRead(const std::string &relative,bool text,bool environmentAllowed=true)
     :lease(captureFileReadLease(relative,environmentAllowed)),text(text){}
   // Charge the maximum result and bounded retained path, including a view's

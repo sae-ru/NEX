@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.108.0 LANGUAGES C CXX)
+project(NEX VERSION 0.109.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -473,7 +473,8 @@ add_test(NAME numbers COMMAND ${Python3_EXECUTABLE}
 add_test(NAME task_limits_workflow COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_limits_workflow.py $<TARGET_FILE:nex>)
 set_tests_properties(task_limits_workflow PROPERTIES TIMEOUT 900)
 
-add_executable(nex_file_read_lease_probe tests/file_read_lease.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+add_executable(nex_file_read_lease_probe tests/file_read_lease.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_compile_definitions(nex_file_read_lease_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
 target_include_directories(nex_file_read_lease_probe PRIVATE runtime)
 target_link_libraries(nex_file_read_lease_probe PRIVATE Threads::Threads)
 add_test(NAME task_external_file_lease COMMAND nex_file_read_lease_probe)

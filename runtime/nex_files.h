@@ -6,13 +6,16 @@
 
 namespace nexrt {
 class FileReadLease;
+class FileReadGrant;
 // Host-owned capability. No descriptor or mutable resource becomes a NEX value.
 class TextFiles {
   struct Impl;
   std::shared_ptr<Impl> impl;
   friend class FileScope;
   friend class FileReadLease;
+  friend class FileReadGrant;
   friend FileReadLease captureFileReadLease(const std::string &,bool);
+  friend FileReadGrant captureFileReadGrant(bool);
   explicit TextFiles(std::shared_ptr<Impl> impl):impl(std::move(impl)){}
   std::unique_ptr<TextFiles> retain() const;
   FileReadLease readLeaseIn(const ResourceAccess &,const std::string &) const;
@@ -45,10 +48,27 @@ class FileReadLease {
 public:
   FileReadLease()=default;
   uint64_t identity()const noexcept;
+  size_t retainedPathBytes()const noexcept;
   void check()const;
   std::vector<uint8_t> read(const TextFiles::Poll &poll={})const;
 };
 FileReadLease captureFileReadLease(const std::string &relative,bool environmentAllowed=true);
+// Capture authority once on the host coordinator, after its root RequestScope
+// exists. Copies retain physical root state and revocable access, never a domain
+// owner. Per-path preparation can then run on a scheduler without consulting its
+// temporary RequestScope, FileScope TLS or process environment. An unavailable
+// grant reports CAPABILITY only when check()/lease() attempts to use it.
+class FileReadGrant {
+  struct State;
+  std::shared_ptr<const State> state;
+  friend FileReadGrant captureFileReadGrant(bool);
+  explicit FileReadGrant(std::shared_ptr<const State> state):state(std::move(state)){}
+public:
+  FileReadGrant()=default;
+  void check()const;
+  FileReadLease lease(const std::string &relative)const;
+};
+FileReadGrant captureFileReadGrant(bool environmentAllowed=true);
 #endif
 // An explicit host scope overrides the process environment. Native HTTP calls
 // do not inherit an environment capability unless the trusted host grants one.

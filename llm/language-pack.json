@@ -1068,7 +1068,12 @@
       "adapter": "PreparedTaskFileRead",
       "grant": "coordinator-captured revocation-aware lexical/request lease; no worker TLS discovery",
       "source_lowering": false,
-      "windows": false
+      "windows": false,
+      "grant_type": "FileReadGrant",
+      "capture_grant": "captureFileReadGrant",
+      "grant_per_path_ambient_lookup": false,
+      "unavailable_grant_deferred": true,
+      "retained_path_storage": "exact owned bytes up to4096"
     },
     "pending": [
       "public source asynchronous IO",
