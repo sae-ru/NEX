@@ -39,12 +39,39 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def external_crypto_components(sdk, crypto_path):
+def merge_notice_components(*groups):
+    """Deduplicate reviewed metadata, allowing identical relocated licenses."""
+    selected = {}
+    signatures = {}
+    for group in groups:
+        for component in group:
+            item = {field: component[field] for field in
+                    ('name', 'version', 'url', 'roots', 'license_files')}
+            item['roots'] = [str(Path(value).resolve(strict=True)) for value in item['roots']]
+            item['license_files'] = [str(Path(value).resolve(strict=True)) for value in item['license_files']]
+            signature = (item['version'], item['url'], tuple(sorted(set(item['roots']))),
+                         tuple(sorted(hashlib.sha256(Path(value).read_bytes()).hexdigest()
+                                      for value in item['license_files'])))
+            name = item['name']
+            require(name not in signatures or signatures[name] == signature,
+                    'conflicting package notice component: ' + name)
+            signatures[name] = signature
+            selected[name] = item
+    return list(selected.values())
+
+
+def external_crypto_components(sdk, crypto_path, reviewed=()):
     """Review external provider metadata before capturing package task inputs."""
     sdk = Path(sdk).resolve(strict=True)
     crypto = Path(crypto_path).resolve(strict=True)
     if sdk in crypto.parents:
         return []
+    matching = [component for component in reviewed
+                if any(crypto == Path(root).resolve(strict=True) or
+                       Path(root).resolve(strict=True) in crypto.parents
+                       for root in component['roots'])]
+    if matching:
+        return merge_notice_components(matching)
     if platform.system() == 'Linux':
         from sdk_bundle import DebianNotices
         installed = []
@@ -285,14 +312,21 @@ def main():
 
     def run(command, cwd=root, expected_success=True, timeout=180):
         command = list(map(str, command))
+        project_package = (len(command) > 1 and command[0] == str(compiler) and
+                           command[1] == 'project' and '--kind' in command and
+                           command.index('--kind') + 1 < len(command) and
+                           command[command.index('--kind') + 1] == 'package')
         packaging = (len(command) > 1 and
-                     ((command[0] == str(compiler) and command[1] == 'package') or
+                     ((command[0] == str(compiler) and command[1] == 'package') or project_package or
                       command[1] == str(resources / 'tools/foreign_bundle.py')))
         if extra_notices and packaging:
             components = list(extra_notices)
             if '--notices' in command:
                 index = command.index('--notices')
-                components += notice_components(Path(command[index + 1]))
+                notice_path = Path(command[index + 1])
+                if not notice_path.is_absolute():
+                    notice_path = Path(cwd) / notice_path
+                components = merge_notice_components(components, notice_components(notice_path))
                 del command[index:index + 2]
             directory = root / 'package-notices'; directory.mkdir(exist_ok=True)
             path = directory / ('%03d.json' % len(report['commands']))
@@ -1668,7 +1702,8 @@ int main() {
             'license_files': [str(package_bundle / 'NOTICE')]}]
         # Direct packaging can resolve installed metadata, but replay consumes
         # captured reviewed inputs and cannot inherit a command-line switch.
-        notice_components += external_crypto_components(sdk, report['doctor']['native_openssl_crypto'])
+        notice_components = merge_notice_components(notice_components, extra_notices,
+            external_crypto_components(sdk, report['doctor']['native_openssl_crypto'], extra_notices))
         package_flags = ['--dpkg-notices'] if platform.system() == 'Linux' else []
         package_notices = directory / 'package-notices.json'
         package_notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': notice_components}))
@@ -2503,9 +2538,9 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 not (shared_project/'.nex/graph.db').exists(), 'project profile lost provider attribution or created graph IDs')
         task_project=root/'project-task-example';shutil.copytree(resources/'examples/project-tasks',task_project)
         notice_fixture=task_project/'fixture-notice.txt';notice_fixture.write_text('SDK acceptance notice-capture data fixture; not a dependency redistribution notice.\n')
-        (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':[
+        (task_project/'notices.json').write_text(json.dumps({'schema':'nex.sdk-notices/1','components':merge_notice_components([
             {'name':'sdk-notice-capture-fixture','version':'test','url':'https://github.com/sae-ru/NEX',
-             'roots':[str(compiler)],'license_files':['fixture-notice.txt']}]}))
+             'roots':[str(compiler)],'license_files':[str(notice_fixture)]}], extra_notices)}))
         notice_pin=cli('task','notices.json','--kind','notices',cwd=task_project)
         require(not notice_pin['graph_store_opened'] and not notice_pin['external_tools_invoked'] and not (task_project/'.nex').exists(), 'notice inspector executed tools or opened a graph')
         task_contract=json.loads((task_project/'task.json').read_text())

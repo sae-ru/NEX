@@ -1,21 +1,3 @@
-Working101 adds a private compiled continuation stage: MLIR/LLVM step functions
-retain owned frame values across scheduler yield. General task calls, scoped
-capabilities/channels, independent async reference/TypeScript, migration and
-public source builds remain pending. Existing public guards stay enabled.
-
-Toolchain0.98 development source adds an internal C++20 coroutine task/channel
-scheduler, enabled only in a private runtime probe. NEX source async/tasks/channels
-and their MLIR/reference/TypeScript integrations remain pending; ordinary
-applications do not enable this prototype. Final13focusedgroups pass; the
-38-case coroutine probe passes strictASan/UBSan/TSan on macOS and normal
-Clang/GCC plus GCCASan/UBSan on LinuxARM64. A real initial TSan race was
-fixed; raw failure is retained. Full102/SDK/platform gates remain pending. See [the design](docs/tasks-runtime-design.md).
-
-Toolchain0.97 development source adds typed dedicated browser worker jobs.
-Six focused groups and15 actual production worker cases in Chromium/Firefox/
-WebKit pass on the exact current compiler; full101/SDK/platform acceptance
-remains pending. No release/platform acceptance is implied. See [browser workers](docs/browser-workers.md).
-
 # NEX
 
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
@@ -24,33 +6,17 @@ remains pending. No release/platform acceptance is implied. See [browser workers
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.96.0 / language 0.18**.
-Full platform, installed SDK and editor acceptance for this exact source remains
-pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
-Historical receipts in `STATUS.md` retain their original compiler/source scopes;
-they do not establish acceptance of this candidate.
+This isolated development source is **toolchain 0.98.1 / language 0.18**.
+It fixes operator runtime notice propagation in installed SDK acceptance,
+including captured project packaging tasks. Complete acceptance of this exact
+source is pending. The approved primary checkout is preserved at 0.81 / 0.16.
+Historical receipts retain their original compiler/source scopes.
 
-Toolchain0.96 reads compiler inputs in raw64KiB blocks with explicit EOF/error
-checks and owned file cleanup. A live0.95 warm-build sample located per-byte
-stream iteration in cache reads. Seventeen focused groups pass, including
-binary boundaries, fragmented FIFO and a UTF8 scalar split across64KiB in real
-native/reference/TypeScript checks. Three real retained095artifacts are compared
-byte for byte across18old/new-reader observations; the146MBMLIR observation
-changes4.747s to0.145s, including output/comparison on a concurrent Mac.
-This is not a full-build speedup claim. See [the exact receipt](docs/evidence/compiler-inputs-0.96.0.json).
-The independent095native10k gate passes with warm69.021s; full current096
-native10000/100-group/SDK/platform/editor/migration gates remain pending.
-
-Toolchain0.95 added a scoped readonly name index to native planning. Actual0.94
-cached10,000-function builds took81s; a live sample showed repeated linear
-function resolution in the plan. Byte-exact plan comparison with the actual0.94
-libraries covers seven programs in normal/all-callable modes, including9,900
-emitted functions. The large checked-load/plan/serialization observation changes
-from17.225s to3.945s; complete0.95 build/SDK/platform gates remain pending.
-The separate [0.94 scale receipt](docs/evidence/native-scale-0.94.0.json) verifies
-cold9,900/warm0/edit1 native compilation and source-deleted archived execution.
-An opt-in [checked-core comparison](experiments/quality/README.md) retains exact
-NEX/C++/Python inputs and observations without claiming general parity.
+The private native task prototype compiles yield continuations to MLIR/LLVM
+step functions, preserving owned frame values across scheduler suspension.
+General task calls, scoped capabilities/channels, independent asynchronous
+reference/TypeScript execution, migration and public source builds remain
+pending. Public guards stay enabled. See [the design](docs/tasks-runtime-design.md).
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.

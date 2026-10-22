@@ -443,3 +443,11 @@ The application resumes with exit0 and old handles must be rejected. Without
 --live the report explicitly leaves live_dap_pages false; it does not claim a
 native process interaction. The matching distribution validators require all21
 phases in order, including this one.
+Development0.98.1 fixes acceptance of explicitly reviewed private runtime notices.
+The acceptance runner uses matching `--package-notices` entries before automatic
+Debian ownership lookup, retains all supplied entries in captured package tasks,
+and supplies them to project packaging. Identical relocated license texts can
+deduplicate; conflicting versions, roots or license bytes for one component name
+fail explicitly. This changes the validation workflow, not source language,
+compiler/runtime ABI or migration. Original0.94 Astra failures remain retained.
+
