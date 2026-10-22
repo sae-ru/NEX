@@ -426,7 +426,8 @@
                     "io",
                     "db",
                     "fs",
-                    "ffi"
+                    "ffi",
+                    "task"
                   ]
                 },
                 "minItems": 0,
