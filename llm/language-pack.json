@@ -225,7 +225,8 @@
     "result_propagation": "docs/error-propagation.md",
     "project_porting_design": "docs/project-porting-design.md",
     "concurrency_example": "examples/parallel.nex",
-    "browser_workers": "docs/browser-workers.md"
+    "browser_workers": "docs/browser-workers.md",
+    "tasks_runtime_design": "docs/tasks-runtime-design.md"
   },
   "document_access": "nex guide --kind result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -308,7 +309,8 @@
     "project_task_app": "examples/project-tasks/app/main.nex",
     "project_task_guide": "examples/project-tasks/README.md",
     "foreign_project_package": "examples/ffi/project/README.md",
-    "result_propagation": "examples/propagation.nex"
+    "result_propagation": "examples/propagation.nex",
+    "browser_workers": "examples/workers/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -811,6 +813,37 @@
       "installed_sdk",
       "platform_editor_validation",
       "general_tasks_channels_async"
+    ]
+  },
+  "structured_tasks_runtime": {
+    "status": "internal_coroutine_prototype",
+    "source_support": false,
+    "guide": "docs/tasks-runtime-design.md",
+    "header": "runtime/nex_tasks.h",
+    "probe": "nex_task_scheduler_probe",
+    "development_definitions": [
+      "NEX_STRUCTURED_WORKERS",
+      "NEX_ASYNC_TASKS"
+    ],
+    "ordinary_applications_enabled": false,
+    "scheduler": "bounded ready ring; parked coroutine waits do not block OS workers",
+    "maximum_workers": 16,
+    "default_task_slots": 4096,
+    "maximum_task_slots": 65536,
+    "maximum_channels": 1024,
+    "maximum_total_channel_slots": 65536,
+    "channel_rendezvous": true,
+    "nested_task_depth": 256,
+    "request_control": "shared atomic budget/deadline/cancellation; coordinator-only host callback",
+    "task_input_output": "immutable resource-free Value snapshots; no raw Handle across suspension",
+    "pending": [
+      "source async/task/channel types and scoped effects",
+      "explicit history-preserving language migration",
+      "MLIR continuation lowering",
+      "reference and TypeScript scheduling",
+      "native debugger and async profile attribution",
+      "asynchronous IO",
+      "full current platform SDK validation"
     ]
   }
 }

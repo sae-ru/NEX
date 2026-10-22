@@ -1,3 +1,9 @@
+Current0.98 work implements and validates the coroutine task/channel runtime
+foundation. It does not complete source async/tasks/channels. Next: scoped
+capability/effect typing, explicit versioned migration, MLIR continuation
+lowering and matching reference/TypeScript semantics, then SDK/editor/platform
+and asynchronous IO integration. The full existing objective remains open.
+
 Current functional work: typed dedicated browser worker jobs in0.97 are being
 implemented and tested; production engines/full SDK gates remain pending.
 General native tasks/channels/async, accelerator APIs and platform delivery

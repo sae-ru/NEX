@@ -1,3 +1,7 @@
+Toolchain0.98 adds a private coroutine scheduler probe only. Language0.18,
+source types/effects, canonical identities and migration are unchanged.
+Source async/task/channel syntax is still unsupported.
+
 Toolchain0.97 adds an external typed browser worker application contract using
 ordinary0.18 functions and std/worker.nex. No source syntax, canonical format
 or language migration changes. See [browser workers](browser-workers.md).

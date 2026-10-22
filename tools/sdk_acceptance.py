@@ -444,6 +444,10 @@ test fn examples() -> unit {
                 'SDK lacks frame-to-loaded-image identity binding')
         require(descriptor['native_core'] == pack['native_core'] and descriptor['native_core']['readonly'], 'SDK lacks checked read-only core reports')
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
+        require(descriptor['browser_workers']==pack['browser_workers'] and
+                descriptor['structured_tasks_runtime']==pack['structured_tasks_runtime'] and
+                descriptor['structured_tasks_runtime']['source_support'] is False,
+                'worker/task capability pack mismatch')
         state['descriptor'] = descriptor
         inventory = {}
         for name in [*pack['documents'].values(), *pack['examples'].values()]:
@@ -451,7 +455,7 @@ test fn examples() -> unit {
             require(resources.resolve() in path.parents and path.is_file(), 'missing/escaped language resource: ' + name)
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
             inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
-        for kind in ('prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
+        for kind in ('tasks-runtime', 'browser-worker', 'prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
                      'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload', 'task-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),

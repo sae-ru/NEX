@@ -30,6 +30,7 @@ void printNativeTrap(const char *code,const char *message,int64_t line,const std
 // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
 class RequestScope {
   friend struct ParallelAccess;
+  friend struct TaskAccess;
   struct Control;
   struct Impl;std::shared_ptr<Impl> impl;
   RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop);

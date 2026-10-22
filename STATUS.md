@@ -1,3 +1,11 @@
+Toolchain0.98 development source adds an internal C++20 coroutine task/channel
+scheduler, enabled only in a private runtime probe. NEX source async/tasks/channels
+and their MLIR/reference/TypeScript integrations remain pending; ordinary
+applications do not enable this prototype. Final13focusedgroups pass; the
+38-case coroutine probe passes strictASan/UBSan/TSan on macOS and normal
+Clang/GCC plus GCCASan/UBSan on LinuxARM64. A real initial TSan race was
+fixed; raw failure is retained. Full102/SDK/platform gates remain pending. See [the design](docs/tasks-runtime-design.md).
+
 Toolchain0.97 development source adds typed dedicated browser worker jobs.
 Six focused groups and15 actual production worker cases in Chromium/Firefox/
 WebKit pass on the exact current compiler; full101/SDK/platform acceptance

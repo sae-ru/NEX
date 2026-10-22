@@ -1,3 +1,10 @@
+Use nex guide --kind tasks-runtime for the internal scheduler design, and
+nex guide --kind browser-worker for implemented browser jobs.
+structured_tasks_runtime is an internal development capability. When its
+source_support is false, do not invent async/await/task/channel source syntax.
+Use the existing parallel_map or browser worker adapter only within their
+actual advertised contracts. General source tasks/channels remain pending.
+
 When browser_workers.source_support is true, read docs/browser-workers.md.
 Use worker_compute(Input)->Output and worker_commands(State,State,web::Event)
 ->list<worker::Command<Input>> together. Input/Output must be wire values;

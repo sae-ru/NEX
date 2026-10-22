@@ -4,6 +4,9 @@
 #include <limits>
 #include "nex_host.h"
 #include "nex_io.h"
+#ifdef NEX_ASYNC_TASKS
+#include "nex_tasks.h"
+#endif
 #ifdef NEX_STRUCTURED_WORKERS
 #include "nex_parallel.h"
 #include <condition_variable>
@@ -136,6 +139,9 @@ struct RequestScope::Impl {
   bool preserveParentProfile=false;
   size_t functionBaseline=functionOwners.depth;
   const std::atomic<bool> *workerStop=nullptr;
+#ifdef NEX_ASYNC_TASKS
+  std::shared_ptr<const task_detail::Cancellation> taskStop;
+#endif
   explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
 };
 RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>(std::make_shared<Control>(budget,timeoutMs))){
@@ -185,6 +191,9 @@ void RequestScope::checkExecution(int64_t line,bool forceCancellation,bool consu
   }
   if(control->exhausted){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
   if(std::chrono::steady_clock::now()>=control->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
+#ifdef NEX_ASYNC_TASKS
+  if(state->taskStop&&state->taskStop->stopped())throw Trap("E_CANCELLED","task was cancelled",line);
+#endif
 }
 #ifdef NEX_STRUCTURED_WORKERS
 namespace {
@@ -357,6 +366,9 @@ Value parallelCompiledValues(const Value &items,const Value &environment,int64_t
     return parallelValues(items,Value(std::move(context)),workers,compiledParallelInvoke,location);
   });
 }
+#endif
+#ifdef NEX_ASYNC_TASKS
+#include "nex_tasks_impl.h"
 #endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
