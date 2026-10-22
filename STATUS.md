@@ -1,3 +1,40 @@
+# Development0.95 / language0.18 — readonly native planning index
+
+The actual0.94 full10,000-function native gate passes: cold9,900 compiled,
+warm0compiled/9,900reused, one changed leaf1compiled/9,899reused and original/
+edited standalone outputs. Both archived revisions execute after their physical
+sources move outside the project. Cold/warm/edit observations are577.309s,
+81.494s and116.048s on a concurrently used Mac; no isolated throughput claim.
+The original093E2BIG and090timeout remain retained. See the exact scale receipt.
+
+An81.356s cached diagnostic confirms no LLVM compilation. Its live sample
+locates repeated linear function searches inside native planning. Candidate095
+uses an index scoped to that readonly operation; no mutable Program keeps
+pointers or cached indices. First-match local/exact precedence and generic local
+names containing qualified arguments are preserved. A shared private receipt
+probe linked against actual094/095 libraries produces byte-exact plans for
+seven programs in normal/all-callable modes, including9,900units. The large
+checked-load/plan/serialization observation changes17.225s to3.945s (normal)
+and19.550s to4.177s (all-callable). This is not a full095warm-build measurement.
+
+The final15 focused groups pass. The first new plan fixture omitted
+required local type annotations and failed parsing; its raw failure is retained.
+The corrected four cases pass, covering module/generic names, layouts, callable
+bridges, dependency edges and missing-name diagnostics. Final full99/SDK/platform/
+editor/migration and native scale gates remain pending. Language018/runtime/canonical formats/ABI contracts are unchanged.
+
+The opt-in checked-core experiment now has a reusable runner. Initial operational
+smoke1/2 exposed a CLI variable shadowed by subprocess argv; a distinct settings
+object fixes it. The final operational smoke passes with the exact final095
+compiler; short smoke timings are not throughput evidence. Its recorded094
+single positive integer kernel takes median0.307272s NEX,0.292982s checked C++
+and9.922024s CPython for100million steps over five repetitions, with other
+verification running. All five additional input observations agree. It does
+not establish general parity or model-cost savings. Current094full98/SDK/Linux
+and installed acceptance continue;093Macfull97/SDK24 and complete migration/
+five installed IDE profiles pass after preserving four successful observations
+and resuming the fifth with a shorter private macOS socket path.
+
 # Development0.94 / language0.18 — bounded native tool arguments
 
 Actual0.93 native scale compiled9,900 functions, then failed at posix_spawn:

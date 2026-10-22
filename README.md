@@ -6,11 +6,22 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.94.0 / language 0.18**.
+This isolated development source is **toolchain 0.95.0 / language 0.18**.
 Full platform, installed SDK and editor acceptance for this exact source remains
 pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
 Historical receipts in `STATUS.md` retain their original compiler/source scopes;
 they do not establish acceptance of this candidate.
+
+Toolchain0.95 adds a scoped readonly name index to native planning. Actual0.94
+cached10,000-function builds took81s; a live sample showed repeated linear
+function resolution in the plan. Byte-exact plan comparison with the actual0.94
+libraries covers seven programs in normal/all-callable modes, including9,900
+emitted functions. The large checked-load/plan/serialization observation changes
+from17.225s to3.945s; complete0.95 build/SDK/platform gates remain pending.
+The separate [0.94 scale receipt](docs/evidence/native-scale-0.94.0.json) verifies
+cold9,900/warm0/edit1 native compilation and source-deleted archived execution.
+An opt-in [checked-core comparison](experiments/quality/README.md) retains exact
+NEX/C++/Python inputs and observations without claiming general parity.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.

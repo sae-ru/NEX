@@ -3,6 +3,37 @@
 
 namespace nex {
 namespace {
+// Only the current readonly planning operation owns these pointers. Program is
+// mutable during checking/specialization, so retain no index on the Program.
+struct PlanLookup {
+  const Program &program;
+  std::map<std::string,const Function*> functions;
+  std::map<std::string,const Structure*> structures;
+  static bool local(const std::string &name){
+    auto separator=name.find("::"),arguments=name.find('<');
+    return separator==std::string::npos||(arguments!=std::string::npos&&arguments<separator);
+  }
+  explicit PlanLookup(const Program &p):program(p){
+    // Preserve Program's first-match precedence between exact and local names,
+    // including generic local names containing qualified type arguments.
+    for(const auto &f:p.functions){
+      functions.try_emplace(f.name,&f);
+      if(f.owner==p.module&&local(f.localName))functions.try_emplace(f.localName,&f);
+    }
+    for(const auto &s:p.structures){
+      structures.try_emplace(s.name,&s);
+      if(s.owner==p.module&&local(s.localName))structures.try_emplace(s.localName,&s);
+    }
+  }
+  const Function &function(const std::string &name) const {
+    if(auto found=functions.find(name);found!=functions.end())return *found->second;
+    return program.function(name);
+  }
+  const Structure &structure(const std::string &name) const {
+    if(auto found=structures.find(name);found!=structures.end())return *found->second;
+    return program.structure(name);
+  }
+};
 llvm::json::Array array(const std::set<std::string> &values){
   llvm::json::Array result;for(const auto &value:values)result.push_back(value);return result;
 }
@@ -12,27 +43,31 @@ llvm::json::Value interface(const Function &f){
   return llvm::json::Object{{"name",f.name},{"parameters",std::move(parameters)},{"result",typeName(f.result)},
     {"effects",array(f.effects)},{"realm",f.realm},{"exported",f.exported},{"test",f.test},{"closure",f.closure},{"captures",std::move(captures)}};
 }
-}
-std::set<std::string> nativeFunctionBridges(const Program &p,const std::set<std::string> &reachable){
+std::set<std::string> functionBridges(const PlanLookup &lookup,const std::set<std::string> &reachable){
   std::set<std::string> result;std::function<void(E)> expression=[&](E e){if(e){if(e->kind==Expr::FunctionRef)result.insert(e->text);for(auto child:e->args)expression(child);}};
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
-  for(const auto &name:reachable)block(p.function(name).body);return result;
+  for(const auto &name:reachable)block(lookup.function(name).body);return result;
+}
+}
+std::set<std::string> nativeFunctionBridges(const Program &p,const std::set<std::string> &reachable){
+  return functionBridges(PlanLookup(p),reachable);
 }
 NativePlan planNative(const Program &p,const std::string &entry,const std::vector<std::string> &additionalEntries,bool allCallableBridges){
+  const PlanLookup lookup(p);
   std::set<std::string> reachable;
-  std::function<void(const Function&)> visit=[&](const Function &f){if(reachable.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
-  visit(p.function(entry));
-  for(const auto &name:additionalEntries)visit(p.function(name));
-  auto bridges=nativeFunctionBridges(p,reachable);
-  if(allCallableBridges)for(const auto &name:reachable)if(!p.function(name).closure)bridges.insert(name);
+  std::function<void(const Function&)> visit=[&](const Function &f){if(reachable.insert(f.name).second)for(const auto &name:f.dependencies)visit(lookup.function(name));};
+  visit(lookup.function(entry));
+  for(const auto &name:additionalEntries)visit(lookup.function(name));
+  auto bridges=functionBridges(lookup,reachable);
+  if(allCallableBridges)for(const auto &name:reachable)if(!lookup.function(name).closure)bridges.insert(name);
   std::map<std::string,std::set<std::string>> members,callers,unitDependencies,unitConsumers;
   for(const auto &name:reachable){
-    const auto &f=p.function(name);members[f.unit].insert(name);
+    const auto &f=lookup.function(name);members[f.unit].insert(name);
     for(const auto &callee:f.dependencies)callers[callee].insert(name);
   }
   NativePlan plan;
   for(const auto &name:reachable){
-    const auto &f=p.function(name);const auto &key=f.unit;
+    const auto &f=lookup.function(name);const auto &key=f.unit;
     NativeUnit unit;unit.identity=name;unit.unit=key;unit.module=f.owner;unit.functions={name};
     unit.foreign=f.foreign.has_value();if(unit.foreign){unit.wire=true;unit.files=true;}
     if(unit.module.empty())unit.module=p.module;
@@ -41,7 +76,7 @@ NativePlan planNative(const Program &p,const std::string &entry,const std::vecto
       if(t.element)type(*t.element);
       if(t.kind==Type::Function)for(const auto &argument:t.arguments)type(argument);
       if(t.kind!=Type::Record||!types.insert(t.name).second)return;
-      const auto &record=p.structure(t.name);if(record.unit!=key)unitDependencies[key].insert(record.unit);
+      const auto &record=lookup.structure(t.name);if(record.unit!=key)unitDependencies[key].insert(record.unit);
       for(const auto &argument:record.typeArguments)type(argument);
       for(auto field:record.members())type(field->type);
     };
@@ -61,14 +96,14 @@ NativePlan planNative(const Program &p,const std::string &entry,const std::vecto
       definitions.push_back(canonical(f));
       type(f.result);for(const auto &param:f.params)type(param.type);for(const auto &capture:f.captures)type(capture.type);block(f.body);
       for(const auto &callee:f.dependencies)if(callee!=name){
-        externalCalls.insert(callee);if(p.function(callee).unit!=key)unitDependencies[key].insert(p.function(callee).unit);
+        externalCalls.insert(callee);if(lookup.function(callee).unit!=key)unitDependencies[key].insert(lookup.function(callee).unit);
       }
     }
     for(const auto &name:externalCalls){
-      const auto &callee=p.function(name);interfaces.push_back(interface(callee));
+      const auto &callee=lookup.function(name);interfaces.push_back(interface(callee));
       type(callee.result);for(const auto &param:callee.params)type(param.type);
     }
-    for(const auto &name:types)layouts.push_back(canonical(p.structure(name)));
+    for(const auto &name:types)layouts.push_back(canonical(lookup.structure(name)));
     llvm::json::Array unitBridges;if(bridges.contains(name))unitBridges.push_back(name);
     unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/2"},{"language",languageVersion},
       {"function",name},{"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
@@ -88,7 +123,7 @@ NativePlan planNative(const Program &p,const std::string &entry,const std::vecto
     allUnits.insert(key);for(const auto &dep:deps){allUnits.insert(dep);unitConsumers[dep].insert(key);}
   }
   llvm::json::Array functions,units;
-  for(const auto &name:reachable){const auto &f=p.function(name);functions.push_back(llvm::json::Object{
+  for(const auto &name:reachable){const auto &f=lookup.function(name);functions.push_back(llvm::json::Object{
     {"name",name},{"unit",f.unit},{"callees",array(f.dependencies)},{"callers",array(callers[name])}});}
   for(const auto &key:allUnits)units.push_back(llvm::json::Object{{"unit",key},{"emitted",members.contains(key)},
     {"dependencies",array(unitDependencies[key])},{"consumers",array(unitConsumers[key])}});

@@ -1,0 +1,151 @@
+{
+  "schema": "nex.native-plan-index-evidence/1",
+  "ok": true,
+  "toolchain": "0.95.0",
+  "language": "0.18",
+  "compiler_sha256": "60fd37c40976bfafbef10d2fe30edc32c14724373329c68ff569ec1c7d4fb4cf",
+  "compiler_build": "62a0178134c94d529b1822656e36837ee4ec24e1287288f3e98029d5597bd51a",
+  "source_incremental_sha256": "b1a83fbbd598bea0adabc3784794c273e71fc517683fdf358dddbeaa32a477c0",
+  "scope": "Same readonly probe compiled against actual frozen094 and candidate095 libraries; byte-exact checked plan contracts/sources/dependencies. Timings include loading/checking and serialization, on concurrently used macOS host.",
+  "provenance": {
+    "baseline_nex_sha256": "90efc23d10ba66d2b01d682c23ea12a95d7e796e1cbc3f75585fc04841b4c4a0",
+    "candidate_nex_sha256": "60fd37c40976bfafbef10d2fe30edc32c14724373329c68ff569ec1c7d4fb4cf",
+    "baseline_library_sha256": "ead48a7e82e9798e1edc3ea2736a9ce4bce6a42c29c12e4b02ed647eaebf844c",
+    "candidate_library_sha256": "a333aaceffcbf82901dd0d373c009df55a3c83764032fd1d95ae744d4b45884c",
+    "shared_probe_source_sha256": "9297bbec181b0d31928c485f317f8eefc8d01f39a44ed658d2ab2c472bedfb52",
+    "candidate_incremental_sha256": "b1a83fbbd598bea0adabc3784794c273e71fc517683fdf358dddbeaa32a477c0"
+  },
+  "all_plan_bytes_exact": true,
+  "comparisons": [
+    {
+      "case": "arithmetic-normal",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "3e5124388a57b65d44a2e282e57df1242c480b32adc4cdff1303415a88c6fdc2",
+      "baseline_seconds": 0.2544958749999999,
+      "candidate_seconds": 0.04435408299999999
+    },
+    {
+      "case": "arithmetic-all",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "544bdcdbd95f941f760ad77c6545e0ebb2ac68263948de3b17aa853ce17d172d",
+      "baseline_seconds": 0.04720154100000018,
+      "candidate_seconds": 0.04594645799999997
+    },
+    {
+      "case": "data-normal",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "0842d8f4b651120307753e2cf81fc8af614aa24a5eadefb5035a2c0c8368c0c7",
+      "baseline_seconds": 0.042606582999999976,
+      "candidate_seconds": 0.04783691600000006
+    },
+    {
+      "case": "data-all",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "c11d813a6bdcb10da9759a382bb3f5b875228148216531982df84683a3834fe8",
+      "baseline_seconds": 0.043594457999999836,
+      "candidate_seconds": 0.04650029100000008
+    },
+    {
+      "case": "functions-normal",
+      "units": 6,
+      "byte_exact_plan": true,
+      "sha256": "992b544b15a6696538827b2aededbc1353a8220347c8d64c481c4bf4d67413f1",
+      "baseline_seconds": 0.04051070800000023,
+      "candidate_seconds": 0.03987799999999986
+    },
+    {
+      "case": "functions-all",
+      "units": 6,
+      "byte_exact_plan": true,
+      "sha256": "ca48f7360d33511f483100fabd41b5b86ac29ebfa6a61987acccbe26f2142a6b",
+      "baseline_seconds": 0.040297124999999934,
+      "candidate_seconds": 0.041489292000000066
+    },
+    {
+      "case": "generics-normal",
+      "units": 4,
+      "byte_exact_plan": true,
+      "sha256": "06497b3e439c3b81aae521404174db339e67124ade98d4ede3f9fb42658551ab",
+      "baseline_seconds": 0.04485683300000032,
+      "candidate_seconds": 0.08582970899999998
+    },
+    {
+      "case": "generics-all",
+      "units": 4,
+      "byte_exact_plan": true,
+      "sha256": "e68358b1df8a7304033b81b17a1126d62daca99daa2fe2387f9b3515cd19b555",
+      "baseline_seconds": 0.04377625000000007,
+      "candidate_seconds": 0.04446391699999985
+    },
+    {
+      "case": "traits-normal",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "a295ac99aa7b2c0afc3ab6c5e6baacd686b1877971cf673a76c6f42dad3f39ed",
+      "baseline_seconds": 0.04167933300000026,
+      "candidate_seconds": 0.07304604100000045
+    },
+    {
+      "case": "traits-all",
+      "units": 3,
+      "byte_exact_plan": true,
+      "sha256": "5537a4fbe5a32988c1a63f6790644a70357b37f81aa9b1c232a27fa1d192a425",
+      "baseline_seconds": 0.08089554200000038,
+      "candidate_seconds": 0.08250704199999959
+    },
+    {
+      "case": "parallel-normal",
+      "units": 5,
+      "byte_exact_plan": true,
+      "sha256": "3950a25962474c3042f3d8af2779a21923674da2e005cfc1aa4d2b425c2fc258",
+      "baseline_seconds": 0.04455162500000043,
+      "candidate_seconds": 0.05058508300000053
+    },
+    {
+      "case": "parallel-all",
+      "units": 5,
+      "byte_exact_plan": true,
+      "sha256": "89b79a464155ec4efbc13a51d1972c0b2548624eeae14e29279e2a7c97edf1e8",
+      "baseline_seconds": 0.041192666999999794,
+      "candidate_seconds": 0.045574624999999536
+    },
+    {
+      "case": "large10000-normal",
+      "units": 9900,
+      "byte_exact_plan": true,
+      "sha256": "f73a8e1781c38c584f24afd1892fce1c98a6b79e7304283e531aa6ba4ba68f65",
+      "baseline_seconds": 17.224828624999997,
+      "candidate_seconds": 3.9445805410000006
+    },
+    {
+      "case": "large10000-all",
+      "units": 9900,
+      "byte_exact_plan": true,
+      "sha256": "b86fb3f8277fb66b17e40c1d70d0d4d8e1cde54d3b2143df7674b18755efef0f",
+      "baseline_seconds": 19.550310875,
+      "candidate_seconds": 4.1773013329999955
+    }
+  ],
+  "final_focused_groups": 15,
+  "new_plan_semantic_cases": 4,
+  "final_focused_report": "build/native-plan-index-095-prototype-controller-v3.json",
+  "final_comparison_report": "build/native-plan-index-095-comparison-v2/report.json",
+  "comparison_report_sha256": "9581d80b4b0e5c2c6ef6f1cf52f69d65472255eb9ebde16d97e01f673bcbe7b5",
+  "maintained_probe_operational_smoke": "build/checked-core-095-maintained-smoke-v4/report.json",
+  "maintained_probe_sha256": "da7dc1673f20550b9a06791964a7b423feaa232d71ca9429af8f2ba38b86c7ed",
+  "operational_smoke_is_not_throughput_evidence": true,
+  "retained_failures": [
+    "initial new native-plan fixture omitted mandatory local annotations; four E_PARSE failures, corrected without changing assertions",
+    "portable probe CLI options variable was shadowed by subprocess argv; smoke1/2 failed, distinct settings variable fixes it"
+  ],
+  "retained_initial_comparison": "build/native-plan-index-095-comparison-v1/report.json",
+  "not_established": [
+    "complete095native10000cold/warm/edit and actual warm speedup",
+    "full99 regression and installedSDK/platform/editor/migration",
+    "general runtime performance or multi-model costs"
+  ]
+}
