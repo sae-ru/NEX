@@ -31,7 +31,7 @@ std::string uuid(const fs::path &p){
   if(id.empty())fail("linked image has no UUID/build ID: "+p.string());return llvm::toHex(id,true);
 }
 struct Temporary {fs::path path=createTemporaryDirectory("nex-native-image");~Temporary(){std::error_code ignored;fs::remove_all(path,ignored);}};
-void run(std::vector<std::string> args){if(execute(args)!=0)fail("native image tool failed; retained inputs describe the selected link");}
+void run(std::vector<std::string> args){if(executeNativeBuildTool(args)!=0)fail("native image tool failed; retained inputs describe the selected link");}
 void copyCaptured(const fs::path &from,const fs::path &to){fs::create_directories(to.parent_path());copyFile(from.string(),to.string(),true);}
 struct Captured {
   const NativeImageInput *input;

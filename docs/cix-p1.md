@@ -74,3 +74,33 @@ still requires matching target ABI, platform libraries and accelerator drivers.
 
 Primary runtime references: [Arm China Compass ONNX Runtime](https://github.com/Arm-China/Compass_Onnxruntime)
 and [ONNX Runtime CPU fallback setting](https://github.com/microsoft/onnxruntime/blob/v1.20.0/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h).
+
+## Source CPU workers on private SDK0.92
+
+The frozen0.92/language0.18 source was separately tested on this board with a
+private compiler loader/library closure and the board's own GCC12/glibc2.36
+application environment. Its actual parallel example passes check/reference,
+native Debug/Release tests and runs, native profile and source-deleted replay.
+Sixteen compute callbacks overlap on four distinct actual runtime thread IDs;
+all managed pools balance, all function calls complete and no profile counters
+drop. A copied AArch64 ELF runs from `/` with unavailable SDK resources and
+only ordinary system dependencies. The older070 SDK/system are unchanged.
+See [the exact receipt](evidence/cix-p1-cpu-0.92.0.json).
+
+This private `/tmp` setup does not establish a permanent/relocatable installer,
+full CIX SDK acceptance or actual CIX debugger interaction. General GPU/NPU
+source APIs remain pending.
+
+The existing fixed accelerator fixture was also explicitly retested with this
+private0.92 SDK. A SQLite backup of its genuine0.16 graph was migrated explicitly
+to0.18, preserving every original row and schema; the original0.70 fixture was
+unchanged. Reference execution, native Debug/Release runs and tests, native
+profile, source-deleted archived replay and a standalone application pass.
+Across ten fixture executions,30 GPU calls check30,720 output bytes and20 NPU
+calls check120 values. Every NPU profile identifies only Zhouyi; CPU fallback
+is disabled and `/dev/aipu` is open. Native managed pools balance.
+The first harness incorrectly passed an execution grant to passive build;
+the second undercounted reference-plus-native test executions. Both failed
+receipts are retained, and continuation reused the already verified device
+executions. See [the separate0.92 accelerator receipt](evidence/cix-p1-ffi-0.92.0.json).
+These results retain the fixed adapter's limitations above.

@@ -723,15 +723,45 @@ int execute(const std::vector<std::string> &args) {
   int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,{},0,0,&error,&failed);
   if(failed||status<0)throw Error("E_PROCESS",error.empty()?"process failed":error);return status;
 }
-namespace {
-int executeBuildTool(const std::vector<std::string> &arguments){
+int executeNativeBuildTool(const std::vector<std::string> &arguments){
+  if(arguments.empty())throw Error("E_PROCESS","empty native build command");
+  std::vector<llvm::StringRef> refs;size_t bytes=0;
+  for(const auto &argument:arguments){
+    if(argument.find('\0')!=std::string::npos)throw Error("E_PROCESS","native build argument contains NUL");
+    refs.push_back(argument);bytes+=argument.size()+1;
+  }
+  auto command=arguments;std::filesystem::path response;
+  if(bytes>65536||!llvm::sys::commandLineFitsWithinSystemLimits(arguments[0],refs)){
+    response=std::filesystem::path(createTemporaryDirectory("nex-native-response"))/"arguments.rsp";
+    std::filesystem::permissions(response.parent_path(),std::filesystem::perms::owner_all);
+    std::string text;
+    for(size_t i=1;i<arguments.size();++i){
+      text+='"';
+      for(char c:arguments[i]){if(c=='\\'||c=='"')text+='\\';text+=c;}
+      text+="\"\n";
+    }
+    writeFile(response.string(),text);
+    std::filesystem::permissions(response,std::filesystem::perms::owner_read|std::filesystem::perms::owner_write);
+    command={arguments[0],"@"+response.string()};
+  }
   // LLVM tools create their own temporary files too (notably dsymutil).
   // Scope the workaround to build tools; application environments stay intact.
   auto base=std::filesystem::canonical(std::filesystem::temp_directory_path());
-  if(base.string().find('%')==std::string::npos)return execute(arguments);
-  std::vector<std::string> command{"/usr/bin/env","TMPDIR=/tmp","TMP=/tmp","TEMP=/tmp","TEMPDIR=/tmp"};
-  command.insert(command.end(),arguments.begin(),arguments.end());return execute(command);
-}
+  if(base.string().find('%')!=std::string::npos){
+    std::vector<std::string> scoped{"/usr/bin/env","TMPDIR=/tmp","TMP=/tmp","TEMP=/tmp","TEMPDIR=/tmp"};
+    scoped.insert(scoped.end(),command.begin(),command.end());command=std::move(scoped);
+  }
+  try{
+    auto status=execute(command);
+    if(!response.empty()){
+      if(status!=0)throw Error("E_LINK","native build tool exited "+std::to_string(status)+"; response file retained at "+response.string());
+      std::error_code ignored;std::filesystem::remove_all(response.parent_path(),ignored);
+    }
+    return status;
+  }catch(const Error &error){
+    if(response.empty()||error.code=="E_LINK")throw;
+    throw Error(error.code,std::string(error.what())+"; response file retained at "+response.string(),error.span);
+  }
 }
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &directory){
   namespace fs=std::filesystem;
@@ -1100,7 +1130,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
         if(options.positionIndependent)compile.push_back("-fPIC");
-        if(executeBuildTool(compile)!=0)throw Error("E_LINK","native unit compiler failed");
+        if(executeNativeBuildTool(compile)!=0)throw Error("E_LINK","native unit compiler failed");
         artifact.object=readFile((stage/"program.o").string());saveArtifact(buildRoot,unitKeys[i],artifact);std::filesystem::remove_all(stage);
       }catch(const Error &error){throw Error(error.code,std::string(error.what())+"; intermediate files retained at "+stage.string(),error.span);}
       ++result.compiledFunctions;compiledSourceUnits.insert(unit.unit);
@@ -1134,7 +1164,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(profiling){
         arguments.insert(arguments.end(),{"-DNEX_PROFILE_ENABLED","-DTRACY_ENABLE","-DTRACY_ON_DEMAND","-DTRACY_DELAYED_INIT","-DTRACY_MANUAL_LIFETIME","-DTRACY_ONLY_LOCALHOST","-DTRACY_NO_BROADCAST","-DTRACY_NO_CODE_TRANSFER","-DTRACY_NO_CALLSTACK","-DTRACY_NO_SYSTEM_TRACING","-DTRACY_NO_SAMPLING","-DTRACY_NO_CRASH_HANDLER","-DTRACY_NO_FRAME_IMAGE","-pthread"});
       }
-      if(executeBuildTool(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
+      if(executeNativeBuildTool(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
       auto digest=hash(readFile(temporary.string()));std::filesystem::rename(temporary,cached);writeFile(marker.string(),digest+"\n");
     }
     auto destination=folder/std::filesystem::path(component).replace_extension(".o");
@@ -1147,7 +1177,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto bridgeCompile=command({"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization});
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
     if(options.positionIndependent)bridgeCompile.push_back("-fPIC");
-    if(executeBuildTool(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
+    if(executeNativeBuildTool(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
     link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
   }
   if(!objectArchive){
@@ -1156,7 +1186,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"build_key",key},{"compiler_build",NEX_BUILD_ID}},false);
     auto source=(folder/"application-identity.cpp").string(),object=(folder/"application-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_application_identity()noexcept{return "+json(identity,false)+";}\n");
-    if(executeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","application identity compilation failed");link.push_back(object);
+    if(executeNativeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","application identity compilation failed");link.push_back(object);
   }
   if(profiling&&!options.codeOnlyLibrary&&!options.deferredLink){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX
@@ -1164,7 +1194,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name}},false);
     auto source=(folder/"profile-identity.cpp").string(),object=(folder/"profile-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_profile_build_info(){return "+json(identity,false)+";}\n");
-    if(executeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
+    if(executeNativeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
   }
   if(foreign&&!objectArchive){link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
   if(profiling&&!objectArchive){link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
@@ -1198,14 +1228,14 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
     link.insert(link.end(),{"-o",linkOutput,"-g"});
   }
-  if(executeBuildTool(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
+  if(executeNativeBuildTool(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
   if(!linkStage.empty()){
     try{copyFile(linkOutput,result.executable,true);std::filesystem::remove_all(linkStage);}
     catch(const Error &e){throw Error(e.code,std::string(e.what())+"; link output retained at "+linkStage.string(),e.span);}
   }
   if(!objectArchive&&driverABI.isOSDarwin()) {
     auto dsym=toolchain.debugPackager;
-    if(executeBuildTool({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
+    if(executeNativeBuildTool({dsym,result.executable,"-o",result.executable+".dSYM"})!=0)throw Error("E_DEBUG","debug-symbol packaging failed");
     writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }
   if(!result.notices.empty())writeFile(result.notices,notices);

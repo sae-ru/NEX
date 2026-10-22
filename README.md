@@ -6,7 +6,7 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.93.0 / language 0.18**.
+This isolated development source is **toolchain 0.94.0 / language 0.18**.
 Full platform, installed SDK and editor acceptance for this exact source remains
 pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
 Historical receipts in `STATUS.md` retain their original compiler/source scopes;

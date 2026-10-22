@@ -50,6 +50,9 @@ void validateNativeBuildEntry(const Program &program,const BuildOptions &options
 std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metadata);
 BuildResult build(const Program &program, const std::string &directory, const BuildOptions &options);
 int execute(const std::vector<std::string> &arguments);
+// Trusted Clang/GNU-compatible build tools accept @response files. Large
+// commands use an owned UTF-8 argument file; application argv stays literal.
+int executeNativeBuildTool(const std::vector<std::string> &arguments);
 // The caller owns cleanup (or retains failed native intermediates).
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &base="");
 struct ProcessResult { int code; std::string output, errors; };

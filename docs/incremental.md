@@ -320,3 +320,25 @@ then checked zero warm compilations and one compiled/1,979 reused objects after
 a leaf edit. Cold wall times were299.583s and113.567s on one concurrently loaded
 macOS host. This is scoped build-work evidence; full10,000-function acceptance,
 isolated throughput, runtime/C++ comparisons and model cost remain pending.
+
+## Long native build commands in development0.94
+
+Clang and GNU-compatible native build tools must accept GNU-style UTF-8
+`@response-file` arguments. Toolchain wrappers must forward them unchanged to
+the real tool. The compiler uses a response file when an argument vector exceeds
+64KiB or LLVM reports that it exceeds host limits. Native image links share this
+path. Application execution keeps its original argument vector.
+
+Arguments are quoted individually, preserving spaces, quotes, backslashes and
+Unicode. The compiler creates an owned0700 directory and0600 file, removes it on
+success and retains its path in failure diagnostics. Its existing safe TMPDIR
+handling applies to build tools. Current validation targets macOS/Linux Clang
+and LLVM ar; native Windows-hosted toolchain encoding/driver validation remains
+pending. The response dialect does not make unsupported toolchains supported.
+
+The actual0.93 100module/10,000function gate compiled all9,900 objects but failed
+with posix_spawn E2BIG at linking. The tested0.94 helper links those retained
+objects without recompiling/changing them, verifies DWARF and executes the
+expected49,460,406 result. That recovery is scoped evidence, not a passed0.93
+or full0.94 scale gate. Complete0.94 cold/warm/edit/standalone acceptance remains
+required.

@@ -1,3 +1,35 @@
+# Development0.94 / language0.18 — bounded native tool arguments
+
+Actual0.93 native scale compiled9,900 functions, then failed at posix_spawn:
+its2.17MB link command exceeded the host argv limit. Native build tools now use
+GNU UTF-8 response files for large commands. Native image linking shares the
+helper; applications retain literal argv. Owned0700 directories/0600 files are
+removed on success; failures preserve exact inputs and a useful path.
+
+The first new test exposed default temporary-directory mode0750; explicit
+private modes fix it. Fourteen focused groups then pass, including real Clang
+and LLVM ar requests beyond host argv limits with spaces/quotes/backslashes/
+percent/Unicode paths. The helper also linked all9,900 retained actual093 objects,
+verified their unchanged bytes and DWARF, and executed49,460,406 correctly.
+The original093 scale failure remains retained; this recovery does not turn it
+into acceptance. Full09498-group/SDK/platform/editor/migration and independent
+cold/warm/edit/standalone scale gates remain pending. Language0.18 and its
+canonical identity/runtime/source semantics are unchanged.
+
+Frozen092 passes Mac/Linux full97, installedSDK24, Linux live22 and source-free
+acceptance, five actual installed IDE profiles, installed CPU-worker debugging
+and complete primary016->018 migration. On the actual CIX
+board, its private SDK passes CPU Debug/Release/reference/profile checks with
+four overlapping workers, balanced managed pools, source-deleted replay and a
+standalone AArch64 application without SDK dependencies. OldSDK070 and the
+system installation are unchanged. Its existing fixed accelerator fixture also
+passes with the private092 SDK:30 GPU calls and20 exclusively Zhouyi NPU calls,
+both profiles/reference/tests, balanced managed profile, archived source-deleted
+replay and standalone execution. Genuine016 history is preserved through
+explicit migration in a copy. Both harness failures are retained in the exact
+092 receipt. General GPU/NPU source APIs remain unfinished.
+Approved primary081 remains unchanged and the full objective is not complete.
+
 # Development 0.93 / language 0.18 — native emission analysis
 
 A sample of the actual0.90 10,000-function build found repeated whole-closure

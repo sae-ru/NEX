@@ -11,6 +11,15 @@ int main(int argc,char **argv) {
     auto parsed=llvm::json::parse(argv[3]);
     if(!parsed)throw Error("E_JSON",llvm::toString(parsed.takeError()));
     auto o=parsed->getAsObject();if(!o)throw Error("E_JSON","expected options object");
+    if(auto file=o->getString("native_tool_arguments")){
+      auto payload=llvm::json::parse(readFile(file->str()));
+      if(!payload)throw Error("E_JSON",llvm::toString(payload.takeError()));
+      auto values=payload->getAsArray();if(!values)throw Error("E_OPTION","native tool arguments must be an array");
+      std::vector<std::string> command;
+      for(const auto &value:*values){auto text=value.getAsString();if(!text)throw Error("E_OPTION","native tool argument must be text");command.push_back(text->str());}
+      auto status=executeNativeBuildTool(command);
+      std::cout<<json(llvm::json::Object{{"status",status}})<<'\n';return status;
+    }
     if(auto completion=o->getObject("completion_metadata")){
       llvm::json::Array paths;for(const auto &path:nativeCompletionInputs(*completion))paths.push_back(path);
       std::cout<<json(llvm::json::Object{{"paths",std::move(paths)}})<<'\n';return 0;

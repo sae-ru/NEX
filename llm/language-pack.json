@@ -770,5 +770,20 @@
     "implemented": false,
     "design": "docs/project-porting-design.md",
     "first_scope": "defined typed C++/Python subset with differential validation"
+  },
+  "native_tool_arguments": {
+    "guide": "docs/incremental.md",
+    "response_file_dialect": "GNU",
+    "encoding": "UTF-8",
+    "application_argv_unchanged": true,
+    "private_directory_mode": "0700",
+    "private_file_mode": "0600",
+    "successful_files_removed": true,
+    "failed_files_retained_in_diagnostic": true,
+    "hosts": [
+      "macos",
+      "linux"
+    ],
+    "windows_host_validation": "pending"
   }
 }
