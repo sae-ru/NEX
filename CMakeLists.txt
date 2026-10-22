@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.96.0 LANGUAGES C CXX)
+project(NEX VERSION 0.97.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -368,8 +368,11 @@ if(NEX_NODE_EXECUTABLE)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/web.py $<TARGET_FILE:nex>)
   add_test(NAME web_commands COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/web_commands.py $<TARGET_FILE:nex>)
+  add_test(NAME web_workers COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/web_workers.py $<TARGET_FILE:nex>)
   set_tests_properties(web PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
   set_tests_properties(web_commands PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
+  set_tests_properties(web_workers PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
 endif()
 
 add_test(NAME enums COMMAND ${Python3_EXECUTABLE}

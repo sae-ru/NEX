@@ -1,0 +1,113 @@
+"""Typed pure worker contracts and host lifecycle; production engines are separate."""
+import os
+import shutil
+import subprocess
+import unittest
+import support as harness
+
+
+class Workers(harness.ToolchainCase):
+    def example(self):
+        self.source((harness.REPO/'examples/workers/main.nex').read_text())
+
+    def test_compute_and_descriptors_agree_native_reference_typescript(self):
+        self.example()
+        original = self.file.read_text()
+        self.cli('test', self.file, '--target', 'web')
+        self.file.write_text(original.replace('client fn', 'shared fn').replace('client test fn', 'shared test fn'))
+        self.cli('test', self.file)
+
+    def test_separate_reachable_closures_and_actual_host_lifecycle(self):
+        self.example()
+        self.file.write_text(self.file.read_text()+'\nserver fn secret()->str{return "SERVER_WORKER_SECRET";}\nclient fn unused()->str{return "UNUSED_WORKER_SECRET";}\n')
+        out = self.root/'generated'
+        self.cli('web', self.file, '--directory', out)
+        main = (out/'src/program.ts').read_text()
+        worker = (out/'src/worker-program.ts').read_text()
+        self.assertNotIn('as compute', main)
+        self.assertNotIn('Worker 🧠', main)
+        self.assertIn('as compute', worker)
+        self.assertNotIn('NEX Workers', worker)
+        for path in list((out/'src').glob('*'))+[out/'nex-map.json',out/'nex-worker-map.json']:
+            text = path.read_text()
+            self.assertNotIn('SERVER_WORKER_SECRET', text)
+            self.assertNotIn('UNUSED_WORKER_SECRET', text)
+        shutil.copyfile(harness.REPO/'tests/worker-runner.ts', out/'src/check.ts')
+        checked = subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(out/'src/check.ts')],capture_output=True,text=True,timeout=30)
+        self.assertEqual(checked.returncode,0,checked.stdout+checked.stderr)
+
+    def test_contract_rejections(self):
+        base = '''module contract;
+import "std/web.nex" as web;
+import "std/worker.nex" as worker;
+client fn title()->str{return "Contract";}
+client fn initial()->i64{return 0;}
+client fn update(s:i64,e:web::Event)->i64{return s;}
+client fn view(s:i64)->web::View{return web::text(str(s));}
+client fn worker_compute(input:i64)->i64{return input+1;}
+client fn worker_commands(before:i64,after:i64,e:web::Event)->list<worker::Command<i64>>{return [worker::request("1",2,"done",1000)];}
+'''
+        variants = [
+            base.replace('fn worker_compute','fn other_compute'),
+            base.replace('worker_compute(input:i64)','worker_compute(input:i64,extra:i64)'),
+            base.replace('client fn worker_compute','server fn worker_compute'),
+            base.replace('->i64{return input+1;}','->i64 !{io}{print(input);return input+1;}'),
+            base.replace('->i64{return input+1;}','->(fn(i64)->i64){return fn(x:i64)->i64{return x;};}'),
+            base.replace('worker::Command<i64>','worker::Command<str>').replace('request("1",2,','request("1","2",'),
+            base.replace('worker_commands(before:i64','worker_commands(before:str'),
+        ]
+        for index, source in enumerate(variants):
+            with self.subTest(index=index):
+                self.source(source)
+                self.assertEqual(self.cli('web',self.file,'--directory',self.root/('bad'+str(index)),ok=False)['code'],'E_WEB_SIGNATURE')
+
+    def test_old_helper_names_do_not_enable_worker_contract(self):
+        self.source('''module old_helpers;
+import "std/web.nex" as web;
+client fn title()->str{return "Legacy helpers";}
+client fn initial()->i64{return 0;}
+client fn update(s:i64,e:web::Event)->i64{return worker_compute(s);}
+client fn view(s:i64)->web::View{return web::text(str(worker_commands(s)));}
+client fn worker_compute(input:i64)->i64{return input+1;}
+client fn worker_commands(input:i64)->i64{return input+2;}
+''')
+        out=self.root/'legacy';self.cli('web',self.file,'--directory',out)
+        self.assertFalse((out/'src/worker-program.ts').exists())
+        self.assertIn('workerEnabled = false',(out/'src/program.ts').read_text())
+
+    def test_application_result_is_nested_inside_transport_result(self):
+        self.source('''module nested_worker;
+import "std/web.nex" as web;
+import "std/worker.nex" as worker;
+shared fn title()->str{return "Nested";}
+shared fn initial()->i64{return 0;}
+shared fn update(s:i64,e:web::Event)->i64{return s;}
+shared fn view(s:i64)->web::View{return web::text(str(s));}
+shared fn worker_compute(input:i64)->result<i64>{
+ if input<0{return err<i64>("E_APPLICATION","Expected failure");}return ok(input+1);
+}
+shared fn worker_commands(b:i64,a:i64,e:web::Event)->list<worker::Command<i64>>{return [];}
+test fn nested_test()->unit{
+ assert(worker_compute(2)==ok(3));
+ assert(error_code(worker_compute(-1))=="E_APPLICATION");
+}
+''')
+        self.cli('test',self.file)
+        self.cli('test',self.file,'--target','web')
+        out=self.root/'nested';self.cli('web',self.file,'--directory',out)
+        driver=out/'src/check.ts'
+        driver.write_text('''import assert from 'node:assert/strict';
+import {compute} from './worker-program.ts';
+import {makeWorkerResponseEvent} from './program.ts';
+import {encodeJSON} from './nex-runtime.ts';
+const event=makeWorkerResponseEvent('done','1',encodeJSON(compute(-1n)),'','','/');
+assert.deepEqual(JSON.parse(event.value),{id:'1',value:{ok:{error:{code:'E_APPLICATION',message:'Expected failure'}}}});
+const transport=makeWorkerResponseEvent('done','2','','E_TIMEOUT','Timed out','/');
+assert.deepEqual(JSON.parse(transport.value),{id:'2',value:{error:{code:'E_TIMEOUT',message:'Timed out'}}});
+''')
+        result=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(driver)],capture_output=True,text=True,timeout=30)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

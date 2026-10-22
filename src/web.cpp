@@ -56,8 +56,30 @@ Project prepare(const Program &p){
   auto state=initial.result;
   requireFunction(initial,{},state);requireFunction(update,{state,event},state);requireFunction(render,{state},view);requireFunction(title,{},Type::Str);
   std::map<std::string,std::string> entries={{"initial",initial.name},{"update",update.name},{"view",render.name},{"title",title.name}};
-  const Function *commands=nullptr;
-  for(const auto &f:p.functions)if(f.owner==p.module&&f.localName=="commands")commands=&f;
+  const Function *commands=nullptr,*workerCompute=nullptr,*workerCommands=nullptr;
+  for(const auto &f:p.functions)if(f.owner==p.module){
+    if(f.localName=="commands")commands=&f;
+    if(f.localName=="worker_compute")workerCompute=&f;
+    if(f.localName=="worker_commands")workerCommands=&f;
+  }
+  // A new nominal command type opts into this host contract. Old applications
+  // may already use either name for an ordinary helper; keep those valid.
+  bool workerContract=workerCommands&&workerCommands->result.kind==Type::List&&workerCommands->result.element->kind==Type::Record&&p.structure(workerCommands->result.element->name).templateName=="std::worker::Command";
+  if(!workerContract){workerCompute=nullptr;workerCommands=nullptr;}
+  else if(!workerCompute)throw Error("E_WEB_SIGNATURE","typed worker_commands requires worker_compute");
+  llvm::json::Value workerInput=nullptr,workerOutput=nullptr;
+  if(workerCompute){
+    if(workerCompute->params.size()!=1)throw Error("E_WEB_SIGNATURE","worker_compute requires one wire input",workerCompute->span);
+    const auto &input=workerCompute->params[0].type;
+    requireFunction(*workerCompute,{input},workerCompute->result);
+    try{workerInput=wireSchema(p,input);workerOutput=wireSchema(p,workerCompute->result);}
+    catch(const Error &e){throw Error("E_WEB_SIGNATURE",std::string("worker_compute requires wire input/output: ")+e.what(),workerCompute->span);}
+    if(workerCommands->result.kind!=Type::List||workerCommands->result.element->kind!=Type::Record)throw Error("E_WEB_SIGNATURE","worker_commands must return list<worker::Command<Input>>",workerCommands->span);
+    auto command=*workerCommands->result.element;const auto &s=p.structure(command.name);
+    if(s.templateName!="std::worker::Command"||s.typeArguments!=std::vector<Type>{input})throw Error("E_WEB_SIGNATURE","worker command input must match worker_compute",workerCommands->span);
+    requireStructure(p,command.name,{{"kind",Type::Str},{"id",Type::Str},{"input",Type::result(input)},{"action",Type::Str},{"timeout_ms",Type::I64}});
+    requireFunction(*workerCommands,{state,state,event},Type::list(command));entries["worker_commands"]=workerCommands->name;
+  }
   if(commands){
     auto command=Type::record("std::net::Command");
     requireStructure(p,command.name,{{"kind",Type::Str},{"id",Type::Str},{"method",Type::Str},{"path",Type::Str},{"body",Type::Str},{"token",Type::Str},{"action",Type::Str},{"timeout_ms",Type::I64}});
@@ -72,6 +94,24 @@ Project prepare(const Program &p){
   else module.source+="export type Command = nex.RecordValue & { readonly kind: string; readonly id: string; readonly method: string; readonly path: string; readonly body: string; readonly token: string; readonly action: string; readonly timeout_ms: bigint };\nexport function commands(_before: State, _after: State, _event: Event): ReadonlyArray<Command> { return nex.list<Command>([]); }\n";
   module.source+="export function makeResponseEvent(action: string, id: string, status: number, body: string, code: string, message: string, path: string): Event {\n  const payload = (content: nex.Result<string>) => nex.record('std::net::Response', [['id', nex.string(id)], ['status', nex.checked(BigInt(status))], ['body', content]]);\n  let encoded: string;\n  try { encoded = nex.encodeJSON(payload(code ? nex.err<string>(nex.string(code), nex.string(message)) : nex.ok(nex.string(body)))); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(payload(nex.err<string>('E_LIMIT', 'Response envelope exceeds wire limits')));\n  }\n  return makeEvent(action, encoded, path);\n}\n";
   std::map<std::string,std::string> files;
+  module.source+="\nexport const workerEnabled = "+std::string(workerCompute?"true":"false")+";\n";
+  if(workerCompute){
+    module.source+="export type WorkerCommand = ReturnType<typeof "+nativeSymbol(workerCommands->name)+">[number];\n";
+    auto worker=emitTypeScript(p,{{"compute",workerCompute->name}});
+    files["src/worker-program.ts"]=worker.source;
+    files["nex-worker-map.json"]=json(worker.mapping)+"\n";
+    files["src/worker-contract.ts"]="import type { Schema } from './nex-runtime.ts';\nexport const inputSchema: Schema = "+json(workerInput,false)+";\nexport const outputSchema: Schema = "+json(workerOutput,false)+";\n";
+    files["src/workers.ts"]=readFile(resourceFile("web/workers.ts"));
+    files["src/worker-entry.ts"]=readFile(resourceFile("web/worker-entry.ts"));
+  }else{
+    module.source+="export type WorkerCommand = nex.RecordValue & { readonly kind: string; readonly id: string; readonly input: nex.Result<nex.Value>; readonly action: string; readonly timeout_ms: bigint };\nexport function worker_commands(_before: State, _after: State, _event: Event): ReadonlyArray<WorkerCommand> { return []; }\n";
+    files["src/workers.ts"]="import type { WorkerCommand } from './program.ts';\nexport class WorkerRunner { constructor(_deliver: (action: string, id: string, body: string, code: string, message: string) => void) {} validate(_commands: ReadonlyArray<WorkerCommand>): void {} run(_commands: ReadonlyArray<WorkerCommand>): void {} close(): void {} }\n";
+  }
+  if(workerCompute)module.source+="import { outputSchema as workerOutputSchema } from './worker-contract.ts';\n";
+  module.source+="export function makeWorkerResponseEvent(action: string, id: string, body: string, code: string, message: string, path: string): Event {\n  const value: nex.Result<nex.Value> = "+std::string(workerCompute?"code ? nex.err(code, message) : nex.decodeJSON<nex.Value>(body, workerOutputSchema)":"nex.err('E_WORKER', 'No worker handler configured')")+";\n";
+  // Wire input is already checked by the runner. Encode the response envelope
+  // without parsing numeric wire strings into JavaScript Number values.
+  module.source+="  let encoded: string;\n  try { encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', value]])); }\n  catch (error) {\n    if (!(error instanceof nex.NexError) || error.code !== 'E_JSON') throw error;\n    encoded = nex.encodeJSON(nex.record('std::worker::Response', [['id', id], ['value', nex.err('E_LIMIT', 'Worker response envelope exceeds wire limits')]]));\n  }\n  return makeEvent(action, encoded, path);\n}\n";
   files["src/program.ts"]=module.source;
   files["src/nex-runtime.ts"]=readFile(resourceFile("web/nex-runtime.ts"));
   files["src/nex-bytes.ts"]=readFile(resourceFile("web/nex-bytes.ts"));

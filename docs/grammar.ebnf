@@ -1,3 +1,4 @@
+(* Toolchain0.97 browser worker entries are ordinary functions; no syntax change. *)
 (* Toolchain0.87 scoped discovery is external metadata, with no grammar or migration. *)
 (* Toolchain0.86 internal worker probes add no source builtin or grammar;
    source concurrency and its explicit language migration remain pending. *)

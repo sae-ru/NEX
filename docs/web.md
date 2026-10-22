@@ -1,3 +1,8 @@
+Toolchain0.97 adds [typed browser worker jobs](browser-workers.md) through
+ordinary worker_compute/worker_commands entries. Actual worker execution has
+separate production-engine and installed-SDK evidence. Synchronous parallel_map
+keeps the semantics below; general source async/await remains unfinished.
+
 Language0.18 adds ordered CPU map semantics to the synchronous TypeScript
 backend through serial evaluation, checked closure metadata and bounded group
 polling. This does not provide browser workers. Pure value/error agreement and

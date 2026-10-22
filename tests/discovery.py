@@ -96,6 +96,9 @@ class Discovery(harness.ToolchainCase):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
+        self.assertEqual(full['browser_workers'], pack['browser_workers'])
+        self.assertTrue(full['browser_workers']['source_support'])
+        self.assertFalse(full['browser_workers']['parallel_map_workers'])
         self.assertEqual(full['scoped_discovery']['field_bytes'], 256)
         self.assertEqual(full['scoped_discovery']['path_components'], 8)
         for kind, key in [('discovery', 'scoped_discovery'), ('bootstrap', 'bootstrap_prompt'),

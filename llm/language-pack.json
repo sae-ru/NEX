@@ -224,7 +224,8 @@
     "debug_session_schema": "llm/debug-session.schema.json",
     "result_propagation": "docs/error-propagation.md",
     "project_porting_design": "docs/project-porting-design.md",
-    "concurrency_example": "examples/parallel.nex"
+    "concurrency_example": "examples/parallel.nex",
+    "browser_workers": "docs/browser-workers.md"
   },
   "document_access": "nex guide --kind result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -785,5 +786,31 @@
       "linux"
     ],
     "windows_host_validation": "pending"
+  },
+  "browser_workers": {
+    "status": "development_browser_jobs",
+    "source_support": true,
+    "guide": "docs/browser-workers.md",
+    "library": "std/worker.nex",
+    "compute_entry": "worker_compute",
+    "commands_entry": "worker_commands",
+    "execution": "dedicated module Worker per running job",
+    "maximum_running": 2,
+    "maximum_pending": 32,
+    "maximum_batch": 64,
+    "maximum_timeout_ms": 60000,
+    "wire_bytes": 1048576,
+    "input_output": "checked wire values; no functions or files",
+    "deadline": "queue and worker startup included; host timer termination",
+    "delivery": "at most once per accepted job; no delivery after close",
+    "source_async_await": false,
+    "parallel_map_workers": false,
+    "pending": [
+      "production_browser_validation",
+      "full_current_regression",
+      "installed_sdk",
+      "platform_editor_validation",
+      "general_tasks_channels_async"
+    ]
   }
 }

@@ -1,3 +1,9 @@
+Current functional work: typed dedicated browser worker jobs in0.97 are being
+implemented and tested; production engines/full SDK gates remain pending.
+General native tasks/channels/async, accelerator APIs and platform delivery
+still belong to the full objective. C++/Python project converter remains a
+separate proposed importer; no converter command is implemented.
+
 # План разработки NEX
 
 Обновлён: 22 октября 2026 года.

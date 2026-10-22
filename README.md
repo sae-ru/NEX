@@ -1,3 +1,8 @@
+Toolchain0.97 development source adds typed dedicated browser worker jobs.
+Six focused groups and15 actual production worker cases in Chromium/Firefox/
+WebKit pass on the exact current compiler; full101/SDK/platform acceptance
+remains pending. No release/platform acceptance is implied. See [browser workers](docs/browser-workers.md).
+
 # NEX
 
 **NEX — Neural Execution Language** («язык нейронного исполнения»).

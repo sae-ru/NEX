@@ -1,3 +1,7 @@
+Toolchain0.97 adds an external typed browser worker application contract using
+ordinary0.18 functions and std/worker.nex. No source syntax, canonical format
+or language migration changes. See [browser workers](browser-workers.md).
+
 # NEX language specification 0.18
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.

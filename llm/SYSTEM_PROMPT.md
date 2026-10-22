@@ -1,3 +1,13 @@
+When browser_workers.source_support is true, read docs/browser-workers.md.
+Use worker_compute(Input)->Output and worker_commands(State,State,web::Event)
+->list<worker::Command<Input>> together. Input/Output must be wire values;
+functions and files cannot cross. Worker completion arrives asynchronously in
+update through worker::response<Output>. Check response IDs and the nested
+value result. Never run heavy compute directly from update/view. Test the pure
+compute and descriptions across reference/native/TypeScript, then actual
+production workers. This adapter does not change synchronous parallel_map or
+provide source async/await/native tasks/channels.
+
 Language0.17 adds postfix `value?` for result<T> inside a function returning
 result<U>. It evaluates once, yields T on success, or returns the unchanged error
 from that current function (lambdas have their own boundary). Use it to avoid

@@ -2,8 +2,9 @@
 
 The source operation is implemented in this development source. Complete frozen
 regression, installed SDK, platform, editor/debug/profile and migration acceptance
-remain pending. Source async/await, general tasks/channels, browser workers and
-GPU/NPU execution are separate unfinished work. Check actual `nex describe
+remain pending. Source async/await, general tasks/channels and GPU/NPU execution
+are separate unfinished work. Toolchain0.97 adds an explicit browser worker-job
+adapter; see [its distinct contract](browser-workers.md). Check actual `nex describe
 --field source_concurrency --json`; an older SDK may expose only a private probe.
 
 ## Source contract
@@ -82,7 +83,8 @@ and checked error precedence. Representation-specific object/resource counters
 are backend policies, not byte-for-byte allocation equivalence.
 
 **These two backends provide no measured or promised parallel execution.**
-Actual browser workers need an asynchronous integration and remain pending.
+The0.97 browser worker-job adapter provides an explicit asynchronous application
+boundary. It does not make synchronous parallel_map launch browser workers.
 Browser output still contains only reachable client/shared code; server code and
 capabilities cannot enter it. No npm dependency or bundled notice changed.
 

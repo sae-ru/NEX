@@ -1,0 +1,20 @@
+module std::worker;
+import "./web.nex" as web;
+
+// Pure typed descriptions. The browser host owns execution and cancellation.
+pub struct Command<T: wire> {
+  kind: str; id: str; input: result<T>; action: str; timeout_ms: i64;
+}
+pub struct Response<T: wire> { id: str; value: result<T>; }
+pub fn request<T: wire>(id: str, input: T, action: str, timeout_ms: i64) -> Command<T> {
+  return Command<T>("request", id, ok(input), action, timeout_ms);
+}
+pub fn cancel<T: wire>(id: str) -> Command<T> {
+  return Command<T>("cancel", id, err<T>("E_CANCELED", "Worker canceled"), "", 0);
+}
+pub fn cancel_all<T: wire>() -> Command<T> {
+  return Command<T>("cancel_all", "", err<T>("E_CANCELED", "Worker canceled"), "", 0);
+}
+pub fn response<T: wire>(event: web::Event) -> result<Response<T>> {
+  return decode_json<Response<T>>(event.value);
+}

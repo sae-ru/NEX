@@ -1,11 +1,12 @@
 import { Component, createElement, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { initial, update, view, title, commands, makeEvent, makeResponseEvent } from './program.ts';
+import { initial, update, view, title, commands, makeEvent, makeResponseEvent, workerEnabled, worker_commands, makeWorkerResponseEvent } from './program.ts';
 import type { Event } from './program.ts';
 import { NexError } from './nex-runtime.ts';
 import { renderView, currentPath } from './renderer.tsx';
 import { RequestRunner, configuredAPIOrigin } from './net.ts';
+import { WorkerRunner } from './workers.ts';
 import './app.css';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -22,7 +23,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 function App(): ReactNode {
   const [state, setState] = useState(initial);
   const [failure, setFailure] = useState<Error | null>(null);
-  const current = useRef(state), runner = useRef<RequestRunner | null>(null);
+  const current = useRef(state), runner = useRef<RequestRunner | null>(null), workers = useRef<WorkerRunner | null>(null);
   const events = useRef<Event[]>([]), processing = useRef(false);
   const dispatch = useCallback((event: Event) => {
     events.current.push(event);
@@ -33,24 +34,31 @@ function App(): ReactNode {
         const input = events.current.shift()!;
         const before = current.current, after = update(before, input);
         const work = commands(before, after, input);
+        const computation = worker_commands(before, after, input);
+        runner.current?.validate(work); workers.current?.validate(computation);
         current.current = after; setState(after);
         runner.current?.run(work);
+        workers.current?.run(computation);
       }
     } catch (error) {
-      runner.current?.close(); events.current = [];
+      runner.current?.close(); workers.current?.close(); events.current = [];
       setFailure(error instanceof Error ? error : new Error('Application update failed'));
     } finally { processing.current = false; }
   }, []);
   useEffect(() => {
     try { runner.current = new RequestRunner((action, id, status, body, code, message) => {
       try { dispatch(makeResponseEvent(action, id, status, body, code, message, currentPath())); }
-      catch (error) { runner.current?.close(); setFailure(error instanceof Error ? error : new Error('Invalid response event')); }
+      catch (error) { runner.current?.close(); workers.current?.close(); setFailure(error instanceof Error ? error : new Error('Invalid response event')); }
     }, window.location.href, globalThis.fetch.bind(globalThis), configuredAPIOrigin(document));
+    if (workerEnabled) workers.current = new WorkerRunner((action, id, body, code, message) => {
+      try { dispatch(makeWorkerResponseEvent(action, id, body, code, message, currentPath())); }
+      catch (error) { runner.current?.close(); workers.current?.close(); setFailure(error instanceof Error ? error : new Error('Invalid worker event')); }
+    });
     } catch (error) { setFailure(error instanceof Error ? error : new Error('Invalid host configuration')); return; }
     document.title = title();
     const route = () => dispatch(makeEvent('route', '', currentPath()));
     route(); window.addEventListener('popstate', route); window.addEventListener('hashchange', route);
-    return () => { runner.current?.close(); runner.current = null; window.removeEventListener('popstate', route); window.removeEventListener('hashchange', route); };
+    return () => { runner.current?.close(); workers.current?.close(); runner.current = null; workers.current = null; window.removeEventListener('popstate', route); window.removeEventListener('hashchange', route); };
   }, [dispatch]);
   if (failure) throw failure;
   return renderView(view(state), dispatch);
