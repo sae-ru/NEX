@@ -10,7 +10,9 @@
 #include "llvm/Support/JSON.h"
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.18";
+inline constexpr const char *languageVersion = "0.19";
+inline constexpr const char *taskCandidateLanguageVersion = "0.19";
+enum class SourceLanguage { Language018, Tasks019 };
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -148,7 +150,10 @@ struct Program {
   std::vector<Implementation> implementations;
   std::vector<EditorName> editorNames;
   bool traitsPrepared=false;
-  bool taskPrototype=false; // Private frontend staging; never persist as language0.18.
+  // Task syntax/continuations are shared by public019 and the guarded raw018
+  // development frontend. sourceLanguage distinguishes their semantic identity.
+  bool taskPrototype=false;
+  SourceLanguage sourceLanguage=SourceLanguage::Language018;
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
   std::map<std::string,Function> functionTemplates;
@@ -166,7 +171,12 @@ struct Program {
   std::string definition(const Implementation &implementation) const;
   std::string location(const Span &span) const;
 };
+// The checked program's semantic version, separate from the installed public
+// compiler default. Explicit019 candidates must never be persisted as018.
+const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
+Program parseLegacy018(std::string source,std::string path,
+    bool editorNames=false,bool editorDetails=false);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
 S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
 P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
@@ -180,6 +190,10 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
 // Same lexer as the parser, for checked editor projections; no source identities.
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
+// Explicit versioned recheck; no physical manifest relabel or auto-detection.
+//018 uses the retained legacy parser;019 uses task syntax and lifetime checks.
+Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,
+    const std::string &language);
 // Binding-only source syntax for reference projection. Never pass it to a
 // backend: separately check both the original and projected source bundles.
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root);
@@ -208,7 +222,7 @@ std::string json(const llvm::json::Value &value, bool pretty = true);
 std::string hash(const std::string &text);
 std::string revision(const Program &program);
 llvm::json::Value describe();
-const std::set<std::string> &builtinNames(bool tasks=false);
+const std::set<std::string> &builtinNames(bool tasks=true);
 const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);

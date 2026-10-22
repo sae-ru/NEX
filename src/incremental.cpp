@@ -105,7 +105,7 @@ NativePlan planNative(const Program &p,const std::string &entry,const std::vecto
     }
     for(const auto &name:types)layouts.push_back(canonical(lookup.structure(name)));
     llvm::json::Array unitBridges;if(bridges.contains(name))unitBridges.push_back(name);
-    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/2"},{"language",languageVersion},
+    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/2"},{"language",programLanguage(p)},
       {"function",name},{"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
       {"external_interfaces",std::move(interfaces)},{"type_layouts",std::move(layouts)},{"closure_bridges",std::move(unitBridges)}},false);
     // Absolute byte offsets may change after an unrelated earlier edit. Machine

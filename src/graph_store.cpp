@@ -229,7 +229,7 @@ Object queryPage(unsigned offset,unsigned limit,size_t total,size_t count,bool b
     {"next_offset",std::move(cursor)},{"truncated",next<total},{"byte_limited",byteLimited}};
 }
 Object queryEnvelope(sqlite3 *db,const Program &p,const char *schema,Object selection){
-  Object result{{"schema",schema},{"query_policy","nex.graph-query/1"},{"language",languageVersion},
+  Object result{{"schema",schema},{"query_policy","nex.graph-query/1"},{"language",programLanguage(p)},
     {"namespace",graphIdentityNamespace(db)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",std::move(selection)}};
   // Selection identity excludes page ranges; exact archived input and namespace
   // participate, so clients can pin a revision and reject mixed query pages.
@@ -284,7 +284,7 @@ Value graphDeclarations(sqlite3 *db,const Program &p,const std::string &kind,con
     value["definition"]=std::move(definition);value["definition_bytes"]=int64_t(definitionBytes);value["definition_omitted"]=omitted;value["editable"]=entity.kind!="module"&&!entity.derived;value["derived"]=entity.derived;
     value["references"]=std::move(dependencies);value["reference_count"]=int64_t(entity.dependencies.size());value["references_truncated"]=limit&&entity.dependencies.size()>100;rows.push_back(std::move(value));
   }
-  return Object{{"schema","nex.declarations/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},
+  return Object{{"schema","nex.declarations/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"namespace",graphIdentityNamespace(db)},
     {"identity_policy","nex.graph-identity/1"},{"total",int64_t(total)},{"offset",int64_t(offset)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
 }
 Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
@@ -296,7 +296,7 @@ Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const
   for(const auto &[key,entity]:entities){if(key.first!="function"||!includes(selection,entity,true))continue;
     for(const auto &operation:operations.all(entity).ordered)append(operation);
   }
-  return Object{{"schema","nex.identities/1"},{"language",languageVersion},{"identity_policy","nex.graph-identity/1"},{"namespace",graphIdentityNamespace(db)},
+  return Object{{"schema","nex.identities/1"},{"language",programLanguage(p)},{"identity_policy","nex.graph-identity/1"},{"namespace",graphIdentityNamespace(db)},
     {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",Object{{"entity",kind},{"symbol",selection.symbol}}},
     {"offset",int64_t(offset)},{"total",int64_t(total)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
 }
@@ -357,7 +357,7 @@ Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifes
   auto object=manifest.getAsObject();if(!object)throw Error("E_IDENTITY_SCHEMA","identity manifest must be an object");
   keys(*object,{"schema","language","identity_policy","namespace","revision","source_hash","selection","offset","total","truncated","nodes"});
   if(token(*object,"schema")!="nex.identities/1"||token(*object,"identity_policy")!="nex.graph-identity/1")throw Error("E_IDENTITY_SCHEMA","unsupported graph identity protocol");
-  if(token(*object,"language")!=languageVersion)throw Error("E_LANGUAGE_VERSION","identity manifest uses another language version");
+  if(token(*object,"language")!=programLanguage(p))throw Error("E_LANGUAGE_VERSION","identity manifest uses another language version");
   auto origin=token(*object,"namespace",32),sourceRevision=token(*object,"revision",64),sourceHash=token(*object,"source_hash",64),current=revision(p),localNamespace=graphIdentityNamespace(db);
   if(origin.size()!=32||origin.find_first_not_of("0123456789abcdef")!=std::string::npos||!digest(sourceRevision)||!digest(sourceHash))throw Error("E_IDENTITY_SCHEMA","invalid namespace or source digest");
   auto nodes=object->getArray("nodes");if(!nodes||nodes->empty()||nodes->size()>maximumPage)throw Error("E_IDENTITY_LIMIT","reconciliation requires 1..1000 identity records");
@@ -383,7 +383,7 @@ Value reconcileGraphIdentities(sqlite3 *db,const Program &p,const Value &manifes
     links.push_back({remote,id,kind,symbol,path->str(),content,context});
   }
   for(const auto &link:links){Query q(db,"INSERT OR IGNORE INTO identity_links(origin,remote_id,source_revision,target_revision,local_id,kind,symbol,path,hash,context_hash,manifest_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?)");q.bind(1,origin);q.bind(2,link.remote);q.bind(3,sourceRevision);q.bind(4,current);q.bind(5,link.local);q.bind(6,link.kind);q.bind(7,link.symbol);q.bind(8,link.path);q.bind(9,link.content);q.bind(10,link.context);q.bind(11,manifestHash);q.row();}
-  return Object{{"schema","nex.identity-reconciliation/1"},{"ok",true},{"language",languageVersion},{"revision",current},{"namespace",localNamespace},{"source_namespace",origin},{"source_revision",sourceRevision},{"manifest_hash",manifestHash},{"mappings",std::move(mappings)},{"source_unchanged",true},{"head_unchanged",true}};
+  return Object{{"schema","nex.identity-reconciliation/1"},{"ok",true},{"language",programLanguage(p)},{"revision",current},{"namespace",localNamespace},{"source_namespace",origin},{"source_revision",sourceRevision},{"manifest_hash",manifestHash},{"mappings",std::move(mappings)},{"source_unchanged",true},{"head_unchanged",true}};
 }
 Value resolveGraphIdentity(sqlite3 *db,const Program &p,const std::string &origin,const std::string &sourceRevision,const std::string &id){
   if(origin.size()!=32||origin.find_first_not_of("0123456789abcdef")!=std::string::npos||!digest(sourceRevision)||id.empty()||id.size()>128||id.find('\0')!=std::string::npos)throw Error("E_IDENTITY_SCHEMA","invalid snapshot identity reference");
@@ -395,7 +395,7 @@ Value resolveGraphIdentity(sqlite3 *db,const Program &p,const std::string &origi
     if(result.getAsNull())for(const auto &f:p.functions){const auto &owner=entities.at({"function",f.name});for(const auto &node:operations.all(owner).ordered)if(node.getString("id")==id){result=Object(node);break;}if(!result.getAsNull())break;}
   }
   if(result.getAsNull())throw Error("E_IDENTITY_REF","identity reference has no mapping in the selected revision");
-  return Object{{"schema","nex.identity-resolution/1"},{"language",languageVersion},{"source",Object{{"namespace",origin},{"revision",sourceRevision},{"id",id}}},
+  return Object{{"schema","nex.identity-resolution/1"},{"language",programLanguage(p)},{"source",Object{{"namespace",origin},{"revision",sourceRevision},{"id",id}}},
     {"target",Object{{"namespace",graphIdentityNamespace(db)},{"revision",targetRevision},{"node",std::move(result)}}},{"manifest_hash",manifestHash}};
 }
 }

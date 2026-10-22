@@ -111,11 +111,11 @@ server fn main(s:task_scope,f:file)->unit !{task}{
   auto fixture=llvm::json::parse(readFile(argv[1]));require(bool(fixture),"invalid baseline metadata");
   auto object=fixture->getAsObject();require(object&&object->getString("source"),"baseline source missing");
   auto source=object->getString("source")->str();
-  auto legacy=loadBundle(llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",source}}}},std::filesystem::temp_directory_path().string());
+  auto legacy=loadVersionedBundle(llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",source}}}},std::filesystem::temp_directory_path().string(),"0.18");
   auto baseline=object->getString("revision");require(baseline&&revision(legacy)==*baseline,"old0.18 canonical revision changed");++cases;
   require(evaluate(legacy,"legacy_task_names::answer",10000).value==llvm::json::Value(int64_t(43)),"legacy names no longer execute");++cases;
   rejects("E_DUPLICATE",[&]{auto incompatible=parseTaskPrototype(source,"legacy.nex");check(incompatible);});
-  require(builtinNames().count("task_wait")==0&&builtinNames(true).count("task_wait")==1,"private builtin names escaped into public language");++cases;
+  require(builtinNames(false).count("task_wait")==0&&builtinNames(true).count("task_wait")==1,"legacy and task builtin sets are not distinct");++cases;
   auto directory=std::filesystem::path(createTemporaryDirectory("nex-task-frontend"));
   try{
     writeFile((directory/"worker.nex").string(),"module worker; pub fn compute()->i64 !{task}{task_yield();return 42;}");
@@ -124,9 +124,11 @@ server fn main(s:task_scope,f:file)->unit !{task}{
     require(loaded.taskPrototype&&loaded.functions.size()>=3&&loaded.units.size()==2,"task module assembly lost its mode or imports");
     require(loaded.function("app::main").effects.contains("task"),"task effect lost during module binding");++cases;
     rejects("E_TASK_UNIMPLEMENTED",[&]{sourceBundle(loaded);});
-    rejects("E_TYPE",[&]{loadProgram((directory/"main.nex").string(),directory.string());});
+    auto publicProgram=loadProgram((directory/"main.nex").string(),directory.string());
+    require(publicProgram.sourceLanguage==SourceLanguage::Tasks019&&publicProgram.taskPrototype&&std::string(programLanguage(publicProgram))=="0.19","ordinary loader did not select public019 task syntax");++cases;
+    require(evaluate(publicProgram,"app::main",10000).value==llvm::json::Value(int64_t(42)),"public019 reference execution lost task module semantics");++cases;
     require(!std::filesystem::exists(directory/".nex"),"private source checking opened a graph store");++cases;
     std::filesystem::remove_all(directory);
   }catch(...){std::filesystem::remove_all(directory);throw;}
-  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_source_tasks\":false}\n";return 0;
+  std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_source_tasks\":true,\"private018_guards\":true}\n";return 0;
 }catch(const std::exception &error){std::cerr<<"after "<<cases<<" cases: "<<error.what()<<'\n';return 1;}

@@ -2,6 +2,23 @@
 #include <functional>
 
 namespace nex {
+const char *programLanguage(const Program &program){
+  switch(program.sourceLanguage){
+  case SourceLanguage::Language018:return "0.18";
+  case SourceLanguage::Tasks019:return taskCandidateLanguageVersion;
+  }
+  throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
+}
+bool usesTaskEffects(const Program &program,const std::string &entry){
+  std::vector<std::string> pending{entry};std::set<std::string> seen;
+  while(!pending.empty()){
+    auto name=std::move(pending.back());pending.pop_back();
+    const auto &function=program.function(name);if(!seen.insert(function.name).second)continue;
+    if(function.effects.contains("task"))return true;
+    pending.insert(pending.end(),function.dependencies.begin(),function.dependencies.end());
+  }
+  return false;
+}
 const std::set<std::string> &taskBuiltins(){
   static const std::set<std::string> names={"with_tasks","task_spawn","task_wait",
     "channel_new","task_send","task_recv","task_close","task_cancel",
@@ -24,7 +41,16 @@ bool containsTaskAuthority(const Program &program,const Type &type){
   return visit(type);
 }
 void rejectUnloweredTasks(const Program &program,const char *operation){
-  if(program.taskPrototype)throw Error("E_TASK_UNIMPLEMENTED",
+  if(program.taskPrototype&&program.sourceLanguage!=SourceLanguage::Tasks019)throw Error("E_TASK_UNIMPLEMENTED",
     std::string(operation)+" requires continuation lowering and an explicit language migration; private task typing is not an executable language0.18 program");
+}
+void rejectUnarchivedTasks(const Program &program,const char *operation){
+  if(program.sourceLanguage==SourceLanguage::Tasks019){
+    if(!program.taskPrototype)throw Error("E_TASK_STATE","language019 candidate requires its checked task frontend");
+    for(const auto &function:program.functions)if(!function.checked&&!function.traitSignature)
+      throw Error("E_TASK_STATE","language019 candidate contains an unchecked function",function.span);
+    return;
+  }
+  rejectUnloweredTasks(program,operation);
 }
 }

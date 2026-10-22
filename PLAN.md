@@ -1,22 +1,25 @@
-Current0.98 work implements and validates the coroutine task/channel runtime
-foundation. It does not complete source async/tasks/channels. Next: scoped
-capability/effect typing, explicit versioned migration, MLIR continuation
-lowering and matching reference/TypeScript semantics, then SDK/editor/platform
-and asynchronous IO integration. The full existing objective remains open.
-
-Current functional work: typed dedicated browser worker jobs in0.97 are being
-implemented and tested; production engines/full SDK gates remain pending.
-General native tasks/channels/async, accelerator APIs and platform delivery
-still belong to the full objective. C++/Python project converter remains a
-separate proposed importer; no converter command is implemented.
-
 # План разработки NEX
 
 Обновлён: 22 октября 2026 года.
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.96 / язык0.18
+## Текущий шаг: toolchain0.105 / язык0.19
+
+- [x] Подготовить native compiled continuations, независимые AST/TypeScript
+  schedulers и bounded lifetime analysis параллельно по общему контракту.
+- [x] Соединить public019 parser/checker/graph/backend routing; сохранить
+  отдельный018 parser и явный путь миграции настоящей истории.
+- [ ] Проверить совместную сборку, native/reference/TypeScript semantics,
+  rejected programs, migration rollback и сохранность всех старых записей.
+- [ ] После целевых проверок заморозить один source cohort и пройти полную
+  регрессию, SDK/editor/platform delivery с точной фиксацией результатов.
+- [ ] Подключить async IO, task debugger/profile attribution и provider lifetime.
+- [ ] Завершить GPU/NPU API, оставшиеся платформы и измерения качества/токенов.
+
+## История этапов
+
+## Сохранённый этап: toolchain0.96 / язык0.18
 
 - [x] Найти задержку настоящей095warm10k-сборки и заменить посимвольное чтение
   compiler inputs блочным64КиБ с проверкой ошибок и RAII закрытием файла.

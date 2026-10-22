@@ -537,7 +537,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       }else row["reference_skip_reason"]="effectful test executes once in its selected backend";
       verifyGrant();llvm::json::Value observation=nullptr;
       if(test.web){
-        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+NEX_BUILD_ID);
+        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"))+(module.asynchronous?readFile(resourceFile("web/nex-task-runtime.ts")):std::string())+NEX_BUILD_ID);
         auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout);
         observation=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
       }else{
@@ -555,7 +555,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       verifyGrant();auto &observed=*observation.getAsObject();
       bool ok=observed.getInteger("exit_code")==0&&referenceOK&&(!function.effects.empty()||observed.getString("stdout")==expected);
       if(typescriptReference){
-        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+NEX_BUILD_ID);
+        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"))+(module.asynchronous?readFile(resourceFile("web/nex-task-runtime.ts")):std::string())+NEX_BUILD_ID);
         auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout);
         row["typescript_observation"]=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
         ok&=child.code==0&&child.output==expected;

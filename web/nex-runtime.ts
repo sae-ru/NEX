@@ -38,7 +38,7 @@ export function resultScope<T extends Value>(body: () => Result<T>): Result<T> {
   try { return body(); }
   catch (error) { if (error instanceof ResultPropagation) return error.failure; throw error; }
 }
-// Private generated generator functions use the same source return boundary.
+// Generated resumable functions use the same source return boundary.
 export function propagatedFailure(error: unknown): Failure | undefined {
   return error instanceof ResultPropagation ? error.failure : undefined;
 }

@@ -37,8 +37,8 @@ try:
         pack=json.loads((source_root/'llm/language-pack.json').read_text())
         runtime=descriptor['structured_tasks_runtime']
         assert runtime['private_lifetime_analysis']==pack['structured_tasks_runtime']['private_lifetime_analysis']
-        assert not runtime['source_support'] and descriptor['version']=='0.18'
-        assert descriptor['effects']==['io','db','fs','ffi']
+        assert runtime['source_support'] and descriptor['version']=='0.19'
+        assert descriptor['effects']==['io','db','fs','ffi','task']
         guide=json.loads(subprocess.check_output([str(compiler),'guide','--kind','task-lifetime','--json'],text=True))
         assert guide['text']==(source_root/'docs/task-lifetimes.md').read_text()
     tree = ast.parse((source_root/'tests/task_native.py').read_text())

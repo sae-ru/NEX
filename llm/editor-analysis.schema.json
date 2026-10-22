@@ -8,7 +8,7 @@
   "properties": {
     "schema": {"const": "nex.analysis/1"},
     "ok": {"const": true},
-    "language": {"const": "0.18"},
+    "language": {"const": "0.19"},
     "compiler": {"type": "object", "additionalProperties": false, "required": ["version", "build"], "properties": {"version": {"type": "string"}, "build": {"$ref": "#/$defs/hash"}}},
     "revision": {"$ref": "#/$defs/hash"},
     "entry": {"type": "string"},

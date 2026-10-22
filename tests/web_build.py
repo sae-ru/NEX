@@ -17,7 +17,7 @@ if args.npm_cache:
     env["NEX_NPM_CACHE"] = str(args.npm_cache.resolve())
 with tempfile.TemporaryDirectory(prefix='nex real web build "quoted" \\ % 🧠 ') as temporary:
     root = Path(temporary)
-    (root / "nex.json").write_text(json.dumps({"entry": "main.nex", "language": "0.18"}))
+    (root / "nex.json").write_text(json.dumps({"entry": "main.nex", "language": "0.19"}))
     source = root / "main.nex"
     secret = "SERVER_ONLY_NEVER_IN_BROWSER_ASSETS"
     source.write_text((repo / "examples/web/main.nex").read_text() + '\nserver fn secret() -> str { return "' + secret + '"; }\n')

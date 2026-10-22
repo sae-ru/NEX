@@ -8,7 +8,7 @@ import support as harness
 class Propagation(harness.ToolchainCase):
     def test_descriptor_contract_and_sample_agree_in_three_backends(self):
         descriptor=self.cli('describe')
-        self.assertEqual(descriptor['version'],'0.18')
+        self.assertEqual(descriptor['version'],'0.19')
         self.assertFalse(descriptor['result_propagation']['checked_traps_caught'])
         self.assertFalse(descriptor['result_propagation']['source_try_catch_throw'])
         self.source((harness.REPO/'examples/propagation.nex').read_text())
@@ -120,7 +120,7 @@ fn main()->unit{let value:result<i64>=ok(41);let result:result<i64>=helper(value
 ''')
         session=self.cli('debug',timeout=180);manifest=Path(session['manifest'])
         identity=json.loads(manifest.read_text())
-        frame={'schema':'nex.debug-frame/1','language':'0.18','revision':identity['revision'],
+        frame={'schema':'nex.debug-frame/1','language':'0.19','revision':identity['revision'],
                'build_key':identity['build_key'],'function':'stopped::main',
                'stop':{'process_id':'1','thread_id':'1','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'result<i64>','value':{'ok':'41'}}],
@@ -151,7 +151,7 @@ fn main()->unit{let value:result<i64>=ok(41);let result:result<i64>=helper(value
         self.cli('export','--revision',fixture['revision'],'--directory',old)
         self.cli('export','--revision','HEAD','--directory',new)
         self.assertEqual(json.loads((old/'nex.json').read_text())['language'],'0.16')
-        self.assertEqual(json.loads((new/'nex.json').read_text())['language'],'0.18')
+        self.assertEqual(json.loads((new/'nex.json').read_text())['language'],'0.19')
         self.assertEqual((old/'main.nex').read_text(),fixture['source'])
         self.assertEqual(self.cli('run',cwd=new,timeout=180)['stdout'],fixture['stdout'])
         self.cli('test','--target','web',cwd=new,timeout=180)

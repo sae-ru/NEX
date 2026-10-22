@@ -7,6 +7,9 @@ llvm::json::Value previewWebApp(const std::string &directory,const std::vector<s
 struct WebModule {
   std::string source;
   llvm::json::Value mapping;
+  // Resumable exports return task.Step<T>; invoke them through task.call/run.
+  // Pure modules retain their ordinary synchronous function signatures.
+  bool asynchronous=false;
 };
 // Only the reachable client/shared closure is emitted. Export names are caller supplied.
 WebModule emitTypeScript(const Program &program,const std::map<std::string,std::string> &entries);

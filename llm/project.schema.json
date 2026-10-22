@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.local/schemas/project-1.json",
   "title": "Current NEX project manifest",
-  "description": "Source language0.18 authoring schema. Omitted legacy metadata is interpreted under the current compiler. Entry is required by commands without a source file. Filesystem containment, reachability, actual library versions and graph compatibility are checked by the compiler.",
+  "description": "Source language0.19 authoring schema. Omitted legacy metadata is interpreted under the current compiler. Entry is required by commands without a source file. Filesystem containment, reachability, actual library versions and graph compatibility are checked by the compiler.",
   "type": "object",
   "additionalProperties": true,
   "properties": {
@@ -10,7 +10,7 @@
       "const": "nex.project/1"
     },
     "language": {
-      "const": "0.18"
+      "const": "0.19"
     },
     "entry": {
       "type": "string",

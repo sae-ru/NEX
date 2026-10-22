@@ -74,6 +74,8 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(!build||build->getString("key")!=built.key||build->getString("revision")!=revision(p)||build->getString("compiler_build")!=NEX_BUILD_ID||
      (build->getString("kind")!="executable"&&build->getString("kind")!="http_server"))
     throw Error("E_DEBUG","debug launch requires its matching checked native application or HTTP server artifact");
+  if(auto requirements=build->getObject("runtime_requirements");requirements&&requirements->getBoolean("tasks").value_or(false))
+    throw Error("E_TASK_UNIMPLEMENTED","source task debugger attribution is not implemented");
   llvm::json::Array commands{
     "command script import "+json((folder/"debugger/lldb_nex.py").string(),false),
     "nex-load-debug "+json(manifest.string(),false)+" --compiler "+json(compiler,false)};

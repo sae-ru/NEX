@@ -1,4 +1,5 @@
 #include "nex/task_frontend.h"
+#include "nex/task_lifetime.h"
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/traits.h"
@@ -107,7 +108,7 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
     expression->text=resolveSymbol(units,symbols,key,name,false,expression->span);
 }
 class Loader {
-  fs::path root;bool frozen,captureNames,captureDetails,taskPrototype;std::string entry;size_t capturedNames=0;
+  fs::path root;bool frozen,captureNames,captureDetails,taskPrototype;SourceLanguage sourceVersion;std::string entry;size_t capturedNames=0;
   std::map<std::string,std::string> overlays;
   std::map<std::string,std::string> texts;
   std::map<std::string,fs::path> packages;
@@ -150,7 +151,7 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=taskPrototype?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails):parse(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
+    try{unit=taskPrototype?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails):parseLegacy018(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
     capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
@@ -231,8 +232,8 @@ class Loader {
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false)
-      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks)){
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018)
+      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks)){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json");
@@ -247,7 +248,7 @@ public:
     safeKey(entry);if(entry.starts_with("@"))throw Error("E_BUNDLE","entry must be a project source path");visit(entry);
     if(frozen&&parsed.size()!=texts.size())throw Error("E_BUNDLE","snapshot contains unreachable source files");
     complete=true;phase="bind";bind();
-    Program p;p.taskPrototype=taskPrototype;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
+    Program p;p.taskPrototype=taskPrototype;p.sourceLanguage=sourceVersion;p.module=parsed.at(entry).module;p.source=texts.at(entry);p.path=parsed.at(entry).path;p.entryUnit=entry;
     std::vector<std::string> order{entry};for(const auto &[key,unit]:parsed)if(key!=entry)order.push_back(key);
     for(const auto &key:order){auto &unit=parsed.at(key);if(p.editorNames.size()+unit.editorNames.size()>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries");for(auto &name:unit.editorNames)p.editorNames.push_back(std::move(name));p.units[key]={key,unit.module,unit.source,unit.path,unit.imports,taskPrototype};for(auto &f:unit.functions)p.functions.push_back(std::move(f));for(auto &s:unit.structures)p.structures.push_back(std::move(s));for(auto &endpoint:unit.endpoints)p.endpoints.push_back(std::move(endpoint));for(auto &value:unit.traits)p.traits.push_back(std::move(value));for(auto &value:unit.implementations)p.implementations.push_back(std::move(value));}
     p.imports=p.units.at(entry).imports;if(validate){phase="check";check(p);}return p;
@@ -272,7 +273,7 @@ void validateProjectMetadata(const std::string &root){
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,SourceLanguage::Tasks019).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();
@@ -282,14 +283,19 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
   }
   return p;
 }
-static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate){
+static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=SourceLanguage::Tasks019){
   auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
   auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
   std::map<std::string,std::string> sources;
   for(const auto &[key,value]:*files){safeKey(key.str());auto text=value.getAsString();if(!text)throw Error("E_BUNDLE","source file must contain text");sources[key.str()]=text->str();}
-  return Loader(root,required(*obj,"entry"),true,std::move(sources)).run(validate);
+  return Loader(root,required(*obj,"entry"),true,std::move(sources),{},false,false,tasks,version).run(validate);
 }
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,true);}
+Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,const std::string &language){
+  if(language=="0.18")return bundleProgram(bundle,root,true,false,SourceLanguage::Language018);
+  if(language!=taskCandidateLanguageVersion)throw Error("E_LANGUAGE_VERSION","versioned source recheck supports018 or the explicit019 candidate");
+  return bundleProgram(bundle,root,true,true,SourceLanguage::Tasks019);
+}
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
@@ -310,15 +316,15 @@ Program loadTaskPrototype(const std::string &entry,const std::string &root,const
   return Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,false,false,true).run();
 }
 llvm::json::Value sourceBundle(const Program &p){
-  rejectUnloweredTasks(p,"source archival");
+  rejectUnarchivedTasks(p,"source archival");
   llvm::json::Object files;for(const auto &[key,unit]:p.units)files[key]=unit.source;
   return llvm::json::Object{{"schema","nex.sources/1"},{"entry",p.entryUnit},{"files",std::move(files)}};
 }
 llvm::json::Value dependencyLock(const Program &p){
-  rejectUnloweredTasks(p,"dependency locking");
+  rejectUnarchivedTasks(p,"dependency locking");
   llvm::json::Object dependencies;
   for(const auto &[key,unit]:p.units)if(key.starts_with("@"))dependencies[key]=llvm::json::Object{{"module",unit.module},{"source_hash",hash(unit.source)}};
-  return llvm::json::Object{{"schema","nex.lock/1"},{"language",languageVersion},{"dependencies",std::move(dependencies)}};
+  return llvm::json::Object{{"schema","nex.lock/1"},{"language",programLanguage(p)},{"dependencies",std::move(dependencies)}};
 }
 void exportProject(const llvm::json::Value &bundle,const std::string &directory,const std::string &language){
   auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");

@@ -175,8 +175,8 @@ fn main()->i64 !{task}{task_yield();return dive(300);}
   {
     auto p=source("fn main()->i64 !{task}{return 42;}");
     rejects("E_TASK_UNIMPLEMENTED",[&]{evaluate(p);});rejects("E_TASK_UNIMPLEMENTED",[&]{revision(p);});
-    auto publicProgram=parse("module ordinary;fn main()->i64{return 42;}","ordinary.nex");check(publicProgram);
-    rejects("E_TASK_STATE",[&]{TaskAstMachine bad(publicProgram,"main");});
+    auto legacyProgram=parseLegacy018("module ordinary;fn main()->i64{return 42;}","ordinary.nex");check(legacyProgram);
+    rejects("E_TASK_STATE",[&]{TaskAstMachine bad(legacyProgram,"main");});
     ++scenarios;
   }
   {

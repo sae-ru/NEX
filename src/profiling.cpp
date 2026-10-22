@@ -30,6 +30,9 @@ bool cleanupProfileDirectory(const std::filesystem::path &directory)noexcept{
 }
 }
 llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::json::Value graph,const ProfileOptions &options){
+  auto metadata=llvm::json::parse(readFile((std::filesystem::path(built.executable).parent_path()/"build.json").string()));
+  if(metadata&&metadata->getAsObject())if(auto requirements=metadata->getAsObject()->getObject("runtime_requirements");requirements&&requirements->getBoolean("tasks").value_or(false))
+    throw Error("E_TASK_UNIMPLEMENTED","source task profile attribution is not implemented");
   auto directory=std::filesystem::path(createTemporaryDirectory("nex-profile")),raw=directory/"runtime.json";
   try{
     auto nativeTemporary=directory/"native-tmp";std::filesystem::create_directory(nativeTemporary);

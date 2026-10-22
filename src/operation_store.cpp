@@ -71,7 +71,7 @@ JSON storedOperations(sqlite3 *db,const Program &p,const std::string &symbol,con
     }
   }
   if(!selector.empty()&&!selected)throw Error("E_OPERATION","operation ID/site is not in the selected revision");
-  Object output{{"schema",context?"nex.operation-context/1":"nex.operations/1"},{"language",languageVersion},{"revision",rev},{"source_hash",hash(json(sourceBundle(p),false))},{"identity_scope","local_store"},{"identity_policy","nex.operation-identity/1"},{"total",int64_t(total)},{"offset",int64_t(offset)},{"truncated",uint64_t(offset)+result.size()<total},{"nodes",std::move(result)}};
+  Object output{{"schema",context?"nex.operation-context/1":"nex.operations/1"},{"language",programLanguage(p)},{"revision",rev},{"source_hash",hash(json(sourceBundle(p),false))},{"identity_scope","local_store"},{"identity_policy","nex.operation-identity/1"},{"total",int64_t(total)},{"offset",int64_t(offset)},{"truncated",uint64_t(offset)+result.size()<total},{"nodes",std::move(result)}};
   if(context)output["ancestors"]=std::move(ancestors);return output;
 }
 }

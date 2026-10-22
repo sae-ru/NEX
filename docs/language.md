@@ -1,44 +1,20 @@
-Working108 adds private bounded authority-flow diagnostics, including ancestor
-borrowing through helpers, aggregates and callable factories. Unresolved flow
-retains mandatory runtime checks; this is not complete static region typing.
-Public0.18 remains unchanged. See [task lifetimes](task-lifetimes.md).
+# NEX language specification 0.19
 
-Working107 adds a private generated TypeScript task backend and event-loop
-scheduler. It preserves reachable client/shared emission, source function result
-boundaries and checked values. It also counts the root task as nesting level1
-in AST/TypeScript, matching native cancellation ancestry. Public018 execution
-and archival guards remain; complete lifetime typing and019 migration are pending.
+Language0.19 adds structured task scopes, futures, channels and the explicit
+`task` effect. Public checking, source archives and semantic revisions use0.19;
+old0.18 sources need an explicit history-preserving recheck. Native macOS/Linux
+applications and source-only project builds use compiled continuations.
+Reference evaluation and emitted TypeScript use independent cooperative
+schedulers. Complete static lifetime inference, asynchronous IO, source task
+debug/profile attribution, binary-provider lifetime, UI adapters and current
+SDK/platform acceptance remain pending. Discover actual support with
+`nex describe --json` and read [task migration](task-migration.md).
 
-Working106 connects independent checked-AST continuations to a private
-cooperative scope/future/channel scheduler. It does not use TaskIR or native
-TaskGroup dispatch. Public0.18 syntax, identities and task execution guards
-remain unchanged; public scheduling, region typing and explicit migration
-remain pending. See tasks-runtime-design.md.
-
-Working104 privately executes structured scopes, futures and bounded channels
-through compiled continuations, with owned capability graphs and ancestor worker
-caps. Public language0.18 and archive/build guards remain unchanged. Independent
-asynchronous reference/TypeScript, complete region typing and explicit migration
-remain pending. See tasks-runtime-design.md for this private contract.
-
-Working100 adds private continuation IR and a semantic lowering harness, not
-native source-task execution. Public0.18 types/effects/canonical identities and
-all unlowered-task execution/archive guards stay unchanged.
-
-Working099 has private task typing entry points, separately guarded from public
-language0.18 parsing/execution/archival. No public task source feature is enabled;
-continuation lowering and explicit history-preserving migration remain required.
-See [the integration contract](tasks-runtime-design.md#required-source-integration).
-
-Toolchain0.98 adds a private coroutine scheduler probe only. Language0.18,
-source types/effects, canonical identities and migration are unchanged.
-Source async/task/channel syntax is still unsupported.
-
-Toolchain0.97 adds an external typed browser worker application contract using
-ordinary0.18 functions and std/worker.nex. No source syntax, canonical format
-or language migration changes. See [browser workers](browser-workers.md).
-
-# NEX language specification 0.18
+The working099–108 private frontend, native continuations, independent AST and
+TypeScript schedulers and bounded lifetime analysis were earlier integration
+stages under0.18. Their historical reports do not establish acceptance for the
+current0.19 source. Private raw0.18 task prototypes remain unarchivable; only an
+explicitly checked0.19 program receives0.19 identities and storage.
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 
@@ -59,7 +35,7 @@ Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language 0.16.
 
-Physical projects can declare `nex.project/1` and language `0.18` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+Physical projects can declare `nex.project/1` and language `0.19` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
 Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
@@ -170,7 +146,7 @@ Relative imports begin with `./` or `../` and stay within the current project or
 ```json
 {
   "entry": "src/main.nex",
-  "language": "0.18",
+  "language": "0.19",
   "libraries": { "numbers": "../numbers-library" }
 }
 ```
@@ -195,8 +171,11 @@ Library roots can be absolute or relative to the project root. `std/` defaults t
 | Named structure | Immutable value with declared, typed fields |
 | Named enum | One declared case with its immutable typed payload |
 | `fn(T)->U` | A checked callable with explicit realm/effects and immutable captures |
+| `task_scope` | Opaque authority for one active structured scope |
+| `task<T>` | Opaque future belonging to its owner scope; `task<unit>` is permitted |
+| `channel<T>` | Opaque scoped rendezvous or bounded FIFO channel; T is non-unit |
 
-There are no implicit numeric/boolean conversions. Parameters, locals, generic arguments and collection elements cannot have type `unit`. There are no source-level pointers, null values or manual memory operations. Function and file values have object identity; other values retain structural equality. User generics follow the rules below. Traits and fixed constructor parameters are described in traits.md. Mutable collections and custom destructors remain unimplemented.
+There are no implicit numeric/boolean conversions. Parameters, locals, user generic arguments and collection elements cannot have type `unit`; the builtin `task<unit>` is the explicit future-result exception. There are no source-level pointers, null values or manual memory operations. Function, file, task, scope and channel values have object identity; other values retain structural equality. User generics follow the rules below. Traits and fixed constructor parameters are described in traits.md. Mutable collections and custom destructors remain unimplemented.
 
 Language 0.14 introduces [file resources](resources.md) with server/`fs`
 operations, shared identity, explicit/automatic close and scoped revocation.
@@ -206,7 +185,7 @@ rather than structural equality. File formatting is `<file>`. Source has no raw
 descriptor, pointer or file constructor. `file` is contextual in type positions;
 its declaration/generic-parameter name and streaming builtin names are reserved.
 Explicit migration from 0.13 preserves old snapshots and requires reviewed
-repairs for conflicting user declarations. General external resources, callbacks into NEX and async remain pending.
+repairs for conflicting user declarations. General external resources, callbacks into NEX and asynchronous IO remain pending.
 
 Language 0.15 adds experimental source external functions:
 
@@ -444,7 +423,7 @@ boundary. Scalar proofs and the scalar Wasm subset do not support it.
 See [result propagation](error-propagation.md) for examples and the explicit
 history-preserving0.16 migration. The existing canonical formats and old AST
 kind ordinals remain; an appended expression kind15 represents this operation.
-Program identities include the declared current language (0.18). Old artifacts require their matching SDK.
+Program identities include the declared current language (0.19). Old artifacts require their matching SDK.
 This development cohort still needs the descriptor's integration gates.
 
 ### Recoverable results
@@ -535,11 +514,111 @@ and migration are normative in [functions.md](functions.md).
 
 ## Effects and execution realms
 
-A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitting the declaration means an empty effect set. Current effects are `io`, database access `db`, file access `fs` and opaque native access `ffi`; declaring `db`, `fs` or `ffi` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment, storage and filesystem builtins require a server realm as well as their effect.
+A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitting the declaration means an empty effect set. Current effects are `io`, database access `db`, file access `fs`, opaque native access `ffi` and structured scheduling `task`; declaring `db`, `fs` or `ffi` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment, storage and filesystem builtins require a server realm as well as their effect.
 
 Optional `shared`, `server`, or `client` precedes `fn` (and precedes `test` for a test definition); `pub`, when present, precedes the realm. The default is `shared`. A function may directly call shared functions or functions in its own realm. These checks apply across imports. Direct client/server calls and shared/platform-specific calls are rejected with `E_REALM`. This is a static boundary, not a network-call implementation. Client-entry native builds and server-entry TypeScript emission are rejected. Browser applications use the checked state/update/view contract in `docs/web.md`; the browser emitter includes only reachable client/shared functions.
 
-The browser adapter additionally accepts a pure `commands(before: State, after: State, event: web::Event) -> list<net::Command>` entry with `std/net.nex`. Commands are ordinary immutable values describing same-origin HTTP work or cancellation; constructing one performs no I/O in any language backend. The adapter executes them after a UI/response transition and delivers strict typed response envelopes as events. This adds a library/adapter contract in toolchain 0.6.0 without changing the 0.4 grammar, source semantics or revision format. General source async/await remains pending. Language 0.5 endpoints generate typed request/response helpers; see the web/API guides for contracts and limits.
+The browser adapter additionally accepts a pure `commands(before: State, after: State, event: web::Event) -> list<net::Command>` entry with `std/net.nex`. Commands are ordinary immutable values describing same-origin HTTP work or cancellation; constructing one performs no I/O in any language backend. The adapter executes them after a UI/response transition and delivers strict typed response envelopes as events. This adds a library/adapter contract in toolchain 0.6.0 without changing the 0.4 grammar, source semantics or revision format. Structured source tasks are a separate0.19 contract; asynchronous IO and the NEX UI task adapter remain pending. Language 0.5 endpoints generate typed request/response helpers; see the web/API guides for contracts and limits.
+
+## Structured task scopes, futures and channels (0.19)
+
+All ten task intrinsics require `!{task}` in the current source function.
+Calling a task-effect function, directly or through a callable, requires the
+same effect in its caller. `task` grants scheduling and scoped value transfer;
+it does not grant `io`, `db`, `fs`, `ffi` or asynchronous IO. Existing realm
+boundaries remain in force. `with_tasks` and `task_spawn` callbacks must be in
+an available realm and declare either no effects or exactly `task`. They cannot
+declare `io`, `db`, `fs` or `ffi`. This callback acceptance does not introduce
+general function effect/realm subtyping.
+
+| Intrinsic | Checked signature and behavior |
+| --- | --- |
+| `with_tasks(workers, callback)` | `(i64, fn(task_scope)->R [!{task}])->R`; creates a child scope, invokes the callback and drains descendants before returning |
+| `task_spawn(scope, callback)` | `(task_scope, fn()->T [!{task}])->task<T>`; captures an immutable snapshot and schedules a child |
+| `task_wait(future)` | `(task<T>)->T`; suspends until its outcome is available, or propagates its checked failure |
+| `task_cancel(future)` | `(task<T>)->bool`; requests cancellation, false when completed or already cancelled |
+| `channel_new<T>(scope, capacity)` | `(task_scope, i64)->channel<T>`; payload T is explicit or inferred from a `channel<T>` context |
+| `task_send(channel, value)` | `(channel<T>, T)->bool`; suspends for space/a receiver, false when closed |
+| `task_recv(channel)` | `(channel<T>)->result<T>`; suspends for a value, then returns an error once closed and drained |
+| `task_close(channel)` | `(channel<T>)->bool`; closes it once, wakes waiters and preserves queued values for receive |
+| `task_yield()` | `()->unit`; offers a cooperative scheduling turn |
+| `current_task_scope()` | `()->task_scope`; returns the active logical scope, failing outside a scope |
+
+`[!{task}]` in this table means the callback can be pure or task-only; square
+brackets are documentation notation. R can be unit. T can be unit only for a
+future, not for a channel. Intrinsics are ordinary call syntax, not first-class
+function values. The nominal/generic-parameter names `task`, `channel` and
+`task_scope`, and the ten intrinsic declaration names, are reserved. Ordinary
+`async`, `await`, `spawn`, `send`, `recv`, `cancel`, `close` and `yield` remain
+valid identifiers. No async/await keyword is introduced.
+
+```nex
+module structured_example;
+fn main()->i64 !{task}{
+  return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+    let first:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 20;});
+    let second:task<i64>=task_spawn(scope,fn()->i64{return 22;});
+    return task_wait(first)+task_wait(second);
+  });
+}
+```
+
+Workers must be1..16. Every ancestor worker cap bounds its descendants; nested
+scopes share the executor. Capacity0 is rendezvous, positive capacities are
+bounded FIFO, and capacity must be0..65536 with at most65536 reserved slots
+across1024 channels. The ordinary native application executor has a pool of16,
+a shared1000000-step budget and5000ms deadline. Per-application CLI controls for
+these defaults remain pending. The reference and TypeScript schedulers are
+cooperative and do not claim OS CPU overlap; TypeScript returns control to its
+host event loop. Neither provides asynchronous IO through `task`.
+
+Task/scope/channel values are immutable owner aliases. Their opaque formatting
+and identity equality do not expose a constructor, pointer or transferable host
+handle. At spawn, send, task completion, scope return and the outer invocation
+result, every capability in the actual aggregate/capture graph must belong to
+the destination scope or one of its ancestors. Ancestor borrowing is legal;
+capabilities owned by an ending child scope cannot escape. Files cannot cross
+these value boundaries. Task authority, including nested/phantom types, cannot
+satisfy `wire` or cross JSON/API/storage, foreign or browser-worker boundaries.
+Synchronous `parallel_map` also rejects task authority in signatures and hidden
+captures.
+
+Ordinary checking follows known owners through helpers, generics, aggregates
+and closures and rejects known escapes with `E_TASK_LIFETIME`. Known forbidden
+files retain their type/value diagnostics. Unknown call targets, channel receive
+payloads, recursion, loop widening and analysis-budget exhaustion retain dynamic
+obligations; success is not a complete static lifetime proof. All native,
+reference and TypeScript task boundaries keep mandatory runtime owner/value
+checks (`E_TASK_SCOPE`/`E_TASK_VALUE`). See [task lifetimes](task-lifetimes.md).
+
+Normal scope exit drains children, including descendants created during drain.
+An error result, checked trap or cancellation aborts/drains descendants before
+completion becomes visible. Unobserved child failures propagate on normal exit.
+Future/scope-drain cycles fail with `E_TASK_CYCLE`; a stalled all-channel
+reference schedule reports `E_TASK_DEADLOCK`, while native execution retains its
+request deadline. Closed, drained receive returns
+`err<T>("E_CHANNEL_CLOSED","channel is closed")`. A future wait on a cancelled
+child propagates cancellation. Limits, traps and cancellation are not caught by
+`result` or postfix `?`; the latter returns only ordinary result errors from the
+current source function. Checked arithmetic, left-to-right evaluation, short
+circuit, strict UTF-8 and immutable snapshots continue across suspension.
+
+Standalone TypeScript emission selects task generators from the reachable task
+effect closure. Every export in that module returns a `task.Step<T>`; its host
+runs it with `await task.run(task.call(() => entry(...inputs), inputs), {signal})`.
+Pure modules remain synchronous, and unused task declarations do not change
+emission. A standalone pure export with task-authority types and no reachable
+task effect is rejected; that same helper can run inside a task entry.
+UI/worker adapters keep their synchronous pure entry contracts and reject
+reachable task effects/callables. See [the web contract](web.md).
+
+Native task execution currently targets macOS/Linux applications and source-only
+project linkage. Binary providers, task server hosting, task debugging/profiling,
+other native targets, asynchronous IO, a NEX UI task adapter and complete current
+SDK/platform delivery remain pending. Emitted TypeScript includes only reachable
+client/shared code. Language0.18 programs require explicit migration under the
+new checker, preserving original source/history/IDs and repairing reserved names
+in a separate reviewed bundle; see [task migration](task-migration.md).
 
 ## Endpoint declarations
 

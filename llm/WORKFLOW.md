@@ -132,3 +132,49 @@ For source-reference navigation, keep the exact declaration file/byte interval f
 static подключает проверенный архив. Храните exports и зависимости в
 nex.build.json. План явно перечисляет consumer_instantiations для generics;
 отсутствующий обычный экспорт должен быть исправлен в контракте библиотеки.
+
+
+## Исходные задачи и миграция0.19
+
+Перед использованием задач запросите `nex describe --json` и прочитайте
+`docs/language.md`, `docs/grammar.ebnf`, `docs/task-lifetimes.md` и
+`docs/task-migration.md`. Реальные типы — `task_scope`, `task<T>` (включая
+`task<unit>`) и `channel<T>` с не-unit данными. Все десять intrinsic-вызовов
+требуют `!{task}`: `with_tasks`, `task_spawn`, `task_wait`, `task_cancel`,
+`channel_new`, `task_send`, `task_recv`, `task_close`, `task_yield`,
+`current_task_scope`. Callback области получает `task_scope`, callback запуска
+не имеет аргументов. Оба могут быть чистыми или иметь только эффект `task`
+в доступном realm; `io/db/fs/ffi` им не разрешаются. Ключевых слов async/await
+нет; обычные имена async/await/spawn/send/recv/cancel/close/yield сохраняются.
+
+Компилятор заранее отклоняет известные утечки полномочий через helpers,
+generics, aggregates и captures с `E_TASK_LIFETIME`. Неизвестные вызовы,
+получаемые из channel значения, рекурсия, widening циклов и исчерпанный бюджет
+анализа сохраняют обязательные runtime-проверки. Успех не доказывает полную
+статическую безопасность lifetime. Данные могут содержать полномочия только
+своего или родительского scope; заимствование предка разрешено, выход
+полномочий завершающегося потомка запрещён. Правила действуют и внутри
+immutable snapshots/closures. Файлы не пересекают task-границы, task-полномочия
+не проходят wire/JSON/API/storage/foreign/browser workers или parallel_map.
+
+В native macOS/Linux приложениях и проектах только с source-связями используются
+компилированные continuations. Общие defaults —1000000 шагов,5000ms и pool16;
+`with_tasks` принимает1..16 workers и сохраняет ограничения предков. Настройки
+этих defaults через CLI приложения пока pending. Reference и TypeScript
+выполняют независимое cooperative scheduling; это не доказательство физического
+CPU overlap. Standalone task-экспорты TypeScript возвращают task.Step<T> и
+запускаются scheduler host; pure-модули остаются синхронными. UI/worker-adapters
+сохраняют pure synchronous контракты и отклоняют reachable task effects/callables.
+Async IO, task debug/profile, binary-provider lifetime, task server/UI adapters,
+прочие native targets и полная текущая SDK/platform-приёмка остаются pending.
+
+Для018 сохраните matching SDK, исходники и полный snapshot графа. Выполняйте
+явный `migrate` исходного архива либо отдельного reviewed source candidate;
+конфликтующие новые reserved declarations переименовываются по identifier tokens
+в новом bundle. Старые revision/language/source/IDs не переписываются, критерии
+приёмки не ослабляются. Новая019 ревизия выбирается через `--revision HEAD`,
+пока не экспортирован отдельный019 проект. Проверьте сохранность всех старых
+строк/DDL/IDs, новые language-envelopes/journal, source replay, export и
+повторный recheck без нового перехода HEAD; конфликты HEAD требуют согласования
+со свежим контекстом. Подробные команды и реальные fixtures описаны в migration
+guide, а scoped test evidence не заменяет общую приёмку текущего SDK/платформы.

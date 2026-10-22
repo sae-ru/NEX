@@ -80,7 +80,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current0.18. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Explicit declared version; current0.19. Old archived source requires matching SDK or explicit recheck/migration. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |
@@ -106,3 +106,11 @@ complete store snapshot. Explicit migration rechecks archived source and retains
 old rows/IDs/schema; conflicting old declaration names require an explicit
 reviewed exported-source repair. The genuine017 fixture has two actual revisions,
 including a reserved-name conflict; no stored version/source is relabeled.
+
+## Language0.19 task migration
+
+Language0.19 reserves ten task intrinsics and `task`, `channel`, `task_scope`
+type names. Retained018 bundles use the original parser and canonical hashes;
+public019 recheck creates a new revision while preserving old rows/IDs. Conflicting
+declarations need an explicit reviewed source repair. The physical manifest is
+not automatically rewritten. See [the migration procedure](task-migration.md).

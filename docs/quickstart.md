@@ -1,10 +1,12 @@
-Рабочая версия toolchain0.97 использует язык0.18: доступны `?` для result<T>,
-упорядоченный CPU parallel_map и отдельный браузерный worker-адаптер. Полные
-проверки выпуска ещё не завершены. Основной установленный проект0.81 остаётся
-на языке0.16; для него сохраняйте соответствующую версию манифеста. Новые
-примеры в этой изолированной копии рассчитаны на0.18.
-Переход выполняйте явной миграцией архива с сохранением истории, а не заменой
-поля language. См. [контракт](error-propagation.md).
+Рабочая версия toolchain0.105 использует язык0.19: доступны `?` для result<T>,
+упорядоченный CPU parallel_map и структурированные задачи/каналы. Native task
+applications собираются на macOS/Linux, reference и standalone TypeScript
+исполняют задачи кооперативно. Task IO/debug/profile, binary providers и NEX UI
+интеграция ещё не завершены. Полные проверки текущего выпуска идут.
+Основной установленный проект0.81 остаётся на языке0.16; выбирайте манифест
+для фактически используемого SDK. Эта изолированная копия содержит примеры019.
+Переход018→019 выполняйте [явной миграцией](task-migration.md) с сохранением
+истории, а не заменой поля language.
 
 # NEX: установка и первый проект
 
@@ -540,3 +542,24 @@ nex task /путь/к/запуску/receipt.json --kind replay --json
 завершается timeout с откатом записи. Подготовка сессии не запускает сервер и
 не создаёт runtime-базу. См. [пример](../examples/server-debug/README.md) и
 [руководство](server-debugging.md); эти функции требуют подходящего SDK/LLDB.
+
+## Структурированные задачи в языке0.19
+
+Проверьте `nex describe --field structured_tasks_runtime --json`: установленный
+компилятор должен сообщать `source_support: true`. Затем используйте
+[пример задач и rendezvous-канала](../examples/structured-tasks.nex):
+
+```sh
+nex check examples/structured-tasks.nex
+nex eval examples/structured-tasks.nex
+nex test examples/structured-tasks.nex
+nex test examples/structured-tasks.nex --target web
+nex build examples/structured-tasks.nex --profile release --json
+```
+
+`with_tasks` задаёт область жизни, `task_spawn` запускает дочернюю задачу,
+`task_wait` получает результат, `channel_new` создаёт канал. Effect `task`
+объявляется в сигнатуре. Нативная программа исполняет скомпилированные
+continuations и работает без NEX/LLM; TypeScript использует свой event loop.
+Отдельная генерация TypeScript описана в [web guide](web.md); обычный UI
+`initial/update/view` пока сохраняет синхронный контракт.

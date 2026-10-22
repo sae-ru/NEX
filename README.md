@@ -1,39 +1,27 @@
 # NEX
 
-Working108 adds bounded private source diagnostics for task capability escapes.
-Known owners flow through helpers, aggregates and closures; returning a borrowed
-ancestor stays legal. Unknown flow retains mandatory runtime validation. See
-[task lifetimes](docs/task-lifetimes.md). Public tasks, complete static region
-inference and019 migration remain pending.
-
-Working107 adds a private TypeScript generator backend with an independent
-event-loop scheduler. Direct/indirect calls, guarded matches, result propagation,
-scopes/futures/channels and cancellation preserve actual suspension. Shared/client
-code is emitted by reachability; private maps do not invent public018 revisions.
-Node/source agreement and standalone browser responsiveness have separate
-evidence. Public task execution, complete lifetime typing,019 migration,
-async IO/debug/profile and delivery remain pending.
-
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
 **Главная идея:** минимальное количество токенов для передачи максимального
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.104.0 / language 0.18**.
-It includes native compiled continuations and independent AST and generated
-TypeScript task schedulers as private integration stages. Complete acceptance
-of this exact source is pending. The approved primary checkout is preserved at
-0.81 / 0.16; historical receipts retain their original compiler/source scopes.
+This isolated development source is **toolchain 0.105.0 / language 0.19**.
+The current integration connects checked source tasks to native compiled
+continuations, an independent reference scheduler and generated TypeScript.
+`task_scope`, `task<T>`, `channel<T>` and the `task` effect share one contract.
+Known capability escapes are diagnosed before execution; uncertain flows retain
+mandatory runtime owner checks. A [rendezvous example](examples/structured-tasks.nex)
+can be checked and tested in native and web targets. See [the language](docs/language.md),
+[lifetimes](docs/task-lifetimes.md) and [explicit migration](docs/task-migration.md).
 
-Native scopes share an executor and bound every descendant through ancestor
-worker limits. Owned capability graphs, cancellation/drain and source-call
-cleanup are checked independently in AST and TypeScript. Public asynchronous
-task execution remains disabled until complete lifetime/effect rules, explicit
-019 migration and current delivery/debug/IO acceptance are verified. See
-[the private task contract](docs/tasks-runtime-design.md). Frozen106 passed
-full108, strict AST/reference/IR sanitizers and six targeted Linux gates; those
-receipts do not substitute for current107 acceptance.
+Native task applications use bounded joined workers on macOS/Linux; source-only
+component projects are supported. Reference and TypeScript scheduling are
+cooperative. Task callbacks accept pure/task effects. Async IO, task debugger
+and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
+full current installed SDK/platform validation and complete static region
+inference remain pending. The shared build and focused native/TypeScript/migration checks pass; full
+regression and delivery validation remain pending. This is not an accepted release. The approved primary checkout remains 0.81 / 0.16.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.
@@ -48,12 +36,12 @@ and compiler tools. Compiled applications run independently of an LLM.
 Use the [model-independent bootstrap](llm/BOOTSTRAP.md), the
 [language pack](llm/README.md), actual capability discovery and bounded context.
 
-Language 0.18 adds candidate ordered CPU mapping through
+Language 0.19 retains ordered CPU mapping, introduced in 0.18, through
 `parallel_map(items, callback, workers)`. Native macOS/Linux uses bounded joined
 threads, pure available-realm callbacks and checked resource-free captures.
 Reference and current public TypeScript execute this operation serially. The
-dedicated browser-worker adapter is separate; public general async tasks remain
-pending. See [the contract](docs/concurrency-design.md) and
+dedicated browser-worker adapter is separate; integrating source tasks with
+that adapter remains pending. See [the contract](docs/concurrency-design.md) and
 [example](examples/parallel.nex). Explicit migration preserves genuine 0.17
 history; a declaration named `parallel_map` requires a reviewed repair.
 
@@ -86,13 +74,13 @@ Platform coverage is bounded. Linux/macOS execution, Windows cross-build/Wine,
 iOS archives and mobile WebView generation have separate receipts and remaining
 delivery work. Cross-builds are not evidence of actual device execution.
 [CIX P1](docs/cix-p1.md) fixed trusted FFI experiments do not provide general
-GPU/NPU language APIs. General source tasks/async concurrency, general accelerators, source
+GPU/NPU language APIs. Asynchronous IO, task delivery, general accelerators, source
 try/catch/throw, broader native targets and cross-model cost measurements remain
 pending in [PLAN.md](PLAN.md). This checkpoint does not complete the objective.
 
 ## Build
 
-Private TypeScript task tests also require Node22.18+ and the pinned TypeScript
+TypeScript task tests also require Node22.18+ and the pinned TypeScript
 compiler. Set `NEX_TSC=/path/to/node_modules/typescript/bin/tsc`, or set
 `NEX_NPM_CACHE` to a populated cache for the exact `web/package-lock.json`.
 The test installs missing tools offline with lifecycle scripts disabled in its

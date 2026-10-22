@@ -178,7 +178,7 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         output = self.root / "web output"
         generated = self.cli("web", "--directory", output)
         self.assertEqual(generated["schema"], "nex.web/1")
-        self.assertEqual(generated["language"], "0.18")
+        self.assertEqual(generated["language"], "0.19")
         self.assertEqual(set(generated["files"]), {
             "README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", "vite.config.js", "playwright.config.js",
             "nex-map.json", "src/program.ts", "src/nex-runtime.ts", "src/nex-bytes.ts", "src/renderer.tsx", "src/urls.ts", "src/net.ts", "src/workers.ts", "src/app.tsx", "src/app.css", "src/vite-env.d.ts", "tests/smoke.spec.js", "public/THIRD_PARTY_NOTICES.txt"})

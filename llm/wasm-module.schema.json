@@ -4,7 +4,7 @@
  "type":"object","additionalProperties":false,
  "required":["schema","toolchain","language","compiler_build","revision","build_key","entry","target","abi","parameters","result","native_symbol","module_sha256","exports","functions","memory_bytes","max_call_depth","max_budget"],
  "properties":{
-  "schema":{"const":"nex.wasm-module/1"},"toolchain":{"type":"string"},"language":{"const":"0.18"},
+  "schema":{"const":"nex.wasm-module/1"},"toolchain":{"type":"string"},"language":{"const":"0.19"},
   "compiler_build":{"$ref":"#/$defs/hash"},"revision":{"$ref":"#/$defs/hash"},"build_key":{"$ref":"#/$defs/hash"},
   "entry":{"type":"string","minLength":1},"target":{"const":"wasm32-unknown-unknown"},"abi":{"const":1},
   "parameters":{"type":"array","maxItems":32,"items":{"enum":["i64","bool"]}},"result":{"enum":["i64","bool","unit"]},

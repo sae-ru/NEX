@@ -1,5 +1,6 @@
 #include "nex/task_machine.h"
 #include "nex/task_frontend.h"
+#include "nex/task_reference.h"
 #include "nex/language.h"
 #include "nex/watch_values.h"
 #include <algorithm>
@@ -223,7 +224,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){if(!p.taskPrototype)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false):p(p),limit(limit){if(!atoms&&(!p.taskPrototype||p.sourceLanguage==SourceLanguage::Tasks019))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
@@ -251,9 +252,21 @@ public:
 }
 TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
-  return Interpreter(p,limit).atom(std::move(atom),values,depth);
+  return Interpreter(p,limit,true).atom(std::move(atom),values,depth);
 }
-Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){rejectUnloweredTasks(p,"reference execution");return Interpreter(p,stepLimit).run(entry);}
+Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){
+  rejectUnloweredTasks(p,"reference execution");
+  const auto &function=p.function(entry);
+  if(p.sourceLanguage==SourceLanguage::Tasks019&&function.effects.contains("task")){
+    if(!function.typeParameters.empty()||std::any_of(function.typeArguments.begin(),function.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be concrete",function.span);
+    if(!function.params.empty())throw Error("E_ENTRY","entry must take no arguments",function.span);
+    auto actual=evaluateTaskReference(p,entry,{},stepLimit);Evaluation result;
+    result.output=std::move(actual.output);result.steps=actual.steps;
+    if(function.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(actual.value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}
+    return result;
+  }
+  return Interpreter(p,stepLimit).run(entry);
+}
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
   rejectUnloweredTasks(p,"reference inspection");
   try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}

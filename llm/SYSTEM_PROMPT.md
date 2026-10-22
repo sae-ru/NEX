@@ -1,14 +1,55 @@
-When structured_tasks_runtime.private_lifetime_analysis is present,
-`nex guide --kind task-lifetime` explains its bounded early diagnostics. A
-successful private report retains mandatory runtime ownership guards; it is not
-a complete static proof or permission to use tasks when source_support is false.
+# NEX coding prompt — language 0.19, protocol 2
 
-Use nex guide --kind tasks-runtime for the internal scheduler design, and
-nex guide --kind browser-worker for implemented browser jobs.
-structured_tasks_runtime is an internal development capability. When its
-source_support is false, do not invent async/await/task/channel source syntax.
-Use the existing parallel_map or browser worker adapter only within their
-actual advertised contracts. General source tasks/channels remain pending.
+Query `nex describe --json` for the actual language and structured task support.
+For0.19 tasks, read `docs/language.md`, `docs/task-lifetimes.md` and
+`docs/task-migration.md` alongside the grammar. Source types are `task_scope`,
+`task<T>` (including `task<unit>`) and `channel<T>` with non-unit payload T.
+All ten intrinsics require the explicit `task` effect:
+`with_tasks`, `task_spawn`, `task_wait`, `task_cancel`, `channel_new`,
+`task_send`, `task_recv`, `task_close`, `task_yield`, `current_task_scope`.
+`with_tasks(workers,fn(scope:task_scope)->R{...})` creates/drains a child scope;
+`task_spawn(scope,fn()->T{...})` returns a future. Scope/spawn callbacks must be
+pure or task-only in an available realm. They receive no io/db/fs/ffi authority.
+There are no async/await keywords: ordinary async/await/spawn/send/recv/cancel/
+close/yield names remain valid. New reserved type/intrinsic declaration names
+require a reviewed token-level repair in a separate migration candidate.
+
+Treat scope/task/channel values as owner aliases. At spawn/send/return, every
+capability hidden in immutable aggregates and callable captures must belong to
+the destination or an ancestor; ending-child capabilities cannot escape.
+Ancestor borrowing is legal. Files cannot cross task boundaries. Task authority
+cannot satisfy wire or cross JSON/API/storage, foreign or browser-worker
+boundaries, including phantom types. parallel_map remains pure and resource-free
+and rejects task authority, including hidden captures.
+
+Ordinary019 checking conservatively diagnoses known escapes with E_TASK_LIFETIME.
+Unknown callees, channel receive payloads, recursion, loop widening and exhausted
+analysis leave runtime obligations. A successful analysis is not a complete
+static proof: native/reference/TypeScript keep mandatory owner/value guards.
+Scope exit drains normally and aborts/drains on error-result exits, checked traps
+and cancellation before publishing completion. Preserve checked arithmetic,
+left-to-right evaluation, short circuit, strict UTF-8, immutable captures and
+source-function-local result propagation across suspension.
+
+Native task applications/source-only project linkage target macOS/Linux with
+compiled continuations. The native request defaults are1000000 steps,5000ms and
+an executor pool of16; scopes request1..16 workers and inherit ancestor caps.
+Per-app CLI controls remain pending. Reference and generated TypeScript task
+execution are independent cooperative schedulers, with no OS CPU-overlap claim.
+Standalone TypeScript task exports return task.Step<T> and need the generated
+scheduler host; pure modules stay synchronous. UI/worker adapters retain pure
+synchronous entry contracts and reject reachable task effects/callables.
+Asynchronous IO, task debug/profile, binary-provider lifetime, task server/UI
+adapters, other native targets and current SDK/platform delivery remain pending.
+Do not infer their completion from source_support or a passing scoped probe.
+
+Keep genuine018 source, the matching SDK and a complete graph snapshot. Explicit
+migrate rechecks a separate archived/reviewed source bundle under019 and preserves
+old rows/IDs/schema; it does not overwrite physical nex.json/source. Never change
+an old language field to bypass compatibility. Use --revision HEAD for the new
+saved program, then export a separate019 project and run unchanged acceptance
+criteria. A repeated recheck adds no HEAD transition; reconcile expected-HEAD
+conflicts instead of replacing the guard blindly.
 
 When browser_workers.source_support is true, read docs/browser-workers.md.
 Use worker_compute(Input)->Output and worker_commands(State,State,web::Event)
@@ -18,7 +59,7 @@ update through worker::response<Output>. Check response IDs and the nested
 value result. Never run heavy compute directly from update/view. Test the pure
 compute and descriptions across reference/native/TypeScript, then actual
 production workers. This adapter does not change synchronous parallel_map or
-provide source async/await/native tasks/channels.
+grant the separate0.19 source task or asynchronous-IO contracts.
 
 Language0.17 adds postfix `value?` for result<T> inside a function returning
 result<U>. It evaluates once, yields T on success, or returns the unchanged error
@@ -36,8 +77,6 @@ and require runtime Bearer credentials. Configure exact server CORS origins;
 preflight does not authenticate a user. Keep timeout/cancellation uncertainty
 and response limits intact. Verify the actual host and network path separately.
 
-# NEX coding prompt — language 0.18, protocol 2
-
 For toolchain0.87, llm/BOOTSTRAP.md provides short initial routing. Use
 `nex describe --kind index --json` and `nex describe --field PATH --json` for
 relevant exact capability sections; compare compiler_build/descriptor_hash.
@@ -45,13 +84,14 @@ An older SDK may require the full describe command. Follow this workflow and
 the applicable normative guides; a projection never implies pending support.
 Measure the complete accepted task and failed attempts, not syntax length.
 
-For candidate language0.18, query source_concurrency and read the concurrency
-guide before using parallel_map(items, callback, workers). Callbacks are pure,
+For ordered CPU mapping introduced in language0.18, query source_concurrency
+and read the concurrency guide before using parallel_map(items, callback, workers). Callbacks are pure,
 in an available realm and resource-free across the worker boundary, including
 hidden captures. Results preserve order; limits/cancellation are never caught
 as ordinary item failures. Native macOS/Linux uses CPU threads; reference and
-current TypeScript execute serially. Do not claim browser workers, async/await,
-general tasks/channels or GPU/NPU support. Migrate genuine0.17 explicitly and
+current synchronous TypeScript execute serially. This intrinsic grants no
+browser-worker, source-task, asynchronous-IO or GPU/NPU API; discover each
+separate advertised contract. Migrate genuine0.17 explicitly and
 retain old SDK/source/history; a declaration named parallel_map needs repair.
 Check the actual integration_pending/pending gates for the installed compiler.
 
@@ -186,7 +226,7 @@ JSON/API, browser state and scalar proofs, including phantom type arguments.
 Native HTTP has no implicit environment file grant. Pure watches may inspect
 opaque identities and compare aliases, but cannot run any filesystem operation.
 Use explicit history-preserving migration from 0.13; repair newly reserved old
-user names in an exported graph. Source async/await, general foreign resources and callbacks into NEX remain pending.
+user names in an exported graph. Asynchronous IO, general foreign resources and callbacks into NEX remain pending. Structured task scheduling uses the separate0.19 contract.
 
 For native extensions, query `foreign_boundary` and retrieve `nex guide --kind ffi`.
 Declare a concrete server function such as `server extern fn transform(data:bytes)
@@ -242,7 +282,7 @@ For native acceptance across platforms, use `nex toolchain FILE --json` to inspe
 
 For native platform selection, retrieve `nex guide --kind build --json`. `--target native` uses the host ABI; macOS hosts can cross-build arm64/x86_64 with `--target TRIPLE`. `--toolchain FILE` (`nex.toolchain/1`, `llm/toolchain.schema.json`) selects a target compiler/SDK/dependencies and also works with `--target server`. Read `target`, `compiler_target` and `host_compatible` in build responses. A successful cross-build does not verify execution: local run/test/debug/profile reject a foreign architecture with E_TARGET_RUN. Supply target SQLite/OpenSSL dependencies when needed. Do not infer mobile/Linux/Windows cross-support from LLVM backend availability. Task contracts can pin native toolchains and accept foreign build artifacts; foreign native execution checks remain unsupported.
 
-NEX 0.18 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>` named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Source-level async/await is not yet available. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
+NEX 0.19 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>`, `task_scope`, `task<T>`, `channel<T>`, named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Structured scheduling uses the task effect and ten checked intrinsics; async/await keywords are not introduced. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
 
 Import files with `import "./model.nex" as model;` and call `model::create(...)` or use `model::User` as a type. A library import such as `import "std/math.nex" as math;` exposes `math::min`, `math::max`, `math::clamp`, `math::abs`. Register other library roots in `nex.json` under `libraries`. Definitions are private by default; export with `pub fn` or `pub struct`/`pub enum`. `pub` precedes a function realm, for example `pub server fn`. Public APIs cannot expose private structures. Each reachable file declares a distinct logical module. Imports are not re-exports; cyclic module imports are rejected. Preserve existing import aliases and visibility when replacing a function. Use `nex lock` to record or explicitly update reviewed dependency pins; respect E_LOCK rather than silently updating dependencies.
 
@@ -256,7 +296,7 @@ For a typed API, retrieve `nex guide --kind api --json`. Declare `endpoint creat
 
 For a new task, state the required behavior, inputs, edge cases, and acceptance tests. Run `nex check FILE --json` to validate and establish a revision, then `nex test FILE --json`. Native test execution is part of the default test command.
 
-For a browser application, retrieve `nex guide --kind web --json`. Import `std/web.nex` and define pure client/shared functions `initial() -> State`, `update(State, web::Event) -> State`, `view(State) -> web::View`, and `title() -> str`. State may be a private structure; views and events are ordinary immutable structures from that library. Use `web::text`, `element`, `attr`, `on`, `button`, `input`, and `link` with semantic HTML and accessible labels. State/update/view remain synchronous and pure. For networking, import std/net.nex and optionally define pure commands(before: State, after: State, event: web::Event) -> list<net::Command>. Use net::request(id, method, path, body, runtime_token, response_action, timeout_ms), net::cancel(id) and net::cancel_all(). The adapter executes these after each event, allowing same-origin /api/ requests and delivering Event(response_action, encoded_Response, path). net::response(event) decodes result<net::Response>; Response contains id, HTTP status and body: result<str>. Check the envelope, current request ID, body outcome and HTTP status before decode_json<T> of the shared model. HTTP errors retain their status; transport errors include E_NETWORK/E_TIMEOUT/E_CANCELED/E_UTF8/E_LIMIT. Use monotonically increasing IDs, ignore stale responses and clear state/cancel_all on logout. Requests are not automatically retried; a failed/canceled mutation may have committed, so refresh to confirm. Keep credentials in runtime configuration/state. Do not invent source async/await or direct client/server calls. Run `nex test FILE --target web --json` for interpreter/TypeScript agreement, then `nex build FILE --target web --profile release --json` for real TypeScript/Vite output. The build reports its project directory and static `dist` assets. `nex web FILE --directory NEW_DIRECTORY` generates an editable React/Vite project without installing/building it. Inspect browser behavior with the generated Playwright tests. Only reachable shared/client functions enter the client. The connected examples/fullstack client/server share models and use authenticated durable storage; examples/web is intentionally local memory state. Consult the web guide for batch/body/pending/time limits and reload/re-entry behavior. Use explicit endpoint contracts for generated helpers; general async remains pending.
+For a browser application, retrieve `nex guide --kind web --json`. Import `std/web.nex` and define pure client/shared functions `initial() -> State`, `update(State, web::Event) -> State`, `view(State) -> web::View`, and `title() -> str`. State may be a private structure; views and events are ordinary immutable structures from that library. Use `web::text`, `element`, `attr`, `on`, `button`, `input`, and `link` with semantic HTML and accessible labels. State/update/view remain synchronous and pure. For networking, import std/net.nex and optionally define pure commands(before: State, after: State, event: web::Event) -> list<net::Command>. Use net::request(id, method, path, body, runtime_token, response_action, timeout_ms), net::cancel(id) and net::cancel_all(). The adapter executes these after each event, allowing same-origin /api/ requests and delivering Event(response_action, encoded_Response, path). net::response(event) decodes result<net::Response>; Response contains id, HTTP status and body: result<str>. Check the envelope, current request ID, body outcome and HTTP status before decode_json<T> of the shared model. HTTP errors retain their status; transport errors include E_NETWORK/E_TIMEOUT/E_CANCELED/E_UTF8/E_LIMIT. Use monotonically increasing IDs, ignore stale responses and clear state/cancel_all on logout. Requests are not automatically retried; a failed/canceled mutation may have committed, so refresh to confirm. Keep credentials in runtime configuration/state. Do not invent source async/await or direct client/server calls. Run `nex test FILE --target web --json` for interpreter/TypeScript agreement, then `nex build FILE --target web --profile release --json` for real TypeScript/Vite output. The build reports its project directory and static `dist` assets. `nex web FILE --directory NEW_DIRECTORY` generates an editable React/Vite project without installing/building it. Inspect browser behavior with the generated Playwright tests. Only reachable shared/client functions enter the client. The connected examples/fullstack client/server share models and use authenticated durable storage; examples/web is intentionally local memory state. Consult the web guide for batch/body/pending/time limits and reload/re-entry behavior. Use explicit endpoint contracts for generated helpers; asynchronous IO and source-task UI integration remain pending.
 
 For large stopped strings, query `string_debug_features` and retrieve `nex guide --kind string-debug --json`. String shapes give Unicode scalar length; `text_range` captures select canonical scalar start/count and exact UTF-8 text, at most4096 scalars. They are not byte offsets, display previews or complete root values. Follow the exact demand fields and preserve build/stop/source identity. Native providers stream strict UTF-8 under a separate32MiB physical-read budget and cooperative deadline, without inferior calls; explicit unavailability remains possible. Whole-string equality/formatting/codecs still need a bounded complete value. The matching text-range/frame schemas and compiler validate captured counts and overlapping callable aliases. Old frames/manifests require their matching compiler/resources.
 

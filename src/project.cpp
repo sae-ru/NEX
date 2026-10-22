@@ -69,7 +69,9 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
   try{
     auto previous=head(db);
     if(!expected.empty()&&previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
-    {Statement q(db,"INSERT INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?) ON CONFLICT(hash) DO UPDATE SET language=excluded.language");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,languageVersion);q.row();}
+    {Statement existing(db,"SELECT language FROM revisions WHERE hash=?");existing.bind(1,rev);
+      if(existing.row()&&existing.text(0)!=programLanguage(p))throw Error("E_REVISION","stored revision language differs from its checked semantic identity");}
+    {Statement q(db,"INSERT OR IGNORE INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?)");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,programLanguage(p));q.row();}
     for(const auto &f:p.functions){
       auto id=nodeId(db,f.owner,f.localName);
       if(id.empty()){
@@ -139,7 +141,7 @@ llvm::json::Value Store::graph(const Program &p) {
   llvm::json::Array modules;
   for(const auto &[key,unit]:p.units){llvm::json::Array imports;for(const auto &dep:unit.imports)imports.push_back(llvm::json::Object{{"alias",dep.alias},{"path",dep.path},{"target",dep.target},{"module",p.units.at(dep.target).module}});llvm::json::Object module{{"file",key},{"name",unit.module},{"imports",std::move(imports)}};
     for(const auto &node:*declarationNodes){auto value=node.getAsObject();if(value->getString("kind")=="module"&&value->getString("symbol")==unit.module){module["id"]=value->getString("id")->str();module["hash"]=value->getString("hash")->str();module["context_hash"]=value->getString("context_hash")->str();break;}}modules.push_back(std::move(module));}
-  return llvm::json::Object{{"schema","nex.graph/2"},{"language",languageVersion},{"module",p.module},{"revision",revision(p)},{"identity_namespace",graphIdentityNamespace(impl->db)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"operation_graph",std::move(operationGraph)},{"declaration_graph",std::move(declarations)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
+  return llvm::json::Object{{"schema","nex.graph/2"},{"language",programLanguage(p)},{"module",p.module},{"revision",revision(p)},{"identity_namespace",graphIdentityNamespace(impl->db)},{"source",p.source},{"path",p.path},{"bundle",sourceBundle(p)},{"nodes",std::move(nodes)},{"operation_graph",std::move(operationGraph)},{"declaration_graph",std::move(declarations)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}};
 }
 llvm::json::Value Store::history() {
   llvm::json::Array rows;Statement q(impl->db,"SELECT hash,module,created,language FROM revisions ORDER BY created DESC,hash");

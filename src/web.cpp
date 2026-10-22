@@ -34,6 +34,7 @@ public:
   }
 };
 void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result){
+  if(f.effects.contains("task"))throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application/worker adapter cannot invoke task functions",f.span);
   bool valid=!f.test&&f.realm!="server"&&f.effects.empty()&&f.result==result&&f.params.size()==params.size();
   if(valid)for(size_t i=0;i<params.size();++i)if(f.params[i].type!=params[i])valid=false;
   if(!valid)throw Error("E_WEB_SIGNATURE","invalid web application contract for "+f.name+"; see docs/web.md",f.span);
@@ -87,6 +88,7 @@ Project prepare(const Program &p){
     requireFunction(*commands,{state,state,event},Type::list(command));entries["commands"]=commands->name;
   }
   auto module=emitTypeScript(p,entries);
+  if(module.asynchronous)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot retain reachable task callables");
   // Names used by the renderer are explicit aliases; the source retains qualified nominal identities.
   module.source+="\nexport type State = ReturnType<typeof "+nativeSymbol(initial.name)+">;\nexport type View = ReturnType<typeof "+nativeSymbol(render.name)+">;\nexport type Event = Parameters<typeof "+nativeSymbol(update.name)+">[1];\n";
   module.source+="export function makeEvent(name: string, value: string, path: string): Event {\n  return nex.record<Event>('std::web::Event', [['name', nex.string(name)], ['value', nex.string(value)], ['path', nex.string(path)]]);\n}\n";
@@ -98,6 +100,7 @@ Project prepare(const Program &p){
   if(workerCompute){
     module.source+="export type WorkerCommand = ReturnType<typeof "+nativeSymbol(workerCommands->name)+">[number];\n";
     auto worker=emitTypeScript(p,{{"compute",workerCompute->name}});
+    if(worker.asynchronous)throw Error("E_TASK_UNIMPLEMENTED","the synchronous browser worker adapter cannot retain reachable task callables",workerCompute->span);
     files["src/worker-program.ts"]=worker.source;
     files["nex-worker-map.json"]=json(worker.mapping)+"\n";
     files["src/worker-contract.ts"]="import type { Schema } from './nex-runtime.ts';\nexport const inputSchema: Schema = "+json(workerInput,false)+";\nexport const outputSchema: Schema = "+json(workerOutput,false)+";\n";
@@ -124,7 +127,7 @@ Project prepare(const Program &p){
   files["README.md"]="# Generated NEX web application\n\nEdit NEX sources and regenerate this directory.\n\nRun `npm ci --ignore-scripts`, `npm run build`, then `npm run preview`.\nThe `dist` directory contains the client application; configure SPA route fallback to index.html.\nNo NEX compiler or model is needed to serve/run the result.\n\nOptional pure commands(before, after, event) describes bounded same-origin /api/ requests and cancellation using std/net.nex. Responses return as typed JSON in ordinary web events. Configure credentials at runtime; no token is bundled by NEX. Serve this dist with the native HTTP server's --static option for a same-origin API. See the installed web/server guides for contracts and limits.\n";
   llvm::json::Object hashes;for(const auto &[name,text]:files)hashes[name]=hash(text);
   llvm::json::Value fileHashes=std::move(hashes);auto key=hash(json(fileHashes,false));
-  llvm::json::Value metadata=llvm::json::Object{{"schema","nex.web/1"},{"language",languageVersion},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
+  llvm::json::Value metadata=llvm::json::Object{{"schema","nex.web/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
   return {std::move(files),std::move(metadata)};
 }
 void materialize(const Project &project,const std::filesystem::path &directory){
@@ -142,10 +145,13 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   namespace fs=std::filesystem;
   auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
   writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
-  writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
+  writeFile((folder/"test.ts").string(),module.asynchronous?
+    "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\nawait task.run(task.call(() => entry()));\n":
+    "import { entry } from './program.ts';\nentry();\n");
   ToolDirectory runner(folder);
   if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})
     fs::copy_file(folder/name,runner.path()/name);
+  if(runner.relocated()&&module.asynchronous)fs::copy_file(folder/"nex-task-runtime.ts",runner.path()/"nex-task-runtime.ts");
   const char *node=std::getenv("NEX_NODE");
   return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);
 }

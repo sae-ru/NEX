@@ -1,4 +1,4 @@
-Current development source is toolchain0.92/language0.18. Query actual
+Current development source is toolchain0.105/language0.19. Query actual
 source_concurrency before using ordered CPU maps; native threads and serial
 reference/TypeScript are distinct. Full current acceptance remains pending.
 Earlier milestone notes below retain their historical scopes.

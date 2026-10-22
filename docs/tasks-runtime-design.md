@@ -1,3 +1,17 @@
+# Public019 integration
+
+Language0.19 now uses the checked task frontend for ordinary source programs.
+Native standalone applications/source-only projects compile continuations;
+reference evaluation and standalone TypeScript use independent cooperative
+schedulers. The checker invokes bounded lifetime analysis and runtime authority
+checks remain mandatory. See [the current specification](language.md),
+[lifetimes](task-lifetimes.md) and [migration](task-migration.md).
+
+The sections below preserve the development history of the private018 stages.
+Their statements about disabled public support describe those older stages.
+Current task IO/debug/profile, binary providers, NEX UI adaptation, full installed
+SDK/platform acceptance and complete static region inference remain pending.
+
 # Private authority-flow diagnostics (working108)
 
 The bounded analyzeTaskLifetimes pass follows known scope owners through helpers,

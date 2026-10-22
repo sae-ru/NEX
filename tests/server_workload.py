@@ -15,7 +15,7 @@ def definition():
 
 def project_fixture(self):
     for name in ['core','server']:(self.root/name).mkdir()
-    (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'server/main.nex'}))
+    (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'server/main.nex'}))
     (self.root/'core/value.nex').write_text('''module workload::core;
 pub fn calculate(seed:i64)->str{
  let offset:fn(i64)->i64=fn(x:i64)->i64{return seed+x;};
@@ -213,7 +213,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
             self.program(source,{'echo':'echo'})
         finally:ffi_fixture.C=original
         (self.root/'app').mkdir();self.file.rename(self.root/'app/main.nex')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.18','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile'}},'components':{'app':{'kind':'server','root':'app','entry':'app/main.nex'}}}))
         workload=self.root/'workload.json';workload.write_text(json.dumps({'schema':'nex.server-workload/1',

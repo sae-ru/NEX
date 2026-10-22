@@ -1,3 +1,21 @@
+# Working109: public language0.19 integration
+
+Toolchain0.105.0 connects task types/effect and conservative lifetime checking to
+native compiled continuations, reference evaluation, TypeScript generators and
+real018 history migration. The shared CMake build passes. Focused checks pass: native15xdebug/release,
+TypeScript11 source scenarios, migration66 requests, lifetime91 fixtures and
+ordinary graph/version/history/integration groups. Full114 acceptance is pending;
+this source is not an accepted release.
+Native task applications and source-only projects are supported by the new path;
+binary task providers, asynchronous IO, task debugger/profile, NEX UI integration,
+complete static region inference and current full SDK/platform delivery remain
+pending. Primary081 is preserved. This does not complete the full objective.
+
+Frozen108 passed full110, strict ASan/UBSan/LSan and TSan gates, and eight scoped
+Linux ARM64 groups. Those receipts apply to its exact private-task source,
+not current109 or a full Linux/installed SDK claim. Previous entries below record
+historical implementation stages and their original pending work.
+
 # Working108 private authority-flow diagnostics
 
 Toolchain0.104.0/language0.18 adds early source diagnostics for known task

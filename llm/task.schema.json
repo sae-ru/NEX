@@ -8,7 +8,7 @@
       "const": "nex.task/1"
     },
     "language": {
-      "const": "0.18"
+      "const": "0.19"
     },
     "id": {
       "$ref": "#/$defs/id"

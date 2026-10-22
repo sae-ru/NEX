@@ -1,0 +1,102 @@
+"""Standalone public019 executables use compiled continuations and owned tasks."""
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+nex = str(Path(sys.argv[1]).resolve())
+cases = [
+    ('yield', 'fn main()->i64 !{task,io}{print(7);task_yield();return 42;}', 42, '7\n', None),
+    ('negative-exit', 'fn main()->i64 !{task}{task_yield();return -1;}', 255, '', None),
+    ('unit', 'fn main()->unit !{task}{task_yield();}', 0, '', None),
+    ('calls', 'fn item(n:i64)->i64 !{task,io}{print(n);task_yield();return n;}fn sum(a:i64,b:i64)->i64 !{task}{task_yield();return a+b;}fn main()->i64 !{task,io}{return sum(item(20),item(22));}', 42, '20\n22\n', None),
+    ('short', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task}{if true||false{return 42;}return 0;}', 42, '', None),
+    ('short-call', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task,io}{let value:bool=(true||bad())&&(false&&bad());assert(!value);return 42;}', 42, '', None),
+    ('snapshot', 'fn main()->i64 !{task}{var base:i64=40;let f:fn(i64)->i64 !{task}=fn(n:i64)->i64 !{task}{task_yield();return base+n;};base=99;return f(2);}', 42, '', None),
+    ('heap-return', 'fn text()->list<str> !{task}{let value:list<str>=["A🧠\\u0000"];task_yield();return value;}fn main()->i64 !{task,io}{print(text());return 42;}', 42, '["A🧠\\u0000"]\n', None),
+    ('scope', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let a:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});return task_wait(a)+task_wait(b);});}', 42, '', None),
+    ('channel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<str>=channel_new<str>(s,0);let writer:task<unit>=task_spawn(s,fn()->unit !{task}{assert(task_send(q,"A🧠\\u0000"));assert(task_close(q));});let value:str=unwrap(task_recv(q));task_wait(writer);assert(!is_ok(task_recv(q)));assert(len(value)==3);return 42;});}', 42, '', None),
+    ('cancel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{let held:list<str>=["retained🧠"];while true{task_yield();}return len(held);});task_yield();assert(task_cancel(t));return 42;});}', 42, '', None),
+    ('propagate-cleanup', 'fn work()->result<i64> !{task}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<str>=task_spawn(s,fn()->str !{task}{let held:str="retained🧠";while true{task_yield();}return held;});task_yield();let bad:result<str>=err<str>("E_STOP","stop");let value:str=bad?;return ok(len(value));});}fn main()->i64 !{task}{return unwrap(work());}', 70, '', 'E_RESULT'),
+    ('unobserved', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 1/0;});return 42;});}', 70, '', 'E_DIV_ZERO'),
+    ('overflow', 'fn main()->i64 !{task,io}{let held:list<str>=["retained🧠"];print(7);task_yield();let x:i64=9223372036854775807;return x+len(held);}', 70, '7\n', 'E_OVERFLOW'),
+    ('owner', 'fn main()->i64 !{task}{let absent:task_scope=current_task_scope();return 42;}', 70, '', 'E_TASK_SCOPE'),
+]
+
+def cli(root, *args, success=True):
+    p = subprocess.run([nex, *map(str, args), '--json'], cwd=root, capture_output=True, text=True, timeout=180)
+    value = json.loads(p.stdout)
+    assert (p.returncode == 0) == success, (args, p.returncode, value, p.stderr)
+    return value
+
+with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as temporary:
+    root = Path(temporary)
+    executable_root = root / 'standalone'
+    executable_root.mkdir()
+    results = []
+    for name, body, status, stdout, trap in cases:
+        source = root / (name + '.nex')
+        source.write_text('module application;\n' + body + '\n')
+        for profile in ('debug', 'release'):
+            built = cli(root, 'build', source, '--profile', profile)
+            metadata = json.loads((Path(built['executable']).parent / 'build.json').read_text())
+            assert metadata['runtime_requirements']['tasks'] is True, metadata
+            assert 'nex_task_application.cpp' in metadata['runtime_components'], metadata
+            llvm = Path(built['llvm']).read_text()
+            assert 'nex_task_application_execute' in llvm and '__task_step' in llvm, llvm[:1000]
+            # The copied executable runs outside its project and source/cache,
+            # with no compiler/resource-path environment or compiler on PATH.
+            target = executable_root / (name + '-' + profile)
+            shutil.copy2(built['executable'], target)
+            hidden = source.with_suffix('.hidden')
+            source.rename(hidden)
+            try:
+                actual = subprocess.run([str(target)], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
+            finally:
+                hidden.rename(source)
+            assert (actual.returncode, actual.stdout) == (status, stdout), (name, profile, actual.returncode, actual.stdout, actual.stderr)
+            if trap:
+                assert actual.stderr.startswith(trap + ':'), (name, actual.stderr)
+            else:
+                assert not actual.stderr, (name, actual.stderr)
+            warm = cli(root, 'build', source, '--profile', profile)
+            assert warm['cached'] is True and warm['build_key'] == built['build_key'], (name, warm)
+            results.append((name, profile))
+
+    task = root / 'task.nex'
+    task.write_text('module boundary;fn main()->unit !{task}{task_yield();}')
+    assert cli(root, 'build', task, '--profile', 'profile', success=False)['code'] == 'E_TASK_PROFILE'
+    assert cli(root, 'build', task, '--library', success=False)['code'] == 'E_TASK_PROVIDER'
+    pure = root / 'pure.nex'
+    pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->i64{return 42;}')
+    built = cli(root, 'build', pure)
+    metadata = json.loads((Path(built['executable']).parent / 'build.json').read_text())
+    assert metadata['runtime_requirements']['tasks'] is False, metadata
+    assert 'nex_task_application.cpp' not in metadata['runtime_components'], metadata
+    assert '__task_step' not in Path(built['llvm']).read_text()
+    assert cli(root, 'build', pure, '--library')['executable'].endswith('libnex.a')
+    project = root / 'source-project'
+    (project / 'app').mkdir(parents=True)
+    (project / 'core').mkdir()
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.19', 'entry': 'app/main.nex'}))
+    (project / 'nex.build.json').write_text(json.dumps({
+        'schema': 'nex.project-build/1', 'default_configuration': 'debug',
+        'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
+        'components': {
+            'core': {'kind': 'source', 'root': 'core', 'entry': 'core/work.nex'},
+            'app': {'kind': 'executable', 'root': 'app', 'entry': 'app/main.nex', 'dependencies': {'core': 'source'}},
+        },
+    }))
+    (project / 'core/work.nex').write_text('module core;pub fn work()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}')
+    (project / 'app/main.nex').write_text('module app;import "../core/work.nex" as core;fn main()->unit !{task,io}{print(core::work());}')
+    planned = cli(project, 'project', '--kind', 'build', '--component', 'app')
+    app = next(artifact for artifact in planned['artifacts'] if artifact['component'] == 'app')
+    metadata = json.loads(Path(app['metadata']).read_text())
+    assert metadata['runtime_requirements']['tasks'] is True, metadata
+    actual = subprocess.run([app['artifact']], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
+    assert (actual.returncode, actual.stdout, actual.stderr) == (0, '42\n', ''), actual
+    observed = cli(project, 'project', '--kind', 'run', '--component', 'app')
+    assert observed['observation']['stdout'] == '42\n' and observed['observation']['exit_code'] == 0, observed
+    print(json.dumps({'ok': True, 'standalone_profiles': len(results), 'cases': len(cases), 'compiled_continuations': True, 'source_hidden_execution': True, 'warm_cache': True, 'pure_reachability_preserved': True, 'source_component_project': True}))

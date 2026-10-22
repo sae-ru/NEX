@@ -1,4 +1,4 @@
-// Compiler-private generator backend. No serialized AST/IR or native scheduler.
+// Checked resumable TypeScript backend. No serialized AST/IR or native scheduler.
 import * as nex from './nex-runtime.ts';
 type Item = nex.Value | void;
 declare const outcome: unique symbol;

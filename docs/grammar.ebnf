@@ -1,11 +1,7 @@
-(* Working108 private authority-flow diagnostics add no public syntax. *)
-(* Working107 private generated TypeScript tasks add no public syntax. *)
-(* Working106 private cooperative AST task scheduler adds no public syntax. *)
-(* Working105 private AST continuations add no public syntax. *)
-(* Working104 private scoped task/channel continuations add no public syntax. *)
-(* Working100 private continuation IR adds no public source syntax. *)
-(* Working099 private task frontend is separate from this public0.18 grammar.
-   No public task types/effect/builtins are enabled before lowering/migration. *)
+(* Language0.19 adds task_scope, task<T>, channel<T> and effect task.
+   Structured operations use ordinary calls; lifetime, callback effect and realm
+   checks are semantic. Explicit018 migration preserves old history and IDs.
+   Working099–108 were private018 integration stages, not the public grammar. *)
 (* Toolchain0.98 internal coroutine scheduler adds no source syntax. *)
 (* Toolchain0.97 browser worker entries are ordinary functions; no syntax change. *)
 (* Toolchain0.87 scoped discovery is external metadata, with no grammar or migration. *)
@@ -18,7 +14,7 @@
 (* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
 (* Project source/static linkage and concrete export roots are external
    nex.build.json metadata, not language syntax or a version migration. *)
-(* NEX 0.18. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.19. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain0.73 native application lifetime adds no syntax or migration. *)
 (* Toolchain0.74 shared native project images are external build metadata;
    language0.16 source grammar and canonical identities are unchanged. *)
@@ -43,8 +39,8 @@ foreign_body  = "=", "foreign", "(", string, ",", string, ",", string, ")", ";" 
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
-type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | "file" | ( "list" | "result" ), "<", type, ">" |
-                qualified_name, [ type_arguments ] | "list" | function_type | "(", type, ")" ;
+type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | "file" | "task_scope" | ( "list" | "result" | "task" | "channel" ), "<", type, ">" |
+                qualified_name, [ type_arguments ] | "list" | "task" | "channel" | function_type | "(", type, ")" ;
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
 type_parameters = "<", type_parameter, { ",", type_parameter }, ">" ;
@@ -53,7 +49,7 @@ constructor_parameters = "<", "_", { ",", "_" }, ">" ;
 constraint    = "add" | "ordered" | "integer" | "number" | "wire" | qualified_name ;
 type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
-effect        = "io" | "db" | "fs" | "ffi" ;
+effect        = "io" | "db" | "fs" | "ffi" | "task" ;
 block         = "{", { statement }, "}" ;
 statement     = declaration | assignment | return | if | while | match | expression, ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
@@ -227,7 +223,21 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    preserves archived revisions/IDs. No identifiers are newly reserved. *)
 
 (* Language0.18 adds the reserved intrinsic parallel_map(items, callback, workers)
-+   through ordinary call syntax. Callback typing/effects/realm, resource graphs,
-+   bounds and explicit history-preserving migration are semantic rules; see
-+   concurrency-design.md. No new expression kind or existing AST ordinal changes. *)
-+
+   through ordinary call syntax. Callback typing/effects/realm, resource graphs,
+   bounds and explicit history-preserving migration are semantic rules; see
+   concurrency-design.md. No new expression kind or existing AST ordinal changes. *)
+
+(* Language0.19 semantic rules: task<unit> is allowed; channel/list/result
+   payloads and user generic arguments remain non-unit. task/channel also denote
+   unary constructors in kinded generic positions, like list/result.
+   task/task_scope/channel nominal declarations and generic parameters are reserved.
+   with_tasks, task_spawn, task_wait, task_send, task_recv, task_close,
+   task_cancel, task_yield, channel_new and current_task_scope are reserved
+   intrinsic declaration names. Their calls require task; scope/spawn callbacks
+   are pure or task-only in an available realm, with no io/db/fs/ffi grant.
+   async, await, spawn, send, recv, cancel, close and yield remain identifiers.
+   No async/await keyword, exception grammar or asynchronous IO is introduced.
+   Ordinary019 checking rejects known lifetime escapes conservatively. Unknown
+   ownership flow retains runtime guards; ancestor borrowing stays legal.
+   018 source is rechecked by explicit migration without relabeling old archives.
+   See language.md, task-lifetimes.md and task-migration.md for normative rules. *)
