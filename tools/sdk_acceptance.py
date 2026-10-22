@@ -497,7 +497,10 @@ test fn examples() -> unit {
         require(pack['language_version'] == doctor['language'] == descriptor['version'], 'language pack mismatch')
         require(descriptor['browser_workers']==pack['browser_workers'] and
                 descriptor['structured_tasks_runtime']==pack['structured_tasks_runtime'] and
-                descriptor['structured_tasks_runtime']['source_support'] is False,
+                descriptor['structured_tasks_runtime']['source_support'] is True and
+                descriptor['structured_tasks_runtime']['ordinary_applications_enabled'] is True and
+                descriptor['structured_tasks_runtime']['private_lifetime_analysis']['mandatory_runtime_guards'] is True and
+                descriptor['structured_tasks_runtime']['private_lifetime_analysis']['fully_static'] is False,
                 'worker/task capability pack mismatch')
         state['descriptor'] = descriptor
         inventory = {}
