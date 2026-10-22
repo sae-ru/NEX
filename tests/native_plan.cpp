@@ -11,6 +11,9 @@ int main(int argc,char **argv){
     auto options=llvm::json::parse(argv[2]);
     if(!options)throw Error("E_JSON",llvm::toString(options.takeError()));
     auto object=options->getAsObject();if(!object)throw Error("E_OPTION","expected options object");
+    if(object->getBoolean("read_file").value_or(false)){
+      auto bytes=readFile(argv[1]);std::cout.write(bytes.data(),static_cast<std::streamsize>(bytes.size()));return 0;
+    }
     std::vector<std::string> exports;
     if(auto values=object->getArray("exports"))for(const auto &value:*values){
       auto name=value.getAsString();if(!name)throw Error("E_OPTION","export must be text");exports.push_back(name->str());

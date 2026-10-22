@@ -6,13 +6,24 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.95.0 / language 0.18**.
+This isolated development source is **toolchain 0.96.0 / language 0.18**.
 Full platform, installed SDK and editor acceptance for this exact source remains
 pending. The approved primary checkout is separately preserved at 0.81 / 0.16.
 Historical receipts in `STATUS.md` retain their original compiler/source scopes;
 they do not establish acceptance of this candidate.
 
-Toolchain0.95 adds a scoped readonly name index to native planning. Actual0.94
+Toolchain0.96 reads compiler inputs in raw64KiB blocks with explicit EOF/error
+checks and owned file cleanup. A live0.95 warm-build sample located per-byte
+stream iteration in cache reads. Seventeen focused groups pass, including
+binary boundaries, fragmented FIFO and a UTF8 scalar split across64KiB in real
+native/reference/TypeScript checks. Three real retained095artifacts are compared
+byte for byte across18old/new-reader observations; the146MBMLIR observation
+changes4.747s to0.145s, including output/comparison on a concurrent Mac.
+This is not a full-build speedup claim. See [the exact receipt](docs/evidence/compiler-inputs-0.96.0.json).
+The independent095native10k gate passes with warm69.021s; full current096
+native10000/100-group/SDK/platform/editor/migration gates remain pending.
+
+Toolchain0.95 added a scoped readonly name index to native planning. Actual0.94
 cached10,000-function builds took81s; a live sample showed repeated linear
 function resolution in the plan. Byte-exact plan comparison with the actual0.94
 libraries covers seven programs in normal/all-callable modes, including9,900

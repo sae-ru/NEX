@@ -7,11 +7,14 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cctype>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <cstdlib>
 #include <functional>
@@ -44,9 +47,20 @@ const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
 std::string readFile(const std::string &path) {
-  std::ifstream in(path, std::ios::binary);
+  std::unique_ptr<std::FILE,decltype(&std::fclose)> in(std::fopen(path.c_str(),"rb"),&std::fclose);
   if (!in) throw Error("E_FILE", "cannot read " + path);
-  return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+  // Read raw bytes without requiring a seekable file or trusting its reported
+  // size. Cache artifacts are large; per-character iterator work is expensive
+  // in development compilers. A short final block still contributes its bytes.
+  std::array<char,64*1024> buffer;
+  std::string text;
+  while(true){
+    auto count=std::fread(buffer.data(),1,buffer.size(),in.get());
+    if(std::ferror(in.get()))throw Error("E_FILE","cannot read "+path);
+    text.append(buffer.data(),count);
+    if(std::feof(in.get()))return text;
+    if(!count)throw Error("E_FILE","cannot read "+path);
+  }
 }
 void writeFile(const std::string &path, const std::string &text) {
   auto parent = std::filesystem::path(path).parent_path();

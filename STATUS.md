@@ -1,3 +1,36 @@
+# Development0.96 / language0.18 — raw buffered compiler inputs
+
+The actual095native100module/10000function gate passes: cold9900/warm0/edit1,
+standalone original/edited outputs and both archived revisions after source
+paths move outside the project. Warm observation69.021s versus the earlier
+09481.494s is recorded with concurrent-host scope. A live sample of that actual
+095warm process identifies per-character readFile work inside cache validation.
+
+Compiler inputs now use64KiB fread blocks, explicit ferror/feof and C++ RAII
+FILE cleanup. No size/seek assumption, text normalization, source/runtime/ABI
+layout change or weaker cache check is introduced. The first std::ifstream::read
+variant treated a macOS directory as empty EOF; the new directory assertion
+exposed this and the raw failed receipt remains. Explicit stream-error checking
+fixes it without weakening that test.
+
+All17 focused groups pass. The new five-case IO group covers every octet,
+empty/exact/partial/multiple blocks, fragmented FIFO, failed reads, /dev/null and
+a real UTF8 scalar split at byte65534 across the64KiB boundary. Native/reference/
+TypeScript tests agree; invalidUTF8 remains E_UTF8. Its Linux procfs case is
+pending actual Linux execution. The same private probe compiled against real
+095/096frontend libraries compares every output byte from MachO/MLIR/JSON
+artifacts across18observations and retains their unchanged hashes. Median
+read/output/comparison wall for146.6MBMLIR is4.747s versus0.145s, for14.7MBMachO
+0.504s versus0.042s and for24.1MBJSON0.805s versus0.048s on the concurrent Mac.
+This is not a complete-build or isolated throughput measurement. Current096
+native10000/full100/SDK/platform/editor/history gates remain pending.
+
+Frozen094Mac/Linuxfull98, installedSDK24, Linuxlive22/source-free acceptance,
+five installed editor profiles, CPUworkerDAP and complete016->018migration now
+pass. Frozen095Macfull99passed; its SDK/Linux acceptance continues. Primary081
+is unchanged. Generalasync/tasks/channels/browserworkers, accelerators, platform
+delivery, model-cost quality and reviewed primary integration remain open.
+
 # Development0.95 / language0.18 — readonly native planning index
 
 The actual0.94 full10,000-function native gate passes: cold9,900 compiled,

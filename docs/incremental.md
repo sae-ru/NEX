@@ -342,3 +342,23 @@ objects without recompiling/changing them, verifies DWARF and executes the
 expected49,460,406 result. That recovery is scoped evidence, not a passed0.93
 or full0.94 scale gate. Complete0.94 cold/warm/edit/standalone acceptance remains
 required.
+
+## Compiler input reads in0.96
+
+The development compiler reads raw bytes in64KiB blocks without seeking or
+assuming a reported file size. Explicit EOF/error checks and owned FILE cleanup
+preserve complete input or produce E_FILE; a failed directory read is not an
+empty successful input. Source UTF8 validation remains after reading. Runtime
+file APIs, language syntax, native value layouts and migration rules are unchanged.
+The [standard C file interface](https://eel.is/c++draft/c.files) supplies these
+independent EOF/error indicators. Every artifact/cache digest and exact source
+comparison still executes; this change removes per-character iterator work.
+
+The actual095native10k gate passes with9900cold/0warm/1edited compilation and
+both archived revisions after physical source paths are removed. Its warm69.021s
+sample identifies the remaining cache-read cost. See [the095scale receipt](evidence/native-scale-0.95.0.json).
+The0.96 [reader comparison](evidence/compiler-inputs-0.96.0.json) checks every
+byte of retained MachO/146MBMLIR/24MBJSON through both actual frontend libraries.
+Those concurrent-host observations include output/verification cost and do not
+establish the final full096build speed. Full100/SDK/platform/editor/history and
+independent native10000gates remain separate pending acceptance.
