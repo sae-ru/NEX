@@ -45,7 +45,7 @@ int main(){std::filesystem::path directory;try{
  validateNativeBuildEntry(p,options);++checks;auto changed=options;changed.staticTaskABI=true;rejects([&]{validateNativeBuildEntry(p,changed);});
  changed=options;changed.taskLinkageMode=static_cast<NativeTaskLinkageMode>(99);rejects([&]{validateNativeBuildEntry(p,changed);});
  changed=options;changed.positionIndependent=false;rejects([&]{validateNativeBuildEntry(p,changed);});changed=options;changed.functionsOnly=false;rejects([&]{validateNativeBuildEntry(p,changed);});
- changed=options;changed.profile="profile";rejects([&]{validateNativeBuildEntry(p,changed);});changed=options;changed.taskDebug=true;rejects([&]{validateNativeBuildEntry(p,changed);});changed=options;changed.target="server";rejects([&]{validateNativeBuildEntry(p,changed);});
+ changed=options;changed.profile="profile";validateNativeBuildEntry(p,changed);++checks;changed=options;changed.taskDebug=true;rejects([&]{validateNativeBuildEntry(p,changed);});changed=options;changed.target="server";rejects([&]{validateNativeBuildEntry(p,changed);});
  // Schema5 structure, order and paired pins are independent of file contents.
  auto entry=[](const std::string &kind,const std::string &path){return llvm::json::Object{{"kind",kind},{"path",path}};};
  auto image="images/libnex_leaf_"+std::string(64,'a')+".so";
@@ -57,6 +57,12 @@ int main(){std::filesystem::path directory;try{
  directory=createTemporaryDirectory("nex-shared-provider-boundary");auto archive=directory/"leaf.a",record=directory/"task-provider.json";writeFile(archive.string(),"!<arch>\n");options.taskImportedFunctions={name};options.toolchain=(directory/"MUST_NOT_READ_TOOLCHAIN.json").string();
  auto preflight=[&](const NativeTaskProviderInfo &info){writeFile(record.string(),json(nativeTaskProviderJSON(info))+"\n");options.libraries={{archive.string(),hash(readFile(archive.string())),stage.cohort,{{name,contracts.at(name)}},false,record.string(),hash(readFile(record.string()))}};rejects([&]{(void)build(p,(directory/"artifacts").string(),options);});require(!std::filesystem::exists(directory/"artifacts"),"failed preflight created cache");};
  auto wrongMode=stage;wrongMode.mode=NativeTaskLinkageMode::Static;preflight(wrongMode);preflight(mixed);auto wrong=stage;wrong.exports[name].signature=std::string(64,'b');preflight(wrong);
+ // Profile and ordinary task-provider cohorts reject mixing before tools/cache.
+ options.profile="profile";preflight(stage);options.profile="debug";
+ NativeTaskProfileCatalog catalog;catalog.mode=NativeTaskLinkageMode::SharedFixed;catalog.artifact=NativeTaskArtifactKind::PicStage;
+ catalog.registries.push_back({"leaf",nativeTaskProfileRegistryAccessor("leaf"),"",{{name,hash(json(canonical(p.function(name)),false)),hash(p.definition(p.function(name))),hash(p.source),"/verified/boundary.nex",contracts.at(name),1}}});
+ auto profiled=stage;profiled.profiling=nativeTaskProfileInfo(catalog);preflight(profiled);
+ require(!std::filesystem::exists(directory/"task-profile-catalog.json"),"mode mismatch read a profile catalog");
  std::filesystem::remove_all(directory);directory.clear();
  std::cout<<json(llvm::json::Object{{"ok",true},{"checks",checks},{"rejections",rejections},{"execution_abi",3},{"descriptor_bytes",88},{"native_tools_executed",false},{"source_runtime_execution_claim",false}})<<'\n';return 0;
  }catch(const std::exception &e){if(!directory.empty())std::filesystem::remove_all(directory);std::cerr<<e.what()<<'\n';return 1;}}
