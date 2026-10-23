@@ -1,0 +1,429 @@
+{
+  "schema": "nex.toolchain-acceptance-summary/1",
+  "recorded_at_utc": "2026-10-23T07:58:29.519799+00:00",
+  "toolchain": "0.117.2",
+  "language": "0.20",
+  "execution_task_abi": 3,
+  "descriptor_bytes": 88,
+  "compiler_sha256": "b43f230b530648300f5dbae2604319d9a1fc46a6d56748489d2cbd3f978e852e",
+  "compiler_build": "fed7a5938891c6114497cfd9bc94065e52adb29f56283f66352dff9bbbb5b53a",
+  "source_files": 1004,
+  "source_manifest_sha256": "cec60dd7dc96174490477a9d9a960c6400392037fd984019031227b57e6b3aab",
+  "implementation": "fixed startup-linked source-backed shared task providers with one root runtime, explicit physical ownership and raw delivery provenance; atomic cache-image publication preserving loaded mappings and literal path characters",
+  "source_or_canonical_change": false,
+  "macos": {
+    "clean_all_build_passed": true,
+    "clean_all_build_seconds": 64.39,
+    "focused_ctest_groups": 11,
+    "focused_seconds": 123.098,
+    "regression": {
+      "groups": 144,
+      "single_pristine_full_suite_passed": true,
+      "seconds": 1204.585,
+      "composite": false
+    },
+    "installed_sdk": {
+      "phases": 29,
+      "commands": 542,
+      "seconds": 837.177,
+      "original_compiled_source_path_absent": true,
+      "kernel_source_isolation": false,
+      "other_source_copies_accessible": true,
+      "source_restored_unchanged": true,
+      "fixed_shared_provider_checks": {
+        "descriptor": true,
+        "actual_shared_images": true,
+        "defined_descriptor_accessors": true,
+        "consumer_ownership": true,
+        "actual_loaded_closure": true,
+        "one_runtime": true,
+        "native_reference": true,
+        "unused_read_excluded": true,
+        "root_file_grant": true,
+        "root_limits": true,
+        "warm_cache": true,
+        "retained_completion5": true,
+        "raw_package_provenance": true,
+        "source_deleted_replay": true,
+        "copied_closure_without_resources": true,
+        "source_deleted_package": true,
+        "execution_task_abi": 3,
+        "descriptor_bytes": 88,
+        "records": {
+          "leaf": {
+            "abi_offset": 40,
+            "artifact_kind": "shared-image",
+            "code_only": true,
+            "cohort": "1e4800e1f12cb64866574192ff89fbbcb07304fbde0bf210874c28b6a65a4676",
+            "compiler_build": "fed7a5938891c6114497cfd9bc94065e52adb29f56283f66352dff9bbbb5b53a",
+            "component": "leaf",
+            "component_file_reads": {
+              "leaf": true
+            },
+            "definition_owners": {
+              "installed_shared_leaf::answer": "leaf",
+              "installed_shared_leaf::pure": "leaf",
+              "installed_shared_leaf::read": "leaf"
+            },
+            "definitions": [
+              "installed_shared_leaf::answer",
+              "installed_shared_leaf::pure",
+              "installed_shared_leaf::read"
+            ],
+            "descriptor_abi": 5640011226151911427,
+            "descriptor_size": 88,
+            "exports": {
+              "installed_shared_leaf::answer": {
+                "accessor": "nex_21_installed_shared_leaf_6_answer__task_code_address",
+                "contract": "7d73703bff356446c6da674e2c86c7abde381a9da972e7416424259a39fbfc26",
+                "requirements": 17,
+                "signature": "6e2b57a0c1b07e2685d0052298ff0288f886748943acc4cef0a521f5d87eca24"
+              },
+              "installed_shared_leaf::read": {
+                "accessor": "nex_21_installed_shared_leaf_4_read__task_code_address",
+                "contract": "d77353f4871ebcbd17bd756acfeb7a203dcd3a85b9a35a1af31e06f95f0908df",
+                "requirements": 31,
+                "signature": "f454310e7e54fcbddab9811242cef43fa4beb29ec3414f5dd6d6ebba0e21b7ac"
+              }
+            },
+            "image": {
+              "hash": "aff38c879d49f1ac3b5653c79278acadb9e1bfda90bb4c5b1085d0034f95b445",
+              "key": "418d12924f52137bc41d02f2bb8ed169d682ab04c5786f1774a275e3fa739d8c",
+              "runtime_hash": "947fcf33812ae570a4c0ef92c4a0f2408da5b202e1f7a477674a54190dd864c8",
+              "runtime_key": "8efc8b4d9afe6a5cc0c4608f70a50e3ada2f691654bd51c54d984b7722f32abe",
+              "sha256": "d1d383a2c7b653c568976a31a199322f1d684707510a261eeb553db4483d7cf0",
+              "uuid": "7d5f7bf7b1833db6af917626eb7fa762"
+            },
+            "language": "0.20",
+            "mode": "shared-fixed",
+            "owner_image": "leaf",
+            "schema": "nex.native-task-provider/2",
+            "task_file_reads": true
+          },
+          "mid": {
+            "abi_offset": 40,
+            "artifact_kind": "shared-image",
+            "code_only": true,
+            "cohort": "1e4800e1f12cb64866574192ff89fbbcb07304fbde0bf210874c28b6a65a4676",
+            "compiler_build": "fed7a5938891c6114497cfd9bc94065e52adb29f56283f66352dff9bbbb5b53a",
+            "component": "mid",
+            "component_file_reads": {
+              "mid": false
+            },
+            "definition_owners": {
+              "installed_shared_mid::answer": "mid"
+            },
+            "definitions": [
+              "installed_shared_mid::answer"
+            ],
+            "descriptor_abi": 5640011226151911427,
+            "descriptor_size": 88,
+            "exports": {
+              "installed_shared_mid::answer": {
+                "accessor": "nex_20_installed_shared_mid_6_answer__task_code_address",
+                "contract": "8dd1905f8a56f9b3183e9a23ef178518c604cee0afe9b6056ac2a56a3737eda8",
+                "requirements": 1,
+                "signature": "24ff30c39d7f2b7cd2401b350c60cfb277dbe0b6345a68929277c369c8c88b47"
+              }
+            },
+            "image": {
+              "hash": "ff4ac1b099b5e2047eee58fb48bc491ca2366ea790c97eaa00bfa02c22f00e61",
+              "key": "dd8ccb86c7716226e7c4579d9a460ef8627480cf6e9ed3f014cdaa10940723a9",
+              "runtime_hash": "947fcf33812ae570a4c0ef92c4a0f2408da5b202e1f7a477674a54190dd864c8",
+              "runtime_key": "8efc8b4d9afe6a5cc0c4608f70a50e3ada2f691654bd51c54d984b7722f32abe",
+              "sha256": "7cb8107a31937ebf2c901ecbc41396cb46c7e8b38197e8ffbd807da9feb9a180",
+              "uuid": "e9e1f8b34ee7328aba6585ff0ff133cc"
+            },
+            "language": "0.20",
+            "mode": "shared-fixed",
+            "owner_image": "mid",
+            "schema": "nex.native-task-provider/2",
+            "task_file_reads": false
+          },
+          "app": {
+            "abi_offset": 40,
+            "artifact_kind": "application",
+            "code_only": false,
+            "cohort": "1e4800e1f12cb64866574192ff89fbbcb07304fbde0bf210874c28b6a65a4676",
+            "compiler_build": "fed7a5938891c6114497cfd9bc94065e52adb29f56283f66352dff9bbbb5b53a",
+            "component": "app",
+            "component_file_reads": {
+              "app": false
+            },
+            "definition_owners": {
+              "installed_shared_app::main": "app"
+            },
+            "definitions": [
+              "installed_shared_app::main"
+            ],
+            "descriptor_abi": 5640011226151911427,
+            "descriptor_size": 88,
+            "exports": {},
+            "image": {
+              "hash": "bbb42ba40711b970607a7b63c74b55a110990e86cf2ac2b1e71174b13fa676fa",
+              "key": "518ca1079397932b9fff19d3a4bb1b1d95c51a44e7a00dda88140205f11aba35",
+              "runtime_hash": "947fcf33812ae570a4c0ef92c4a0f2408da5b202e1f7a477674a54190dd864c8",
+              "runtime_key": "8efc8b4d9afe6a5cc0c4608f70a50e3ada2f691654bd51c54d984b7722f32abe",
+              "sha256": "8afa5ac6cf03fd58b6154e901c92a2b1b19ddf33bd84e4018dfbf25118cba16d",
+              "uuid": "c7a3c1c4d64b39ef9b07dbdcce1ec693"
+            },
+            "language": "0.20",
+            "mode": "shared-fixed",
+            "owner_image": "app",
+            "schema": "nex.native-task-provider/2",
+            "task_file_reads": false
+          }
+        },
+        "original_images_sha256": {
+          "leaf": "d1d383a2c7b653c568976a31a199322f1d684707510a261eeb553db4483d7cf0",
+          "mid": "7cb8107a31937ebf2c901ecbc41396cb46c7e8b38197e8ffbd807da9feb9a180",
+          "app": "8afa5ac6cf03fd58b6154e901c92a2b1b19ddf33bd84e4018dfbf25118cba16d"
+        },
+        "loader_logs": [
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/logs/428.stderr",
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/logs/437.stderr",
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/logs/438.stderr"
+        ],
+        "receipt": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-provider-capture/receipt.json",
+        "replay": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-provider-replay/receipt.json",
+        "captured_artifacts": {
+          "leaf": {
+            "artifact": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib",
+            "build_key": "604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659",
+            "cached": false,
+            "compilation": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659/compilation.json",
+            "compiler_target": "arm64-apple-macosx27.0.0",
+            "component": "leaf",
+            "debug_manifest": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659/debug.json",
+            "host_compatible": true,
+            "kind": "shared_library",
+            "metadata": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659/build.json",
+            "notices": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659/THIRD_PARTY_NOTICES.txt",
+            "target": "arm64-apple-darwin27.0.0"
+          },
+          "mid": {
+            "artifact": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib",
+            "build_key": "c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5",
+            "cached": false,
+            "compilation": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5/compilation.json",
+            "compiler_target": "arm64-apple-macosx27.0.0",
+            "component": "mid",
+            "debug_manifest": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5/debug.json",
+            "host_compatible": true,
+            "kind": "shared_library",
+            "metadata": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5/build.json",
+            "notices": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5/THIRD_PARTY_NOTICES.txt",
+            "target": "arm64-apple-darwin27.0.0"
+          },
+          "app": {
+            "artifact": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214/app",
+            "build_key": "7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214",
+            "cached": false,
+            "compilation": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214/compilation.json",
+            "compiler_target": "arm64-apple-macosx27.0.0",
+            "component": "app",
+            "debug_manifest": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214/debug.json",
+            "host_compatible": true,
+            "kind": "executable",
+            "metadata": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214/build.json",
+            "notices": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/7ce7ee09bb8e07ed5bf0e4d586128dd355586c6ce857580e7a58009cafa9d214/THIRD_PARTY_NOTICES.txt",
+            "target": "arm64-apple-darwin27.0.0"
+          }
+        },
+        "package_provenance": {
+          "build_key": "6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764",
+          "files": [
+            {
+              "kind": "application_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/task-provider.json",
+              "path": "provenance/task/000-task-provider.json",
+              "sha256": "3c5c3ae2965b41475b75dba7ee687996a891a7ec2ed0c975e9d808337943f1f9",
+              "bytes": 1150,
+              "compiler_validated_input_hash": "8f5a3314d072f04a47f7a2aa049b54542df12e7ffda8135bc032d3062c294cd0"
+            },
+            {
+              "kind": "owned_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/images/libnex_leaf_418d12924f52137bc41d02f2bb8ed169d682ab04c5786f1774a275e3fa739d8c.dylib.task-provider.json",
+              "path": "provenance/task/001-libnex_leaf_418d12924f52137bc41d02f2bb8ed169d682ab04c5786f1774a275e3fa739d8c.dylib.task-provider.json",
+              "sha256": "a452e98bb3a91c5d8e746790efc731279db8f2a1a3a051de7bf405811158be23",
+              "bytes": 1958,
+              "compiler_validated_input_hash": "4780142cda5a6a2dadaf3e00b599e9f8ca2d39813a94efb5b30cd32b73a99bd8"
+            },
+            {
+              "kind": "owned_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/images/libnex_mid_dd8ccb86c7716226e7c4579d9a460ef8627480cf6e9ed3f014cdaa10940723a9.dylib.task-provider.json",
+              "path": "provenance/task/002-libnex_mid_dd8ccb86c7716226e7c4579d9a460ef8627480cf6e9ed3f014cdaa10940723a9.dylib.task-provider.json",
+              "sha256": "a14b161df810abf83f3468c643fa4c799fa6b2ef792732a027f62ab1d2a6e28a",
+              "bytes": 1477,
+              "compiler_validated_input_hash": "46356ae351a0961d92f5c71cebca66a96e8ef41984e661b07929ed43117c49fe"
+            },
+            {
+              "kind": "image_inputs",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/image-inputs.json",
+              "path": "provenance/task/003-image-inputs.json",
+              "sha256": "4bccaf9186629b54d1f1c60d93913cd00a1c36a6e1e135a8fba6bc591def1351",
+              "bytes": 14954,
+              "compiler_validated_input_hash": "44b2283f759dfb133f1c27a58cb74c7d4382253c45795677154683d7df9e501c"
+            },
+            {
+              "kind": "build",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/build.json",
+              "path": "provenance/task/004-build.json",
+              "sha256": "25fe8dca69777fad1764417f34628de6eaa5f5eab491957ba885fe908fcc605c",
+              "bytes": 12403,
+              "compiler_validated_input_hash": "2093efeb0b730d215d93802ed03faa8a49e5247a42adb367b20256de62c0691e"
+            },
+            {
+              "kind": "complete",
+              "original": "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-providers/.nex/build/6ee989da7e377642b81d5d2f9d5d72a609a3c5ff23478560b31e3cd80db66764/complete",
+              "path": "provenance/task/005-complete",
+              "sha256": "68c7ceefc060c5280360e8094dd11a2124f9581a172c8a1dd42bdb1a25cca1bf",
+              "bytes": 65,
+              "compiler_validated_input_hash": "8a555ae9f1a9e456451106353e798a80847df3b9983ea0e5ae41a2e9a0a03072"
+            }
+          ],
+          "verification": "matching compiler validated package completion BLAKE3; independent own-original/copied bytes, SHA256, sizes, provider pins and output inventory; no capture-index equivalence or Python BLAKE3 recomputation"
+        },
+        "retained": [
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-provider-capture/artifacts/build-native/components/leaf/retained-build/retained.json",
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-provider-capture/artifacts/build-native/components/mid/retained-build/retained.json",
+          "/Users/sae/projects/NEX/build/sdk-124d-native-image-atomic-paths-acceptance-v1/shared-task-provider-capture/artifacts/build-native/components/app/retained-build/retained.json"
+        ],
+        "retained_file_sha256": {
+          "artifacts/build-native/components/leaf/retained-build/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib": "6c2ba9388d1f415d53115b28dda13acfbb82cf0c0abec321fed39a616a7339db",
+          "artifacts/build-native/components/leaf/retained-build/program.mlir": "841c60206d32f038c07d5c56e250feb037c83fbaa5a6b3ace1d79ee60988080a",
+          "artifacts/build-native/components/leaf/retained-build/program.ll": "28f66788c70cefbbc6bf1c304af58ad69770ee0e54488d187c72be8c5ca24dce",
+          "artifacts/build-native/components/leaf/retained-build/compilation.json": "8538e74afa85ae7762a53c0ff6812b5bca6a80e3aea55def912d4b02b65d4866",
+          "artifacts/build-native/components/leaf/retained-build/build.json": "75c24ffc389c22a3628aaad13985d46ce5bee0e9031619076df9e14ca2ab5354",
+          "artifacts/build-native/components/leaf/retained-build/source-bundle.json": "04ba652a6545b3b32a5e33c0b47b08deca65a8d354e5ae6c753bb78b5808d03a",
+          "artifacts/build-native/components/leaf/retained-build/library-abi.json": "b3f319ef46b05a9af23915abec0a78805fb11994f3c738520b9181560e11a34e",
+          "artifacts/build-native/components/leaf/retained-build/task-provider.json": "dc6f0e5ccad3404ef5648297fccbf1548ec0a8f03c459343c6963c0cb5502a51",
+          "artifacts/build-native/components/leaf/retained-build/image-inputs.json": "d53119a1a6cff63820ccdb8f55374366c3e14e88fb4dddb2b4bef3aa8bcdbd4e",
+          "artifacts/build-native/components/leaf/retained-build/objects.a": "b72dd451014316a8aef1314f1fe681d70471742af796e343b35423b6444ec043",
+          "artifacts/build-native/components/leaf/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "673477e9dd38f919a64d53ecbe776ea45b82c231eac683a3b102b7e37c824433",
+          "artifacts/build-native/components/leaf/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Info.plist": "6f382a7f6ed4a38cd991e5dd66c059af2713ec50014aaea0499295845c99d983",
+          "artifacts/build-native/components/leaf/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "c75ff1177e1c29870fbb4f997c09d864eb171e428245531a6e23fd4ca8a00daf",
+          "artifacts/build-native/components/leaf/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.yml": "8d4c20da3c0290b22173bb073603350960c7c6e89837f78fc7538ef6782ae435",
+          "artifacts/build-native/components/leaf/retained-build/complete": "68f0adbff4c6b49767158624334e3ff32d12807615f2e3ed28643c8f59540759",
+          "artifacts/build-native/components/leaf/retained-build/debug.json": "22d9fc190d64bd3ed1ee56f44696543d6200efe0ae7ad848b7e9395f0c30dfbf",
+          "artifacts/build-native/components/mid/retained-build/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib": "a74eb3a91e905acaf3d8390a94f5f9bc757476a2de6503f67863f91dc28081e2",
+          "artifacts/build-native/components/mid/retained-build/program.mlir": "0430eba2ff2f6576c09df2f97995ffb20495d176ce64d8e8cd9b6acbff5d176d",
+          "artifacts/build-native/components/mid/retained-build/program.ll": "8e3af2d90cb20198be40425dce36ecb4ff5e2d1d2be6a5bd4ad51613c701c4e9",
+          "artifacts/build-native/components/mid/retained-build/compilation.json": "447c57ccc3809472e273222f79478179653cd3bebd39e3c40adcb56dda6562cf",
+          "artifacts/build-native/components/mid/retained-build/build.json": "1f96bf8e9e946af7b0ac2f1446f46c6796dcce7814119badad7ba637840bb235",
+          "artifacts/build-native/components/mid/retained-build/source-bundle.json": "5c2ab79c6279fcd65bc7ec2dc0bb5f74230508d6c496bc3e06a66270a0f3f315",
+          "artifacts/build-native/components/mid/retained-build/library-abi.json": "b1a8eb5517623f227e1e2396fa2af543bc06f577e085dec89aa1ab9b5cc03330",
+          "artifacts/build-native/components/mid/retained-build/task-provider.json": "bb139c7496a88c11b88c8b92b003d1bf94c19a66d538aee4b870190ab36e7394",
+          "artifacts/build-native/components/mid/retained-build/image-inputs.json": "70f0ffe7ee3cd77f30e878ed7405b8b7bfbe257a684eb8f78e2ff01ecf1e4b85",
+          "artifacts/build-native/components/mid/retained-build/objects.a": "52249b92cd0a7afa11f48ecb40efd08decef12bca415694afeba4672b2fabf15",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib": "6c2ba9388d1f415d53115b28dda13acfbb82cf0c0abec321fed39a616a7339db",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "673477e9dd38f919a64d53ecbe776ea45b82c231eac683a3b102b7e37c824433",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.task-provider.json": "dc6f0e5ccad3404ef5648297fccbf1548ec0a8f03c459343c6963c0cb5502a51",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Info.plist": "9d74aafd9c0a86377e77e8d7929f81dbd2d0710a5a99650592edee88d92dc5c7",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Resources/DWARF/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib": "b4fe2e0a5b6554fcc043be9643db9a28300dad6008205ee5dc40c6f9f403ba1a",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.yml": "114c1ee6214f3160e9d92712a46500364d17a73d23aec97d71eb8923505bd1e2",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Info.plist": "6f382a7f6ed4a38cd991e5dd66c059af2713ec50014aaea0499295845c99d983",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "c75ff1177e1c29870fbb4f997c09d864eb171e428245531a6e23fd4ca8a00daf",
+          "artifacts/build-native/components/mid/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.yml": "8d4c20da3c0290b22173bb073603350960c7c6e89837f78fc7538ef6782ae435",
+          "artifacts/build-native/components/mid/retained-build/complete": "29880feb9b14a5648cd523a19e80954f1acef40944b3a20866db5a93e441da4e",
+          "artifacts/build-native/components/mid/retained-build/debug.json": "5b680612f482e087832f8254d30ae8a33c01f217b8750bb03143ecd1facdb91b",
+          "artifacts/build-native/components/app/retained-build/app": "79f9fb45109121f20b8952cbe40444ebcaf8afe8fda48d60d60395f22d326149",
+          "artifacts/build-native/components/app/retained-build/program.mlir": "6bdc9aa7369a419ec9128efaa901e8cfa9529fa55f6d979e4436dd665a32dd83",
+          "artifacts/build-native/components/app/retained-build/program.ll": "ebbb5f06ca0c302284b65149f12343169b4e0bdde9822d23134052e41bdbdbc7",
+          "artifacts/build-native/components/app/retained-build/compilation.json": "9c66a477bc5ff04ca80a01b3720cbcb75e57c4b302cdb82dfb65055a33265ea9",
+          "artifacts/build-native/components/app/retained-build/build.json": "35b258da24301dcccdc1436a9057ce3193530ec2a7890a262d294ec30c90a0d1",
+          "artifacts/build-native/components/app/retained-build/source-bundle.json": "a3939bc15a8edfac200a8f70f9daaea44f1bacdaf9631e9a5aeb67db623984ca",
+          "artifacts/build-native/components/app/retained-build/library-abi.json": "5a662ce1ff552dd3fa8db3bd915f5028f972f99c4e256f8b184fce07b18b64db",
+          "artifacts/build-native/components/app/retained-build/task-provider.json": "a8e281c2e6c4af9a3d5355c3e808d785cd5cb4c4f61dc08c49e5035b66c23b0d",
+          "artifacts/build-native/components/app/retained-build/image-inputs.json": "8ad3bc96c50f2b4126c79f1764fa15b2cee4da68752dee59b46bf2322e06b45f",
+          "artifacts/build-native/components/app/retained-build/objects.a": "9c98c3a425049409a826caa55bbbeeccd25f571691eaadbc3942a54bb5e311c7",
+          "artifacts/build-native/components/app/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib": "6c2ba9388d1f415d53115b28dda13acfbb82cf0c0abec321fed39a616a7339db",
+          "artifacts/build-native/components/app/retained-build/images/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib": "a74eb3a91e905acaf3d8390a94f5f9bc757476a2de6503f67863f91dc28081e2",
+          "artifacts/build-native/components/app/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "673477e9dd38f919a64d53ecbe776ea45b82c231eac683a3b102b7e37c824433",
+          "artifacts/build-native/components/app/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.task-provider.json": "dc6f0e5ccad3404ef5648297fccbf1548ec0a8f03c459343c6963c0cb5502a51",
+          "artifacts/build-native/components/app/retained-build/images/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib.task-provider.json": "bb139c7496a88c11b88c8b92b003d1bf94c19a66d538aee4b870190ab36e7394",
+          "artifacts/build-native/components/app/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Info.plist": "9d74aafd9c0a86377e77e8d7929f81dbd2d0710a5a99650592edee88d92dc5c7",
+          "artifacts/build-native/components/app/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Resources/DWARF/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib": "b4fe2e0a5b6554fcc043be9643db9a28300dad6008205ee5dc40c6f9f403ba1a",
+          "artifacts/build-native/components/app/retained-build/images/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_leaf_604aaa26cf88ed57c5d25c98b037b0f51b9f078b3bbbd3c0eb76058285e78659.dylib.yml": "114c1ee6214f3160e9d92712a46500364d17a73d23aec97d71eb8923505bd1e2",
+          "artifacts/build-native/components/app/retained-build/images/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib.dSYM/Contents/Info.plist": "9067dab45555dc13ccc01eb27f11b358faac17a8255fece8e297bda185032d9d",
+          "artifacts/build-native/components/app/retained-build/images/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib.dSYM/Contents/Resources/DWARF/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib": "e414167329224cebb9a235fcb2baea541132e76b5ce466d0f8fae25add332df0",
+          "artifacts/build-native/components/app/retained-build/images/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_mid_c980e11ed1ec7eb33e122c8648d7972c37c13fb01bdb29d106a14e44bf9b67b5.dylib.yml": "effacdbd45e221b2e478af3dd03bfeab90fc3b5074fd16d4aaaf9be542eb4f88",
+          "artifacts/build-native/components/app/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Info.plist": "6f382a7f6ed4a38cd991e5dd66c059af2713ec50014aaea0499295845c99d983",
+          "artifacts/build-native/components/app/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib": "c75ff1177e1c29870fbb4f997c09d864eb171e428245531a6e23fd4ca8a00daf",
+          "artifacts/build-native/components/app/retained-build/images/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_849589590a0a535b61e1d2daa94841af2c1cd655c6c12e9d8969146a99faa4b6.dylib.yml": "8d4c20da3c0290b22173bb073603350960c7c6e89837f78fc7538ef6782ae435",
+          "artifacts/build-native/components/app/retained-build/complete": "9424c0b9635dba706491390d1e25240313a5bc8f8f498c4c7d4c8c5eb2a37bd7",
+          "artifacts/build-native/components/app/retained-build/debug.json": "0225cc5b2e03d24cbecca3f245d15b9b8be5e96ff35b760331893417d538e766"
+        },
+        "retained_bytes": 19015312,
+        "retained_hash_verification": "compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation",
+        "physical_file_retirement_claim": false
+      },
+      "retained_hash_verification": "compiler-checked receipt BLAKE3 index plus exact original/retained bytes, sizes and independent SHA256; no Python BLAKE3 recomputation"
+    }
+  },
+  "linux_arm64": {
+    "groups": [
+      "task_shared_provider_native",
+      "task_shared_provider_boundary_native",
+      "task_shared_provider_lifetime_native",
+      "task_static_provider_native",
+      "native_images",
+      "project_build",
+      "task_limits_workflow"
+    ],
+    "seconds": 361.257,
+    "compiler_sha256": "36d069f023ca427df647f9e1a09f55f04360539429d068d1c0e7fea67426c768",
+    "pinned_image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+    "network": "none",
+    "source_readonly": true,
+    "source_unchanged": true,
+    "full_linux_suite": false,
+    "installed_linux_sdk": false
+  },
+  "runtime_sanitizers": {
+    "passed": true,
+    "seconds": 43.8,
+    "modes": [
+      "ASAN+UBSAN+LSAN",
+      "TSAN"
+    ],
+    "actual_cases_per_mode": 4,
+    "scope": "new actual generated startup-linked providers with instrumented captured common runtime and private driver; provider IR uninstrumented",
+    "generated_provider_IR_instrumented": false,
+    "physical_file_retirement_claim": false
+  },
+  "regressions_fixed": [
+    "Reusing an unchanged cached owned image leaves inode and mtime untouched; changed images publish via same-directory atomic rename, preserving existing loaded mappings.",
+    "Temporary-file creation treats literal percent signs, Unicode and quotes in parent paths as data."
+  ],
+  "original_failures_retained": [
+    "124b actual Python ELF loader SIGSEGV and controlled load/warm/load reproduction",
+    "124c six real native-image path regressions and matching Linux path failure"
+  ],
+  "limits": [
+    "Provider task profiling and logical debugging are pending this checkpoint.",
+    "Startup-linked shared providers require source-backed checking; unload, arbitrary dynamic loading, binary-only checking, HTTP/foreign task hosts and callable/File/task-authority transport are unsupported.",
+    "Scoped Linux groups do not establish a full Linux suite or installed Linux SDK pass.",
+    "Original source-path absence is not kernel-enforced source isolation."
+  ],
+  "recovery": {
+    "url": "https://github.com/sae-ru/NEX/tree/codex/backup-nex-20261023-072332",
+    "commit": "6df944c8163f2801c0127ac5410eedc9cafae390",
+    "tree": "9ecdcc554f559c1f234bbb2e3fc0597c4a92e855",
+    "verified_files": 1004,
+    "accepted_release": false
+  },
+  "primary081_preserved": true,
+  "root_promoted": false,
+  "full_objective_complete": false,
+  "receipts": {
+    "native-124d-native-image-atomic-paths-source-manifest-v1.json": "cec60dd7dc96174490477a9d9a960c6400392037fd984019031227b57e6b3aab",
+    "task-shared-provider-124d-build-controller-v1.json": "4c08ed744bf4b0541d10ac7b32d472670bfb64aeaf706cd3885b60160651d20a",
+    "task-shared-provider-124d-frozen-focused-controller-v1.json": "579c74cc375f47de46638148f8f809e739731c67d1031aba1e4a5f69a8962c33",
+    "task-shared-provider-124d-sanitizer-gate-v1.json": "194c87ecca0b8064e32d124045647888f272b50371415153b9021e50def19b28",
+    "task-shared-provider-124d-acceptance-controller-v1.json": "eb2d58a9ae80038319bba3541cd3ab5c8d91cf00af9ceb0ac522e40d4e30f45c",
+    "sdk-124d-native-image-atomic-paths-acceptance-v1/report.json": "2f6f4e9261274ab6088cecc5f9fed3ae1b63008c61c0eb78b3bb2636b748d866",
+    "linux-124d-native-image-atomic-paths-v1/report.json": "c96ae27d87adfac6832c6087b67f6ef3584dac4a2842ee97708c8c80a69ae9f5",
+    "github-nex-checkpoint-20261023-072332/verification.json": "f978a0a9a2d2939c82e64fce6367eeda513e81a180ee3aa7754a98e499fd227c"
+  }
+}

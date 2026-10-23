@@ -42,7 +42,7 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
         for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries',
                      'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers',
-                     'shared-task-providers'):
+                     'shared-task-providers','task-provider-profiling'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
 
@@ -79,6 +79,24 @@ class DistributionWorkflow(unittest.TestCase):
                     acceptance.validate_completed_report(changed)
         # The separate mode never waives static123 or older delivery contracts.
         with self.assertRaisesRegex(RuntimeError,'static task provider delivery'):
+            acceptance.validate_completed_report(current)
+
+    def test_provider_profile_sdk118_requires_actual_source_catalog_and_owned_delivery(self):
+        current=self.report();current['doctor']={'version':'0.118.0'}
+        fields=('descriptor','native_reference','exact_source_calls','zero_provider_generic','physical_owners',
+                'defined_registry_accessors','one_runtime','managed_cleanup','event_only_completeness','root_limits',
+                'unused_read_excluded','warm_cache','measured_retained_completion6','raw_package_provenance',
+                'source_deleted_replay','copied_profile_without_resources','source_deleted_package_profile')
+        with self.assertRaisesRegex(RuntimeError,'task provider profiling delivery'):
+            acceptance.validate_completed_report(current)
+        current['evidence']={'task_provider_profiling':{name:True for name in fields}}
+        for name in fields:
+            for value in (False,None,'true',1):
+                changed=copy.deepcopy(current);changed['evidence']['task_provider_profiling'][name]=value
+                with self.subTest(field=name,value=value),self.assertRaisesRegex(RuntimeError,'task provider profiling delivery'):
+                    acceptance.validate_completed_report(changed)
+        # New instrumented metadata cannot waive old unprofiled shared delivery.
+        with self.assertRaisesRegex(RuntimeError,'shared task provider delivery'):
             acceptance.validate_completed_report(current)
 
     def test_captured_task_artifacts_use_their_checked_command_not_another_cwd(self):
@@ -121,6 +139,85 @@ class DistributionWorkflow(unittest.TestCase):
                 damaged=copy.deepcopy(captured_command);damaged[field]=value
                 with self.subTest(field=field,value=value,type=type(value).__name__),self.assertRaises(RuntimeError):
                     acceptance.captured_task_build_artifacts(damaged,linkages)
+
+    def test_profile_retention_binds_measured_command_and_rejects_cross_action_pins(self):
+        # Opaque digest labels are compiler-issued pins in this transport test;
+        # SHA256 is independent evidence, never a stand-in for BLAKE3 validation.
+        with tempfile.TemporaryDirectory(prefix='sdk profile retention ') as temporary:
+            root=Path(temporary).resolve();receipt=root/'receipt';receipt.mkdir()
+            def fixture(label,digit):
+                key=digit*64;original=root/label/'.nex/build'/key;original.mkdir(parents=True)
+                artifact={'component':'app','kind':'executable','build_key':key,'artifact':str(original/'app')}
+                component={'component':'app','kind':'executable',
+                    'retained_build':'artifacts/measure-provider/components/app/retained-build/retained.json'}
+                provider={'schema':'nex.native-task-provider/3','component':'app','mode':'static',
+                    'profiling':{'catalog_file':'task-profile-catalog.json','catalog_hash':'c'*64}}
+                catalog={'schema':'nex.task-profile-catalog/1','registry_abi':1,'mode':'static'}
+                inputs=['library-abi.json','task-provider.json','task-profile-catalog.json',
+                    'libraries/0.a','libraries/0.task-provider.json','libraries/0.task-profile-catalog.json']
+                metadata={'key':key,'compiler_build':'f'*64,'completion_schema':'nex.native-completion/6',
+                    'task_provider':provider,'task_provider_hash':digit*64}
+                names=['app','program.mlir','program.ll','compilation.json','build.json','source-bundle.json',
+                    *inputs,'complete','debug.json']
+                payload={name:(label+':'+name).encode() for name in names}
+                leaf={**provider,'component':'leaf'}
+                dependency={'hash':digit*64,'task_provider_hash':digit*64,'task_profile_catalog_hash':digit*64,'task_provider':leaf}
+                payload.update({'build.json':json.dumps(metadata).encode(),'task-provider.json':json.dumps(provider).encode(),
+                    'task-profile-catalog.json':json.dumps(catalog).encode(),
+                    'library-abi.json':json.dumps({'static_libraries':[dependency]}).encode(),
+                    'libraries/0.task-provider.json':json.dumps(leaf).encode(),
+                    'complete':(digit*64+'\n').encode()})
+                record={'schema':'nex.retained-native-task-build/3','compiler_build':'f'*64,'build_key':key,
+                    'original_directory':str(original),'metadata_rewritten':False,'hash_algorithm':'BLAKE3',
+                    'completion_schema':'nex.native-completion/6','files':[]}
+                check={'id':'measure-provider','artifacts':{}}
+                for name in names:
+                    copied=receipt/'artifacts/measure-provider/components/app/retained-build'/name
+                    copied.parent.mkdir(parents=True,exist_ok=True);copied.write_bytes(payload[name]);(original/name).parent.mkdir(parents=True,exist_ok=True);(original/name).write_bytes(payload[name])
+                    row={'original':str(original/name),'retained':copied.relative_to(receipt).as_posix(),
+                        'hash':digit*64,'bytes':len(payload[name])};record['files'].append(row)
+                    check['artifacts'][copied.relative_to(receipt/'artifacts/measure-provider').as_posix()]={'hash':row['hash'],'bytes':row['bytes']}
+                path=receipt/component['retained_build'];path.write_text(json.dumps(record))
+                check['artifacts'][path.relative_to(receipt/'artifacts/measure-provider').as_posix()]={'hash':'f'*64,'bytes':path.stat().st_size}
+                return artifact,component,check,record,inputs,path
+            artifact,component,check,record,inputs,path=fixture('capture','a')
+            proof=acceptance.retained_task_profile_build(receipt,check,artifact,component,'f'*64,lambda unused:inputs)
+            self.assertEqual(proof['build_key'],'a'*64)
+            # A previous build from another CWD cannot authenticate this capture.
+            foreign=copy.deepcopy(artifact);foreign.update(build_key='b'*64,artifact=str(root/'other/.nex/build'/('b'*64)/'app'))
+            with self.assertRaises(RuntimeError):acceptance.retained_task_profile_build(receipt,check,foreign,component,'f'*64,lambda unused:inputs)
+            for mutate in (
+                lambda r:r.update(build_key='b'*64),
+                lambda r:r['files'][0].update(original=str(root/'foreign/app')),
+                lambda r:r['files'][0].update(retained='../escape'),
+                lambda r:r['files'][0].update(hash='b'*64),
+                lambda r:r['files'][0].update(bytes=True),
+                lambda r:r['files'].reverse()):
+                damaged=copy.deepcopy(record);mutate(damaged);path.write_text(json.dumps(damaged))
+                check['artifacts'][path.relative_to(receipt/'artifacts/measure-provider').as_posix()]['bytes']=path.stat().st_size
+                with self.subTest(mutate=mutate),self.assertRaises(RuntimeError):
+                    acceptance.retained_task_profile_build(receipt,check,artifact,component,'f'*64,lambda unused:inputs)
+            # Even an internally indexed catalog row must match the ABI's
+            # static frontier raw catalog pin, in addition to archive/sidecar.
+            damaged=copy.deepcopy(record);damaged_check=copy.deepcopy(check)
+            catalog_row=next(row for row in damaged['files'] if row['original'].endswith('/libraries/0.task-profile-catalog.json'))
+            catalog_row['hash']='b'*64
+            damaged_check['artifacts'][catalog_row['retained'].split('artifacts/measure-provider/',1)[1]]['hash']='b'*64
+            path.write_text(json.dumps(damaged))
+            record_key=path.relative_to(receipt/'artifacts/measure-provider').as_posix()
+            damaged_check['artifacts'][record_key]['bytes']=path.stat().st_size
+            with self.assertRaisesRegex(RuntimeError,'triple pins'):
+                acceptance.retained_task_profile_build(receipt,damaged_check,artifact,component,'f'*64,lambda unused:inputs)
+            path.write_text(json.dumps(record))
+            record_key=path.relative_to(receipt/'artifacts/measure-provider').as_posix()
+            check['artifacts'][record_key]['bytes']=path.stat().st_size
+            for corrupt in ({'hash':'f'*64,'bytes':True},{'hash':'0','bytes':path.stat().st_size},{}):
+                baseline=copy.deepcopy(check);baseline['artifacts'][record_key]=corrupt
+                with self.subTest(record_pin=corrupt),self.assertRaises(RuntimeError):
+                    acceptance.retained_task_profile_build(receipt,baseline,artifact,component,'f'*64,lambda unused:inputs)
+            target=receipt/record['files'][0]['retained'];target.unlink();target.symlink_to(artifact['artifact'])
+            with self.assertRaisesRegex(RuntimeError,'symlink'):
+                acceptance.retained_task_profile_build(receipt,check,artifact,component,'f'*64,lambda unused:inputs)
 
     def test_package_task_provenance_binds_own_originals_not_capture_pins(self):
         # Data-only transport fixtures use opaque compiler pins. They deliberately
@@ -189,6 +286,63 @@ class DistributionWorkflow(unittest.TestCase):
                 damaged=copy.deepcopy(packaged);mutate(damaged)
                 with self.subTest(mutate=mutate),self.assertRaises(RuntimeError):
                     acceptance.package_task_provenance(package_root,damaged,package_project)
+
+    def test_profile_package_preserves_catalog_image_association_across_action_keys(self):
+        with tempfile.TemporaryDirectory(prefix='sdk profile package ') as temporary:
+            root=Path(temporary)
+            def fixture(label,digit):
+                project=root/(label+'-cwd');key=digit*64;original=project/'.nex/build'/key;original.mkdir(parents=True)
+                package=root/(label+'-package');package.mkdir()
+                original_app=(label+' original app').encode();(original/'app').write_bytes(original_app)
+                provider={'schema':'nex.native-task-provider/3','component':'app','mode':'static',
+                    'profiling':{'schema':'nex.native-task-profile/1','catalog_hash':digit*64}}
+                catalog={'schema':'nex.task-profile-catalog/1','registry_abi':1,'owner_image':'app'}
+                (original/'task-provider.json').write_text(json.dumps(provider))
+                (original/'task-profile-catalog.json').write_text(json.dumps(catalog))
+                # These are opaque matching-compiler BLAKE3 labels. This fixture
+                # independently hashes bytes with SHA256 only for transport.
+                pin=lambda name:hashlib.sha256((original/name).read_bytes()).hexdigest()
+                metadata={'key':key,'compiler_build':'f'*64,'profile':'profile','completion_schema':'nex.native-completion/6',
+                    'completion_mode':'static-application','task_provider':provider,'task_provider_hash':pin('task-provider.json')}
+                (original/'build.json').write_text(json.dumps(metadata));(original/'complete').write_text(digit*64+'\n')
+                output=package/'bin/app';output.parent.mkdir();output.write_bytes((label+' relocated app').encode())
+                output_sha=hashlib.sha256(output.read_bytes()).hexdigest()
+                meta={'build_key':key,'compiler_build':'f'*64,'entry':'bin/app',
+                    'files':{'bin/app':{'sha256':output_sha,'bytes':output.stat().st_size}}}
+                rows=[]
+                for index,(kind,name) in enumerate([('application_provider','task-provider.json'),
+                        ('application_profile_catalog','task-profile-catalog.json'),('build','build.json'),('complete','complete')]):
+                    raw=(original/name).read_bytes();path='provenance/task/%03d-'%index+name
+                    target=package/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
+                    sha=hashlib.sha256(raw).hexdigest();meta['files'][path]={'sha256':sha,'bytes':len(raw)}
+                    associated=index<2
+                    rows.append({'kind':kind,'path':path,'input_hash':pin(name),'input_sha256':sha,'bytes':len(raw),
+                        'component':'app' if associated else None,'input_image_key':key if associated else None,
+                        'input_image_sha256':hashlib.sha256(original_app).hexdigest() if associated else None,
+                        'input_uuid':digit*32 if associated else None,'output_image':'bin/app' if associated else None,
+                        'output_image_sha256':output_sha if associated else None})
+                meta['task_profile_provenance']={'schema':'nex.application-task-profile-provenance/1',
+                    'metadata_rewritten':False,'hash_algorithm':'BLAKE3','files':rows}
+                return project,package,meta
+            capture,capture_package,captured=fixture('capture','a')
+            project,package,meta=fixture('package','b')
+            first=acceptance.package_task_profile_provenance(capture_package,captured,capture)
+            proof=acceptance.package_task_profile_provenance(package,meta,project)
+            self.assertNotEqual(first['build_key'],proof['build_key'])
+            self.assertTrue(all('/package-cwd/' in row['original'] for row in proof['files']))
+            with self.assertRaises(RuntimeError):acceptance.package_task_profile_provenance(package,meta,capture)
+            for mutate in (
+                lambda p:p['task_profile_provenance']['files'][0].update(input_hash=captured['task_profile_provenance']['files'][0]['input_hash']),
+                lambda p:p['task_profile_provenance']['files'][1].update(input_image_key='a'*64),
+                lambda p:p['task_profile_provenance']['files'][1].update(component='foreign'),
+                lambda p:p['task_profile_provenance']['files'][1].update(output_image_sha256='0'*64),
+                lambda p:p['task_profile_provenance']['files'][1].update(bytes=True),
+                lambda p:p['task_profile_provenance']['files'].reverse(),
+                lambda p:p['task_profile_provenance']['files'][2].update(component='app'),
+                lambda p:p['task_profile_provenance']['files'][0].update(path='../escape')):
+                damaged=copy.deepcopy(meta);mutate(damaged)
+                with self.subTest(mutate=mutate),self.assertRaises(RuntimeError):
+                    acceptance.package_task_profile_provenance(package,damaged,project)
 
     def test_task_debug_sdk_requires_actual_delivery_and_live_execution(self):
         current = self.report(); current['doctor'] = {'version':'0.115.0'}

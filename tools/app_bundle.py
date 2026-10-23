@@ -120,6 +120,7 @@ def unique_task_fields(pairs):
 
 def task_package_inputs(request, binary, owned_inputs):
     task = request.get('task_inputs')
+    profile = request['schema'] == 'nex.application-request/3'
     if request['schema'] == 'nex.application-request/1':
         if task is not None:
             raise ValueError('legacy application request cannot contain task provenance')
@@ -128,32 +129,42 @@ def task_package_inputs(request, binary, owned_inputs):
         'runtime_notices_sha256', 'sdk_root', 'toolchain', 'language', 'revision',
         'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
         'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
-    if (set(request) != expected_fields or request['kind'] != 'executable' or request['profile'] == 'profile' or
+    if (set(request) != expected_fields or request['kind'] != 'executable' or (request['profile'] != 'profile' if profile else request['profile'] == 'profile') or
             request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
             not isinstance(task, dict) or set(task) != {'schema', 'files'} or
-            task['schema'] != 'nex.application-task-inputs/1' or
-            not isinstance(task['files'], list) or not 4 <= len(task['files']) <= 132):
+            task['schema'] != ('nex.application-task-inputs/2' if profile else 'nex.application-task-inputs/1') or
+            not isinstance(task['files'], list) or not 4 <= len(task['files']) <= (300 if profile else 132)):
         raise ValueError('invalid task application provenance envelope')
     libraries = sorted((p for p, row in owned_inputs.items() if row['kind'] == 'library'), key=lambda p: p.name)
     expected = [('application_provider', binary.parent/'task-provider.json', binary)]
-    expected += [('owned_provider', Path(str(p)+'.task-provider.json'), p) for p in libraries]
-    expected += [(kind, binary.parent/name, None) for kind, name in
-                 [('image_inputs', 'image-inputs.json'), ('build', 'build.json'), ('complete', 'complete')]]
+    if profile:
+        expected += [('application_profile_catalog', binary.parent/'task-profile-catalog.json', binary)]
+        for image in libraries:
+            expected += [('owned_provider', Path(str(image)+'.task-provider.json'), image),
+                         ('owned_profile_catalog', Path(str(image)+'.task-profile-catalog.json'), image)]
+        if owned_inputs:
+            expected += [('image_inputs', binary.parent/'image-inputs.json', None)]
+        expected += [('build', binary.parent/'build.json', None), ('complete', binary.parent/'complete', None)]
+    else:
+        expected += [('owned_provider', Path(str(p)+'.task-provider.json'), p) for p in libraries]
+        expected += [(kind, binary.parent/name, None) for kind, name in
+                     [('image_inputs', 'image-inputs.json'), ('build', 'build.json'), ('complete', 'complete')]]
     if len(expected) != len(task['files']):
         raise ValueError('task provenance closure differs from owned images')
     result = []
     total = 0
+    provider_identities = {}
     for row, (kind, source, image) in zip(task['files'], expected):
         if (not isinstance(row, dict) or set(row) != {'kind', 'path', 'hash', 'sha256', 'bytes',
                 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
                 row['kind'] != kind or row['path'] != str(source) or
                 any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
-                type(row['bytes']) is not int or not 1 <= row['bytes'] <= 16*1024**2 or
+                type(row['bytes']) is not int or not 1 <= row['bytes'] <= (64 if profile else 16)*1024**2 or
                 source.is_symlink() or source.resolve(strict=True) != source or
                 not source.is_file() or source.stat().st_size != row['bytes'] or sha256(source) != row['sha256']):
             raise ValueError('task provenance file identity/path/bytes differ')
         total += row['bytes']
-        if total > 32*1024**2:
+        if total > (64 if profile else 32)*1024**2:
             raise ValueError('task provenance exceeds aggregate bound')
         if image is None:
             if any(row[k] is not None for k in ('component', 'image', 'image_key', 'image_sha256', 'image_uuid')):
@@ -169,23 +180,78 @@ def task_package_inputs(request, binary, owned_inputs):
                 'component_file_reads', 'image'}
             # The matching compiler validates BLAKE3/cohort/descriptor semantics before
             # this data-only collector; independently preserve and bind raw SHA bytes.
-            identity = provider.get('image')
             physical = owned_inputs.get(image)
-            if (set(provider) != provider_fields or provider.get('schema') != 'nex.native-task-provider/2' or
-                    provider.get('mode') != 'shared-fixed' or provider.get('component') != row['component'] or
-                    provider.get('owner_image') != row['component'] or
-                    provider.get('artifact_kind') != ('application' if kind == 'application_provider' else 'shared-image') or
-                    not isinstance(identity, dict) or set(identity) != {'key', 'hash', 'sha256', 'uuid', 'runtime_key', 'runtime_hash'} or
+            application = kind in ('application_provider', 'application_profile_catalog')
+            if profile and kind.endswith('profile_catalog'):
+                if (set(provider) != {'schema', 'registry_abi', 'mode', 'artifact_kind', 'owner_image', 'registries'} or
+                        provider.get('schema') != 'nex.task-profile-catalog/1' or type(provider.get('registry_abi')) is not int or provider['registry_abi'] != 1 or
+                        provider.get('mode') not in ('static', 'shared-fixed') or
+                        provider.get('artifact_kind') != ('application' if application else 'shared-image') or
+                        provider.get('owner_image') != row['component'] or image not in provider_identities):
+                    raise ValueError('invalid raw task profile catalog')
+                registries = provider['registries']
+                if not isinstance(registries, list) or not 1 <= len(registries) <= 128:
+                    raise ValueError('invalid raw profile registry count')
+                names = set(); previous = ''; count = 0
+                for registry in registries:
+                    if (not isinstance(registry, dict) or set(registry) != {'component', 'accessor', 'owner_image', 'sites'} or
+                            not isinstance(registry['component'], str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', registry['component']) or
+                            registry['component'] <= previous or registry['accessor'] != 'nex_task_profile_registry_'+registry['component']+'_v1' or
+                            registry['owner_image'] != row['component'] or not isinstance(registry['sites'], list) or not registry['sites']):
+                        raise ValueError('invalid raw profile component registration')
+                    previous = registry['component']
+                    previous_site = ''
+                    for site in registry['sites']:
+                        if (not isinstance(site, dict) or set(site) != {'name', 'function_hash', 'function_source_hash', 'source_unit_hash', 'debug_path', 'contract', 'line'} or
+                                not isinstance(site['name'], str) or not site['name'] or site['name'] <= previous_site or site['name'] in names or type(site['line']) is not int or site['line'] < 1 or
+                                not isinstance(site['debug_path'], str) or not Path(site['debug_path']).is_absolute() or '\0' in site['debug_path'] or
+                                any(not isinstance(site[k], str) or not re.fullmatch('[0-9a-f]{64}', site[k]) for k in ('function_hash', 'function_source_hash', 'source_unit_hash', 'contract'))):
+                            raise ValueError('invalid raw profile source site')
+                        previous_site = site['name']; names.add(site['name']); count += 1
+                if count > 16384:
+                    raise ValueError('raw profile site bound exceeded')
+                identity = provider_identities[image]
+            else:
+                shared = provider.get('mode') == 'shared-fixed'
+                expected = provider_fields if shared else provider_fields - {'artifact_kind', 'owner_image', 'definition_owners', 'component_file_reads', 'image'}
+                if profile:
+                    expected = expected | {'profiling'}
+                if (set(provider) != expected or provider.get('schema') != ('nex.native-task-provider/3' if profile else 'nex.native-task-provider/2') or
+                        (not shared and (not profile or provider.get('mode') != 'static' or not application)) or provider.get('component') != row['component'] or
+                        (shared and (provider.get('owner_image') != row['component'] or provider.get('artifact_kind') != ('application' if application else 'shared-image')))):
+                    raise ValueError('invalid raw task provider fields/mode')
+                if profile:
+                    info = provider['profiling']
+                    if (not isinstance(info, dict) or set(info) != {'schema', 'registry_abi', 'catalog_file', 'catalog_hash', 'registries'} or
+                            info['schema'] != 'nex.native-task-profile/1' or type(info['registry_abi']) is not int or info['registry_abi'] != 1 or info['catalog_file'] != 'task-profile-catalog.json' or
+                            not isinstance(info['catalog_hash'], str) or not re.fullmatch('[0-9a-f]{64}', info['catalog_hash']) or
+                            not isinstance(info['registries'], list) or not 1 <= len(info['registries']) <= 128):
+                        raise ValueError('invalid raw task profile extension')
+                    previous_registry = ''; total_sites = 0; total_text = 0
+                    for registry in info['registries']:
+                        if (not isinstance(registry, dict) or set(registry) != {'component', 'accessor', 'site_count', 'text_bytes', 'catalog_hash'} or
+                                not isinstance(registry['component'], str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', registry['component']) or
+                                registry['component'] <= previous_registry or registry['accessor'] != 'nex_task_profile_registry_'+registry['component']+'_v1' or
+                                type(registry['site_count']) is not int or not 1 <= registry['site_count'] <= 16384 or
+                                type(registry['text_bytes']) is not int or not 1 <= registry['text_bytes'] <= 16*1024**2 or
+                                not isinstance(registry['catalog_hash'], str) or not re.fullmatch('[0-9a-f]{64}', registry['catalog_hash'])):
+                            raise ValueError('invalid raw task profile registry extension')
+                        previous_registry = registry['component']; total_sites += registry['site_count']; total_text += registry['text_bytes']
+                    if total_sites > 16384 or total_text > 16*1024**2:
+                        raise ValueError('raw task profile registry bound exceeded')
+                identity = provider.get('image') if shared else {'key': request['build_key'], 'hash': None, 'sha256': request['binary_sha256'], 'uuid': row['image_uuid'], 'runtime_key': None, 'runtime_hash': None}
+                provider_identities[image] = identity
+            if (not isinstance(identity, dict) or set(identity) != {'key', 'hash', 'sha256', 'uuid', 'runtime_key', 'runtime_hash'} or
                     any(identity.get(k) != row[v] for k, v in [('key', 'image_key'), ('sha256', 'image_sha256'), ('uuid', 'image_uuid')]) or
                     identity['sha256'] != sha256(image) or
                     (physical and any(physical[k] != identity[k] for k in ('key', 'sha256', 'uuid'))) or
                     (not physical and (identity['key'] != request['build_key'] or identity['sha256'] != request['binary_sha256']))):
-                raise ValueError('raw task provider does not describe its original image')
+                raise ValueError('raw task provenance does not describe its original image')
         result.append((row, source, image))
     return result
 
 
-def copy_task_provenance(inputs, stage, application, collector):
+def copy_task_provenance(inputs, stage, application, collector, profile=False):
     if not inputs:
         return None
     records = []
@@ -197,7 +263,7 @@ def copy_task_provenance(inputs, stage, application, collector):
         if (source.stat().st_size != row['bytes'] or sha256(source) != row['sha256'] or
                 target.stat().st_size != row['bytes'] or sha256(target) != row['sha256']):
             raise ValueError('task provenance changed during collection')
-        output = None if image is None else application if row['kind'] == 'application_provider' else collector.destinations.get(image)
+        output = None if image is None else application if row['kind'] in ('application_provider', 'application_profile_catalog') else collector.destinations.get(image)
         if image is not None and (output is None or not output.is_file() or stage not in output.parents):
             raise ValueError('task provider image was not retained by collector')
         records.append({'kind': row['kind'], 'path': relative.as_posix(),
@@ -206,14 +272,14 @@ def copy_task_provenance(inputs, stage, application, collector):
             'input_image_sha256': row['image_sha256'], 'input_uuid': row['image_uuid'],
             'output_image': None if output is None else output.relative_to(stage).as_posix(),
             'output_image_sha256': None if output is None else sha256(output)})
-    return {'schema': 'nex.application-task-provenance/1', 'metadata_rewritten': False,
+    return {'schema': 'nex.application-task-profile-provenance/1' if profile else 'nex.application-task-provenance/1', 'metadata_rewritten': False,
             'hash_algorithm': 'BLAKE3', 'files': records}
 
 def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patchelf'):
     if dpkg_notices and platform.system() != 'Linux':
         raise ValueError('--dpkg-notices is Linux-only')
-    if request.get('schema') not in ('nex.application-request/1', 'nex.application-request/2'):
-        raise ValueError('expected nex.application-request/1 or /2')
+    if request.get('schema') not in ('nex.application-request/1', 'nex.application-request/2', 'nex.application-request/3'):
+        raise ValueError('expected nex.application-request/1, /2 or /3')
     binary = Path(request['binary']).resolve(strict=True)
     if sha256(binary) != request['binary_sha256']:
         raise ValueError('application binary changed after compilation')
@@ -307,7 +373,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                        'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx),
                        'external_prerequisites': ['matching GNU loader/glibc runtime; system C++/GCC runtimes listed in system_libraries'],
                        'packager_patchelf': run([patchelf, '--version']).strip()}
-        task_provenance = copy_task_provenance(task_inputs, stage, application, collector)
+        task_provenance = copy_task_provenance(task_inputs, stage, application, collector, request['schema'] == 'nex.application-request/3')
         used_components = collector.copy_notices('licenses')
         foreign, foreign_components, foreign_system = copy_foreign(request, stage)
         used_components += foreign_components
@@ -337,7 +403,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                   'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
                   **details, 'files': collector.inventory()}
         if task_provenance:
-            report['task_provenance'] = task_provenance
+            report['task_profile_provenance' if request['schema'] == 'nex.application-request/3' else 'task_provenance'] = task_provenance
         if foreign:
             report['foreign_projection'] = foreign
         (stage / 'application.json').write_text(json.dumps(report, indent=2) + '\n')

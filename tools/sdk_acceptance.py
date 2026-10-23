@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -79,6 +79,209 @@ def task_sdk_regular(base,name,maximum=64*1024*1024):
         path=path/part;require(not path.is_symlink(),'task SDK path contains a symlink')
     require(path.is_file() and path.stat().st_size<=maximum,'task SDK input is not a bounded regular file')
     return path
+
+
+
+def retained_task_profile_build(receipt_root, check, artifact, component, compiler_build, completion_inputs):
+    """Verify one measured action against its own checked artifact index.
+
+    BLAKE3 pins come from the matching compiler's receipt; independent checks
+    compare every original/copied byte, SHA256 and size. No Python BLAKE3 claim.
+    """
+    check_id=check.get('id');name=component.get('component')
+    require(isinstance(check_id,str) and re.fullmatch('[A-Za-z_][A-Za-z_0-9-]{0,63}',check_id) and
+            name==artifact.get('component') and isinstance(name,str) and re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}',name),
+            'profile retention component/check association differs')
+    base='artifacts/'+check_id+'/'
+    prefix=base+'components/'+name+'/retained-build/'
+    require(component.get('retained_build')==prefix+'retained.json','profile retained record moved')
+    record_path=task_sdk_regular(receipt_root,component['retained_build'],2*1024*1024)
+    record_pin=check.get('artifacts',{}).get(component['retained_build'][len(base):],{})
+    require(isinstance(record_pin,dict) and set(record_pin)=={'hash','bytes'} and
+            type(record_pin['bytes']) is int and record_pin['bytes']==record_path.stat().st_size and
+            isinstance(record_pin['hash'],str) and re.fullmatch('[0-9a-f]{64}',record_pin['hash']),
+            'profile retained record lacks checked receipt BLAKE3 index/size')
+    record=json.loads(record_path.read_text())
+    require(isinstance(record,dict) and set(record)=={'schema','compiler_build','build_key','original_directory',
+            'metadata_rewritten','hash_algorithm','completion_schema','files'} and
+            record['schema']=='nex.retained-native-task-build/3' and record['completion_schema']=='nex.native-completion/6' and
+            record['metadata_rewritten'] is False and record['hash_algorithm']=='BLAKE3' and
+            record['compiler_build']==compiler_build and record['build_key']==artifact.get('build_key') and
+            isinstance(record['files'],list) and 11<=len(record['files'])<=2056,
+            'invalid measured retained completion6 record')
+    executable=Path(artifact['artifact']);original=Path(record['original_directory'])
+    require(executable.is_absolute() and executable.parent==original and original.resolve(strict=True)==original and original.name==record['build_key'] and
+            re.fullmatch('[0-9a-f]{64}',record['build_key']) and
+            executable.name==('app' if component['kind']=='executable' else 'libnex.a' if component['kind']=='static_library'
+                else 'libnex_'+name+'_'+record['build_key']+executable.suffix),
+            'profile retained artifact does not match measured component')
+    metadata=json.loads(task_sdk_regular(receipt_root,prefix+'build.json',8*1024*1024).read_text())
+    require(metadata.get('key')==record['build_key'] and metadata.get('compiler_build')==compiler_build and
+            metadata.get('completion_schema')=='nex.native-completion/6','retained profile build identity differs')
+    inputs=completion_inputs(metadata)
+    require(3<=len(inputs)<=2048 and inputs[:3]==['library-abi.json','task-provider.json','task-profile-catalog.json'],
+            'profile retained completion6 input order differs')
+    names=[executable.name,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',*inputs,'complete','debug.json']
+    require(len(names)==len(set(names))==len(record['files']),'profile retained mapping count differs')
+    mapped={};total=0;independent=[]
+    for expected,row in zip(names,record['files']):
+        require(isinstance(row,dict) and set(row)=={'original','retained','hash','bytes'} and
+                row['original']==str(original/expected) and row['retained']==prefix+expected and
+                type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
+                isinstance(row['hash'],str) and re.fullmatch('[0-9a-f]{64}',row['hash']),
+                'profile retained row/path/order differs')
+        copied=task_sdk_regular(receipt_root,row['retained']).read_bytes()
+        source=task_sdk_regular(original,expected).read_bytes();total+=len(copied)
+        require(total<=256*1024*1024 and copied==source and len(copied)==row['bytes'],
+                'profile retained bytes differ from measured originals')
+        require(check.get('artifacts',{}).get(row['retained'][len(base):])=={'hash':row['hash'],'bytes':row['bytes']},
+                'profile retained bytes lack the checked receipt BLAKE3 pin')
+        mapped[expected]=(row,copied)
+        independent.append({'path':row['retained'],'sha256':hashlib.sha256(copied).hexdigest(),'bytes':len(copied)})
+    require(re.fullmatch(b'[0-9a-f]{64}\n',mapped['complete'][1]),'profile completion digest is malformed')
+    provider=json.loads(mapped['task-provider.json'][1]);catalog=json.loads(mapped['task-profile-catalog.json'][1])
+    require(provider.get('schema')=='nex.native-task-provider/3' and provider.get('component')==name and
+            provider==metadata.get('task_provider') and metadata.get('task_provider_hash')==mapped['task-provider.json'][0]['hash'] and
+            catalog.get('schema')=='nex.task-profile-catalog/1' and catalog.get('registry_abi')==1 and
+            catalog.get('mode')==provider.get('mode') and
+            provider.get('profiling',{}).get('catalog_file')=='task-profile-catalog.json' and
+            isinstance(provider.get('profiling',{}).get('catalog_hash'),str) and
+            re.fullmatch('[0-9a-f]{64}',provider['profiling']['catalog_hash']),
+            'profile retained provider/catalog identity differs')
+    abi=json.loads(mapped['library-abi.json'][1])
+    for index,dependency in enumerate(abi.get('static_libraries',[])):
+        archive='libraries/%d.a'%index;sidecar='libraries/%d.task-provider.json'%index
+        catalog_path='libraries/%d.task-profile-catalog.json'%index
+        require(archive in mapped and sidecar in mapped and catalog_path in mapped and
+                dependency.get('hash')==mapped[archive][0]['hash'] and
+                dependency.get('task_provider_hash')==mapped[sidecar][0]['hash'] and
+                dependency.get('task_profile_catalog_hash')==mapped[catalog_path][0]['hash'] and
+                dependency.get('task_provider')==json.loads(mapped[sidecar][1]),'profile static frontier raw triple pins differ')
+    if 'image-inputs.json' in mapped:
+        links=json.loads(mapped['image-inputs.json'][1])
+        require(links.get('schema')=='nex.native-image-inputs/3' and
+                sum(row.get('kind')=='runtime' for row in links.get('images',[]))==1,
+                'profile retained shared closure/runtime differs')
+        runtime=next(row for row in links['images'] if row.get('kind')=='runtime')
+        if provider.get('mode')=='shared-fixed' and provider.get('artifact_kind') in ('shared-image','application'):
+            image=provider.get('image',{})
+            require(image.get('key')==record['build_key'] and image.get('hash')==mapped[executable.name][0]['hash'] and
+                    image.get('sha256')==hashlib.sha256(mapped[executable.name][1]).hexdigest() and
+                    image.get('runtime_key')==runtime.get('key') and image.get('runtime_hash')==runtime.get('hash'),
+                    'retained own profile image/runtime identity differs')
+        for image in links.get('images',[]):
+            path='images/'+Path(image['path']).name
+            require(path in mapped and image.get('hash')==mapped[path][0]['hash'] and
+                    image.get('sha256')==hashlib.sha256(mapped[path][1]).hexdigest(),'profile retained owned image pin differs')
+        for field in ('task_providers','task_profile_catalogs'):
+            for entry in links.get(field,[]):
+                path=entry.get('path')
+                require(path in mapped and entry.get('hash')==mapped[path][0]['hash'],
+                        'profile retained owned metadata pin differs')
+    return {'component':name,'build_key':record['build_key'],'record':str(record_path),'record_sha256':hashlib.sha256(record_path.read_bytes()).hexdigest(),'files':independent,
+        'bytes':total,'verification':'compiler-checked receipt BLAKE3 pins plus own-original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation'}
+
+
+
+def package_task_profile_provenance(package_root, package_meta, project_root):
+    """Bind raw profile metadata to this package action and relocated outputs."""
+    key=package_meta.get('build_key')
+    require(isinstance(key,str) and re.fullmatch('[0-9a-f]{64}',key),'packaged profile build key differs')
+    prefix='.nex/build/'+key+'/'
+    original=lambda name:task_sdk_regular(project_root,prefix+name,64*1024*1024)
+    metadata=json.loads(original('build.json').read_text())
+    require(metadata.get('key')==key and metadata.get('compiler_build')==package_meta.get('compiler_build') and
+            metadata.get('completion_schema')=='nex.native-completion/6' and metadata.get('profile')=='profile',
+            'packaged profile own completed build identity differs')
+    shared=metadata.get('completion_mode')=='shared-application'
+    require(shared or metadata.get('completion_mode')=='static-application','packaged profile is not an application')
+    links=json.loads(original('image-inputs.json').read_text()) if shared else {}
+    providers=links.get('task_providers',[]);catalogs=links.get('task_profile_catalogs',[]);images=links.get('images',[])
+    require(isinstance(providers,list) and isinstance(catalogs,list) and len(providers)==len(catalogs)<=128 and
+            [row.get('image') for row in providers]==sorted({row.get('image') for row in providers}) and
+            (not shared or links.get('schema')=='nex.native-image-inputs/3' and
+                sum(row.get('kind')=='runtime' for row in images)==1 and
+                len(providers)==sum(row.get('kind')=='library' for row in images)),
+            'packaged profile own loaded closure differs')
+    expected=[('application_provider','task-provider.json',metadata.get('task_provider_hash')),
+        ('application_profile_catalog','task-profile-catalog.json',metadata.get('task_profile_catalog_file_hash'))]
+    for provider in providers:
+        catalog=next((row for row in catalogs if row.get('image')==provider.get('image')),None)
+        require(catalog is not None and provider.get('component')==catalog.get('component'),
+                'packaged provider/catalog physical owner differs')
+        expected.extend([('owned_provider',provider['path'],provider['hash']),
+            ('owned_profile_catalog',catalog['path'],catalog['hash'])])
+    if shared:expected.append(('image_inputs','image-inputs.json',None))
+    expected.extend([('build','build.json',None),('complete','complete',None)])
+    provenance=package_meta.get('task_profile_provenance')
+    require(isinstance(provenance,dict) and set(provenance)=={'schema','metadata_rewritten','hash_algorithm','files'} and
+            provenance.get('schema')=='nex.application-task-profile-provenance/1' and
+            provenance.get('metadata_rewritten') is False and provenance.get('hash_algorithm')=='BLAKE3' and
+            isinstance(provenance.get('files'),list) and len(provenance['files'])==len(expected),
+            'packaged profile raw provenance envelope/count differs')
+    identities={};proof=[];total=0
+    for index,(row,(kind,name,pin)) in enumerate(zip(provenance['files'],expected)):
+        require(isinstance(row,dict) and set(row)=={'kind','path','input_hash','input_sha256','bytes','component',
+                'input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'} and
+                row.get('kind')==kind and row.get('path')=='provenance/task/%03d-'%index+Path(name).name and
+                type(row.get('bytes')) is int and 0<row['bytes']<=64*1024*1024 and
+                isinstance(row.get('input_hash'),str) and re.fullmatch('[0-9a-f]{64}',row['input_hash']) and
+                (pin is None or row['input_hash']==pin),'packaged profile raw row/order/pin differs')
+        raw=task_sdk_regular(package_root,row['path']).read_bytes();source=original(name).read_bytes();total+=len(raw)
+        sha=hashlib.sha256(raw).hexdigest()
+        require(total<=64*1024*1024 and raw==source and len(raw)==row['bytes'] and sha==row['input_sha256'] and
+                package_meta.get('files',{}).get(row['path'],{}).get('sha256')==sha and
+                package_meta['files'][row['path']].get('bytes')==len(raw),
+                'packaged profile raw bytes differ from own original/output inventory')
+        if kind in ('application_provider','owned_provider','application_profile_catalog','owned_profile_catalog'):
+            require(isinstance(row['component'],str) and isinstance(row['output_image'],str),
+                    'packaged profile metadata lost image association')
+            application=kind.startswith('application_')
+            owner=metadata['task_provider'] if application else None
+            if kind.endswith('provider'):
+                owner=json.loads(raw)
+                require(owner.get('schema')=='nex.native-task-provider/3' and owner.get('component')==row['component'] and
+                        owner.get('profiling',{}).get('schema')=='nex.native-task-profile/1',
+                        'packaged profile provider extension differs')
+                if application:
+                    require(owner==metadata['task_provider'] and row['output_image']==package_meta.get('entry'),
+                            'packaged profile application provider differs from own completed root')
+                else:
+                    pinrow=next(item for item in providers if item['path']==name)
+                    physical=next((image for image in images if Path(image['path']).name==Path(pinrow['image']).name),{})
+                    require(owner.get('component')==pinrow['component'] and owner.get('owner_image')==pinrow['component'] and
+                            owner.get('artifact_kind')=='shared-image' and physical.get('kind')=='library' and
+                            all(owner.get('image',{}).get(k)==physical.get(k) for k in ('key','hash','sha256','uuid')),
+                            'packaged profile provider differs from its own original loaded image')
+                identity=owner.get('image') if shared else {'key':key,'sha256':hashlib.sha256(original('app').read_bytes()).hexdigest(),
+                    'uuid':row['input_uuid']}
+                if application:
+                    require(identity.get('key')==key and identity.get('sha256')==hashlib.sha256(original('app').read_bytes()).hexdigest(),
+                            'packaged profile root image differs from own original bytes')
+                elif shared:
+                    root_image=metadata['task_provider'].get('image',{})
+                    require(all(identity.get(k)==root_image.get(k) for k in ('runtime_key','runtime_hash')),
+                            'packaged profile providers bind different runtime images')
+                require(isinstance(identity,dict) and (identity.get('key'),identity.get('sha256'),identity.get('uuid'))==
+                        (row['input_image_key'],row['input_image_sha256'],row['input_uuid']),
+                        'packaged profile original image identity differs')
+                identities[row['output_image']]=(row['component'],row['input_image_key'],row['input_image_sha256'],row['input_uuid'])
+            else:
+                catalog=json.loads(raw)
+                require(catalog.get('schema')=='nex.task-profile-catalog/1' and catalog.get('registry_abi')==1 and
+                        catalog.get('owner_image')==row['component'] and
+                        identities.get(row['output_image'])==(row['component'],row['input_image_key'],row['input_image_sha256'],row['input_uuid']),
+                        'packaged raw catalog differs from preceding physical provider')
+            output=task_sdk_regular(package_root,row['output_image'])
+            output_sha=hashlib.sha256(output.read_bytes()).hexdigest();inventory=package_meta.get('files',{}).get(row['output_image'],{})
+            require(output_sha==row['output_image_sha256']==inventory.get('sha256') and output.stat().st_size==inventory.get('bytes'),
+                    'packaged profile relocated image differs from output inventory')
+        else:
+            require(all(row[k] is None for k in ('component','input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256')),
+                    'nonprovider profile provenance claims image identity')
+        proof.append({'kind':kind,'original':str(original(name)),'path':row['path'],'sha256':sha,'bytes':len(raw),
+            'compiler_validated_input_hash':row['input_hash']})
+    return {'build_key':key,'files':proof,'verification':'matching compiler validated package completion BLAKE3; independent own-original/copied bytes, SHA256, sizes, raw metadata pins and relocated output inventory; no capture-index equivalence or Python BLAKE3 recomputation'}
 
 
 def package_task_provenance(package_root,package_meta,project_root):
@@ -258,6 +461,13 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 118, 0):
+        profiles=report.get('evidence',{}).get('task_provider_profiling',{})
+        require(all(profiles.get(key) is True for key in ('descriptor','native_reference','exact_source_calls',
+                'zero_provider_generic','physical_owners','defined_registry_accessors','one_runtime','managed_cleanup',
+                'event_only_completeness','root_limits','unused_read_excluded','warm_cache','measured_retained_completion6',
+                'raw_package_provenance','source_deleted_replay','copied_profile_without_resources','source_deleted_package_profile')),
+                'SDK acceptance lacks complete native task provider profiling delivery evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 117, 0):
         providers = report.get('evidence', {}).get('shared_task_providers', {})
         require(all(providers.get(key) is True for key in ('descriptor','actual_shared_images',
@@ -1941,6 +2151,185 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             retained=retained,retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
             retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation',
             physical_file_retirement_claim=False)
+
+    def task_provider_profiles():
+        import importlib.util
+        # Registered only after the matching compiler's generated-source proof.
+        feature=cli('describe')['task_provider_profiling'];identity=cli('describe','--kind','index')
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(feature==pack['task_provider_profiling'] and feature['public_enabled'] is True and
+                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/3' and
+                feature['registry_abi']==1 and feature['registry_bytes']==32 and
+                feature['execution_task_abi']==3 and not feature['runtime_load_unload'] and not feature['tracy'],
+                'installed task provider profiling descriptor differs')
+        directory=root/'task-provider-profile';directory.mkdir()
+        for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        limits={'steps':1000000,'timeout_ms':10000,'workers':2}
+        description={'schema':'nex.project-build/1','default_configuration':'measured',
+            'configurations':{'measured':{'profile':'profile','task_limits':limits}},'components':{
+                'leaf':{'kind':'static_library','root':'leaf','entry':'leaf/value.nex','entry_function':'work','exports':['read']},
+                'mid':{'kind':'shared_library','root':'mid','entry':'mid/value.nex','entry_function':'work','dependencies':{'leaf':'static'}},
+                'unused':{'kind':'shared_library','root':'unused','entry':'unused/value.nex','entry_function':'unused'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'mid':'dynamic','unused':'dynamic'}}}}
+        (directory/'nex.build.json').write_text(json.dumps(description))
+        (directory/'leaf/value.nex').write_text(r'''module installed_profile_leaf;
+fn helper(value:i64)->i64{let owned:list<str>=["A🌍\u0000λ"];assert(len(owned[0])==4);return value+1;}
+pub fn work(value:i64)->i64!{task}{task_yield();return helper(value);}
+pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
+''')
+        (directory/'mid/value.nex').write_text('module installed_profile_mid;import "../leaf/value.nex" as leaf;pub fn work(value:i64)->i64!{task}{task_yield();return leaf::work(value);}')
+        (directory/'unused/value.nex').write_text('module installed_profile_unused;fn identity<T>(value:T)->T{return value;}pub fn unused()->str{return identity("only provider generic");}')
+        (directory/'app/main.nex').write_text('module installed_profile_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(41));print(mid::work(41));}')
+        expected={'installed_profile_app::main':1,'installed_profile_mid::work':2,'installed_profile_leaf::work':2,
+            'installed_profile_leaf::helper':2,'installed_profile_leaf::read':0,
+            'installed_profile_unused::unused':0,'installed_profile_unused::identity<str>':0}
+        output='42\n42\n'
+        plan=cli('project','--kind','plan','--component','app',cwd=directory)
+        require(plan['external_tools_invoked'] is False and not (directory/'.nex').exists(),
+                'profiled provider readonly planning invoked tools/state')
+        source_plan={row['name']:row['task_linkage'] for row in plan['components']}
+        require(set(source_plan)=={'leaf','mid','unused','app'} and all(value['schema']=='nex.project-task-linkage/3' and
+                value['profiling']['schema']=='nex.project-task-profile/1' and value['profiling']['registry_abi']==1
+                for value in source_plan.values()),'profiled source ownership plan differs')
+        require(cli('eval',cwd=directory)['stdout']==output,'profile provider independent source oracle differs')
+        def checked(session,timeline=True):
+            require(session['schema']=='nex.profile-session/3' and session['stdout']==output and
+                    session['build']['schema']=='nex.profile-build/2','profiled provider session identity differs')
+            saved=json.loads(Path(session['output']).read_text())
+            require(saved['schema']=='nex.profile/3' and saved['build_key']==session['build_key'] and
+                    saved['build']['build_key']==session['build_key'] and saved['build']['compiler_build']==identity['compiler_build'] and
+                    all(saved['completeness'][key] is True for key in ('aggregates','memory','cpu','elapsed','lifetime')) and
+                    saved['completeness']['timeline'] is timeline,'profiled provider completeness/build differs')
+            functions={row['name']:row for row in saved['functions']}
+            require(len(functions)==len(saved['functions']) and set(functions)==set(expected),
+                    'provider profile source function set differs from independent fixture oracle')
+            for name,count in expected.items():
+                row=functions[name];require((row['calls'],row['completed'],row['aborted'])==(count,count,0),
+                    'provider exact source-call oracle differs: '+name)
+            require(all(row['terminal'] and row['active_invocations']==0 for row in saved['tasks']) and
+                    all(row['live']==0 and row['live_shallow_bytes']==0 and row['allocations']==row['frees'] for row in saved['memory']),
+                    'provider profile published before owned cleanup')
+            catalog=saved['task_provider_profile']['catalog'];registries=catalog['registries']
+            require({row['component']:row['owner_image'] for row in registries}=={'app':'app','leaf':'mid','mid':'mid','unused':'unused'} and
+                    {site['name'] for row in registries for site in row['sites']}==set(functions) and
+                    functions['installed_profile_unused::identity<str>']['node_id'] is None and
+                    functions['installed_profile_unused::identity<str>']['identity_scope']=='captured_project_component',
+                    'provider-only zero site/physical source owner differs')
+            return saved
+        profiled=cli('project','--kind','profile','--component','app',cwd=directory,timeout=300)
+        saved=checked(profiled['observation']);artifacts={row['component']:row for row in profiled['artifacts']}
+        require(saved['build_key']==artifacts['app']['build_key'],'profile command measured another artifact')
+        for name,registries in (('mid',('leaf','mid')),('unused',('unused',))):
+            symbols={}
+            for line in run(['nm','-g',artifacts[name]['artifact']]).splitlines():
+                words=line.split()
+                if len(words)>=2 and len(words[-2])==1:symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+            require(all(symbols.get('nex_task_profile_registry_'+component+'_v1',set()) & {'T','W'} for component in registries) and
+                    all(not symbols.get(symbol,set()) & {'T','W'} for symbol in
+                        ('nex_profile_enter','nex_profile_build_info','nex_task_profile_prepare_registries','nex_release')),
+                    'provider registry accessor is undefined or image duplicates profiling runtime')
+            if name=='unused':
+                debug=json.loads(Path(artifacts[name]['debug_manifest']).read_text())
+                generic=next(row for row in debug['functions'] if row['name']=='installed_profile_unused::identity<str>')
+                checked_generic=next(site for registry in saved['task_provider_profile']['catalog']['registries']
+                    for site in registry['sites'] if site['name']==generic['name'])
+                require(generic['function_hash']==checked_generic['function_hash'] and
+                        generic['function_source_hash']==checked_generic['function_source_hash'] and
+                        symbols.get(generic['native_symbol'],set()) & {'T','W'},
+                        'zero-call provider-only generic has no actual checked physical definition')
+        metadata=json.loads(Path(artifacts['app']['metadata']).read_text())
+        require(metadata['task_application']['task_file_reads'] is False and
+                profiled['native_runtime_image']['requirements']['task_file_reads'] is True,
+                'unused instrumented provider read code changed root grant policy')
+        require(all(row['cached'] for row in cli('project','--kind','build','--component','app',cwd=directory,timeout=300)['artifacts']),
+                'profile provider warm cache missed')
+        lowered=cli('project','--kind','profile','--component','app','--events','0','--',
+            '--nex-task-steps','500000','--nex-task-workers','1',cwd=directory,timeout=300)
+        reduced=checked(lowered['observation'],False)
+        require(reduced['task_execution']['effective']==dict(limits,steps=500000,workers=1) and reduced['dropped_events']>0,
+                'provider profile lost lowered root policy/event-only completeness')
+        task=cli('task','nex.build.json','--kind','init','--component','app','--configuration','measured',cwd=directory)
+        task['checks']=[{'id':'measure-provider','kind':'profile','program':'app','target':'native','configuration':'measured',
+            'entry':'installed_profile_app::main','scenario':'provider source calls over suspension',
+            'budget':{'max_calls':{name:str(count) for name,count in expected.items()},'max_peak_handles':'100000','max_peak_objects':'100000'},
+            'timeout_seconds':300}]
+        task['requirements']=[{'id':'measure-provider','text':'Measure the checked physical task provider closure',
+            'bindings':[{'program':'app','kind':'function','symbol':'installed_profile_app::main'}],
+            'targets':['native'],'checks':['measure-provider']}]
+        taskfile=directory/'task.json';taskfile.write_text(json.dumps(task))
+        accepted=cli('task',taskfile,'--kind','run','--directory',root/'task-provider-profile-capture',cwd=directory,timeout=600)
+        receipt=Path(accepted['output']);full=json.loads(receipt.read_text());check,=full['checks']
+        require(check['status']=='passed' and not check['budget_failures'],'provider profile reviewed budget failed')
+        command_file_sha256={}
+        for field in ('build','receipt'):
+            path=task_sdk_regular(receipt.parent,check[field],64*1024*1024)
+            relative=path.relative_to(receipt.parent/'artifacts/measure-provider').as_posix()
+            pin=check['artifacts'].get(relative,{})
+            require(isinstance(pin,dict) and set(pin)=={'hash','bytes'} and type(pin['bytes']) is int and
+                    pin['bytes']==path.stat().st_size and isinstance(pin['hash'],str) and re.fullmatch('[0-9a-f]{64}',pin['hash']),
+                    'measured profile command lacks checked artifact index/size')
+            command_file_sha256[check[field]]=hashlib.sha256(path.read_bytes()).hexdigest()
+        command_path=task_sdk_regular(receipt.parent,check['build'],16*1024*1024)
+        captured=captured_task_build_artifacts(json.loads(command_path.read_text()),source_plan)
+        measured=json.loads(task_sdk_regular(receipt.parent,check['receipt'],64*1024*1024).read_text())
+        captured_saved=checked(measured['response'],False)
+        require(captured_saved['build_key']==captured['app']['build_key']==measured['build_key'],
+                'provider profile capture associated a different CWD/build action')
+        spec=importlib.util.spec_from_file_location('sdk_profile_completion',resources/'tools/core_capsule.py')
+        capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
+        require({row['component'] for row in check['components']}==set(captured),'provider retained component set differs')
+        retained=[retained_task_profile_build(receipt.parent,check,captured[row['component']],row,
+            identity['compiler_build'],capsule.completion_inputs) for row in check['components']]
+        package=root/'task-provider-profile-package'
+        cli('project','--kind','package','--component','app','--directory',package,cwd=directory,timeout=300)
+        application_package=package/'apps/app';package_meta=json.loads((application_package/'application.json').read_text())
+        package_proof=package_task_profile_provenance(application_package,package_meta,directory)
+        original=directory/'.nex/build'/package_meta['build_key']
+        images=json.loads((original/'compilation.json').read_text())['owned_images']
+        require(sum(row['kind']=='runtime' for row in images)==1,'profile package closure has multiple runtimes')
+        copied=root/'task-provider-profile-copied';copied.mkdir();shutil.copy2(original/'app',copied/'app');shutil.copytree(original/'images',copied/'images')
+        shutil.rmtree(directory);loader_logs=[];raw_reports=[]
+        previous={key:environment.pop(key,None) for key in ('NEX_PROFILE_OUTPUT','NEX_PROFILE_EVENTS','NEX_TRACY','NEX_RESOURCE_DIR',
+            'DYLD_PRINT_LIBRARIES','DYLD_PRINT_TO_FILE','LD_DEBUG','LD_DEBUG_OUTPUT')}
+        try:
+            environment.update(NEX_PROFILE_EVENTS='0',NEX_TRACY='0',NEX_RESOURCE_DIR='/absent')
+            loader_key='DYLD_PRINT_LIBRARIES' if platform.system()=='Darwin' else 'LD_DEBUG'
+            environment[loader_key]='1' if platform.system()=='Darwin' else 'libs'
+            for label,executable in (('copied',copied/'app'),('package',application_package/'bin/app')):
+                raw_path=root/('task-provider-profile-'+label+'-runtime.json');environment['NEX_PROFILE_OUTPUT']=str(raw_path)
+                require(run([executable],cwd='/')==output,'source-deleted profile closure output differs')
+                loader=Path(report['commands'][-1]['stderr']);loader_logs.append(str(loader));lines=loader.read_text().splitlines()
+                if platform.system()=='Linux':lines=[line.split('calling init:',1)[1].strip() for line in lines if 'calling init:' in line]
+                require(all(sum(line.rstrip().endswith('/'+Path(image['path']).name) for line in lines)==1 for image in images),
+                        'source-deleted profile closure did not map each image exactly once')
+                runtime={Path(match).name for line in lines for match in re.findall(r'\S*libnex_runtime_[0-9a-f]{64}\.(?:dylib|so)',line)}
+                require(runtime=={Path(image['path']).name for image in images if image['kind']=='runtime'},
+                        'source-deleted provider profile mapped a different runtime')
+                raw=json.loads(raw_path.read_text());functions={row['name']:row for row in raw['functions']}
+                require(raw['schema']=='nex.profile-runtime/3' and raw['build']['build_key']==package_meta['build_key'] and
+                        len(functions)==len(raw['functions']) and set(functions)==set(expected) and
+                        all(functions[name]['calls']==count for name,count in expected.items()) and
+                        raw['completeness']['aggregates'] is True and raw['completeness']['memory'] is True and
+                        all(row['live']==0 for row in raw['memory']),'source-deleted raw3 profile differs')
+                raw_reports.append(str(raw_path))
+        finally:
+            for key,value in previous.items():
+                environment.pop(key,None)
+                if value is not None:environment[key]=value
+        replay=cli('task',receipt,'--kind','replay','--directory',root/'task-provider-profile-replay',timeout=600)
+        repeated=json.loads(Path(replay['output']).read_text());again,=repeated['checks']
+        require(replay['ok'] and repeated['programs']==full['programs'] and again['status']=='passed',
+                'source-deleted provider profile replay differs')
+        observed=json.loads((Path(replay['output']).parent/again['receipt']).read_text());checked(observed['response'],False)
+        report['evidence']['task_provider_profiling']={name:True for name in (
+            'descriptor','native_reference','exact_source_calls','zero_provider_generic','physical_owners',
+            'defined_registry_accessors','one_runtime','managed_cleanup','event_only_completeness','root_limits',
+            'unused_read_excluded','warm_cache','measured_retained_completion6','raw_package_provenance',
+            'source_deleted_replay','copied_profile_without_resources','source_deleted_package_profile')}
+        report['evidence']['task_provider_profiling'].update(receipt=str(receipt),replay=replay['output'],
+            source_oracle=expected,retained=retained,package_provenance=package_proof,loader_logs=loader_logs,command_file_sha256=command_file_sha256,
+            raw_reports=raw_reports,physical_file_retirement_claim=False)
 
     def graph_snapshot_recovery():
         original = root / 'snapshot-original'
@@ -3755,6 +4144,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('structured-task-debug', structured_task_debug),
                 ('static-task-providers', static_task_providers),
                 ('shared-task-providers', shared_task_providers),
+                ('task-provider-profiling', task_provider_profiles),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

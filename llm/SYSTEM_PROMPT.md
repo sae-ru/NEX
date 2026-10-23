@@ -7,6 +7,20 @@ authority must not be reconstructed as a pure watch input.
 
 # NEX coding prompt — language 0.20, protocol 2
 
+For native task-provider profiling, query `task_provider_profiling` and read
+`nex guide --kind task-provider-profile --json`. Treat pending enablement as
+unsupported; respect the exact `supported_actions` list even when public support
+is enabled. Profile test/build-test remains pending in the first slice. One
+running application owns the collector and the checked batch
+of actual component registries. Register/check zero-call provider-only exports
+and concrete generic sites too; never invent root graph node IDs. Source calls
+count once across resumes/images. Preserve CPU/active elapsed/lifetime and shallow
+memory meanings/completeness. Bind each profile/capture/replay/package operation
+to its own source/catalog/image closure; CWD/build keys may differ between actions.
+Raw catalogs/provider/build/complete bytes stay unchanged under relocation, with
+separate output SHA inventories. No runtime unload, provider logicaldebug/Tracy,
+HTTP/foreign or non-native profile support follows from a new metadata schema.
+
 For fixed shared task provider projects, first query
 `nex describe --field task_shared_providers --json` and read
 `nex guide --kind task-shared-providers --json`. Public enablement is separate
@@ -17,7 +31,8 @@ import one common runtime. A static dependency cannot be embedded twice in one
 loaded closure; independent application roots have independent ledgers. Do not
 retag static provider1 records as shared provider2. Exporting unused read code
 adds code support, not root authority. Runtime load/unload, callable/authority
-transport, provider profile/debug, HTTP/foreign and binary-only remain pending.
+transport, provider logical debug, HTTP/foreign and binary-only remain pending.
+Use the distinct `task_provider_profiling` contract for instrumented provider3 builds.
 
 Toolchain0.116 is integrating concrete static task providers. Before selecting
 that build arrangement, query `nex describe --field task_providers --json` and
@@ -88,13 +103,14 @@ returning a closure is not an imported task descriptor. Keep provider source and
 the declared static edge available, and inspect task_linkage ownership rather
 than accepting consumer recompilation as a provider proof. Fixed startup-linked shared task providers have their own task_shared_providers
 descriptor and guide; do not infer support from static task_providers. Provider
-task profile/logical debug, HTTP/foreign and runtime unload remain unsupported.
+logical debug, HTTP/foreign and runtime unload remain unsupported in that scope.
+Instrumented provider3 builds use the distinct `task_provider_profiling` contract.
 Use native task profiling only when the actual task_profiling descriptor reports
 source_support; read docs/profiling.md for its current CLI language/platform scope.
 Task schema2 separates source CPU, active elapsed and logical lifetime; a resume
 is not a new source call. Inspect each completeness flag before budgets. Event
 truncation alone does not invalidate complete call/shallow-memory aggregates.
-Task Tracy, async debugging and non-native task profilers remain pending.
+Task Tracy, provider logical debugging and non-native task profilers remain pending.
 The private task_profile_collector module alone does not enable source profiling.
 
 Keep genuine018 source, the matching SDK and a complete graph snapshot. Explicit

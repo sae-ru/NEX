@@ -1,21 +1,31 @@
-# Working124: fixed shared task providers in progress
+# Working125: checked native task-provider profiling development slice
 
-Toolchain0.117/language0.20 enables candidate OS startup-linked task provider
-images, static/shared frontiers, per-application ownership and a single common
-runtime. The11-case actual source suite passes, including real symbols/loader,
-component read requirements, independent roots, grant/limits and source-deleted
-retained replay/package/copy. Failed harness assumptions remain retained. A
-separate controlled private shared-image fence passes without claiming real
-regular-file physical retirement was held deterministically.
-Complete current regression, installedSDK29 and native platform acceptance are
-pending. No source/canonical/migration or execution ABI3 layout change is made.
-Provider profile/logical debug, HTTP/foreign, binary-only checking, callable or
-explicit authority transport and runtime load/unload remain unsupported. See
-[the contract](docs/task-shared-providers.md). Primary081 and frozen123/123b are
-preserved. The123 full141 stale-capability assertion and its same-compiler
-21-case repair/composite140+1 are retained separately. Matching installedSDK28
-passed28 phases/523 commands/262 resources, and four scoped Linux groups passed
-17 actual cases; see [exact123b evidence](docs/evidence/toolchain-0.116.0-task-providers.json).
+Toolchain0.118/language0.20 enables one collector and checked registry batch
+across static and fixed startup-linked task providers. Provider3/catalog1,
+completion6/linkage3/retained3/request3 and raw/saved/session3 are separate tooling
+formats; source syntax/canonical/migration and execution ABI3 remain unchanged.
+The matching ten-case source/report suite, including canonical cache-parent alias
+and internal-input symlink boundaries, passed. A separate private physical-drain
+fence/sanitizers and the exact scoped SDK30 phase body passed. Full current
+regression, matching installed SDK30 and supported platform gates remain pending.
+Profile test/build-test, runtime load/unload, provider logical debug, combined
+debug/profile, Tracy tasks, HTTP/foreign, authority/callable transport and
+non-native profilers remain unsupported. See docs/task-provider-profiling.md.
+Primary081 and prior checkpoints remain unchanged.
+
+# Preserved124d: fixed shared task providers
+
+Toolchain0.117.2/language0.20 passed a pristine full144 regression and matching
+installedSDK29/542 commands, with its original compiled source path absent and
+restored unchanged. Seven scoped LinuxARM64 groups and the separate actual
+startup-linked private image fence/sanitizers passed. This fixes atomic cached
+image publication while preserving loaded mappings and treats literal percent,
+Unicode and quote characters in parent paths as data. Original124b/c failures
+remain retained; they are not relabelled as passes. Exact identities and limits:
+[the124d summary](docs/evidence/toolchain-0.117.2-task-shared-providers.json).
+These are development-checkpoint results, without full Linux/installed Linux SDK,
+kernel source-isolation, root promotion or whole-objective completion claims.
+Provider profiling belongs to the separate125 slice above.
 
 # Preserved123/123b: concrete static task providers
 

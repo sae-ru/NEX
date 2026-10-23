@@ -4,20 +4,32 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.117 / язык0.20
+## Текущий шаг: toolchain0.118 / язык0.20
+
+- [x] Связать checked component registries с единым task collector через
+  static/shared provider boundaries, сохранив once-per-source-call semantics.
+- [x] Проверить source-count oracle, zero-call provider-only generics, actual
+  component/image attribution, limits/grants и cleanup без подмены RAM/CPU metrics.
+- [x] Проверить строгие raw3/catalog/image negatives, self-consistent wrong-owner
+  ledgers, canonical cache-parent aliases, physical fence и отдельные sanitizers.
+- [x] Проверить matching actual10 и reviewed capture/replay/raw package provenance;
+  точное тело SDK30 отдельно прошло15 командами, с каждым actual CWD/build key.
+- [ ] Пройти frozen full148, установленный SDK30 и scoped native platform gates.
+  Язык020, explicit migration и execution ABI3 не меняются. Profile test/build-test,
+  provider logical debugging, runtime unload, Tracy/HTTP/foreign остаются pending.
+
+## Сохранённый124d: toolchain0.117.2 / язык0.20
 
 - [x] Связать конкретные task-экспорты через OS startup-loaded shared images,
   смешанные static/shared frontiers и один общий runtime/root executor.
-- [x] Проверить реальные accessor symbols, per-application owner ledger,
-  immutable/result/Unicode семантику, root grant/limits и независимые roots.
-- [x] Проверить pins/cache, completion5 и raw retained provenance, capture/replay,
-  source-deleted copied app/package и отдельный physical-drain fence.
-- [x] После действительного native proof включить точную candidate discovery;
-  actual source suite11 и отдельный private shared-image fence пройдены.
-- [ ] Проверить общий frozen144 regression, установленный SDK29 и scoped native
-  platform gates.
-  Runtime load/unload, provider task profile/debug, HTTP/foreign и binary-only
-  providers не входят в этот шаг. Язык020 и execution ABI3 не меняются.
+- [x] Проверить symbols/loader, per-application owners, immutable/result/Unicode,
+  grant/limits, независимые roots и source-deleted retained replay/package/copy.
+- [x] Исправить реальный124b cache-image SIGSEGV atomic publication и124c literal
+  parent-path regressions; сохранить все исходные failures и loaded-image test.
+- [x] Пройти новый pristine full144, установленный SDK29/542 команды и семь
+  scoped LinuxARM64 groups; см. docs/evidence/toolchain-0.117.2-task-shared-providers.json.
+  Это отдельный development checkpoint; full Linux/installed Linux SDK, kernel
+  source isolation и root promotion не заявлены. Язык020/execution ABI3 прежние.
 
 ## Сохранённый123: toolchain0.116 / язык0.20
 

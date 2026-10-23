@@ -687,7 +687,7 @@ class Emitter {
     if(scoped)scopes.pop_back();debug.scope=previousDebugScope;return returned;
   }
   void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
-    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave"&&name!="nex_task_profile_prepare"&&name!="nex_wasm_leave";
+    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave"&&name!="nex_task_profile_prepare"&&name!="nex_task_profile_prepare_application_v1"&&name!="nex_wasm_leave";
     if(located)runtimeCalls.insert(name);
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
@@ -799,7 +799,7 @@ class Emitter {
   }
 public:
   explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
-  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={},const std::map<std::string,NativeTaskExport> *taskImports=nullptr,const std::set<std::string> *taskExports=nullptr,bool taskImageFileReads=false,bool taskInternalSteps=false){
+  std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={},const std::map<std::string,NativeTaskExport> *taskImports=nullptr,const std::set<std::string> *taskExports=nullptr,bool taskImageFileReads=false,bool taskInternalSteps=false,const std::string &profileRegistryAccessor={},const std::string &profileComponent={}){
     importedTaskCodes=taskImports;internalTaskSteps=taskInternalSteps;
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
     const auto computedNames=closure?std::set<std::string>{}:reachable(p,entry);
@@ -823,7 +823,7 @@ public:
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(tasks){
       declaration("nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
-      if(profiling)declaration("nex_task_profile_prepare","!llvm.ptr, i64");
+      if(profiling){declaration("nex_task_profile_prepare","!llvm.ptr, i64");if(!profileRegistryAccessor.empty())declaration("nex_task_profile_prepare_application_v1","");}
     }
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
     declaration("nex_foreign_invoke","!llvm.ptr, i64, !llvm.ptr, i64","!llvm.ptr");declaration("nex_foreign_configure","i64, !llvm.ptr");
@@ -853,7 +853,10 @@ public:
     if(taskImports)for(const auto &[name,f]:*taskImports)declaration(f.accessor,"","!llvm.ptr");
     if(tasks){
       taskDeclarations();
-      if(profiling)taskProfileMetadata(*tasks);
+      if(profiling){taskProfileMetadata(*tasks);if(!profileRegistryAccessor.empty()){
+        auto registry=metadataArray("nex_task_profile_registry_data_","!llvm.struct<(i64, !llvm.ptr, i64, !llvm.ptr)>",{{int64_t(1),taskProfileTable,int64_t(tasks->size()),rawGlobal(profileComponent)}});
+        out<<"  func.func @"<<profileRegistryAccessor<<"() -> !llvm.ptr {\n";auto value=fresh();line(value+" = llvm.mlir.addressof @"+registry+" : !llvm.ptr",main.span);line("func.return "+value+" : !llvm.ptr",main.span);out<<"  }\n";
+      }}
       const bool imageFileReads=taskImageFileReads||std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileReadOperation(op.operation);});});
       for(const auto &ir:*tasks){
         std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
@@ -944,8 +947,8 @@ public:
     // temporaries and release every live managed handle, including caller scopes.
     out<<"  func.func private @nex_application_entry(%nex_argc64: i64, %nex_argv: !llvm.ptr) -> i64 {\n";
     if(tasks&&profiling){
-      auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
-      call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
+      if(!profileRegistryAccessor.empty())call("nex_task_profile_prepare_application_v1",{},Type::Unit,main.span);else{auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
+      call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);}
     }
     if(tasks&&taskDebug){
       auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskDebugTable+" : !llvm.ptr",main.span);
@@ -1121,6 +1124,7 @@ struct TaskNativeLinkage {
   const std::set<std::string> &local,&complete,&exports;
   const std::map<std::string,NativeTaskExport> &imports;
   bool fileReads=false,internalSteps=false;
+  std::string profileRegistryAccessor{},profileComponent{};
 };
 TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false,const TaskNativeLinkage *linkage=nullptr){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
@@ -1137,7 +1141,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
   }
   TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.descriptorSymbol=nativeSymbol(function.name)+"__task_code_address";result.parameters=ir.parameters;
   for(const auto &slot:ir.slots)result.slotKinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
-  result.mlir=Emitter(p,optimized,profiling,nullptr,false,nullptr,taskDebug).run(entry,function.test,!application,&pure,&complete,bool(linkage),true,&tasks,taskLimits,linkage?&linkage->imports:nullptr,linkage?&linkage->exports:nullptr,linkage&&linkage->fileReads,linkage&&linkage->internalSteps);return result;
+  result.mlir=Emitter(p,optimized,profiling,nullptr,false,nullptr,taskDebug).run(entry,function.test,!application,&pure,&complete,bool(linkage),true,&tasks,taskLimits,linkage?&linkage->imports:nullptr,linkage?&linkage->exports:nullptr,linkage&&linkage->fileReads,linkage&&linkage->internalSteps,linkage?linkage->profileRegistryAccessor:std::string{},linkage?linkage->profileComponent:std::string{});return result;
 }
 }
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
@@ -1182,6 +1186,25 @@ NativeTaskLinkageMode effectiveNativeTaskLinkage(const BuildOptions &options){
     throw Error("E_TASK_PROVIDER","static and fixed shared task linkage selections conflict");
   return options.staticTaskABI?NativeTaskLinkageMode::Static:mode;
 }
+namespace {
+std::string taskArtifactName(NativeTaskArtifactKind kind){switch(kind){case NativeTaskArtifactKind::CodeArchive:return "code-archive";case NativeTaskArtifactKind::PicStage:return "pic-stage";case NativeTaskArtifactKind::SharedImage:return "shared-image";case NativeTaskArtifactKind::Application:return "application";}throw Error("E_TASK_PROVIDER","invalid task artifact kind");}
+bool taskComponentName(const std::string &name){static const std::regex pattern("[A-Za-z_][A-Za-z_0-9]{0,63}");return std::regex_match(name,pattern);}
+llvm::json::Object profileRegistryJSON(const NativeTaskProfileRegistry &r){llvm::json::Array sites;for(const auto &s:r.sites)sites.push_back(llvm::json::Object{{"name",s.name},{"function_hash",s.functionHash},{"function_source_hash",s.functionSourceHash},{"source_unit_hash",s.sourceUnitHash},{"debug_path",s.debugPath},{"contract",s.contract},{"line",s.line}});return llvm::json::Object{{"component",r.component},{"accessor",r.accessor},{"owner_image",r.ownerImage.empty()?llvm::json::Value(nullptr):llvm::json::Value(r.ownerImage)},{"sites",std::move(sites)}};}
+llvm::json::Object profileInfoJSON(const NativeTaskProfileInfo &p){llvm::json::Array rows;for(const auto &r:p.registries)rows.push_back(llvm::json::Object{{"component",r.component},{"accessor",r.accessor},{"site_count",r.siteCount},{"text_bytes",r.textBytes},{"catalog_hash",r.catalogHash}});return llvm::json::Object{{"schema","nex.native-task-profile/1"},{"registry_abi",1},{"catalog_file",p.catalogFile},{"catalog_hash",p.catalogHash},{"registries",std::move(rows)}};}
+NativeTaskProfileInfo parseProfileInfo(const llvm::json::Value &v){auto fail=[](){throw Error("E_TASK_PROVIDER","invalid task profile provider extension");};auto o=v.getAsObject();if(!o||o->size()!=5||o->getString("schema")!="nex.native-task-profile/1"||o->getInteger("registry_abi")!=1||o->getString("catalog_file")!="task-profile-catalog.json")fail();auto hash=o->getString("catalog_hash");auto rows=o->getArray("registries");if(!hash||!digestText(*hash)||!rows||rows->empty()||rows->size()>128)fail();NativeTaskProfileInfo result;result.catalogFile="task-profile-catalog.json";result.catalogHash=hash->str();uint64_t total=0,text=0;std::string previous;
+ for(const auto &v:*rows){auto r=v.getAsObject();if(!r||r->size()!=5)fail();auto c=r->getString("component"),a=r->getString("accessor"),h=r->getString("catalog_hash");auto n=r->getInteger("site_count"),b=r->getInteger("text_bytes");if(!c||!taskComponentName(c->str())||c->str()<=previous||!a||*a!=nativeTaskProfileRegistryAccessor(c->str())||!h||!digestText(*h)||!n||*n<=0||uint64_t(*n)>16384-total||!b||*b<=0||uint64_t(*b)>16777216-text)fail();previous=c->str();total+=*n;text+=*b;result.registries.push_back({c->str(),a->str(),h->str(),uint64_t(*n),uint64_t(*b)});}return result;
+}
+}
+std::string nativeTaskProfileRegistryAccessor(const std::string &component){if(!taskComponentName(component))throw Error("E_TASK_PROVIDER","invalid task profile component identity");return "nex_task_profile_registry_"+component+"_v1";}
+llvm::json::Object nativeTaskProfileCatalogJSON(const NativeTaskProfileCatalog &c){llvm::json::Array registries;for(const auto &r:c.registries)registries.push_back(profileRegistryJSON(r));return llvm::json::Object{{"schema","nex.task-profile-catalog/1"},{"registry_abi",1},{"mode",c.mode==NativeTaskLinkageMode::Static?"static":c.mode==NativeTaskLinkageMode::SharedFixed?"shared-fixed":"none"},{"artifact_kind",taskArtifactName(c.artifact)},{"owner_image",c.ownerImage.empty()?llvm::json::Value(nullptr):llvm::json::Value(c.ownerImage)},{"registries",std::move(registries)}};}
+NativeTaskProfileCatalog parseNativeTaskProfileCatalog(const llvm::json::Value &v){auto fail=[](){throw Error("E_TASK_PROVIDER","invalid task profile source catalog");};auto o=v.getAsObject();if(!o||o->size()!=6||o->getString("schema")!="nex.task-profile-catalog/1"||o->getInteger("registry_abi")!=1)fail();NativeTaskProfileCatalog c;auto mode=o->getString("mode"),kind=o->getString("artifact_kind");if(mode=="static")c.mode=NativeTaskLinkageMode::Static;else if(mode=="shared-fixed")c.mode=NativeTaskLinkageMode::SharedFixed;else fail();if(kind=="code-archive")c.artifact=NativeTaskArtifactKind::CodeArchive;else if(kind=="pic-stage")c.artifact=NativeTaskArtifactKind::PicStage;else if(kind=="shared-image")c.artifact=NativeTaskArtifactKind::SharedImage;else if(kind=="application")c.artifact=NativeTaskArtifactKind::Application;else fail();auto owner=o->get("owner_image");if(!owner)fail();if(auto text=owner->getAsString()){if(!taskComponentName(text->str()))fail();c.ownerImage=text->str();}else if(!owner->getAsNull())fail();
+ if((c.mode==NativeTaskLinkageMode::Static&&(c.artifact==NativeTaskArtifactKind::PicStage||c.artifact==NativeTaskArtifactKind::SharedImage))||(c.mode==NativeTaskLinkageMode::SharedFixed&&c.artifact==NativeTaskArtifactKind::CodeArchive))fail();const bool stage=c.artifact==NativeTaskArtifactKind::CodeArchive||c.artifact==NativeTaskArtifactKind::PicStage;if(stage!=c.ownerImage.empty())fail();
+ auto rows=o->getArray("registries");if(!rows||rows->empty()||rows->size()>128)fail();std::string previous;std::set<std::string> names;size_t total=0,bytes=0;
+ for(const auto &v:*rows){auto r=v.getAsObject();if(!r||r->size()!=4)fail();auto component=r->getString("component"),accessor=r->getString("accessor");auto rowOwner=r->get("owner_image");auto sites=r->getArray("sites");if(!component||!taskComponentName(component->str())||component->str()<=previous||!accessor||*accessor!=nativeTaskProfileRegistryAccessor(component->str())||!sites||sites->empty()||sites->size()>16384-total||!rowOwner)fail();NativeTaskProfileRegistry registry;registry.component=component->str();registry.accessor=accessor->str();previous=registry.component;total+=sites->size();if(auto text=rowOwner->getAsString()){if(!taskComponentName(text->str()))fail();registry.ownerImage=text->str();}else if(!rowOwner->getAsNull())fail();if(stage?!registry.ownerImage.empty():registry.ownerImage.empty()||(c.artifact==NativeTaskArtifactKind::SharedImage&&registry.ownerImage!=c.ownerImage))fail();std::string prior;
+  for(const auto &v:*sites){auto s=v.getAsObject();if(!s||s->size()!=7)fail();auto name=s->getString("name"),fh=s->getString("function_hash"),fs=s->getString("function_source_hash"),us=s->getString("source_unit_hash"),file=s->getString("debug_path"),contract=s->getString("contract");auto line=s->getInteger("line");if(!name||name->empty()||name->size()>4096||name->contains('\0')||name->str()<=prior||!names.insert(name->str()).second||!fh||!digestText(*fh)||!fs||!digestText(*fs)||!us||!digestText(*us)||!contract||!digestText(*contract)||!file||file->empty()||file->size()>32768||file->contains('\0')||!line||*line<1)fail();auto size=name->size()+file->size()+fh->size()+3;if(size>16777216-bytes)fail();bytes+=size;prior=name->str();registry.sites.push_back({name->str(),fh->str(),fs->str(),us->str(),file->str(),contract->str(),*line});}c.registries.push_back(std::move(registry));}
+ return c;
+}
+NativeTaskProfileInfo nativeTaskProfileInfo(const NativeTaskProfileCatalog &c,const std::string &file){auto validated=parseNativeTaskProfileCatalog(llvm::json::Value(nativeTaskProfileCatalogJSON(c)));NativeTaskProfileInfo p;p.catalogFile=file;p.catalogHash=hash(json(nativeTaskProfileCatalogJSON(validated),false));for(const auto &r:validated.registries){size_t bytes=0;for(const auto &s:r.sites)bytes+=s.name.size()+s.debugPath.size()+s.functionHash.size()+3;p.registries.push_back({r.component,r.accessor,hash(json(profileRegistryJSON(r),false)),r.sites.size(),bytes});}return parseProfileInfo(llvm::json::Value(profileInfoJSON(p)));}
 llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStage &stage){
   if(!stage.enabled)return nullptr;
   return llvm::json::Object{{"entry",stage.entry},{"descriptor_accessor",stage.descriptorAccessor},{"configured",taskLimitsJSON(stage.configured,true)},{"task_file_reads",stage.fileReads}};
@@ -1212,9 +1235,19 @@ llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
     result["definition_owners"]=std::move(owners);result["component_file_reads"]=std::move(reads);
     result["image"]=info.image?llvm::json::Value(llvm::json::Object{{"key",info.image->key},{"hash",info.image->digest},{"sha256",info.image->sha256},{"uuid",info.image->uuid},{"runtime_key",info.image->runtimeKey},{"runtime_hash",info.image->runtimeDigest}}):llvm::json::Value(nullptr);
   }
+  if(info.profiling){result["schema"]="nex.native-task-provider/3";result["profiling"]=profileInfoJSON(*info.profiling);}
   return result;
 }
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
+  if(auto object=value.getAsObject();object&&object->getString("schema")=="nex.native-task-provider/3"){
+    const bool shared=object->getString("mode")=="shared-fixed";if(object->size()!=(shared?19:14)||!object->get("profiling"))throw Error("E_TASK_PROVIDER","invalid profiled task provider shape");
+    auto profile=parseProfileInfo(*object->get("profiling"));auto base=llvm::json::Object(*object);base.erase("profiling");base["schema"]=shared?"nex.native-task-provider/2":"nex.native-task-provider/1";auto result=parseNativeTaskProvider(llvm::json::Value(std::move(base)));
+    std::map<std::string,uint64_t> expected;if(shared){for(const auto &[name,owner]:result.definitionOwners){(void)name;++expected[owner];}}else expected[result.component]=result.definitions.size();
+    std::set<std::string> present;for(const auto &registry:profile.registries){present.insert(registry.component);if(auto count=expected.find(registry.component);count!=expected.end()){if(count->second!=registry.siteCount)throw Error("E_TASK_PROVIDER","task profile registry count differs from physical definitions");}else if(shared||result.codeOnly)throw Error("E_TASK_PROVIDER","task profile registry names a foreign physical component");}
+    for(const auto &[component,count]:expected){(void)count;if(!present.contains(component))throw Error("E_TASK_PROVIDER","task profile omitted a physical component registry");}
+    if((shared||result.codeOnly)&&present.size()!=expected.size())throw Error("E_TASK_PROVIDER","task profile registry ownership differs");
+    result.profiling=std::move(profile);return result;
+  }
   auto invalid=[](){throw Error("E_TASK_PROVIDER","invalid or incompatible native task provider record");};
   const auto *o=value.getAsObject();if(!o)invalid();const bool shared=o->getString("schema")=="nex.native-task-provider/2";
   if(o->size()!=(shared?18:13)||o->getString("schema")!=(shared?"nex.native-task-provider/2":"nex.native-task-provider/1")||o->getString("mode")!=(shared?"shared-fixed":"static")||
@@ -1267,10 +1300,11 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   auto names=reachable(p,options.entry);for(const auto &entry:options.libraryExports){auto more=reachable(p,entry);names.insert(more.begin(),more.end());}
   if(taskProviders){
     if(!isPublicTaskLanguage(p)||!options.projectLibraryABI||options.taskComponent.empty()||options.taskComponent.size()>256||options.taskComponent.find('\0')!=std::string::npos||
-       options.profile=="profile"||options.taskDebug||server||!options.foreignCatalogue.empty()||(options.libraryEntry&&!options.codeOnlyLibrary)||
+       options.taskDebug||server||!options.foreignCatalogue.empty()||(options.libraryEntry&&!options.codeOnlyLibrary)||
        (taskMode==NativeTaskLinkageMode::Static&&(options.deferredLink||options.functionsOnly))||
        (taskMode==NativeTaskLinkageMode::SharedFixed&&(!options.positionIndependent||(!options.libraryEntry&&(!options.deferredLink||!options.functionsOnly)))))
-      throw Error("E_TASK_PROVIDER","task providers require checked static or fixed shared PIC staging in debug/release; profile/logical-debug/HTTP/foreign integration remains pending",p.function(options.entry).span);
+      throw Error("E_TASK_PROVIDER","task providers require checked static or fixed shared PIC staging; logical-debug/HTTP/foreign integration remains pending",p.function(options.entry).span);
+    if((taskMode==NativeTaskLinkageMode::SharedFixed||options.profile=="profile")&&!taskComponentName(options.taskComponent))throw Error("E_TASK_PROVIDER","task profile/shared component identity must be a bounded machine identifier");
     for(const auto &name:names)if(p.function(name).foreign)throw Error("E_TASK_PROVIDER","foreign task provider cohorts remain pending",p.function(name).span);
     if(!options.libraryEntry&&!tasks&&(taskMode==NativeTaskLinkageMode::SharedFixed||!options.libraries.empty()))throw Error("E_TASK_PROVIDER","a pure application cannot consume a task-provider cohort; no implicit task executor is created",p.function(options.entry).span);
     auto roots=options.libraryExports;if(options.libraryEntry)roots.push_back(options.entry);
@@ -1346,6 +1380,22 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
   auto schema=metadata.get("completion_schema"),inputs=metadata.get("completion_inputs");
   if(!schema&&!inputs)return {};
   auto values=inputs?inputs->getAsArray():nullptr;
+  if(schema&&schema->getAsString()=="nex.native-completion/6"){
+    auto invalid=[](){throw Error("E_CORE_BUILD","invalid profiled task completion input shape/order");};
+    auto mode=metadata.getString("completion_mode");const bool shared=mode=="shared-image"||mode=="shared-application";
+    if(!mode||(!shared&&mode!="static-archive"&&mode!="static-application"&&mode!="pic-stage")||!values||values->size()<3||values->size()>2048)invalid();
+    size_t next=0;std::vector<std::string> result;llvm::json::Array base;
+    auto take=[&](const std::string &kind,const std::string &path,bool keep=true){if(next>=values->size())invalid();auto o=(*values)[next++].getAsObject();if(!o||o->size()!=2||o->getString("kind")!=kind||o->getString("path")!=path)invalid();result.push_back(path);if(keep)base.push_back(llvm::json::Object(*o));};
+    auto kind=[&](){if(next>=values->size())return llvm::StringRef();auto o=(*values)[next].getAsObject();return o?o->getString("kind").value_or(""):llvm::StringRef();};
+    take("abi","library-abi.json");take("task_provider","task-provider.json");take("profile_catalog","task-profile-catalog.json",false);
+    if(shared){take("link_inputs","image-inputs.json");take("objects","objects.a");}
+    size_t archives=0;while(kind()=="static_library"){if(archives>=128)invalid();auto prefix="libraries/"+std::to_string(archives++);take("static_library",prefix+".a");take("static_task_provider",prefix+".task-provider.json");take("static_profile_catalog",prefix+".task-profile-catalog.json",false);}
+    if(!shared){if(next!=values->size())invalid();return result;}
+    while(kind()=="owned_image"){auto path=(*values)[next].getAsObject()->getString("path");if(!path)invalid();take("owned_image",path->str());}
+    while(kind()=="owned_task_provider"){auto path=(*values)[next].getAsObject()->getString("path");if(!path||!path->ends_with(".task-provider.json"))invalid();auto image=path->drop_back(std::string(".task-provider.json").size()).str();take("owned_task_provider",path->str());take("owned_profile_catalog",image+".task-profile-catalog.json",false);}
+    while(next<values->size()){auto path=(*values)[next].getAsObject()?(*values)[next].getAsObject()->getString("path"):std::nullopt;if(!path)invalid();take("owned_symbols",path->str());}
+    auto translated=llvm::json::Object(metadata);translated["completion_schema"]="nex.native-completion/5";translated["completion_inputs"]=std::move(base);(void)nativeCompletionInputs(translated);return result;
+  }
   if(schema&&schema->getAsString()=="nex.native-completion/4"){
     if(!values||values->size()<2||values->size()>258||(values->size()-2)%2||(*values)[0].getAsString()!="library-abi.json"||(*values)[1].getAsString()!="task-provider.json")
       throw Error("E_CORE_BUILD","invalid static task completion input schema/order");
@@ -1424,7 +1474,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto checkedPlan=planNative(p,options.entry,options.libraryExports,options.projectLibraryABI);
   std::map<std::string,std::string> checkedContracts;
   for(const auto &unit:checkedPlan.units){auto contract=llvm::json::parse(unit.contract);if(!contract)throw Error("E_INTERNAL","invalid native contract");contract->getAsObject()->erase("unit");checkedContracts[unit.identity]=hash(json(*contract,false));}
-  std::vector<NativeTaskProviderInfo> providers;std::vector<std::string> capturedProviderRecords,capturedLibraries;
+  std::vector<NativeTaskProviderInfo> providers;std::vector<std::string> capturedProviderRecords,capturedLibraries,capturedProfileRecords;std::vector<NativeTaskProfileCatalog> importedProfileCatalogs;
   std::map<std::string,NativeTaskExport> importedTaskExports;std::set<std::string> importedDefinitions;
   if(taskProviders){
     if(options.libraries.size()>128)throw Error("E_PROJECT_LIMIT","native build accepts at most128 dependency archives");
@@ -1436,6 +1486,13 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       auto parsed=llvm::json::parse(record);if(!parsed)throw Error("E_TASK_PROVIDER","invalid static task provider JSON");auto provider=parseNativeTaskProvider(*parsed);
       if(provider.mode!=taskMode||(taskMode==NativeTaskLinkageMode::SharedFixed&&provider.artifact!=NativeTaskArtifactKind::PicStage)||!provider.codeOnly||provider.language!=programLanguage(p)||provider.cohort!=library.abi||provider.component==options.taskComponent||!components.insert(provider.component).second)
         throw Error("E_TASK_PROVIDER","static task provider cohort, owner or source language differs");
+      if(bool(provider.profiling)!=(options.profile=="profile"))throw Error("E_TASK_PROVIDER","instrumented and uninstrumented task providers cannot be mixed");
+      if(provider.profiling){auto bytes=readFile((std::filesystem::path(library.taskProviderPath).parent_path()/provider.profiling->catalogFile).string());
+        if(bytes.size()>64*1048576)throw Error("E_TASK_PROVIDER","task profile catalog exceeds bound");auto parsed=llvm::json::parse(bytes);if(!parsed||hash(json(*parsed,false))!=provider.profiling->catalogHash)throw Error("E_TASK_PROVIDER","task profile catalog pin differs");auto catalog=parseNativeTaskProfileCatalog(*parsed);
+        if(catalog.mode!=taskMode||json(profileInfoJSON(nativeTaskProfileInfo(catalog)),false)!=json(profileInfoJSON(*provider.profiling),false)||catalog.registries.size()!=1||catalog.registries.front().component!=provider.component)throw Error("E_TASK_PROVIDER","task provider profile catalog differs from checked stage");
+        std::set<std::string> definitions;for(const auto &site:catalog.registries.front().sites){definitions.insert(site.name);auto contract=library.contracts.find(site.name);if(contract==library.contracts.end()||contract->second!=site.contract)throw Error("E_TASK_PROVIDER","task profile source contract differs");}
+        if(definitions!=provider.definitions)throw Error("E_TASK_PROVIDER","task profile catalog definition partition differs");capturedProfileRecords.push_back(std::move(bytes));importedProfileCatalogs.push_back(std::move(catalog));
+      }
       for(const auto &name:provider.definitions){
         if(!importedDefinitions.insert(name).second)throw Error("E_TASK_PROVIDER","duplicate physical static task provider definition: "+name);
         auto source=library.contracts.find(name);if(source==library.contracts.end())throw Error("E_TASK_PROVIDER","provider definition has no checked source contract: "+name);
@@ -1543,6 +1600,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::map<std::string,std::string> runtimeFiles;
   for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
   const std::vector<std::string> taskCohortFiles={"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_parallel.h","nex_parallel_value.h"};
+  if(taskProviders&&profiling){for(const auto &file:{"nex_task_profile.h","nex_task_profile.cpp","nex_task_profile_site.h"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));if(std::find(components.begin(),components.end(),"nex_task_profile.cpp")==components.end())components.push_back("nex_task_profile.cpp");}
   if(taskProviders)for(const auto &file:taskCohortFiles)if(!runtimeFiles.contains(file))runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
   std::string notices;
   auto license=[&](const std::string &name,const std::string &file){
@@ -1581,7 +1639,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       externalContracts[name]=contract;contracts[name]=contract;
     }
     auto input=llvm::json::Object{{"path",library.path},{"hash",library.digest},{"abi",library.abi},{"contracts",std::move(contracts)},{"parallel",library.parallelCalls}};
-    if(taskProviders){input["task_provider_path"]=library.taskProviderPath;input["task_provider_hash"]=library.taskProviderDigest;input["task_provider"]=nativeTaskProviderJSON(providers[i]);}
+    if(taskProviders){input["task_provider_path"]=library.taskProviderPath;input["task_provider_hash"]=library.taskProviderDigest;input["task_provider"]=nativeTaskProviderJSON(providers[i]);
+      if(profiling){input["task_profile_catalog_path"]=(std::filesystem::path(library.taskProviderPath).parent_path()/providers[i].profiling->catalogFile).string();input["task_profile_catalog_hash"]=hash(capturedProfileRecords[i]);}}
     libraryInputs.push_back(std::move(input));
   }
   auto buildRoot=std::filesystem::absolute(directory);
@@ -1621,10 +1680,26 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   llvm::json::Array exportInputs;for(const auto &entry:options.libraryExports)exportInputs.push_back(entry);
   llvm::json::Array plannedImports;for(const auto &name:options.taskImportedFunctions)plannedImports.push_back(name);
   std::string linkageIdentity=json(llvm::json::Object{{"static_task_abi",taskMode==NativeTaskLinkageMode::Static},{"task_linkage_mode",taskMode==NativeTaskLinkageMode::SharedFixed?"shared-fixed":taskMode==NativeTaskLinkageMode::Static?"static":"none"},{"task_component",options.taskComponent},{"task_imports",std::move(plannedImports)},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug},{"task_debug_abi",options.taskDebug?int64_t(nexrt::taskDebugCatalogABI):0},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"project_library_abi",options.projectLibraryABI},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"functions_only",options.functionsOnly},{"code_only",options.codeOnlyLibrary},{"exports",std::move(exportInputs)},{"libraries",llvm::json::Array(libraryInputs)}},false);
+  std::string profileCatalogText;NativeTaskProfileCatalog pendingProfileCatalog;
+  if(taskProviders&&profiling){
+    auto &catalog=pendingProfileCatalog;catalog.mode=taskMode;catalog.artifact=taskMode==NativeTaskLinkageMode::SharedFixed?NativeTaskArtifactKind::PicStage:options.libraryEntry?NativeTaskArtifactKind::CodeArchive:NativeTaskArtifactKind::Application;
+    if(!options.libraryEntry&&taskMode==NativeTaskLinkageMode::Static)catalog.ownerImage=options.taskComponent;
+    NativeTaskProfileRegistry local;local.component=options.taskComponent;local.accessor=nativeTaskProfileRegistryAccessor(options.taskComponent);local.ownerImage=catalog.ownerImage;
+    for(const auto &name:names)if(!importedDefinitions.contains(name)){const auto &f=p.function(name);const auto *unit=p.units.contains(f.unit)?&p.units.at(f.unit):nullptr;const auto &source=unit?unit->source:p.source;local.sites.push_back({name,hash(json(canonical(f),false)),hash(p.definition(f)),hash(source),sourcePaths(unit?unit->module:p.module,source).second,checkedContracts.at(name),int64_t(f.span.line)});}
+    catalog.registries.push_back(std::move(local));
+    if(!options.libraryEntry&&taskMode==NativeTaskLinkageMode::Static)for(const auto &imported:importedProfileCatalogs)for(auto registry:imported.registries){registry.ownerImage=options.taskComponent;catalog.registries.push_back(std::move(registry));}
+    std::sort(catalog.registries.begin(),catalog.registries.end(),[](const auto &a,const auto &b){return a.component<b.component;});(void)nativeTaskProfileInfo(catalog);
+    profileCatalogText=json(nativeTaskProfileCatalogJSON(catalog))+"\n";linkageIdentity+=":task-profile-catalog="+hash(profileCatalogText);
+  }
   std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET")+linkageIdentity);
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
+  // The linkage key pins the original checked inputs. Profile reports and
+  // retained receipts inspect the closed, byte-identical captured frontier.
+  // Leave historical unprofiled inventory path semantics unchanged.
+  if(taskProviders&&profiling)for(size_t i=0;i<libraryInputs.size();++i){auto &input=*libraryInputs[i].getAsObject();auto prefix=folder/"libraries"/std::to_string(i);input["path"]=prefix.string()+".a";input["task_provider_path"]=prefix.string()+".task-provider.json";input["task_profile_catalog_path"]=prefix.string()+".task-profile-catalog.json";}
   auto plan=std::move(checkedPlan);
   BuildResult result{(folder/(options.deferredLink?"objects.a":options.libraryEntry?"libnex.a":windows?"app.exe":"app")).string(),(folder/"program.mlir").string(),(folder/"program.ll").string(),key,false,notices.empty()?"":(folder/"THIRD_PARTY_NOTICES.txt").string(),(folder/"compilation.json").string(),0,0,target,compilerTarget,toolchain.hostCompatible,0,0,false,{},{}};
+  result.profileCatalog=std::move(pendingProfileCatalog);
   result.foreignCalls=foreign;
   result.parallelCalls=parallel;
   auto snapshot=p;
@@ -1671,8 +1746,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   result.libraryABI=hash(nativeSeed+coreABI+(tasks?runtimeIdentity:std::string()));
   if(taskProviders){
-    std::string cohort=coreABI;for(const auto &file:taskCohortFiles)cohort+=file+hash(runtimeFiles.at(file));
-    result.libraryABI=hash(json(llvm::json::Object{{"schema",taskMode==NativeTaskLinkageMode::SharedFixed?"nex.shared-task-cohort/1":"nex.static-task-cohort/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},{"compiler",compiler},{"compiler_identity",identity.output},{"target",target},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"toolchain_inputs",toolchain.identity},{"toolchain_fingerprint",toolchainFingerprint},{"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")},{"execution_abi",nexrt::taskCodeABI},{"runtime",hash(cohort)}},false));
+    std::string cohort=coreABI;for(const auto &file:taskCohortFiles)cohort+=file+hash(runtimeFiles.at(file));if(profiling)for(const auto &[file,data]:runtimeFiles)if(file=="nex_profile.cpp"||file=="nex_task_profile.cpp"||file=="nex_task_profile.h"||file.starts_with("third_party/tracy/"))cohort+=file+hash(data);if(profiling)cohort+=":instrumentation=task-profile/1:registry=1";
+    result.libraryABI=hash(json(llvm::json::Object{{"schema",taskMode==NativeTaskLinkageMode::SharedFixed?(profiling?"nex.shared-task-cohort/2":"nex.shared-task-cohort/1"):(profiling?"nex.static-task-cohort/2":"nex.static-task-cohort/1")},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},{"compiler",compiler},{"compiler_identity",identity.output},{"target",target},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"toolchain_inputs",toolchain.identity},{"toolchain_fingerprint",toolchainFingerprint},{"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")},{"execution_abi",nexrt::taskCodeABI},{"runtime",hash(cohort)}},false));
   }
   for(const auto &library:options.libraries)if(library.abi!=result.libraryABI)throw Error("E_PROJECT_ABI","native dependency target/toolchain/runtime ABI differs: "+library.path);
   std::set<std::string> localNames=names;
@@ -1698,6 +1773,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       info.exports[f.name]=surface;taskExportNames.insert(f.name);
     }}
     if(taskMode==NativeTaskLinkageMode::SharedFixed){for(const auto &name:localNames)info.definitionOwners[name]=options.taskComponent;info.componentFileReads[options.taskComponent]=taskFileReads;}
+    if(profiling)info.profiling=nativeTaskProfileInfo(result.profileCatalog);
     taskProviderText=json(nativeTaskProviderJSON(info))+"\n";result.taskProviderFile=(folder/"task-provider.json").string();result.taskProviderDigest=hash(taskProviderText);
   }
   if(taskMode==NativeTaskLinkageMode::SharedFixed&&!options.libraryEntry){
@@ -1743,6 +1819,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   llvm::json::Array completionInputs;completionInputs.push_back("library-abi.json");
   if(taskProviders)completionInputs.push_back("task-provider.json");
   for(size_t i=0;i<capturedLibraries.size();++i){completionInputs.push_back("libraries/"+std::to_string(i)+".a");if(taskProviders)completionInputs.push_back("libraries/"+std::to_string(i)+".task-provider.json");}
+  if(taskProviders&&profiling){completionInputs.clear();auto item=[&](const std::string &kind,const std::string &path){completionInputs.push_back(llvm::json::Object{{"kind",kind},{"path",path}});};item("abi","library-abi.json");item("task_provider","task-provider.json");item("profile_catalog","task-profile-catalog.json");for(size_t i=0;i<capturedLibraries.size();++i){auto prefix="libraries/"+std::to_string(i);item("static_library",prefix+".a");item("static_task_provider",prefix+".task-provider.json");item("static_profile_catalog",prefix+".task-profile-catalog.json");}}
   auto debugRecord=llvm::json::Object{{"schema",options.taskDebug?"nex.debug/2":"nex.debug/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"runtime_view","nex.runtime-view/3"},{"expression_protocol",options.taskDebug?"nex.task-debug-expression/1":"nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"source_map",std::move(debugSourceMap)},{"functions",std::move(debugFunctions)}};
   if(options.taskDebug)debugRecord["task_debug"]=llvm::json::Object{{"schema","nex.task-debug-view/1"},{"abi",nexrt::taskDebugCatalogABI},
     {"catalog_symbol","nex_task_debug_catalog_v1"},{"marker_symbol","nex_task_debug_stop_marker"},{"metadata_hash",taskDebugHash},
@@ -1774,11 +1851,11 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto completion=[&](){
     std::string contents=key;
     for(const auto &file:{std::filesystem::path(result.executable),std::filesystem::path(result.mlir),std::filesystem::path(result.llvm),std::filesystem::path(result.compilation),folder/"build.json",folder/"source-bundle.json"})contents+=hash(readFile(file.string()));
-    for(const auto &file:completionInputs)contents+=hash(readFile((folder/file.getAsString()->str()).string()));
+    for(const auto &file:completionInputs){auto name=file.getAsString();auto path=name?name->str():file.getAsObject()->getString("path")->str();contents+=hash(readFile((folder/path).string()));}
     return hash(contents)+"\n";
   };
   auto buildIntact=[&](){try{return readFile((folder/"complete").string())==completion();}catch(const std::exception &){return false;}};
-  auto taskIntact=[&](){return !taskProviders||(std::filesystem::is_regular_file(result.taskProviderFile)&&readFile(result.taskProviderFile)==taskProviderText);};
+  auto taskIntact=[&](){if(taskProviders&&profiling&&(!std::filesystem::is_regular_file(folder/"task-profile-catalog.json")||readFile((folder/"task-profile-catalog.json").string())!=profileCatalogText))return false;return !taskProviders||(std::filesystem::is_regular_file(result.taskProviderFile)&&readFile(result.taskProviderFile)==taskProviderText);};
   if(buildIntact()&&taskIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){verifyToolchain();result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=tasks?localNames.size():plan.units.size();return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
@@ -1796,7 +1873,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
   const NativeEmissionContext emissionContext{callableTargets,parallel};
   auto emittedTaskAccessors=taskExportNames;if(taskMode==NativeTaskLinkageMode::SharedFixed&&options.functionsOnly)emittedTaskAccessors.insert(p.function(options.entry).name);
-  const TaskNativeLinkage taskLinkage{localNames,names,emittedTaskAccessors,importedTaskExports,taskFileReads,taskMode==NativeTaskLinkageMode::SharedFixed};
+  const TaskNativeLinkage taskLinkage{localNames,names,emittedTaskAccessors,importedTaskExports,taskFileReads,taskMode==NativeTaskLinkageMode::SharedFixed,taskProviders&&profiling?nativeTaskProfileRegistryAccessor(options.taskComponent):std::string{},options.taskComponent};
   auto mlir=tasks?emitTaskNative(snapshot,options.entry,!options.libraryEntry&&!options.functionsOnly,options.profile!="debug",options.taskLimits,profiling,options.taskDebug,taskProviders?&taskLinkage:nullptr).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
@@ -1830,6 +1907,17 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile(result.llvm,unitArtifacts.empty()&&options.functionsOnly?lower(mlir,snapshot.path,compilerTarget,dataLayout):linkIR(unitArtifacts,snapshot.path));
   writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity",tasks?"continuation_image":"function"},{"revision",revision(p)},{"build_key",key},
     {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)},{"static_libraries",llvm::json::Array(libraryInputs)}})+"\n");
+  if(taskProviders&&profiling){
+    if(!tasks){const auto &registry=result.profileCatalog.registries.front();std::string code="#include \"nex_task_profile_site.h\"\nstatic const nexrt::TaskProfileCodeSite sites[]={\n";
+      for(const auto &site:registry.sites)code+="{"+json(site.name,false)+","+json(site.debugPath,false)+","+json(site.functionHash,false)+","+std::to_string(site.line)+"},\n";
+      code+="};\nstatic const nexrt::TaskProfileCodeRegistry registry={1,sites,"+std::to_string(registry.sites.size())+","+json(registry.component,false)+"};\nextern \"C\" const nexrt::TaskProfileCodeRegistry *"+registry.accessor+"(){return &registry;}\n";
+      auto source=folder/"task-profile-registry.cpp",object=folder/"task-profile-registry.o";writeFile(source.string(),code);auto args=command({"-std=c++20","-c",source.string(),"-I",runtimeProjection.string(),"-o",object.string(),"-g",optimization});if(options.positionIndependent)args.push_back("-fPIC");if(executeNativeBuildTool(args)!=0)throw Error("E_LINK","task profile registry compilation failed");link.push_back(object.string());
+    }
+    if(!options.libraryEntry&&!options.deferredLink){std::string code="#include \"nex_task_profile_site.h\"\n";for(const auto &r:result.profileCatalog.registries)code+="extern \"C\" const nexrt::TaskProfileCodeRegistry *"+r.accessor+"();\n";
+      code+="extern \"C\" void nex_task_profile_prepare_application_v1(){const nexrt::TaskProfileCodeRegistry *registries[]={";for(const auto &r:result.profileCatalog.registries)code+=r.accessor+"(),";code+="};nex_task_profile_prepare_registries(registries,"+std::to_string(result.profileCatalog.registries.size())+");}\n";
+      auto source=folder/"task-profile-entry.cpp",object=folder/"task-profile-entry.o";writeFile(source.string(),code);auto args=command({"-std=c++20","-c",source.string(),"-I",runtimeProjection.string(),"-o",object.string(),"-g",optimization});if(options.positionIndependent)args.push_back("-fPIC");if(executeNativeBuildTool(args)!=0)throw Error("E_LINK","task profile preparation bridge compilation failed");link.push_back(object.string());
+    }
+  }
   for(const auto &component:components){
     if(options.codeOnlyLibrary||options.deferredLink)continue;
     auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
@@ -1879,8 +1967,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(profiling&&!options.codeOnlyLibrary&&!options.deferredLink){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX
     // module objects across unrelated body edits and different entry programs.
-    auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name},
-      {"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)}},false);
+    auto identityObject=llvm::json::Object{{"schema",taskProviders?"nex.profile-build/2":"nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name},
+      {"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)}};if(taskProviders)identityObject["task_profile_catalog"]=result.taskProvider.profiling->catalogHash;auto identity=json(llvm::json::Value(std::move(identityObject)),false);
     auto source=(folder/"profile-identity.cpp").string(),object=(folder/"profile-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_profile_build_info(){return "+json(identity,false)+";}\n");
     if(executeNativeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
@@ -1892,14 +1980,21 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // Stage their output in an independent directory so literal project paths
   // (including percent signs) are never interpreted as that template.
   std::filesystem::path linkStage;auto linkOutput=result.executable;
-  for(size_t i=0;i<capturedLibraries.size();++i){writeFile((folder/"libraries"/(std::to_string(i)+".a")).string(),capturedLibraries[i]);if(taskProviders)writeFile((folder/"libraries"/(std::to_string(i)+".task-provider.json")).string(),capturedProviderRecords[i]);}
+  for(size_t i=0;i<capturedLibraries.size();++i){writeFile((folder/"libraries"/(std::to_string(i)+".a")).string(),capturedLibraries[i]);if(taskProviders)writeFile((folder/"libraries"/(std::to_string(i)+".task-provider.json")).string(),capturedProviderRecords[i]);if(taskProviders&&profiling)writeFile((folder/"libraries"/(std::to_string(i)+".task-profile-catalog.json")).string(),capturedProfileRecords[i]);}
   if(driverABI.isOSLinux()||windows||objectArchive){
     linkStage=createTemporaryDirectory("nex-link");linkOutput=(linkStage/std::filesystem::path(result.executable).filename()).string();
   }
   if(objectArchive){
     std::vector<std::string> archive={toolchain.archiver,"rcs",linkOutput};archive.insert(archive.end(),link.begin()+toolchain.driver.size(),link.end());link=std::move(archive);
   }else {
-    for(size_t i=0;i<capturedLibraries.size();++i)link.push_back((folder/"libraries"/(std::to_string(i)+".a")).string());
+    for(size_t i=0;i<capturedLibraries.size();++i){auto archive=(folder/"libraries"/(std::to_string(i)+".a")).string();
+      // The registered profile catalog describes the full checked machine
+      // footprint, including zero-call pure exports. Force these code-only
+      // archives into the final static application rather than registering
+      // metadata for archive members the linker never extracted.
+      if(taskProviders&&profiling){if(driverABI.isOSDarwin())link.insert(link.end(),{"-Xlinker","-force_load","-Xlinker",archive});else link.insert(link.end(),{"-Xlinker","--whole-archive",archive,"-Xlinker","--no-whole-archive"});}
+      else link.push_back(archive);
+    }
     if(windows)link.push_back("-static");
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
     if(options.taskDebug&&driverABI.isOSLinux())link.push_back("-Wl,--build-id=sha1");
@@ -1937,12 +2032,13 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);
   llvm::json::Object runtimeInputs;for(const auto &[file,contents]:runtimeFiles)runtimeInputs[file]=hash(contents);
   llvm::json::Object functionContracts;for(const auto &[name,digest]:result.functionContracts)functionContracts[name]=digest;
-  if(taskProviders)writeFile(result.taskProviderFile,taskProviderText);
+  if(taskProviders)writeFile(result.taskProviderFile,taskProviderText);if(taskProviders&&profiling)writeFile((folder/"task-profile-catalog.json").string(),profileCatalogText);
   auto abiRecord=llvm::json::Object{{"schema","nex.native-library-abi/1"},{"abi",result.libraryABI},{"compiler_build",NEX_BUILD_ID},{"target",target},{"code_only",options.codeOnlyLibrary},{"function_contracts",std::move(functionContracts)},{"static_libraries",llvm::json::Array(libraryInputs)}};
   if(taskProviders){abiRecord["task_provider"]=nativeTaskProviderJSON(result.taskProvider);abiRecord["task_provider_hash"]=result.taskProviderDigest;}
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Value(std::move(abiRecord)))+"\n");
   auto buildRecord=llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema",taskProviders?"nex.native-completion/4":"nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}};
   if(taskProviders){buildRecord["static_task_abi"]=taskMode==NativeTaskLinkageMode::Static;buildRecord["task_linkage_mode"]=taskMode==NativeTaskLinkageMode::SharedFixed?"shared-fixed":"static";buildRecord["task_application"]=nativeTaskApplicationStageJSON(result.taskApplication);buildRecord["task_component"]=options.taskComponent;buildRecord["task_provider"]=nativeTaskProviderJSON(result.taskProvider);buildRecord["task_provider_record"]="task-provider.json";buildRecord["task_provider_hash"]=result.taskProviderDigest;}
+  if(taskProviders&&profiling){buildRecord["completion_schema"]="nex.native-completion/6";buildRecord["completion_mode"]=taskMode==NativeTaskLinkageMode::SharedFixed?"pic-stage":options.libraryEntry?"static-archive":"static-application";buildRecord["task_profile_catalog"]=result.taskProvider.profiling->catalogHash;}
   writeFile((folder/"build.json").string(),json(llvm::json::Value(std::move(buildRecord))));
   verifyToolchain();writeFile((folder/"complete").string(),completion());return result;
 }

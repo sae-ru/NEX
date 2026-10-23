@@ -187,6 +187,7 @@ class SharedTaskProviders(harness.ToolchainCase):
             self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
 
+
     def test_mixed_static_frontiers_have_exact_final_image_owners(self):
         (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}')
         (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}')
@@ -358,7 +359,16 @@ server fn main()->unit!{task,fs,io}{
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{let f:fn()->i64!{task}=leaf::answer;return f();}')
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::answer();}')
-        self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
+        profiling=self.cli('describe','--field','task_provider_profiling')['value']
+        if profiling['public_enabled']:
+            profile_plan=self.project('plan',configuration='profile')
+            self.assertFalse(profile_plan['external_tools_invoked'])
+            for row in profile_plan['components']:
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/3')
+                self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
+                self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
+                self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
+        else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
         self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}')
         self.description['components']['app'].update(kind='server',entry_function='handle');self.save()

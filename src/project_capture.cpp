@@ -24,10 +24,11 @@ std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
 void taskLinkage(const JSON &value,const std::string &component){
   const auto &o=object(value);
-  const bool shared=o.getString("schema")=="nex.project-task-linkage/2";
-  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
+  const bool profiled=o.getString("schema")=="nex.project-task-linkage/3";
+  const bool shared=profiled||o.getString("schema")=="nex.project-task-linkage/2";
+  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
   auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
-  if((shared?(o.size()!=8||o.getString("mode")!="shared-fixed"||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
+  if((shared?(o.size()!=(profiled?9:8)||(o.getString("mode")!="shared-fixed"&&(!profiled||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
      !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
   auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
   std::set<std::string> defined,imported;
@@ -41,6 +42,15 @@ void taskLinkage(const JSON &value,const std::string &component){
   for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");
     if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskCodeRequirementsMask))fail("invalid captured task export");
     digest(row,"contract");digest(row,"signature");text(row,"accessor");
+  }
+  if(profiled){auto profile=o.getObject("profiling");auto sites=profile?profile->getArray("sites"):nullptr;
+    if(!profile||profile->size()!=3||profile->getString("schema")!="nex.project-task-profile/1"||profile->getInteger("registry_abi")!=1||!sites||sites->size()!=defined.size())fail("invalid captured profile source sites");
+    std::set<std::string> names;for(const auto &value:*sites){const auto &row=object(value);auto function=text(row,"name");auto line=row.getInteger("line");
+      if(row.size()!=6||!defined.contains(function)||!names.insert(function).second||!line||*line<1)fail("invalid captured profile source definition");
+      for(const auto *key:{"function_hash","function_source_hash","source_unit_hash","contract"})digest(row,key);
+      const auto &definition=*std::find_if(definitions->begin(),definitions->end(),[&](const auto &value){return value.getAsObject()->getString("function")==function;});
+      if(row.getString("contract")!=definition.getAsObject()->getString("contract"))fail("captured profile contract differs");
+    }
   }
   if(shared&&!o.get("load_closure")->getAsNull()){
     const auto &closure=object(*o.get("load_closure"));auto images=closure.getArray("images");

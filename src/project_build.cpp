@@ -372,10 +372,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   for(auto &item:prepared)if(taskABI.contains(item.name)){
     const auto &c=components.at(item.name);
     if((c.kind!="executable"&&c.kind!="static_library"&&c.kind!="shared_library")||
-       configuration.profile=="profile"||!options.foreign.empty())
-      fail("task binary providers require fixed native debug/release applications without HTTP or foreign code","E_TASK_PROVIDER");
-    if(options.kind=="debug"||options.kind=="profile"||item.options.taskDebug)
-      fail("logical debugging and profiling of task binary providers remain pending",options.kind=="debug"?"E_TASK_DEBUG":"E_TASK_PROVIDER");
+       !options.foreign.empty())
+      fail("task binary providers require fixed native applications without HTTP or foreign code","E_TASK_PROVIDER");
+    if(options.kind=="debug"||item.options.taskDebug)
+      fail("logical debugging of task binary providers remains pending","E_TASK_DEBUG");
     if(c.kind=="executable"&&!usesTaskEffects(item.program,item.options.entry))
       fail("a pure application cannot consume a task-provider cohort; no implicit task executor is created","E_TASK_PROVIDER");
     const bool shared=sharedTaskABI.contains(item.name);
@@ -495,9 +495,14 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         {"definitions",std::move(definitions)},{"imports",std::move(imports)},{"exports",std::move(exports)}};
     }
   }
-  for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed){
+  for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed||(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&configuration.profile=="profile")){
+    const bool shared=effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed;
     auto &linkage=*item.description.getAsObject()->getObject("task_linkage");
-    linkage["schema"]="nex.project-task-linkage/2";linkage["mode"]="shared-fixed";linkage["load_closure"]=nullptr;
+    linkage["schema"]=configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2";linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
+    if(configuration.profile=="profile"){llvm::json::Array sites;for(const auto &[name,contract]:taskDefinitions.at(item.name)){const auto &function=item.program.function(name);auto unit=item.program.units.find(function.unit);auto source=unit==item.program.units.end()?item.program.source:unit->second.source;
+      sites.push_back(Object{{"name",name},{"function_hash",hash(json(canonical(function),false))},{"function_source_hash",hash(item.program.definition(function))},{"source_unit_hash",hash(source)},{"contract",contract},{"line",int64_t(function.span.line)}});}
+      linkage["profiling"]=Object{{"schema","nex.project-task-profile/1"},{"registry_abi",1},{"sites",std::move(sites)}};
+    }
     const auto &kind=components.at(item.name).kind;if(kind!="executable"&&kind!="shared_library")continue;
     std::set<std::string> loaded(dynamicImages[item.name].begin(),dynamicImages[item.name].end());loaded.insert(item.name);
     std::map<std::string,std::string> owners;llvm::json::Array images;
@@ -508,7 +513,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         if(!inserted)fail("task load closure "+item.name+" contains duplicate machine definition "+function+" in "+old->second+" and "+name,"E_TASK_PROVIDER");
         definitions.push_back(Object{{"function",function},{"source_component",component},{"contract",contract}});
       }};
-      add(name);for(const auto &component:staticFrontiers[name]){add(component);statics.push_back(component);}
+      add(name);
+      if(shared)for(const auto &component:staticFrontiers[name]){add(component);statics.push_back(component);}
+      else for(const auto &component:order)if(binaryClosures[name].contains(component)){add(component);statics.push_back(component);}
       for(const auto &component:dynamicImages[name])dynamics.push_back(component);
       images.push_back(Object{{"component",name},{"kind",components.at(name).kind=="executable"?"application":"shared-image"},
         {"definitions",std::move(definitions)},{"static_components",std::move(statics)},{"dynamic_components",std::move(dynamics)}});
@@ -646,6 +653,10 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     auto result=buildProject(directory,manifest,source,projected);context->verify();fs::remove_all(temporary);return result;
   }
   auto cache=fs::absolute(options.directory.empty()?(root/".nex/build").string():options.directory);
+  // Resolve a caller-selected root alias before producing closed profile
+  // inputs. Individual completed files still reject internal symlinks.
+  if(configuration.profile=="profile"&&std::any_of(prepared.begin(),prepared.end(),[](const auto &item){return effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None;}))
+    cache=fs::weakly_canonical(cache);
   if(options.kind=="debug")cache=nativeDebugBuildDirectory(cache.string());
   std::optional<ForeignCatalogueSnapshot> foreign;
   if(!options.foreign.empty())foreign=inspectForeignCatalogue(options.foreign);
@@ -795,6 +806,12 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         llvm::json::Array nodes;
         for(const auto &function:item.program.functions)nodes.push_back(Object{{"name",function.name},{"hash",hash(json(canonical(function),false))},{"file",function.unit},{"id",nullptr}});
         auto profiling=options.profiling;profiling.arguments=arguments;profiling.directory=root.string();
+        TaskProfileSourceUnion profileSources;
+        if(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None){
+          for(const auto &source:prepared)if(taskDefinitions.contains(source.name))
+            profileSources.emplace(source.name,TaskProfileComponentSource{source.program,taskDefinitions.at(source.name)});
+          profiling.taskProviderSources=&profileSources;
+        }
         if(effectiveTaskLimits&&!options.explicitTimeout)
           profiling.timeout=std::max(30u,unsigned((effectiveTaskLimits->timeoutMs+999)/1000+5));
         std::unique_ptr<ServerWorkloadRun> workloadRun;

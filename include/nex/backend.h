@@ -13,6 +13,32 @@ struct NativeTaskExport {
   std::string contract, signature, accessor;
   int64_t requirements=0;
 };
+struct NativeTaskProfileSite {
+  std::string name,functionHash,functionSourceHash,sourceUnitHash,debugPath,contract;
+  int64_t line=0;
+};
+struct NativeTaskProfileRegistry {
+  std::string component,accessor,ownerImage;
+  std::vector<NativeTaskProfileSite> sites;
+};
+struct NativeTaskProfileCatalog {
+  NativeTaskLinkageMode mode=NativeTaskLinkageMode::None;
+  NativeTaskArtifactKind artifact=NativeTaskArtifactKind::CodeArchive;
+  std::string ownerImage;
+  std::vector<NativeTaskProfileRegistry> registries;
+};
+struct NativeTaskProfileRegistryInfo {
+  std::string component,accessor,catalogHash;
+  uint64_t siteCount=0,textBytes=0;
+};
+struct NativeTaskProfileInfo {
+  std::string catalogFile,catalogHash;
+  std::vector<NativeTaskProfileRegistryInfo> registries;
+};
+std::string nativeTaskProfileRegistryAccessor(const std::string &component);
+llvm::json::Object nativeTaskProfileCatalogJSON(const NativeTaskProfileCatalog &);
+NativeTaskProfileCatalog parseNativeTaskProfileCatalog(const llvm::json::Value &);
+NativeTaskProfileInfo nativeTaskProfileInfo(const NativeTaskProfileCatalog &,const std::string &file="task-profile-catalog.json");
 struct NativeTaskProviderInfo {
   bool enabled=false, codeOnly=false, taskFileReads=false;
   std::string component, cohort, language;
@@ -25,6 +51,7 @@ struct NativeTaskProviderInfo {
   std::map<std::string,std::string> definitionOwners{};
   std::map<std::string,bool> componentFileReads{};
   std::optional<NativeTaskImageIdentity> image{};
+  std::optional<NativeTaskProfileInfo> profiling{};
 };
 struct NativeTaskApplicationStage {
   bool enabled=false;
@@ -89,6 +116,7 @@ struct BuildResult {
   NativeTaskProviderInfo taskProvider{};
   std::string taskProviderFile{},taskProviderDigest{};
   NativeTaskApplicationStage taskApplication{};
+  NativeTaskProfileCatalog profileCatalog{};
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.

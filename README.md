@@ -6,16 +6,24 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.117.2 / language0.20**.
-Working124d adds atomic publication of captured native images: warm builds leave
-unchanged files untouched and repairs replace an inode rather than truncating a
-loaded library. Its exact regression/SDK/platform acceptance remains pending.
-Working124 enables candidate fixed startup-linked shared native task providers,
-checked per-application image ownership and one common runtime. The11-case actual
-source suite and separate controlled private image fence pass. Full144 regression,
-installedSDK29 and platform acceptance remain pending. Query
-`nex describe --field task_shared_providers --json` and read
-[shared task providers](docs/task-shared-providers.md).
+This isolated development source is **toolchain0.118.0 / language0.20**.
+Working125 enables a development slice of checked native task-provider profiling
+across concrete static archives and fixed startup-linked shared images. Its
+matching ten-case source/report suite, separate private physical-drain fence and
+exact scoped SDK30 phase body passed. Query
+`nex describe --field task_provider_profiling --json` and read
+[provider task profiling](docs/task-provider-profiling.md). Full current regression,
+matching installed SDK30 and platform acceptance remain pending. Language/canonical
+identity, migration and execution ABI3 remain unchanged.
+
+Preserved124d / toolchain0.117.2 passed a pristine full144 regression and matching
+installedSDK29/542 commands. Seven scoped LinuxARM64 groups and the separate
+private image fence/sanitizers passed. It fixes atomic cache-image publication
+and literal parent-path handling; original124b/c failures remain retained. See the
+[exact124d development checkpoint](docs/evidence/toolchain-0.117.2-task-shared-providers.json)
+and [shared task providers](docs/task-shared-providers.md). These results cover
+that snapshot, without a full Linux/installed Linux SDK or kernel source-isolation
+claim. They do not validate Working125 provider profiling.
 
 Preserved123 adds concrete static task providers with checked source and real
 code-only archives. Its17-case scoped suite and production SDK phase body passed.

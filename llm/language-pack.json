@@ -241,9 +241,13 @@
     "project_static_task_linkage_schema": "llm/project-static-task-linkage.schema.json",
     "task_shared_providers": "docs/task-shared-providers.md",
     "native_shared_task_provider_schema": "llm/native-shared-task-provider.schema.json",
-    "project_task_linkage_schema": "llm/project-task-linkage.schema.json"
+    "project_task_linkage_schema": "llm/project-task-linkage.schema.json",
+    "task_provider_profiling": "docs/task-provider-profiling.md",
+    "native_profiled_task_provider_schema": "llm/native-profiled-task-provider.schema.json",
+    "task_profile_catalog_schema": "llm/task-profile-catalog.schema.json",
+    "project_profiled_task_linkage_schema": "llm/project-profiled-task-linkage.schema.json"
   },
-  "document_access": "nex guide --kind task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
+  "document_access": "nex guide --kind task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -1406,6 +1410,65 @@
     "acceptance_pending": [
       "full current144-group regression",
       "matching installed SDK29",
+      "supported native platform acceptance"
+    ]
+  },
+  "task_provider_profiling": {
+    "status": "development_checked_native_task_provider_profiles",
+    "public_enabled": true,
+    "source_support": true,
+    "language": "0.20",
+    "guide": "docs/task-provider-profiling.md",
+    "configuration": "profile",
+    "source_required": true,
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "static_linkage": true,
+    "fixed_shared_linkage": true,
+    "execution_task_abi": 3,
+    "descriptor_bytes": 88,
+    "registry_abi": 1,
+    "registry_bytes": 32,
+    "record_schema": "nex.native-task-provider/3",
+    "catalog_schema": "nex.task-profile-catalog/1",
+    "completion_schema": "nex.native-completion/6",
+    "plan_schema": "nex.project-task-linkage/3",
+    "retained_build_schema": "nex.retained-native-task-build/3",
+    "runtime_schema": "nex.profile-runtime/3",
+    "report_schema": "nex.profile/3",
+    "session_schema": "nex.profile-session/3",
+    "build_schema": "nex.profile-build/2",
+    "supported_actions": [
+      "build",
+      "run",
+      "profile",
+      "package"
+    ],
+    "collector_ownership": "one collector and one checked registry batch per running application physical load closure",
+    "source_attribution": "checked component source catalogs, including unused concrete provider definitions",
+    "source_calls": "one logical activation across suspension and image boundaries",
+    "root_limits_and_grants": "preserved root execution policy; catalogs do not grant authority",
+    "reviewed_capture_replay": true,
+    "logical_debugging": false,
+    "combined_debug_profile": false,
+    "runtime_load_unload": false,
+    "authority_transport": false,
+    "callable_transport": false,
+    "foreign": false,
+    "binary_only": false,
+    "http_task_handlers": false,
+    "tracy": false,
+    "reference": false,
+    "typescript": false,
+    "windows": false,
+    "wasm": false,
+    "acceptance_pending": [
+      "matching hardened compiler source and ownership checks",
+      "profile configuration test/build-test workflow",
+      "full current148-group regression",
+      "matching installed SDK30",
       "supported native platform acceptance"
     ]
   }

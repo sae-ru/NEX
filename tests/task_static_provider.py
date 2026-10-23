@@ -446,7 +446,15 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
             for row in closure['images'][0]['definitions']))
         self.description=original
         self.save()
-        self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
+        profiling=self.cli('describe','--field','task_provider_profiling')['value']
+        if profiling['public_enabled']:
+            profile_plan=self.project('plan',configuration='profile')
+            self.assertFalse(profile_plan['external_tools_invoked'])
+            for row in profile_plan['components']:
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/3')
+                self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
+                self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
+        else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
         self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.assertFalse((self.root/'.nex').exists())
 

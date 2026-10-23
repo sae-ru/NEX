@@ -82,7 +82,8 @@ struct State {
   uint64_t eventLimit=100000,droppedEvents=0,droppedFunctions=0,droppedFrames=0,droppedAllocations=0,untrackedFrees=0,nextThread=0;
 #ifdef NEX_TASK_PROFILE_ENABLED
   std::unique_ptr<nexrt::TaskProfileCollector> collector;
-  const nexrt::TaskProfileCodeSite *siteBase=nullptr;size_t siteCount=0;
+  struct ProfileRange {uintptr_t begin=0,end=0;size_t first=0,count=0;std::string component;};
+  std::vector<ProfileRange> ranges;size_t siteCount=0;bool providerProfile=false;
   std::vector<TaskMetadata> metadata;std::vector<size_t> siteLookup;
   std::unique_ptr<TaskAllocation[]> taskAllocations;
   std::unique_ptr<SiteAllocations[]> siteAllocations;
@@ -333,28 +334,45 @@ void taskFree(const void *pointer)noexcept{
 }
 }
 namespace {
-void prepareTaskProfile(const nexrt::TaskProfileCodeSite *sites,int64_t count){
-  // Even an early rejection unwinds the application's ordinary profile hook.
-  // Select the dormant task route first so that cleanup cannot start Tracy or
-  // lazily construct the synchronous collector for this task image.
+void prepareTaskProfiles(const nexrt::TaskProfileCodeRegistry *const *registries,int64_t registryCount,bool providers){
   taskRoute.store(true,std::memory_order_release);
   if(auto *tracy=std::getenv("NEX_TRACY");tracy&&std::strcmp(tracy,"1")==0)throw nexrt::DataError("E_TASK_PROFILE","task Tracy capture remains pending; use a local task profile report");
-  if(count<=0||count>int64_t(nexrt::maximumTaskProfileCodeSites)||!sites)throw nexrt::DataError("E_PROFILE_INIT","invalid task profile site registry");
+  if(registryCount<=0||registryCount>int64_t(nexrt::maximumTaskProfileRegistries)||!registries)throw nexrt::DataError("E_PROFILE_INIT","invalid task profile registry count");
+  std::array<const nexrt::TaskProfileCodeRegistry*,nexrt::maximumTaskProfileRegistries> ordered{};size_t total=0;
+  for(int64_t i=0;i<registryCount;++i){const auto *r=registries[i];
+    if(!r||r->abi!=nexrt::taskProfileRegistryABI||r->count<=0||size_t(r->count)>nexrt::maximumTaskProfileCodeSites-total||!r->sites||reinterpret_cast<uintptr_t>(r->sites)%alignof(nexrt::TaskProfileCodeSite)||!r->component)throw nexrt::DataError("E_PROFILE_INIT","invalid task profile registry ABI/range");
+    size_t n=0;for(;n<65&&r->component[n];++n){const auto c=r->component[n];if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_'||(n&&c>='0'&&c<='9')))throw nexrt::DataError("E_PROFILE_INIT","invalid task profile component");}
+    if(!n||n>64)throw nexrt::DataError("E_PROFILE_INIT","invalid task profile component length");
+    const auto begin=reinterpret_cast<uintptr_t>(r->sites);const auto bytes=size_t(r->count)*sizeof(nexrt::TaskProfileCodeSite);
+    if(bytes>std::numeric_limits<uintptr_t>::max()-begin)throw nexrt::DataError("E_PROFILE_INIT","task profile range overflows");
+    for(int64_t j=0;j<i;++j){const auto *q=ordered[j];const auto other=reinterpret_cast<uintptr_t>(q->sites);const auto end=other+size_t(q->count)*sizeof(nexrt::TaskProfileCodeSite);
+      if(!std::strcmp(q->component,r->component)||(begin<end&&other<begin+bytes))throw nexrt::DataError("E_PROFILE_INIT","duplicate or overlapping task profile registry");}
+    ordered[i]=r;total+=size_t(r->count);
+  }
+  std::sort(ordered.begin(),ordered.begin()+registryCount,[](auto *a,auto *b){return std::strcmp(a->component,b->component)<0;});
   const auto *output=std::getenv("NEX_PROFILE_OUTPUT");if(!output||!*output)return;
   try{
-    auto &s=state();if(s.collector){if(s.siteBase!=sites||s.siteCount!=size_t(count))throw nexrt::DataError("E_PROFILE_INIT","task profile image registry cannot change during execution");return;}
-    size_t textBytes=0;s.metadata.reserve(count);
-    for(int64_t i=0;i<count;++i){
-      TaskMetadata site;auto copy=[&](const char *text){if(!text)throw nexrt::DataError("E_PROFILE_INIT","task profile site string is absent");size_t n=0;while(n<nexrt::maximumTaskProfileCodeTextBytes-textBytes&&text[n])++n;if(n==nexrt::maximumTaskProfileCodeTextBytes-textBytes)throw nexrt::DataError("E_PROFILE_INIT","task profile site text exceeds its bound");textBytes+=n;return std::string(text,n);};
-      site.name=copy(sites[i].name);site.file=copy(sites[i].file);site.content=copy(sites[i].content);site.line=sites[i].line;
-      if(site.name.empty()||site.content.empty()||site.line<0)throw nexrt::DataError("E_PROFILE_INIT","invalid task profile source identity");s.metadata.push_back(std::move(site));
+    auto &s=state();if(s.collector){
+      if(s.providerProfile!=providers||s.ranges.size()!=size_t(registryCount))throw nexrt::DataError("E_PROFILE_INIT","task profile registry cannot change during execution");
+      for(int64_t i=0;i<registryCount;++i)if(s.ranges[i].begin!=reinterpret_cast<uintptr_t>(ordered[i]->sites)||s.ranges[i].count!=size_t(ordered[i]->count)||s.ranges[i].component!=ordered[i]->component)throw nexrt::DataError("E_PROFILE_INIT","task profile registry cannot change during execution");return;
     }
-    size_t lookupSize=1;while(lookupSize<size_t(count)*2)lookupSize*=2;s.siteLookup.assign(lookupSize,0);
-    std::vector<nexrt::TaskProfileSite> registration;registration.reserve(count);
-    for(size_t i=0;i<size_t(count);++i){const auto &site=s.metadata[i];auto at=size_t(siteHash(site.name.c_str(),site.file.c_str(),site.content.c_str()))&(lookupSize-1);while(s.siteLookup[at]){const auto &prior=s.metadata[s.siteLookup[at]-1];if(prior.name==site.name&&prior.file==site.file&&prior.content==site.content)throw nexrt::DataError("E_PROFILE_INIT","duplicate task profile source identity");at=(at+1)&(lookupSize-1);}s.siteLookup[at]=i+1;registration.push_back({site.name,site.file,site.content,site.line});}
-    s.taskAllocations=std::make_unique<TaskAllocation[]>(allocationSlots);s.siteAllocations=std::make_unique<SiteAllocations[]>(count);
-    nexrt::TaskProfileOptions options;options.limits.events=s.eventLimit;
-    s.collector=std::make_unique<nexrt::TaskProfileCollector>(options,registration);s.siteBase=sites;s.siteCount=count;
+    // Build temporary metadata first. A failed initialization cannot leave a
+    // partially appended catalog that a later attempt mistakes for complete.
+    std::vector<TaskMetadata> metadata;metadata.reserve(total);std::vector<State::ProfileRange> ranges;ranges.reserve(registryCount);size_t textBytes=0;std::set<std::string> names;
+    for(int64_t r=0;r<registryCount;++r){const auto &registry=*ordered[r];auto begin=reinterpret_cast<uintptr_t>(registry.sites);
+      ranges.push_back({begin,begin+size_t(registry.count)*sizeof(nexrt::TaskProfileCodeSite),metadata.size(),size_t(registry.count),registry.component});
+      for(int64_t i=0;i<registry.count;++i){const auto &source=registry.sites[i];TaskMetadata site;
+        auto copy=[&](const char *text){if(!text)throw nexrt::DataError("E_PROFILE_INIT","task profile site string is absent");size_t n=0;while(n<nexrt::maximumTaskProfileCodeTextBytes-textBytes&&text[n])++n;if(n==nexrt::maximumTaskProfileCodeTextBytes-textBytes)throw nexrt::DataError("E_PROFILE_INIT","task profile site text exceeds its bound");textBytes+=n+1;return std::string(text,n);};
+        site.name=copy(source.name);site.file=copy(source.file);site.content=copy(source.content);site.line=source.line;
+        if(site.name.empty()||site.content.empty()||site.line<0||!names.insert(site.name).second)throw nexrt::DataError("E_PROFILE_INIT","invalid or duplicate task profile source identity");metadata.push_back(std::move(site));
+      }
+    }
+    size_t lookupSize=1;while(lookupSize<total*2)lookupSize*=2;std::vector<size_t> lookup(lookupSize);
+    std::vector<nexrt::TaskProfileSite> registration;registration.reserve(total);
+    for(size_t i=0;i<total;++i){const auto &site=metadata[i];auto at=size_t(siteHash(site.name.c_str(),site.file.c_str(),site.content.c_str()))&(lookupSize-1);while(lookup[at])at=(at+1)&(lookupSize-1);lookup[at]=i+1;registration.push_back({site.name,site.file,site.content,site.line});}
+    auto allocations=std::make_unique<TaskAllocation[]>(allocationSlots);auto siteAllocations=std::make_unique<SiteAllocations[]>(total);
+    nexrt::TaskProfileOptions options;options.limits.events=s.eventLimit;auto collector=std::make_unique<nexrt::TaskProfileCollector>(options,registration);
+    s.metadata=std::move(metadata);s.ranges=std::move(ranges);s.siteLookup=std::move(lookup);s.taskAllocations=std::move(allocations);s.siteAllocations=std::move(siteAllocations);s.siteCount=total;s.providerProfile=providers;s.collector=std::move(collector);
     taskCollectorPointer.store(s.collector.get(),std::memory_order_release);
   }catch(const nexrt::DataError&){throw;}catch(...){throw nexrt::DataError("E_PROFILE_INIT","task profiler preallocation failed before source execution");}
 }
@@ -363,16 +381,21 @@ extern "C" void nex_task_profile_prepare(const nexrt::TaskProfileCodeSite *sites
   // This executes inside the application wrapper but before its root request.
   // Preserve the specific initialization diagnostic at that C ABI boundary;
   // an escaping DataError would be reduced to generic E_RUNTIME by the wrapper.
-  try{prepareTaskProfile(sites,count);}
+  const nexrt::TaskProfileCodeRegistry registry{nexrt::taskProfileRegistryABI,sites,count,"standalone"};const auto *pointer=&registry;
+  try{prepareTaskProfiles(&pointer,1,false);}
+  catch(const nexrt::DataError &error){throw nexrt::Trap(error.code,error.what(),0);}
+}
+extern "C" void nex_task_profile_prepare_registries(const nexrt::TaskProfileCodeRegistry *const *registries,int64_t count){
+  try{prepareTaskProfiles(registries,count,true);}
   catch(const nexrt::DataError &error){throw nexrt::Trap(error.code,error.what(),0);}
 }
 namespace nexrt {
 TaskProfileCollector *taskProfileCollector()noexcept{return taskCollectorPointer.load(std::memory_order_acquire);}
 std::optional<size_t> taskProfileSiteIndex(const TaskProfileCodeSite *site)noexcept{
   if(!taskProfileCollector()||!site)return {};
-  auto &s=state();const auto begin=reinterpret_cast<uintptr_t>(s.siteBase),at=reinterpret_cast<uintptr_t>(site);
-  if(at<begin||at-begin>=s.siteCount*sizeof(TaskProfileCodeSite)||(at-begin)%sizeof(TaskProfileCodeSite))return {};
-  return (at-begin)/sizeof(TaskProfileCodeSite);
+  const auto at=reinterpret_cast<uintptr_t>(site);
+  for(const auto &range:state().ranges)if(at>=range.begin&&at-range.begin<range.end-range.begin&&(at-range.begin)%sizeof(TaskProfileCodeSite)==0)return range.first+(at-range.begin)/sizeof(TaskProfileCodeSite);
+  return {};
 }
 void taskProfileLimits(const TaskExecutionLimits &configured,const TaskExecutionLimits &effective)noexcept{if(taskProfileCollector()){auto &s=state();s.configured=configured;s.effective=effective;s.limitsConfigured=true;}}
 void taskProfileEffectiveLimits(const TaskExecutionLimits &effective)noexcept{if(taskProfileCollector()){auto &s=state();s.effective=effective;if(!s.limitsConfigured)s.configured=effective;}}
@@ -425,6 +448,19 @@ void State::finishTasks(){
   for(const auto &t:snapshot.tasks)for(auto value:{t.id,t.spawningInvocationId,t.createdWallNs,t.terminalWallNs,t.resumes,t.migrations,t.lastThreadId,t.sourceCpuNs,t.sourceElapsedNs,t.activeInvocations,t.readyNs,t.blockedFutureNs,t.blockedSendNs,t.blockedReceiveNs,t.blockedScopeNs,t.blockedExternalNs,t.drainNs,t.executorCpuNs,t.executorElapsedNs})inspect(value);
   for(const auto &f:snapshot.invocations)for(auto value:{f.id,f.taskId,f.parentId,f.startWallNs,f.endWallNs,f.inclusiveCpuNs,f.selfCpuNs,f.activeElapsedNs,f.selfActiveElapsedNs,f.lifetimeNs})inspect(value);
   for(const auto &f:snapshot.segments)for(auto value:{f.taskId,f.invocationId,f.threadId,f.startWallNs,f.elapsedNs,f.cpuNs})inspect(value);
+  // Adapter backing capacities are separate gauges, not an additive RAM
+  // total. Text capacity may include inline string storage already represented
+  // in a shallow record. Keep standalone schema2's memory object unchanged.
+  std::array<uint64_t,6> adapterCapacity{};
+  if(providerProfile){
+    auto product=[](size_t count,size_t width){return width&&count>std::numeric_limits<uint64_t>::max()/width?std::numeric_limits<uint64_t>::max():uint64_t(count)*width;};
+    auto add=[](uint64_t &to,size_t value){to=value>std::numeric_limits<uint64_t>::max()-to?std::numeric_limits<uint64_t>::max():to+value;};
+    adapterCapacity[0]=ranges.capacity();adapterCapacity[1]=product(ranges.capacity(),sizeof(ProfileRange));
+    for(const auto &r:ranges){add(adapterCapacity[2],r.component.capacity());add(adapterCapacity[2],1);}
+    adapterCapacity[3]=product(metadata.capacity(),sizeof(TaskMetadata));
+    for(const auto &m:metadata)for(const auto *text:{&m.name,&m.file,&m.content}){add(adapterCapacity[4],text->capacity());add(adapterCapacity[4],1);}
+    adapterCapacity[5]=product(siteLookup.capacity(),sizeof(size_t));for(auto value:adapterCapacity)inspect(value);
+  }
   bool aggregates=!snapshot.drops.tasks&&!snapshot.drops.invocations&&!snapshot.drops.guards&&!snapshot.drops.suppressedHooks&&!snapshot.drops.invalidTransitions&&!snapshot.drops.counterOverflows&&!functionsDropped&&!framesDropped&&!hookFailures.load()&&!memoryOverflows;
   bool memory=!allocationsDropped&&!freesUntracked&&!memoryOverflows,cpu=!snapshot.drops.counterOverflows,elapsed=cpu,lifetime=cpu;
   std::ostringstream functionText;functionText<<'[';
@@ -480,7 +516,7 @@ void State::finishTasks(){
   const auto segmentsJSON=segmentText.str();
   if(numericOverflow){aggregates=false;memory=false;cpu=false;elapsed=false;lifetime=false;}
   const bool timeline=!snapshot.drops.events&&!extraDrops&&!serializationOverflows&&aggregates;
-  std::ostringstream out;out<<"{\"schema\":\"nex.profile-runtime/2\",\"kind\":\"native_tasks\",\"build\":"<<identity<<",\"clock\":\"steady_wall_and_thread_cpu_nanoseconds\",\"duration_ns\":"<<number(duration)
+  std::ostringstream out;out<<"{\"schema\":"<<quoted(providerProfile?"nex.profile-runtime/3":"nex.profile-runtime/2")<<",\"kind\":\"native_tasks\",\"build\":"<<identity<<",\"clock\":\"steady_wall_and_thread_cpu_nanoseconds\",\"duration_ns\":"<<number(duration)
     <<",\"origin_wall_ns\":"<<number(origin)<<",\"tracy\":false,\"incomplete\":"<<boolean(!(aggregates&&timeline&&memory&&cpu&&elapsed&&lifetime))
     <<",\"completeness\":{\"aggregates\":"<<boolean(aggregates)<<",\"timeline\":"<<boolean(timeline)<<",\"memory\":"<<boolean(memory)<<",\"cpu\":"<<boolean(cpu)<<",\"elapsed\":"<<boolean(elapsed)<<",\"lifetime\":"<<boolean(lifetime)<<'}'
     <<",\"dropped_events\":"<<number(snapshot.drops.events+extraDrops)<<",\"dropped_functions\":"<<number(functionsDropped)<<",\"dropped_frames\":"<<number(framesDropped)
@@ -489,11 +525,13 @@ void State::finishTasks(){
     <<",\"invalid_transitions\":"<<number(snapshot.drops.invalidTransitions)<<",\"clock_failures\":"<<number(snapshot.drops.clockFailures)<<",\"counter_overflows\":"<<number(snapshot.drops.counterOverflows+memoryOverflows)
     <<",\"serialization_overflows\":"<<number(serializationOverflows)
     <<",\"limits\":{\"events\":"<<eventLimit<<",\"sites\":16384,\"tasks\":4096,\"active_invocations\":65536,\"guards_per_thread\":4096,\"live_allocations\":1000000,\"report_bytes\":"<<byteLimit<<'}'
-    <<",\"collector_memory\":{\"storage_bytes\":"<<snapshot.collectorStorageBytes<<",\"site_text_storage_bytes\":"<<snapshot.siteTextStorageBytes<<",\"address_slots\":"<<allocationSlots<<",\"address_storage_bytes\":"<<allocationSlots*sizeof(TaskAllocation)<<'}'
-    <<",\"task_execution\":{\"configured\":";limitsJSON(out,configured);out<<",\"effective\":";limitsJSON(out,effective);out<<",\"executor_workers\":"<<effective.workers<<'}'
+    <<",\"collector_memory\":{\"storage_bytes\":"<<snapshot.collectorStorageBytes<<",\"site_text_storage_bytes\":"<<snapshot.siteTextStorageBytes<<",\"address_slots\":"<<allocationSlots<<",\"address_storage_bytes\":"<<allocationSlots*sizeof(TaskAllocation);
+  if(providerProfile){const char *keys[]={"registry_record_capacity","registry_record_capacity_bytes","registry_component_text_capacity_bytes","metadata_record_capacity_bytes","metadata_text_capacity_bytes","site_lookup_capacity_bytes"};for(size_t i=0;i<adapterCapacity.size();++i)out<<','<<quoted(keys[i])<<':'<<number(adapterCapacity[i]);}
+  out<<'}'<<",\"task_execution\":{\"configured\":";limitsJSON(out,configured);out<<",\"effective\":";limitsJSON(out,effective);out<<",\"executor_workers\":"<<effective.workers<<'}'
     <<",\"functions\":"<<functionsJSON<<",\"tasks\":"<<tasksJSON<<",\"invocations\":"<<invocationsJSON<<",\"segments\":"<<segmentsJSON<<",\"memory\":[";
   for(size_t i=0;i<2;++i){const auto &p=memoryPools[i];if(i)out<<',';out<<"{\"pool\":"<<quoted(poolName(i))<<",\"allocations\":"<<number(p.allocations)<<",\"frees\":"<<number(p.frees)<<",\"live\":"<<number(p.live)<<",\"peak_live\":"<<number(p.peak)<<",\"live_shallow_bytes\":"<<number(p.bytes)<<",\"peak_shallow_bytes\":"<<number(p.peakBytes)<<'}';}
-  out<<"],\"traceEvents\":[]}\n";const auto report=out.str();if(report.size()>byteLimit)throw std::runtime_error("task profile report exceeds bounded output size");
+  out<<']';if(providerProfile){out<<",\"catalog\":{\"schema\":\"nex.task-profile-runtime-catalog/1\",\"registries\":[";bool comma=false;for(const auto &r:ranges){if(comma)out<<',';comma=true;out<<"{\"component\":"<<quoted(r.component)<<",\"first_site\":"<<r.first<<",\"site_count\":"<<r.count<<'}';}out<<"]}";}
+  out<<",\"traceEvents\":[]}\n";const auto report=out.str();if(report.size()>byteLimit)throw std::runtime_error("task profile report exceeds bounded output size");
   std::ofstream file(output,std::ios::binary|std::ios::trunc);file<<report;file.flush();if(!file)std::fprintf(stderr,"NEX_PROFILE: could not write task profile report\n");
 }
 #endif

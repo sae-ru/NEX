@@ -1,5 +1,10 @@
 # NEX language specification 0.20
 
+Toolchain0.118 enables development checked task-provider profiling with separate
+metadata/report schemas. Discover `task_provider_profiling` and read
+[its tooling contract](task-provider-profiling.md). This changes no source syntax,
+effect/realm rules, canonical field, language identity or migration.
+
 Toolchain0.117 enables candidate fixed startup-linked shared task images. Discover
 `task_shared_providers` and read [the shared contract](task-shared-providers.md)
 for actual enablement and per-application ownership. This external build slice
@@ -642,11 +647,13 @@ Toolchain0.116 adds checked concrete static task archives with resource-free
 direct task/pure interfaces; source remains required and one root owns the
 executor, limits and file grant. Imported callable/authority transport remains
 rejected. Shared task providers use a separate checked fixed-startup mode when the actual
-`task_shared_providers.public_enabled` is true; provider profile/debug and runtime
-load/unload remain unsupported. See [task providers](task-providers.md) and
-[fixed shared providers](task-shared-providers.md).
-Native020 task debugging/profiling retains its separate standalone/source-only
-scope and rejects provider graphs. Task server hosting, other native targets,
+`task_shared_providers.public_enabled` is true. Those unprofiled provider1/2
+contracts remain distinct. Provider profiling uses `task_provider_profiling`,
+checked provider3/catalog1 and [its separate guide](task-provider-profiling.md).
+Provider logical debugging and runtime load/unload remain unsupported. See
+[task providers](task-providers.md) and [fixed shared providers](task-shared-providers.md).
+Native020 logical task debugging retains its standalone/source-only scope and
+rejects provider graphs. Task server hosting, other native targets,
 task writes/streams/db/ffi/network, a NEX UI adapter and complete current
 SDK/platform delivery remain pending. Emitted TypeScript includes only reachable
 client/shared code. Language0.18 programs require explicit migration under the

@@ -1,3 +1,11 @@
+# Checked task-provider profiling (toolchain0.118 integration)
+
+A distinct `task_provider_profiling` descriptor and
+[guide](task-provider-profiling.md) describe development static/fixed-shared
+provider recording. Check actual enablement; provider3/raw3 are not silently substituted
+for ordinary task2 or synchronous1. No source language or execution ABI3 change
+is introduced. Current full/installedSDK/platform acceptance remains pending.
+
 # Native structured-task profiling (toolchain0.114 candidate)
 
 Working121 implements this path; its complete acceptance is pending. Query

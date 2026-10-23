@@ -7,6 +7,29 @@
 #include <set>
 
 namespace nex {
+void validateTaskProfileCatalogOwnership(const NativeTaskProviderInfo &provider,
+                                        const NativeTaskProfileCatalog &catalog,
+                                        const std::map<std::string,std::set<std::string>> &definitions){
+  auto fail=[](){throw Error("E_PROFILE","profile catalog differs from its physical definition owner");};
+  const bool shared=provider.mode==NativeTaskLinkageMode::SharedFixed;
+  const auto artifact=shared?provider.artifact:provider.codeOnly?NativeTaskArtifactKind::CodeArchive:NativeTaskArtifactKind::Application;
+  const bool stage=artifact==NativeTaskArtifactKind::CodeArchive||artifact==NativeTaskArtifactKind::PicStage;
+  const auto owner=stage?std::string{}:provider.component;
+  if(!provider.enabled||!provider.profiling||catalog.mode!=provider.mode||catalog.artifact!=artifact||catalog.ownerImage!=owner||
+     definitions.empty()||!definitions.contains(provider.component)||definitions.at(provider.component).empty())fail();
+  auto computed=provider;computed.profiling=nativeTaskProfileInfo(catalog);
+  if(*nativeTaskProviderJSON(computed).get("profiling")!=*nativeTaskProviderJSON(provider).get("profiling"))fail();
+  if(catalog.registries.size()!=definitions.size())fail();
+  std::set<std::string> all;
+  for(const auto &registry:catalog.registries){
+    auto expected=definitions.find(registry.component);if(expected==definitions.end()||expected->second.empty()||registry.ownerImage!=owner)fail();
+    std::set<std::string> names;for(const auto &site:registry.sites){if(!names.insert(site.name).second||!all.insert(site.name).second)fail();
+      if(shared){auto found=provider.definitionOwners.find(site.name);if(found==provider.definitionOwners.end()||found->second!=registry.component)fail();}}
+    if(names!=expected->second)fail();
+  }
+  if(shared){if(all!=provider.definitions)fail();}
+  else if(definitions.at(provider.component)!=provider.definitions||(stage&&definitions.size()!=1))fail();
+}
 namespace {
 using Object=llvm::json::Object;using Array=llvm::json::Array;using Value=llvm::json::Value;
 [[noreturn]] void invalid(const std::string &message){throw Error("E_PROFILE","invalid task profile: "+message);}
@@ -42,11 +65,14 @@ Value parseTaskProfileRuntimeReport(const std::string &source){
   try{(void)JSON::parse(source,callback);}catch(const Error&){throw;}catch(const JSON::exception&){invalid("malformed JSON");}
   auto parsed=llvm::json::parse(source);if(!parsed){llvm::consumeError(parsed.takeError());invalid("malformed JSON");}return std::move(*parsed);
 }
-void validateTaskProfileRuntimeReport(const Object &report,const Object &expected,const nexrt::TaskExecutionLimits &effective){
-  fields(report,{"schema","kind","tracy","build","clock","duration_ns","origin_wall_ns","task_execution","completeness","incomplete","dropped_events","dropped_functions","dropped_frames","dropped_allocations","untracked_frees","dropped_tasks","dropped_invocations","dropped_guards","suppressed_hooks","invalid_transitions","clock_failures","counter_overflows","serialization_overflows","limits","collector_memory","functions","tasks","invocations","segments","memory","traceEvents"});
-  if(report.getString("schema")!="nex.profile-runtime/2")invalid("schema");
+void validateTaskProfileRuntimeReport(const Object &report,const Object &expected,const nexrt::TaskExecutionLimits &effective,const NativeTaskProfileCatalog *catalog){
+  const bool provider=expected.getString("schema")=="nex.profile-build/2";
+  Object base(report);if(provider)base.erase("catalog");
+  fields(base,{"schema","kind","tracy","build","clock","duration_ns","origin_wall_ns","task_execution","completeness","incomplete","dropped_events","dropped_functions","dropped_frames","dropped_allocations","untracked_frees","dropped_tasks","dropped_invocations","dropped_guards","suppressed_hooks","invalid_transitions","clock_failures","counter_overflows","serialization_overflows","limits","collector_memory","functions","tasks","invocations","segments","memory","traceEvents"});
+  if(report.getString("schema")!=(provider?"nex.profile-runtime/3":"nex.profile-runtime/2"))invalid("schema");
   auto identity=report.getObject("build");if(!identity)invalid("missing build identity");
-  fields(*identity,{"schema","toolchain","language","revision","build_key","compiler_build","source_hash","entry","task_limits"});
+  Object baseIdentity(*identity);if(provider)baseIdentity.erase("task_profile_catalog");
+  fields(baseIdentity,{"schema","toolchain","language","revision","build_key","compiler_build","source_hash","entry","task_limits"});
   for(const auto *key:{"schema","toolchain","language","revision","build_key","compiler_build","source_hash","entry"}){
     auto selected=expected.getString(key);if(!selected||identity->getString(key)!=selected)invalid(std::string("build identity mismatch: ")+key);
   }
@@ -62,6 +88,22 @@ void validateTaskProfileRuntimeReport(const Object &report,const Object &expecte
   if(report.getString("kind")!="native_tasks"||report.getString("clock")!="steady_wall_and_thread_cpu_nanoseconds")invalid("kind/clock");
   (void)number(report,"duration_ns");(void)number(report,"origin_wall_ns");
   const auto &functions=array(report,"functions",16384);
+  if(provider){
+    if(!catalog||!expected.getString("task_profile_catalog")||identity->getString("task_profile_catalog")!=expected.getString("task_profile_catalog")||
+       expected.getString("task_profile_catalog")!=nativeTaskProfileInfo(*catalog).catalogHash)invalid("provider catalog identity differs");
+    digest(*identity,"task_profile_catalog");
+    auto ranges=report.getObject("catalog");if(!ranges||ranges->size()!=2||ranges->getString("schema")!="nex.task-profile-runtime-catalog/1")invalid("missing provider runtime catalog");
+    const auto &registries=array(*ranges,"registries",128);if(registries.size()!=catalog->registries.size()||registries.empty())invalid("provider registry union differs");
+    size_t first=0;std::set<std::string> components;
+    for(size_t index=0;index<registries.size();++index){const auto &row=object(registries[index]);const auto &checked=catalog->registries[index];
+      fields(row,{"component","first_site","site_count"});
+      if(text(row,"component",64)!=checked.component||!components.insert(checked.component).second||number(row,"first_site")!=first||number(row,"site_count")!=checked.sites.size()||checked.sites.empty()||checked.sites.size()>functions.size()-first)invalid("provider registry range/order differs");
+      for(const auto &site:checked.sites){const auto &measured=object(functions[first++]);
+        if(measured.getString("name")!=site.name||measured.getString("file")!=site.debugPath||measured.getString("content_hash")!=site.functionHash||measured.getInteger("line")!=site.line)invalid("provider site union differs");
+      }
+    }
+    if(first!=functions.size())invalid("provider catalog does not exhaust function sites");
+  }
   const auto &tasks=array(report,"tasks",65536);
   const auto &invocations=array(report,"invocations",65536);
   const auto &segments=array(report,"segments",1000000);

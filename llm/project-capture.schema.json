@@ -102,7 +102,7 @@
               "$ref": "#/$defs/hash"
             },
             "task_linkage": {
-              "oneOf": [{"$ref": "project-static-task-linkage.schema.json"}, {"$ref": "project-task-linkage.schema.json"}]
+              "oneOf": [{"$ref": "project-static-task-linkage.schema.json"}, {"$ref": "project-task-linkage.schema.json"}, {"$ref": "project-profiled-task-linkage.schema.json"}]
             }
           },
           "required": [

@@ -42,9 +42,14 @@ def completion_inputs(build):
         if inputs != expected:
             raise ValueError('invalid retained static task completion path/order')
         return inputs
-    if build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5'):
-        task = build['completion_schema'] == 'nex.native-completion/5'
-        if not isinstance(inputs, list) or not 4 <= len(inputs) <= 1024:
+    if build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5', 'nex.native-completion/6'):
+        profile = build['completion_schema'] == 'nex.native-completion/6'
+        task = profile or build['completion_schema'] == 'nex.native-completion/5'
+        mode = build.get('completion_mode')
+        if profile and mode not in ('static-archive', 'static-application', 'pic-stage', 'shared-image', 'shared-application'):
+            raise ValueError('invalid profile completion mode')
+        shared = not profile or mode in ('shared-image', 'shared-application')
+        if not isinstance(inputs, list) or not (3 if profile else 4) <= len(inputs) <= (2048 if profile else 1024):
             raise ValueError('invalid retained native image completion limit')
         result = []
         position = 0
@@ -63,8 +68,11 @@ def completion_inputs(build):
         take('abi', 'library-abi.json')
         if task:
             take('task_provider', 'task-provider.json')
-        take('link_inputs', 'image-inputs.json')
-        take('objects', 'objects.a')
+        if profile:
+            take('profile_catalog', 'task-profile-catalog.json')
+        if shared:
+            take('link_inputs', 'image-inputs.json')
+            take('objects', 'objects.a')
         archives = 0
         while position < len(inputs) and kind() == 'static_library':
             if archives >= 128:
@@ -72,7 +80,13 @@ def completion_inputs(build):
             take('static_library', 'libraries/%d.a' % archives)
             if task:
                 take('static_task_provider', 'libraries/%d.task-provider.json' % archives)
+            if profile:
+                take('static_profile_catalog', 'libraries/%d.task-profile-catalog.json' % archives)
             archives += 1
+        if not shared:
+            if position != len(inputs):
+                raise ValueError('static profile completion cannot contain image inputs')
+            return result
         image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
         images = []
         while position < len(inputs) and kind() == 'owned_image':
@@ -93,6 +107,8 @@ def completion_inputs(build):
                 raise ValueError('invalid retained owned task provider')
             providers.append(path)
             take('owned_task_provider', path)
+            if profile:
+                take('owned_profile_catalog', path[:-len('.task-provider.json')]+'.task-profile-catalog.json')
         previous = ''
         while position < len(inputs):
             value = inputs[position]
@@ -251,7 +267,7 @@ def system_dependencies(program, owned_names=()):
 
 def owned_image_paths(manifest, build):
     paths = completion_inputs(build)
-    shared = build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5')
+    shared = build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5') or (build.get('completion_schema') == 'nex.native-completion/6' and build.get('completion_mode') in ('shared-image', 'shared-application'))
     if not shared:
         if 'owned_images' in manifest:
             raise ValueError('legacy capsule cannot add owned images')

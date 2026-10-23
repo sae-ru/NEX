@@ -2,6 +2,7 @@
 #include "nex/foreign_catalogue.h"
 #include "nex/native_toolchain.h"
 #include "nex/native_images.h"
+#include "nex/profiling.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/SHA256.h"
@@ -43,7 +44,8 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
   for(const auto &name:nativeCompletionInputs(*info))complete+=hash(readFile((buildFolder/name).string()));
   if(readFile((buildFolder/"complete").string())!=hash(complete)+"\n")throw Error("E_PACKAGE","native artifact completion differs before packaging");
   llvm::json::Array owned,taskFiles;
-  const bool sharedTasks=info->getString("completion_schema")=="nex.native-completion/5";
+  const bool profiled=info->getString("completion_schema")=="nex.native-completion/6";
+  const bool sharedTasks=info->getString("completion_schema")=="nex.native-completion/5"||(profiled&&info->getString("completion_mode")=="shared-application");
   auto physical=[&](const fs::path &path){
     if(!path.is_absolute()||path.lexically_normal()!=path)throw Error("E_PACKAGE","invalid owned native input path");
     fs::path current;for(const auto &part:path){current/=part;if(fs::is_symlink(current))throw Error("E_PACKAGE","symlink in owned native input path");}
@@ -53,15 +55,18 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     physical(path);auto data=readFile(path.string());
     llvm::json::Object record{{"kind",kind},{"path",path.string()},{"hash",hash(data)},{"sha256",sha256(data)},{"bytes",int64_t(data.size())},
       {"component",nullptr},{"image",nullptr},{"image_key",nullptr},{"image_sha256",nullptr},{"image_uuid",nullptr}};
-    if(provider){if(!provider->image)throw Error("E_PACKAGE","task provider has no physical image");
-      record["component"]=provider->component;record["image"]=provider->artifact==NativeTaskArtifactKind::Application?built.executable:(buildFolder/"images"/path.filename().string().substr(0,path.filename().string().size()-std::string(".task-provider.json").size())).string();
-      record["image_key"]=provider->image->key;record["image_sha256"]=provider->image->sha256;record["image_uuid"]=provider->image->uuid;}
+    if(provider){const bool application=kind=="application_provider"||kind=="application_profile_catalog";
+      if(!application&&!provider->image)throw Error("E_PACKAGE","task provider has no physical image");
+      auto suffix=kind=="owned_profile_catalog"?std::string(".task-profile-catalog.json"):std::string(".task-provider.json");
+      auto image=application?fs::path(built.executable):buildFolder/"images"/path.filename().string().substr(0,path.filename().string().size()-suffix.size());
+      record["component"]=provider->component;record["image"]=image.string();
+      record["image_key"]=application?built.key:provider->image->key;record["image_sha256"]=sha256(readFile(image.string()));record["image_uuid"]=nativeImageUUID(image.string());}
     taskFiles.push_back(std::move(record));
   };
   if(info->getString("completion_schema")=="nex.native-completion/3"||sharedTasks){
     auto link=llvm::json::parse(readFile((buildFolder/"image-inputs.json").string()));
     auto inventory=link&&link->getAsObject()?link->getAsObject()->getArray("images"):nullptr;
-    if(!inventory||inventory->empty()||inventory->size()>129||(sharedTasks&&(link->getAsObject()->getString("schema")!="nex.native-image-inputs/2"||link->getAsObject()->size()!=4)))throw Error("E_PACKAGE","invalid compiler-owned native image inventory");
+    if(!inventory||inventory->empty()||inventory->size()>129||(sharedTasks&&(link->getAsObject()->getString("schema")!=(profiled?"nex.native-image-inputs/3":"nex.native-image-inputs/2")||link->getAsObject()->size()!=(profiled?5:4))))throw Error("E_PACKAGE","invalid compiler-owned native image inventory");
     std::set<std::string> expected,seen;std::map<std::string,const llvm::json::Object*> imageRecords;size_t runtimes=0;
     for(const auto &entry:*info->getArray("completion_inputs"))if(entry.getAsObject()->getString("kind")=="owned_image")expected.insert(entry.getAsObject()->getString("path")->str());
     for(const auto &entry:*inventory){
@@ -76,7 +81,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
       owned.push_back(llvm::json::Object{{"path",path->str()},{"sha256",digest->str()},{"key",key->str()},{"abi",abi->str()},{"kind",kind->str()},{"uuid",uuid->str()}});
     }
     if(seen!=expected||(sharedTasks&&runtimes!=1))throw Error("E_PACKAGE","compiler-owned image inventory is incomplete");
-    if(sharedTasks){
+    if(sharedTasks&&!profiled){
       auto ownPath=buildFolder/"task-provider.json";auto ownBytes=readFile(ownPath.string());auto ownJSON=llvm::json::parse(ownBytes);
       if(!ownJSON)throw Error("E_PACKAGE","invalid task application provider");auto own=parseNativeTaskProvider(*ownJSON);
       auto seed=link->getAsObject()->getObject("inputs");
@@ -100,7 +105,19 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
       taskFile("image_inputs",buildFolder/"image-inputs.json",nullptr);taskFile("build",buildFolder/"build.json",nullptr);taskFile("complete",buildFolder/"complete",nullptr);
     }
   }
-  llvm::json::Object packageRequest{{"schema",sharedTasks?"nex.application-request/2":"nex.application-request/1"},
+  if(profiled){
+    (void)inspectTaskProfileBuildInputs(built);
+    auto parseProvider=[&](const fs::path &path){auto parsed=llvm::json::parse(readFile(path.string()));if(!parsed)throw Error("E_PACKAGE","invalid profile provider");return parseNativeTaskProvider(*parsed);};
+    auto own=parseProvider(buildFolder/"task-provider.json");if(!own.profiling)throw Error("E_PACKAGE","profile application omitted catalog");
+    taskFile("application_provider",buildFolder/"task-provider.json",&own);taskFile("application_profile_catalog",buildFolder/"task-profile-catalog.json",&own);
+    if(sharedTasks){auto parsed=llvm::json::parse(readFile((buildFolder/"image-inputs.json").string()));const auto &link=*parsed->getAsObject();
+      for(const auto &value:*link.getArray("task_providers")){const auto &row=*value.getAsObject();auto path=buildFolder/row.getString("path")->str();auto provider=parseProvider(path);taskFile("owned_provider",path,&provider);
+        auto image=row.getString("image")->str();taskFile("owned_profile_catalog",buildFolder/(image+".task-profile-catalog.json"),&provider);}
+      taskFile("image_inputs",buildFolder/"image-inputs.json",nullptr);
+    }
+    taskFile("build",buildFolder/"build.json",nullptr);taskFile("complete",buildFolder/"complete",nullptr);
+  }
+  llvm::json::Object packageRequest{{"schema",profiled?"nex.application-request/3":sharedTasks?"nex.application-request/2":"nex.application-request/1"},
     {"binary",built.executable},{"binary_sha256",sha256(bytes)},{"owned_images",std::move(owned)},
     {"runtime_notices",built.notices},{"runtime_notices_sha256",sha256(readFile(built.notices))},{"sdk_root",fs::path(options.compiler).parent_path().parent_path().string()},
     {"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(candidate)},
@@ -110,7 +127,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     {"compiler_build",info->getString("compiler_build").value_or("")},
     {"profile",info->getString("profile").value_or("")},{"kind",info->getString("kind").value_or("")},
     {"host_compatible",built.hostCompatible}};
-  if(sharedTasks)packageRequest["task_inputs"]=llvm::json::Object{{"schema","nex.application-task-inputs/1"},{"files",std::move(taskFiles)}};
+  if(sharedTasks||profiled)packageRequest["task_inputs"]=llvm::json::Object{{"schema",profiled?"nex.application-task-inputs/2":"nex.application-task-inputs/1"},{"files",std::move(taskFiles)}};
   writeFile(request.string(),json(llvm::json::Value(std::move(packageRequest)))+"\n");
   std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),
     "--request",request.string(),"--output",output.string()};

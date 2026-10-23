@@ -58,6 +58,27 @@ class Toolchain(harness.ToolchainCase):
             self.assertIs(shared[field],False)
         for field in ('typescript', 'windows', 'wasm', 'http_task_handlers', 'writes', 'streams', 'task_debug_profile'):
             self.assertFalse(reads[field])
+        profiled=descriptor['task_provider_profiling']
+        self.assertEqual(profiled,pack['task_provider_profiling'])
+        self.assertEqual((profiled['language'],profiled['configuration']),('0.20','profile'))
+        self.assertEqual((profiled['execution_task_abi'],profiled['descriptor_bytes'],profiled['registry_abi'],profiled['registry_bytes']),
+            (3,88,1,32))
+        for field,value in {'record_schema':'nex.native-task-provider/3','catalog_schema':'nex.task-profile-catalog/1',
+                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/3',
+                'retained_build_schema':'nex.retained-native-task-build/3','runtime_schema':'nex.profile-runtime/3',
+                'report_schema':'nex.profile/3','session_schema':'nex.profile-session/3','build_schema':'nex.profile-build/2'}.items():
+            self.assertEqual(profiled[field],value)
+        self.assertIs(profiled['source_required'],True)
+        self.assertEqual(profiled['source_support'],profiled['public_enabled'])
+        self.assertEqual(profiled['guide'],pack['documents']['task_provider_profiling'])
+        self.assertEqual(self.cli('guide','--kind','task-provider-profile')['text'],(REPO/profiled['guide']).read_text())
+        if profiled['public_enabled']:
+            self.assertTrue(profiled['supported_actions']);self.assertIs(profiled['reviewed_capture_replay'],True)
+        else:
+            self.assertEqual(profiled['supported_actions'],[]);self.assertIs(profiled['reviewed_capture_replay'],False)
+        for field in ('authority_transport','callable_transport','logical_debugging','combined_debug_profile',
+                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','windows','wasm'):
+            self.assertIs(profiled[field],False)
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
         descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())

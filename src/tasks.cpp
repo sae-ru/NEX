@@ -520,7 +520,8 @@ struct Runner {
   }
   std::string retainTaskProviderBuild(const fs::path &executable,const fs::path &destination){
     const auto folder=executable.parent_path();auto metadata=readJSON(inside(folder,"build.json"),8*1048576);const auto &build=object(metadata);
-    const bool shared=build.getString("completion_schema")=="nex.native-completion/5";
+    const bool profiled=build.getString("completion_schema")=="nex.native-completion/6";
+    const bool shared=profiled||build.getString("completion_schema")=="nex.native-completion/5";
     if(!shared&&build.getString("completion_schema")!="nex.native-completion/4")return {};
     if(fs::is_symlink(folder)||build.getString("compiler_build")!=NEX_BUILD_ID)
       throw Error("E_TASK_ARTIFACT","static task build requires its matching compiler and physical artifact directory");
@@ -544,9 +545,9 @@ struct Runner {
     for(const auto &[name,identity]:inputs)if(hash(readFile(inside(folder,name).string()))!=identity.first)
       throw Error("E_TASK_ARTIFACT","static task build changed after artifact retention");
     if(!completed(retained))throw Error("E_TASK_ARTIFACT","retained static task build completion differs");
-    auto record=retained/"retained.json";atomic(record,Object{{"schema",shared?"nex.retained-native-task-build/2":"nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
+    auto record=retained/"retained.json";atomic(record,Object{{"schema",profiled?"nex.retained-native-task-build/3":shared?"nex.retained-native-task-build/2":"nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
       {"build_key",text(build,"key")},{"original_directory",folder.string()},{"metadata_rewritten",false},{"hash_algorithm","BLAKE3"},
-      {"completion_schema",shared?"nex.native-completion/5":"nex.native-completion/4"},{"files",std::move(mapping)}});
+      {"completion_schema",profiled?"nex.native-completion/6":shared?"nex.native-completion/5":"nex.native-completion/4"},{"files",std::move(mapping)}});
     return record.lexically_relative(directory).generic_string();
   }
   JSON check(const Object &c){
@@ -649,6 +650,15 @@ struct Runner {
         built.executable=text(a,"artifact");built.key=text(a,"build_key");built.target=text(a,"target");built.compilerTarget=text(a,"compiler_target");built.hostCompatible=a.getBoolean("host_compatible").value_or(false);requireNativeHost(built);
         Array nodes;for(const auto &f:source.functions)nodes.push_back(Object{{"name",f.name},{"hash",content(f)},{"file",f.unit},{"id",nullptr}});
         ProfileOptions profiling;profiling.output=(artifact/"profile.json").string();profiling.scenario=text(c,"scenario");profiling.events=0;profiling.timeout=remaining();profiling.directory=workspace(program).string();
+        TaskProfileSourceUnion profileSources;
+        for(const auto &value:*object(p.projects.at(program)).getObject("expectations")->getArray(text(c,"configuration"))){
+          const auto &component=object(value);auto linkage=component.getObject("task_linkage");
+          if(!linkage||linkage->getString("schema")!="nex.project-task-linkage/3")continue;
+          TaskProfileComponentSource checked;checked.program=loadProgram((workspace(program)/text(component,"entry")).string(),workspace(program).string());
+          for(const auto &definition:*linkage->getArray("definitions")){const auto &row=object(definition);checked.definitions.emplace(text(row,"function"),text(row,"contract"));}
+          profileSources.emplace(text(component,"name"),std::move(checked));
+        }
+        if(!profileSources.empty())profiling.taskProviderSources=&profileSources;
         profiling.interrupted=[&](int signal){interrupted=true;report["signal"]=signal;};
         std::unique_ptr<ForeignTemporary> temporary,serverState;
         std::unique_ptr<ServerWorkloadRun> workloadRun;
@@ -669,6 +679,14 @@ struct Runner {
         catch(const Error &error){finish();if(error.code=="E_PROFILE_TIMEOUT")throw Error("E_TASK_TIMEOUT",error.what());if(error.code=="E_PROFILE_OUTPUT")throw Error("E_TASK_OUTPUT",error.what());if(error.code=="E_PROFILE_INTERRUPTED")throw Error("E_TASK_INTERRUPTED",error.what());throw;}
         catch(...){finish();throw;}
         verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyWorkload(id);passed=ok(measured);
+        if(!profileSources.empty()){
+          Array outputs;for(const auto &item:array(response(compiled),"artifacts",0,128)){const auto &a=object(item);auto name=text(a,"component");auto destination=artifact/"components"/name;auto executable=fs::path(text(a,"artifact"));
+            copyArtifact(executable,destination/executable.filename());if(fs::is_directory(executable.parent_path()/"images"))copyArtifact(executable.parent_path()/"images",destination/"images");
+            for(auto key:{"metadata","compilation","debug_manifest","notices"})if(auto file=a.getString(key);file&&!file->empty())copyArtifact(file->str(),destination/(std::string(key)+(std::string(key)=="notices"?".txt":".json")));
+            auto retained=retainTaskProviderBuild(executable,destination);if(retained.empty())throw Error("E_TASK_ARTIFACT","profile provider omitted its completed retained build");
+            outputs.push_back(Object{{"component",name},{"kind",text(a,"kind")},{"directory",destination.lexically_relative(directory).generic_string()},{"retained_build",std::move(retained)}});
+          }row["components"]=std::move(outputs);
+        }
         auto receipt="artifacts/"+id+"/commands/profile.json";Array command;
         for(const auto &argument:profiling.launcher)command.push_back(argument);command.push_back(built.executable);for(const auto &argument:profiling.arguments)command.push_back(argument);
         atomic(directory/receipt,Object{{"command",std::move(command)},{"instrumented",true},{"build_key",built.key},{"revision",revision(source)},{"response",std::move(measured)}});
@@ -677,7 +695,7 @@ struct Runner {
         auto value=invoke({"profile","--entry",entry,"--events","0","--scenario",text(c,"scenario"),"--timeout",std::to_string(timeout),"--output",(artifact/"profile.json").string()},"profile");passed=successful(value);row["receipt"]=text(object(value),"receipt");
       }
       if(passed){auto full=readJSON(artifact/"profile.json",64*1048576);const auto &r=object(full),&budget=*c.getObject("budget");Array failures;
-        if(r.getString("schema")=="nex.profile/2"){
+        if(r.getString("schema")=="nex.profile/2"||r.getString("schema")=="nex.profile/3"){
           for(auto &failure:taskProfileBudgetIncomplete(r,budget))failures.push_back(std::move(failure));
           auto execution=r.get("task_execution");if(!execution||!execution->getAsObject())throw Error("E_TASK_INTEGRITY","task profile omitted execution limits");
           row["task_execution"]=*execution;
