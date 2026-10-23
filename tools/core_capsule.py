@@ -31,6 +31,17 @@ def completion_inputs(build):
     if 'completion_schema' not in build and 'completion_inputs' not in build:
         return []
     inputs = build.get('completion_inputs')
+    if build.get('completion_schema') == 'nex.native-completion/4':
+        if (not isinstance(inputs, list) or not 2 <= len(inputs) <= 258 or
+                (len(inputs) - 2) % 2):
+            raise ValueError('invalid retained static task completion limit')
+        expected = ['library-abi.json', 'task-provider.json']
+        for index in range((len(inputs) - 2) // 2):
+            expected += ['libraries/%d.a' % index,
+                         'libraries/%d.task-provider.json' % index]
+        if inputs != expected:
+            raise ValueError('invalid retained static task completion path/order')
+        return inputs
     if build.get('completion_schema') == 'nex.native-completion/3':
         if not isinstance(inputs, list) or not 4 <= len(inputs) <= 1024:
             raise ValueError('invalid retained native image completion limit')

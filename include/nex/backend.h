@@ -2,12 +2,29 @@
 #include "nex/language.h"
 #include "nex_task_limits.h"
 namespace nex {
+// Versioned compiler-private static task interface. Source remains required.
+// Definitions describe physical machine ownership, separately from exports.
+struct NativeTaskExport {
+  std::string contract, signature, accessor;
+  int64_t requirements=0;
+};
+struct NativeTaskProviderInfo {
+  bool enabled=false, codeOnly=false, taskFileReads=false;
+  std::string component, cohort, language;
+  std::set<std::string> definitions;
+  std::map<std::string,NativeTaskExport> exports;
+};
+llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &);
+NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &);
+NativeTaskExport nativeTaskExportInterface(const Program &,const std::string &function,
+                                         const std::string &contract);
 // Compiler-private NEX ABI inputs, produced by a checked project build. Source
 // remains available to the checker; machine definitions come from this archive.
 struct NativeLibraryInput {
   std::string path, digest, abi;
   std::map<std::string,std::string> contracts;
   bool parallelCalls=false;
+  std::string taskProviderPath{},taskProviderDigest{};
 };
 struct BuildOptions {
   std::string profile = "debug", target, entry = "main";
@@ -30,6 +47,9 @@ struct BuildOptions {
   // Explicit logical task debugger instrumentation; ordinary debug-profile
   // builds retain their existing execution and metadata without these hooks.
   bool taskDebug=false;
+  bool staticTaskABI=false;
+  std::string taskComponent{};
+  std::set<std::string> taskImportedFunctions{};
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;
@@ -44,6 +64,8 @@ struct BuildResult {
   std::string libraryABI;
   std::map<std::string,std::string> functionContracts;
   bool parallelCalls=false;
+  NativeTaskProviderInfo taskProvider{};
+  std::string taskProviderFile{},taskProviderDigest{};
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.

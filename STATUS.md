@@ -1,6 +1,31 @@
-# Working122: logical native task debugger integration in progress
+# Working123: concrete static task providers in progress
 
-Toolchain0.115/language0.20 is implementing a separately versioned debug catalog, compiled safe points and logical LLDB/nex-dap inspection/stepping. This source is mutable. Narrow native020 standalone/source-only public controls are enabled. Actual10 LLDB/DAP cases,39 native commands/eight scenarios,9 IR cases/183 checks, public source/project/archive preparation and a separate installed SDK task-debug phase pass. Full139/SDK27/platform gates remain pending. Execution ABI3, source semantics and canonical/migration history stay unchanged. Frozen121 passed clean build, strict runtime sanitizers and focused16 via retained14 plus corrected offline browser2; its full134 and scoped Linux profiling gates passed; matching installed SDK26/498 commands passed in710.019s with original compiled source path absent and restored unchanged. Primary081 remains preserved; full objective remains active.
+Toolchain0.116/language0.20 is integrating source-checked static native task
+provider archives, concrete descriptor accessors and explicit machine ownership.
+Bounded candidate public enablement follows actual archive/accessor/ownership
+and semantic proof. Complete123 regression, SDK28 and platform acceptance remain pending.
+No source language/canonical/history change or execution ABI3 layout change is
+introduced. Dynamic providers, task profile/logical debug across providers,
+exported authority/callables, binary-only checking, HTTP/foreign task hosting and
+unload remain unsupported. Primary081 and frozen122/122b remain unchanged.
+The17-case permanent suite passes actual native/reference chains, real archive/
+accessor ownership, grants/limits, strict callable boundaries, warm export changes
+and source-deleted capture/replay/package. Failed bootstrap/harness attempts are
+retained separately. Final frozen common build/regression, installedSDK28 and
+platform gates still have to finish. See docs/task-providers.md.
+
+# Preserved122: logical native task debugger integration
+
+Toolchain0.115/language0.20 integrates separately versioned debug catalog ABI1,
+compiled safe points and logical LLDB/nex-dap inspection/stepping. Its immutable
+acceptance is [recorded separately](docs/evidence/toolchain-0.115.0-task-debug.json):
+composite139 means138 retained passes plus one corrected9-case server workload
+group using the same implementation/compiler. The original full139 failure is
+retained; no pristine complete rerun is claimed. InstalledSDK27/504 commands,
+three scoped Linux groups with10 actual LLDB/DAP cases and bounded runtime
+sanitizer checks passed. Execution ABI3/source/canonical/history are unchanged.
+Those receipts cover122/122b only. Primary081 is preserved; no full objective
+completion or123 provider acceptance follows from them.
 
 # Working121: native source task-profile integration in progress
 

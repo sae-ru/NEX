@@ -1,5 +1,11 @@
 # NEX language specification 0.20
 
+Toolchain0.116 enables candidate concrete static task provider linkage with checked
+source and code-only archives; discover `task_providers` and read
+[the provider contract](task-providers.md). This is external build metadata,
+with no source syntax, effects, canonical format or migration change. Current
+enablement and acceptance are reported separately from source semantics.
+
 Toolchain0.115 is integrating external logical task debug metadata and controls.
 Discover `task_debugging` for current enablement and read
 [the task debugger contract](task-debugging.md). This tooling adds no source
@@ -18,7 +24,7 @@ Explicit018/019 rechecks retain their original rules and identities. The020
 checker creates distinct revisions and requires history-preserving migration;
 never relabel an old project. Native continuations and independent AST/TypeScript
 schedulers remain separate implementations. Complete static lifetime inference,
-write/stream/db/ffi/network task bridges, non-native task debugging/profiling, provider lifetime,
+write/stream/db/ffi/network task bridges, non-native task debugging/profiling, dynamic provider lifetime,
 UI integration and other task platforms remain pending.
 
 Toolchain0.114 adds native020 task profiling without changing source semantics
@@ -626,9 +632,14 @@ task effect is rejected; that same helper can run inside a task entry.
 UI/worker adapters keep their synchronous pure entry contracts and reject
 reachable task effects/callables. See [the web contract](web.md).
 
-Native task execution currently targets macOS/Linux applications and source-only
-project linkage. Binary providers, task server hosting, task debugging/profiling,
-other native targets, task writes/streams/db/ffi/network, a NEX UI task adapter and complete current
+Native task execution targets macOS/Linux applications and source-only projects.
+Toolchain0.116 adds checked concrete static task archives with resource-free
+direct task/pure interfaces; source remains required and one root owns the
+executor, limits and file grant. Imported callable/authority transport and dynamic
+task providers remain rejected. See [task providers](task-providers.md).
+Native020 task debugging/profiling retains its separate standalone/source-only
+scope and rejects provider graphs. Task server hosting, other native targets,
+task writes/streams/db/ffi/network, a NEX UI adapter and complete current
 SDK/platform delivery remain pending. Emitted TypeScript includes only reachable
 client/shared code. Language0.18 programs require explicit migration under the
 new checker, preserving original source/history/IDs and repairing reserved names

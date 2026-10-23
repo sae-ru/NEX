@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/native-task-provider-1.json",
+  "title": "Compiler-private completed static task provider record; source checking remains required",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "mode", "descriptor_abi", "descriptor_size", "abi_offset", "compiler_build", "language", "component", "cohort", "code_only", "task_file_reads", "definitions", "exports"],
+  "properties": {
+    "schema": {"const": "nex.native-task-provider/1"},
+    "mode": {"const": "static"},
+    "descriptor_abi": {"const": 5640011226151911427},
+    "descriptor_size": {"const": 88},
+    "abi_offset": {"const": 40},
+    "compiler_build": {"$ref": "#/$defs/hash"},
+    "language": {"const": "0.20"},
+    "component": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"},
+    "cohort": {"$ref": "#/$defs/hash"},
+    "code_only": {"type": "boolean"},
+    "task_file_reads": {"type": "boolean"},
+    "definitions": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/function"}},
+    "exports": {"type": "object", "propertyNames": {"$ref": "#/$defs/function"}, "additionalProperties": {"$ref": "#/$defs/export"}}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "function": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "export": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract", "signature", "accessor", "requirements"],
+      "properties": {
+        "contract": {"$ref": "#/$defs/hash"},
+        "signature": {"$ref": "#/$defs/hash"},
+        "accessor": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*__task_code_address$"},
+        "requirements": {"type": "integer", "minimum": 1, "maximum": 31, "enum": [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31]}
+      }
+    }
+  }
+}

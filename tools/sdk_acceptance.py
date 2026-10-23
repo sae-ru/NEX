@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -138,6 +138,13 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 116, 0):
+        providers = report.get('evidence', {}).get('static_task_providers', {})
+        require(all(providers.get(key) is True for key in ('descriptor', 'actual_static_archives',
+                'descriptor_accessors', 'consumer_ownership', 'native_reference', 'unused_read_excluded',
+                'root_file_grant', 'root_limits', 'warm_cache', 'retained_completion',
+                'source_deleted_replay', 'standalone_without_resources', 'source_deleted_package')),
+                'SDK acceptance lacks complete static task provider delivery evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 115, 0):
         debug = report.get('evidence', {}).get('structured_task_debug', {})
         require(all(debug.get(key) is True for key in ('descriptor', 'actual_image_identity',
@@ -1315,6 +1322,235 @@ fn main()->unit!{io,task}{
             'revision':revision,'profile':str(public_profile),'raw_profile':str(raw_path),
             'receipt':str(receipt),'replay':replay['output'],'configured_task_limits':limits,
             'lowered_workers':1,'memory_scope':'managed shallow handles/objects; not total heap/RAM'}
+
+    def static_task_providers():
+        import importlib.util
+        feature = cli('describe')['task_providers']
+        identity = cli('describe','--kind','index')
+        pack = json.loads((resources/'llm/language-pack.json').read_text())
+        require(feature == pack['task_providers'] and feature['public_enabled'] and feature['static_linkage'] and
+                feature['source_required'] and feature['execution_task_abi']==3 and
+                feature['descriptor_bytes']==88 and not feature['dynamic_linkage'] and
+                not feature['profiling'] and not feature['logical_debugging'],
+                'installed static task provider capability differs')
+        directory = root/'static-task-providers';directory.mkdir()
+        for name in ('leaf','mid','app'):(directory/name).mkdir()
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        limits = {'steps':1000000,'timeout_ms':10000,'workers':2}
+        description = {'schema':'nex.project-build/1','default_configuration':'release',
+            'configurations':{mode:{'profile':mode,'task_limits':limits} for mode in ('debug','release','profile')},
+            'components':{
+                'leaf':{'kind':'static_library','root':'leaf','entry':'leaf/value.nex','entry_function':'answer','exports':['read']},
+                'mid':{'kind':'static_library','root':'mid','entry':'mid/value.nex','entry_function':'answer','dependencies':{'leaf':'static'}},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'mid':'static','leaf':'static'}}}}
+        (directory/'nex.build.json').write_text(json.dumps(description))
+        (directory/'leaf/value.nex').write_text('''module installed_provider_leaf;
+fn pure(value:i64)->i64{return value+1;}
+pub fn answer(value:i64)->i64!{task}{task_yield();return pure(value);}
+pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_read_text(path);}
+''')
+        (directory/'mid/value.nex').write_text('module installed_provider_mid;import "../leaf/value.nex" as leaf;pub fn answer()->i64!{task}{return leaf::answer(41);}')
+        application = directory/'app/main.nex'
+        application.write_text('module installed_provider_app;import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(mid::answer());}')
+        plan = cli('project','--kind','plan','--component','app',cwd=directory)
+        require(not plan['external_tools_invoked'] and not (directory/'.nex').exists(),
+                'static task provider plan invoked tools or opened state')
+        require(all(item['task_linkage']['execution_abi']==3 for item in plan['components']),
+                'static task source ownership plan is absent')
+        require(cli('eval',cwd=directory)['stdout']=='42\n','independent task provider source observation differs')
+        built = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        artifacts = {item['component']:item for item in built['artifacts']}
+        records = {}
+        archive_hashes = {}
+        for name in ('leaf','mid'):
+            archive = Path(artifacts[name]['artifact'])
+            require(archive.read_bytes().startswith(b'!<arch>\n'),'provider is not an actual static archive')
+            record = json.loads((archive.parent/'task-provider.json').read_text());records[name]=record
+            require(record['schema']=='nex.native-task-provider/1' and record['code_only'] and
+                    record['descriptor_abi']==0x4e45585400000003 and record['descriptor_size']==88 and
+                    record['abi_offset']==40 and record['component']==name,
+                    'provider sidecar identity/layout differs')
+            archive_hashes[name]=hashlib.sha256(archive.read_bytes()).hexdigest()
+            symbols = {}
+            for line in run(['nm','-g',archive]).splitlines():
+                words = line.split()
+                if len(words)>=2 and len(words[-2])==1:
+                    symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+            require(record['exports'] and all(symbols.get(export['accessor'],set()) & {'T','W'}
+                    for export in record['exports'].values()),
+                    'archive lacks defined descriptor accessor symbols')
+        require(records['leaf']['cohort']==records['mid']['cohort'],'provider cohorts differ')
+        app = artifacts['app']
+        compilation = json.loads(Path(app['compilation']).read_text())
+        require({name for unit in compilation['units'] for name in unit['functions']}=={'installed_provider_app::main'} and
+                len(compilation['static_libraries'])==2,'consumer recompiles provider definitions')
+        metadata = json.loads(Path(app['metadata']).read_text())
+        require(records['leaf']['task_file_reads'] and not metadata['runtime_requirements']['task_file_reads'],
+                'uncalled provider read export inflated root file requirements')
+        require(run([app['artifact']],cwd='/')=='42\n','static provider standalone output differs')
+        warm = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        require(all(item['cached'] for item in warm['artifacts']),'static task provider warm cache missed')
+        low = cli('project','--kind','run','--component','app','--','--nex-task-steps','500000',
+            '--nex-task-timeout-ms','5000','--nex-task-workers','1',cwd=directory,timeout=300)
+        require(low['observation']['stdout']=='42\n' and low['observation']['task_execution']['effective']==
+                {'steps':500000,'timeout_ms':5000,'workers':1},'provider root controls were not inherited')
+        grant = root/'static-task-provider-files';grant.mkdir();(grant/'text').write_bytes('A🌍\0λ'.encode())
+        application.write_text('''module installed_provider_app;
+import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;
+server fn main()->unit!{task,fs,io}{
+ let outcome:result<str>=leaf::read("text");
+ if error_code(outcome)=="CAPABILITY"{print("CAPABILITY");return;}
+ let value:str=unwrap(outcome);assert(value=="A🌍\\u0000λ");print(mid::answer());print(len(value));
+}
+''')
+        read_build = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        read_artifacts = {item['component']:item for item in read_build['artifacts']}
+        require(all(hashlib.sha256(Path(read_artifacts[name]['artifact']).read_bytes()).hexdigest()==archive_hashes[name]
+                    for name in ('leaf','mid')),'root policy change rebuilt different provider machine code')
+        require(json.loads(Path(read_artifacts['app']['metadata']).read_text())['runtime_requirements']['task_file_reads'],
+                'provider-only read failed to request root grant transport')
+        previous_grant = environment.pop('NEX_FILES_ROOT',None)
+        try:
+            require(run([read_artifacts['app']['artifact']],cwd='/')=='CAPABILITY\n','missing provider grant is not typed CAPABILITY')
+            environment['NEX_FILES_ROOT']=str(grant)
+            require(run([read_artifacts['app']['artifact']],cwd='/')=='42\n4\n','provider root file grant/UTF-8/NUL differs')
+            criteria = cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
+            criteria['checks'].append({'id':'observe','kind':'run','program':'app','target':'native','configuration':'release',
+                'expect':{'stdout':'42\n4\n','exit_code':0},'timeout_seconds':120})
+            criteria['requirements'].append({'id':'observe','text':'Keep the checked static task providers',
+                'bindings':[{'program':'app','kind':'function','symbol':'installed_provider_app::main'}],
+                'targets':['native'],'checks':['observe']})
+            taskfile = directory/'task.json';taskfile.write_text(json.dumps(criteria))
+            accepted = cli('task',taskfile,'--kind','run','--directory',root/'static-task-provider-capture',cwd=directory,timeout=600)
+            require(accepted['ok'],'static provider reviewed capture failed')
+            receipt = Path(accepted['output']);saved = json.loads(receipt.read_text())
+            native = next(check for check in saved['checks'] if check['id']=='build-native')
+            retained = []
+            spec = importlib.util.spec_from_file_location('sdk_static_provider_capsule',resources/'tools/core_capsule.py')
+            capsule = importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
+            artifact_base = receipt.parent/'artifacts/build-native'
+            retained_sha256 = {}
+            total_bytes = 0
+
+            def regular(base,name,maximum=64*1024*1024):
+                require(type(name) is str and 0<len(name.encode())<=16384 and '\\' not in name and '\0' not in name,
+                        'invalid retained completion path text')
+                relative = Path(name)
+                require(not relative.is_absolute() and relative.as_posix()==name and
+                        all(part not in ('','.','..') for part in relative.parts),
+                        'retained completion path escapes its root')
+                path = base
+                require(not path.is_symlink(),'retained completion root is a symlink')
+                for part in relative.parts:
+                    path = path/part
+                    require(not path.is_symlink(),'retained completion contains a symlink')
+                require(path.is_file() and path.stat().st_size<=maximum,'retained completion is not a bounded regular file')
+                return path
+
+            require({item['component'] for item in native['components']}=={'leaf','mid','app'} and
+                    len(native['components'])==3,'retained component set differs')
+            for component in native['components']:
+                prefix = 'artifacts/build-native/components/'+component['component']+'/retained-build/'
+                require(component['retained_build']==prefix+'retained.json','retained record moved outside its component')
+                path = regular(receipt.parent,component['retained_build'],2*1024*1024)
+                record = json.loads(path.read_text());retained.append(str(path))
+                record_index = native['artifacts'].get(path.relative_to(artifact_base).as_posix(),{})
+                require(set(record_index)=={'hash','bytes'} and record_index['bytes']==path.stat().st_size and
+                        re.fullmatch('[0-9a-f]{64}',record_index['hash']),
+                        'retained mapping is absent from the checked artifact index')
+                require(set(record)=={'schema','compiler_build','build_key','original_directory','metadata_rewritten',
+                        'hash_algorithm','completion_schema','files'} and
+                        record['schema']=='nex.retained-native-task-build/1' and record['metadata_rewritten'] is False and
+                        record['hash_algorithm']=='BLAKE3' and record['completion_schema']=='nex.native-completion/4' and
+                        record['compiler_build']==identity['compiler_build'] and
+                        type(record['files']) is list and 10<=len(record['files'])<=266,
+                        'invalid retained completion record')
+                original_directory = directory/'.nex/build'/record['build_key']
+                require(re.fullmatch('[0-9a-f]{64}',record['build_key']) and
+                        record['original_directory']==str(original_directory),'retained original directory differs')
+                metadata = json.loads(regular(receipt.parent,prefix+'build.json',8*1024*1024).read_text())
+                require(metadata['completion_schema']=='nex.native-completion/4' and
+                        metadata['key']==record['build_key'] and metadata['compiler_build']==identity['compiler_build'],
+                        'retained build/compiler identity differs')
+                inputs = capsule.completion_inputs(metadata)
+                require(2<=len(inputs)<=258 and (len(inputs)-2)%2==0 and inputs==['library-abi.json','task-provider.json']+
+                        [part for index in range((len(inputs)-2)//2) for part in
+                         ('libraries/%d.a'%index,'libraries/%d.task-provider.json'%index)],
+                        'retained completion4 inputs are not the exact bounded ordered pin list')
+                executable_name = 'libnex.a' if metadata['kind']=='static_library' else 'app'
+                require(metadata['kind'] in ('static_library','executable'),'unsupported retained build kind')
+                names = [executable_name,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',
+                         *inputs,'complete','debug.json']
+                require(len(names)==len(record['files']) and len(set(names))==len(names),
+                        'retained completion map count/order differs')
+                mapped = {}
+                for name,row in zip(names,record['files']):
+                    require(set(row)=={'original','retained','hash','bytes'} and
+                            row['original']==str(original_directory/name) and row['retained']==prefix+name and
+                            type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
+                            re.fullmatch('[0-9a-f]{64}',row['hash']),
+                            'retained completion map path/type differs')
+                    original = regular(directory,'.nex/build/'+record['build_key']+'/'+name).read_bytes()
+                    copied = regular(receipt.parent,row['retained']).read_bytes()
+                    total_bytes += len(copied)
+                    require(total_bytes<=128*1024*1024 and len(original)==len(copied)==row['bytes'] and original==copied,
+                            'retained completion changed original bytes or exceeded its bound')
+                    index_name = (receipt.parent/row['retained']).relative_to(artifact_base).as_posix()
+                    require(native['artifacts'].get(index_name)=={'hash':row['hash'],'bytes':row['bytes']},
+                            'retained file differs from compiler-checked receipt BLAKE3 index')
+                    retained_sha256[row['retained']]=hashlib.sha256(copied).hexdigest()
+                    mapped[name]=(row,copied)
+                require(re.fullmatch(b'[0-9a-f]{64}\n',mapped['complete'][1]),'retained raw completion is malformed')
+                own = json.loads(mapped['task-provider.json'][1]);abi = json.loads(mapped['library-abi.json'][1])
+                compiled = json.loads(mapped['compilation.json'][1])
+                require(own==metadata['task_provider'] and own['component']==component['component'] and
+                        own['compiler_build']==identity['compiler_build'] and own['cohort']==abi['abi'] and
+                        own['cohort']==records['leaf']['cohort'] and own['language']=='0.20' and
+                        own['code_only']==(executable_name=='libnex.a') and
+                        metadata['task_provider_hash']==mapped['task-provider.json'][0]['hash'] and
+                        compiled['static_libraries']==abi['static_libraries'] and
+                        len(inputs)==2+2*len(abi['static_libraries']),
+                        'retained archive/sidecar/cohort identity differs')
+                for index,dependency in enumerate(abi['static_libraries']):
+                    archive_name='libraries/%d.a'%index;sidecar_name='libraries/%d.task-provider.json'%index
+                    sidecar=json.loads(mapped[sidecar_name][1])
+                    require(dependency['hash']==mapped[archive_name][0]['hash'] and
+                            dependency['task_provider_hash']==mapped[sidecar_name][0]['hash'] and
+                            dependency['abi']==own['cohort'] and dependency['task_provider']==sidecar and
+                            sidecar==records[sidecar['component']] and sidecar['code_only'] is True,
+                            'retained dependency archive/sidecar pins differ')
+                    for original_key,mapped_name in (('path',archive_name),('task_provider_path',sidecar_name)):
+                        original = Path(dependency[original_key])
+                        require(original.is_absolute() and original.is_relative_to(directory/'.nex/build'),
+                                'retained dependency original escapes the selected build root')
+                        original_name=original.relative_to(directory/'.nex/build').as_posix()
+                        require(regular(directory,'.nex/build/'+original_name).read_bytes()==mapped[mapped_name][1],
+                                'retained dependency differs from its completed original')
+            packaged = cli('project','--kind','package','--component','app','--directory',root/'static-task-provider-package',cwd=directory,timeout=300)
+            package = Path(packaged['directory']) if 'directory' in packaged else root/'static-task-provider-package'
+            standalone = root/'static-task-provider-app';shutil.copy2(read_artifacts['app']['artifact'],standalone)
+            shutil.rmtree(directory)
+            prior_resources=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']='/absent'
+            try:
+                require(run([standalone],cwd='/')=='42\n4\n' and
+                        run([package/'apps/app/bin/app'],cwd='/')=='42\n4\n',
+                        'copied static task application/package needs compiler sources/resources')
+            finally:
+                if prior_resources is None:environment.pop('NEX_RESOURCE_DIR',None)
+                else:environment['NEX_RESOURCE_DIR']=prior_resources
+            replay = cli('task',receipt,'--kind','replay','--directory',root/'static-task-provider-replay',timeout=600)
+            require(replay['ok'] and replay['programs']==accepted['programs'],'source-deleted static provider replay differs')
+        finally:
+            if previous_grant is None:environment.pop('NEX_FILES_ROOT',None)
+            else:environment['NEX_FILES_ROOT']=previous_grant
+        report['evidence']['static_task_providers'] = {key:True for key in (
+            'descriptor','actual_static_archives','descriptor_accessors','consumer_ownership','native_reference',
+            'unused_read_excluded','root_file_grant','root_limits','warm_cache','retained_completion',
+            'source_deleted_replay','standalone_without_resources','source_deleted_package')}
+        report['evidence']['static_task_providers'].update(execution_task_abi=3,descriptor_bytes=88,
+            original_archives_sha256=archive_hashes,records=records,receipt=str(receipt),replay=replay['output'],retained=retained,
+            retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
+            retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation')
 
     def graph_snapshot_recovery():
         original = root / 'snapshot-original'
@@ -3127,6 +3363,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),
+                ('static-task-providers', static_task_providers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

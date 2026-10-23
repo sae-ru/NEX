@@ -100,6 +100,9 @@
             },
             "native_toolchain_hash": {
               "$ref": "#/$defs/hash"
+            },
+            "task_linkage": {
+              "$ref": "project-static-task-linkage.schema.json"
             }
           },
           "required": [

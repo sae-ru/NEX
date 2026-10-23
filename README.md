@@ -6,8 +6,25 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.115.0 / language0.20**.
-Working122 enables narrow native020 logical task debugging with a separate catalog ABI after actual private LLDB/NEX-DAP inspection and stepping checks. Actual10 LLDB/DAP cases, public source/project/archive preparation and a separate installed SDK task-debug phase passed. Full139, installedSDK27 and platform acceptance remain pending. Language020/history and execution ABI3 remain unchanged. Frozen121 passed full134 and scoped Linux profiling gates; its matching installed SDK26/498 commands passed in710.019s with original compiled source path absent and restored unchanged.
+This isolated development source is **toolchain0.116.0 / language0.20**.
+Working123 enables candidate concrete static native task providers with checked
+source, real code-only archives and explicit machine ownership. Complete123
+regression, installed SDK28 and platform acceptance remain pending. See [task providers](docs/task-providers.md)
+and query `nex describe --field task_providers --json` before using this slice.
+No source syntax, language identity or task execution descriptor layout changes.
+
+Preserved122 enables narrow native020 logical task debugging with a separate
+catalog ABI. Its recorded regression is composite139:138 original passed groups
+plus the corrected9-case server workload group using the same compiler. The
+original numeric-metric/text-marker false-positive failure remains retained;
+there is no claim of a pristine full139 rerun. Matching installedSDK27/504
+commands and three scoped Linux groups passed. See the [exact122 acceptance
+summary](docs/evidence/toolchain-0.115.0-task-debug.json) for hashes and limits.
+These results do not validate the new123 provider integration.
+
+Frozen121 passed full134 and scoped Linux profiling gates; its matching
+installedSDK26/498 commands passed with its original compiled source path absent
+and restored unchanged.
 
 Frozen121 integrates native source task profiling across compiler, scheduler,
 retained source frames and checked CLI/project/replay reports. Its accepted
@@ -39,7 +56,7 @@ apply to their exact source snapshots. Primary081 remains preserved.
 Checked source tasks retain native compiled continuations and independent
 AST/TypeScript schedulers, conservative lifetime diagnostics and mandatory
 runtime guards. TypeScript/browser filesystem, task writes/streams/db/ffi/network,
-HTTP task handlers, task debugger/non-native profile, provider lifetime, NEX UI task adapters,
+HTTP task handlers, non-native task debugging/profiling, dynamic provider lifetime, NEX UI task adapters,
 other task platforms and complete static region inference remain pending.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,

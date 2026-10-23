@@ -84,7 +84,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         self.assertTrue(self.cli('task',receipt,'--kind','replay','--directory',self.root/'replay',timeout=300)['ok'])
         self.assertEqual(harness.database_rows(self.root/'.nex/graph.db'),before)
 
-    def test_task_binary_provider_is_rejected_during_readonly_plan(self):
+    def test_task_static_provider_readonly_plan_preserves_reviewed_limits_and_ownership(self):
         (self.root/'app').mkdir();(self.root/'core').mkdir()
         self.file=self.root/'app/main.nex'
         self.source(SOURCE.replace('module capped;','module capped;import "../core/value.nex" as c;').replace('return 42;','return c::value();'))
@@ -95,7 +95,18 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
           'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}},
                         'core':{'kind':'static_library','root':'core','entry':'core/value.nex','entry_function':'value'}}}
         manifest=self.root/'nex.build.json';self.save(manifest,architecture)
-        self.assertEqual(self.cli('project','--component','app',ok=False)['code'],'E_TASK_PROVIDER')
+        plan=self.cli('project','--component','app')
+        self.assertEqual(plan['configuration']['task_limits'],LIMITS)
+        self.assertFalse(plan['external_tools_invoked'])
+        components={row['name']:row for row in plan['components']}
+        self.assertEqual(components['app']['dependencies'],{'core':'static'})
+        linkage=components['app']['task_linkage']
+        self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/1')
+        self.assertEqual(linkage['execution_abi'],3)
+        self.assertTrue(all(row['function'].startswith('capped::') for row in linkage['definitions']))
+        imported,=linkage['imports']
+        self.assertEqual((imported['function'],imported['provider'],imported['calling_mode']),('value::value','core','sync/1'))
+        self.assertEqual(components['core']['task_linkage']['component'],'core')
         self.assertFalse((self.root/'.nex').exists())
         architecture['components']['app']['dependencies']['core']='source'
         self.save(manifest,architecture)

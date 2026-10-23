@@ -1,5 +1,6 @@
 #include "nex/project_capture.h"
 #include "nex/native_toolchain.h"
+#include "nex_task_protocol.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
 #include <filesystem>
@@ -21,6 +22,26 @@ std::string name(const std::string &value){
 }
 std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();if(!p.is_absolute())fail("capture input is not absolute");return name((fs::path("fs")/p.relative_path()).generic_string());}
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
+void taskLinkage(const JSON &value,const std::string &component){
+  const auto &o=object(value);
+  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports")fail("unknown captured task linkage field");
+  auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
+  if(o.getString("schema")!="nex.project-static-task-linkage/1"||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
+     !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
+  auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
+  std::set<std::string> defined,imported;
+  for(const auto &value:*definitions){const auto &row=object(value);if(row.size()!=2||!defined.insert(text(row,"function")).second)fail("invalid/duplicate captured task definition");digest(row,"contract");}
+  for(const auto &value:*imports){const auto &row=object(value);auto function=text(row,"function"),provider=text(row,"provider");
+    auto mode=row.getString("calling_mode");
+    if(row.size()!=4||!imported.insert(function).second||defined.contains(function)||provider==component||
+       (mode!="task-code/3"&&mode!="sync/1"))fail("invalid captured task import");
+    digest(row,"contract");
+  }
+  for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");
+    if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskCodeRequirementsMask))fail("invalid captured task export");
+    digest(row,"contract");digest(row,"signature");text(row,"accessor");
+  }
+}
 struct Shape {const Object *files,*links,*expectations,*toolchains;std::vector<std::string> directories;std::string root,manifest;};
 Shape shape(const JSON &capture){
   const auto &c=object(capture);
@@ -49,6 +70,7 @@ Shape shape(const JSON &capture){
       for(auto field:{"kind","entry","revision","source_bundle_hash"})text(e,field);
       auto function=e.get("entry_function");if(!function||(!function->getAsNull()&&!function->getAsString()))fail("invalid captured entry function");
       if(auto fingerprint=e.getString("native_toolchain_hash");fingerprint&&fingerprint!=native->getString("hash"))fail("component toolchain differs from its configuration");
+      if(auto linkage=e.get("task_linkage"))taskLinkage(*linkage,id);
     }
     if(!found)fail("capture lacks its selected component");
   }
@@ -97,6 +119,7 @@ JSON captureProject(const std::string &directory,const std::string &manifest,con
       if(c.getString("revision")!=revision(program)||c.getString("source_bundle_hash")!=hash(json(sourceBundle(program),false)))fail("component changed while capturing: "+cName);
       Object descriptor{{"name",cName},{"kind",text(c,"kind")},{"entry",entry},{"entry_function",*c.get("entry_function")},{"revision",revision(program)},{"source_bundle_hash",hash(json(sourceBundle(program),false))}};
       if(auto native=c.getObject("native_toolchain"))descriptor["native_toolchain_hash"]=text(*native,"hash");
+      if(auto linkage=c.get("task_linkage"))descriptor["task_linkage"]=*linkage;
       descriptions.push_back(std::move(descriptor));
       if(sourcesCaptured)continue;
       auto lock=dependencyLock(program);for(const auto &[key,value]:*object(lock).getObject("dependencies"))derivedLock[key]=value;
@@ -177,6 +200,8 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
     for(size_t i=0;i<entries->size();++i){
       const auto &a=object((*actual)[i]),&e=object((*entries)[i]);
       for(auto field:{"name","kind","entry","entry_function","revision","source_bundle_hash"})if(!a.get(field)||!e.get(field)||*a.get(field)!=*e.get(field))fail("captured component/source identity changed");
+      auto actualLinkage=a.get("task_linkage"),expectedLinkage=e.get("task_linkage");
+      if(bool(actualLinkage)!=bool(expectedLinkage)||(actualLinkage&&*actualLinkage!=*expectedLinkage))fail("captured task provider ownership/contracts changed");
       if(auto fingerprint=e.getString("native_toolchain_hash")){auto native=a.getObject("native_toolchain");if(!native||native->getString("hash")!=fingerprint)throw Error("E_TASK_TOOLCHAIN","captured project toolchain fingerprint changed");}
       auto program=loadProgram((root/text(a,"entry")).string(),root.string());
       for(const auto &[key,unit]:program.units){(void)key;auto actual=fs::canonical(unit.path);if(!inside(actual,base))fail("project source fell back outside the captured namespace");auto saved=s.files->getString(actual.lexically_relative(base).generic_string());if(!saved||*saved!=unit.source)fail("project source is not indexed in the capture");}

@@ -7,6 +7,12 @@ authority must not be reconstructed as a pure watch input.
 
 # NEX coding prompt — language 0.20, protocol 2
 
+Toolchain0.116 is integrating concrete static task providers. Before selecting
+that build arrangement, query `nex describe --field task_providers --json` and
+read `nex guide --kind task-providers --json`. Do not treat pending enablement
+or a completed archive alone as acceptance. Checked source and explicit physical
+ownership remain required. This adds no source syntax or language migration.
+
 Query `nex describe --json` for the actual language and structured task support.
 For explicit task host budgets, query `nex describe --field task_execution_limits --json`
 and read `docs/task-limits.md`. Use --task-steps/--task-timeout-ms/--task-workers
@@ -27,8 +33,10 @@ pure or task-only in an available realm.020 additionally allows exactly server
 task/fs callbacks when their caller declares task and fs. No io/db/ffi callback
 is added. Read docs/task-file-reads.md before using file_read_text/bytes in tasks.
 A task caller rejects fs-only helpers; explicitly review task/fs declarations.
-Only native macOS/Linux/source-only projects and independent reference support
-these reads. TypeScript/Node/browser filesystem remain unsupported.
+Native macOS/Linux standalone/source-only projects, checked concrete static task
+provider projects and independent reference support these reads. Providers use
+the same root grant; exporting read code does not create authority. TypeScript/
+Node/browser filesystem remain unsupported.
 There are no async/await keywords: ordinary async/await/spawn/send/recv/cancel/
 close/yield names remain valid. New reserved type/intrinsic declaration names
 require a reviewed token-level repair in a separate migration candidate.
@@ -58,9 +66,16 @@ execution are independent cooperative schedulers, with no OS CPU-overlap claim.
 Standalone TypeScript task exports return task.Step<T> and need the generated
 scheduler host; pure modules stay synchronous. UI/worker adapters retain pure
 synchronous entry contracts and reject reachable task effects/callables.
-Broader IO, task debugging, binary-provider lifetime, task server/UI
+Broader IO, non-native task debugging, dynamic-provider lifetime, task server/UI
 adapters, other native targets and current SDK/platform delivery remain pending.
 Do not infer their completion from source_support or a passing scoped probe.
+For checked static providers, query task_providers and read task-providers.md.
+Keep concrete direct task/pure signatures resource-free, including nested types;
+do not transport any callable or authority through this cohort. A pure factory
+returning a closure is not an imported task descriptor. Keep provider source and
+the declared static edge available, and inspect task_linkage ownership rather
+than accepting consumer recompilation as a provider proof. Shared task providers,
+provider task profile/logical debug, HTTP/foreign and unload remain unsupported.
 Use native task profiling only when the actual task_profiling descriptor reports
 source_support; read docs/profiling.md for its current CLI language/platform scope.
 Task schema2 separates source CPU, active elapsed and logical lifetime; a resume

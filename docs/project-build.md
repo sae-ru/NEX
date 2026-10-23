@@ -1,5 +1,13 @@
 # Checked project architecture and builds
 
+Toolchain0.116 adds candidate [concrete static task providers](task-providers.md)
+under existing checked static edges. Source and concrete resource-free export
+contracts remain required; archives contain real provider definitions and
+descriptor accessors. The root alone owns runtime/limits/file authority. This
+does not enable dynamic task providers, callable/authority transport or task
+profiling/logical debugging across provider graphs. Query `task_providers` for
+the actual compiler's enablement and pending acceptance scopes.
+
 ## Project actions
 
 Toolchain0.78 adds [acceptance tasks and captured replay](project-tasks.md).

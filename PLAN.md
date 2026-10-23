@@ -4,7 +4,21 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.115 / язык0.20
+## Текущий шаг: toolchain0.116 / язык0.20
+
+- [x] Связать конкретные task-экспорты через настоящие статические архивы,
+  сохранив checked source, единственного machine-owner и один root executor.
+- [x] Проверить provider chains, immutable aggregate/result/Unicode semantics,
+  root file grant/limits, pins/cache, captured replay и standalone package.
+- [x] Проверить fail-closed границы authority/callable и неподдержанные режимы;
+  сохранить существующие синхронные File/callback архивы.
+- [x] После действительного native proof включить точную candidate discovery;
+  пройдены17 permanent cases и отдельное тело SDK-фазы19 командами.
+- [ ] Проверить общий frozen regression, установленный SDK28 и платформы.
+  Shared providers,
+  task profile/debug через provider и unload не входят в этот шаг.
+
+## Сохранённый122: toolchain0.115 / язык0.20
 
 - [x] Добавить отдельный bounded debug catalog ABI1 без удержания значений программы;
   private runtime109 проверок/614 остановок прошёл строгие sanitizers.
@@ -14,8 +28,10 @@
   10 настоящих LLDB/DAP сценариев и39 native-команд пройдены.
 - [x] Проверить archived-source inspection, явные лимиты и cleanup;
   новая фаза установленного SDK отдельно пройдена с настоящим DAP.
-- [ ] Проверить frozen122:139 групп, полный установленный SDK27 и отдельные
-  LinuxARM64 LLDB/DAP/runtime и GCC sanitizer gates.
+- [x] Сохранить composite139:138 исходных passes и один исправленный9-case
+  workload group на том же компиляторе, с исходной ошибкой без сокрытия.
+  Установленный SDK27/504 и отдельные три LinuxARM64 группы с10 LLDB/DAP
+  случаями пройдены; см. docs/evidence/toolchain-0.115.0-task-debug.json.
 
 ## Зафиксированный121: toolchain0.114 / язык0.20
 

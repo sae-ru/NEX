@@ -1,0 +1,181 @@
+{
+  "schema": "nex.toolchain-acceptance-summary/1",
+  "recorded_at_utc": "2026-10-23T04:42:33.713582+00:00",
+  "toolchain": "0.115.0",
+  "language": "0.20",
+  "execution_task_abi": 3,
+  "task_debug_catalog_abi": 1,
+  "compiler_sha256": "163758c07ddd89be4d039242406191dfbd865ff9510924784f21fae3068a343e",
+  "compiler_build": "b6345ae0511590b7c3acf85aaffebed3eeab2548027d3ab117fcc77ee67bf8a3",
+  "source_files": 990,
+  "source_manifest_sha256": "60d3a053dd90b354fc7cf2516161151c1364ac54c47fcee57b460d56deab5652",
+  "test_repaired_manifest_sha256": "ab8a06fa9e471633f919d7adc6ffb9e60406431b984dc7a1cd342b5fa0e5b346",
+  "implementation": "native macOS/Linux020 logical task debugger: nonowning catalog, read-only LLDB/NEX-DAP task stacks/values/pure watches/stepping",
+  "macos": {
+    "clean_all_build_passed": true,
+    "focused_ctest_groups": 9,
+    "actual_lldb_dap_cases": 10,
+    "regression": {
+      "label": "composite139: 138 retained passes from original full139 plus one corrected test-group rerun",
+      "original_full139": "138passed; server_workload failed due numeric1047042 containing marker4704",
+      "original_failure_retained": true,
+      "corrected_group_tests": 9,
+      "same_existing_compiler_reused": true,
+      "single_pristine_full139_pass": false,
+      "fresh_full139_on_test_repaired_source": false
+    },
+    "installed_sdk": {
+      "phases": 27,
+      "commands": 504,
+      "indexed_resource_hashes": 259,
+      "seconds": 723.555,
+      "original_compiled_source_path_absent": true,
+      "kernel_source_isolation": false,
+      "other_source_copies_accessible": true,
+      "source_restored_unchanged": true,
+      "task_debug": {
+        "descriptor": true,
+        "actual_image_identity": true,
+        "source_deleted_archive": true,
+        "source_only_project": true,
+        "standalone_without_resources": true,
+        "logical_stack": true,
+        "initialized_locals": true,
+        "pure_watch": true,
+        "logical_step": true,
+        "stale_references_rejected": true,
+        "graceful_exit": true,
+        "manifest": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug/.nex/build/6b014c568dfbb6121a38b6ab00f2df9ffa92a4e54876cc5e206621fa876a3cbb/debug.json",
+        "project_manifest": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug-project/.nex/build/9ed5af25ebf4e5f6a7dc3502d32c0a71c775d7ba155bdc409889c94df06be204/debug.json",
+        "step_before": {
+          "schema": "nex.task-debug-stack/1",
+          "task_id": 1,
+          "generation": 1,
+          "stop_id": "29",
+          "frames": [
+            {
+              "index": 0,
+              "id": 2,
+              "task_id": 1,
+              "name": "task_debug_handoff::child",
+              "function_hash": "d0bb03610876029f8a465b9967a9b18bc760a5963b4a6c38de9df4acbbb6eca1",
+              "file": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug/.nex/build/source-cache/da4268c32e1c75a399e2be94e7d3b43ab33ae61e4cdb315752ee23af5c1ce8eb/source.nex",
+              "line": 5,
+              "column": 2,
+              "point_id": 6,
+              "phase": "statement",
+              "site": "72ea021d4843a32b2c723de98e4aaf8426455a61e3c9cf4f283271cd7b4c8f7e",
+              "depth": 2
+            },
+            {
+              "index": 1,
+              "id": 1,
+              "task_id": 1,
+              "name": "task_debug_handoff::main",
+              "function_hash": "64b457f1eba1d3510b5f412b40c7e448613850dc4a3c9633e997660657385775",
+              "file": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug/.nex/build/source-cache/da4268c32e1c75a399e2be94e7d3b43ab33ae61e4cdb315752ee23af5c1ce8eb/source.nex",
+              "line": 9,
+              "column": 17,
+              "point_id": 3,
+              "phase": "call_entry",
+              "site": "164c189a82660b92095202614136309caaa1ee67a2713f7d90e465202003d376",
+              "depth": 1
+            }
+          ]
+        },
+        "step_after": {
+          "schema": "nex.task-debug-stack/1",
+          "task_id": 1,
+          "generation": 1,
+          "stop_id": "31",
+          "frames": [
+            {
+              "index": 0,
+              "id": 2,
+              "task_id": 1,
+              "name": "task_debug_handoff::child",
+              "function_hash": "d0bb03610876029f8a465b9967a9b18bc760a5963b4a6c38de9df4acbbb6eca1",
+              "file": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug/.nex/build/source-cache/da4268c32e1c75a399e2be94e7d3b43ab33ae61e4cdb315752ee23af5c1ce8eb/source.nex",
+              "line": 6,
+              "column": 2,
+              "point_id": 7,
+              "phase": "statement",
+              "site": "d8a81f0646c6f3d8a770092908a295eeb16c5a70272d197d8d083414299692ad",
+              "depth": 2
+            },
+            {
+              "index": 1,
+              "id": 1,
+              "task_id": 1,
+              "name": "task_debug_handoff::main",
+              "function_hash": "64b457f1eba1d3510b5f412b40c7e448613850dc4a3c9633e997660657385775",
+              "file": "/Users/sae/projects/NEX/build/sdk-122-task-debug-integration-acceptance-v1/structured-task-debug/.nex/build/source-cache/da4268c32e1c75a399e2be94e7d3b43ab33ae61e4cdb315752ee23af5c1ce8eb/source.nex",
+              "line": 9,
+              "column": 17,
+              "point_id": 3,
+              "phase": "call_entry",
+              "site": "164c189a82660b92095202614136309caaa1ee67a2713f7d90e465202003d376",
+              "depth": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+  "linux_arm64": {
+    "groups": [
+      "task_debug_runtime_native",
+      "task_debugging_native",
+      "task_profile_runtime_native"
+    ],
+    "actual_lldb_dap_cases": 10,
+    "seconds": 96.231,
+    "compiler_sha256": "1aef2aba15f9a7b37c476a60de27d6f49f826e684bd4ff4d3fbe48f66fc90f5c",
+    "pinned_image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+    "network": "none",
+    "source_readonly": true,
+    "full_linux_suite": false,
+    "installed_linux_sdk": false,
+    "separate_gcc_asan_ubsan_lsan": "debugruntime109checks/614markers; debug-disabledprofiling38checks; separate matching input proof",
+    "gcc_receipt": "task-debug-122-linux-gcc-sanitizer-v1/report.json"
+  },
+  "runtime_sanitizers": {
+    "matching_runtime_inputs_reused": true,
+    "new_postfreeze_execution_claim": false,
+    "macos": "ASAN/UBSAN/LSAN+TSAN debug109checks/614markers and debug-disabledprofile38checks",
+    "compiler_codegen_under_sanitizers": false
+  },
+  "limits": [
+    "native020 standalone and source-only project task debug only",
+    "rawDAP, HTTP, foreign code and binary providers rejected",
+    "combined task debugging/profiling and logicaltask core inspection pending",
+    "non-native/other-platform taskdebug pending"
+  ],
+  "recovery": {
+    "url": "https://github.com/sae-ru/NEX/tree/codex/backup-nex-20261023-043011",
+    "commit": "97a7cb46536d75fe739905fe41371ee6f943f9ad",
+    "tree": "4ac425e3ea85a05d5d6b0cf12b0f2e329f463b6d",
+    "verified_files": 990,
+    "accepted_release": false
+  },
+  "primary081_preserved": true,
+  "root_promoted": false,
+  "full_objective_complete": false,
+  "receipts": {
+    "native-122-task-debug-integration-source-manifest-v1.json": "60d3a053dd90b354fc7cf2516161151c1364ac54c47fcee57b460d56deab5652",
+    "native-122b-task-debug-test-repair-source-manifest-v1.json": "ab8a06fa9e471633f919d7adc6ffb9e60406431b984dc7a1cd342b5fa0e5b346",
+    "task-debug-122-build-controller-v2.json": "8f1dc24d94e9936901595ee577dc201c0dd46fcc7543d72c3737f8717f7e73d1",
+    "task-debug-122-focused-controller-v2.json": "a7551b5c71566af7457bcf580ea7e5fb9743ca790df87acb900dcb84aa81bd67",
+    "task-debug-122-acceptance-controller-v2.json": "55da9ad0f18db97f4b38207e37ae55b7287bbc0ebb42b41d3b774345d81f0e9a",
+    "task-debug-122b-composite139-v3.json": "26619ec37ee9d8bc5ba9ebdbdbbcc5bedb35d48645663c3f850182151b5ce348",
+    "task-debug-122b-server-workload-test-repair-v1/report.json": "ea5925cea60a9e2cab3c7e74e3f799c654996f6cfd9ada6db610220d78410bc6",
+    "task-debug-122b-readonly-test-repair-audit-v1.json": "734dd51cc76e545a8d24bdf4c252c7f70186d2a1eeb14d7c1acfa2f311b7125c",
+    "task-debug-122-sdk-acceptance-controller-v3.json": "3c3a0b9b5fcadb8e4d618b4a25a3968a30c3da876840c080565aa5a529dd6314",
+    "sdk-122-task-debug-integration-acceptance-v1/report.json": "18eea1d5e511abdfa2023c19babd1c4f8f49b8e383e0624ce563cb515cad2238",
+    "linux-122-task-debug-probe-v2/report.json": "3e2c5b14d96a694ddfb192201adb561602d4c8ddcc9a850854022560595b37f8",
+    "task-debug-122-linux-gcc-sanitizer-v1/report.json": "b1c3785202e3b973a5a47c9ac7043b01c66170526783a1c6bb06e93aad271269",
+    "task-debug-122-runtime-sanitizers-v1/report.json": "c800a0d4193ef2fe837a8ed4beac3a20bb07e725d44fa30fea53cf0c66d9a591",
+    "task-profile-122-macro-off-compat-v2/report.json": "3554b74179ab1eb5152e2e1ea15ed1999806fa5a8189eb88a167337856321a65",
+    "github-nex-checkpoint-20261023-043011/verification.json": "295228da4ac8ced30c9ecf320e3b8f23833b57fb43446a8ff9e8ff09a2c4ea9d"
+  }
+}

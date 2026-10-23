@@ -40,9 +40,26 @@ class DistributionWorkflow(unittest.TestCase):
         self.assertEqual(len(old['phases']), 12)
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
         for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries',
-                     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug'):
+                     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_static_provider_sdk116_requires_actual_archives_and_source_deleted_delivery(self):
+        current = self.report();current['doctor']={'version':'0.116.0'}
+        fields = ('descriptor','actual_static_archives','descriptor_accessors','consumer_ownership',
+                  'native_reference','unused_read_excluded','root_file_grant','root_limits','warm_cache',
+                  'retained_completion','source_deleted_replay','standalone_without_resources','source_deleted_package')
+        with self.assertRaisesRegex(RuntimeError,'static task provider delivery'):
+            acceptance.validate_completed_report(current)
+        current['evidence']={'static_task_providers':{name:True for name in fields}}
+        for name in fields:
+            for value in (False,None,'true'):
+                changed=copy.deepcopy(current);changed['evidence']['static_task_providers'][name]=value
+                with self.subTest(delivery=name,value=value),self.assertRaisesRegex(RuntimeError,'static task provider delivery'):
+                    acceptance.validate_completed_report(changed)
+        # New provider evidence cannot waive genuine debugger/profile/read gates.
+        with self.assertRaisesRegex(RuntimeError,'task debugger delivery'):
+            acceptance.validate_completed_report(current)
 
     def test_task_debug_sdk_requires_actual_delivery_and_live_execution(self):
         current = self.report(); current['doctor'] = {'version':'0.115.0'}

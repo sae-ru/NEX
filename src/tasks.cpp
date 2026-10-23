@@ -518,6 +518,36 @@ struct Runner {
     else if(fs::is_regular_file(source)){fs::create_directories(destination.parent_path());copyFile(source.string(),destination.string(),true);}
     else throw Error("E_TASK_ARTIFACT","missing output artifact: "+source.string());
   }
+  std::string retainTaskProviderBuild(const fs::path &executable,const fs::path &destination){
+    const auto folder=executable.parent_path();auto metadata=readJSON(inside(folder,"build.json"),8*1048576);const auto &build=object(metadata);
+    if(build.getString("completion_schema")!="nex.native-completion/4")return {};
+    if(fs::is_symlink(folder)||build.getString("compiler_build")!=NEX_BUILD_ID)
+      throw Error("E_TASK_ARTIFACT","static task build requires its matching compiler and physical artifact directory");
+    auto inputNames=nativeCompletionInputs(build);std::vector<std::string> names{executable.filename().string(),"program.mlir","program.ll","compilation.json","build.json","source-bundle.json"};
+    names.insert(names.end(),inputNames.begin(),inputNames.end());names.push_back("complete");names.push_back("debug.json");
+    std::map<std::string,std::pair<std::string,uintmax_t>> inputs;
+    for(const auto &name:names){auto source=inside(folder,name);if(!fs::is_regular_file(source))throw Error("E_TASK_ARTIFACT","missing retained static task input: "+name);auto bytes=readFile(source.string());inputs.emplace(name,std::pair{hash(bytes),bytes.size()});}
+    auto completed=[&](const fs::path &root){
+      std::string value=text(build,"key");
+      for(const auto &name:names)if(name!="complete"&&name!="debug.json")value+=hash(readFile(inside(root,name).string()));
+      return readFile(inside(root,"complete").string())==hash(value)+"\n";
+    };
+    if(!completed(folder))throw Error("E_TASK_ARTIFACT","static task build completion differs before retention");
+    const auto retained=destination/"retained-build";Array mapping;
+    for(const auto &name:names){auto source=inside(folder,name),target=inside(retained,name);copyArtifact(source,target);
+      if(hash(readFile(target.string()))!=inputs.at(name).first||fs::file_size(target)!=inputs.at(name).second)
+        throw Error("E_TASK_ARTIFACT","static task build changed during artifact retention");
+      mapping.push_back(Object{{"original",source.string()},{"retained",target.lexically_relative(directory).generic_string()},
+        {"hash",inputs.at(name).first},{"bytes",int64_t(inputs.at(name).second)}});
+    }
+    for(const auto &[name,identity]:inputs)if(hash(readFile(inside(folder,name).string()))!=identity.first)
+      throw Error("E_TASK_ARTIFACT","static task build changed after artifact retention");
+    if(!completed(retained))throw Error("E_TASK_ARTIFACT","retained static task build completion differs");
+    auto record=retained/"retained.json";atomic(record,Object{{"schema","nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
+      {"build_key",text(build,"key")},{"original_directory",folder.string()},{"metadata_rewritten",false},{"hash_algorithm","BLAKE3"},
+      {"completion_schema","nex.native-completion/4"},{"files",std::move(mapping)}});
+    return record.lexically_relative(directory).generic_string();
+  }
   JSON check(const Object &c){
     auto id=text(c,"id"),kind=text(c,"kind"),program=text(c,"program"),target=text(c,"target");const auto &candidate=p.programs.at(program);const auto &source=candidate.program;
     Object row{{"id",id},{"kind",kind},{"program",program},{"target",target},{"status","failed"}};
@@ -678,13 +708,15 @@ struct Runner {
         Array outputs;
         for(const auto &item:array(response(value),"artifacts",0,128)){
           const auto &a=object(item);auto name=text(a,"component"),kind=text(a,"kind");auto destination=artifact/"components"/name;
+          Object output{{"component",name},{"kind",kind},{"directory",destination.lexically_relative(directory).generic_string()}};
           if(kind=="web")copyArtifact(text(*a.getObject("result"),"dist"),destination/"dist");
           else{
             auto executable=fs::path(text(a,"artifact"));copyArtifact(executable,destination/executable.filename());
             if(fs::is_directory(executable.parent_path()/"images"))copyArtifact(executable.parent_path()/"images",destination/"images");
             for(auto key:{"metadata","compilation","debug_manifest","notices"})if(auto file=a.getString(key);file&&!file->empty())copyArtifact(file->str(),destination/(std::string(key)+(std::string(key)=="notices"?".txt":".json")));
+            auto retained=retainTaskProviderBuild(executable,destination);if(!retained.empty())output["retained_build"]=std::move(retained);
           }
-          outputs.push_back(Object{{"component",name},{"kind",kind},{"directory",destination.lexically_relative(directory).generic_string()}});
+          outputs.push_back(std::move(output));
         }row["components"]=std::move(outputs);
       }else if(passed&&mode!="module"){const auto &r=response(value);if(target=="web")copyArtifact(text(r,"dist"),artifact/"dist");else {auto exe=fs::path(text(r,"executable"));copyArtifact(exe,artifact/exe.filename());auto notices=r.getString("notices").value_or("").str();if(!notices.empty())copyArtifact(notices,artifact/"THIRD_PARTY_NOTICES.txt");for(auto k:{"metadata","compilation","debug_manifest"})if(auto path=r.getString(k))if(fs::is_regular_file(path->str()))copyArtifact(path->str(),artifact/(std::string(k)+".json"));}}
     }

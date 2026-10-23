@@ -1,3 +1,5 @@
+(* Toolchain0.116 concrete static task providers are external checked project
+   linkage/ownership metadata, with no new syntax, canonical fields or migration. *)
 (* Toolchain0.115 logical task debugger metadata adds no source syntax,
    execution instructions, operation ordinals or canonical fields. *)
 (* Language0.20 retains019 syntax and adds semantic whole-file read suspension

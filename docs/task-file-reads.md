@@ -5,6 +5,9 @@ to structured task suspension in standalone native macOS/Linux applications,
 source-only native projects and the independent reference scheduler. This
 candidate's complete regression, installed-SDK and platform gates are pending.
 Query `nex describe --field task_file_reads --json` for the actual compiler.
+Toolchain0.116 also carries this bridge through checked concrete static task
+providers using the application's root grant. See [task providers](task-providers.md)
+for source/ownership requirements and separate current acceptance status.
 
 Only a **server function declaring both `task` and `fs`** uses this bridge.
 The calls retain their existing types: `str -> result<str>` and
@@ -116,7 +119,7 @@ helpers/scopes cannot renew the root deadline. An outer forced process timeout
 does not establish joined cleanup.
 
 This subset does not enable writes, streaming reads, db/ffi/network bridges,
-task HTTP handlers, binary providers, combined task debugging/profiling, TypeScript/Node
+task HTTP handlers, dynamic/binary-only providers, combined task debugging/profiling, TypeScript/Node
 filesystem, browser filesystem, NEX UI adapters, Windows, Wasm or mobile tasks.
 Browser emission still rejects reachable server code and includes only reachable
 client/shared code. Existing pure/task TypeScript scheduling remains available.
