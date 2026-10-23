@@ -1,3 +1,25 @@
+# Working119b: complete current fixture repair
+
+Toolchain0.112.1/language0.20 adds the third118 failure correction: regenerate
+the current type-patches and verification example revision pins after the
+explicit020 transition. Frozen118 finished125/128 groups; two editor fixtures and this pin
+were stale. Its raw results are retained. Frozen119 cleanallbuild passed but
+was not given a full/SDK claim after the third failure became known.
+Current119b full regression and matching SDK acceptance are pending. Semantics,
+grammar, history migration and execution ABI remain unchanged. Primary081 is
+preserved; the full objective remains active.
+
+# Working119: current editor acceptance fixtures
+
+Toolchain0.112/language0.20 keeps the118 implementation and changes the two
+new-project editor acceptance manifests from019 to020. These are current
+fixtures, not retained historical sources. Frozen118 macOS full128 found both
+editor acceptance failures; its raw report remains retained. Its selected
+Linux ARM6427 groups pass. No118 full acceptance or installedSDK claim follows.
+Working119 full regression and matching SDK acceptance are pending.
+No language semantics, grammar, history, task execution ABI or migration changes.
+Primary081 remains preserved; the full objective remains active.
+
 # Working118: consistent pending-capability discovery
 
 Toolchain0.111/language0.20 retains117 public file-read implementation and fixes

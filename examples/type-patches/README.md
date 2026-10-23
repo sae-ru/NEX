@@ -1,6 +1,6 @@
 # Atomic type and caller replacement
 
-Requires a compiler advertising `type` in `patch_entities` (toolchain 0.45).
+Requires a language0.20 compiler advertising `type` in `patch_entities`.
 From this directory:
 
 ```sh
@@ -24,5 +24,5 @@ constructor has too few fields.
 The patch changes archived HEAD and leaves these source files unchanged. Use
 `--revision HEAD` until exporting. A subsequent bare `check` checks the old
 physical files and selects their revision again. The example's expected digest
-is pinned to the checked language-0.15 baseline; changed source requires a fresh
+is pinned to the checked language0.20 baseline; changed source requires a fresh
 reviewed patch and expected HEAD.

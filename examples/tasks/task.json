@@ -117,7 +117,7 @@
       "program": "app",
       "target": "source",
       "contracts": "proof.json",
-      "intent_hash": "7ef3c050afd07a4fdf71164e01df3acab24bf4dbf4c5950ff4ed171bccbb6397"
+      "intent_hash": "0caf232bfaf15a88715be23518b269d488ea517d9f59ad67af4346eaec8bb5d1"
     },
     {
       "id": "native-build",

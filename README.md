@@ -6,11 +6,14 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.111.0 / language0.20**.
-Working118 retains the117 public read bridge and corrects its browser-worker
-pending-capability discovery/pack mismatch. Frozen117 is retained with its
-focused discovery failure and passing five-probe sanitizers; it has no full
-acceptance claim. This correction changes no source semantics or migration.
+This isolated development source is **toolchain0.112.1 / language0.20**.
+Working119b repairs two current editor acceptance project manifests still marked
+019 after the explicit020 transition and regenerates current type-patch and
+verification example pins. Frozen118 retains three macOS failures and its
+independently passing Linux ARM64 27-group probe. Its source
+and all historical migration fixtures remain unchanged. Current full regression
+and matching installed SDK acceptance are pending. The source semantics,
+execution ABI and migration are unchanged by this fixture correction.
 The implementation connects the two existing whole-file read operations to structured
 suspension in explicit server `!{task,fs}` functions. Native macOS/Linux
 applications/source-only projects and the independent reference scheduler use
