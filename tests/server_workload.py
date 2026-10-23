@@ -13,6 +13,16 @@ def definition():
         'phases':[{'concurrency':1,'iterations':2},{'concurrency':4,'iterations':3}],'warmup':2,
         'authorization_env':'NEX_TEST_WORKLOAD_TOKEN'}
 
+def assert_json_text_excludes(test,value,marker):
+    # Numeric observations may contain the same digits as the response body.
+    if isinstance(value,str):test.assertNotIn(marker,value)
+    elif isinstance(value,dict):
+        for key,item in value.items():
+            assert_json_text_excludes(test,key,marker)
+            assert_json_text_excludes(test,item,marker)
+    elif isinstance(value,list):
+        for item in value:assert_json_text_excludes(test,item,marker)
+
 def project_fixture(self):
     for name in ['core','server']:(self.root/name).mkdir()
     (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'server/main.nex'}))
@@ -38,6 +48,18 @@ server fn handle(request:http::Request)->http::Response{
         'server':{'kind':'server','root':'server','entry':'server/main.nex','dependencies':{'core':'dynamic'}}}}))
 
 class Protocol(unittest.TestCase):
+    def test_payload_exclusion_checks_text_without_numeric_latency_collisions(self):
+        metrics={'schema':'nex.server-workload-result/1','authorization_values_captured':False,
+            'request_payloads_captured':False,'phases':[{'duration_ns':1047042,'requests_per_second':4704.25,
+                'latency_ns':{'min':4704,'p50':1047042},'samples_ns':[4704,1047042]}],'error':None}
+        assert_json_text_excludes(self,metrics,'4704')
+        # Keep the original substring criterion for every textual key/value,
+        # including nested body fields and a wrongly stringified observation.
+        for captured in [{'body':'4704 🧠'},{'phases':[{'response':{'body':'prefix4704suffix'}}]},
+            {'4704':0},{'nested':[{'4704 🧠':False}]},{'samples':['4704']},{'duration_ns':'1047042'}]:
+            with self.subTest(captured=captured):
+                with self.assertRaises(AssertionError):assert_json_text_excludes(self,captured,'4704')
+
     def test_bounds_strict_utf8_and_no_executable_or_header_authority(self):
         valid=definition();raw=json.dumps(valid,ensure_ascii=False).encode();normalized,plan=helper.inspect(raw)
         self.assertEqual(plan['total_requests'],16);self.assertEqual(plan['sha256'],hashlib.sha256(raw).hexdigest())
@@ -162,7 +184,7 @@ class PublicProject(harness.ToolchainCase):
         for name in ['workload::core::calculate','workload::service::handle']:self.assertEqual(functions[name]['calls'],16)
         saved=json.loads(output.read_text());self.assertEqual(saved['workload'],metrics)
         self.assertTrue(all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in saved['memory']))
-        self.assertNotIn(token,output.read_text());self.assertNotIn(token,json.dumps(result));self.assertNotIn('4704',json.dumps(metrics))
+        self.assertNotIn(token,output.read_text());self.assertNotIn(token,json.dumps(result));assert_json_text_excludes(self,metrics,'4704')
         value=definition();value['requests'][0]['expect']['text']='different';value['phases']=[{'concurrency':1,'iterations':1}];value['warmup']=0
         self.workload.write_text(json.dumps(value))
         failed=self.action('profile','--','--auth',self.root/'auth.json','--database',self.root/'state.sqlite',env=env,ok=False)
