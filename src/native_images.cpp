@@ -2,8 +2,6 @@
 #include "nex/native_toolchain.h"
 #include "nex/operations.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/SmallString.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Object/BuildID.h"
 #include "llvm/Object/MachO.h"
@@ -12,6 +10,8 @@
 #include "llvm/Support/SHA256.h"
 #include "llvm/TargetParser/Triple.h"
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <filesystem>
 #include <set>
 
@@ -39,10 +39,11 @@ void copyCaptured(const fs::path &from,const fs::path &to){
   // ELF loaders keep relocated private pages for the lifetime of a mapping.
   // Truncating a mapped DSO, even to restore identical bytes, invalidates them.
   if(!fs::is_symlink(to)&&fs::is_regular_file(to)&&fs::status(to).permissions()==permissions&&readFile(to.string())==bytes)return;
-  llvm::SmallString<256> path;int descriptor=-1;
-  auto error=llvm::sys::fs::createUniqueFile(to.string()+".nex-copy-%%%%%%",descriptor,path);
-  if(error)fail("cannot stage captured image: "+error.message());
-  struct Staged {fs::path path;~Staged(){std::error_code ignored;fs::remove(path,ignored);}} staged{path.str().str()};
+  // mkstemp interprets only the final Xs; literal '%' in a project path is
+  // data, whereas LLVM unique-file models replace '%' throughout the path.
+  auto path=to.string()+".nex-copy-XXXXXX";int descriptor=::mkstemp(path.data());
+  if(descriptor<0)fail("cannot stage captured image: "+std::error_code(errno,std::generic_category()).message());
+  struct Staged {fs::path path;~Staged(){std::error_code ignored;fs::remove(path,ignored);}} staged{path};
   llvm::raw_fd_ostream output(descriptor,true);output.write(bytes.data(),bytes.size());output.close();
   if(output.has_error()){auto failure=output.error();output.clear_error();fail("cannot write staged image: "+failure.message());}
   fs::permissions(staged.path,permissions);
