@@ -5,6 +5,10 @@
 namespace nexrt {
 inline constexpr uint64_t taskDebugCatalogABI=1;
 inline constexpr uint64_t taskDebugCatalogMagic=UINT64_C(0x4e45584442473031);
+inline constexpr uint64_t taskDebugProviderCatalogABI=2;
+inline constexpr uint64_t taskDebugProviderCatalogMagic=UINT64_C(0x4e45584442473032);
+inline constexpr uint64_t taskDebugRegistryABI=1;
+inline constexpr size_t maximumTaskDebugRegistries=128; // Total, including root.
 inline constexpr uint64_t noTaskDebugIndex=UINT64_MAX;
 inline constexpr size_t maximumTaskDebugCodes=16384,maximumTaskDebugPoints=262144,
   maximumTaskDebugBindings=65536,maximumTaskDebugVisibleBindings=1048576,
@@ -23,6 +27,16 @@ struct TaskDebugCodeSite {
   const int64_t *visibleBindings;
   int64_t pointCount,bindingCount,visibleCount,slotCount;
 };
+// Original compiler-owned metadata; a pure-only component has null/zero codes.
+// All images are fixed startup mappings and outlive the root physical drain.
+struct TaskDebugCodeRegistry {
+  uint64_t abi;
+  const TaskDebugCodeSite *codes;
+  uint64_t count;
+  const char *component;
+};
+static_assert(sizeof(TaskDebugCodeRegistry)==32&&offsetof(TaskDebugCodeRegistry,codes)==8&&offsetof(TaskDebugCodeRegistry,component)==24);
+static_assert(std::is_trivial_v<TaskDebugCodeRegistry>&&std::is_standard_layout_v<TaskDebugCodeRegistry>);
 static_assert(sizeof(void*)==8&&sizeof(TaskDebugBinding)==40&&offsetof(TaskDebugBinding,name)==8);
 static_assert(sizeof(TaskDebugPoint)==72&&offsetof(TaskDebugPoint,pc)==8);
 static_assert(sizeof(TaskDebugCodeSite)==96&&offsetof(TaskDebugCodeSite,pointCount)==64);
@@ -32,5 +46,6 @@ static_assert(std::is_trivial_v<TaskDebugCodeSite>&&std::is_standard_layout_v<Ta
 }
 extern "C" {
 void nex_task_debug_prepare(const nexrt::TaskDebugCodeSite*,int64_t count);
+void nex_task_debug_prepare_registries(const nexrt::TaskDebugCodeRegistry *const*,int64_t count);
 void nex_task_debug_checkpoint(void *frame,int64_t pointIndex)noexcept;
 }

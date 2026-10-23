@@ -1,3 +1,13 @@
+When `task_provider_debugging` is present, check its actual `public_enabled` and
+`source_support` before preparing provider instrumentation. Read
+docs/task-provider-debugging.md. An ordinary debug-profile build does not select
+logical metadata: project plan/build/package require explicit --task-debug;
+project debug prepares it inherently. Keep each action's own source/image/CWD/key
+provenance. A captured task_debug build check uses a dedicated debug-profile
+configuration and prepares artifacts without launching an inferior. Never infer
+provider support from the source-only descriptor, rewrite hashed raw metadata,
+inspect authority values or invent root graph IDs for provider-only definitions.
+
 When `task_debugging` is present, check its `source_support` and `public_launch`
 fields before using logical task debug commands. Read docs/task-debugging.md.
 An unavailable/odd publication cannot authorize a watch; reacquire after a fresh
@@ -10,7 +20,8 @@ authority must not be reconstructed as a pure watch input.
 For native task-provider profiling, query `task_provider_profiling` and read
 `nex guide --kind task-provider-profile --json`. Treat pending enablement as
 unsupported; respect the exact `supported_actions` list even when public support
-is enabled. Profile test/build-test remains pending in the first slice. One
+is enabled. Profile-configured test/build-test builds are supported; measured
+profile sessions for test actions remain unsupported. One
 running application owns the collector and the checked batch
 of actual component registries. Register/check zero-call provider-only exports
 and concrete generic sites too; never invent root graph node IDs. Source calls
@@ -18,8 +29,9 @@ count once across resumes/images. Preserve CPU/active elapsed/lifetime and shall
 memory meanings/completeness. Bind each profile/capture/replay/package operation
 to its own source/catalog/image closure; CWD/build keys may differ between actions.
 Raw catalogs/provider/build/complete bytes stay unchanged under relocation, with
-separate output SHA inventories. No runtime unload, provider logicaldebug/Tracy,
-HTTP/foreign or non-native profile support follows from a new metadata schema.
+separate output SHA inventories. Runtime unload, combined task debug/profile,
+task Tracy, HTTP/foreign and non-native profile support do not follow from a new
+metadata schema.
 
 For fixed shared task provider projects, first query
 `nex describe --field task_shared_providers --json` and read
@@ -31,7 +43,8 @@ import one common runtime. A static dependency cannot be embedded twice in one
 loaded closure; independent application roots have independent ledgers. Do not
 retag static provider1 records as shared provider2. Exporting unused read code
 adds code support, not root authority. Runtime load/unload, callable/authority
-transport, provider logical debug, HTTP/foreign and binary-only remain pending.
+transport, HTTP/foreign and binary-only remain pending. Logical provider
+debugging requires the separate task_provider_debugging contract.
 Use the distinct `task_provider_profiling` contract for instrumented provider3 builds.
 
 Toolchain0.116 is integrating concrete static task providers. Before selecting
@@ -103,14 +116,16 @@ returning a closure is not an imported task descriptor. Keep provider source and
 the declared static edge available, and inspect task_linkage ownership rather
 than accepting consumer recompilation as a provider proof. Fixed startup-linked shared task providers have their own task_shared_providers
 descriptor and guide; do not infer support from static task_providers. Provider
-logical debug, HTTP/foreign and runtime unload remain unsupported in that scope.
+logical debugging uses the separate task_provider_debugging contract.
+HTTP/foreign tasks and runtime unload remain unsupported.
 Instrumented provider3 builds use the distinct `task_provider_profiling` contract.
 Use native task profiling only when the actual task_profiling descriptor reports
 source_support; read docs/profiling.md for its current CLI language/platform scope.
 Task schema2 separates source CPU, active elapsed and logical lifetime; a resume
 is not a new source call. Inspect each completeness flag before budgets. Event
 truncation alone does not invalidate complete call/shallow-memory aggregates.
-Task Tracy, provider logical debugging and non-native task profilers remain pending.
+Task Tracy and non-native task profilers remain pending. Use the separate
+task_provider_debugging contract for provider debug instrumentation.
 The private task_profile_collector module alone does not enable source profiling.
 
 Keep genuine018 source, the matching SDK and a complete graph snapshot. Explicit
@@ -189,7 +204,8 @@ never put them in source, workload, Git or captured payloads. Check workload.ok,
 counts, native exit, profile identity, dropped events and managed pools. Warmup
 contributes to native calls but not phase latency statistics. Timeouts never
 retry mutations. Workload task capture/replay requires the separate0.83 capability; HTTPS/external
-targets and server debugging remain pending; HTTP worker concurrency adds no language syntax.
+targets remain pending; server debugging uses the separate server_debugging
+capability/guide. HTTP worker concurrency adds no language syntax.
 
 
 When editor_features advertises project_architecture_debug_launch, use extension
@@ -222,8 +238,9 @@ the application; runtime acceptance still needs separate observations. For
 external notice inputs, query `nex task NOTICES.json --kind notices --json`,
 review inputs_hash and pin notices/notices_hash in the check. Complete license
 text must stay inside the project and is captured for replay. Inspect catalogue
-changes explicitly; notice data grants no execution authority. Server
-workloads and dedicated editor task debugging remain pending; passing a task
+changes explicitly; notice data grants no execution authority. Server workload
+capture uses project_task_server_workloads and docs/task-workloads.md;
+dedicated logical-task editor integration remains separate. Passing a task
 proves only its reviewed criteria.
 
 When `project_binary_execution` is advertised inside `project_build.features`,
@@ -395,7 +412,7 @@ Use compiler diagnostics (code, file, line, column) to repair errors. Report the
 
 For native debugging, query `debug_features` and `nex guide --kind debug --json`. `nex debug FILE --json` returns the frozen executable, manifest and `lldb-dap` launch settings without starting a debugger. At a stopped LLDB frame, `nex-values` returns bounded `nex.debug-values/1` previews with the revision and logical/native function mapping. Shadowed names can occur more than once. Previews can be truncated or unavailable and are not lossless JSON wire values. Fetch fresh frame data after every stop. For pure NEX watch expressions, use `nex-eval EXPR`, `nex-frame EXPR` and `nex guide --kind expression --json`. `--kind nex-dap` supplies an external stdio adapter command for standard DAP watches. It requires client adapter registration. The compiler interprets checked expressions over exact wire snapshots; it never executes an effectful call in the inferior. Results preserve revision/function/stop identity. For large aggregates, `nex-frame EXPR` returns a bounded `nex.debug-frame/2` snapshot with only demanded shape/value captures. Offline `inspect --kind demand` requests the first missing checked path; supply exact wire data from the same stop and replay, or report unavailable. List lengths, record fields, result tags and dynamic indices propagate through pure helpers without reading siblings. Whole-value operations and strings still need complete bounded values. Missing captures are explicit failures; never fabricate an omitted value. Read both frame schemas and the expression guide before implementing a capture provider.
 
-For native build changes, query `build_features` and `nex guide --kind build --json`. `nex build FILE --json` reports compiled/reused function and module counts and a `nex.compilation/1` report path. Each concrete function/closure/specialization has its own object; same-file body edits can reuse other functions, while changed call contracts, layouts or emitted source coordinates invalidate consumers. A module counts as compiled if any selected function compiled, otherwise reused. The frontend still checks the complete program. A warm cache or green reuse count does not prove behavior: check/test the selected revision and compare relevant observations with a clean build when investigating invalidation. Keep the build workspace's source cache and matching source maps for old debug sessions. Source language is 0.16; native ABI metadata is toolchain-specific.
+For native build changes, query `build_features` and `nex guide --kind build --json`. `nex build FILE --json` reports compiled/reused function and module counts and a `nex.compilation/1` report path. Each concrete function/closure/specialization has its own object; same-file body edits can reuse other functions, while changed call contracts, layouts or emitted source coordinates invalidate consumers. A module counts as compiled if any selected function compiled, otherwise reused. The frontend still checks the complete program. A warm cache or green reuse count does not prove behavior: check/test the selected revision and compare relevant observations with a clean build when investigating invalidation. Keep the build workspace's source cache and matching source maps for old debug sessions. Current source language is0.20; native ABI metadata is toolchain-specific.
 
 For native performance work, inspect `profile_features` and `nex guide --kind profile --json`. Run `nex profile FILE --scenario TEXT --json` on a defined workload, follow its report path for details, and use the recorded revision/name with `nex context`. Inspect dropped-record counts. Report measured wall time, call counts and shallow memory sizes with the host/scenario; do not present them as CPU utilization, total RSS, GPU timing or a general performance guarantee. Compare observable outputs/tests before and after an optimization.
 

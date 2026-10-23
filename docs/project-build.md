@@ -1,12 +1,15 @@
 # Checked project architecture and builds
 
-Toolchain0.116 adds candidate [concrete static task providers](task-providers.md)
-under existing checked static edges. Source and concrete resource-free export
-contracts remain required; archives contain real provider definitions and
-descriptor accessors. The root alone owns runtime/limits/file authority. This
-does not enable dynamic task providers, callable/authority transport or task
-profiling/logical debugging across provider graphs. Query `task_providers` for
-the actual compiler's enablement and pending acceptance scopes.
+Checked native task projects support concrete [static archives](task-providers.md)
+and [fixed startup-linked shared images](task-shared-providers.md). Source and
+resource-free concrete export contracts remain required. Each application owns
+one runtime/executor/limits/file authority. Instrumented
+[provider profiles](task-provider-profiling.md) and
+[logical debugging](task-provider-debugging.md) have distinct descriptors/formats.
+Query each actual capability; callable/authority transport and arbitrary runtime
+loading/unloading remain unsupported. For debug-profile artifacts use
+`project --kind plan|build|package --task-debug`; `project --kind debug` selects
+logical instrumentation inherently. Ordinary debug-profile build/run is separate.
 
 ## Project actions
 

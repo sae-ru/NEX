@@ -20,6 +20,31 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_debug_completion_keeps_exact_darwin_root_symbols(self):
+        spec=importlib.util.spec_from_file_location('debug_completion',Path(__file__).resolve().parents[1]/'tools/core_capsule.py')
+        capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
+        inputs=[{'kind':kind,'path':path} for kind,path in (
+            ('abi','library-abi.json'),('task_provider','task-provider.json'),
+            ('debug_catalog','task-debug-catalog.json'),('debug_sources','task-debug-sources.json'),
+            ('debug_source_bundle','debugger/components/app/source-bundle.json'),
+            ('debug_source_projection','debugger/source-cache/'+'a'*64+'/source.nex'),
+            ('debug_manifest','debug.json'),('debug_formatter','debugger/lldb_nex.py'),('debug_adapter','debugger/nex_dap.py'))]
+        metadata={'completion_schema':'nex.native-completion/7','completion_mode':'static-application',
+            'compiler_target':'aarch64-unknown-linux-gnu','completion_inputs':copy.deepcopy(inputs)}
+        self.assertEqual(capsule.completion_inputs(metadata),[row['path'] for row in inputs])
+        metadata['compiler_target']='arm64-apple-darwin27.0.0'
+        with self.assertRaises(ValueError):capsule.completion_inputs(metadata)
+        symbols=[{'kind':'root_symbols','path':path} for path in (
+            'debug-symbols.complete','app.dSYM/Contents/Info.plist','app.dSYM/Contents/Resources/DWARF/app')]
+        metadata['completion_inputs']+=symbols
+        self.assertEqual(len(capsule.completion_inputs(metadata)),12)
+        for mutate in (lambda d:d['completion_inputs'].pop(),
+                       lambda d:d['completion_inputs'][-1].update(path='../app'),
+                       lambda d:d.update(completion_mode='static-archive'),
+                       lambda d:d.update(compiler_target='aarch64-unknown-linux-gnu')):
+            changed=copy.deepcopy(metadata);mutate(changed)
+            with self.subTest(mutate=mutate),self.assertRaises(ValueError):capsule.completion_inputs(changed)
+
     def test_debugger_script_paths_preserve_unicode_and_argument_boundaries(self):
         for path in ['/SDK, % 🧠/record.py', '/SDK "quoted"/record.py', '/SDK \\ slash/record.py']:
             command = acceptance.lldb_script_import(Path(path))
@@ -42,9 +67,34 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
         for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries',
                      'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers',
-                     'shared-task-providers','task-provider-profiling'):
+                     'shared-task-providers','task-provider-profiling','task-provider-debugging'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_provider_debug_sdk119_requires_owned_delivery_and_actual_protocol(self):
+        report={'schema':'nex.sdk-acceptance/1','ok':True,'doctor':{'version':'0.119.0'},
+            'phases':[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES],
+            'commands':[{'status':'passed','exit_code':0}]}
+        delivery=('descriptor','native_reference','static_and_shared_artifacts','original_registry_symbols',
+            'closed_owned_images','source_union','retained_completion7','raw_package_provenance','source_deleted_capture','source_deleted_replay')
+        for key in delivery:
+            for value in (False,None,'true',1):
+                changed=copy.deepcopy(report);changed['evidence']={'task_provider_debugging':{name:True for name in delivery}}
+                changed['evidence']['task_provider_debugging'][key]=value
+                with self.subTest(key=key,value=value),self.assertRaisesRegex(RuntimeError,'provider debugger delivery'):
+                    acceptance.validate_completed_report(changed)
+        report['evidence']={'task_provider_debugging':{name:True for name in delivery},'live_debugger':True}
+        live=('provider_locals','component_pure_watch','next_in_out','stale_references','retained_live_debug','package_live_debug','replay_live_debug')
+        for key in live:
+            for value in (False,None,'true',1):
+                changed=copy.deepcopy(report);changed['evidence']['task_provider_debugging'].update({name:True for name in live})
+                changed['evidence']['task_provider_debugging'][key]=value
+                with self.subTest(key=key,value=value),self.assertRaisesRegex(RuntimeError,'provider debugger execution'):
+                    acceptance.validate_completed_report(changed)
+        report['evidence']['task_provider_debugging'].update({name:True for name in live})
+        with self.assertRaisesRegex(RuntimeError,'provider profiling delivery'):
+            acceptance.validate_completed_report(report)
+
 
     def test_static_provider_sdk116_requires_actual_archives_and_source_deleted_delivery(self):
         current = self.report();current['doctor']={'version':'0.116.0'}

@@ -27,7 +27,7 @@ MAX_TEXT = 4096
 _contexts = {}
 
 
-def _image_hash(path):
+def _image_hash(path, deadline=None):
     fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
     try:
         before = os.fstat(fd)
@@ -36,6 +36,8 @@ def _image_hash(path):
         digest = hashlib.sha256()
         count = 0
         while True:
+            if deadline is not None and time.monotonic() > deadline:
+                raise ValueError('owned image verification exceeded capture deadline')
             data = os.read(fd, 65536)
             if not data:
                 break
@@ -59,6 +61,17 @@ def _owned_images(manifest, program):
     images = manifest.get('owned_images', [])
     if not isinstance(images, list) or len(images) > 129:
         raise ValueError('invalid owned native image inventory')
+    parent = (Path(program).parent/'images').resolve()
+    if manifest.get('schema') == 'nex.debug/3':
+        directory = Path(manifest['artifact_directory'])
+        if directory == Path(program).parent:
+            parent = directory/'images'
+        else:
+            package = directory.parent.parent
+            if (directory != package/'debugger/retained-build' or
+                    Path(program) != package/'bin/app'):
+                raise ValueError('provider debug program is outside its completed/package layout')
+            parent = package/'lib/nex/host'
     result = {}
     for record in images:
         if not isinstance(record, dict):
@@ -73,11 +86,97 @@ def _owned_images(manifest, program):
             raise ValueError('invalid owned native image path/identity')
         resolved = str(Path(path).resolve())
         if (resolved in result or Path(path).is_symlink() or
-                Path(resolved).parent != (Path(program).parent/'images').resolve() or
+                Path(resolved).parent != parent or
                 _image_hash(path) != digest):
             raise ValueError('owned native image bytes/path differ from the manifest')
         result[resolved] = record
     return result
+
+
+def _provider_artifact_layout(manifest, path):
+    """Bound the raw namespace separately from relocated executable paths."""
+    directory = manifest.get('artifact_directory')
+    if (not isinstance(directory, str) or not 1 <= len(directory) <= 16384 or
+            '\0' in directory or not Path(directory).is_absolute() or
+            str(Path(directory).resolve(strict=True)) != directory or
+            Path(directory) != path.resolve(strict=True).parent or path.is_symlink()):
+        raise ValueError('provider manifest is outside its completed artifact directory')
+    root = Path(directory)
+    deadline = time.monotonic() + 10
+    for field, name in (('formatter', 'lldb_nex.py'), ('dap_adapter', 'nex_dap.py')):
+        script = root/'debugger'/name
+        if (manifest.get(field) != str(script) or script.is_symlink() or script.parent.is_symlink() or
+                script.resolve(strict=True) != script or not 0 < script.stat().st_size <= 2*1024*1024 or
+                not _task_digest(manifest.get(field+'_hash')) or
+                not _task_digest(manifest.get(field+'_sha256')) or
+                _image_hash(script, deadline) != manifest[field+'_sha256']):
+            raise ValueError('provider debug captured script identity differs')
+    if Path(__file__).resolve(strict=True) != Path(manifest['formatter']):
+        raise ValueError('provider views require their exact captured formatter')
+    relocation = manifest.get('relocation')
+    if relocation is None:
+        if path.name != 'debug.json' or Path(manifest['program']).parent != root:
+            raise ValueError('original provider manifest/program layout differs')
+        return
+    if (not isinstance(relocation, dict) or set(relocation) != {'path', 'hash'} or
+            relocation['path'] != 'debug-relocation.json' or not _task_digest(relocation['hash'])):
+        raise ValueError('invalid provider debug relocation reference')
+    receipt_path = root/relocation['path']
+    if receipt_path.is_symlink() or not 0 < receipt_path.stat().st_size <= 16*1024*1024:
+        raise ValueError('invalid provider debug relocation receipt')
+    receipt = json.loads(receipt_path.read_text())
+    if (not isinstance(receipt, dict) or set(receipt) != {'schema', 'compiler_build', 'build_key',
+            'original_directory', 'artifact_directory', 'metadata_rewritten', 'raw_files', 'images'} or
+            receipt.get('schema') != 'nex.task-debug-relocation/1' or receipt.get('metadata_rewritten') is not False or
+            receipt.get('artifact_directory') != directory or receipt.get('build_key') != manifest.get('build_key') or
+            receipt.get('compiler_build') != manifest.get('compiler_build') or
+            not isinstance(receipt.get('raw_files'), list) or not 1 <= len(receipt['raw_files']) <= 16391 or
+            not isinstance(receipt.get('images'), list) or not 1 <= len(receipt['images']) <= 129):
+        raise ValueError('provider debug relocation envelope differs')
+    original = receipt.get('original_directory')
+    if not isinstance(original, str) or not Path(original).is_absolute() or os.path.normpath(original) != original:
+        raise ValueError('provider debug original directory is invalid')
+    names, total = set(), 0
+    for record in receipt['raw_files']:
+        if (not isinstance(record, dict) or set(record) != {'path', 'hash', 'bytes'} or
+                not isinstance(record['path'], str) or '\\' in record['path'] or '\0' in record['path'] or
+                not record['path'] or any(part in ('', '.', '..') for part in record['path'].split('/')) or
+                Path(record['path']).is_absolute() or record['path'] in names or
+                not _task_digest(record['hash']) or type(record['bytes']) is not int or
+                not 0 <= record['bytes'] <= 512*1024*1024):
+            raise ValueError('provider debug raw relocation inventory differs')
+        raw = root/record['path']; total += record['bytes']; names.add(record['path'])
+        if (total > 1024*1024*1024 or raw.resolve(strict=True) != raw or raw.is_symlink() or
+                not raw.is_file() or raw.stat().st_size != record['bytes']):
+            raise ValueError('provider debug raw relocation bytes/path differ')
+    if not {'debug.json', 'debugger/lldb_nex.py', 'debugger/nex_dap.py'} <= names:
+        raise ValueError('provider debug raw relocation inputs are incomplete')
+    view = manifest['task_debug']; expected = {image['path']: image for image in view['images']}
+    expected[view['runtime_image']['path']] = view['runtime_image']
+    seen = set()
+    for record in receipt['images']:
+        if not isinstance(record, dict) or set(record) != {'input', 'output'}:
+            raise ValueError('invalid provider debug relocation image')
+        before, after = record['input'], record['output']
+        if (not isinstance(before, dict) or not isinstance(after, dict) or
+                set(before) != {'component', 'path', 'key', 'hash', 'sha256', 'uuid', 'kind'} or
+                after != expected.get(after.get('path')) or after.get('path') in seen or
+                any(before.get(key) != after.get(key) for key in ('component', 'key', 'kind')) or
+                any(not _task_digest(image.get(key)) for image in (before, after) for key in ('key', 'hash', 'sha256')) or
+                any(not isinstance(image.get('uuid'), str) or not re.fullmatch('[0-9a-f]{16,128}', image['uuid']) or
+                    len(image['uuid']) % 2 for image in (before, after))):
+            raise ValueError('provider debug relocated image mapping differs')
+        try:
+            relative = Path(before['path']).relative_to(original).as_posix()
+        except (TypeError, ValueError):
+            raise ValueError('provider debug original image escaped its namespace')
+        if relative not in names or _image_hash(root/relative, deadline) != before.get('sha256'):
+            raise ValueError('provider debug original image bytes differ')
+        if _image_hash(after['path'], deadline) != after.get('sha256'):
+            raise ValueError('provider debug relocated image bytes differ')
+        seen.add(after['path'])
+    if seen != set(expected):
+        raise ValueError('provider debug relocation image set is incomplete')
 
 
 def _member(value, name):
@@ -278,10 +377,12 @@ def load(debugger, command, result, internal_dict):
         manifest.pop('_capsule_recorded_program', None)
         manifest.pop('_capsule_recorded_images', None)
         manifest.pop('_owned_images', None)
-        if manifest.get("schema") not in ("nex.debug/1", "nex.debug/2") or manifest.get("runtime_view") != "nex.runtime-view/3":
+        if manifest.get("schema") not in ("nex.debug/1", "nex.debug/2", "nex.debug/3") or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
-        if manifest.get('schema') == 'nex.debug/2':
+        if manifest.get('schema') in ('nex.debug/2', 'nex.debug/3'):
             _task_manifest(manifest)
+        if manifest.get('schema') == 'nex.debug/3':
+            _provider_artifact_layout(manifest, path)
         manifest['_owned_images'] = _owned_images(manifest, str(Path(manifest['program']).resolve()))
         mappings = manifest.get("source_map", [])
         if not isinstance(mappings, list) or len(mappings) > 4096:
@@ -318,7 +419,7 @@ def load(debugger, command, result, internal_dict):
         if previous.get('_task_marker'):
             debugger.GetSelectedTarget().BreakpointDelete(previous['_task_marker'])
         _contexts[program_key] = manifest
-        if manifest.get('schema') == 'nex.debug/2':
+        if manifest.get('schema') in ('nex.debug/2', 'nex.debug/3'):
             manifest['_task_breakpoints'] = {}
             manifest['_task_selected'] = None
             manifest['_task_plan'] = None
@@ -999,7 +1100,7 @@ def _require_frame_image(target, frame, program):
 def _stopped(debugger, compiler=True):
     target = debugger.GetSelectedTarget()
     context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
-    if context and context.get('schema') == 'nex.debug/2' and context.get('_task_selected'):
+    if context and context.get('schema') in ('nex.debug/2', 'nex.debug/3') and context.get('_task_selected'):
         return _task_stopped(debugger, compiler, frame_index=context.get('_task_frame_index', 0))
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
@@ -1064,7 +1165,7 @@ def operation(debugger, command, result, internal_dict):
 
 
 def _fresh(process, snapshot):
-    if snapshot.get('schema') == 'nex.debug-frame/3':
+    if snapshot.get('schema') in ('nex.debug-frame/3', 'nex.debug-frame/4'):
         if (process.GetState() != lldb.eStateStopped or str(process.GetStopID()) != snapshot['stop']['stop_id'] or
                 str(process.GetProcessID()) != snapshot['stop']['process_id'] or
                 str(process.GetUniqueID()) != snapshot['stop']['process_epoch']):
@@ -1115,7 +1216,7 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
             if for_frame:
                 return None
             raise
-        if response.get("schema") in ("nex.expression/1", "nex.task-expression/1"):
+        if response.get("schema") in ("nex.expression/1", "nex.task-expression/1", "nex.task-expression/2"):
             return response
         if read_count >= 128:
             raise ValueError("expression capture exceeded 128 partial reads")
@@ -1248,9 +1349,149 @@ _TASK_WAITS = ('none', 'future', 'send', 'receive', 'scope', 'external')
 _TASK_PHASES = ('entry', 'statement', 'loop_test', 'call_entry', 'resume', 'return')
 
 
+def _task_digest(value):
+    return isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value) is not None
+
+
+def _provider_task_manifest(context, codes=None):
+    """Check the closed source/owner union; it never supplies memory authority."""
+    view = context.get('task_debug')
+    if (not isinstance(view, dict) or view.get('schema') != 'nex.task-debug-view/2' or
+            type(view.get('abi')) is not int or view['abi'] != 2 or
+            type(view.get('registry_abi')) is not int or view['registry_abi'] != 1 or
+            view.get('catalog_symbol') != 'nex_task_debug_catalog_v2' or
+            view.get('marker_symbol') != 'nex_task_debug_stop_marker' or
+            context.get('expression_protocol') != 'nex.task-debug-expression/2' or
+            view.get('deadline_advances_while_stopped') is not True or
+            any(not _task_digest(view.get(key)) for key in ('metadata_hash', 'catalog_hash', 'source_union_hash')) or
+            any(type(view.get(key)) is not int or view[key] != value for key, value in (('maximum_codes', 16384), ('maximum_points', 262144),
+                ('maximum_bindings', 65536), ('maximum_visible_bindings', 1048576)))):
+        raise ValueError('unsupported provider task debug manifest')
+    images = view.get('images')
+    if not isinstance(images, list) or not 1 <= len(images) <= 128:
+        raise ValueError('provider task image inventory exceeds bound')
+    by_owner, paths = {}, set()
+    for image in images + [view.get('runtime_image')]:
+        if (not isinstance(image, dict) or set(image) != {'component', 'path', 'key', 'hash', 'sha256', 'uuid', 'kind'} or
+                any(not _task_digest(image.get(key)) for key in ('key', 'hash', 'sha256')) or
+                not isinstance(image.get('uuid'), str) or not re.fullmatch('[0-9a-f]{16,128}', image['uuid']) or len(image['uuid']) % 2 or
+                not isinstance(image.get('path'), str) or not 1 <= len(image['path']) <= 16384 or
+                '\0' in image['path'] or not Path(image['path']).is_absolute() or os.path.normpath(image['path']) != image['path']):
+            raise ValueError('invalid provider task image identity')
+    for image in images:
+        component = image['component']
+        if (not isinstance(component, str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', component) or
+                image['kind'] not in ('application', 'shared-image') or component in by_owner or image['path'] in paths):
+            raise ValueError('duplicate/invalid provider task image owner')
+        by_owner[component] = image; paths.add(image['path'])
+    if [image['component'] for image in images] != sorted(by_owner):
+        raise ValueError('provider task image order differs')
+    runtime = view['runtime_image']
+    if (runtime['kind'] not in ('application', 'runtime') or
+            (runtime['kind'] == 'runtime' and runtime['component'] is not None) or
+            (runtime['kind'] == 'application' and
+             (not isinstance(runtime['component'], str) or by_owner.get(runtime['component']) != runtime))):
+        raise ValueError('invalid provider task runtime owner')
+    if codes is None:
+        return
+    catalog, union = view.get('catalog'), view.get('source_union')
+    if (not isinstance(catalog, dict) or set(catalog) != {'schema', 'registry_abi', 'catalog_abi', 'mode', 'artifact_kind', 'owner_image', 'registries'} or
+            catalog.get('schema') != 'nex.task-debug-catalog/1' or
+            type(catalog.get('registry_abi')) is not int or catalog['registry_abi'] != 1 or
+            type(catalog.get('catalog_abi')) is not int or catalog['catalog_abi'] != 2 or
+            catalog.get('mode') not in ('static', 'shared-fixed') or catalog.get('artifact_kind') != 'application' or
+            not isinstance(catalog.get('owner_image'), str) or catalog['owner_image'] not in by_owner or
+            not isinstance(union, dict) or set(union) != {'schema', 'mode', 'artifact_kind', 'owner_image', 'components'} or
+            union.get('schema') != 'nex.task-debug-source-union/1' or
+            any(union.get(key) != catalog.get(key) for key in ('mode', 'artifact_kind', 'owner_image'))):
+        raise ValueError('invalid provider task catalog/source union')
+    registries, components, summaries = catalog['registries'], union['components'], view.get('registries')
+    if (not isinstance(registries, list) or not 1 <= len(registries) <= 128 or
+            not isinstance(components, list) or len(components) != len(registries) or
+            not isinstance(summaries, list) or len(summaries) != len(registries)):
+        raise ValueError('provider task registry/source count differs')
+    functions = context.get('functions')
+    if not isinstance(functions, list) or len(functions) > 16384:
+        raise ValueError('provider task definition table exceeds bound')
+    by_name = {}
+    for function in functions:
+        if (not isinstance(function, dict) or not isinstance(function.get('name'), str) or
+                not 1 <= len(function['name']) <= 4096 or '\0' in function['name'] or function['name'] in by_name):
+            raise ValueError('duplicate provider source function')
+        by_name[function.get('name')] = function
+    seen, names, total, previous = set(), set(), 0, ''
+    for registry_index, (registry, component, summary) in enumerate(zip(registries, components, summaries)):
+        if (not isinstance(registry, dict) or set(registry) != {'component', 'accessor', 'owner_image', 'codes'} or
+                not isinstance(component, dict) or set(component) != {'component', 'owner_image', 'entry', 'exports', 'language', 'revision', 'source_hash', 'bundle_file', 'bundle_hash', 'definitions'} or
+                not isinstance(summary, dict) or set(summary) != {'component', 'accessor', 'owner_image', 'first_code', 'code_count'}):
+            raise ValueError('invalid provider registry/source record')
+        name, owner = registry['component'], registry['owner_image']
+        rows = registry['codes']
+        if (not isinstance(name, str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', name) or name <= previous or
+                not isinstance(owner, str) or owner not in by_owner or
+                registry['accessor'] != 'nex_task_debug_registry_' + name + '_v1' or
+                component['component'] != name or component['owner_image'] != owner or
+                component['language'] not in ('0.19', '0.20') or
+                any(not _task_digest(component[key]) for key in ('revision', 'source_hash', 'bundle_hash')) or
+                not isinstance(component['entry'], str) or not 1 <= len(component['entry']) <= 4096 or '\0' in component['entry'] or
+                not isinstance(component['exports'], list) or len(component['exports']) > 16384 or
+                any(not isinstance(value, str) or not 1 <= len(value) <= 4096 or '\0' in value for value in component['exports']) or
+                len(set(component['exports'])) != len(component['exports']) or
+                not isinstance(component['bundle_file'], str) or not 1 <= len(component['bundle_file']) <= 4096 or
+                '\0' in component['bundle_file'] or '\\' in component['bundle_file'] or
+                Path(component['bundle_file']).is_absolute() or any(part in ('', '.', '..') for part in component['bundle_file'].split('/')) or
+                not isinstance(rows, list) or len(rows) > 16384 - total or
+                type(summary['first_code']) is not int or type(summary['code_count']) is not int or
+                summary != {'component': name, 'accessor': registry['accessor'], 'owner_image': owner, 'first_code': total, 'code_count': len(rows)}):
+            raise ValueError('provider registry ordering/ownership/range differs')
+        definitions = component['definitions']
+        if not isinstance(definitions, list) or len(definitions) > 16384:
+            raise ValueError('provider source definitions exceed bound')
+        retained = []
+        definition_names = []
+        for definition in definitions:
+            if (not isinstance(definition, dict) or set(definition) != {'name', 'function_hash', 'function_source_hash', 'source_unit_hash', 'debug_path', 'contract', 'line', 'retained'} or
+                    type(definition.get('retained')) is not bool or type(definition.get('line')) is not int or definition['line'] < 1):
+                raise ValueError('invalid provider source definition')
+            if (not isinstance(definition['name'], str) or not 1 <= len(definition['name']) <= 4096 or '\0' in definition['name'] or
+                    not isinstance(definition['debug_path'], str) or not 1 <= len(definition['debug_path']) <= 4096 or '\0' in definition['debug_path']):
+                raise ValueError('invalid provider source name/path')
+            function = by_name.get(definition['name'])
+            if not function or definition['name'] in names:
+                raise ValueError('provider source definition omitted/duplicated')
+            definition_names.append(definition['name']); names.add(definition['name'])
+            if (any(not _task_digest(definition[key]) for key in ('function_hash', 'function_source_hash', 'source_unit_hash', 'contract')) or
+                    any(function.get(key) != definition[key] for key in ('function_hash', 'function_source_hash', 'source_unit_hash', 'contract')) or
+                    function.get('component') != name or function.get('owner_image') != owner or
+                    function.get('language') != component['language'] or function.get('source_revision') != component['revision'] or
+                    function.get('source_hash') != component['source_hash'] or
+                    bool(function.get('task_debug')) != definition['retained']):
+                raise ValueError('provider checked source identity differs')
+            if definition['retained']:
+                retained.append((definition, function))
+        if definition_names != sorted(definition_names) or len(retained) != len(rows):
+            raise ValueError('provider retained definition set differs')
+        for local_index, (row, (definition, function)) in enumerate(zip(rows, retained)):
+            if (not isinstance(row, dict) or set(row) != {'name', 'function_hash', 'function_source_hash', 'source_unit_hash', 'debug_path', 'contract', 'task_debug'} or
+                    not isinstance(row.get('task_debug'), dict) or set(row['task_debug']) != {'file', 'slot_count', 'bindings', 'points'} or
+                    any(row.get(key) != definition[key] for key in ('name', 'function_hash', 'function_source_hash', 'source_unit_hash', 'debug_path', 'contract')) or
+                    function.get('registry_index') != registry_index or type(function.get('registry_index')) is not int or
+                    function.get('local_site_id') != local_index + 1 or type(function.get('local_site_id')) is not int or
+                    function['task_debug'] != dict(row['task_debug'], site_id=total + local_index + 1) or
+                    codes.get(total + local_index) is not function):
+                raise ValueError('provider dense/original code association differs')
+        previous = name; seen.add(name); total += len(rows)
+    if total != len(codes) or names != set(by_name):
+        raise ValueError('provider source/catalog union is not exhaustive')
+    context['_task_provider_images'] = by_owner
+
+
 def _task_manifest(context):
     view = context.get('task_debug')
-    if (not isinstance(view, dict) or view.get('schema') != 'nex.task-debug-view/1' or
+    provider = context.get('schema') == 'nex.debug/3'
+    if provider:
+        _provider_task_manifest(context)
+    elif (not isinstance(view, dict) or view.get('schema') != 'nex.task-debug-view/1' or
             view.get('abi') != 1 or view.get('catalog_symbol') != 'nex_task_debug_catalog_v1' or
             view.get('marker_symbol') != 'nex_task_debug_stop_marker' or
             not re.fullmatch('[0-9a-f]{64}', view.get('metadata_hash', '')) or
@@ -1265,9 +1506,13 @@ def _task_manifest(context):
     codes = {}
     points = bindings = visibility = 0
     for function in functions:
+        if not isinstance(function, dict):
+            raise ValueError('invalid task debug function record')
         metadata = function.get('task_debug')
         if metadata is None:
             continue
+        if not isinstance(metadata, dict):
+            raise ValueError('invalid task debug metadata record')
         index = metadata.get('site_id')
         if type(index) is not int or not 1 <= index <= 16384 or index - 1 in codes:
             raise ValueError('invalid task debug code index')
@@ -1281,6 +1526,8 @@ def _task_manifest(context):
             raise ValueError('invalid task debug function metadata')
         ids = set()
         for binding in metadata['bindings']:
+            if not isinstance(binding, dict):
+                raise ValueError('invalid task debug binding record')
             identity, slot = binding.get('id'), binding.get('slot')
             if (type(identity) is not int or identity < 1 or identity in ids or
                     type(slot) is not int or not (0 <= slot < metadata['slot_count'] or (slot == -1 and binding.get('type') == 'unit')) or
@@ -1292,7 +1539,8 @@ def _task_manifest(context):
                 raise ValueError('task binding requires explicit authority opacity')
             ids.add(identity)
         for number, point in enumerate(metadata['points']):
-            if (point.get('id') != number + 1 or type(point.get('pc')) is not int or point['pc'] < 0 or
+            if (not isinstance(point, dict) or type(point.get('id')) is not int or point['id'] != number + 1 or
+                    type(point.get('pc')) is not int or not 0 <= point['pc'] < 262144 or
                     type(point.get('line')) is not int or point['line'] < 1 or
                     type(point.get('column')) is not int or point['column'] < 1 or
                     type(point.get('begin')) is not int or point['begin'] < 0 or
@@ -1303,7 +1551,7 @@ def _task_manifest(context):
                     any(type(identity) is not int or identity not in ids for identity in point['visible']) or
                     len(set(point['visible'])) != len(point['visible'])):
                 raise ValueError('invalid task debug point/visibility')
-            if point.get('kind') != _TASK_PHASES.index(point['phase']):
+            if type(point.get('kind')) is not int or point['kind'] != _TASK_PHASES.index(point['phase']):
                 raise ValueError('task point kind/phase differ')
             visibility += len(point['visible'])
         points += len(metadata['points']); bindings += len(metadata['bindings'])
@@ -1313,6 +1561,8 @@ def _task_manifest(context):
     if set(codes) != set(range(len(codes))) or not codes:
         raise ValueError('task debug code indices must be contiguous')
     context['_task_codes'] = codes
+    if provider:
+        _provider_task_manifest(context, codes)
     return codes
 
 
@@ -1326,8 +1576,10 @@ class _TaskCatalog:
         self.stop_id = self.process.GetStopID()
         self.program = str(Path(str(self.target.GetExecutable())).resolve())
         self.context = _contexts.get(self.program)
-        if not self.context or self.context.get('schema') != 'nex.debug/2':
+        if not self.context or self.context.get('schema') not in ('nex.debug/2', 'nex.debug/3'):
             raise ValueError('load a matching task debug manifest')
+        self.provider = self.context['schema'] == 'nex.debug/3'
+        provider_deadline = time.monotonic() + 10 if self.provider else None
         process_epoch = (self.process.GetProcessID(), self.process.GetUniqueID())
         if self.context.get('_task_process_id') != process_epoch:
             self.context['_task_process_id'] = process_epoch
@@ -1343,34 +1595,133 @@ class _TaskCatalog:
                        file_stat.st_ino, file_stat.st_size, file_stat.st_mtime_ns, file_stat.st_ctime_ns)
         if (self.image.GetUUIDString().replace('-', '').lower() != identity.get('image_uuid') or
                 (self.context.get('_task_verified_image') != image_stamp and
-                 _image_hash(self.program) != identity.get('image_sha256'))):
+                 _image_hash(self.program, provider_deadline) != identity.get('image_sha256'))):
             raise ValueError('task executable UUID/bytes differ from retained manifest')
         self.context['_task_verified_image'] = image_stamp
         if self.target.GetAddressByteSize() != 8:
-            raise ValueError('task debug ABI1 requires 64-bit pointers')
+            raise ValueError('task debug catalogs require 64-bit pointers')
         order = self.target.GetByteOrder()
         if order not in (lldb.eByteOrderLittle, lldb.eByteOrderBig):
             raise ValueError('unsupported target byte order')
         self.endian = '<' if order == lldb.eByteOrderLittle else '>'
         self.remaining = 64 * 1024 * 1024
-        self.deadline = time.monotonic() + 10
-        catalog = self.target.FindFirstGlobalVariable('nex_task_debug_catalog_v1')
-        if not catalog.IsValid() or catalog.GetByteSize() != 168:
+        self.deadline = provider_deadline if self.provider else time.monotonic() + 10
+        self.runtime_image = self.image
+        self.code_addresses, self.code_images = {}, {}
+        if self.provider:
+            image_stamp = self.provider_images(image_stamp, process_epoch)
+        catalog_symbol = 'nex_task_debug_catalog_v2' if self.provider else 'nex_task_debug_catalog_v1'
+        catalog = (self.runtime_image.FindFirstGlobalVariable(self.target, catalog_symbol) if self.provider else
+                   self.target.FindFirstGlobalVariable(catalog_symbol))
+        catalog_size = 200 if self.provider else 168
+        if not catalog.IsValid() or catalog.GetByteSize() != catalog_size:
             raise ValueError('task catalog DWARF/global layout unavailable')
         self.address = catalog.GetLoadAddress()
-        self.image_address(self.address, 168)
-        self.header = self.words(self.address, 21)
+        self.image_address(self.address, catalog_size, self.runtime_image)
+        self.header = self.words(self.address, 25 if self.provider else 21)
         h = self.header
-        if (h[:8] != (0x4e45584442473031, 1, 168, 128, 80, 96, 72, 40) or
+        prefix = (0x4e45584442473032, 2, 200) if self.provider else (0x4e45584442473031, 1, 168)
+        if (h[:8] != prefix + (128, 80, 96, 72, 40) or
                 h[9] != len(self.codes) or not 0 < h[9] <= 16384 or
                 not 0 < h[11] <= 4096 or h[12] > h[11] or
-                not 0 < h[14] <= 65536 or h[15] > h[14] or h[19:] != (256, 256)):
+                not 0 < h[14] <= 65536 or h[15] > h[14] or h[19:21] != (256, 256)):
             raise ValueError('task catalog ABI/counts exceed checked bounds')
-        self.image_address(h[8], h[9] * 96)
+        if self.provider:
+            self.provider_refs()
+        else:
+            self.image_address(h[8], h[9] * 96)
         if self.context.get('_task_metadata_stamp') != image_stamp:
             self.context['_task_metadata_stamp'] = image_stamp
             self.context['_task_metadata'] = {}
         self._metadata = self.context['_task_metadata']
+        if self.provider:
+            descriptors = set()
+            for index in range(len(self.codes)):
+                _, code = self.metadata(index)
+                if code[0] in descriptors:
+                    raise ValueError('provider code descriptor is registered twice')
+                descriptors.add(code[0])
+
+    def provider_images(self, root_stamp, process_epoch):
+        """Authenticate fixed loaded owners, including the one runtime owner."""
+        view = self.context['task_debug']
+        if self.target.GetNumModules() > 10000:
+            raise ValueError('provider module list exceeds bound')
+        modules = {}
+        for index in range(self.target.GetNumModules()):
+            module = self.target.GetModuleAtIndex(index)
+            modules.setdefault(str(Path(str(module.GetFileSpec())).resolve()), []).append(module)
+        self.owner_images = {}
+        stamps, inventory = [], self.context.get('_owned_images', {})
+        expected_paths = set()
+        records = view['images'] + [view['runtime_image']]
+        checked = {}
+        for record in records:
+            self.fresh()
+            path = record['path']
+            if path in checked:
+                if checked[path][0] != record:
+                    raise ValueError('provider runtime/code image identity differs')
+                module = checked[path][1]
+            else:
+                if path != self.program:
+                    retained = inventory.get(path)
+                    if not retained or any(retained.get(key) != record[key] for key in ('sha256', 'uuid')):
+                        raise ValueError('provider image is absent from retained closure')
+                candidates = modules.get(path, [])
+                if len(candidates) != 1:
+                    raise ValueError('provider module identity is missing or ambiguous')
+                module = candidates[0]
+                if module.GetUUIDString().replace('-', '').lower() != record['uuid']:
+                    raise ValueError('provider loaded image UUID differs')
+                state = os.stat(path, follow_symlinks=False)
+                stamp = (process_epoch, path, module.GetUUIDString(), state.st_dev, state.st_ino,
+                         state.st_size, state.st_mtime_ns, state.st_ctime_ns)
+                if self.context.get('_task_verified_images', {}).get(path) != stamp and _image_hash(path, self.deadline) != record['sha256']:
+                    raise ValueError('provider image bytes differ')
+                stamps.append(stamp); checked[path] = (record, module)
+            expected_paths.add(path)
+            if record in view['images']:
+                self.owner_images[record['component']] = module
+        if expected_paths != set(inventory) | {self.program}:
+            raise ValueError('provider task closure omits a retained image')
+        self.runtime_image = checked[view['runtime_image']['path']][1]
+        self.context['_task_verified_images'] = {stamp[1]: stamp for stamp in stamps}
+        return root_stamp, tuple(stamps)
+
+    def provider_refs(self):
+        h, expected = self.header, self.context['task_debug']['registries']
+        if (h[22] != len(expected) or not 1 <= h[22] <= 128 or h[23:] != (24, 16) or
+                not h[21] or h[21] % 8 or not h[8] or h[8] % 8):
+            raise ValueError('provider registry/code ref ABI differs')
+        registry_refs = self.words(h[21], h[22] * 3)
+        code_refs = self.words(h[8], h[9] * 2)
+        addresses, ranges, total = set(), [], 0
+        for registry_index, summary in enumerate(expected):
+            address, first, count = registry_refs[registry_index * 3:registry_index * 3 + 3]
+            owner = self.owner_images[summary['owner_image']]
+            if (not address or address % 8 or address in addresses or first != total or
+                    first != summary['first_code'] or count != summary['code_count'] or count > h[9] - total):
+                raise ValueError('provider original registry range differs')
+            addresses.add(address); self.image_address(address, 32, owner)
+            registry = self.words(address, 4)
+            if registry[0] != 1 or registry[2] != count or (count == 0) != (registry[1] == 0) or (count and registry[1] % 8):
+                raise ValueError('provider original registry ABI/count differs')
+            self.text(registry[3], summary['component'], owner)
+            if count:
+                self.image_address(registry[1], count * 96, owner)
+                if any(registry[1] < end and start < registry[1] + count * 96 for start, end in ranges):
+                    raise ValueError('provider original code ranges overlap')
+                ranges.append((registry[1], registry[1] + count * 96))
+            for local_index in range(count):
+                index = first + local_index
+                original, registered = code_refs[index * 2:index * 2 + 2]
+                if registered != registry_index or original != registry[1] + local_index * 96:
+                    raise ValueError('provider dense/original code ref differs')
+                self.code_addresses[index] = original; self.code_images[index] = owner
+            total += count
+        if total != h[9]:
+            raise ValueError('provider code refs are not exhaustive')
 
     def fresh(self):
         if self.process.GetState() != lldb.eStateStopped or self.process.GetStopID() != self.stop_id:
@@ -1395,18 +1746,18 @@ class _TaskCatalog:
             raise ValueError('task word count exceeds bound')
         return struct.unpack(self.endian + 'Q' * count, self.read(address, count * 8))
 
-    def image_address(self, address, size):
+    def image_address(self, address, size, image=None):
         if not address or size < 1 or address + size >= (1 << 64):
             raise ValueError('invalid task immutable image range')
         for point in (address, address + size - 1):
-            if self.target.ResolveLoadAddress(point).GetModule() != self.image:
+            if self.target.ResolveLoadAddress(point).GetModule() != (image or self.image):
                 raise ValueError('task metadata pointer is outside retained image')
 
-    def text(self, address, expected):
+    def text(self, address, expected, image=None):
         encoded = expected.encode('utf-8') + b'\0'
         if len(encoded) > 4097:
             raise ValueError('task metadata string exceeds bound')
-        self.image_address(address, len(encoded))
+        self.image_address(address, len(encoded), image)
         if self.read(address, len(encoded)) != encoded:
             raise ValueError('task immutable metadata differs from checked manifest')
 
@@ -1417,11 +1768,12 @@ class _TaskCatalog:
         if function is None:
             raise ValueError('task frame has an unknown code index')
         metadata = function['task_debug']
-        code = self.words(self.header[8] + index * 96, 12)
+        owner = self.code_images[index] if self.provider else self.image
+        code = self.words(self.code_addresses[index] if self.provider else self.header[8] + index * 96, 12)
         if (code[8] != len(metadata['points']) or code[9] != len(metadata['bindings']) or
                 code[10] > 1048576 or code[11] != metadata['slot_count']):
             raise ValueError('task code counts differ from manifest')
-        self.image_address(code[0], 88)
+        self.image_address(code[0], 88, owner)
         descriptor = self.words(code[0], 11)
         if descriptor[5] != 0x4e45585400000003 or descriptor[6] != code[11]:
             raise ValueError('task execution descriptor ABI/slots differ')
@@ -1430,26 +1782,26 @@ class _TaskCatalog:
         if matches.GetSize() > 128:
             raise ValueError('task continuation symbol is ambiguous')
         addresses = {matches.GetContextAtIndex(i).GetSymbol().GetStartAddress().GetLoadAddress(self.target)
-                     for i in range(matches.GetSize())}
+                     for i in range(matches.GetSize()) if not self.provider or matches.GetContextAtIndex(i).GetModule() == owner}
         if descriptor[0] not in addresses:
             raise ValueError('task code descriptor points to a foreign continuation')
         for pointer, expected in zip(code[1:5], (function['name'], metadata['file'], function['function_source_hash'], function['function_hash'])):
-            self.text(pointer, expected)
-        if code[8]: self.image_address(code[5], code[8] * 72)
-        if code[9]: self.image_address(code[6], code[9] * 40)
-        if code[10]: self.image_address(code[7], code[10] * 8)
+            self.text(pointer, expected, owner)
+        if code[8]: self.image_address(code[5], code[8] * 72, owner)
+        if code[9]: self.image_address(code[6], code[9] * 40, owner)
+        if code[10]: self.image_address(code[7], code[10] * 8, owner)
         bindings = metadata['bindings']
         for number, binding in enumerate(bindings):
             raw = self.words(code[6] + number * 40, 5)
             if (raw[0], raw[3], raw[4]) != (binding['id'], binding['slot'] & _TASK_NONE, binding['scope']):
                 raise ValueError('task binding identity/layout differs')
-            self.text(raw[1], binding['name']); self.text(raw[2], binding['type'])
+            self.text(raw[1], binding['name'], owner); self.text(raw[2], binding['type'], owner)
         for number, point in enumerate(metadata['points']):
             raw = self.words(code[5] + number * 72, 9)
             if (raw[1:7] != (point['pc'], point['line'], point['column'], point['begin'], point['end'], _TASK_PHASES.index(point['phase'])) or
                     raw[7] > code[10] or raw[8] > code[10] - raw[7]):
                 raise ValueError('task point identity/location differs')
-            self.text(raw[0], point['site'])
+            self.text(raw[0], point['site'], owner)
             visible = self.words(code[7] + raw[7] * 8, raw[8]) if raw[8] else ()
             if any(i >= len(bindings) for i in visible) or [bindings[i]['id'] for i in visible] != point['visible']:
                 raise ValueError('task lexical visibility differs from checked metadata')
@@ -1500,7 +1852,7 @@ class _TaskCatalog:
 def _task_context(debugger):
     target = debugger.GetSelectedTarget()
     context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
-    if not context or context.get('schema') != 'nex.debug/2':
+    if not context or context.get('schema') not in ('nex.debug/2', 'nex.debug/3'):
         raise ValueError('load a task debug manifest')
     if not context.get('_task_marker'):
         _install_task_marker(debugger, context)
@@ -1536,6 +1888,8 @@ def _task_marker(frame, bp_loc, internal_dict):
     try:
         debugger = frame.GetThread().GetProcess().GetTarget().GetDebugger()
         view = _TaskCatalog(debugger)
+        if view.provider:
+            view.image_address(frame.GetPC(), 1, view.runtime_image)
         argument = frame.FindVariable('stop', lldb.eDynamicDontRunTarget)
         if not argument.IsValid():
             raise ValueError('task stop marker argument unavailable')
@@ -1605,7 +1959,8 @@ def _task_stopped(debugger, compiler=True, task_id=None, frame_index=0):
         raise ValueError('logical task frame is unavailable')
     index, record, function = stack[frame_index]
     metadata = function['task_debug']; point = metadata['points'][record[7]]
-    layout = view.target.FindFirstType('nexrt::NativeTaskFrame')
+    layout = (view.runtime_image.FindFirstType('nexrt::NativeTaskFrame') if view.provider else
+              view.target.FindFirstType('nexrt::NativeTaskFrame'))
     if not layout.IsValid() or layout.GetByteSize() > 65536:
         raise ValueError('matching retained frame DWARF is unavailable')
     native = view.target.CreateValueFromAddress('task_frame', lldb.SBAddress(record[6], view.target), layout)
@@ -1642,6 +1997,9 @@ def _task_stopped(debugger, compiler=True, task_id=None, frame_index=0):
                          'frame_id': str(record[1]), 'publication': str(task[0]),
                          'visit': str(task[12]), 'point_id': record[7] + 1},
                 'bindings': bindings, 'truncated': len(visible) > 256, 'captures': []}
+    if view.provider:
+        snapshot['schema'] = 'nex.debug-frame/4'
+        snapshot['source_identity'] = _task_function_source_identity(function)
     if view.task(slot) != task:
         raise ValueError('task publication changed during local capture')
     view.fresh()
@@ -1664,9 +2022,18 @@ def _task_summary(view, slot, task):
                 point = stack[0][2]['task_debug']['points'][stack[0][1][7]]
                 result.update(function=stack[0][2]['name'], file=stack[0][2]['task_debug']['file'],
                               line=point['line'], column=point['column'])
+                if view.provider:
+                    result['source_identity'] = _task_function_source_identity(stack[0][2])
         except ValueError as error:
             result['source_available'] = False; result['unavailable'] = str(error)[:512]
     return result
+
+
+def _task_function_source_identity(function):
+    return {'component': function['component'], 'owner_image': function['owner_image'],
+            'language': function['language'], 'revision': function['source_revision'],
+            'source_hash': function['source_hash'], 'source_unit_hash': function['source_unit_hash'],
+            'contract': function['contract']}
 
 
 def _task_request(debugger, request):
@@ -1753,6 +2120,8 @@ def _task_request(debugger, request):
                          'function_hash': function['function_hash'], 'file': _task_source(context, function['task_debug']['file']),
                          'line': point['line'], 'column': point['column'], 'point_id': record[7] + 1,
                          'phase': point['phase'], 'site': point['site'], 'depth': record[8]})
+            if view.provider:
+                rows[-1]['source_identity'] = _task_function_source_identity(function)
         return {'schema': 'nex.task-debug-stack/1', 'task_id': identity, 'generation': task[3],
                 'stop_id': str(view.stop_id), 'frames': rows}
     if command == 'values':

@@ -1,15 +1,3 @@
-Рабочая версия toolchain0.114 использует язык0.20. Помимо структурированных
-задач она добавляет два чтения файлов в server-функциях с явными task/fs.
-Полный прогон и доставка текущей версии проверяются отдельно. Старые019
-проекты требуют явной миграции с сохранением истории и исходного SDK.
-См. [чтение файлов в задачах](task-file-reads.md).
-Профилирование задач в кандидате0.114 проходит отдельную приёмку. Перед его
-использованием проверьте `nex describe --field task_profiling --json`: нужен
-`source_support: true`. [Руководство](profiling.md) объясняет различие CPU,
-активного времени и времени ожидания задачи; сам private collector не означает
-готовность этой цепочки.
-
-
 # NEX: установка и первый проект
 
 Для фоновых вычислений в веб-приложении см. [пример workers](../examples/workers/main.nex)
@@ -24,11 +12,13 @@ NEX — Neural Execution Language, «язык нейронного исполн�
 исходники `.nex` сами или вместе с LLM; компилятор проверяет их и собирает
 приложение. Готовой программе для работы не нужна LLM.
 
-Историческая основа инструкции — **toolchain0.72 / язык0.16**. Команды ниже проверяются с
-этой версией SDK. На21 октября2026 года у проекта ещё нет опубликованного
-GitHub Release с готовым установщиком, `brew install nex` или `npm install nex`.
-Для воспроизводимой установки ниже закреплён проверенный снимок исходников;
-ветки `codex/backup-*` сохраняют работу и сами по себе не означают выпуск.
+Основа установки ниже — проверенный development-снимок **toolchain0.118.0 /
+язык0.20 (125b)**. Его установленный SDK прошёл30 фаз/557 команд;
+[точная область проверки](evidence/toolchain-0.118.0-task-provider-profiling.json)
+содержит ограничения и сохранённые отказы предыдущих прогонов.
+Снимок закреплён полным commit SHA в резервной ветке GitHub; это не Release
+и не готовый универсальный установщик. Кандидат0.119 и его SDK31 проверяются
+отдельно. Здесь не предполагаются команды `brew install nex`/`npm install nex`.
 Возможности установленной версии показывает `nex describe --json`.
 
 Порядок: [установить](#1-установить-nex) → [создать проект](#2-создать-и-запустить-проект)
@@ -64,10 +54,10 @@ nex describe --json
 ```sh
 git clone https://github.com/sae-ru/NEX.git nex-toolchain
 cd nex-toolchain
-git checkout --detach 0216bed1589f82e24cba0374ae9c61f9b623ce63
+git checkout --detach 6a2a9f14453578cf5c6833c3e06caacaadc081ff
 ```
 
-Это проверенный снимок0.72, а не обещание, что `main` или случайная резервная
+Это проверенный development-снимок0.118.0/125b, а не обещание, что `main` или случайная резервная
 ветка содержат ту же версию. Для другого снимка сохраняйте его полный commit
 SHA и читайте его README/STATUS. Команды работы с приложением ниже не требуют
 изменять репозиторий компилятора.
@@ -95,6 +85,7 @@ SHA и читайте его README/STATUS. Команды работы с пр�
 ```sh
 brew install cmake python git llvm@22 sqlite openssl@3 z3 node@22
 export NEX_LLVM_PREFIX="$(brew --prefix llvm@22)"
+export NEX_Z3_PREFIX="$(brew --prefix z3)"
 export PATH="$NEX_LLVM_PREFIX/bin:$(brew --prefix node@22)/bin:$PATH"
 llvm-config --version
 
@@ -102,12 +93,15 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DLLVM_DIR="$NEX_LLVM_PREFIX/lib/cmake/llvm" \
   -DMLIR_DIR="$NEX_LLVM_PREFIX/lib/cmake/mlir" \
   -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
-  -DNEX_Z3_ROOT="$(brew --prefix z3)" \
+  -DNEX_Z3_ROOT="$NEX_Z3_PREFIX" \
+  -DNEX_Z3_INCLUDE="$NEX_Z3_PREFIX/include" \
+  -DNEX_Z3_LIBRARY="$NEX_Z3_PREFIX/lib/libz3.dylib" \
+  -DNEX_Z3_EXECUTABLE="$NEX_Z3_PREFIX/bin/z3" \
   -DCMAKE_PREFIX_PATH="$(brew --prefix sqlite)"
 cmake --build build -j 4
-cmake --install build --prefix "$HOME/opt/nex-sdk-0.72"
+cmake --install build --prefix "$HOME/opt/nex-sdk-0.118.0"
 
-export NEX_SDK="$HOME/opt/nex-sdk-0.72"
+export NEX_SDK="$HOME/opt/nex-sdk-0.118.0"
 export PATH="$NEX_SDK/bin:$PATH"
 nex doctor
 ```
@@ -199,7 +193,7 @@ nex build --profile release -o out/my-app --json
 точка входа и локальные корни библиотек. Для первого проекта достаточно:
 
 ```json
-{"schema":"nex.project/1","language":"0.17","entry":"src/main.nex"}
+{"schema":"nex.project/1","language":"0.20","entry":"src/main.nex"}
 ```
 
 `nex init` пока не создаёт Git-репозиторий, `.gitignore`, AGENTS.md или UI.
@@ -491,7 +485,7 @@ snapshot/recovery. Скачивание/чистая установка всех
 компьютере и реальное программирование разными LLM — отдельные проверки.
 
 
-## Задачи для архитектуры проекта (кандидат0.78)
+## Задачи для архитектуры проекта
 
 Если `nex describe --json` объявляет `project_architecture_tasks`, можно связать
 приёмку с компонентами и конфигурациями `nex.build.json`:
@@ -527,7 +521,7 @@ nex task /путь/к/запуску/receipt.json --kind replay --json
 и базы сюда не передаются. Для временных/RPS-бюджетов выберите CPU и target из
 `nex doctor --json` и явно согласуйте критерий.
 
-В кандидатной версии0.84 проект с внешними модулями можно упаковать через
+Проект с внешними модулями можно упаковать через
 `nex project --kind package --foreign HOST.json --notices notices.json
 --directory NEW --json`. Предварительно проверьте `project --foreign HOST.json
 --json`. Компилятор согласует новые пины во всех выбранных компонентах, сохраняя
@@ -536,7 +530,7 @@ nex task /путь/к/запуску/receipt.json --kind replay --json
 перенесённый пакет на целевой системе. Пакетные задачи с FFI требуют
 `foreign_hash` и актуального каталога оператора при проверке и повторе.
 
-В кандидатной версии0.85 сервер можно отлаживать командой
+Сервер можно отлаживать командой
 `nex project --kind debug --component service --adapter nex-dap --json -- ARGS`.
 В VS Code0.7 выберите серверный компонент и задайте runtime-аргументы с auth-файлом
 и отдельной базой; доступны точки останова в исходном `.nex` и watch на рабочем
@@ -580,6 +574,7 @@ macOS/Linux приложении объявите server `!{task,fs}` и исп�
 
 fs-only helper из задачи запрещён с E_EFFECT: проверьте реализацию и явно
 добавьте task/fs. Callback может быть server task/fs только при этих эффектах
-у caller. Запись, streaming, task HTTP, TypeScript/Node/browser filesystem,
-providers и UI task adapters остаются неподдержанными. Архив кода не сохраняет
+у caller. Запись, streaming, task HTTP, TypeScript/Node/browser filesystem
+и UI task adapters остаются неподдержанными. Проверяемые static/fixed-shared
+providers используют отдельные `task_providers`/`task_shared_providers` контракты. Архив кода не сохраняет
 содержимое внешних файлов и не даёт replay полномочий читать их.

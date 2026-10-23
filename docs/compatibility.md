@@ -1,6 +1,6 @@
 # Versions, compatibility and explicit migration
 
-Development toolchain0.88 uses source language0.17, graph schema 4 and the canonical
+Development toolchain0.119.0 uses source language0.20, graph schema 4 and the canonical
 formats recorded in docs/language.md. Discover `project_features` and retrieve this guide with
 `nex guide --kind compatibility --json`. The language pack indexes
 `llm/project.schema.json` for authoring current project manifests.
@@ -10,7 +10,7 @@ formats recorded in docs/language.md. Discover `project_features` and retrieve t
 ```json
 {
   "schema": "nex.project/1",
-  "language": "0.17",
+  "language": "0.20",
   "entry": "main.nex",
   "libraries": { "numbers": "./vendor/numbers" }
 }

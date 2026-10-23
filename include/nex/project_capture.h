@@ -6,7 +6,8 @@ namespace nex {
 // aliases retain their checked physical relationships inside that container.
 llvm::json::Value captureProject(const std::string &root,const std::string &manifest,
   const std::string &source,const std::string &component,const std::set<std::string> &configurations,
-  const std::map<std::string,std::string> &overlays = {});
+  const std::map<std::string,std::string> &overlays = {},
+  const std::set<std::string> &debugConfigurations = {});
 std::string materializeProjectCapture(const llvm::json::Value &capture,const std::string &container);
 void verifyProjectCapture(const llvm::json::Value &capture,const std::string &container);
 void validateProjectCaptureData(const llvm::json::Value &capture);

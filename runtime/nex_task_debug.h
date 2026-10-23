@@ -13,6 +13,18 @@ struct TaskDebugCatalog {
   uint64_t codes_address,code_count,tasks_address,task_capacity,task_count,frames_address,frame_capacity,live_frames;
   uint64_t dropped_tasks,dropped_frames,invalid_transitions,maximum_stack_depth,maximum_locals;
 };
+struct TaskDebugRegistryRef {uint64_t registry_address,first_code,code_count;};
+struct TaskDebugCodeRef {uint64_t site_address,registry_index;};
+// ABI2 retains the ABI1 prefix offsets. Its codes_address points to CodeRef[];
+// code_record_size remains the original TaskDebugCodeSite width, 96 bytes.
+struct TaskDebugProviderCatalog {
+  TaskDebugCatalog base;
+  uint64_t registries_address,registry_count,registry_record_size,code_ref_record_size;
+};
+static_assert(sizeof(TaskDebugRegistryRef)==24&&sizeof(TaskDebugCodeRef)==16&&sizeof(TaskDebugProviderCatalog)==200&&offsetof(TaskDebugProviderCatalog,registries_address)==168);
+static_assert(std::is_trivial_v<TaskDebugRegistryRef>&&std::is_standard_layout_v<TaskDebugRegistryRef>);
+static_assert(std::is_trivial_v<TaskDebugCodeRef>&&std::is_standard_layout_v<TaskDebugCodeRef>);
+static_assert(std::is_trivial_v<TaskDebugProviderCatalog>&&std::is_standard_layout_v<TaskDebugProviderCatalog>);
 struct TaskDebugTaskRecord {
   uint64_t source_sequence,scheduler_sequence,id,generation,run_epoch,worker_id,state,wait_kind,wait_target;
   uint64_t top_frame_slot,top_frame_id,frame_count,checkpoint_sequence,flags,origin_task_id,origin_frame_id;
@@ -80,5 +92,6 @@ void taskDebugPublishPark()noexcept;
 }
 extern "C" {
 extern nexrt::TaskDebugCatalog nex_task_debug_catalog_v1;
+extern nexrt::TaskDebugProviderCatalog nex_task_debug_catalog_v2;
 void nex_task_debug_stop_marker(const nexrt::TaskDebugStop *stop)noexcept;
 }

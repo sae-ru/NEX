@@ -538,4 +538,37 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
             catalog.unlink();catalog.write_bytes(raw)
 
 
+    def test_profile_configuration_static_shared_test_and_named_build_test_execute_selected_task(self):
+        # The application entry deliberately fails. These commands must select
+        # the named effectful test, without reference replay or profiling claims.
+        (self.root/'leaf/value.nex').write_text('''module profile_matrix_leaf;
+pub fn answer()->i64!{task}{task_yield();return 42;}
+''')
+        self.file.write_text('''module profile_matrix_app;import "../leaf/value.nex" as leaf;
+fn main()->unit!{task,io}{print("WRONG_MAIN");assert(false);}
+test fn answer()->unit!{task,io}{assert(leaf::answer()==42);print("selected-test42");}
+''')
+        self.description['components']={
+            'leaf':{'kind':'static_library','root':'leaf','entry':'leaf/value.nex','entry_function':'answer'},
+            'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'leaf':'static'}}}
+        for mode in ('static','shared-fixed'):
+            if mode=='shared-fixed':
+                self.description['components']['leaf']['kind']='shared_library'
+                self.description['components']['app']['dependencies']={'leaf':'dynamic'}
+            self.save()
+            result=self.project('test')
+            self.assertEqual(result['schema'],'nex.project-test/1');self.assertTrue(result['test_execution'])
+            test,=result['tests'];self.assertEqual(test['name'],'profile_matrix_app::answer')
+            self.assertTrue(test['native']);self.assertFalse(test['reference'])
+            self.assertEqual((test['observation']['exit_code'],test['observation']['stdout']),(0,'selected-test42\n'))
+            built=self.project('build-test','app','measured','--symbol','profile_matrix_app::answer')
+            self.assertEqual(built['schema'],'nex.project-test-build/1');self.assertFalse(built['test_execution'])
+            self.assertEqual(built['name'],'profile_matrix_app::answer')
+            artifact=self.artifacts(built['build'])['app']
+            metadata=json.loads(Path(artifact['metadata']).read_text())
+            self.assertEqual(metadata['entry'],'profile_matrix_app::answer');self.assertEqual(metadata['profile'],'profile')
+            executed=self.process([artifact['artifact']])
+            self.assertEqual((executed.returncode,executed.stdout),(0,'selected-test42\n'),executed.stderr)
+
+
 if __name__=='__main__':unittest.main()

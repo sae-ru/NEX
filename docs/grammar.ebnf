@@ -1,3 +1,6 @@
+(* Toolchain0.119 source-backed provider logical debugging adds only external
+   catalog/source-union/debug tooling metadata; execution ABI3, source grammar,
+   canonical fields/ordinals and language020/migration remain unchanged. *)
 (* Toolchain0.118 checked task-provider profiling adds only external registry,
    provenance and measurement metadata. No source syntax/canonical/ordinal or
    language020/migration change; see task-provider-profiling.md. *)

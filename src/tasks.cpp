@@ -1,6 +1,7 @@
 #include "nex/tasks.h"
 #include "nex/task_limits.h"
 #include "nex/task_frontend.h"
+#include "nex/debug_session.h"
 #include "nex/task_process.h"
 #include "nex/verification.h"
 #include "nex/native_toolchain.h"
@@ -101,8 +102,9 @@ void validateShape(const JSON &task){
   for(const auto &value:array(t,"checks")){
     const auto &c=object(value);auto kind=text(c,"kind");bool project=projectPrograms.contains(text(c,"program"));std::set<std::string> names={"id","kind","program","target","timeout_seconds"};
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
-    if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="package"){if(!project)invalid("package checks require a declared project architecture");}else if(kind=="api"){}else invalid("unknown check kind: "+kind);
+    if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode","task_debug"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="package"){if(!project)invalid("package checks require a declared project architecture");}else if(kind=="api"){}else invalid("unknown check kind: "+kind);
     if(!project&&(kind=="build"||kind=="run"||kind=="test"||kind=="profile"))add({"task_limits"});
+    if(c.get("task_debug")&&(!c.getBoolean("task_debug")||!project||kind!="build"||text(c,"target")!="native"))invalid("task_debug requires a boolean on a native project BUILD check");
     if(project)add({"configuration"});
     if(project&&kind=="profile")add({"workload","workload_hash","server_workers"});
     if(kind=="package")add({"notices","notices_hash"});
@@ -124,6 +126,10 @@ void validateShape(const JSON &task){
     if(kind=="verify"){pathName(text(c,"contracts"));digest(c,"intent_hash");number(c,"solver_timeout_ms",2000,1,60000);number(c,"resource_limit",1000000,1,100000000);}
     if(kind=="effects"){strings(c,"symbols");for(const auto &s:strings(c,"allowed_effects",0))if(s!="io"&&s!="db"&&s!="fs"&&s!="ffi"&&s!="task")invalid("unknown effect");if(c.get("allowed_realms"))for(const auto &s:strings(c,"allowed_realms"))if(s!="shared"&&s!="client"&&s!="server")invalid("unknown realm");}
     if(kind=="profile"){text(c,"entry");text(c,"scenario");auto b=c.getObject("budget");if(!b||b->empty())invalid("profile requires nonempty budget");fields(*b,{"max_duration_ns","max_peak_handles","max_peak_objects","max_calls","max_p95_latency_ns","max_p99_latency_ns","min_requests_per_second"});for(const auto &[k,v]:*b){if(k=="max_calls"){const auto &calls=object(v);if(calls.empty()||calls.size()>64)invalid("invalid call budget");for(const auto &[name,count]:calls){if(name.str().empty())invalid("empty call symbol");decimal(count);}}else decimal(v);}if(c.get("hardware")){const auto &h=object(*c.get("hardware"));fields(h,{"cpu","target"});text(h,"cpu");text(h,"target");}bool performance=b->get("max_duration_ns");for(auto key:{"max_p95_latency_ns","max_p99_latency_ns","min_requests_per_second"})if(b->get(key)){if(!c.get("workload"))invalid("request budgets require a server workload");performance=true;}if(performance&&!c.get("hardware"))invalid("timing/rate budget requires explicit hardware cpu/target");}
+  }
+  std::map<std::pair<std::string,std::string>,bool> variants;
+  for(const auto &value:array(t,"checks")){const auto &c=object(value);auto kind=text(c,"kind");if(!projectPrograms.contains(text(c,"program"))||(kind!="build"&&kind!="run"&&kind!="test"&&kind!="profile"&&kind!="package"&&kind!="api"))continue;
+    auto key=std::pair{text(c,"program"),text(c,"configuration")};bool debug=c.getBoolean("task_debug").value_or(false);auto [old,inserted]=variants.emplace(key,debug);if(!inserted&&old->second!=debug)invalid("task_debug requires a dedicated configuration; ordinary artifact checks use the same configuration");
   }
   std::set<std::string> used;
   for(const auto &v:array(t,"requirements",1,32)){const auto &r=object(v);fields(r,{"id","text","bindings","targets","checks"});if(!requirements.insert(identifier(r,"id")).second)invalid("duplicate requirement");text(r,"text");strings(r,"targets");for(const auto &id:strings(r,"checks")){if(!checks.contains(id))invalid("requirement refers to unknown check");used.insert(id);}for(const auto &b:array(r,"bindings")){const auto &binding=object(b);fields(binding,{"program","kind","symbol"});if(!programs.contains(text(binding,"program")))invalid("binding refers to unknown program");auto kind=text(binding,"kind");if(kind!="function"&&kind!="structure"&&kind!="endpoint")invalid("unknown binding kind");text(binding,"symbol");}}
@@ -186,14 +192,14 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
     auto rev=store.save(program,"",false);auto graph=store.graph(program);auto sourceHash=hash(json(bundle,false));
     result.programs.emplace(id,Candidate{std::move(program),std::move(bundle),std::move(graph),rev,sourceHash});
     if(auto project=p.getObject("project")){
-      std::set<std::string> configurations;for(const auto &value:array(t,"checks"))if(object(value).getString("program")==id)configurations.insert(text(object(value),"configuration"));
+      std::set<std::string> configurations,debugConfigurations;for(const auto &value:array(t,"checks"))if(object(value).getString("program")==id){configurations.insert(text(object(value),"configuration"));if(object(value).getBoolean("task_debug").value_or(false))debugConfigurations.insert(text(object(value),"configuration"));}
       JSON captured=nullptr;
       if(!frozen.empty())captured=readJSON(frozen/"inputs/projects"/(id+".json"),64*1048576);
       else{
         auto manifest=inside(options.root,text(*project,"manifest"));auto source=readFile(manifest.string());auto architecture=parse(source);
         if(hash(json(architecture,false))!=digest(*project,"architecture_hash"))throw Error("E_TASK_PROJECT","reviewed project architecture changed");
         auto overlays=selected.empty()?std::map<std::string,std::string>{}:projectOverlays(result.programs.at(id).bundle,options.root);
-        captured=captureProject(options.root,manifest.string(),source,text(*project,"component"),configurations,overlays);
+        captured=captureProject(options.root,manifest.string(),source,text(*project,"component"),configurations,overlays,debugConfigurations);
       }
       validateProjectCaptureData(captured);const auto &capture=object(captured);
       if(capture.getString("schema")!="nex.project-capture/1"||capture.getString("component")!=project->getString("component")||capture.getString("architecture_hash")!=project->getString("architecture_hash")||capture.getString("manifest")!=project->getString("manifest"))throw Error("E_TASK_PROJECT","captured architecture identity differs from the task");
@@ -437,7 +443,8 @@ struct Runner {
   ServerWorkload checkedWorkload(const std::string &id){
     const auto &expected=p.workloads.at(id);auto selected=inspectServerWorkload((directory/"inputs/workloads"/id).string(),"workload.json");
     if(selected.source!=expected.source||selected.sha256!=expected.sha256||selected.helperSource!=expected.helperSource||selected.helperSha256!=expected.helperSha256)
-      throw Error("E_TASK_INTEGRITY","captured workload or trusted runner changed: "+id);return selected;
+      throw Error("E_TASK_INTEGRITY","captured workload or trusted runner changed: "+id);
+    return selected;
   }
   void verifyWorkload(const std::string &id){if(p.workloads.contains(id))(void)checkedWorkload(id);}
   void verifyForeign(const std::string &id){if(p.foreignChecks.contains(id)){
@@ -520,18 +527,19 @@ struct Runner {
   }
   std::string retainTaskProviderBuild(const fs::path &executable,const fs::path &destination){
     const auto folder=executable.parent_path();auto metadata=readJSON(inside(folder,"build.json"),8*1048576);const auto &build=object(metadata);
+    const bool debug=build.getString("completion_schema")=="nex.native-completion/7";
     const bool profiled=build.getString("completion_schema")=="nex.native-completion/6";
-    const bool shared=profiled||build.getString("completion_schema")=="nex.native-completion/5";
+    const bool shared=debug||profiled||build.getString("completion_schema")=="nex.native-completion/5";
     if(!shared&&build.getString("completion_schema")!="nex.native-completion/4")return {};
     if(fs::is_symlink(folder)||build.getString("compiler_build")!=NEX_BUILD_ID)
       throw Error("E_TASK_ARTIFACT","static task build requires its matching compiler and physical artifact directory");
     auto inputNames=nativeCompletionInputs(build);std::vector<std::string> names{executable.filename().string(),"program.mlir","program.ll","compilation.json","build.json","source-bundle.json"};
-    names.insert(names.end(),inputNames.begin(),inputNames.end());names.push_back("complete");names.push_back("debug.json");
+    names.insert(names.end(),inputNames.begin(),inputNames.end());names.push_back("complete");if(!debug)names.push_back("debug.json");
     std::map<std::string,std::pair<std::string,uintmax_t>> inputs;
     for(const auto &name:names){auto source=inside(folder,name);if(!fs::is_regular_file(source))throw Error("E_TASK_ARTIFACT","missing retained static task input: "+name);auto bytes=readFile(source.string());inputs.emplace(name,std::pair{hash(bytes),bytes.size()});}
     auto completed=[&](const fs::path &root){
       std::string value=text(build,"key");
-      for(const auto &name:names)if(name!="complete"&&name!="debug.json")value+=hash(readFile(inside(root,name).string()));
+      for(const auto &name:names)if(name!="complete"&&(debug||name!="debug.json"))value+=hash(readFile(inside(root,name).string()));
       return readFile(inside(root,"complete").string())==hash(value)+"\n";
     };
     if(!completed(folder))throw Error("E_TASK_ARTIFACT","static task build completion differs before retention");
@@ -545,9 +553,9 @@ struct Runner {
     for(const auto &[name,identity]:inputs)if(hash(readFile(inside(folder,name).string()))!=identity.first)
       throw Error("E_TASK_ARTIFACT","static task build changed after artifact retention");
     if(!completed(retained))throw Error("E_TASK_ARTIFACT","retained static task build completion differs");
-    auto record=retained/"retained.json";atomic(record,Object{{"schema",profiled?"nex.retained-native-task-build/3":shared?"nex.retained-native-task-build/2":"nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
+    auto record=retained/"retained.json";atomic(record,Object{{"schema",debug?"nex.retained-native-task-build/4":profiled?"nex.retained-native-task-build/3":shared?"nex.retained-native-task-build/2":"nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
       {"build_key",text(build,"key")},{"original_directory",folder.string()},{"metadata_rewritten",false},{"hash_algorithm","BLAKE3"},
-      {"completion_schema",profiled?"nex.native-completion/6":shared?"nex.native-completion/5":"nex.native-completion/4"},{"files",std::move(mapping)}});
+      {"completion_schema",debug?"nex.native-completion/7":profiled?"nex.native-completion/6":shared?"nex.native-completion/5":"nex.native-completion/4"},{"files",std::move(mapping)}});
     return record.lexically_relative(directory).generic_string();
   }
   JSON check(const Object &c){
@@ -719,7 +727,7 @@ struct Runner {
     }else if(kind=="build"){
       auto mode=optional(c,"mode","application");if(target=="web"&&mode=="library")invalid("web libraries use mode module");if(target!="web"&&mode=="module")invalid("module output requires target web");
       std::vector<std::string> args;
-      if(project)args=projectArguments("build");
+      if(project){args=projectArguments("build");if(c.getBoolean("task_debug").value_or(false))args.push_back("--task-debug");}
       else if(mode=="module")args={"emit","--kind","typescript","--entry",entry,"--directory",(artifact/"module").string()};
       else {args={"build","--target",target,"--profile",optional(c,"profile","debug")};if(target!="web"){args.insert(args.end(),{"--entry",entry});if(mode=="library")args.push_back("--library");}}
       auto value=invoke(args,"build");passed=successful(value);row["receipt"]=text(object(value),"receipt");
@@ -734,6 +742,11 @@ struct Runner {
             if(fs::is_directory(executable.parent_path()/"images"))copyArtifact(executable.parent_path()/"images",destination/"images");
             for(auto key:{"metadata","compilation","debug_manifest","notices"})if(auto file=a.getString(key);file&&!file->empty())copyArtifact(file->str(),destination/(std::string(key)+(std::string(key)=="notices"?".txt":".json")));
             auto retained=retainTaskProviderBuild(executable,destination);if(!retained.empty())output["retained_build"]=std::move(retained);
+            if(c.getBoolean("task_debug").value_or(false)&&name==text(object(p.projects.at(program)),"component")){
+              BuildResult built;built.executable=executable.string();built.key=text(a,"build_key");built.target=text(a,"target");built.compilerTarget=text(a,"compiler_target");built.hostCompatible=a.getBoolean("host_compatible").value_or(false);auto raw=destination/"retained-build";std::map<std::string,std::string> images{{executable.string(),(raw/executable.filename()).string()}};
+              auto manifest=readJSON(executable.parent_path()/"debug.json",8*1048576);auto view=object(manifest).getObject("task_debug");for(const auto &entry:*view->getArray("images")){auto old=text(object(entry),"path");if(old!=executable.string())images[old]=(raw/"images"/fs::path(old).filename()).string();}auto runtime=text(*view->getObject("runtime_image"),"path");if(runtime!=executable.string())images[runtime]=(raw/"images"/fs::path(runtime).filename()).string();
+              auto relocated=relocateNativeTaskDebugSession(source,built,raw.string(),raw.string(),raw.string(),options.compiler,images);for(const auto &[key,value]:relocated)output[key]=fs::path(value.getAsString()->str()).lexically_relative(directory).generic_string();
+            }
           }
           outputs.push_back(std::move(output));
         }row["components"]=std::move(outputs);

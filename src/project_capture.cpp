@@ -24,11 +24,12 @@ std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
 void taskLinkage(const JSON &value,const std::string &component){
   const auto &o=object(value);
+  const bool debug=o.getString("schema")=="nex.project-task-linkage/4";
   const bool profiled=o.getString("schema")=="nex.project-task-linkage/3";
-  const bool shared=profiled||o.getString("schema")=="nex.project-task-linkage/2";
-  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
+  const bool shared=debug||profiled||o.getString("schema")=="nex.project-task-linkage/2";
+  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!debug||key!="debugging")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
   auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
-  if((shared?(o.size()!=(profiled?9:8)||(o.getString("mode")!="shared-fixed"&&(!profiled||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
+  if((shared?(o.size()!=((profiled||debug)?9:8)||(o.getString("mode")!="shared-fixed"&&(!(profiled||debug)||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
      !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
   auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
   std::set<std::string> defined,imported;
@@ -50,6 +51,12 @@ void taskLinkage(const JSON &value,const std::string &component){
       for(const auto *key:{"function_hash","function_source_hash","source_unit_hash","contract"})digest(row,key);
       const auto &definition=*std::find_if(definitions->begin(),definitions->end(),[&](const auto &value){return value.getAsObject()->getString("function")==function;});
       if(row.getString("contract")!=definition.getAsObject()->getString("contract"))fail("captured profile contract differs");
+    }
+  }
+  if(debug){auto metadata=o.getObject("debugging");auto rows=metadata?metadata->getArray("definitions"):nullptr;
+    if(!metadata||metadata->size()!=4||metadata->getString("schema")!="nex.project-task-debug/1"||metadata->getInteger("registry_abi")!=1||metadata->getInteger("catalog_abi")!=2||!rows||rows->size()!=defined.size())fail("invalid captured logical debug source definitions");
+    std::set<std::string> names;for(const auto &value:*rows){const auto &row=object(value);auto name=text(row,"name");auto retained=row.getBoolean("retained");if(row.size()!=8||!defined.contains(name)||!names.insert(name).second||!row.getInteger("line")||*row.getInteger("line")<1||!retained||!row.get("task_debug")||(*retained?!row.getObject("task_debug"):!row.get("task_debug")->getAsNull()))fail("invalid captured logical debug source definition");for(const auto *key:{"function_hash","function_source_hash","source_unit_hash","contract"})digest(row,key);
+      for(const auto &entry:*definitions)if(entry.getAsObject()->getString("function")==name&&entry.getAsObject()->getString("contract")!=row.getString("contract"))fail("captured debug source contract differs");
     }
   }
   if(shared&&!o.get("load_closure")->getAsNull()){
@@ -103,12 +110,12 @@ Shape shape(const JSON &capture){
 }
 }
 
-JSON captureProject(const std::string &directory,const std::string &manifest,const std::string &source,const std::string &component,const std::set<std::string> &configurations,const std::map<std::string,std::string> &overlays){
+JSON captureProject(const std::string &directory,const std::string &manifest,const std::string &source,const std::string &component,const std::set<std::string> &configurations,const std::map<std::string,std::string> &overlays,const std::set<std::string> &debugConfigurations){
   if(configurations.empty()||configurations.size()>32)fail("capture requires1..32 configurations");
   auto root=fs::canonical(directory);fs::path manifestName=fs::path(manifest).filename();
   if(fs::canonical(manifest).parent_path()!=root)fail("task architecture manifest must be beside nex.json");
   ProjectBuildOptions preflight;preflight.kind="plan";preflight.component=component;preflight.configuration=*configurations.begin();preflight.compilerVersion=NEX_VERSION;preflight.compilerBuild=NEX_BUILD_ID;
-  preflight.sourceOverlays=overlays;preflight.archivedSources=!overlays.empty();
+  preflight.taskDebug=debugConfigurations.contains(preflight.configuration);preflight.sourceOverlays=overlays;preflight.archivedSources=!overlays.empty();
   buildProject(root.string(),manifest,source,preflight);
   auto architecture=parse(source),project=parse(read(root/"nex.json",1048576));
   const auto &definitions=*object(architecture).getObject("components"),&settings=*object(architecture).getObject("configurations");
@@ -135,7 +142,7 @@ JSON captureProject(const std::string &directory,const std::string &manifest,con
   bool sourcesCaptured=false;
   for(const auto &configuration:configurations){
     ProjectBuildOptions options;options.kind="plan";options.component=component;options.configuration=configuration;options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;
-    options.sourceOverlays=overlays;options.archivedSources=!overlays.empty();
+    options.taskDebug=debugConfigurations.contains(configuration);options.sourceOverlays=overlays;options.archivedSources=!overlays.empty();
     auto plan=buildProject(root.string(),manifest,source,options);const auto &p=object(plan);Array descriptions;
     for(const auto &value:*p.getArray("components")){
       const auto &c=object(value);auto cName=text(c,"name"),entry=text(c,"entry");auto program=loadProgram((root/entry).string(),root.string(),overlays.empty(),overlays);
@@ -218,6 +225,7 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
     auto toolchain=inspectNativeToolchain(native);
     if(toolchain.hash!=text(record,"hash")||toolchain.manifest!=*record.get("manifest")||toolchain.inputs!=*record.get("identity"))throw Error("E_TASK_TOOLCHAIN","captured/current project toolchain data differs");
     ProjectBuildOptions options;options.kind="plan";options.component=text(object(capture),"component");options.configuration=configuration.str();options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;
+    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/4";
     auto plan=buildProject(root.string(),(root/s.manifest).string(),readFile((root/s.manifest).string()),options);
     auto actual=object(plan).getArray("components"),entries=expected.getAsArray();if(!actual||!entries||actual->size()!=entries->size())fail("captured component selection changed");
     for(size_t i=0;i<entries->size();++i){

@@ -118,7 +118,61 @@ def unique_task_fields(pairs):
     return result
 
 
+def debug_task_package_inputs(request, binary, owned_inputs):
+    from core_capsule import completion_inputs
+    expected_fields = {'schema', 'binary', 'binary_sha256', 'owned_images', 'runtime_notices',
+        'runtime_notices_sha256', 'sdk_root', 'toolchain', 'language', 'revision',
+        'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
+        'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
+    task = request.get('task_inputs')
+    if (set(request) != expected_fields or request['kind'] != 'executable' or request['profile'] != 'debug' or
+            request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
+            not isinstance(task, dict) or set(task) != {'schema', 'files'} or task['schema'] != 'nex.application-task-inputs/3' or
+            not isinstance(task['files'], list) or not 14 <= len(task['files']) <= 16391):
+        raise ValueError('invalid debug application provenance envelope')
+    build_path = binary.parent/'build.json'
+    build = json.loads(build_path.read_text(), object_pairs_hook=unique_task_fields)
+    if (build.get('completion_schema') != 'nex.native-completion/7' or build.get('completion_mode') not in ('static-application', 'shared-application') or
+            build.get('key') != request['build_key'] or build.get('compiler_build') != request['compiler_build'] or build.get('task_debug') is not True):
+        raise ValueError('debug request differs from completed application')
+    base = [('base_binary', binary.name), ('base_mlir', 'program.mlir'), ('base_llvm', 'program.ll'),
+            ('base_compilation', 'compilation.json'), ('base_build', 'build.json'), ('base_source_bundle', 'source-bundle.json')]
+    names = completion_inputs(build)
+    expected = base + [(row['kind'], row['path']) for row in build['completion_inputs']] + [('complete', 'complete')]
+    if len(expected) != len(task['files']) or names != [row['path'] for row in build['completion_inputs']]:
+        raise ValueError('debug request omitted a completed input')
+    result = []; total = 0
+    for row, (kind, relative) in zip(task['files'], expected):
+        if (not isinstance(row, dict) or set(row) != {'kind', 'relative', 'path', 'hash', 'sha256', 'bytes', 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
+                row['kind'] != kind or row['relative'] != relative or row['path'] != str(binary.parent/relative) or
+                any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
+                type(row['bytes']) is not int or not 0 <= row['bytes'] <= 512*1024**2):
+            raise ValueError('invalid debug raw completed input identity')
+        source = Path(row['path'])
+        if source.resolve(strict=True) != source or source.is_symlink() or not source.is_file() or source.stat().st_size != row['bytes'] or sha256(source) != row['sha256']:
+            raise ValueError('debug raw completed input changed')
+        total += row['bytes']
+        if total > 1024**3: raise ValueError('debug raw completed namespace exceeds bound')
+        image = None if row['image'] is None else Path(row['image'])
+        if image is None:
+            if any(row[k] is not None for k in ('component', 'image_key', 'image_sha256', 'image_uuid')):
+                raise ValueError('unexpected debug input image association')
+        else:
+            physical = owned_inputs.get(image)
+            if image != binary and physical is None: raise ValueError('unowned debug input image')
+            if (not isinstance(row['component'], str) and row['component'] is not None) or not isinstance(row['image_key'], str) or not re.fullmatch('[0-9a-f]{64}', row['image_key']) or sha256(image) != row['image_sha256'] or not isinstance(row['image_uuid'], str):
+                raise ValueError('invalid debug image association')
+            if physical and any(physical[k] != row[v] for k, v in [('key', 'image_key'), ('sha256', 'image_sha256'), ('uuid', 'image_uuid')]):
+                raise ValueError('debug image association differs from owned image')
+            if image == binary and (row['image_key'] != request['build_key'] or row['image_sha256'] != request['binary_sha256']):
+                raise ValueError('debug root image association differs')
+        result.append((row, source, image))
+    return result
+
+
 def task_package_inputs(request, binary, owned_inputs):
+    if request['schema'] == 'nex.application-request/4':
+        return debug_task_package_inputs(request, binary, owned_inputs)
     task = request.get('task_inputs')
     profile = request['schema'] == 'nex.application-request/3'
     if request['schema'] == 'nex.application-request/1':
@@ -251,35 +305,46 @@ def task_package_inputs(request, binary, owned_inputs):
     return result
 
 
-def copy_task_provenance(inputs, stage, application, collector, profile=False):
+def copy_task_provenance(inputs, stage, application, collector, profile=False, debug=False):
     if not inputs:
         return None
     records = []
     for index, (row, source, image) in enumerate(inputs):
-        relative = Path('provenance/task')/('%03d-' % index + source.name)
+        relative = Path('debugger/retained-build')/row['relative'] if debug else Path('provenance/task')/('%03d-' % index + source.name)
         target = stage/relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, target)
+        if debug:
+            shutil.copy2(source, target)
+        else:
+            shutil.copyfile(source, target)
         if (source.stat().st_size != row['bytes'] or sha256(source) != row['sha256'] or
                 target.stat().st_size != row['bytes'] or sha256(target) != row['sha256']):
             raise ValueError('task provenance changed during collection')
-        output = None if image is None else application if row['kind'] in ('application_provider', 'application_profile_catalog') else collector.destinations.get(image)
+        if debug and row['kind'] == 'root_symbols' and row['relative'] != 'debug-symbols.complete':
+            # The immutable original remains in retained-build. LLDB also needs
+            # the matching root dSYM adjacent to the relocated executable.
+            symbols = application.parent/row['relative']
+            symbols.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target, symbols)
+            if symbols.stat().st_size != row['bytes'] or sha256(symbols) != row['sha256']:
+                raise ValueError('relocated root debug symbols changed during collection')
+        output = None if image is None else application if (image == Path(collector.debug_input_binary) if debug else row['kind'] in ('application_provider', 'application_profile_catalog')) else collector.destinations.get(image)
         if image is not None and (output is None or not output.is_file() or stage not in output.parents):
             raise ValueError('task provider image was not retained by collector')
-        records.append({'kind': row['kind'], 'path': relative.as_posix(),
+        records.append({**({'relative': row['relative']} if debug else {}), 'kind': row['kind'], 'path': relative.as_posix(),
             'input_hash': row['hash'], 'input_sha256': row['sha256'], 'bytes': row['bytes'],
             'component': row['component'], 'input_image_key': row['image_key'],
             'input_image_sha256': row['image_sha256'], 'input_uuid': row['image_uuid'],
             'output_image': None if output is None else output.relative_to(stage).as_posix(),
             'output_image_sha256': None if output is None else sha256(output)})
-    return {'schema': 'nex.application-task-profile-provenance/1' if profile else 'nex.application-task-provenance/1', 'metadata_rewritten': False,
+    return {'schema': 'nex.application-task-debug-provenance/1' if debug else 'nex.application-task-profile-provenance/1' if profile else 'nex.application-task-provenance/1', 'metadata_rewritten': False,
             'hash_algorithm': 'BLAKE3', 'files': records}
 
 def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patchelf'):
     if dpkg_notices and platform.system() != 'Linux':
         raise ValueError('--dpkg-notices is Linux-only')
-    if request.get('schema') not in ('nex.application-request/1', 'nex.application-request/2', 'nex.application-request/3'):
-        raise ValueError('expected nex.application-request/1, /2 or /3')
+    if request.get('schema') not in ('nex.application-request/1', 'nex.application-request/2', 'nex.application-request/3', 'nex.application-request/4'):
+        raise ValueError('expected nex.application-request/1, /2, /3 or /4')
     binary = Path(request['binary']).resolve(strict=True)
     if sha256(binary) != request['binary_sha256']:
         raise ValueError('application binary changed after compilation')
@@ -373,7 +438,8 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                        'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx),
                        'external_prerequisites': ['matching GNU loader/glibc runtime; system C++/GCC runtimes listed in system_libraries'],
                        'packager_patchelf': run([patchelf, '--version']).strip()}
-        task_provenance = copy_task_provenance(task_inputs, stage, application, collector, request['schema'] == 'nex.application-request/3')
+        collector.debug_input_binary = str(binary)
+        task_provenance = copy_task_provenance(task_inputs, stage, application, collector, request['schema'] == 'nex.application-request/3', request['schema'] == 'nex.application-request/4')
         used_components = collector.copy_notices('licenses')
         foreign, foreign_components, foreign_system = copy_foreign(request, stage)
         used_components += foreign_components
@@ -403,7 +469,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                   'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
                   **details, 'files': collector.inventory()}
         if task_provenance:
-            report['task_profile_provenance' if request['schema'] == 'nex.application-request/3' else 'task_provenance'] = task_provenance
+            report['task_debug_provenance' if request['schema'] == 'nex.application-request/4' else 'task_profile_provenance' if request['schema'] == 'nex.application-request/3' else 'task_provenance'] = task_provenance
         if foreign:
             report['foreign_projection'] = foreign
         (stage / 'application.json').write_text(json.dumps(report, indent=2) + '\n')

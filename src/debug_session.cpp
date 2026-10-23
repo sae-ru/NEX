@@ -1,8 +1,12 @@
 #include "nex/debug_session.h"
 #include "nex/native_toolchain.h"
 #include "nex/task_limits.h"
+#include "nex/task_provider_debug.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Error.h"
+#include "nex/native_images.h"
+#include "llvm/Support/SHA256.h"
+#include "llvm/ADT/StringExtras.h"
 #include "nex_json.h"
 #include <filesystem>
 #include <array>
@@ -82,19 +86,24 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
   auto debug=debugManifest->getAsObject();llvm::json::Object taskControl;
   if(tasks){
+    const bool provider=debug->getString("schema")=="nex.debug/3";
     auto view=debug->getObject("task_debug");auto limits=build->get("task_limits");
     if(kind=="dap")throw Error("E_TASK_DEBUG","logical source task debugging requires lldb or nex-dap; raw DAP is pending");
     if(std::string(programLanguage(p))!="0.20"||build->getString("kind")!="executable"||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
-       debug->getString("schema")!="nex.debug/2"||debug->getString("language")!=programLanguage(p)||debug->getString("revision")!=revision(p)||debug->getString("build_key")!=built.key||
+       debug->getString("schema")!=(provider?"nex.debug/3":"nex.debug/2")||debug->getString("language")!=programLanguage(p)||debug->getString("revision")!=revision(p)||debug->getString("build_key")!=built.key||
        debug->getString("program")!=built.executable||debug->getString("compiler_build")!=NEX_BUILD_ID||debug->getString("source_hash")!=hash(json(sourceBundle(p),false))||
-       !view||view->getString("schema")!="nex.task-debug-view/1"||view->getInteger("abi")!=1||view->getString("metadata_hash")!=build->getString("task_debug_metadata_hash")||
+       !view||view->getString("schema")!=(provider?"nex.task-debug-view/2":"nex.task-debug-view/1")||view->getInteger("abi")!=(provider?2:1)||view->getString("metadata_hash")!=build->getString("task_debug_metadata_hash")||
        !view->getString("image_sha256")||view->getString("image_sha256")->size()!=64||!view->getString("image_uuid")||view->getString("image_uuid")->empty()||!limits)
-      throw Error("E_TASK_DEBUG","task debug launch requires its matching020 native debug executable and catalog ABI1");
+      throw Error("E_TASK_DEBUG","task debug launch requires its matching020 native debug executable and catalog");
+    if(provider){(void)inspectNativeTaskDebugBuildInputs(built);(void)validateNativeTaskDebugManifest(*debug,folder.string());
+      for(const auto &[key,name]:std::vector<std::pair<std::string,std::string>>{{"formatter","lldb_nex.py"},{"dap_adapter","nex_dap.py"}}){auto file=folder/"debugger"/name;if(debug->getString(key)!=file.string()||(debug->getString(key+"_hash")!=hash(readBoundedText(file.string(),8*1048576,"captured debugger script","E_DEBUG"))||debug->getString(key+"_hash")!=hash(readFile(resourceFile("debug/"+name)))))throw Error("E_DEBUG","provider debug scripts differ from their captured build");}
+    }
     auto configured=parseTaskLimitsJSON(*limits,"E_DEBUG");
     if(json(llvm::json::Value(taskLimitsJSON(configured)),false)!=json(*limits,false))throw Error("E_DEBUG","task debug limits are not canonical");
     auto argv=arguments;argv.insert(argv.begin(),built.executable);auto effective=taskEffectiveLimits(configured,argv);
-    taskControl=llvm::json::Object{{"schema","nex.task-debug-session/1"},{"catalog_abi",1},{"deadline_advances_while_stopped",true},
+    taskControl=llvm::json::Object{{"schema",provider?"nex.task-debug-session/2":"nex.task-debug-session/1"},{"catalog_abi",provider?2:1},{"deadline_advances_while_stopped",true},
       {"task_execution",taskExecutionJSON(configured,effective,"native")}};
+    if(provider){taskControl["registry_abi"]=1;taskControl["metadata_hash"]=view->getString("metadata_hash")->str();taskControl["catalog_hash"]=view->getString("catalog_hash")->str();taskControl["source_union_hash"]=view->getString("source_union_hash")->str();}
   }
   llvm::json::Array commands{
     "command script import "+json((folder/"debugger/lldb_nex.py").string(),false),
@@ -124,4 +133,36 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(tasks||kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);
   return session;
 }
+llvm::json::Object relocateNativeTaskDebugSession(const Program &p,const BuildResult &built,
+    const std::string &rawDirectory,const std::string &physicalDirectory,
+    const std::string &publishedDirectory,const std::string &compiler,
+    const std::map<std::string,std::string> &imageOutputs){
+  using Object=llvm::json::Object;using Array=llvm::json::Array;using JSON=llvm::json::Value;
+  (void)inspectNativeTaskDebugBuildInputs(built);
+  auto raw=fs::absolute(rawDirectory).lexically_normal(),physical=fs::absolute(physicalDirectory).lexically_normal(),published=fs::absolute(publishedDirectory).lexically_normal();
+  auto relative=raw.lexically_relative(physical);if(relative.is_absolute()||std::any_of(relative.begin(),relative.end(),[](const auto &part){return part=="..";}))throw Error("E_DEBUG","relocated raw namespace escapes its owned output");
+  auto finalRaw=(relative=="."?published:published/relative).lexically_normal();
+  // lexically_normal() preserves a directory's trailing separator. The
+  // published namespace uses one canonical spelling in JSON and Python.
+  if(finalRaw!=finalRaw.root_path()&&finalRaw.filename().empty())finalRaw=finalRaw.parent_path();
+  auto original=fs::path(built.executable).parent_path();
+  auto value=parseJSON(readBoundedText((original/"debug.json").string(),8*1048576,"debug manifest","E_DEBUG"));auto manifest=value.getAsObject();if(!manifest||manifest->getString("schema")!="nex.debug/3")throw Error("E_DEBUG","relocation requires provider debug3");
+  auto buildValue=parseJSON(readFile((original/"build.json").string()));auto build=buildValue.getAsObject();std::vector<std::string> names{fs::path(built.executable).filename().string(),"program.mlir","program.ll","compilation.json","build.json","source-bundle.json"};auto completed=nativeCompletionInputs(*build);names.insert(names.end(),completed.begin(),completed.end());names.push_back("complete");
+  Array rawPins;for(const auto &name:names){auto target=raw/name;fs::path current;for(const auto &part:target){current/=part;if(fs::is_symlink(current))throw Error("E_DEBUG","symlink relocated raw input");}if(!fs::is_regular_file(target)||fs::file_size(target)>512ULL*1048576)throw Error("E_DEBUG","missing/oversized relocated raw input");auto a=readFile((original/name).string()),b=readFile(target.string());if(a!=b)throw Error("E_DEBUG","relocation changed raw completed input: "+name);rawPins.push_back(Object{{"path",name},{"hash",hash(b)},{"bytes",int64_t(b.size())}});}
+  auto view=manifest->getObject("task_debug");auto catalog=parseNativeTaskDebugCatalog(*view->get("catalog"));auto sources=parseNativeTaskDebugSourceUnion(*view->get("source_union"));std::map<std::string,std::string> bundles;for(const auto &source:sources.components)bundles.emplace(source.component,readFile((raw/source.bundleFile).string()));
+  auto sha=[](const std::string &bytes){return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(bytes)),true);};Array mappings;std::set<std::string> mappedImages;
+  auto relocate=[&](Object row){auto old=row.getString("path");if(!old||!imageOutputs.contains(old->str()))throw Error("E_DEBUG","relocation omitted a loaded image");auto inputPath=old->str();auto file=fs::absolute(imageOutputs.at(inputPath)).lexically_normal();auto suffix=file.lexically_relative(physical);if(suffix.is_absolute()||std::any_of(suffix.begin(),suffix.end(),[](const auto &part){return part=="..";}))throw Error("E_DEBUG","relocated image escapes output");fs::path current;for(const auto &part:file){current/=part;if(fs::is_symlink(current))throw Error("E_DEBUG","relocated image is a symlink");}auto bytes=readFile(file.string());auto target=(published/suffix).lexically_normal();auto input=Object(row);row["path"]=target.string();row["hash"]=hash(bytes);row["sha256"]=sha(bytes);row["uuid"]=nativeImageUUID(file.string());if(mappedImages.insert(inputPath).second)mappings.push_back(Object{{"input",std::move(input)},{"output",Object(row)}});return row;};
+  Array images;for(const auto &image:*view->getArray("images"))images.push_back(relocate(Object(*image.getAsObject())));auto runtime=relocate(Object(*view->getObject("runtime_image")));
+  auto base=Object(*manifest);base["artifact_directory"]=finalRaw.string();auto root=std::find_if(images.begin(),images.end(),[](const JSON &v){return v.getAsObject()->getString("kind")=="application";});if(root==images.end())throw Error("E_DEBUG","relocation omitted application");base["program"]=root->getAsObject()->getString("path")->str();base["formatter"]=(finalRaw/"debugger/lldb_nex.py").string();base["dap_adapter"]=(finalRaw/"debugger/nex_dap.py").string();
+  if(manifest->get("owned_images"))base["owned_images"]=relocateNativeTaskDebugOwnedImages(*manifest,mappings,raw.string(),finalRaw.string());
+  auto fresh=finalizeNativeTaskDebugManifest(std::move(base),catalog,sources,bundles,std::move(images),std::move(runtime));auto freshPath=finalRaw/"debug-relocated.json";
+  auto sessionValue=nativeDebugSession(p,built,physical.string(),compiler,"nex-dap",{});auto session=Object(*sessionValue.getAsObject());session["manifest"]=freshPath.string();
+  auto launch=Object(*session.getObject("launch"));launch["program"]=fresh.getString("program")->str();launch["cwd"]=published.string();launch["sourceMap"]=Array(*fresh.getArray("source_map"));launch["initCommands"]=Array{"command script import "+json((finalRaw/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(freshPath.string(),false)+" --compiler "+json(compiler,false)};session["launch"]=Object(launch);
+  auto adapter=Object(*session.getObject("nex_adapter"));auto command=Array(*adapter.getArray("command"));command[1]=(finalRaw/"debugger/nex_dap.py").string();adapter["command"]=Array(command);adapter["launch"]=std::move(launch);session["nex_adapter"]=std::move(adapter);session["adapter_command"]=std::move(command);
+  Object receipt{{"schema","nex.task-debug-relocation/1"},{"compiler_build",NEX_BUILD_ID},{"build_key",built.key},{"original_directory",original.string()},{"artifact_directory",finalRaw.string()},{"metadata_rewritten",false},{"raw_files",std::move(rawPins)},{"images",std::move(mappings)}};
+  fresh["relocation"]=Object{{"path","debug-relocation.json"},{"hash",hash(json(Object(receipt),false))}};
+  writeFile((raw/"debug-relocated.json").string(),json(Object(fresh))+"\n");writeFile((raw/"debug-session.json").string(),json(Object(session))+"\n");writeFile((raw/"debug-relocation.json").string(),json(Object(receipt))+"\n");
+  return Object{{"debug_manifest",freshPath.string()},{"debug_session",(finalRaw/"debug-session.json").string()},{"debug_relocation",(finalRaw/"debug-relocation.json").string()}};
+}
+
 }

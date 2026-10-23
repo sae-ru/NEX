@@ -1,4 +1,6 @@
 #include "nex/project_build.h"
+#include "nex/task_ir.h"
+#include "nex/task_provider_debug.h"
 #include "nex/task_limits.h"
 #include "nex/task_frontend.h"
 #include "nex/server_workload.h"
@@ -117,6 +119,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(withWorkload&&options.kind!="plan"&&options.kind!="profile")fail("--workload requires project plan or profile","E_OPTION");
   const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",buildTest=options.kind=="build-test",testing=options.kind=="test"||buildTest;
   if(options.kind!="plan"&&options.kind!="build"&&options.kind!="package"&&!execution&&!testing)fail("project kind must be plan, build, package, run, test, build-test, debug or profile","E_OPTION");
+  if(options.taskDebug&&options.kind!="plan"&&options.kind!="build"&&options.kind!="package")fail("--task-debug applies only to project plan/build/package","E_OPTION");
   if(buildTest&&options.selectedTest.empty())fail("build-test requires --symbol NAME","E_OPTION");
   if(options.kind=="debug"&&options.adapter!="lldb"&&options.adapter!="dap"&&options.adapter!="nex-dap")fail("debug adapter must be lldb, dap or nex-dap","E_OPTION");
   if(options.kind=="debug")validateNativeDebugArguments(options.arguments);
@@ -196,6 +199,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(!configurations.contains(selectedConfiguration))fail("unknown configuration: "+selectedConfiguration);
   if(!options.component.empty()&&!components.contains(options.component))fail("unknown component: "+options.component);
   const auto &configuration=configurations.at(selectedConfiguration);
+  if(options.taskDebug&&(configuration.profile!="debug"||!options.foreign.empty()||withWorkload))fail("--task-debug requires a native task application, debug profile and no HTTP/foreign workload","E_TASK_DEBUG");
   auto selectedComponent=options.component;
   if(execution||withWorkload){
     if(selectedComponent.empty()){
@@ -283,8 +287,8 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     }
     if(!native.entry.empty()&&usesTaskEffects(program,native.entry)){
       native.taskLimits=configuration.taskLimits;native.taskLimitsSpecified=configuration.taskLimitsSpecified;
-      if(options.kind=="debug"){
-        if(configuration.profile!="debug"||c.kind!="executable"||!binaryProviders.empty()||!options.foreign.empty())fail("task debug requires a native debug executable with source-only dependencies; HTTP/provider/profile task debugging is pending","E_TASK_DEBUG");
+      if((options.kind=="debug"||options.taskDebug)&&(c.kind=="executable"||c.kind=="server")){
+        if(configuration.profile!="debug"||c.kind!="executable"||!options.foreign.empty())fail("task debug requires a native debug task application without HTTP or foreign code","E_TASK_DEBUG");
         if(options.adapter=="dap")fail("logical source task debugging requires lldb or nex-dap; raw DAP is pending","E_TASK_DEBUG");
         native.taskDebug=true;
       }
@@ -338,7 +342,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   };
   std::set<std::string> taskABI;
   for(const auto &item:prepared)if(taskEntries(item)&&
-      (components.at(item.name).kind=="static_library"||components.at(item.name).kind=="shared_library"||!binaryClosures[item.name].empty()))taskABI.insert(item.name);
+      (components.at(item.name).kind=="static_library"||components.at(item.name).kind=="shared_library"||!binaryClosures[item.name].empty()||(options.taskDebug&&components.at(item.name).kind=="executable")))taskABI.insert(item.name);
   // A task archive and its pure dependencies/consumers use one compatible
   // runtime cohort. Source-only task applications retain their existing path.
   for(bool changed=true;changed;){
@@ -369,18 +373,19 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       for(const auto &dependency:binaryClosures[item.name])if(taskABI.contains(dependency))changed|=sharedTaskABI.insert(dependency).second;
     }
   }
+  if(options.taskDebug){bool application=false;for(const auto &item:prepared){const auto &c=components.at(item.name);if(c.kind=="executable"){application=true;if(item.options.entry.empty()||!usesTaskEffects(item.program,item.options.entry))fail("--task-debug requires actual task application roots","E_TASK_DEBUG");}else if(c.kind=="server"||c.kind=="web")fail("--task-debug supports native task applications without HTTP or browser adapters","E_TASK_DEBUG");}if(!application)fail("--task-debug requires a selected native task application","E_TASK_DEBUG");}
   for(auto &item:prepared)if(taskABI.contains(item.name)){
     const auto &c=components.at(item.name);
     if((c.kind!="executable"&&c.kind!="static_library"&&c.kind!="shared_library")||
        !options.foreign.empty())
       fail("task binary providers require fixed native applications without HTTP or foreign code","E_TASK_PROVIDER");
-    if(options.kind=="debug"||item.options.taskDebug)
-      fail("logical debugging of task binary providers remains pending","E_TASK_DEBUG");
+    if((options.kind=="debug"||options.taskDebug||item.options.taskDebug)&&configuration.profile!="debug")fail("task provider debugging requires a debug profile","E_TASK_DEBUG");
     if(c.kind=="executable"&&!usesTaskEffects(item.program,item.options.entry))
       fail("a pure application cannot consume a task-provider cohort; no implicit task executor is created","E_TASK_PROVIDER");
     const bool shared=sharedTaskABI.contains(item.name);
     item.options.staticTaskABI=!shared;item.options.taskComponent=item.name;
     item.options.taskLinkageMode=shared?NativeTaskLinkageMode::SharedFixed:NativeTaskLinkageMode::Static;
+    if(options.kind=="debug"||options.taskDebug)item.options.taskDebug=true;
     if(shared){
       item.options.positionIndependent=true;
       if(c.kind=="executable"){item.options.deferredLink=true;item.options.functionsOnly=true;}
@@ -495,10 +500,16 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         {"definitions",std::move(definitions)},{"imports",std::move(imports)},{"exports",std::move(exports)}};
     }
   }
-  for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed||(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&configuration.profile=="profile")){
+  for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed||(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&(configuration.profile=="profile"||item.options.taskDebug))){
     const bool shared=effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed;
     auto &linkage=*item.description.getAsObject()->getObject("task_linkage");
-    linkage["schema"]=configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2";linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
+    linkage["schema"]=item.options.taskDebug?"nex.project-task-linkage/4":configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2";linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
+    if(item.options.taskDebug){llvm::json::Array sites;bool retained=usesTaskEffects(item.program,item.options.entry);for(const auto &entry:item.options.libraryExports)retained|=usesTaskEffects(item.program,entry);
+      for(const auto &[name,contract]:taskDefinitions.at(item.name)){const auto &function=item.program.function(name);auto unit=item.program.units.find(function.unit);auto source=unit==item.program.units.end()?item.program.source:unit->second.source;
+        sites.push_back(Object{{"name",name},{"function_hash",hash(json(canonical(function),false))},{"function_source_hash",hash(item.program.definition(function))},{"source_unit_hash",hash(source)},{"contract",contract},{"line",int64_t(function.span.line)},{"retained",retained},{"task_debug",retained?llvm::json::Value(taskDebugFunctionMetadata(item.program,function,function.unit)):llvm::json::Value(nullptr)}});
+      }
+      linkage["debugging"]=Object{{"schema","nex.project-task-debug/1"},{"registry_abi",1},{"catalog_abi",2},{"definitions",std::move(sites)}};
+    }
     if(configuration.profile=="profile"){llvm::json::Array sites;for(const auto &[name,contract]:taskDefinitions.at(item.name)){const auto &function=item.program.function(name);auto unit=item.program.units.find(function.unit);auto source=unit==item.program.units.end()?item.program.source:unit->second.source;
       sites.push_back(Object{{"name",name},{"function_hash",hash(json(canonical(function),false))},{"function_source_hash",hash(item.program.definition(function))},{"source_unit_hash",hash(source)},{"contract",contract},{"line",int64_t(function.span.line)}});}
       linkage["profiling"]=Object{{"schema","nex.project-task-profile/1"},{"registry_abi",1},{"sites",std::move(sites)}};
@@ -655,9 +666,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   auto cache=fs::absolute(options.directory.empty()?(root/".nex/build").string():options.directory);
   // Resolve a caller-selected root alias before producing closed profile
   // inputs. Individual completed files still reject internal symlinks.
-  if(configuration.profile=="profile"&&std::any_of(prepared.begin(),prepared.end(),[](const auto &item){return effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None;}))
+  if(std::any_of(prepared.begin(),prepared.end(),[&](const auto &item){return effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&(configuration.profile=="profile"||item.options.taskDebug);}))
     cache=fs::weakly_canonical(cache);
-  if(options.kind=="debug")cache=nativeDebugBuildDirectory(cache.string());
+  if(options.kind=="debug"||options.taskDebug)cache=nativeDebugBuildDirectory(cache.string());
   std::optional<ForeignCatalogueSnapshot> foreign;
   if(!options.foreign.empty())foreign=inspectForeignCatalogue(options.foreign);
   auto grant=[&](const Program &program,const std::string &entry){
@@ -864,7 +875,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
           packaged.push_back(Object{{"component",item.name},{"kind","web"},{"directory","web/"+item.name},{"entry","web/"+item.name+"/index.html"},{"revision",revision(item.program)}});
         }else if(c.kind=="executable"||c.kind=="server"){
           const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);
-          auto package=options.package;package.directory=(stage/"apps"/item.name).string();
+          auto package=options.package;package.directory=(stage/"apps"/item.name).string();package.publishedDirectory=(packageOutput/"apps"/item.name).string();
           const ForeignPackageArtifact *foreign=nullptr;
           if(options.packageProjection){options.packageProjection->verify();auto found=options.packageProjection->applications.find(item.name);if(found!=options.packageProjection->applications.end())foreign=&found->second;}
           auto result=packageNativeArtifact(item.program,built,package,foreign);auto data=result.getAsObject();
@@ -905,6 +916,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   }
   Object buildResult{{"schema","nex.project-build-result/1"},{"ok",true},{"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},
     {"native_runtime_image",std::move(images.runtime)},{"graph_store_opened",false},{"external_tools_invoked",true},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+  if(options.taskDebug){llvm::json::Object sessions;for(const auto &item:prepared)if(components.at(item.name).kind=="executable"){const auto &built=images.images.contains(item.name)?images.images.at(item.name):nativeResults.at(item.name);auto session=nativeDebugSession(item.program,built,root.string(),options.compiler,"nex-dap",{});if(item.name==options.component)buildResult["observation"]=llvm::json::Value(session);sessions[item.name]=std::move(session);}buildResult["debug_sessions"]=std::move(sessions);}
   if(runtimeImages.size()>1)buildResult["native_runtime_images"]=std::move(runtimeImages);
   return buildResult;
 }

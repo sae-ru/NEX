@@ -1,10 +1,13 @@
 # Logical native task debugging
 
-Development toolchain0.115/language0.20 enables this debugger for the narrow
-native scope below after actual private LLDB and NEX DAP checks. Query
-`nex describe --field task_debugging --json` before using it. Complete current
-regression, installed SDK and platform acceptance remain pending; this source
-is not an accepted release.
+This source-only catalogABI1 debugger was checked in the preserved0.115/language0.20
+checkpoint, including actual LLDB/NEX-DAP, composite139 and matching installedSDK27.
+See [its exact evidence](evidence/toolchain-0.115.0-task-debug.json). Query
+`nex describe --field task_debugging --json` before using it; acceptance remains
+specific to the recorded source/compiler/platform cohort. Current126 provider
+logical-debug integration has a separate `task_provider_debugging` descriptor,
+[guide](task-provider-debugging.md) and separate live/SDK/platform receipts. It does
+not reinterpret this standalone/source-only ABI1 contract.
 
 The first slice targets local macOS/Linux64 debug executables and source-only
 project applications, launched through the public language0.20 CLI. For example:

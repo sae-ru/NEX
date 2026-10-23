@@ -191,6 +191,10 @@
               },
               "task_limits": {
                 "$ref": "#/$defs/task_limits"
+              },
+              "task_debug": {
+                "type": "boolean",
+                "description": "Native application build preparation only; task_debug true requires a dedicated debug-profile configuration in a captured project. It never launches an inferior."
               }
             },
             "required": [

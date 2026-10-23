@@ -1,4 +1,19 @@
-# Working125: checked native task-provider profiling development slice
+# Working126: checked provider logical task debugging
+
+Toolchain0.119.0/language0.20 enables development source-backed static and fixed
+startup-linked shared provider debugging. Seven actual LLDB/NEX-DAP scenarios
+and separate normal/ASAN/UBSAN/LSAN/TSAN physical-drain preflights pass on macOS
+ARM64. Relocation derives new image/symbol references from immutable raw pins;
+Darwin completion7 retains the root dSYM and packages it beside the executable.
+Source-deleted capture/package/replay and substituted-path/symbol rejection are
+exercised. Full matching152-group regression, installedSDK31 and platform gates
+require separate final receipts; preflights do not certify that delivery.
+Provider4/catalog1/source-union1 and catalogABI2 are separate tooling formats;
+executionABI3/88, old source-only debug2 and profile3 retain their contracts.
+See docs/task-provider-debugging.md. No language migration or primary081
+promotion is introduced.
+
+# Preserved125: checked native task-provider profiling development slice
 
 Toolchain0.118/language0.20 enables one collector and checked registry batch
 across static and fixed startup-linked task providers. Provider3/catalog1,
@@ -6,9 +21,17 @@ completion6/linkage3/retained3/request3 and raw/saved/session3 are separate tool
 formats; source syntax/canonical/migration and execution ABI3 remain unchanged.
 The matching ten-case source/report suite, including canonical cache-parent alias
 and internal-input symlink boundaries, passed. A separate private physical-drain
-fence/sanitizers and the exact scoped SDK30 phase body passed. Full current
-regression, matching installed SDK30 and supported platform gates remain pending.
-Profile test/build-test, runtime load/unload, provider logical debug, combined
+fence/sanitizers and the exact scoped SDK30 phase body passed. Preserved125b has
+Mac composite148 (147 original groups plus corrected boundary55/39) and scoped
+Linux composite11 (10 original groups plus corrected boundary). Matching installed
+SDK30 passed30 phases/557 commands/269 resources with original compiled source
+path absent and restored unchanged. Original failures remain retained; no pristine
+full148/fullLinux/kernel-isolation claim. Exact identities and sanitizer scope:
+[the125b summary](docs/evidence/toolchain-0.118.0-task-provider-profiling.json).
+This accepted baseline does not validate126.
+Profile-configuration test/build-test paths have an additional checked matrix;
+measured profile sessions for tests remain unsupported. Provider3 itself does not
+enable the distinct126 debugger. Runtime load/unload, combined
 debug/profile, Tracy tasks, HTTP/foreign, authority/callable transport and
 non-native profilers remain unsupported. See docs/task-provider-profiling.md.
 Primary081 and prior checkpoints remain unchanged.

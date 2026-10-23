@@ -1,5 +1,12 @@
 # NEX language specification 0.20
 
+Toolchain0.119 provides development source-backed native task-provider logical debugging
+with separate component catalogs/source unions and debug protocols. Discover
+`task_provider_debugging` and read [its bounded tooling scope](task-provider-debugging.md).
+This changes no source syntax, effect/realm rule, canonical field, operation ordinal,
+language identity or explicit migration. Actual generated-image LLDB/NEX-DAP preflights precede enablement; complete
+regression/SDK/platform receipts remain specific to each compiler/resource delivery.
+
 Toolchain0.118 enables development checked task-provider profiling with separate
 metadata/report schemas. Discover `task_provider_profiling` and read
 [its tooling contract](task-provider-profiling.md). This changes no source syntax,

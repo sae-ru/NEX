@@ -1,14 +1,14 @@
 # Installed SDK acceptance and handoff
 
-Toolchain0.115 is adding a twenty-seventh phase, `structured-task-debug`.
-This mutable integration requires actual image identity, an archived revision
-after source deletion, a source-only project debug descriptor and execution of
-the instrumented binary with SDK resources unavailable. With `--live`, its
-matching NEX DAP bridge must stop on a logical source breakpoint, read the child
-and caller frames, expose initialized locals, evaluate immutable pure watches,
-step the selected logical task, reject stale references and exit cleanly.
-Contract tests passing do not establish these live delivery results. See
-[logical task debugging](task-debugging.md) and the exact acceptance report.
+The current0.119 workflow has31 phases, including `task-provider-debugging`.
+The preceding0.118/125b installed checkpoint passed30 phases/557 commands;
+that receipt does not certify the current compiler. The new phase verifies
+static/shared debug artifacts, immutable completion7, source-deleted capture,
+package and replay. With `--live`, actual LLDB-backed NEX-DAP sessions inspect
+provider locals/pure watches, next/in/out, stale references and graceful exit.
+Full delivery requires a completed report for the exact compiler and resources.
+The separate opt-in [Q1–Q5 quality pack](../experiments/quality/README.md) does
+not add phases to this SDK workflow.
 
 For first installation, application creation, Git versioning and Hermes/Codex
 setup, use the Russian [quickstart](quickstart.md). This page describes SDK

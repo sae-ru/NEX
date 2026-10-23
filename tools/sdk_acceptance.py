@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'task-provider-debugging', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -79,6 +79,164 @@ def task_sdk_regular(base,name,maximum=64*1024*1024):
         path=path/part;require(not path.is_symlink(),'task SDK path contains a symlink')
     require(path.is_file() and path.stat().st_size<=maximum,'task SDK input is not a bounded regular file')
     return path
+
+
+def task_debug_namespace(directory, completion_inputs, compiler_build, build_key):
+    """Check one raw completion7 namespace, preserving the producer's B3 pins."""
+    metadata=json.loads(task_sdk_regular(directory,'build.json',8*1024*1024).read_text())
+    require(metadata.get('compiler_build')==compiler_build and metadata.get('key')==build_key and
+            metadata.get('completion_schema')=='nex.native-completion/7' and metadata.get('task_debug') is True,
+            'provider debug raw completion identity differs')
+    inputs=completion_inputs(metadata)
+    tail=['debug.json','debugger/lldb_nex.py','debugger/nex_dap.py']
+    if metadata.get('completion_mode') in ('static-application','shared-application') and '-apple-' in metadata.get('compiler_target',''):
+        tail+=['debug-symbols.complete','app.dSYM/Contents/Info.plist','app.dSYM/Contents/Resources/DWARF/app']
+    require(isinstance(inputs,list) and 6<=len(inputs)<=16384 and
+            inputs[:4]==['library-abi.json','task-provider.json','task-debug-catalog.json','task-debug-sources.json'] and
+            inputs[-len(tail):]==tail and len(inputs)==len(set(inputs)),
+            'provider debug completion7 order differs')
+    provider=json.loads(task_sdk_regular(directory,'task-provider.json').read_text())
+    require(provider.get('schema')=='nex.native-task-provider/4' and metadata.get('task_provider')==provider and
+            provider.get('debugging',{}).get('schema')=='nex.native-task-debug/1',
+            'provider debug completed record differs')
+    catalog=json.loads(task_sdk_regular(directory,'task-debug-catalog.json').read_text())
+    artifact=catalog.get('artifact_kind')
+    require(artifact in ('code-archive','pic-stage','shared-image','application'),'provider debug artifact kind differs')
+    executable='app' if artifact=='application' else 'libnex.a' if artifact in ('pic-stage','code-archive') else \
+        'libnex_'+provider['component']+'_'+build_key+('.dylib' if platform.system()=='Darwin' else '.so')
+    names=list(dict.fromkeys([executable,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',*inputs,'complete']))
+    require(len(names)<=16391,'provider debug namespace exceeds bound')
+    sources=json.loads(task_sdk_regular(directory,'task-debug-sources.json').read_text())
+    require(catalog.get('schema')=='nex.task-debug-catalog/1' and catalog.get('catalog_abi')==2 and
+            sources.get('schema')=='nex.task-debug-source-union/1' and
+            catalog.get('mode')==sources.get('mode')==provider.get('mode') and
+            catalog.get('owner_image')==sources.get('owner_image') and
+            (provider.get('mode')!='shared-fixed' or catalog.get('owner_image')==provider.get('owner_image')),
+            'provider debug raw source/catalog ownership differs')
+    return metadata,provider,names
+
+
+def retained_task_debug_build(receipt_root,check,artifact,component,compiler_build,completion_inputs):
+    """Bind captured debug4 bytes to this checked action's artifact index."""
+    name=component.get('component');check_id=check.get('id')
+    require(isinstance(name,str) and re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}',name) and
+            name==artifact.get('component') and isinstance(check_id,str) and
+            re.fullmatch('[A-Za-z_][A-Za-z_0-9-]{0,63}',check_id),'provider debug capture component differs')
+    base='artifacts/'+check_id+'/';prefix=base+'components/'+name+'/retained-build/'
+    require(component.get('retained_build')==prefix+'retained.json','provider debug retained record moved')
+    record_path=task_sdk_regular(receipt_root,component['retained_build'],16*1024*1024)
+    record=json.loads(record_path.read_text());index=check.get('artifacts',{})
+    def indexed(path,data,pin=None):
+        row=index.get(path[len(base):])
+        require(isinstance(row,dict) and set(row)=={'hash','bytes'} and type(row.get('bytes')) is int and
+                row['bytes']==len(data) and isinstance(row.get('hash'),str) and re.fullmatch('[0-9a-f]{64}',row['hash']) and
+                (pin is None or row['hash']==pin),'provider debug retained byte/index pin differs')
+    indexed(component['retained_build'],record_path.read_bytes())
+    require(isinstance(record,dict) and set(record)=={'schema','compiler_build','build_key','original_directory',
+            'metadata_rewritten','hash_algorithm','completion_schema','files'} and
+            record.get('schema')=='nex.retained-native-task-build/4' and
+            record.get('completion_schema')=='nex.native-completion/7' and
+            record.get('metadata_rewritten') is False and record.get('hash_algorithm')=='BLAKE3' and
+            record.get('compiler_build')==compiler_build and record.get('build_key')==artifact.get('build_key') and
+            isinstance(record.get('files'),list) and 12<=len(record['files'])<=16391,
+            'provider debug retained envelope differs')
+    original=Path(record['original_directory']);executable=Path(artifact['artifact'])
+    require(original==executable.parent and original.is_absolute() and original.resolve(strict=True)==original and
+            original.name==record['build_key'],'provider debug original capture directory differs')
+    namespace=receipt_root/prefix
+    metadata,provider,names=task_debug_namespace(namespace,completion_inputs,compiler_build,record['build_key'])
+    require(executable.name==names[0] and component.get('kind')==artifact.get('kind') and
+            provider.get('component')==name and len(record['files'])==len(names),'provider debug artifact kind/name differs')
+    rows={};total=0;proof=[]
+    for row,relative in zip(record['files'],names):
+        require(isinstance(row,dict) and set(row)=={'original','retained','hash','bytes'} and
+                row.get('original')==str(original/relative) and row.get('retained')==prefix+relative and
+                type(row.get('bytes')) is int and 0<=row['bytes']<=512*1024*1024 and
+                isinstance(row.get('hash'),str) and re.fullmatch('[0-9a-f]{64}',row['hash']),
+                'provider debug retained mapping order/path differs')
+        copied=task_sdk_regular(receipt_root,row['retained'],512*1024*1024);raw=copied.read_bytes()
+        source=task_sdk_regular(original,relative,512*1024*1024);total+=len(raw)
+        require(total<=1024*1024*1024 and raw==source.read_bytes() and len(raw)==row['bytes'],
+                'provider debug retained bytes differ from original')
+        indexed(row['retained'],raw,row['hash']);rows[relative]=row
+        proof.append({'relative':relative,'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'compiler_checked_hash':row['hash']})
+    require(metadata.get('task_provider_hash')==rows['task-provider.json']['hash'],
+            'provider debug own provider BLAKE3 pin differs')
+    return {'component':name,'build_key':record['build_key'],'record_sha256':hashlib.sha256(record_path.read_bytes()).hexdigest(),
+        'files':proof,'verification':'matching compiler receipt BLAKE3 index plus own original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation'}
+
+
+def relocated_task_debug(package_root,package_meta,project_root,completion_inputs):
+    """Verify a package's own raw namespace and loaded-image relocation."""
+    fresh_path=task_sdk_regular(package_root,package_meta.get('debug_manifest'),8*1024*1024)
+    fresh=json.loads(fresh_path.read_text());directory=fresh_path.parent
+    receipt_path=task_sdk_regular(package_root,package_meta.get('debug_relocation'),16*1024*1024)
+    receipt=json.loads(receipt_path.read_text());key=package_meta.get('build_key')
+    require(receipt.get('schema')=='nex.task-debug-relocation/1' and receipt.get('metadata_rewritten') is False and
+            receipt.get('build_key')==fresh.get('build_key')==key and
+            receipt.get('compiler_build')==package_meta.get('compiler_build')==fresh.get('compiler_build') and
+            receipt.get('artifact_directory')==str(directory)==fresh.get('artifact_directory') and
+            directory==package_root/'debugger/retained-build' and
+            receipt.get('original_directory')==str(project_root/'.nex/build'/key),
+            'packaged provider debug relocation context differs')
+    metadata,provider,names=task_debug_namespace(directory,completion_inputs,package_meta['compiler_build'],key)
+    rows=receipt.get('raw_files')
+    require(isinstance(rows,list) and len(rows)==len(names),'packaged provider debug raw mapping count differs')
+    provenance=package_meta.get('task_debug_provenance')
+    require(isinstance(provenance,dict) and set(provenance)=={'schema','metadata_rewritten','hash_algorithm','files'} and
+            provenance.get('schema')=='nex.application-task-debug-provenance/1' and
+            provenance.get('metadata_rewritten') is False and provenance.get('hash_algorithm')=='BLAKE3' and
+            isinstance(provenance.get('files'),list) and len(provenance['files'])==len(names),
+            'packaged provider debug raw provenance envelope differs')
+    kinds=['base_binary','base_mlir','base_llvm','base_compilation','base_build','base_source_bundle']+\
+        [row['kind'] for row in metadata['completion_inputs']]+['complete']
+    inventory=package_meta.get('files',{});proof=[];total=0
+    for row,name,transport,kind in zip(rows,names,provenance['files'],kinds):
+        require(isinstance(row,dict) and set(row)=={'path','hash','bytes'} and row.get('path')==name and
+                isinstance(row.get('hash'),str) and re.fullmatch('[0-9a-f]{64}',row['hash']) and
+                type(row.get('bytes')) is int and 0<=row['bytes']<=512*1024*1024,
+                'packaged provider debug raw mapping order/pin differs')
+        raw=task_sdk_regular(directory,name,512*1024*1024).read_bytes();total+=len(raw)
+        own=task_sdk_regular(project_root,'.nex/build/'+key+'/'+name,512*1024*1024).read_bytes()
+        relative=(directory/name).relative_to(package_root).as_posix();sha=hashlib.sha256(raw).hexdigest()
+        require(total<=1024*1024*1024 and raw==own and len(raw)==row['bytes'] and
+                inventory.get(relative,{}).get('sha256')==sha and inventory[relative].get('bytes')==len(raw),
+                'packaged provider debug raw bytes differ from own action/or output inventory')
+        require(isinstance(transport,dict) and set(transport)=={'relative','kind','path','input_hash','input_sha256','bytes',
+                'component','input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'} and
+                transport.get('relative')==name and transport.get('kind')==kind and transport.get('path')==relative and
+                transport.get('input_hash')==row['hash'] and transport.get('input_sha256')==sha and
+                type(transport.get('bytes')) is int and transport['bytes']==len(raw),
+                'packaged provider debug provenance order/raw pin differs')
+        proof.append({'relative':name,'sha256':sha,'bytes':len(raw),'compiler_validated_input_hash':row['hash']})
+    mappings=receipt.get('images');expected={image['path']:image for image in fresh['task_debug']['images']}
+    expected[fresh['task_debug']['runtime_image']['path']]=fresh['task_debug']['runtime_image'];seen=set()
+    require(isinstance(mappings,list) and len(mappings)==len(expected),'packaged provider debug physical image count differs')
+    for row in mappings:
+        before,after=row.get('input',{}),row.get('output',{})
+        require(after==expected.get(after.get('path')) and after.get('path') not in seen and
+                all(before.get(field)==after.get(field) for field in ('component','key','kind')),
+                'packaged provider debug physical image ownership differs')
+        source=Path(before['path']).relative_to(receipt['original_directory']).as_posix()
+        raw=task_sdk_regular(directory,source,512*1024*1024).read_bytes()
+        relative=Path(after['path']).relative_to(package_root).as_posix()
+        target=task_sdk_regular(package_root,relative,512*1024*1024);sha=hashlib.sha256(target.read_bytes()).hexdigest()
+        require(hashlib.sha256(raw).hexdigest()==before.get('sha256') and sha==after.get('sha256') and
+                inventory.get(relative,{}).get('sha256')==sha and inventory[relative].get('bytes')==target.stat().st_size,
+                'packaged provider debug original/loaded image SHA differs')
+        seen.add(after['path'])
+    for row in provenance['files']:
+        if row['output_image'] is None:
+            require(all(row[key] is None for key in ('component','input_image_key','input_image_sha256','input_uuid','output_image_sha256')),
+                    'packaged nonimage debug input claims an image')
+        else:
+            physical=next((mapping for mapping in mappings if mapping['output']['path']==str(package_root/row['output_image'])),None)
+            require(physical is not None and row['component']==physical['input']['component'] and
+                    all(row[field]==physical['input'][key] for field,key in (('input_image_key','key'),('input_image_sha256','sha256'),('input_uuid','uuid'))) and
+                    row['output_image_sha256']==physical['output']['sha256'],
+                    'packaged provider debug provenance physical image association differs')
+    return {'build_key':key,'raw_files':proof,'physical_images':len(seen),
+        'verification':'matching compiler validated completion7/relocation BLAKE3; own-action raw bytes, SHA256, sizes and relocated output inventory independently checked'}
 
 
 
@@ -461,6 +619,16 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 119, 0):
+        provider_debug=report.get('evidence',{}).get('task_provider_debugging',{})
+        require(all(provider_debug.get(key) is True for key in ('descriptor','native_reference','static_and_shared_artifacts',
+                'original_registry_symbols','closed_owned_images','source_union','retained_completion7','raw_package_provenance',
+                'source_deleted_capture','source_deleted_replay')),
+                'SDK acceptance lacks task provider debugger delivery evidence')
+        if report.get('evidence',{}).get('live_debugger'):
+            require(all(provider_debug.get(key) is True for key in ('provider_locals','component_pure_watch','next_in_out',
+                    'stale_references','retained_live_debug','package_live_debug','replay_live_debug')),
+                    'SDK acceptance lacks actual task provider debugger execution evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 118, 0):
         profiles=report.get('evidence',{}).get('task_provider_profiling',{})
         require(all(profiles.get(key) is True for key in ('descriptor','native_reference','exact_source_calls',
@@ -2151,6 +2319,181 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             retained=retained,retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
             retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation',
             physical_file_retirement_claim=False)
+
+    def task_provider_debuggers():
+        import importlib.util
+        feature=cli('describe')['task_provider_debugging'];identity=cli('describe','--kind','index')
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(feature==pack['task_provider_debugging'] and feature['public_enabled'] is True and
+                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/4' and
+                feature['catalog_schema']=='nex.task-debug-catalog/1' and feature['catalog_abi']==2 and
+                feature['registry_abi']==1 and feature['maximum_total_registries_including_root']==128 and
+                not feature['combined_debug_profile'] and not feature['runtime_load_unload'],
+                'installed task provider debugger descriptor differs')
+        directory=root/'task-provider-debug';directory.mkdir()
+        for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (directory/'leaf/value.nex').write_text('''module installed_debug_leaf;
+pub fn work(input:i64)->i64!{task}{
+ let value:i64=input;
+ task_yield();
+ return value+1;
+}
+''')
+        (directory/'mid/value.nex').write_text('''module installed_debug_mid;import "../leaf/value.nex" as leaf;
+pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield();return answer;}
+''')
+        (directory/'unused/value.nex').write_text('module installed_debug_unused;pub fn unused()->str{return "provider-only";}')
+        (directory/'app/main.nex').write_text('module installed_debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(41));}')
+        description={'schema':'nex.project-build/1','default_configuration':'logical_debug',
+            'configurations':{'logical_debug':{'profile':'debug','task_limits':{'steps':1000000,'timeout_ms':60000,'workers':2}}},
+            'components':{'leaf':{'kind':'static_library','root':'leaf','entry':'leaf/value.nex','entry_function':'work'},
+                'mid':{'kind':'static_library','root':'mid','entry':'mid/value.nex','entry_function':'work','dependencies':{'leaf':'static'}},
+                'unused':{'kind':'static_library','root':'unused','entry':'unused/value.nex','entry_function':'unused'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'mid':'static','unused':'static'}}}}
+        manifest_path=directory/'nex.build.json';manifest_path.write_text(json.dumps(description))
+        require(cli('eval',cwd=directory)['stdout']=='42\n','provider debugger reference output differs')
+        static=cli('project','--kind','debug','--component','app','--adapter','nex-dap',cwd=directory,timeout=300)
+        static_session=static['observation'];static_manifest=json.loads(Path(static_session['manifest']).read_text())
+        require(static_manifest['schema']=='nex.debug/3' and static_manifest['task_debug']['abi']==2 and
+                static_manifest['task_debug']['catalog']['mode']=='static' and not static_manifest.get('owned_images'),
+                'static debugger did not retain its one executable runtime')
+        require(run([static_manifest['program']])=='42\n','actual static provider debug source output differs from reference')
+        description['components']['mid']['kind']='shared_library';description['components']['unused']['kind']='shared_library'
+        description['components']['app']['dependencies']={'mid':'dynamic','unused':'dynamic'};manifest_path.write_text(json.dumps(description))
+        prepared=cli('project','--kind','debug','--component','app','--adapter','nex-dap',cwd=directory,timeout=300)
+        session=prepared['observation'];view_manifest=json.loads(Path(session['manifest']).read_text());view=view_manifest['task_debug']
+        require(session['task_debug']['schema']=='nex.task-debug-session/2' and view['schema']=='nex.task-debug-view/2' and
+                view['catalog']['mode']=='shared-fixed' and view['runtime_image']['kind']=='runtime' and
+                view['runtime_image']['component'] is None and {r['component'] for r in view['registries']}=={'leaf','mid','unused','app'} and
+                next(r['code_count'] for r in view['registries'] if r['component']=='unused')==0,
+                'fixed shared debugger lost original/zero-code registries or runtime owner')
+        require({row['component'] for row in view['source_union']['components']}=={'leaf','mid','unused','app'},
+                'provider debugger checked source union is incomplete')
+        # Actual exported original-registry symbols, never undefined-name substrings.
+        symbols={}
+        for image in view['images']:
+            output=run(['nm','-g',image['path']]);defined=set()
+            for line in output.splitlines():
+                parts=line.split()
+                if len(parts)>=2 and parts[-2].upper() in ('T','W'):
+                    symbol=parts[-1];defined.add(symbol[1:] if symbol.startswith('_') else symbol)
+            symbols[image['component']]=defined
+        for row in view['registries']:
+            require(row['accessor'] in symbols[row['owner_image']],
+                    'provider original registry accessor is not physically defined by its owner')
+        expected_paths={image['path'] for image in view['images']}|{view['runtime_image']['path']}
+        require(expected_paths=={view_manifest['program']}|{image['path'] for image in view_manifest['owned_images']} and
+                sum(image['kind']=='runtime' for image in view_manifest['owned_images'])==1,
+                'provider debug fixed loaded closure differs')
+        require(run([view_manifest['program']])=='42\n','actual shared provider debug source output differs from reference')
+        spec=importlib.util.spec_from_file_location('sdk_debug_capsule',resources/'tools/core_capsule.py')
+        capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
+        task=cli('task','nex.build.json','--kind','init','--component','app','--configuration','logical_debug',cwd=directory)
+        task['checks']=[{'id':'prepare-debug','kind':'build','program':'app','target':'native','configuration':'logical_debug',
+            'task_debug':True,'timeout_seconds':300}]
+        task['requirements']=[{'id':'prepare-debug','text':'Prepare checked task provider debug artifacts without execution',
+            'bindings':[{'program':'app','kind':'function','symbol':'installed_debug_app::main'}],
+            'targets':['native'],'checks':['prepare-debug']}]
+        taskfile=directory/'task.json';taskfile.write_text(json.dumps(task))
+        accepted=cli('task',taskfile,'--kind','run','--directory',root/'task-provider-debug-capture',cwd=directory,timeout=600)
+        receipt=Path(accepted['output']);record=json.loads(receipt.read_text());check,=record['checks']
+        require(check['status']=='passed','captured provider debug preparation failed')
+        command_path=task_sdk_regular(receipt.parent,check['receipt'],4*1024*1024)
+        command=json.loads(command_path.read_text())
+        linkages={item['name']:item['task_linkage'] for item in command['response']['plan']['components']}
+        require(all(row['schema']=='nex.project-task-linkage/4' for row in linkages.values()),
+                'captured provider debug source plan lacks instrumentation linkage')
+        artifacts=captured_task_build_artifacts(command,linkages)
+        retention=[retained_task_debug_build(receipt.parent,check,artifacts[item['component']],item,
+            identity['compiler_build'],capsule.completion_inputs) for item in check['components']]
+        app=next(row for row in check['components'] if row['component']=='app')
+        retained_session=json.loads(task_sdk_regular(receipt.parent,app['debug_session'],2*1024*1024).read_text())
+        require(Path(retained_session['manifest'])==receipt.parent/app['debug_manifest'] and
+                task_sdk_regular(receipt.parent,app['debug_relocation']).is_file(),
+                'captured provider debugger fresh session is absent')
+        package=root/'task-provider-debug-package'
+        cli('project','--kind','package','--component','app','--task-debug','--directory',package,cwd=directory,timeout=600)
+        package_app=package/'apps/app';package_meta=json.loads((package_app/'application.json').read_text())
+        package_proof=relocated_task_debug(package_app,package_meta,directory,capsule.completion_inputs)
+        packaged_session=json.loads(task_sdk_regular(package_app,package_meta['debug_session'],2*1024*1024).read_text())
+        require(Path(packaged_session['manifest'])==package_app/package_meta['debug_manifest'],
+                'packaged provider debugger session/manifest disagree')
+        live=[]
+        def observe(selected,label,enter=False):
+            log=root/('task-provider-debug-live-'+label);log.mkdir();trace=[]
+            class Recorded(DAP):
+                def send(self,command,arguments=None):
+                    trace.append({'request':command,'arguments':arguments});return super().send(command,arguments)
+                def wait(self,predicate,timeout=30):
+                    result=super().wait(predicate,timeout);trace.append({'response_or_event':result});return result
+            client=Recorded(selected['adapter_command'],log,environment)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True})
+                pending=client.send('launch',dict(selected['launch'],disableASLR=False));client.event('initialized')
+                points=client.request('setFunctionBreakpoints',{'breakpoints':[{'name':'installed_debug_mid::work' if enter else 'installed_debug_leaf::work'}]})
+                require(points['breakpoints'][0]['verified'],'provider function breakpoint is unverified')
+                client.request('configurationDone');client.response(pending);stop=client.event('stopped')
+                require(stop.get('allThreadsStopped') is True and 'threadId' not in stop,'provider stop leaked physical thread identity')
+                tasks=client.request('threads');logical=tasks['nex']['selected'];before=client.request('stackTrace',{'threadId':logical})
+                caller=before['nex']['frames'][0]['id']
+                if enter:
+                    for _ in range(16):
+                        client.request('stepIn',{'threadId':logical,'singleThread':True});client.event('stopped')
+                        before=client.request('stackTrace',{'threadId':logical})
+                        if before['stackFrames'][0]['name']=='installed_debug_leaf::work':break
+                    require(before['stackFrames'][0]['name']=='installed_debug_leaf::work' and
+                            before['nex']['frames'][0]['id']!=caller,'provider stepIn did not enter a distinct logical activation')
+                require([row['name'] for row in before['stackFrames']]==['installed_debug_leaf::work','installed_debug_mid::work','installed_debug_app::main'],
+                        'provider logical source stack differs')
+                frame=before['stackFrames'][0]['id'];scope=client.request('scopes',{'frameId':frame})['scopes'][0]['variablesReference']
+                values=client.request('variables',{'variablesReference':scope})['variables']
+                require(next(row['value'] for row in values if row['name']=='input')=='41',
+                        'provider initialized owned local is absent')
+                watch=client.request('evaluate',{'expression':'input+1','frameId':frame,'context':'watch'})
+                require(watch['nex']['value']=='42' and watch['nex']['source_identity']['component']=='leaf',
+                        'provider watch used the wrong checked component')
+                client.request('next',{'threadId':logical});client.event('stopped')
+                after=client.request('stackTrace',{'threadId':logical})
+                require(before['nex']['task_id']==after['nex']['task_id']==logical and
+                        before['nex']['generation']==after['nex']['generation'] and
+                        after['nex']['frames'][0]['id']==before['nex']['frames'][0]['id'] and
+                        after['stackFrames'][0]['line']>before['stackFrames'][0]['line'] and
+                        after['nex']['frames'][0]['point_id']!=before['nex']['frames'][0]['point_id'] and
+                        int(after['nex']['stop_id'])>int(before['nex']['stop_id']),
+                        'provider next did not advance the selected activation/epoch')
+                stale=client.send('variables',{'variablesReference':scope})
+                require(client.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==stale)['success'] is False,
+                        'provider variable reference survived resume')
+                client.request('stepOut',{'threadId':logical});client.event('stopped')
+                parent=client.request('stackTrace',{'threadId':logical})
+                require(parent['stackFrames'][0]['name']=='installed_debug_mid::work' and
+                        (not enter or parent['nex']['frames'][0]['id']==caller),'provider stepOut lost its caller')
+                client.request('continue',{'threadId':logical});require(client.event('exited')['exitCode']==0,'provider debuggee failed')
+                live.append({'label':label,'source_identity':watch['nex']['source_identity'],'before':before['nex'],'after':after['nex']})
+            finally:
+                try:client.close()
+                finally:(log/'protocol.json').write_text(json.dumps(trace,ensure_ascii=False,indent=2)+'\n')
+        if args.live:
+            observe(static_session,'static');observe(session,'shared',True)
+        # Source/cache removal tests the independently relocated sessions, not stale originals.
+        for name in description['components']:shutil.rmtree(directory/name)
+        shutil.rmtree(directory/'.nex');taskfile.unlink()
+        if args.live:
+            observe(retained_session,'retained');observe(packaged_session,'package')
+        replay=cli('task',receipt,'--kind','replay','--directory',root/'task-provider-debug-replay',cwd=root,timeout=600)
+        replay_path=Path(replay['output']);replayed=json.loads(replay_path.read_text());again,=replayed['checks']
+        require(again['status']=='passed' and replayed['programs']==record['programs'],'source-deleted debug preparation replay differs')
+        replay_app=next(row for row in again['components'] if row['component']=='app')
+        replay_session=json.loads(task_sdk_regular(replay_path.parent,replay_app['debug_session'],2*1024*1024).read_text())
+        if args.live:observe(replay_session,'replay')
+        evidence={name:True for name in ('descriptor','native_reference','static_and_shared_artifacts','original_registry_symbols',
+            'closed_owned_images','source_union','retained_completion7','raw_package_provenance','source_deleted_capture','source_deleted_replay')}
+        evidence.update({name:bool(args.live) for name in ('provider_locals','component_pure_watch','next_in_out','stale_references',
+            'retained_live_debug','package_live_debug','replay_live_debug')})
+        evidence.update(receipt=str(receipt),replay=str(replay_path),retained=retention,package=package_proof,live=live,
+            execution_task_abi=3,catalog_abi=2,source_language='0.20',inferior_function_calls=False)
+        report['evidence']['task_provider_debugging']=evidence
 
     def task_provider_profiles():
         import importlib.util
@@ -4145,6 +4488,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('static-task-providers', static_task_providers),
                 ('shared-task-providers', shared_task_providers),
                 ('task-provider-profiling', task_provider_profiles),
+                ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

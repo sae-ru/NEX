@@ -4,7 +4,16 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.118 / язык0.20
+## Текущий шаг: toolchain0.119 / язык0.20
+
+- [ ] Связать checked component source union и original runtime registries с
+  LLDB/NEX-DAP для static/fixed-shared provider task frames.
+- [ ] Проверить реальные locals/watch42, next/in/out через yield/call/return,
+  stale/image/source rejection и source-deleted delivery до public enablement.
+- [ ] Пройти точные regression/SDK/platform gates нового snapshot. ExecutionABI3,
+  исходный язык020 и миграция не меняются; runtime unload/profile+debug pending.
+
+## Сохранённый125: toolchain0.118 / язык0.20
 
 - [x] Связать checked component registries с единым task collector через
   static/shared provider boundaries, сохранив once-per-source-call semantics.
@@ -14,7 +23,10 @@
   ledgers, canonical cache-parent aliases, physical fence и отдельные sanitizers.
 - [x] Проверить matching actual10 и reviewed capture/replay/raw package provenance;
   точное тело SDK30 отдельно прошло15 командами, с каждым actual CWD/build key.
-- [ ] Пройти frozen full148, установленный SDK30 и scoped native platform gates.
+- [x] Сохранить явный Mac composite148 (147 original groups + corrected boundary55/39),
+  scoped Linux composite11 (10 + corrected boundary) и установленный SDK30/557 команд.
+  Original failures сохранены; pristine full148/fullLinux/kernel isolation не заявлены.
+  См. docs/evidence/toolchain-0.118.0-task-provider-profiling.json.
   Язык020, explicit migration и execution ABI3 не меняются. Profile test/build-test,
   provider logical debugging, runtime unload, Tracy/HTTP/foreign остаются pending.
 
@@ -92,7 +104,9 @@
   согласованными эффектами и backend'ами. Точный119b прошёл128 групп
   регрессии и установленный SDK25/486 команд на macOS.
 - [ ] Проверить текущую файловую интеграцию на полной платформенной матрице;
-  завершить task debugger/profile attribution, provider lifetime и UI adapter.
+  завершить provider logical debugging и NEX UI task adapter. Source-only native
+  task debugger/profile и static/fixed-shared provider profiling имеют отдельные
+  реализованные slices выше; arbitrary runtime load/unload остаётся pending.
 - [ ] Завершить общий GPU/NPU API, оставшиеся платформы и измерения
   качества/суммарной стоимости задач для нескольких LLM.
 
@@ -104,10 +118,13 @@
   compiler inputs блочным64КиБ с проверкой ошибок и RAII закрытием файла.
 - [x] Проверить17целевых групп, реальные rawbinary/FIFO/UTF8-boundary/rejection
   сценарии и все байты трёх настоящих146МБ/24МБ/15МБ артефактов в18наблюдениях.
-- [ ] Завершить текущие native10000/full100/SDK/платформы/IDE/историю.
-- [ ] Следующий функциональный шаг — настоящие асинхронные вычисления
-  browser workers, затем общие structured tasks/channels. Оптимизации backend
-  не заменяют эти требования и не означают завершения языка/цепочки.
+- [x] Сохранить096 native10000 cold9900/warm0/edit1 и обе архивные ревизии после
+  удаления исходников; см. docs/evidence/native-scale-0.96.0.json.
+- [ ] Оставшаяся на момент096 приёмка full100/SDK/платформ/IDE/истории хранится
+  как исторический статус. Текущий SDK требует собственного matching gate.
+- [x] Позднейшие этапы отдельно подключили browser workers и structured
+  tasks/channels; их точные текущие границы сообщает describe. Оптимизация096
+  сама по себе не была завершением языка или всей цепочки.
 
 ## Сохранённый кандидат: toolchain0.95 / язык0.18
 
@@ -176,7 +193,8 @@
 - [x] Исправить повторный обход statement-match и актуализировать учебный patch.
   Пять целевых групп 0.90 прошли; полный прогон 0.89 сохранил четыре отказа.
 - [x] Проверить frontend/interpreter/историю/контекст проекта из 100 модулей
-  и 10 000 функций. Нативная сборка такого проекта ещё не проверена.
+  и 10 000 функций. На момент0.90 нативная сборка ещё не была проверена;
+  отдельные094–096 receipts выше фиксируют последующую проверку.
 - [x] Заморозить и сохранить точный 0.90 в проверенной резервной ветке.
 - [ ] Завершить full95, installed SDK24,
   Linux live/source-free, установленный редактор и повтор миграции через SDK.

@@ -79,6 +79,25 @@ class Toolchain(harness.ToolchainCase):
         for field in ('authority_transport','callable_transport','logical_debugging','combined_debug_profile',
                       'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','windows','wasm'):
             self.assertIs(profiled[field],False)
+        debugging=descriptor['task_provider_debugging']
+        self.assertEqual(debugging,pack['task_provider_debugging'])
+        self.assertEqual((debugging['language'],debugging['configuration']),('0.20','debug'))
+        self.assertEqual((debugging['execution_task_abi'],debugging['descriptor_bytes'],debugging['registry_abi'],
+            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(3,88,1,32,2,200))
+        self.assertEqual(debugging['maximum_total_registries_including_root'],128)
+        self.assertEqual((debugging['record_schema'],debugging['catalog_schema'],debugging['source_union_schema'],
+            debugging['completion_schema'],debugging['manifest_schema'],debugging['view_schema'],debugging['frame_schema']),
+            ('nex.native-task-provider/4','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
+             'nex.native-completion/7','nex.debug/3','nex.task-debug-view/2','nex.debug-frame/4'))
+        self.assertEqual(debugging['source_support'],debugging['public_enabled'])
+        self.assertEqual(debugging['guide'],pack['documents']['task_provider_debugging'])
+        self.assertEqual(self.cli('guide','--kind','task-provider-debug')['text'],(REPO/debugging['guide']).read_text())
+        if debugging['public_enabled']:self.assertEqual(debugging['supported_actions'],['plan','build','debug','package'])
+        else:self.assertEqual(debugging['supported_actions'],[])
+        for field in ('ordinary_pure_helper_logical_frames','combined_debug_profile','runtime_load_unload',
+                      'authority_transport','callable_transport','foreign','binary_only','http_task_handlers',
+                      'reference','typescript','windows','wasm','language_migration_required'):
+            self.assertIs(debugging[field],False)
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
         descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())

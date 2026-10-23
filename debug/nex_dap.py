@@ -525,7 +525,7 @@ class Bridge:
                     result = message.get('body', {}).get('result', '').strip()
                     try:
                         data = json.loads(result)
-                        if data.get('schema') not in ('nex.expression/1', 'nex.task-expression/1') or not data.get('ok'):
+                        if data.get('schema') not in ('nex.expression/1', 'nex.task-expression/1', 'nex.task-expression/2') or not data.get('ok'):
                             raise ValueError('backend did not return a NEX expression result')
                         if data['type'] == 'unit':
                             variable = {'value': 'unit', 'type': 'unit', 'variablesReference': 0}

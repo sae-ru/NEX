@@ -52,6 +52,7 @@ int main(){std::filesystem::path root;try{
  options.toolchain=(root/"MUST_NOT_READ_TOOLCHAIN.json").string();
  NativeLibraryInput input{archive.string(),hash(readFile(archive.string())),info.cohort,{{name,contracts.at(name)}},false,record.string(),{}};
  auto preflight=[&](const NativeTaskProviderInfo &value,const std::string &expected){writeFile(record.string(),json(nativeTaskProviderJSON(value))+"\n");input.taskProviderDigest=hash(readFile(record.string()));options.libraries={input};rejected([&]{(void)build(program,(root/"artifacts").string(),options);},expected);require(!std::filesystem::exists(root/"artifacts"),"failed preflight published native artifacts");};
+ options.taskDebug=true;validateNativeBuildEntry(program,options);++checks;preflight(info,"E_TASK_PROVIDER");options.taskDebug=false;
  auto changed=info;changed.exports[name].signature=std::string(64,'b');preflight(changed,"E_TASK_PROVIDER");
  changed=info;changed.exports.clear();preflight(changed,"E_TASK_PROVIDER");
  changed=info;changed.cohort=std::string(64,'b');preflight(changed,"E_TASK_PROVIDER");

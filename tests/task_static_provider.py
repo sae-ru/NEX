@@ -455,7 +455,12 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
         else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
-        self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
+        if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
+            planned=self.project('plan','app','debug','--task-debug')
+            for row in planned['components']:
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/4')
+                self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
+        else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.assertFalse((self.root/'.nex').exists())
 
     def test_duplicate_private_exports_and_missing_task_specialization_reject(self):

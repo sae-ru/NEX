@@ -2,6 +2,7 @@
 #include "nex/debugging.h"
 #include "nex/debug_values.h"
 #include "nex/task_ir.h"
+#include "nex/task_provider_debug.h"
 #include "nex_json.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
@@ -26,17 +27,34 @@ JSON parseDebugFrame(const std::string &text){
 JSON inspectExpression(const std::string &path,const JSON &frame,const std::string &source,bool plan,uint64_t steps,bool demand){
   if(source.empty()||source.size()>8192||!steps||steps>1000000)throw Error("E_DEBUG_LIMIT","expression requires 1..8192 source bytes and 1..1000000 steps");
   auto manifest=read(path,8*1048576);const auto &m=object(manifest);
-  const bool task=m.getString("schema")=="nex.debug/2";
-  if((!task&&m.getString("schema")!="nex.debug/1")||m.getString("runtime_view")!="nex.runtime-view/3"||m.getString("expression_protocol")!=(task?"nex.task-debug-expression/1":"nex.debug-expression/3")||m.getString("compiler_build")!=NEX_BUILD_ID)throw Error("E_DEBUG_BUILD","expression evaluation requires a matching compiler/debug manifest");
+  const bool provider=m.getString("schema")=="nex.debug/3",task=provider||m.getString("schema")=="nex.debug/2";
+  if((!task&&m.getString("schema")!="nex.debug/1")||m.getString("runtime_view")!="nex.runtime-view/3"||m.getString("expression_protocol")!=(provider?"nex.task-debug-expression/2":task?"nex.task-debug-expression/1":"nex.debug-expression/3")||m.getString("compiler_build")!=NEX_BUILD_ID)throw Error("E_DEBUG_BUILD","expression evaluation requires a matching compiler/debug manifest");
   auto bundle=read(std::filesystem::path(path).parent_path()/"source-bundle.json",16*1048576);
   if(hash(json(bundle,false))!=required(m,"source_hash"))throw Error("E_DEBUG_SNAPSHOT","debug source bundle hash differs");
   auto p=loadVersionedBundle(bundle,std::filesystem::absolute(path).parent_path().string(),required(m,"language"));if(revision(p)!=required(m,"revision")||m.getString("language")!=programLanguage(p))throw Error("E_DEBUG_SNAPSHOT","debug revision/language differs from its checked source bundle");
+  const auto rootRevision=revision(p),rootLanguage=std::string(programLanguage(p));NativeTaskDebugCheckedSources componentSources;
+  if(provider){
+    try{componentSources=validateNativeTaskDebugManifest(m,std::filesystem::absolute(path).parent_path().string());}
+    catch(Error &error){
+      // The shared validator also serves artifact construction. At the
+      // inspector boundary a rejected manifest is a debug-build mismatch;
+      // malformed stopped-frame identities below remain E_DEBUG_FRAME.
+      if(error.code=="E_TASK_DEBUG")error.code="E_DEBUG_BUILD";
+      throw;
+    }
+  }
   const auto &f=object(frame);bool partial=task||f.getString("schema")=="nex.debug-frame/2";
   auto frameFields=std::set<std::string>{"schema","language","revision","build_key","function","stop","bindings","truncated"};
-  if(partial)frameFields.insert("captures");if(task){frameFields.insert("function_hash");frameFields.insert("metadata_hash");}fields(f,std::move(frameFields));
-  if((task?required(f,"schema")!="nex.debug-frame/3":(!partial&&required(f,"schema")!="nex.debug-frame/1"))||required(f,"language")!=programLanguage(p)||required(f,"revision")!=revision(p)||required(f,"build_key")!=required(m,"build_key"))throw Error("E_DEBUG_FRAME","frame and debug build identity differ");
+  if(partial)frameFields.insert("captures");if(task){frameFields.insert("function_hash");frameFields.insert("metadata_hash");}if(provider)frameFields.insert("source_identity");fields(f,std::move(frameFields));
+  if((task?required(f,"schema")!=(provider?"nex.debug-frame/4":"nex.debug-frame/3"):(!partial&&required(f,"schema")!="nex.debug-frame/1"))||required(f,"language")!=rootLanguage||required(f,"revision")!=rootRevision||required(f,"build_key")!=required(m,"build_key"))throw Error("E_DEBUG_FRAME","frame and debug build identity differ");
   auto name=required(f,"function");const Object *compiledFunction=nullptr;auto functions=m.getArray("functions");if(functions)for(const auto &value:*functions)if(object(value).getString("name")==name){if(compiledFunction)throw Error("E_DEBUG_BUILD","duplicate compiled debug function");compiledFunction=&object(value);}
-  if(!compiledFunction)throw Error("E_DEBUG_FRAME","frame is not a compiled NEX function in this manifest");const auto &fn=p.function(name);
+  if(!compiledFunction)throw Error("E_DEBUG_FRAME","frame is not a compiled NEX function in this manifest");
+  const Object *sourceIdentity=nullptr;
+  if(provider){sourceIdentity=f.getObject("source_identity");if(!sourceIdentity)throw Error("E_DEBUG_FRAME","provider frame requires checked source identity");fields(*sourceIdentity,{"component","owner_image","language","revision","source_hash","source_unit_hash","contract"});
+    for(const auto *key:{"component","owner_image","language","source_hash","source_unit_hash","contract"})if(required(*sourceIdentity,key)!=required(*compiledFunction,key))throw Error("E_DEBUG_FRAME","provider frame source/owner identity differs");
+    if(required(*sourceIdentity,"revision")!=required(*compiledFunction,"source_revision")||!componentSources.contains(required(*sourceIdentity,"component")))throw Error("E_DEBUG_FRAME","provider frame has no checked source component");p=componentSources.at(required(*sourceIdentity,"component"));
+  }
+  const auto &fn=p.function(name);
   std::set<std::string> compiledCallables;for(const auto &value:*functions){const auto &entry=object(value);auto symbol=entry.getString("callable_symbol");if(symbol&&!symbol->empty())compiledCallables.insert(required(entry,"name"));}
   auto stop=f.getObject("stop");if(!stop)throw Error("E_DEBUG_FRAME","frame requires stop identity");
   std::map<std::string,const Object*> logicalBindings;
@@ -47,18 +65,18 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
       if(text.empty()||text.size()>20||(text.size()>1&&text.front()=='0')||parsed.ec!=std::errc()||parsed.ptr!=text.data()+text.size()||!number||(std::string(key)=="publication"&&(number&1)))throw Error("E_DEBUG_FRAME","invalid logical task stop identity");
     }
     auto view=m.getObject("task_debug");auto metadata=compiledFunction->getObject("task_debug");
-    if(!view||view->getString("schema")!="nex.task-debug-view/1"||view->getInteger("abi")!=1||!metadata||
-       view->getString("catalog_symbol")!="nex_task_debug_catalog_v1"||view->getString("marker_symbol")!="nex_task_debug_stop_marker"||
+    if(!view||view->getString("schema")!=(provider?"nex.task-debug-view/2":"nex.task-debug-view/1")||view->getInteger("abi")!=(provider?2:1)||!metadata||
+       view->getString("catalog_symbol")!=(provider?"nex_task_debug_catalog_v2":"nex_task_debug_catalog_v1")||view->getString("marker_symbol")!="nex_task_debug_stop_marker"||
        required(f,"metadata_hash")!=required(*view,"metadata_hash")||required(f,"function_hash")!=hash(json(canonical(fn),false))||
        compiledFunction->getString("function_hash")!=required(f,"function_hash")||compiledFunction->getString("function_source_hash")!=hash(p.definition(fn)))throw Error("E_DEBUG_BUILD","logical frame differs from checked source metadata");
-    if(functions->size()>16384)throw Error("E_DEBUG_BUILD","logical function table exceeds its bound");
-    std::map<std::string,const Object*> table;for(const auto &entry:*functions){const auto &function=object(entry);if(function.getObject("task_debug")&&!table.emplace(required(function,"name"),&function).second)throw Error("E_DEBUG_BUILD","duplicate logical code function");}
+    if(functions->size()>(provider?65536:16384))throw Error("E_DEBUG_BUILD","logical function table exceeds its bound");
+    if(!provider){std::map<std::string,const Object*> table;for(const auto &entry:*functions){const auto &function=object(entry);if(function.getObject("task_debug")&&!table.emplace(required(function,"name"),&function).second)throw Error("E_DEBUG_BUILD","duplicate logical code function");}
     Array identity;int64_t siteId=0;for(const auto &[functionName,function]:table){const auto &checked=p.function(functionName);auto debug=function->getObject("task_debug");
       auto functionHash=hash(json(canonical(checked),false)),sourceHash=hash(p.definition(checked));
       if(function->getString("function_hash")!=functionHash||function->getString("function_source_hash")!=sourceHash||debug->getInteger("site_id")!=++siteId)throw Error("E_DEBUG_BUILD","logical code table differs from checked source");
       identity.push_back(Object{{"name",functionName},{"function_hash",functionHash},{"function_source_hash",sourceHash},{"task_debug",Object(*debug)}});
     }
-    if(hash(json(JSON(std::move(identity)),false))!=required(*view,"metadata_hash"))throw Error("E_DEBUG_BUILD","logical metadata table digest differs");
+    if(hash(json(JSON(std::move(identity)),false))!=required(*view,"metadata_hash"))throw Error("E_DEBUG_BUILD","logical metadata table digest differs");}
     auto expected=taskDebugFunctionMetadata(p,fn,required(*metadata,"file"));auto actual=Object(*metadata);actual.erase("site_id");
     if(json(JSON(std::move(expected)),false)!=json(JSON(std::move(actual)),false))throw Error("E_DEBUG_BUILD","logical binding/point metadata differs from checked source");
     auto pointId=stop->getInteger("point_id");auto points=metadata->getArray("points"),bindings=metadata->getArray("bindings");
@@ -143,9 +161,9 @@ JSON inspectExpression(const std::string &path,const JSON &frame,const std::stri
   };names(expression,{});
   if(task)for(const auto &local:referenced)if(logicalBindings.contains(local)&&logicalBindings.at(local)->getBoolean("opaque").value_or(true))throw Error("E_DEBUG_VALUE","logical authority or effectful callable is opaque: "+local);
   Object output;
-  if(plan){Array requested;for(const auto &local:referenced)requested.push_back(Object{{"name",local},{"type",typeName(types.at(local))},{"wire_schema",debugValueSchema(p,types.at(local),&compiledCallables)}});output=Object{{"schema",task?"nex.task-expression-plan/1":"nex.expression-plan/1"},{"ok",true},{"type",typeName(type)},{"variables",std::move(requested)}};}
-  else {auto result=evaluateExpression(p,expression,types,values,steps,captures,demand,&compiledCallables);output=std::move(*result.getAsObject());output["schema"]=task?(output.get("request")?"nex.task-expression-demand/1":"nex.task-expression/1"):(output.get("request")?"nex.expression-demand/1":"nex.expression/1");if(type!=Type::Unit)output["wire_schema"]=debugValueSchema(p,type,&compiledCallables);}
-  output["language"]=programLanguage(p);output["revision"]=revision(p);output["build_key"]=required(m,"build_key");output["function"]=name;output["expression"]=source;output["stop"]=Object(*stop);output["frame_truncated"]=*truncated;
+  if(plan){Array requested;for(const auto &local:referenced)requested.push_back(Object{{"name",local},{"type",typeName(types.at(local))},{"wire_schema",debugValueSchema(p,types.at(local),&compiledCallables)}});output=Object{{"schema",provider?"nex.task-expression-plan/2":task?"nex.task-expression-plan/1":"nex.expression-plan/1"},{"ok",true},{"type",typeName(type)},{"variables",std::move(requested)}};}
+  else {auto result=evaluateExpression(p,expression,types,values,steps,captures,demand,&compiledCallables);output=std::move(*result.getAsObject());output["schema"]=provider?(output.get("request")?"nex.task-expression-demand/2":"nex.task-expression/2"):task?(output.get("request")?"nex.task-expression-demand/1":"nex.task-expression/1"):(output.get("request")?"nex.expression-demand/1":"nex.expression/1");if(type!=Type::Unit)output["wire_schema"]=debugValueSchema(p,type,&compiledCallables);}
+  output["language"]=rootLanguage;output["revision"]=rootRevision;if(sourceIdentity)output["source_identity"]=Object(*sourceIdentity);output["build_key"]=required(m,"build_key");output["function"]=name;output["expression"]=source;output["stop"]=Object(*stop);output["frame_truncated"]=*truncated;
   output["limits"]=Object{{"steps",int64_t(steps)},{"value_visits",100000},{"value_depth",64},{"cumulative_text_bytes",8*1048576},{"wire_result_bytes",1048576},{"frame_captures",256},{"capture_path_depth",56},{"lazy_references",10000},{"text_range_scalars",4096},{"text_scalar_observations",100000}};
   JSON result=std::move(output);if(json(result,false).size()>4*1048576)throw Error("E_DEBUG_LIMIT","expression response exceeds 4 MiB");return result;
 }

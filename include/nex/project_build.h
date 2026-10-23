@@ -22,6 +22,9 @@ struct ProjectBuildOptions {
   std::string workload;
   // Compiler-owned projection; never accepted from a manifest, task or CLI.
   std::shared_ptr<const ProjectPackageProjection> packageProjection;
+  // Compiler-owned prepare-only task build-check selection; never inferred
+  // merely from a configuration whose optimization profile is debug.
+  bool taskDebug=false;
 };
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.

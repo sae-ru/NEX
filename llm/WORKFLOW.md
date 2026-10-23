@@ -160,7 +160,7 @@ generics, aggregates и captures с `E_TASK_LIFETIME`. Неизвестные в
 immutable snapshots/closures. Файлы не пересекают task-границы, task-полномочия
 не проходят wire/JSON/API/storage/foreign/browser workers или parallel_map.
 
-В native macOS/Linux приложениях и проектах только с source-связями используются
+В native macOS/Linux приложениях и проверенных source/static/fixed-shared проектах используются
 компилированные continuations. Общие defaults —1000000 шагов,5000ms и pool16;
 `with_tasks` принимает1..16 workers и сохраняет ограничения предков. Настройки
 этих defaults через CLI/проект описаны в docs/task-limits.md. Reference и TypeScript
@@ -168,8 +168,11 @@ immutable snapshots/closures. Файлы не пересекают task-гран
 CPU overlap. Standalone task-экспорты TypeScript возвращают task.Step<T> и
 запускаются scheduler host; pure-модули остаются синхронными. UI/worker-adapters
 сохраняют pure synchronous контракты и отклоняют reachable task effects/callables.
-Async IO, task debug/profile, binary-provider lifetime, task server/UI adapters,
-прочие native targets и полная текущая SDK/platform-приёмка остаются pending.
+Чтение целых файлов и native task debug/profile имеют отдельные объявленные
+контракты. Для static/fixed-shared providers проверяйте task_providers,
+task_shared_providers, task_provider_profiling и task_provider_debugging.
+Общие task writes/streams/db/ffi/network, runtime load/unload, task server/UI
+adapters, прочие native targets и полная текущая SDK/platform-приёмка остаются pending.
 
 Для018 сохраните matching SDK, исходники и полный snapshot графа. Выполняйте
 явный `migrate` исходного архива либо отдельного reviewed source candidate;

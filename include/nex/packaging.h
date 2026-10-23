@@ -8,6 +8,8 @@ struct PackageOptions {
   std::string directory, notices, compiler;
   bool dpkgNotices = false;
   std::string foreign;
+  // Compiler-private final path when an outer project transaction stages us.
+  std::string publishedDirectory;
 };
 using ForeignSelection=std::map<std::string,std::set<std::string>>;
 struct ForeignPackagePreparation {

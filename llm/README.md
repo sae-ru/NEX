@@ -1,25 +1,23 @@
-Current development source is toolchain0.115/language0.20. Discover actual
-capabilities before authoring. Read task_file_reads/docs/task-file-reads.md for
-the narrow server task/fs native/reference read subset and explicit019 migration.
-TypeScript/browser filesystem stays unsupported; full current acceptance pending.
-Native020 task profiling uses the `task_profiling` capability and
-[profile guide](../docs/profiling.md): schema2 keeps CPU, active elapsed and
-logical lifetime separate. Calls count logical activations across suspension.
-Check relevant completeness flags before interpreting budgets. Task Tracy,
-combined debugging/profiling and non-native task profiling remain pending.
-Logical task debugging has a separate native020 path; query `task_debugging`
-and read [its current contract](../docs/task-debugging.md). Actual private
-LLDB/NEX-DAP checks and a separate installed SDK task-debug phase passed; complete
-current delivery acceptance remains pending.
-Earlier milestone notes below retain their historical scopes.
+Current development source is toolchain0.119/language0.20. Start with
+`llm/BOOTSTRAP.md` and actual scoped discovery. The language, grammar and
+compiler checks define support independently of the LLM provider.
 
-Development toolchain0.88/language0.17 adds a **candidate** postfix result
-propagation operator `?`. Parsing, checking and all three execution backends are
-implemented in this isolated source; complete migration/platform/SDK/editor gates
-remain pending. See [the contract](../docs/error-propagation.md). Earlier cohort
-notes below refer to their original versions. General source try/catch/throw,
-source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
-or complete LLM-token saving is claimed.
+Native020 structured tasks and whole-file server task/fs reads have explicit
+limits/lifetime rules. Source-only task debugging/profiling and checked concrete
+static/fixed-shared provider instruments have distinct contracts:
+`task_debugging`, `task_profiling`, `task_provider_debugging` and
+`task_provider_profiling`. Read their matching guides and actual supported_actions;
+source support is separate from complete acceptance of a compiler/SDK/platform.
+TypeScript uses an independent cooperative task scheduler; filesystem, non-native
+task debug/profile, HTTP task handlers, arbitrary provider loading/unloading and
+combined task debug/profile remain unsupported.
+
+Result propagation `?`, ordered native CPU mapping and the separate typed browser
+worker adapter are implemented. Query `result_propagation`, `source_concurrency`
+and `browser_workers` rather than inferring one feature from another. General
+try/catch/throw, broader task IO and general CPU/GPU/NPU dispatch remain pending.
+No universal C++/Python parity or complete LLM-token saving is claimed.
+Earlier milestone notes below retain their historical scopes.
 
 # Model-independent NEX language pack
 

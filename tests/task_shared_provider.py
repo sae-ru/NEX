@@ -369,7 +369,13 @@ server fn main()->unit!{task,fs,io}{
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
         else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
-        self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
+        if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
+            planned=self.project('plan','app','debug','--task-debug')
+            for row in planned['components']:
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/4')
+                self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
+                self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
+        else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}')
         self.description['components']['app'].update(kind='server',entry_function='handle');self.save()
         self.assertIn(self.project('plan',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_TARGET'))

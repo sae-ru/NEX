@@ -6,14 +6,29 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.118.0 / language0.20**.
-Working125 enables a development slice of checked native task-provider profiling
+This isolated development source is **toolchain0.119.0 / language0.20**.
+Working126 provides development source-backed logical task debugging across
+concrete static and fixed startup-linked shared providers. Actual generated-image
+LLDB/NEX-DAP, relocated delivery and bounded physical-drain/sanitizer preflights
+pass; full matching regression, installed SDK31 and platform delivery have
+separate receipts. Query `task_provider_debugging` and read
+[the bounded contract](docs/task-provider-debugging.md).
+Execution ABI3, source syntax and history-preserving migration remain unchanged.
+
+Preserved125b / toolchain0.118.0 provides a checked native task-provider profiling
 across concrete static archives and fixed startup-linked shared images. Its
 matching ten-case source/report suite, separate private physical-drain fence and
-exact scoped SDK30 phase body passed. Query
+exact scoped SDK30 phase body passed. Its retained Mac regression is composite148
+(147 original passed groups plus the corrected55-check boundary group); scoped
+Linux is composite11 (10 original groups plus that correction). Matching installed
+SDK30 passed30 phases/557 commands with269 indexed resources; its original compiled
+source path was absent and restored unchanged. See the
+[exact125b checkpoint](docs/evidence/toolchain-0.118.0-task-provider-profiling.json).
+Original failures remain retained; this is no pristine-full, full-Linux or kernel
+source-isolation claim and does not validate126. Query
 `nex describe --field task_provider_profiling --json` and read
-[provider task profiling](docs/task-provider-profiling.md). Full current regression,
-matching installed SDK30 and platform acceptance remain pending. Language/canonical
+[provider task profiling](docs/task-provider-profiling.md). Broader platform acceptance
+remains separate. Language/canonical
 identity, migration and execution ABI3 remain unchanged.
 
 Preserved124d / toolchain0.117.2 passed a pristine full144 regression and matching
@@ -79,7 +94,8 @@ apply to their exact source snapshots. Primary081 remains preserved.
 Checked source tasks retain native compiled continuations and independent
 AST/TypeScript schedulers, conservative lifetime diagnostics and mandatory
 runtime guards. TypeScript/browser filesystem, task writes/streams/db/ffi/network,
-HTTP task handlers, non-native task debugging/profiling, runtime provider loading/unloading, provider profile/debug, NEX UI task adapters,
+HTTP task handlers, non-native task debugging/profiling, runtime provider loading/unloading,
+combined task debug/profile, NEX UI task adapters,
 other task platforms and complete static region inference remain pending.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,

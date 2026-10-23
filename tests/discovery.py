@@ -44,7 +44,7 @@ class Discovery(harness.ToolchainCase):
             selected = self.cli('describe', '--kind', 'field', '--field', path)
             self.assertEqual(selected['value'], expected)
             self.assertEqual(type(selected['value']), type(expected))
-        self.assertEqual(self.cli('describe', '--field', 'source_concurrency.status')['value'], 'candidate_ordered_cpu_mapping')
+        self.assertEqual(self.cli('describe', '--field', 'source_concurrency.status')['value'], 'development_ordered_cpu_mapping')
         self.assertIs(self.cli('describe', '--field', 'source_concurrency.source_operations')['value'], True)
         self.assertIs(self.cli('describe', '--field', 'source_concurrency.browser_workers')['value'], False)
 

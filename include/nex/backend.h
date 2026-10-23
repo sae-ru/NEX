@@ -39,6 +39,52 @@ std::string nativeTaskProfileRegistryAccessor(const std::string &component);
 llvm::json::Object nativeTaskProfileCatalogJSON(const NativeTaskProfileCatalog &);
 NativeTaskProfileCatalog parseNativeTaskProfileCatalog(const llvm::json::Value &);
 NativeTaskProfileInfo nativeTaskProfileInfo(const NativeTaskProfileCatalog &,const std::string &file="task-profile-catalog.json");
+struct NativeTaskDebugCode {
+  std::string name,functionHash,functionSourceHash,sourceUnitHash,debugPath,contract;
+  llvm::json::Object metadata;
+};
+struct NativeTaskDebugRegistry {
+  std::string component,accessor,ownerImage;
+  std::vector<NativeTaskDebugCode> codes;
+};
+struct NativeTaskDebugCatalog {
+  NativeTaskLinkageMode mode=NativeTaskLinkageMode::None;
+  NativeTaskArtifactKind artifact=NativeTaskArtifactKind::CodeArchive;
+  std::string ownerImage;
+  std::vector<NativeTaskDebugRegistry> registries;
+};
+struct NativeTaskDebugDefinition {
+  std::string name,functionHash,functionSourceHash,sourceUnitHash,debugPath,contract;
+  int64_t line=0;
+  bool retained=false;
+};
+struct NativeTaskDebugSourceComponent {
+  std::string component,ownerImage,entry,language,revision,sourceHash,bundleFile,bundleHash;
+  std::vector<std::string> exports;
+  std::vector<NativeTaskDebugDefinition> definitions;
+};
+struct NativeTaskDebugSourceUnion {
+  NativeTaskLinkageMode mode=NativeTaskLinkageMode::None;
+  NativeTaskArtifactKind artifact=NativeTaskArtifactKind::CodeArchive;
+  std::string ownerImage;
+  std::vector<NativeTaskDebugSourceComponent> components;
+};
+struct NativeTaskDebugRegistryInfo {
+  std::string component,accessor,catalogHash;
+  uint64_t codeCount=0;
+};
+struct NativeTaskDebugInfo {
+  std::string catalogFile,catalogHash,sourceUnionFile,sourceUnionHash;
+  std::vector<NativeTaskDebugRegistryInfo> registries;
+};
+std::string nativeTaskDebugRegistryAccessor(const std::string &component);
+llvm::json::Object nativeTaskDebugCatalogJSON(const NativeTaskDebugCatalog &);
+NativeTaskDebugCatalog parseNativeTaskDebugCatalog(const llvm::json::Value &);
+llvm::json::Object nativeTaskDebugSourceUnionJSON(const NativeTaskDebugSourceUnion &);
+NativeTaskDebugSourceUnion parseNativeTaskDebugSourceUnion(const llvm::json::Value &);
+llvm::json::Object nativeTaskDebugInfoJSON(const NativeTaskDebugInfo &);
+NativeTaskDebugInfo nativeTaskDebugInfo(const NativeTaskDebugCatalog &,const NativeTaskDebugSourceUnion &,
+  const std::string &catalogFile="task-debug-catalog.json",const std::string &sourceUnionFile="task-debug-sources.json");
 struct NativeTaskProviderInfo {
   bool enabled=false, codeOnly=false, taskFileReads=false;
   std::string component, cohort, language;
@@ -52,6 +98,7 @@ struct NativeTaskProviderInfo {
   std::map<std::string,bool> componentFileReads{};
   std::optional<NativeTaskImageIdentity> image{};
   std::optional<NativeTaskProfileInfo> profiling{};
+  std::optional<NativeTaskDebugInfo> debugging{};
 };
 struct NativeTaskApplicationStage {
   bool enabled=false;
@@ -117,6 +164,10 @@ struct BuildResult {
   std::string taskProviderFile{},taskProviderDigest{};
   NativeTaskApplicationStage taskApplication{};
   NativeTaskProfileCatalog profileCatalog{};
+  NativeTaskDebugCatalog debugCatalog{};
+  NativeTaskDebugSourceUnion debugSources{};
+  // Original pretty-printed source-bundle bytes, keyed by component.
+  std::map<std::string,std::string> debugSourceBundles{};
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.

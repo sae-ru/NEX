@@ -1,0 +1,684 @@
+{
+  "schema": "nex.toolchain-acceptance-summary/1",
+  "recorded_at_utc": "2026-10-23T08:57:58.297082+00:00",
+  "toolchain": "0.118.0",
+  "language": "0.20",
+  "execution_task_abi": 3,
+  "descriptor_bytes": 88,
+  "profile_registry_abi": 1,
+  "profile_registry_bytes": 32,
+  "compiler_sha256": "6fa2dbeadb113b7e179297a9b2d60c5d7f1bc112b97026ecdf970043659e5cc8",
+  "compiler_build": "afbb2e4a89cebc0255ea673ee0c17ca1ea64e0cfbf196226441f51d9ac9f2664",
+  "compiled_source_files": 1015,
+  "compiled_source_manifest_sha256": "211b6a4e49a8ff92c72f21d7be08c1af753d221d67af135ddbf0a1f7dc393679",
+  "test_repaired_source_files": 1015,
+  "test_repaired_source_manifest_sha256": "3d1b259387820018f9e318c5ecb660e73863a7173540a5bf73ae3fe63fc634cb",
+  "sole_repair_change": "tests/task_shared_provider_boundary.cpp",
+  "all_252_production_inputs_and_runtime166_resources_unchanged_for_repair": true,
+  "implementation": "Source-backed native task-provider profiles across static archives and fixed startup-linked shared images. One collector and original component site-array registry batch per running physical closure; exact physical owners/source catalogs including unused concrete generic definitions, retained completion6 and raw delivery provenance.",
+  "source_or_canonical_change": false,
+  "metadata": {
+    "provider": "nex.native-task-provider/3",
+    "catalog": "nex.task-profile-catalog/1",
+    "completion": "nex.native-completion/6",
+    "linkage": "nex.project-task-linkage/3",
+    "retained": "nex.retained-native-task-build/3",
+    "runtime_report": "nex.profile-runtime/3",
+    "profile_session": "nex.profile-session/3",
+    "profile_build": "nex.profile-build/2",
+    "standalone_runtime_report_unchanged": "nex.profile-runtime/2"
+  },
+  "macos": {
+    "clean_all_build_passed": true,
+    "clean_all_build_seconds": 65.635,
+    "regression": {
+      "label": "147 original passed groups plus one repaired same-target boundary probe",
+      "groups": 148,
+      "retained_original_passes": 147,
+      "repaired_group": "task_shared_provider_boundary_native",
+      "repaired_checks": 55,
+      "repaired_rejections": 39,
+      "same_existing_compiler_reused": true,
+      "compiler_rebuilt_for_repair": false,
+      "single_pristine_full148_pass": false,
+      "original_full148_seconds": 1253.285,
+      "original_failure_retained": true,
+      "original_failure_reason": "Obsolete negative expected rejection of newly supported profile entry; repair accepts valid shape and rejects both profiled/unprofiled record mixes before toolchain/catalog/cache."
+    },
+    "installed_sdk": {
+      "phases": 30,
+      "commands": 557,
+      "indexed_resource_hashes": 269,
+      "seconds": 839.094,
+      "original_compiled_source_path_absent": true,
+      "kernel_source_isolation": false,
+      "other_source_copies_accessible": true,
+      "source_restored_unchanged": true,
+      "provider_profile_checks": {
+        "descriptor": true,
+        "native_reference": true,
+        "exact_source_calls": true,
+        "zero_provider_generic": true,
+        "physical_owners": true,
+        "defined_registry_accessors": true,
+        "one_runtime": true,
+        "managed_cleanup": true,
+        "event_only_completeness": true,
+        "root_limits": true,
+        "unused_read_excluded": true,
+        "warm_cache": true,
+        "measured_retained_completion6": true,
+        "raw_package_provenance": true,
+        "source_deleted_replay": true,
+        "copied_profile_without_resources": true,
+        "source_deleted_package_profile": true,
+        "receipt": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-capture/receipt.json",
+        "replay": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-replay/receipt.json",
+        "source_oracle": {
+          "installed_profile_app::main": 1,
+          "installed_profile_mid::work": 2,
+          "installed_profile_leaf::work": 2,
+          "installed_profile_leaf::helper": 2,
+          "installed_profile_leaf::read": 0,
+          "installed_profile_unused::unused": 0,
+          "installed_profile_unused::identity<str>": 0
+        },
+        "retained": [
+          {
+            "component": "leaf",
+            "build_key": "63aa3d70c92856076a1bcf0b3261d3f07979544f431fd1cecf0ed914a8a3dd16",
+            "record": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-capture/artifacts/measure-provider/components/leaf/retained-build/retained.json",
+            "record_sha256": "94fee1adc0441fe557efd75472892c2a8dd2f51031b3ae36a56102b073b30730",
+            "files": [
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/libnex.a",
+                "sha256": "4d268c8614d4236cd1459065ddd13601015762590f4eb4691d25e087e8f77bcc",
+                "bytes": 15368
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/program.mlir",
+                "sha256": "edd91574b85c4220e3b979b0ee4d87d32df16330b6d50d3ea25e54ac48468dab",
+                "bytes": 193597
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/program.ll",
+                "sha256": "37c26d34a986c4a658147bdbbf70821ea889943fb39886144a4720ddbad04056",
+                "bytes": 58632
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/compilation.json",
+                "sha256": "6713c456e3af074efa1902daabe1ff5fe91a5cefca7f5eeb11b3d08156d1f20b",
+                "bytes": 3773
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/build.json",
+                "sha256": "a0ef91c166490749c7c9608aa5081a37f7a3c36b8b783691ed8ba3fd3651a7cb",
+                "bytes": 21372
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/source-bundle.json",
+                "sha256": "70794b5e961d353f6c17a4836381c105e60a86a4141e4edb7122cdfd1879d1d9",
+                "bytes": 399
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/library-abi.json",
+                "sha256": "8e3290e41af1bf2f63dea156f8b023bd50ef2748168677d65dbbf29cc7fe5108",
+                "bytes": 2856
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/task-provider.json",
+                "sha256": "ae27d43910fd13f9c37da9e74c0c821a8cde99800f85e35107ec99c89b43ce97",
+                "bytes": 1991
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/task-profile-catalog.json",
+                "sha256": "f09981a6175e0ca9b614c6830e599a808b4317761099d748a35f4513cd7d9489",
+                "bytes": 2423
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/complete",
+                "sha256": "1426a85fdfd4fb496be5ebdb4c8b0c50109150c137577510fdd30bcdd7b96402",
+                "bytes": 65
+              },
+              {
+                "path": "artifacts/measure-provider/components/leaf/retained-build/debug.json",
+                "sha256": "f1c9cbb2a48e8a77ad9e6366ac82df5b6d7c47c621dd16ba6301fee5eaae60b8",
+                "bytes": 14697
+              }
+            ],
+            "bytes": 315173,
+            "verification": "compiler-checked receipt BLAKE3 pins plus own-original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation"
+          },
+          {
+            "component": "mid",
+            "build_key": "03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77",
+            "record": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-capture/artifacts/measure-provider/components/mid/retained-build/retained.json",
+            "record_sha256": "a8805af9b508f56c58c917959a0bc6db0d11935d7b8f1d5f84a17e2a63000655",
+            "files": [
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib",
+                "sha256": "18c6783c766f5a4847f09d4bd668e343b51863f0226e493b7408ac4bcbd037c3",
+                "bytes": 38080
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/program.mlir",
+                "sha256": "cec2027d73157d1755f8edf3e666b140c6e2698a02ce66043bce578efd9f04ba",
+                "bytes": 51485
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/program.ll",
+                "sha256": "1b56060dd17c1bf92e474eb6287b2d12657d10e396df9df8b2c949f6a54c961c",
+                "bytes": 34834
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/compilation.json",
+                "sha256": "113ed8eaab51242dec7e0413d5b8d6126a4614dd5eb39eb14b5f0c0fd1233b7f",
+                "bytes": 33312
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/build.json",
+                "sha256": "9512633cfd1dbfd4121b0cc2870afce8265e6caef2f7a3c411401b159aefe1b2",
+                "bytes": 24190
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/source-bundle.json",
+                "sha256": "0b5263feef255a8428c90fa22ac7105ee30d887fbc5c82a13a59375de338c6c6",
+                "bytes": 563
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/library-abi.json",
+                "sha256": "7a293f7e72c426abf1b1a0d4ef00d50cdc5824ab9bdafe3c08c149d2e3f1f8dd",
+                "bytes": 7930
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/task-provider.json",
+                "sha256": "b86d88c77390fe4530f57d86b2062020c586b146d37d290303160c1c5139526a",
+                "bytes": 3114
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/task-profile-catalog.json",
+                "sha256": "6262491614c7694f779d79c2c7156fd2cd013de8b6dab3cd3dfbc51bfc312316",
+                "bytes": 3274
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/image-inputs.json",
+                "sha256": "d8bd1ed02b7d26cd4878cb60b9e1fe05a8001751dba5879d4b06c1ca35281f2c",
+                "bytes": 21690
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/objects.a",
+                "sha256": "37b80e949f9f2dedb9a2751410063bc7eeb5ee67325181fdfd52b76d686bf1c7",
+                "bytes": 6912
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/libraries/0.a",
+                "sha256": "4d268c8614d4236cd1459065ddd13601015762590f4eb4691d25e087e8f77bcc",
+                "bytes": 15368
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/libraries/0.task-provider.json",
+                "sha256": "ae27d43910fd13f9c37da9e74c0c821a8cde99800f85e35107ec99c89b43ce97",
+                "bytes": 1991
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/libraries/0.task-profile-catalog.json",
+                "sha256": "f09981a6175e0ca9b614c6830e599a808b4317761099d748a35f4513cd7d9489",
+                "bytes": 2423
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "3751a427f354854c816834919f66d7d4731b21a6a8dce8a4cbcde87166aeec7e",
+                "bytes": 1061784
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Info.plist",
+                "sha256": "94930f034ebb3a0a61d1255255beded40207cd80a7a423a9d1596fbfdbe33a58",
+                "bytes": 714
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "30d8b55f9d57c8c859d68f7a7410bc2d83819f36a6e35022397df61ce342a104",
+                "bytes": 7811236
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.yml",
+                "sha256": "5adb9035f407c634a1f0bd4ccf25c5109ae6c39473768b96620ff87442c1c6b2",
+                "bytes": 352
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/complete",
+                "sha256": "bf663e0981c8e57d4ae8bae23e41141190bc3e983d2f9d08b05743f5c692afab",
+                "bytes": 65
+              },
+              {
+                "path": "artifacts/measure-provider/components/mid/retained-build/debug.json",
+                "sha256": "779710525964f22ef48a8669a4f7509581dd13b259c592452495172b92d6b844",
+                "bytes": 37343
+              }
+            ],
+            "bytes": 9156660,
+            "verification": "compiler-checked receipt BLAKE3 pins plus own-original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation"
+          },
+          {
+            "component": "unused",
+            "build_key": "f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563",
+            "record": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-capture/artifacts/measure-provider/components/unused/retained-build/retained.json",
+            "record_sha256": "eb406d7130886268cb6944a081abf7e4088b17f7a1817e3e7505232e49b7219f",
+            "files": [
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib",
+                "sha256": "62e60c9b77b61966f8a00ad7ff00fca2c79fc0fc1f27bfbf9cbef58b68a83902",
+                "bytes": 36440
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/program.mlir",
+                "sha256": "7b854efc22f9c37ee012612cd5e03ba40457d7a2efb0bd24b57b2653d75822fd",
+                "bytes": 39608
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/program.ll",
+                "sha256": "288d09d08d07a3fca30f52bde7f4bd87a669d2ec8d7a442f25577b0baefa2fd6",
+                "bytes": 31551
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/compilation.json",
+                "sha256": "8cd4500733fa5caa8e83cb03c2ac45e7ce610f3793b26ad7b907037be91cf45d",
+                "bytes": 27552
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/build.json",
+                "sha256": "4006780bc2d85c18b10fad84a411091a13606e5ae480d890986f727f7392df14",
+                "bytes": 22455
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/source-bundle.json",
+                "sha256": "e5589d58ae101c90489199cf82174a8c0a647e5d5ac40dcac4870b6e23777740",
+                "bytes": 246
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/library-abi.json",
+                "sha256": "2ca632b8f2356848ee8604b0ffe87fed262c3a034aa6327a4dd585c1052d8c29",
+                "bytes": 2537
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/task-provider.json",
+                "sha256": "d5fd01f06192f8fcb563ccc19b5be2aeb2e3e86173697970e104b194b3e8b30e",
+                "bytes": 1780
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/task-profile-catalog.json",
+                "sha256": "f80ddb9a527b96f5f6464d653dc28adfbd440d476a2de2d78a77553dfeb65de7",
+                "bytes": 1749
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/image-inputs.json",
+                "sha256": "c3cd38cc93053b22decaf61727d445b9ab7514145a6007f0510832fed18ad1e6",
+                "bytes": 21379
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/objects.a",
+                "sha256": "30e7bfff6d719258beb7ff97fcbe3c328366c54e183d45e50131ae774eb1bf58",
+                "bytes": 20088
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "3751a427f354854c816834919f66d7d4731b21a6a8dce8a4cbcde87166aeec7e",
+                "bytes": 1061784
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Info.plist",
+                "sha256": "94930f034ebb3a0a61d1255255beded40207cd80a7a423a9d1596fbfdbe33a58",
+                "bytes": 714
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "30d8b55f9d57c8c859d68f7a7410bc2d83819f36a6e35022397df61ce342a104",
+                "bytes": 7811236
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.yml",
+                "sha256": "5adb9035f407c634a1f0bd4ccf25c5109ae6c39473768b96620ff87442c1c6b2",
+                "bytes": 352
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/complete",
+                "sha256": "9ab0d5fab2de9c41dc84b7d24421a23d16ec440b57ea5595559abbffcc15305d",
+                "bytes": 65
+              },
+              {
+                "path": "artifacts/measure-provider/components/unused/retained-build/debug.json",
+                "sha256": "5b39459ba8d022bcc251fa4ca2a3eb1e0f62b6ad35284c1c3ca1e478d81613c7",
+                "bytes": 27002
+              }
+            ],
+            "bytes": 9106538,
+            "verification": "compiler-checked receipt BLAKE3 pins plus own-original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation"
+          },
+          {
+            "component": "app",
+            "build_key": "39fff8082035071a856f13abce9c58ce94bd0eca07345e39a71c128e50158b4f",
+            "record": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-capture/artifacts/measure-provider/components/app/retained-build/retained.json",
+            "record_sha256": "30813f9377cf3063cfa801d72705933009b69bba1ee45b225cce2f5fa8298b44",
+            "files": [
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/app",
+                "sha256": "6d4e6b68e47e1bd72469978174de76c95f75e3571bae093beeeff2933d762e2d",
+                "bytes": 38400
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/program.mlir",
+                "sha256": "e52c13d4a6eea354679a4ef0d7fea21be586a3cfede597cc2ddb9c4d6bd9628a",
+                "bytes": 62081
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/program.ll",
+                "sha256": "4b66f19c80e7fb179c89465679d9949ce4bac30f190788b2ede4daa368cfed24",
+                "bytes": 36777
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/compilation.json",
+                "sha256": "5e3716f2fcd5adc073395f8d594b39962dbc04f0a6bd23029bd051a45d66c2e7",
+                "bytes": 41029
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/build.json",
+                "sha256": "5e1abbf122c40adc3b52b456f9a9816181661cbc918d4707ada76554ba14f6c3",
+                "bytes": 25091
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/source-bundle.json",
+                "sha256": "31b79bd6e3086fa32580cad23374ee833902b9298c45a1ba154cb0aa4e7ab75f",
+                "bytes": 719
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/library-abi.json",
+                "sha256": "8fb87a512b93da025aadf606afec11a234623898bd9e7eb5447ea204e2a70fdd",
+                "bytes": 2282
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/task-provider.json",
+                "sha256": "32c40cb07d2a657bacdc4c89c60be967defaaed845643590803e63c09da5d360",
+                "bytes": 1648
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/task-profile-catalog.json",
+                "sha256": "c666790feab27c40fe702f2b5ad483f348409bc3ab01db0c5fb3afbc1ad88f1d",
+                "bytes": 1018
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/image-inputs.json",
+                "sha256": "4250f77906c2ae823b524fa44824c2c08be8881cb4d3d612c1b552f51678ca57",
+                "bytes": 28223
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/objects.a",
+                "sha256": "db0af5493104b6a0cd2fc61684447788174f7797fde91c8f220bb87d9fcf7adb",
+                "bytes": 7288
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib",
+                "sha256": "18c6783c766f5a4847f09d4bd668e343b51863f0226e493b7408ac4bcbd037c3",
+                "bytes": 38080
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "3751a427f354854c816834919f66d7d4731b21a6a8dce8a4cbcde87166aeec7e",
+                "bytes": 1061784
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib",
+                "sha256": "62e60c9b77b61966f8a00ad7ff00fca2c79fc0fc1f27bfbf9cbef58b68a83902",
+                "bytes": 36440
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.task-provider.json",
+                "sha256": "b86d88c77390fe4530f57d86b2062020c586b146d37d290303160c1c5139526a",
+                "bytes": 3114
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.task-profile-catalog.json",
+                "sha256": "6262491614c7694f779d79c2c7156fd2cd013de8b6dab3cd3dfbc51bfc312316",
+                "bytes": 3274
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.task-provider.json",
+                "sha256": "d5fd01f06192f8fcb563ccc19b5be2aeb2e3e86173697970e104b194b3e8b30e",
+                "bytes": 1780
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.task-profile-catalog.json",
+                "sha256": "f80ddb9a527b96f5f6464d653dc28adfbd440d476a2de2d78a77553dfeb65de7",
+                "bytes": 1749
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.dSYM/Contents/Info.plist",
+                "sha256": "a5c7755acf79f00c68d7b26ff19b7193559a3ee66219e3e7d139ab1e1d81b5c3",
+                "bytes": 710
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.dSYM/Contents/Resources/DWARF/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib",
+                "sha256": "cb33ab32885c12ef05111b426cd1640c82f60fb84bb60dcd3273fbbf67558a7f",
+                "bytes": 15318
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_mid_03c0c96df2fff13e36e7a0ea9cf255714a30b7c7ad5ed660061d7b3b8a4cab77.dylib.yml",
+                "sha256": "3d48c372655d9a8b8025e167b1319a161881abd58c5daecc63ac0ad9cdad69ba",
+                "bytes": 2174
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Info.plist",
+                "sha256": "94930f034ebb3a0a61d1255255beded40207cd80a7a423a9d1596fbfdbe33a58",
+                "bytes": 714
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/DWARF/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib",
+                "sha256": "30d8b55f9d57c8c859d68f7a7410bc2d83819f36a6e35022397df61ce342a104",
+                "bytes": 7811236
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_runtime_c1afff77903131bcd4fc4a9be50deb6c7ba357a38113c2efd7428c27b73330da.dylib.yml",
+                "sha256": "5adb9035f407c634a1f0bd4ccf25c5109ae6c39473768b96620ff87442c1c6b2",
+                "bytes": 352
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.dSYM/Contents/Info.plist",
+                "sha256": "9b18fef10e61686c715153ab0c359561d4e0eaf4118af04c2e632db8d526970a",
+                "bytes": 713
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.dSYM/Contents/Resources/DWARF/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib",
+                "sha256": "fe8fb06816f367e310ff2605a358a8f4e99aa00cfa3e2f73de869947e8efce57",
+                "bytes": 19740
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/images/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.dSYM/Contents/Resources/Relocations/aarch64/libnex_unused_f1d4df131cfc204ecde9dbad312bdf00864624f4912eb76dc4d09897fe13d563.dylib.yml",
+                "sha256": "c62d3dcff380f7d12ea3cd0b7f6f2e0969e42f0a6a34e161c12980e4340e4051",
+                "bytes": 1723
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/complete",
+                "sha256": "1aa1b7d32e42611eca9b8beb4ed36e918ab523879acdc5aa8fa06908a0b6fd0b",
+                "bytes": 65
+              },
+              {
+                "path": "artifacts/measure-provider/components/app/retained-build/debug.json",
+                "sha256": "e3d6a8c01be9fb17a259f6168611599ae60e81fc55007f24fa0004609d1be645",
+                "bytes": 46615
+              }
+            ],
+            "bytes": 9290137,
+            "verification": "compiler-checked receipt BLAKE3 pins plus own-original/copied bytes, SHA256 and sizes; no Python BLAKE3 recomputation"
+          }
+        ],
+        "package_provenance": {
+          "build_key": "c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f",
+          "files": [
+            {
+              "kind": "application_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/task-provider.json",
+              "path": "provenance/task/000-task-provider.json",
+              "sha256": "7190fee538d29e04343bece401568d338d184559e36e282d5d44047d434e2d8f",
+              "bytes": 1648,
+              "compiler_validated_input_hash": "fd80069a01c41e50010b67c79d1741721200f15d769ffc414abb4deb6e668f8e"
+            },
+            {
+              "kind": "application_profile_catalog",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/task-profile-catalog.json",
+              "path": "provenance/task/001-task-profile-catalog.json",
+              "sha256": "c666790feab27c40fe702f2b5ad483f348409bc3ab01db0c5fb3afbc1ad88f1d",
+              "bytes": 1018,
+              "compiler_validated_input_hash": "df95aea25a07321ec073f747055a6c7f986d833977aa9671a646c47b1a12f962"
+            },
+            {
+              "kind": "owned_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/images/libnex_mid_395a86ccb90a935863294ce17fb10580f923d34bca3138749e4b0248ce7e05d5.dylib.task-provider.json",
+              "path": "provenance/task/002-libnex_mid_395a86ccb90a935863294ce17fb10580f923d34bca3138749e4b0248ce7e05d5.dylib.task-provider.json",
+              "sha256": "f60fc198053609c5462f768de7975e41726bb7c3970a9cde5bf65017fd5069e6",
+              "bytes": 3114,
+              "compiler_validated_input_hash": "53deb30bd78174bbfe862ff41ef3cd596774dd20a4dbd3602d65e17960aac6c1"
+            },
+            {
+              "kind": "owned_profile_catalog",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/images/libnex_mid_395a86ccb90a935863294ce17fb10580f923d34bca3138749e4b0248ce7e05d5.dylib.task-profile-catalog.json",
+              "path": "provenance/task/003-libnex_mid_395a86ccb90a935863294ce17fb10580f923d34bca3138749e4b0248ce7e05d5.dylib.task-profile-catalog.json",
+              "sha256": "6262491614c7694f779d79c2c7156fd2cd013de8b6dab3cd3dfbc51bfc312316",
+              "bytes": 3274,
+              "compiler_validated_input_hash": "ef583d7b0ace5db64c8112d69e702e4dfcfedc0e7ae27bb7c515ef075149afc4"
+            },
+            {
+              "kind": "owned_provider",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/images/libnex_unused_e0afc7389e4d983caf60b14fcc80076e6c5f44c247682dfb77594bd1d423d254.dylib.task-provider.json",
+              "path": "provenance/task/004-libnex_unused_e0afc7389e4d983caf60b14fcc80076e6c5f44c247682dfb77594bd1d423d254.dylib.task-provider.json",
+              "sha256": "c009912e1eb893963da25690a2dcc0068b6e28fe551854b942c9a86ace084bc9",
+              "bytes": 1780,
+              "compiler_validated_input_hash": "bc94218b0b6bfa3135995d9704a049bef7cd0b8e597d7b98eb5db44002e48310"
+            },
+            {
+              "kind": "owned_profile_catalog",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/images/libnex_unused_e0afc7389e4d983caf60b14fcc80076e6c5f44c247682dfb77594bd1d423d254.dylib.task-profile-catalog.json",
+              "path": "provenance/task/005-libnex_unused_e0afc7389e4d983caf60b14fcc80076e6c5f44c247682dfb77594bd1d423d254.dylib.task-profile-catalog.json",
+              "sha256": "f80ddb9a527b96f5f6464d653dc28adfbd440d476a2de2d78a77553dfeb65de7",
+              "bytes": 1749,
+              "compiler_validated_input_hash": "06ea789eb1fb4de6e00c8f15ffc04ad76e207fb7ab0923acf02337e69a4bbed0"
+            },
+            {
+              "kind": "image_inputs",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/image-inputs.json",
+              "path": "provenance/task/006-image-inputs.json",
+              "sha256": "bc337dc6e455143249ee2cdcf798da2948257ab49f54f4a59d040daf71493f19",
+              "bytes": 28101,
+              "compiler_validated_input_hash": "e77d1407055c16a230456e2b56cd5014f9a6e6b71348b44a359e4c9e85bd1546"
+            },
+            {
+              "kind": "build",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/build.json",
+              "path": "provenance/task/007-build.json",
+              "sha256": "f92af8bbcaaf89d2dca5eca083d1ba9979cd15ef939b16ef7cd24e4eec9e2162",
+              "bytes": 25091,
+              "compiler_validated_input_hash": "2c39aa675b17f47bbb288e2175568c953fdf6abd482e30424ce21bbd91d85f4d"
+            },
+            {
+              "kind": "complete",
+              "original": "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile/.nex/build/c20cd3ea45b9b1e6b535b907f6e6a21e429ac92f81b4c452fc35a0eeb697f42f/complete",
+              "path": "provenance/task/008-complete",
+              "sha256": "cbb134275452270d894e926fec3638b1c3e72b923334eef7367fe770eaa5614d",
+              "bytes": 65,
+              "compiler_validated_input_hash": "75c0d4c5dad266980c3e7041679833386763de3ff7b752d3ca64b7e60d6e1eae"
+            }
+          ],
+          "verification": "matching compiler validated package completion BLAKE3; independent own-original/copied bytes, SHA256, sizes, raw metadata pins and relocated output inventory; no capture-index equivalence or Python BLAKE3 recomputation"
+        },
+        "loader_logs": [
+          "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/logs/452.stderr",
+          "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/logs/453.stderr"
+        ],
+        "command_file_sha256": {
+          "artifacts/measure-provider/commands/profile-build.json": "0fd3285c79ae46541630646f2fee84fc34ffaf6df10d641b26bab2d79a42bc30",
+          "artifacts/measure-provider/commands/profile.json": "6487c9c0c559b2966ab1d890984a61b87913da5c27b444df6832884a91dc3863"
+        },
+        "raw_reports": [
+          "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-copied-runtime.json",
+          "/Users/sae/projects/NEX/build/sdk-125b-task-provider-profile-acceptance-v1/task-provider-profile-package-runtime.json"
+        ],
+        "physical_file_retirement_claim": false
+      },
+      "retained_hash_verification": "Compiler-checked receipt BLAKE3 pins plus own-context raw original/retained bytes, sizes and independent SHA256; no Python BLAKE3 recomputation. Package input keys are not assumed equal to capture/normal build keys."
+    }
+  },
+  "linux_arm64": {
+    "scope": "10 original passed groups plus one repaired same-target boundary probe",
+    "groups": 11,
+    "retained_original_passes": 10,
+    "repaired_checks": 55,
+    "repaired_rejections": 39,
+    "single_pristine_linux11_pass": false,
+    "original_campaign_seconds": 606.942,
+    "compiler_sha256": "48a72673a811ebde4fd00781a88195bc8bd1d3b5db88571e1f2858c333d65951",
+    "pinned_image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+    "network": "none",
+    "source_and_baseline_readonly_during_repair": true,
+    "source_unchanged": true,
+    "full_linux_suite": false,
+    "installed_linux_sdk": false
+  },
+  "runtime_sanitizers": {
+    "passed": true,
+    "seconds": 78.079,
+    "modes": [
+      "ASAN+UBSAN+LSAN",
+      "TSAN"
+    ],
+    "actual_cases_per_mode": 4,
+    "scope": "Full captured common runtime and private physical-fence driver instrumented; generated production provider IR uninstrumented. One actual runtime mapping, first fatal preserved, owned live objects0.",
+    "generated_provider_IR_instrumented": false,
+    "physical_regular_file_retirement_claim": false
+  },
+  "additional_configuration_matrix": {
+    "scope": "One actual static and one shared task test under profile configuration; corresponding named build-test artifacts built and independently executed from cwd /. No profile measurement claim and no whole arbitrary-program coverage.",
+    "cases": [
+      "static-test",
+      "static-build-test",
+      "shared-test",
+      "shared-build-test"
+    ],
+    "actual_named_test_binaries_run": 2,
+    "permanent_regression_on_next_cohort_pending": true
+  },
+  "path_regressions": "Includes accepted124d atomic native-image publication/path fixes; standard macOS cache-parent /tmp alias canonicalized before builders while internal completed-input symlinks still reject.",
+  "collector_capacity_gauges": "Six provider3-only backing-capacity gauges are individually bounded, non-additive and do not represent total RAM; string capacity may overlap shallow inline storage.",
+  "limits": [
+    "Provider logical task debugging is pending this checkpoint; source-only task debugging remains separately supported.",
+    "No arbitrary dlopen/unload, binary-only checking, HTTP/foreign task hosts, callable/File/task-authority transport, Tracy task profiling, combined debug+profile or non-native provider profile claim.",
+    "Broader native platforms/full Linux suite/installed Linux SDK are not established by scoped Linux tests.",
+    "Multi-model token/runtime superiority remains a measured goal, not a general result."
+  ],
+  "recovery": {
+    "url": "https://github.com/sae-ru/NEX/tree/codex/backup-nex-20261023-083914",
+    "commit": "6a2a9f14453578cf5c6833c3e06caacaadc081ff",
+    "tree": "8174484b7217fd5a8d05de91fd166ca9e3b948ad",
+    "verified_files": 1015,
+    "accepted_release": false
+  },
+  "primary081_preserved": true,
+  "root_promoted": false,
+  "full_objective_complete": false,
+  "receipts": {
+    "native-125-task-provider-profile-source-manifest-v1.json": "211b6a4e49a8ff92c72f21d7be08c1af753d221d67af135ddbf0a1f7dc393679",
+    "native-125b-task-profile-boundary-repair-source-manifest-v1.json": "3d1b259387820018f9e318c5ecb660e73863a7173540a5bf73ae3fe63fc634cb",
+    "task-provider-profile-125-build-controller-v1.json": "5b50480f715b5847930ee6c3735e055488c56bd35040146a9483c1bff92af5c3",
+    "task-provider-profile-125-acceptance-controller-v1.json": "1babbc336897e8d7920c3123af23cc7541cf57816ed4627f03ad56e52fdff984",
+    "task-provider-profile-125b-composite148-v1.json": "0af3e99f581898958c75740c0884d08626470d9310e63ff8cfc1e40c817c67cb",
+    "task-provider-profile-125b-linux-composite11-v1.json": "78363d3be2aefa6dc924e8a6b1589cfa88cdd7ef637ebd8c7d641894bf74773e",
+    "task-provider-profile-125b-readonly-test-repair-audit-v1.json": "46c499d1f355f862017da1e8aa1e883657fc499f05f9cd8cab7c2646c8e5f4e4",
+    "task-provider-profile-125b-repair-controller-v1.json": "c54b2be9e0bc5f4488ac1d8f5cc5ff320424f9fb998c5108e2224a023c0b147a",
+    "task-provider-profile-125b-mac-boundary-v1/report.json": "65582285f61e9455d98e4aafa01f3f3838437a4f3e1fb9c3818fffd9817ec38c",
+    "task-provider-profile-125b-linux-boundary-v1/report.json": "550cb09828a42a4f2e5fd43cd66b564887e3f2157aacbbcf1dcbcd23620dca9f",
+    "task-provider-profile-125-sanitizer-gate-v1.json": "5df1386a3ff2b2699fdd02eab6ca0f9c5d5a7219f85369e76035d11e8c95c27b",
+    "task-provider-profile-125-sdk-acceptance-controller-v2.json": "a17b895135f27c3218402135c8a494ae7ae62a7565ca13ddbe195a6d69eb52e7",
+    "sdk-125b-task-provider-profile-acceptance-v1/report.json": "22ea3787dd5b2b9f423c9fd0d6c25eaa634c368589f9e783bb0126b5af54ca5e",
+    "task-provider-profile-125-test-configuration-v1/report.json": "f7cd6a9da16b11f12a786f03fa362db18b483bb889c868fa3a792e28228353d2",
+    "task-provider-profile-125-test-configuration-v2/report.json": "526ffe05ed800528978d429f8884ea4d5d16f760d658f19127a95bd34d23e851",
+    "task-provider-profile-125-test-artifacts-v1/report.json": "685be64dc4bf78a21e2e6b7b3ce55ae33a078f77e4984d1da46bebbefe7e7ebd",
+    "github-nex-checkpoint-20261023-083914/verification.json": "96d8940c5f5e4ae4180e51dfe3fe8fc5305e8e29c26b9fadc84875c9d440afea"
+  }
+}

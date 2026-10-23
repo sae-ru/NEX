@@ -91,63 +91,145 @@
       }
     },
     "task_debug": {
-      "type": "object",
-      "properties": {
-        "schema": {
-          "const": "nex.task-debug-session/1"
-        },
-        "catalog_abi": {
-          "const": 1
-        },
-        "deadline_advances_while_stopped": {
-          "const": true
-        },
-        "task_execution": {
+      "oneOf": [
+        {
           "type": "object",
           "properties": {
-            "configured": {
-              "$ref": "#/$defs/task_limits"
+            "schema": {
+              "const": "nex.task-debug-session/1"
             },
-            "effective": {
-              "$ref": "#/$defs/task_limits"
+            "catalog_abi": {
+              "const": 1
             },
-            "backend": {
-              "const": "native"
-            },
-            "executor_workers": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 16
-            },
-            "step_model": {
-              "const": "native resume and runtime polls"
-            },
-            "cooperative_deadline": {
+            "deadline_advances_while_stopped": {
               "const": true
             },
-            "identical_step_thresholds": {
-              "const": false
+            "task_execution": {
+              "type": "object",
+              "properties": {
+                "configured": {
+                  "$ref": "#/$defs/task_limits"
+                },
+                "effective": {
+                  "$ref": "#/$defs/task_limits"
+                },
+                "backend": {
+                  "const": "native"
+                },
+                "executor_workers": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 16
+                },
+                "step_model": {
+                  "const": "native resume and runtime polls"
+                },
+                "cooperative_deadline": {
+                  "const": true
+                },
+                "identical_step_thresholds": {
+                  "const": false
+                }
+              },
+              "required": [
+                "configured",
+                "effective",
+                "backend",
+                "executor_workers",
+                "step_model",
+                "cooperative_deadline",
+                "identical_step_thresholds"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
-            "configured",
-            "effective",
-            "backend",
-            "executor_workers",
-            "step_model",
-            "cooperative_deadline",
-            "identical_step_thresholds"
+            "schema",
+            "catalog_abi",
+            "deadline_advances_while_stopped",
+            "task_execution"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "nex.task-debug-session/2"
+            },
+            "catalog_abi": {
+              "const": 2
+            },
+            "deadline_advances_while_stopped": {
+              "const": true
+            },
+            "task_execution": {
+              "type": "object",
+              "properties": {
+                "configured": {
+                  "$ref": "#/$defs/task_limits"
+                },
+                "effective": {
+                  "$ref": "#/$defs/task_limits"
+                },
+                "backend": {
+                  "const": "native"
+                },
+                "executor_workers": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 16
+                },
+                "step_model": {
+                  "const": "native resume and runtime polls"
+                },
+                "cooperative_deadline": {
+                  "const": true
+                },
+                "identical_step_thresholds": {
+                  "const": false
+                }
+              },
+              "required": [
+                "configured",
+                "effective",
+                "backend",
+                "executor_workers",
+                "step_model",
+                "cooperative_deadline",
+                "identical_step_thresholds"
+              ],
+              "additionalProperties": false
+            },
+            "registry_abi": {
+              "const": 1
+            },
+            "metadata_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "catalog_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "source_union_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "schema",
+            "catalog_abi",
+            "deadline_advances_while_stopped",
+            "task_execution",
+            "registry_abi",
+            "metadata_hash",
+            "catalog_hash",
+            "source_union_hash"
           ],
           "additionalProperties": false
         }
-      },
-      "required": [
-        "schema",
-        "catalog_abi",
-        "deadline_advances_while_stopped",
-        "task_execution"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   "$defs": {

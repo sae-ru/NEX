@@ -1,6 +1,7 @@
 #include "nex/native_images.h"
 #include "nex/native_toolchain.h"
 #include "nex/operations.h"
+#include "nex/task_provider_debug.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Object/BuildID.h"
@@ -57,6 +58,9 @@ struct Captured {
   std::string objects;
   NativeTaskProviderInfo taskProvider;
   NativeTaskProfileCatalog profileCatalog;
+  NativeTaskDebugCatalog debugCatalog;
+  NativeTaskDebugSourceUnion debugSources;
+  std::map<std::string,std::string> debugBundles;
 };
 Captured capture(const NativeImageInput &input){
   auto folder=fs::path(input.stage.executable).parent_path();auto meta=read(folder/"build.json");
@@ -67,7 +71,7 @@ Captured capture(const NativeImageInput &input){
   for(const auto &path:{folder/"program.mlir",folder/"program.ll",folder/"compilation.json",folder/"build.json",folder/"source-bundle.json"})completed+=digest(path);
   for(const auto &name:nativeCompletionInputs(meta))completed+=digest(folder/name);
   if(readFile((folder/"complete").string())!=hash(completed)+"\n")fail("captured PIC stage changed before image linking: "+input.name);
-  NativeTaskProviderInfo provider;NativeTaskProfileCatalog catalog;
+  NativeTaskProviderInfo provider;NativeTaskProfileCatalog catalog;NativeTaskDebugCatalog debugCatalog;NativeTaskDebugSourceUnion debugSources;std::map<std::string,std::string> debugBundles;
   if(effectiveNativeTaskLinkage(input.options)==NativeTaskLinkageMode::SharedFixed){
     auto record=folder/"task-provider.json";auto bytes=readFile(record.string());
     if(input.stage.taskProviderFile!=record.string()||hash(bytes)!=input.stage.taskProviderDigest)fail("captured task provider pin changed: "+input.name);
@@ -79,11 +83,18 @@ Captured capture(const NativeImageInput &input){
       auto parsed=llvm::json::parse(readFile((folder/provider.profiling->catalogFile).string()));if(!parsed)fail("invalid captured task profile catalog");catalog=parseNativeTaskProfileCatalog(*parsed);
       if(nativeTaskProfileInfo(catalog).catalogHash!=provider.profiling->catalogHash||json(nativeTaskProfileCatalogJSON(catalog),false)!=json(nativeTaskProfileCatalogJSON(input.stage.profileCatalog),false))fail("captured task profile catalog differs from checked stage");
     }else if(provider.profiling)fail("unprofiled stage cannot consume a profile task provider");
+    if(bool(provider.debugging)!=input.options.taskDebug)fail("debug and ordinary task providers cannot be mixed");
+    if(provider.debugging){const auto &info=*provider.debugging;auto catalogValue=llvm::json::parse(readFile((folder/info.catalogFile).string()));auto sourceValue=llvm::json::parse(readFile((folder/info.sourceUnionFile).string()));if(!catalogValue||!sourceValue)fail("invalid captured debug catalog/source union");
+      debugCatalog=parseNativeTaskDebugCatalog(*catalogValue);debugSources=parseNativeTaskDebugSourceUnion(*sourceValue);
+      if(json(nativeTaskDebugInfoJSON(nativeTaskDebugInfo(debugCatalog,debugSources)),false)!=json(nativeTaskDebugInfoJSON(info),false)||json(nativeTaskDebugCatalogJSON(debugCatalog),false)!=json(nativeTaskDebugCatalogJSON(input.stage.debugCatalog),false)||json(nativeTaskDebugSourceUnionJSON(debugSources),false)!=json(nativeTaskDebugSourceUnionJSON(input.stage.debugSources),false))fail("captured debug metadata differs from checked stage");
+      for(const auto &source:debugSources.components){auto bytes=readFile((folder/source.bundleFile).string());if(hash(bytes)!=source.bundleHash||!debugBundles.emplace(source.component,std::move(bytes)).second)fail("captured debug source bundle differs");}
+      if(debugBundles!=input.stage.debugSourceBundles)fail("captured debug source bundle set differs");(void)loadNativeTaskDebugSources(folder.string(),debugCatalog,debugSources);
+    }
     auto root=meta.get("task_application");
     if(!root||*root!=nativeTaskApplicationStageJSON(input.stage.taskApplication))fail("captured task application entry differs");
     if((input.kind=="executable")!=input.stage.taskApplication.enabled)fail("task image application entry selection differs");
   }
-  return {&input,std::move(meta),read(folder/"debug.json"),read(folder/"compilation.json"),std::move(objects),std::move(provider),std::move(catalog)};
+  return {&input,std::move(meta),read(folder/"debug.json"),read(folder/"compilation.json"),std::move(objects),std::move(provider),std::move(catalog),std::move(debugCatalog),std::move(debugSources),std::move(debugBundles)};
 }
 Object imageRecord(const fs::path &path,const std::string &key,const std::string &abi,const std::string &kind){
   return Object{{"path",path.string()},{"key",key},{"abi",abi},{"kind",kind},{"hash",digest(path)},{"sha256",sha(path)},{"uuid",uuid(path)}};
@@ -160,6 +171,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   std::map<std::string,Captured> stages;std::map<std::string,std::string> sources;std::set<std::string> components,notices;
   const bool sharedTasks=effectiveNativeTaskLinkage(inputs.front().options)==NativeTaskLinkageMode::SharedFixed;
   const bool taskProfiling=sharedTasks&&inputs.front().options.profile=="profile";
+  const bool taskDebugging=sharedTasks&&inputs.front().options.taskDebug;
   bool tasks=false,taskReads=false;
   bool storage=false,foreign=false,profiling=false,wire=false,files=false,parallel=false,taskDebug=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
   std::string foreignDefault;
@@ -167,6 +179,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   auto verifyToolchain=[&](){if(inspectNativeToolchain(inputs.front().options).hash!=toolchainFingerprint)fail("native image toolchain changed while linking");};
   for(const auto &input:inputs){
     if((effectiveNativeTaskLinkage(input.options)==NativeTaskLinkageMode::SharedFixed)!=sharedTasks)fail("cannot merge different task linkage modes in one runtime image");
+    if(input.options.taskDebug!=inputs.front().options.taskDebug)fail("cannot merge debug and ordinary native stages in one runtime image");
     if(input.stage.libraryABI!=abi||input.options.profile!=profile||configureNative(input.options).identity!=tools.identity)fail("shared image stages have different target/runtime/toolchain ABIs");
     auto stage=capture(input);if(text(stage.build,"toolchain_fingerprint")!=toolchainFingerprint)fail("captured stage toolchain differs from image linker");
     auto selectedDefault=text(stage.build,"foreign_catalogue");
@@ -178,7 +191,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto requirements=stage.build.getObject("runtime_requirements");if(!requirements)fail("missing shared runtime requirements");
     auto stageTaskDebug=requirements->getBoolean("task_debug").value_or(false);
     if(stageTaskDebug!=input.options.taskDebug||stage.build.getBoolean("task_debug").value_or(false)!=stageTaskDebug)fail("captured task debug selection differs from its image stage");
-    if(stageTaskDebug&&(input.kind!="executable"||!input.dynamicDependencies.empty()||!input.staticDependencies.empty()))fail("task debug binary providers remain pending");
+    if(stageTaskDebug&&!taskDebugging&&(input.kind!="executable"||!input.dynamicDependencies.empty()||!input.staticDependencies.empty()))fail("task debug binary providers require a checked debug provider cohort");
     taskDebug|=stageTaskDebug;
     storage|=requirements->getBoolean("storage").value_or(false);foreign|=requirements->getBoolean("foreign").value_or(false);profiling|=requirements->getBoolean("profiling").value_or(false);
     wire|=requirements->getBoolean("wire").value_or(false);files|=requirements->getBoolean("files").value_or(false);
@@ -243,10 +256,22 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
       if(!shared)for(const auto &name:input.dynamicDependencies)for(const auto &registry:result.images.at(name).profileCatalog.registries)rootCatalog.registries.push_back(registry);
       std::sort(rootCatalog.registries.begin(),rootCatalog.registries.end(),[](const auto &a,const auto &b){return a.component<b.component;});(void)nativeTaskProfileInfo(rootCatalog);
     }
+    NativeTaskDebugCatalog localDebug,rootDebug;NativeTaskDebugSourceUnion localSources,rootSources;std::map<std::string,std::string> localBundles,rootBundles;
+    if(taskDebugging){
+      localDebug.mode=NativeTaskLinkageMode::SharedFixed;localDebug.artifact=shared?NativeTaskArtifactKind::SharedImage:NativeTaskArtifactKind::Application;localDebug.ownerImage=input.name;
+      localSources.mode=localDebug.mode;localSources.artifact=localDebug.artifact;localSources.ownerImage=input.name;
+      auto merge=[&](const Captured &from){for(auto registry:from.debugCatalog.registries){registry.ownerImage=input.name;localDebug.registries.push_back(std::move(registry));}for(auto source:from.debugSources.components){source.ownerImage=input.name;localSources.components.push_back(std::move(source));}for(const auto &[name,bytes]:from.debugBundles)if(!localBundles.emplace(name,bytes).second)fail("duplicate embedded debug component");};
+      merge(stage);for(const auto &name:input.staticDependencies)merge(stages.at(name));
+      auto sort=[](auto &catalog,auto &sources){std::sort(catalog.registries.begin(),catalog.registries.end(),[](const auto &a,const auto &b){return a.component<b.component;});std::sort(sources.components.begin(),sources.components.end(),[](const auto &a,const auto &b){return a.component<b.component;});(void)nativeTaskDebugInfo(catalog,sources);};sort(localDebug,localSources);
+      rootDebug=localDebug;rootSources=localSources;rootBundles=localBundles;
+      if(!shared)for(const auto &name:input.dynamicDependencies){const auto &dependency=result.images.at(name);for(const auto &registry:dependency.debugCatalog.registries)rootDebug.registries.push_back(registry);for(const auto &source:dependency.debugSources.components)rootSources.components.push_back(source);for(const auto &[component,bytes]:dependency.debugSourceBundles){auto [old,inserted]=rootBundles.emplace(component,bytes);if(!inserted&&old->second!=bytes)fail("conflicting loaded debug source component");}}
+      sort(rootDebug,rootSources);
+    }
     Object seed{{"schema","nex.native-image-input/1"},{"compiler_build",NEX_BUILD_ID},{"component",input.name},{"kind",input.kind},{"stage",input.stage.key},{"objects",hash(stage.objects)},
       {"runtime_key",runtimeKey},{"runtime_hash",digest(runtime)},{"abi",abi},{"static_libraries",std::move(statics)},{"dynamic_libraries",std::move(dynamics)}};
     if(sharedTasks){seed["schema"]="nex.native-image-input/2";seed["mode"]="shared-fixed";seed["task_provider_hash"]=input.stage.taskProviderDigest;seed["task_application"]=nativeTaskApplicationStageJSON(input.stage.taskApplication);}
     if(taskProfiling){seed["schema"]="nex.native-image-input/3";seed["task_profile_catalog"]=nativeTaskProfileInfo(rootCatalog).catalogHash;}
+    if(taskDebugging){seed["schema"]="nex.native-image-input/4";seed["task_debug_catalog"]=nativeTaskDebugInfo(rootDebug,rootSources).catalogHash;seed["task_debug_source_union"]=nativeTaskDebugInfo(rootDebug,rootSources).sourceUnionHash;}
     auto seedText=json(JSON(Object(seed)),false),key=hash(seedText);auto folder=root/key;
     auto executable=folder/(shared?"libnex_"+input.name+"_"+key+extension:"app");
     BuildResult built=input.stage;built.executable=executable.string();built.key=key;built.mlir=(folder/"program.mlir").string();built.llvm=(folder/"program.ll").string();built.compilation=(folder/"compilation.json").string();built.notices=(folder/"THIRD_PARTY_NOTICES.txt").string();built.cached=false;
@@ -260,11 +285,14 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
         for(const auto &[name,value]:info.exports)if(!provider.exports.emplace(name,value).second)fail("duplicate task accessor in final image: "+name);
       };merge(stage);for(const auto &name:input.staticDependencies)merge(stages.at(name));
       if(taskProfiling){built.profileCatalog=localCatalog;provider.profiling=nativeTaskProfileInfo(localCatalog);}
+      if(taskDebugging){built.debugCatalog=localDebug;built.debugSources=localSources;built.debugSourceBundles=localBundles;provider.debugging=nativeTaskDebugInfo(localDebug,localSources);}
       built.taskProviderFile=(folder/"task-provider.json").string();built.taskProviderDigest.clear();
     }
     built.functionContracts.clear();provided(stage,built.functionContracts);for(const auto &name:input.staticDependencies)provided(stages.at(name),built.functionContracts);
     fs::create_directories(folder/"images");copyCaptured(input.stage.executable,folder/"objects.a");
-    Array completion;completion.push_back(Object{{"kind","abi"},{"path","library-abi.json"}});if(sharedTasks)completion.push_back(Object{{"kind","task_provider"},{"path","task-provider.json"}});if(taskProfiling)completion.push_back(Object{{"kind","profile_catalog"},{"path","task-profile-catalog.json"}});completion.push_back(Object{{"kind","link_inputs"},{"path","image-inputs.json"}});completion.push_back(Object{{"kind","objects"},{"path","objects.a"}});
+    Array completion;completion.push_back(Object{{"kind","abi"},{"path","library-abi.json"}});if(sharedTasks)completion.push_back(Object{{"kind","task_provider"},{"path","task-provider.json"}});if(taskProfiling)completion.push_back(Object{{"kind","profile_catalog"},{"path","task-profile-catalog.json"}});
+    if(taskDebugging){completion.push_back(Object{{"kind","debug_catalog"},{"path","task-debug-catalog.json"}});completion.push_back(Object{{"kind","debug_sources"},{"path","task-debug-sources.json"}});(void)writeNativeTaskDebugSources(folder.string(),rootDebug,rootSources,rootBundles);for(auto &value:nativeTaskDebugSourceInputs(rootDebug,rootSources,rootBundles))completion.push_back(std::move(value));}
+    completion.push_back(Object{{"kind","link_inputs"},{"path","image-inputs.json"}});completion.push_back(Object{{"kind","objects"},{"path","objects.a"}});
     Array staticInventory;std::vector<std::string> linkInputs;archive(linkInputs,folder/"objects.a",darwin);
     for(size_t i=0;i<input.staticDependencies.size();++i){
       const auto &dependency=stages.at(input.staticDependencies[i]);auto relative="libraries/"+std::to_string(i)+".a";
@@ -273,24 +301,31 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
       auto row=Object{{"component",input.staticDependencies[i]},{"path",(folder/relative).string()},{"hash",hash(dependency.objects)},{"abi",abi},{"contracts",std::move(contracts)}};
       if(sharedTasks){auto sidecar="libraries/"+std::to_string(i)+".task-provider.json";auto bytes=readFile(dependency.input->stage.taskProviderFile);if(hash(bytes)!=dependency.input->stage.taskProviderDigest)fail("static task stage sidecar changed");writeFile((folder/sidecar).string(),bytes);completion.push_back(Object{{"kind","static_task_provider"},{"path",sidecar}});row["task_provider_path"]=(folder/sidecar).string();row["task_provider_hash"]=hash(bytes);row["task_provider"]=nativeTaskProviderJSON(dependency.taskProvider);
         if(taskProfiling){auto name="libraries/"+std::to_string(i)+".task-profile-catalog.json";auto source=fs::path(dependency.input->stage.taskProviderFile).parent_path()/"task-profile-catalog.json";auto raw=readFile(source.string());auto parsed=llvm::json::parse(raw);if(!parsed||nativeTaskProfileInfo(parseNativeTaskProfileCatalog(*parsed)).catalogHash!=dependency.taskProvider.profiling->catalogHash)fail("static profile catalog changed");writeFile((folder/name).string(),raw);completion.push_back(Object{{"kind","static_profile_catalog"},{"path",name}});row["task_profile_catalog_path"]=(folder/name).string();row["task_profile_catalog_hash"]=hash(raw);}
+        if(taskDebugging){auto source=fs::path(dependency.input->stage.taskProviderFile).parent_path();for(const auto &[suffix,kind,key]:std::vector<std::tuple<std::string,std::string,std::string>>{{"task-debug-catalog.json","static_debug_catalog","task_debug_catalog"},{"task-debug-sources.json","static_debug_sources","task_debug_sources"}}){auto name="libraries/"+std::to_string(i)+"."+suffix;auto raw=readFile((source/suffix).string());writeFile((folder/name).string(),raw);completion.push_back(Object{{"kind",kind},{"path",name}});row[key+"_path"]=(folder/name).string();row[key+"_hash"]=hash(raw);}}
       }
       staticInventory.push_back(std::move(row));
     }
     std::map<std::string,Object> images;images.emplace(runtime.filename().string(),read(runtimeFolder/"image.json"));
     for(const auto &name:input.dynamicDependencies){const auto &dependency=result.images.at(name);images.emplace(fs::path(dependency.executable).filename().string(),imageRecord(dependency.executable,dependency.key,abi,"library"));
       auto meta=read(fs::path(dependency.executable).parent_path()/"image-inputs.json");for(const auto &value:*meta.getArray("images")){const auto &record=*value.getAsObject();images.emplace(fs::path(text(record,"path")).filename().string(),Object(record));}}
-    std::map<std::string,std::string> providerRecords,profileRecords;
+    std::map<std::string,std::string> providerRecords,profileRecords,debugCatalogRecords,debugSourceRecords;
     if(sharedTasks)for(const auto &name:input.dynamicDependencies){const auto &dependency=result.images.at(name);
       auto bytes=readFile(dependency.taskProviderFile);if(hash(bytes)!=dependency.taskProviderDigest)fail("dynamic task provider changed");
       auto add=[&](const std::string &image,const std::string &record){auto [old,inserted]=providerRecords.emplace(image,record);if(!inserted&&old->second!=record)fail("conflicting owned task image provider");};
       add(fs::path(dependency.executable).filename().string(),bytes);
       auto addProfile=[&](const std::string &image,const std::string &raw){auto [old,inserted]=profileRecords.emplace(image,raw);if(!inserted&&old->second!=raw)fail("conflicting owned profile catalog");};
       if(taskProfiling)addProfile(fs::path(dependency.executable).filename().string(),readFile((fs::path(dependency.executable).parent_path()/"task-profile-catalog.json").string()));
+      auto addDebug=[&](const std::string &image,const std::string &catalog,const std::string &sources){auto [c,ci]=debugCatalogRecords.emplace(image,catalog);auto [s,si]=debugSourceRecords.emplace(image,sources);if((!ci&&c->second!=catalog)||(!si&&s->second!=sources))fail("conflicting owned debug metadata");};
+      if(taskDebugging){auto parent=fs::path(dependency.executable).parent_path();addDebug(fs::path(dependency.executable).filename().string(),readFile((parent/"task-debug-catalog.json").string()),readFile((parent/"task-debug-sources.json").string()));}
       auto metadata=read(fs::path(dependency.executable).parent_path()/"image-inputs.json");auto records=metadata.getArray("task_providers");if(!records)fail("missing transitive task provider inventory");
       for(const auto &value:*records){const auto &record=*value.getAsObject();auto path=fs::path(dependency.executable).parent_path()/text(record,"path");auto data=readFile(path.string());if(hash(data)!=text(record,"hash"))fail("owned task provider pin changed");add(fs::path(text(record,"image")).filename().string(),data);}
       if(taskProfiling){auto catalogs=metadata.getArray("task_profile_catalogs");if(!catalogs)fail("missing transitive profile catalog inventory");for(const auto &value:*catalogs){const auto &record=*value.getAsObject();auto raw=readFile((fs::path(dependency.executable).parent_path()/text(record,"path")).string());if(hash(raw)!=text(record,"hash"))fail("owned profile catalog pin changed");addProfile(fs::path(text(record,"image")).filename().string(),raw);}}
+      if(taskDebugging){auto catalogs=metadata.getArray("task_debug_catalogs"),sources=metadata.getArray("task_debug_sources");if(!catalogs||!sources||catalogs->size()!=sources->size())fail("missing transitive debug metadata inventory");std::map<std::string,std::string> capturedSources;
+        for(const auto &value:*sources){const auto &row=*value.getAsObject();auto raw=readFile((fs::path(dependency.executable).parent_path()/text(row,"path")).string());if(hash(raw)!=text(row,"hash")||!capturedSources.emplace(text(row,"image"),raw).second)fail("owned debug source union pin differs");}
+        for(const auto &value:*catalogs){const auto &row=*value.getAsObject();auto raw=readFile((fs::path(dependency.executable).parent_path()/text(row,"path")).string());if(hash(raw)!=text(row,"hash")||!capturedSources.contains(text(row,"image")))fail("owned debug catalog pin differs");addDebug(fs::path(text(row,"image")).filename().string(),raw,capturedSources.at(text(row,"image")));}
+      }
     }
-    Array imageInventory,providerInventory,profileInventory;
+    Array imageInventory,providerInventory,profileInventory,debugCatalogInventory,debugSourceInventory;
     for(auto &[name,record]:images){
       auto original=fs::path(text(record,"path")),captured=folder/"images"/name;copyCaptured(original,captured);if(digest(captured)!=text(record,"hash"))fail("owned image changed during capture");
       record["path"]=captured.string();record["symbols"]=symbolFiles(original);
@@ -307,11 +342,18 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
         if(nativeTaskProfileInfo(catalog).catalogHash!=info.profiling->catalogHash||catalog.ownerImage!=info.component)fail("owned profile catalog identity differs");
         auto relative="images/"+name+".task-profile-catalog.json";writeFile((folder/relative).string(),raw);profileInventory.push_back(Object{{"image","images/"+name},{"path",relative},{"hash",hash(raw)},{"catalog_hash",info.profiling->catalogHash},{"component",info.component}});completion.push_back(Object{{"kind","owned_profile_catalog"},{"path",relative}});
       }
+      if(taskDebugging){if(!info.debugging||!debugCatalogRecords.contains(name)||!debugSourceRecords.contains(name))fail("owned image omitted debug metadata");auto c=llvm::json::parse(debugCatalogRecords.at(name)),s=llvm::json::parse(debugSourceRecords.at(name));if(!c||!s)fail("invalid owned debug metadata");auto catalog=parseNativeTaskDebugCatalog(*c);auto sources=parseNativeTaskDebugSourceUnion(*s);if(catalog.ownerImage!=info.component||json(nativeTaskDebugInfoJSON(nativeTaskDebugInfo(catalog,sources)),false)!=json(nativeTaskDebugInfoJSON(*info.debugging),false))fail("owned debug metadata identity differs");
+        auto catalogPath="images/"+name+".task-debug-catalog.json",sourcePath="images/"+name+".task-debug-sources.json";writeFile((folder/catalogPath).string(),debugCatalogRecords.at(name));writeFile((folder/sourcePath).string(),debugSourceRecords.at(name));
+        debugCatalogInventory.push_back(Object{{"image","images/"+name},{"path",catalogPath},{"hash",hash(debugCatalogRecords.at(name))},{"catalog_hash",info.debugging->catalogHash},{"component",info.component}});debugSourceInventory.push_back(Object{{"image","images/"+name},{"path",sourcePath},{"hash",hash(debugSourceRecords.at(name))},{"source_union_hash",info.debugging->sourceUnionHash},{"component",info.component}});completion.push_back(Object{{"kind","owned_debug_catalog"},{"path",catalogPath}});completion.push_back(Object{{"kind","owned_debug_sources"},{"path",sourcePath}});
+      }
     }
     for(const auto &record:imageInventory)for(const auto &symbol:*record.getAsObject()->getArray("symbols"))completion.push_back(Object{{"kind","owned_symbols"},{"path",fs::path(text(*symbol.getAsObject(),"path")).lexically_relative(folder).generic_string()}});
+    if(taskDebugging){completion.push_back(Object{{"kind","debug_manifest"},{"path","debug.json"}});completion.push_back(Object{{"kind","debug_formatter"},{"path","debugger/lldb_nex.py"}});completion.push_back(Object{{"kind","debug_adapter"},{"path","debugger/nex_dap.py"}});}
+    if(taskDebugging&&!shared&&darwin)for(const auto &path:{"debug-symbols.complete","app.dSYM/Contents/Info.plist","app.dSYM/Contents/Resources/DWARF/app"})completion.push_back(Object{{"kind","root_symbols"},{"path",path}});
     for(const auto &name:input.dynamicDependencies)linkInputs.push_back((folder/"images"/fs::path(result.images.at(name).executable).filename()).string());
     linkInputs.push_back((folder/"images"/runtime.filename()).string());
     if(taskProfiling&&profileRecords.size()!=providerRecords.size())fail("profile catalog closure differs from code images");
+    if(taskDebugging&&(debugCatalogRecords.size()!=providerRecords.size()||debugSourceRecords.size()!=providerRecords.size()))fail("debug metadata closure differs from code images");
     auto stageFolder=fs::path(input.stage.executable).parent_path();copyCaptured(stageFolder/"program.mlir",folder/"program.mlir");copyCaptured(stageFolder/"program.ll",folder/"program.ll");copyCaptured(stageFolder/"source-bundle.json",folder/"source-bundle.json");
     auto debug=Object(stage.debug);debug["program"]=executable.string();debug["build_key"]=key;debug["owned_images"]=Array(imageInventory);
     for(const auto *file:{"lldb_nex.py","nex_dap.py"})copyCaptured(stageFolder/"debugger"/file,folder/"debugger"/file);
@@ -319,7 +361,14 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto debugTextFor=[&]{auto record=Object(debug);if(auto task=record.getObject("task_debug")){
       (*task)["image_sha256"]="";(*task)["image_uuid"]="";
       if(fs::is_regular_file(executable))try{(*task)["image_sha256"]=sha(executable);(*task)["image_uuid"]=uuid(executable);}catch(const Error &){}
-    }return json(JSON(std::move(record)))+"\n";};
+    }
+      if(taskDebugging&&!shared&&fs::is_regular_file(executable)){Array owners;Object runtimeOwner;
+        owners.push_back(Object{{"component",input.name},{"path",executable.string()},{"key",key},{"hash",digest(executable)},{"sha256",sha(executable)},{"uuid",uuid(executable)},{"kind","application"}});
+        for(const auto &value:imageInventory){const auto &row=*value.getAsObject();if(row.getString("kind")=="runtime")runtimeOwner=Object{{"component",nullptr},{"path",text(row,"path")},{"key",text(row,"key")},{"hash",text(row,"hash")},{"sha256",text(row,"sha256")},{"uuid",text(row,"uuid")},{"kind","runtime"}};}
+        for(const auto &value:providerInventory){const auto &row=*value.getAsObject();auto name=fs::path(text(row,"image")).filename().string();const auto &owner=images.at(name);owners.push_back(Object{{"component",text(row,"component")},{"path",text(owner,"path")},{"key",text(owner,"key")},{"hash",text(owner,"hash")},{"sha256",text(owner,"sha256")},{"uuid",text(owner,"uuid")},{"kind","shared-image"}});}
+        record=finalizeNativeTaskDebugManifest(std::move(record),rootDebug,rootSources,rootBundles,std::move(owners),std::move(runtimeOwner));
+      }
+      return json(JSON(std::move(record)))+"\n";};
     auto debugText=debugTextFor();
     auto compilation=Object(stage.compilation);compilation["build_key"]=key;compilation["image_inputs"]=Object(seed);compilation["owned_images"]=Array(imageInventory);
     compilation["stage_binary_inputs"]=JSON(*stage.compilation.get("static_libraries"));compilation["static_libraries"]=Array(staticInventory);
@@ -327,11 +376,15 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     Object contracts;for(const auto &[name,digest]:built.functionContracts)contracts[name]=digest;
     Object abiRecord{{"schema","nex.native-library-abi/1"},{"abi",abi},{"compiler_build",NEX_BUILD_ID},{"target",built.target},{"code_only",shared},{"function_contracts",std::move(contracts)},{"static_libraries",Array(staticInventory)}};
     Object linkRecord{{"schema",sharedTasks?"nex.native-image-inputs/2":"nex.native-image-inputs/1"},{"inputs",Object(seed)},{"images",Array(imageInventory)}};if(sharedTasks)linkRecord["task_providers"]=Array(providerInventory);if(taskProfiling){linkRecord["schema"]="nex.native-image-inputs/3";linkRecord["task_profile_catalogs"]=Array(profileInventory);}
+    if(taskDebugging){linkRecord["schema"]="nex.native-image-inputs/4";linkRecord["task_debug_catalogs"]=Array(debugCatalogInventory);linkRecord["task_debug_sources"]=Array(debugSourceInventory);}
     auto meta=Object(stage.build);meta["key"]=key;meta["kind"]=server?"http_server":input.kind;meta["deferred_link"]=false;meta["compilation"]=built.compilation;meta["notices"]=built.notices;meta["completion_schema"]=sharedTasks?"nex.native-completion/5":"nex.native-completion/3";meta["completion_inputs"]=Array(completion);
     meta["stage_runtime_requirements"]=JSON(*stage.build.get("runtime_requirements"));meta["runtime_requirements"]=Object(requirements);
     meta["runtime_source_projection"]=projection.string();meta["runtime_inputs"]=JSON(*runtimeSeed.get("inputs"));meta["runtime_components"]=JSON(*runtimeSeed.get("components"));meta["shared_runtime_key"]=runtimeKey;
     if(taskProfiling){meta["completion_schema"]="nex.native-completion/6";meta["completion_mode"]=shared?"shared-image":"shared-application";meta["task_profile_catalog"]=nativeTaskProfileInfo(rootCatalog).catalogHash;}
+    if(taskDebugging){meta["completion_schema"]="nex.native-completion/7";meta["completion_mode"]=shared?"shared-image":"shared-application";meta["task_debug_metadata_hash"]=nativeTaskDebugMetadataHash(rootDebug,rootSources);meta["task_debug_abi"]=2;meta["task_debug_catalog"]=nativeTaskDebugInfo(rootDebug,rootSources).catalogHash;meta["task_debug_sources"]=nativeTaskDebugInfo(rootDebug,rootSources).sourceUnionHash;}
     const auto profileCatalogText=taskProfiling?json(nativeTaskProfileCatalogJSON(localCatalog))+"\n":std::string{};
+    const auto debugCatalogText=taskDebugging?json(nativeTaskDebugCatalogJSON(localDebug))+"\n":std::string{};
+    const auto debugSourcesText=taskDebugging?json(nativeTaskDebugSourceUnionJSON(localSources))+"\n":std::string{};
     std::string taskProviderText;
     auto updateTask=[&]{if(!sharedTasks||!fs::is_regular_file(executable))return;
       built.taskProvider.image=NativeTaskImageIdentity{key,digest(executable),sha(executable),uuid(executable),runtimeKey,digest(runtime)};
@@ -343,6 +396,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto completionText=[&](){std::string contents=key;for(const auto &path:{executable,folder/"program.mlir",folder/"program.ll",folder/"compilation.json",folder/"build.json",folder/"source-bundle.json"})contents+=digest(path);for(const auto &v:completion)contents+=digest(folder/text(*v.getAsObject(),"path"));return hash(contents)+"\n";};
     auto intact=[&](){try{
       if(taskProfiling&&readFile((folder/"task-profile-catalog.json").string())!=profileCatalogText)return false;
+      if(taskDebugging&&(readFile((folder/"task-debug-catalog.json").string())!=debugCatalogText||readFile((folder/"task-debug-sources.json").string())!=debugSourcesText))return false;
       if(sharedTasks&&(taskProviderText.empty()||readFile(built.taskProviderFile)!=taskProviderText))return false;
       if(readFile((folder/"debug.json").string())!=debugText||readFile((folder/"build.json").string())!=json(JSON(Object(meta)))||readFile((folder/"image-inputs.json").string())!=json(JSON(Object(linkRecord)))||readFile((folder/"library-abi.json").string())!=json(JSON(Object(abiRecord))))return false;
       if(darwin&&readFile((folder/"debug-symbols.complete").string())!=digest(fs::path(executable.string()+".dSYM")/"Contents/Resources/DWARF"/executable.filename())+"\n")return false;
@@ -381,6 +435,9 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
               auto header=source.find("#include \"nex_task_profile_site.h\"");auto prefix=source.substr(0,header);source=source.substr(header);auto body=source.find("static const nexrt::NativeFunctionSite");source.insert(body,prefix);
               source+="const nexrt::TaskProfileCodeRegistry *registries[]={";for(size_t i=0;i<rootCatalog.registries.size();++i){if(i)source+=",";source+=rootCatalog.registries[i].accessor+"()";}source+="};nex_task_profile_prepare_registries(registries,"+std::to_string(rootCatalog.registries.size())+");";
             }
+            if(taskDebugging){source="#include \"nex_task_debug_site.h\"\n"+source;std::string declarations;for(const auto &registry:rootDebug.registries)declarations+="extern \"C\" const nexrt::TaskDebugCodeRegistry *"+registry.accessor+"();\n";source.insert(source.find("static const nexrt::NativeFunctionSite"),declarations);
+              source+="const nexrt::TaskDebugCodeRegistry *debugRegistries[]={";for(size_t i=0;i<rootDebug.registries.size();++i){if(i)source+=",";source+=rootDebug.registries[i].accessor+"()";}source+="};nex_task_debug_prepare_registries(debugRegistries,"+std::to_string(rootDebug.registries.size())+");";
+            }
             source+="return nex_task_application_execute_limits_at("+root.descriptorAccessor+"(),argc,argv,"+std::to_string(root.configured.steps)+","+std::to_string(root.configured.timeoutMs)+","+std::to_string(root.configured.workers)+",&site); }\n";
           }else source+=(entry.result==Type::Unit?nativeSymbol(entry.name)+"();return 0;":"return "+nativeSymbol(entry.name)+"();")+"}\n";
           source+="int main(int argc,char **argv){return int(nex_application_run_at(reinterpret_cast<void*>(entry),argc,argv,&site));}\n";
@@ -398,6 +455,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
       debugText=debugTextFor();updateTask();
       if(sharedTasks)writeFile(built.taskProviderFile,taskProviderText);
       if(taskProfiling)writeFile((folder/"task-profile-catalog.json").string(),profileCatalogText);
+      if(taskDebugging){writeFile((folder/"task-debug-catalog.json").string(),debugCatalogText);writeFile((folder/"task-debug-sources.json").string(),debugSourcesText);}
       if(darwin)writeFile((folder/"debug-symbols.complete").string(),digest(fs::path(executable.string()+".dSYM")/"Contents/Resources/DWARF"/executable.filename())+"\n");
       writeFile((folder/"debug.json").string(),debugText);writeFile((folder/"compilation.json").string(),json(JSON(Object(compilation)))+"\n");writeFile((folder/"library-abi.json").string(),json(JSON(Object(abiRecord))));writeFile((folder/"image-inputs.json").string(),json(JSON(Object(linkRecord))));writeFile((folder/"build.json").string(),json(JSON(Object(meta))));writeFile(built.notices,noticeText);writeFile((folder/"complete").string(),completionText());
     }else built.cached=true;
