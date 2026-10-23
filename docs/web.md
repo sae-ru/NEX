@@ -254,8 +254,11 @@ and an AbortSignal run during a long pure helper. Cancellation unwinds generated
 function cleanup and drains owned descendants before the run completes.
 JavaScript owns managed heap reclamation; this scheduler does not provide OS
 thread parallelism or asynchronous file/network/FFI authority. Standalone task
-execution does not enable task entries in the synchronous React or worker
-adapter, and does not establish browser UI/platform acceptance.
+execution alone does not enable task entries in synchronous React entries
+or establish browser UI/platform acceptance. Toolchain0.120 has a separate
+dedicated task-worker host, described in browser-workers.md and advertised
+by browser_workers.structured_tasks; it accepts task-only compute with wire
+input/output and does not grant external IO.
 
 ## Tests
 

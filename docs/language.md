@@ -654,8 +654,10 @@ runs it with `await task.run(task.call(() => entry(...inputs), inputs), {signal}
 Pure modules remain synchronous, and unused task declarations do not change
 emission. A standalone pure export with task-authority types and no reachable
 task effect is rejected; that same helper can run inside a task entry.
-UI/worker adapters keep their synchronous pure entry contracts and reject
-reachable task effects/callables. See [the web contract](web.md).
+Main-thread UI entries keep synchronous pure contracts and reject reachable
+task effects/callables. Toolchain0.120 separately hosts task-only worker_compute
+in a dedicated Worker with its own scheduler; wire input/output carries no task
+authority. See [the worker contract](browser-workers.md).
 
 Native task execution targets macOS/Linux applications and source-only projects.
 Toolchain0.116 adds checked concrete static task archives with resource-free

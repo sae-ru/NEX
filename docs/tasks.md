@@ -180,9 +180,11 @@ task-effect entry. Its copied artifacts include `nex-task-runtime.ts` and a
 public `nex.typescript-map/1` with the checked0.19 revision, source hash and
 `execution: "task-generator"`. This remains module emission, not an independent
 TypeScript typecheck or browser/UI adapter acceptance. Task entries in the
-synchronous NEX UI/browser-worker adapters, native binary-provider task APIs,
-asynchronous IO and task source debugging/profiling remain pending and must not
-be reported as passed through unrelated checks.
+synchronous main-thread NEX UI entries remain unsupported. Dedicated browser
+task workers, native providers, whole-file reads and native task debug/profile
+have separate contracts and actual capability fields; see browser-workers.md,
+task-providers.md, task-file-reads.md and task-debugging.md. A module-emission
+check alone does not establish any of those integrations or their acceptance.
 
 `run` captures the selected task source bundle, reviewed test hashes and the
 matching native/TypeScript runtime resources. Replay rechecks those captured

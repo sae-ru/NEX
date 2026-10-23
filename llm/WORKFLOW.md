@@ -166,8 +166,14 @@ immutable snapshots/closures. Файлы не пересекают task-гран
 этих defaults через CLI/проект описаны в docs/task-limits.md. Reference и TypeScript
 выполняют независимое cooperative scheduling; это не доказательство физического
 CPU overlap. Standalone task-экспорты TypeScript возвращают task.Step<T> и
-запускаются scheduler host; pure-модули остаются синхронными. UI/worker-adapters
+запускаются scheduler host; pure-модули остаются синхронными. Main-thread UI entries
 сохраняют pure synchronous контракты и отклоняют reachable task effects/callables.
+Отдельно, при browser_workers.structured_tasks=true, worker_compute допускает
+ровно task и получает собственный scheduler внутри dedicated Worker. Только wire
+input/output пересекает сообщения; scopes/futures/channels остаются внутри.
+Лимиты этого scheduler:1000000 шагов/5000ms/logical workers16, один JS thread.
+Отмена/timeout host завершает dedicated Worker; task IO в нём недоступен.
+См. docs/browser-workers.md.
 Чтение целых файлов и native task debug/profile имеют отдельные объявленные
 контракты. Для static/fixed-shared providers проверяйте task_providers,
 task_shared_providers, task_provider_profiling и task_provider_debugging.

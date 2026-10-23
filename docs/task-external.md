@@ -183,8 +183,10 @@ new builtin, db/FFI task bridge, binary-provider task ABI, general async excepti
 syntax, task debugger/profiler integration or async write/stream contract.
 TypeScript still emits reachable shared/client code only and rejects server,
 filesystem and foreign dependencies. Browser filesystem support and task-facing
-network, UI and browser-worker adapters remain pending. Existing synchronous
-UI/worker and ordinary filesystem APIs retain their contracts.
+network, UI and browser-worker external-IO bridges remain pending. The separate
+toolchain0.120 dedicated task-worker host executes task-only compute without
+external authority; see browser-workers.md. Main-thread pure UI and ordinary
+filesystem APIs retain their contracts.
 
 ## Explicit root grant foundation (private116)
 
