@@ -6,7 +6,10 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.117.0 / language0.20**.
+This isolated development source is **toolchain0.117.1 / language0.20**.
+Working124c adds atomic publication of captured native images: warm builds leave
+unchanged files untouched and repairs replace an inode rather than truncating a
+loaded library. Its exact regression/SDK/platform acceptance remains pending.
 Working124 enables candidate fixed startup-linked shared native task providers,
 checked per-application image ownership and one common runtime. The11-case actual
 source suite and separate controlled private image fence pass. Full144 regression,

@@ -2,6 +2,9 @@
 #include "nex/native_toolchain.h"
 #include "nex/operations.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Object/BuildID.h"
 #include "llvm/Object/MachO.h"
 #include "llvm/Object/ObjectFile.h"
@@ -29,7 +32,24 @@ std::string uuid(const fs::path &p){
 }
 struct Temporary {fs::path path=createTemporaryDirectory("nex-native-image");~Temporary(){std::error_code ignored;fs::remove_all(path,ignored);}};
 void run(std::vector<std::string> args){if(executeNativeBuildTool(args)!=0)fail("native image tool failed; retained inputs describe the selected link");}
-void copyCaptured(const fs::path &from,const fs::path &to){fs::create_directories(to.parent_path());copyFile(from.string(),to.string(),true);}
+void copyCaptured(const fs::path &from,const fs::path &to){
+  if(!fs::is_regular_file(from))fail("captured image source is not a regular file: "+from.string());
+  fs::create_directories(to.parent_path());
+  auto bytes=readFile(from.string());auto permissions=fs::status(from).permissions();
+  // ELF loaders keep relocated private pages for the lifetime of a mapping.
+  // Truncating a mapped DSO, even to restore identical bytes, invalidates them.
+  if(!fs::is_symlink(to)&&fs::is_regular_file(to)&&fs::status(to).permissions()==permissions&&readFile(to.string())==bytes)return;
+  llvm::SmallString<256> path;int descriptor=-1;
+  auto error=llvm::sys::fs::createUniqueFile(to.string()+".nex-copy-%%%%%%",descriptor,path);
+  if(error)fail("cannot stage captured image: "+error.message());
+  struct Staged {fs::path path;~Staged(){std::error_code ignored;fs::remove(path,ignored);}} staged{path.str().str()};
+  llvm::raw_fd_ostream output(descriptor,true);output.write(bytes.data(),bytes.size());output.close();
+  if(output.has_error()){auto failure=output.error();output.clear_error();fail("cannot write staged image: "+failure.message());}
+  fs::permissions(staged.path,permissions);
+  // The sibling stage is on the destination filesystem. Rename keeps existing
+  // processes on their old inode while future loads see the complete new file.
+  fs::rename(staged.path,to);
+}
 struct Captured {
   const NativeImageInput *input;
   Object build,debug,compilation;

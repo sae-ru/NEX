@@ -164,7 +164,28 @@ class SharedTaskProviders(harness.ToolchainCase):
             first=ctypes.CDLL(artifacts['leaf']['artifact']);second=ctypes.CDLL(artifacts['mid']['artifact'])
             self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
+            watched={Path(row['artifact']) for row in artifacts.values()}
+            for artifact in artifacts.values():
+                owned,_=self.functions(artifact)
+                watched.update(Path(row['path']) for row in owned['owned_images'])
+            before={str(path):(path.stat().st_ino,path.stat().st_mtime_ns,hashlib.sha256(path.read_bytes()).hexdigest()) for path in watched}
             self.assertTrue(all(row['cached'] for row in self.project(configuration=mode)['artifacts']))
+            after={str(path):(path.stat().st_ino,path.stat().st_mtime_ns,hashlib.sha256(path.read_bytes()).hexdigest()) for path in watched}
+            self.assertEqual(after,before,'warm build rewrote an existing executable/shared image')
+            leaf_owned,_=self.functions(artifacts['leaf'])
+            runtime=Path(next(row['path'] for row in leaf_owned['owned_images'] if row['kind']=='runtime'))
+            permissions=runtime.stat().st_mode & 0o777
+            with runtime.open('rb') as previous_inode:
+                old_inode=os.fstat(previous_inode.fileno()).st_ino
+                old_bytes=previous_inode.read()
+                runtime.chmod(0o700 if permissions!=0o700 else 0o755)
+                self.assertTrue(all(row['cached'] for row in self.project(configuration=mode)['artifacts']))
+                self.assertNotEqual(runtime.stat().st_ino,old_inode,'image repair truncated the loaded inode')
+                self.assertEqual(runtime.stat().st_mode & 0o777,permissions)
+                previous_inode.seek(0)
+                self.assertEqual(previous_inode.read(),old_bytes,'image repair changed an existing mapping input')
+            self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
+            self.loaded(artifacts['app'],fixture.OUTPUT)
 
     def test_mixed_static_frontiers_have_exact_final_image_owners(self):
         (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}')
