@@ -54,6 +54,8 @@ synchronous entry contracts and reject reachable task effects/callables.
 Broader IO, task debug/profile, binary-provider lifetime, task server/UI
 adapters, other native targets and current SDK/platform delivery remain pending.
 Do not infer their completion from source_support or a passing scoped probe.
+The private task_profile_collector module is not connected to source task
+execution. It does not enable nex profile for task programs.
 
 Keep genuine018 source, the matching SDK and a complete graph snapshot. Explicit
 migrate rechecks a separate archived/reviewed source bundle under020 and preserves

@@ -10,6 +10,28 @@ import support as harness
 
 
 class Verification(harness.ToolchainCase):
+    def test_bundled_proof_snapshots_and_task_intent_are_current(self):
+        language = self.cli('describe')['version']
+        for example, filename in [('verification', 'contracts.json'), ('tasks', 'proof.json')]:
+            with self.subTest(example=example):
+                project = self.root / example
+                shutil.copytree(harness.REPO / 'examples' / example, project)
+                checked = self.cli('check', cwd=project)
+                snapshot = json.loads((project / filename).read_text())
+                self.assertEqual(snapshot['language'], language)
+                self.assertEqual(snapshot['expected_revision'], checked['revision'])
+                verified = self.cli('verify', '--contracts', filename, cwd=project, timeout=90)
+                self.assertTrue(verified['ok'])
+                self.assertTrue(verified['functions'])
+                self.assertTrue(all(item['status'] == 'proven' for item in verified['functions']))
+                if example == 'tasks':
+                    task = json.loads((project / 'task.json').read_text())
+                    self.assertEqual(task['programs'][0]['baseline_revision'], checked['revision'])
+                    intent = self.cli('contract', '--kind', 'intent', '--contracts', filename, cwd=project)
+                    proof = next(item for item in task['checks'] if item['id'] == 'proof')
+                    self.assertEqual(proof['intent_hash'], intent['intent_hash'])
+                    self.assertTrue(self.cli('task', 'task.json', '--kind', 'check', cwd=project)['ok'])
+
     def contract(self, symbol, requires=None, ensures=None):
         value = self.cli('contract', '--symbol', symbol)
         function = value['functions'][0]

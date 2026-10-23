@@ -1,24 +1,14 @@
-# Working119b: complete current fixture repair
+# Working120: private logical task-profile collector foundation
 
-Toolchain0.112.1/language0.20 adds the third118 failure correction: regenerate
-the current type-patches and verification example revision pins after the
-explicit020 transition. Frozen118 finished125/128 groups; two editor fixtures and this pin
-were stale. Its raw results are retained. Frozen119 cleanallbuild passed but
-was not given a full/SDK claim after the third failure became known.
-Current119b full regression and matching SDK acceptance are pending. Semantics,
-grammar, history migration and execution ABI remain unchanged. Primary081 is
-preserved; the full objective remains active.
-
-# Working119: current editor acceptance fixtures
-
-Toolchain0.112/language0.20 keeps the118 implementation and changes the two
-new-project editor acceptance manifests from019 to020. These are current
-fixtures, not retained historical sources. Frozen118 macOS full128 found both
-editor acceptance failures; its raw report remains retained. Its selected
-Linux ARM6427 groups pass. No118 full acceptance or installedSDK claim follows.
-Working119 full regression and matching SDK acceptance are pending.
-No language semantics, grammar, history, task execution ABI or migration changes.
-Primary081 remains preserved; the full objective remains active.
+Toolchain0.113/language0.20 is developing a bounded private collector module and
+independent native probe for logical invocation/TLS/clock ownership. No scheduler,
+frame-driver, compiler emission or public task-profile integration is enabled.
+Existing debug/profile rejections, task execution ABI2, semantics, grammar and
+history migration remain unchanged. Allbuild/focused/full/sanitizer/SDK acceptance
+for the final120 source remains pending. Primary081 remains preserved.
+Current editor fixtures and verified119b type/proof/intent pin repairs are included.
+A CLI regression checks bundled proof snapshots/task intent, preserving criteria.
+The complete public task profiler requires a later integrated acceptance stage.
 
 # Working118: consistent pending-capability discovery
 

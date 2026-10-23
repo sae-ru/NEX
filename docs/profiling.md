@@ -1,3 +1,30 @@
+# Private task collector foundation (toolchain0.113)
+
+The source includes `runtime/nex_task_profile.h/.cpp` and a dedicated native
+collector probe. This is a private instrumentation module, with no task scheduler,
+frame driver, generated source hooks or public report/CLI integration yet.
+`nex profile` still rejects source task applications. The task execution ABI2,
+existing synchronous profiler and its Tracy path are unchanged. A module probe
+cannot establish correct profiling of a compiled task program.
+
+The module separates run-local task/invocation identity, logical lifetime,
+per-worker source execution segments and CPU versus elapsed clocks. Its own
+bounded recording metadata is not application heap/RSS, retained Value ownership,
+file transport usage or scheduler wait-state evidence. Those require later hooks
+and independent acceptance. Task Tracy, logical source debugging, providers,
+server/browser/reference profilers and other platforms remain pending.
+
+Private C++ callers register immutable site metadata and allocate recording
+storage before work starts. Runtime hooks are noexcept; a disabled collector
+allocates no State and reads no clocks. Resume/source guards stay on their creating
+thread; detached logical task/invocation tokens may move between workers.
+Same-thread non-LIFO teardown is repaired and marks the measurement incomplete.
+Attached guards share a fixed4096-per-thread limit across collectors. A failed
+enabled resume suppresses nested recording and pauses the current source interval
+until the last failed guard retires, preventing attribution to the prior task.
+Drop/incomplete and clock-availability fields must be checked before using counts
+or timings as evidence. No current CLI consumes this private snapshot protocol.
+
 For actual native project servers, use the bounded [server workload flow](server-workload.md)
 with `project --kind profile --workload FILE`. It preserves static/dynamic edges,
 checks HTTP expectations and records request metrics with native function/memory

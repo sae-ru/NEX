@@ -4,11 +4,12 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.112.1 / язык0.20
+## Текущий шаг: toolchain0.113 / язык0.20
 
-- [x] Исправить два текущих editor acceptance manifests019→020 после
-  воспроизводимого отказа118. Исторические019 fixtures сохранены.
-- [ ] Проверить точный119b полным циклом и установленным SDK.
+- [ ] Проверить private bounded task-profile collector: once-per-invocation,
+  перенос между потоками, TLS, CPU/elapsed clocks, ownership и явные drops.
+- [ ] Подключить проверенный collector к task driver/compiler и public CLI
+  отдельным этапом; текущая основа ещё не включает профилирование задач.
 
 - [x] Соединить public019 parser/checker/graph с native compiled continuations,
   независимыми AST/TypeScript schedulers и conservative lifetime checking.

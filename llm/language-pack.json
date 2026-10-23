@@ -1140,5 +1140,16 @@
       "Linux native source execution",
       "source-only project/replay delivery"
     ]
+  },
+  "task_profile_collector": {
+    "status": "private_module_foundation",
+    "guide": "docs/profiling.md",
+    "header": "runtime/nex_task_profile.h",
+    "probe": "nex_task_profile_collector_probe",
+    "source_support": false,
+    "runtime_integration": false,
+    "public_profile_enabled": false,
+    "execution_task_abi_changed": false,
+    "measurement_scope": "collector API only; no compiled task/scheduler attribution claim"
   }
 }

@@ -6,14 +6,14 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.112.1 / language0.20**.
-Working119b repairs two current editor acceptance project manifests still marked
-019 after the explicit020 transition and regenerates current type-patch and
-verification example pins. Frozen118 retains three macOS failures and its
-independently passing Linux ARM64 27-group probe. Its source
-and all historical migration fixtures remain unchanged. Current full regression
-and matching installed SDK acceptance are pending. The source semantics,
-execution ABI and migration are unchanged by this fixture correction.
+This isolated development source is **toolchain0.113.0 / language0.20**.
+Working120 adds a private bounded logical task-profile collector module and its
+independent C++ probe. It is not connected to the task scheduler, compiler or
+public profile command; source task profiling/debugging remains unsupported.
+Execution task ABI2 and language020 semantics are unchanged. Current editor
+fixture corrections and compiler-verified type/proof/intent pins from119b are
+included. A regression checks the bundled proof snapshots and task intent.
+Full current regression, sanitizer and installed SDK acceptance are pending.
 The implementation connects the two existing whole-file read operations to structured
 suspension in explicit server `!{task,fs}` functions. Native macOS/Linux
 applications/source-only projects and the independent reference scheduler use

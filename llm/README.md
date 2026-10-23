@@ -1,4 +1,4 @@
-Current development source is toolchain0.112.1/language0.20. Discover actual
+Current development source is toolchain0.113/language0.20. Discover actual
 capabilities before authoring. Read task_file_reads/docs/task-file-reads.md for
 the narrow server task/fs native/reference read subset and explicit019 migration.
 TypeScript/browser filesystem stays unsupported; full current acceptance pending.

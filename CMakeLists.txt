@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.112.1 LANGUAGES C CXX)
+project(NEX VERSION 0.113.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -523,4 +523,13 @@ target_compile_definitions(nex_task_external_probe PRIVATE NEX_STRUCTURED_WORKER
 target_link_libraries(nex_task_external_probe PRIVATE Threads::Threads)
 target_compile_options(nex_task_external_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_external_native COMMAND nex_task_external_probe)
+
+# Private collector foundation only. This does not instrument the scheduler,
+# task driver, emitted code or public task profile commands.
+add_executable(nex_task_profile_collector_probe tests/task_profile_collector.cpp runtime/nex_task_profile.cpp)
+target_include_directories(nex_task_profile_collector_probe PRIVATE runtime)
+target_link_libraries(nex_task_profile_collector_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_profile_collector_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_collector_native COMMAND nex_task_profile_collector_probe)
+set_tests_properties(task_profile_collector_native PROPERTIES TIMEOUT 60)
 set_tests_properties(task_external_native PROPERTIES TIMEOUT 60)
