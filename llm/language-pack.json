@@ -846,7 +846,7 @@
     "pending": [
       "complete static region/lifetime inference",
       "asynchronous writes/streams/db/ffi/network",
-      "source-level async debugger and profile attribution",
+      "source-level async debugger and non-native task profiling",
       "provider ABI/lifetime",
       "full current installed SDK and platform delivery",
       "NEX UI adapter task integration",
@@ -880,7 +880,8 @@
         "file_read_text",
         "file_read_bytes"
       ],
-      "root_task_depth": 1
+      "root_task_depth": 1,
+      "profile": true
     },
     "private_ast_steps": {
       "entry_point": "TaskAstMachine",
@@ -1012,7 +1013,7 @@
     "launcher_can_only_lower": true,
     "ambient_environment": false,
     "project_field": "configurations.NAME.task_limits",
-    "acceptance_field": "checks[].task_limits (nonproject build/run/test)",
+    "acceptance_field": "checks[].task_limits (nonproject build/run/test/profile)",
     "reference_executor_workers": 1,
     "typescript_executor_workers": 1,
     "identical_step_thresholds": false,
@@ -1084,7 +1085,7 @@
       "asynchronous writes and streams",
       "source db/ffi/network task lowering",
       "browser filesystem and task network/UI/worker adapters",
-      "task debugger/profile and binary-provider ABI",
+      "task debugger, Tracy and binary-provider ABI",
       "full current regression, installed SDK and platform acceptance"
     ],
     "public_source_guide": "docs/task-file-reads.md",
@@ -1139,17 +1140,83 @@
       "installed SDK",
       "Linux native source execution",
       "source-only project/replay delivery"
-    ]
+    ],
+    "task_profile": true
   },
   "task_profile_collector": {
-    "status": "private_module_foundation",
+    "status": "development_integrated_native_tasks",
     "guide": "docs/profiling.md",
     "header": "runtime/nex_task_profile.h",
     "probe": "nex_task_profile_collector_probe",
-    "source_support": false,
-    "runtime_integration": false,
-    "public_profile_enabled": false,
-    "execution_task_abi_changed": false,
-    "measurement_scope": "collector API only; no compiled task/scheduler attribution claim"
+    "source_support": true,
+    "runtime_integration": true,
+    "public_profile_enabled": true,
+    "execution_task_abi_changed": true,
+    "measurement_scope": "native compiled source tasks; public CLI language020; see task_profiling scope"
+  },
+  "task_profiling": {
+    "status": "development_native_source_tasks",
+    "source_support": true,
+    "guide": "docs/profiling.md",
+    "cli_language": "0.20",
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "execution_task_abi": 3,
+    "runtime_schema": "nex.profile-runtime/2",
+    "report_schema": "nex.profile/2",
+    "session_schema": "nex.profile-session/2",
+    "source_only_project": true,
+    "reviewed_capture_replay": true,
+    "task_file_reads": true,
+    "source_calls": "one logical activation; not one scheduler resume",
+    "clocks": [
+      "thread CPU in active source segments",
+      "active monotonic elapsed",
+      "logical lifetime wall"
+    ],
+    "scheduler_metrics": [
+      "ready",
+      "future",
+      "send",
+      "receive",
+      "scope",
+      "external",
+      "drain",
+      "executor CPU/elapsed"
+    ],
+    "completeness": [
+      "aggregates",
+      "timeline",
+      "memory",
+      "cpu",
+      "elapsed",
+      "lifetime"
+    ],
+    "event_only_truncation_preserves_aggregates": true,
+    "memory_scope": "managed shallow handles and Data objects; not total heap/RAM",
+    "limits": {
+      "events": 1000000,
+      "sites": 16384,
+      "tasks": 4096,
+      "active_invocations": 65536,
+      "guards_per_thread": 4096,
+      "live_allocations": 1000000,
+      "report_bytes": 67108864
+    },
+    "tracy": false,
+    "async_debugger": false,
+    "reference": false,
+    "typescript": false,
+    "http_task_handlers": false,
+    "binary_providers": false,
+    "windows": false,
+    "wasm": false,
+    "acceptance_pending": [
+      "full current regression",
+      "matching installed SDK26",
+      "supported native platform acceptance"
+    ]
   }
 }

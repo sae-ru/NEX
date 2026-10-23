@@ -68,7 +68,10 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
 
     task = root / 'task.nex'
     task.write_text('module boundary;fn main()->unit !{task}{task_yield();}')
-    assert cli(root, 'build', task, '--profile', 'profile', success=False)['code'] == 'E_TASK_PROFILE'
+    profiled = cli(root, 'build', task, '--profile', 'profile')
+    dormant = subprocess.run([profiled['executable']], cwd='/', env={'PATH': '/usr/bin:/bin'},
+                             capture_output=True, text=True, timeout=15)
+    assert (dormant.returncode, dormant.stdout, dormant.stderr) == (0, '', ''), dormant
     assert cli(root, 'build', task, '--library', success=False)['code'] == 'E_TASK_PROVIDER'
     pure = root / 'pure.nex'
     pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->i64{return 42;}')

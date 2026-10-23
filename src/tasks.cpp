@@ -102,7 +102,7 @@ void validateShape(const JSON &task){
     const auto &c=object(value);auto kind=text(c,"kind");bool project=projectPrograms.contains(text(c,"program"));std::set<std::string> names={"id","kind","program","target","timeout_seconds"};
     auto add=[&](std::initializer_list<const char*> keys){for(auto k:keys)names.insert(k);};
     if(kind=="test")add({"tests"});else if(kind=="build")add({"entry","profile","mode"});else if(kind=="run")add({"entry","profile","expect"});else if(kind=="verify")add({"contracts","intent_hash","solver_timeout_ms","resource_limit"});else if(kind=="effects")add({"symbols","allowed_effects","allowed_realms"});else if(kind=="profile")add({"entry","scenario","budget","hardware"});else if(kind=="package"){if(!project)invalid("package checks require a declared project architecture");}else if(kind=="api"){}else invalid("unknown check kind: "+kind);
-    if(!project&&(kind=="build"||kind=="run"||kind=="test"))add({"task_limits"});
+    if(!project&&(kind=="build"||kind=="run"||kind=="test"||kind=="profile"))add({"task_limits"});
     if(project)add({"configuration"});
     if(project&&kind=="profile")add({"workload","workload_hash","server_workers"});
     if(kind=="package")add({"notices","notices_hash"});
@@ -529,7 +529,7 @@ struct Runner {
     auto remaining=[&](){auto elapsed=std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-started).count();if(elapsed>=timeout)throw Error("E_TASK_TIMEOUT","check exhausted its process timeout");return timeout-unsigned(elapsed);};
     auto invoke=[&](std::vector<std::string> args,const std::string &label,const std::string &revision=""){
       if(auto limits=c.get("task_limits")){
-        if(!args.empty()&&(args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="build"))appendTaskLimitArguments(args,parseTaskLimitsJSON(*limits,"E_TASK"));
+        if(!args.empty()&&(args[0]=="eval"||args[0]=="run"||args[0]=="test"||args[0]=="build"||args[0]=="profile"))appendTaskLimitArguments(args,parseTaskLimitsJSON(*limits,"E_TASK"));
       }
       verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);auto value=command(id,program,args,remaining(),label,revision);verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyNotices(id);verifyWorkload(id);if(!ok(value))throw Error(interrupted?"E_TASK_INTERRUPTED":object(value).getBoolean("timed_out").value_or(false)?"E_TASK_TIMEOUT":"E_TASK_OUTPUT","check process exceeded its execution/output limit");return value;};
     auto successful=[&](const JSON &v){return object(v).getInteger("exit_code")==0&&object(v).get("response")&&ok(*object(v).get("response"));};
@@ -646,7 +646,11 @@ struct Runner {
         auto value=invoke({"profile","--entry",entry,"--events","0","--scenario",text(c,"scenario"),"--timeout",std::to_string(timeout),"--output",(artifact/"profile.json").string()},"profile");passed=successful(value);row["receipt"]=text(object(value),"receipt");
       }
       if(passed){auto full=readJSON(artifact/"profile.json",64*1048576);const auto &r=object(full),&budget=*c.getObject("budget");Array failures;
-        for(const auto &key:{"dropped_functions","dropped_frames","dropped_allocations","untracked_frees"})if(r.getInteger(key).value_or(1)!=0)failures.push_back(key);
+        if(r.getString("schema")=="nex.profile/2"){
+          for(auto &failure:taskProfileBudgetIncomplete(r,budget))failures.push_back(std::move(failure));
+          auto execution=r.get("task_execution");if(!execution||!execution->getAsObject())throw Error("E_TASK_INTEGRITY","task profile omitted execution limits");
+          row["task_execution"]=*execution;
+        }else for(const auto &key:{"dropped_functions","dropped_frames","dropped_allocations","untracked_frees"})if(r.getInteger(key).value_or(1)!=0)failures.push_back(key);
         auto exceeds=[&](const std::string &key,int64_t observed){if(auto max=budget.get(key))if(observed<0||uint64_t(observed)>decimal(*max))failures.push_back(key);};exceeds("max_duration_ns",r.getInteger("duration_ns").value_or(-1));
         auto pools=r.getArray("memory");for(const auto &[name,key]:std::map<std::string,std::string>{{"NEX handles","max_peak_handles"},{"NEX objects (shallow)","max_peak_objects"}}){int64_t peak=-1;if(pools)for(const auto &pool:*pools)if(object(pool).getString("pool")==name)peak=object(pool).getInteger("peak_live").value_or(-1);exceeds(key,peak);}
         if(auto calls=budget.getObject("max_calls"))for(const auto &[name,max]:*calls){bool found=false;for(const auto &v:array(r,"functions",0,16384))if(object(v).getString("name")==name.str()){found=true;auto n=object(v).getInteger("calls");if(!n||*n<0||uint64_t(*n)>decimal(max))failures.push_back(name.str());}if(!found)failures.push_back(name.str()+":unobserved");}

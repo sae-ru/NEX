@@ -79,7 +79,7 @@ int main(){
  {nexrt::RequestScope protocol;
   auto invalid=[&](auto action){bool failed=false;try{action();}catch(const nexrt::DataError &e){require(e.code=="E_TASK_STATE");failed=true;}require(failed);};
   std::array<int64_t,2> types{0,0},params{0,0},captures{0,0};
-  nexrt::TaskCodeDescriptor d{step,types.data(),params.data(),captures.data(),nexrt::taskCodeABI,2,0,0,4};
+  nexrt::TaskCodeDescriptor d{step,types.data(),params.data(),captures.data(),nullptr,nexrt::taskCodeABI,2,0,0,4};
   auto bad=d;bad.abi=0;invalid([&]{nexrt::NativeTaskFrame f(bad,{},{});});
   bad=d;bad.parameterCount=2;invalid([&]{nexrt::NativeTaskFrame f(bad,{nexrt::Value(1),nexrt::Value(2)},{});});
   bad=d;bad.parameterCount=1;params[0]=3;invalid([&]{nexrt::NativeTaskFrame f(bad,{nexrt::Value(1)},{});});params[0]=0;

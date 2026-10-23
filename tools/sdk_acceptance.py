@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -138,6 +138,12 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 114, 0):
+        profile = report.get('evidence', {}).get('structured_task_profile', {})
+        require(all(profile.get(key) is True for key in ('native_reference', 'exact_source_calls',
+                'managed_cleanup', 'event_only_truncation', 'archived_source_deleted',
+                'standalone_without_resources', 'source_only_project', 'source_deleted_replay')),
+                'SDK acceptance lacks complete local native task profile delivery evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 110, 0):
         reads = report.get('evidence', {}).get('structured_task_file_reads', {})
         require(all(reads.get(key) is True for key in ('native_reference', 'standalone_without_resources',
@@ -1177,6 +1183,129 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
             for key,value in previous.items():
                 if value is None:environment.pop(key,None)
                 else:environment[key]=value
+
+    def structured_task_profile():
+        descriptor = state['descriptor']['task_profiling']
+        pack = json.loads((resources/'llm/language-pack.json').read_text())
+        require(descriptor == pack['task_profiling'] and descriptor['source_support'] and
+                descriptor['cli_language'] == report['language'] == '0.20',
+                'installed task profiler descriptor/pack differs')
+        limits = {'steps':2000000,'timeout_ms':10000,'workers':2}
+        controls = ['--task-steps','2000000','--task-timeout-ms','10000','--task-workers','2']
+        directory = root/'structured-task-profile'
+        directory.mkdir()
+        source = '''module installed_task_profile;
+fn helper(x:i64)->i64{return x+1;}
+fn leaf()->i64!{task}{task_yield();return helper(41);}
+fn main()->unit!{io,task}{
+ print(with_tasks(2,fn(scope:task_scope)->i64!{task}{
+  let child:task<i64>=task_spawn(scope,leaf);task_yield();return task_wait(child);
+ }));
+}
+'''
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['language'],'entry':'main.nex'}))
+        (directory/'main.nex').write_text(source)
+        revision = cli('check',cwd=directory)['revision']
+        require(cli('eval',*controls,cwd=directory)['stdout']=='42\n' and
+                cli('run','--profile','release',*controls,cwd=directory)['stdout']=='42\n',
+                'task profile scenario differs between native and independent reference')
+
+        def measured(profile, effective=limits):
+            require(profile['schema']=='nex.profile/2' and profile['stdout']=='42\n' and
+                    profile['language']=='0.20' and profile['build']['language']=='0.20' and
+                    not profile['tracy'], 'installed task profile identity/output differs')
+            require(all(profile['completeness'][key] for key in ('aggregates','memory','cpu','elapsed','lifetime')),
+                    'installed task profile lost required measurements')
+            execution = profile['task_execution']
+            require(execution['configured']==limits and execution['effective']==effective and
+                    execution['executor_workers']==effective['workers'], 'task profile launch limits differ')
+            functions = {item['name']:item for item in profile['functions']}
+            for name in ('main','leaf','helper'):
+                item = functions['installed_task_profile::'+name]
+                require((item['calls'],item['completed'],item['aborted'])==(1,1,0),
+                        'task profiler counted scheduler resumes as source calls')
+                require(item['inclusive_cpu_ns']>=item['self_cpu_ns'] and 'self_ns' not in item,
+                        'task profiler confused CPU with synchronous wall metrics')
+            require(all(item['live']==0 and item['live_shallow_bytes']==0 and
+                        item['allocations']==item['frees'] for item in profile['memory']),
+                    'task profile managed ownership did not retire')
+
+        session = cli('profile','--events','0','--scenario','installed task suspension',*controls,cwd=directory)
+        require(session['schema']=='nex.profile-session/2','installed task profile used old session schema')
+        profile = json.loads(Path(session['output']).read_text())
+        measured(profile)
+        require(not profile['completeness']['timeline'] and profile['dropped_events']>0,
+                'zero-event task profile omitted its timeline truncation')
+        public_profile = root/'task-profile-public.json'
+        shutil.copy2(session['output'],public_profile)
+        built = cli('build','--profile','profile',*controls,cwd=directory)
+        standalone = root/'standalone-task-profile'
+        shutil.copy2(built['executable'],standalone)
+        (directory/'main.nex').unlink()
+        archived = cli('profile','--revision',revision,'--events','0',*controls,cwd=directory)
+        measured(json.loads(Path(archived['output']).read_text()))
+        shutil.rmtree(directory)
+        previous = {key:environment.get(key) for key in ('NEX_PROFILE_OUTPUT','NEX_PROFILE_EVENTS',
+                    'NEX_TRACY','NEX_RESOURCE_DIR','PATH')}
+        raw_path = root/'standalone-task-profile-runtime.json'
+        try:
+            environment.update(NEX_PROFILE_OUTPUT=str(raw_path),NEX_PROFILE_EVENTS='0',NEX_TRACY='0',
+                NEX_RESOURCE_DIR=str(root/'absent-task-profile-resources'),PATH='/usr/bin:/bin')
+            require(run([standalone,'--nex-task-workers','1'],cwd=root)=='42\n',
+                    'copied task profile executable needs its original source/SDK')
+        finally:
+            for key,value in previous.items():
+                if value is None:environment.pop(key,None)
+                else:environment[key]=value
+        raw = json.loads(raw_path.read_text())
+        require(raw['schema']=='nex.profile-runtime/2' and raw['build']['revision']==revision and
+                raw['build']['compiler_build']==profile['build']['compiler_build'] and not raw['tracy'] and
+                raw['task_execution']['effective']==dict(limits,workers=1),
+                'independent task profile lost exact build or lowered worker limits')
+
+        project = root/'structured-task-profile-project'
+        (project/'app').mkdir(parents=True)
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['language'],'entry':'app/main.nex'}))
+        (project/'app/main.nex').write_text(source)
+        (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1',
+            'default_configuration':'measured','configurations':{'measured':{'profile':'profile',
+                'target':'native','task_limits':limits}},
+            'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}))
+        observation = cli('project','--kind','profile','--component','app','--events','0',
+            '--','--nex-task-workers','1',cwd=project,timeout=300)
+        measured(json.loads(Path(observation['observation']['output']).read_text()),dict(limits,workers=1))
+        require(not observation['graph_store_opened'] and not (project/'.nex/graph.db').exists(),
+                'source-only project task profiler opened a mutable graph store')
+        criteria = cli('task','nex.build.json','--kind','init','--component','app',
+            '--configuration','measured',cwd=project)
+        criteria['checks'] = [{'id':'profile','program':'app','kind':'profile','target':'native',
+            'configuration':'measured','entry':'installed_task_profile::main',
+            'scenario':'installed exact source calls','timeout_seconds':180,
+            'budget':{'max_calls':{'installed_task_profile::helper':'1'},
+                'max_peak_handles':'10000','max_peak_objects':'10000'}}]
+        criteria['requirements'] = [{'id':'profile','text':'Profile exact source calls across task suspension',
+            'targets':['native'],'checks':['profile'],
+            'bindings':[{'program':'app','kind':'function','symbol':'installed_task_profile::main'}]}]
+        task = project/'task.json';task.write_text(json.dumps(criteria))
+        checked = cli('task',task,'--kind','check',cwd=project)
+        accepted = cli('task',task,'--kind','run','--task-hash',checked['task_hash'],
+            '--directory',root/'task-profile-capture',cwd=project,timeout=300)
+        require(accepted['ok'],'installed task profile capture or exact budget failed')
+        receipt = Path(accepted['output'])
+        measured(json.loads((receipt.parent/'artifacts/profile/profile.json').read_text()))
+        shutil.rmtree(project)
+        replay = cli('task',receipt,'--kind','replay','--directory',root/'task-profile-replay',timeout=300)
+        require(replay['ok'] and replay['programs']==accepted['programs'],
+                'source-deleted installed task profile replay differs')
+        report['evidence']['structured_task_profile'] = {'native_reference':True,
+            'exact_source_calls':True,'managed_cleanup':True,'event_only_truncation':True,
+            'archived_source_deleted':True,'standalone_without_resources':True,
+            'source_only_project':True,'source_deleted_replay':True,'cli_language':'0.20',
+            'revision':revision,'profile':str(public_profile),'raw_profile':str(raw_path),
+            'receipt':str(receipt),'replay':replay['output'],'configured_task_limits':limits,
+            'lowered_workers':1,'memory_scope':'managed shallow handles/objects; not total heap/RAM'}
 
     def graph_snapshot_recovery():
         original = root / 'snapshot-original'
@@ -2868,6 +2997,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
+                ('structured-task-profile', structured_task_profile),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

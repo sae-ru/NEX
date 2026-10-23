@@ -4,12 +4,14 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.113 / язык0.20
+## Текущий шаг: toolchain0.114 / язык0.20
 
-- [ ] Проверить private bounded task-profile collector: once-per-invocation,
+- [x] Проверить private bounded task-profile collector: once-per-invocation,
   перенос между потоками, TLS, CPU/elapsed clocks, ownership и явные drops.
-- [ ] Подключить проверенный collector к task driver/compiler и public CLI
-  отдельным этапом; текущая основа ещё не включает профилирование задач.
+- [x] Подключить проверенный collector к task driver/compiler и public CLI
+  для native020; проверить реальные вызовы, отчёты, проектные лимиты и replay.
+- [ ] Завершить общую приёмку единого121:134 группы, установленный SDK26,
+  sanitizers, Linux и оставшиеся проверки интеграции.
 
 - [x] Соединить public019 parser/checker/graph с native compiled continuations,
   независимыми AST/TypeScript schedulers и conservative lifetime checking.
@@ -26,9 +28,11 @@
 - [x] Подготовить explicit root FileReadGrant, проверить45/42 сценария
   и независимо проверить код без изменения семантики языка019.
 - [x] Завершить общий прогон116:122 группы и installedSDK24/438.
-- [ ] Завершить и проверить два whole-file source read в явной версии020 с миграцией019,
-  согласованными эффектами и backend'ами,
-  затем task debugger/profile attribution, provider lifetime и UI adapter.
+- [x] Подключить два whole-file source read в явной версии020 с миграцией019,
+  согласованными эффектами и backend'ами. Точный119b прошёл128 групп
+  регрессии и установленный SDK25/486 команд на macOS.
+- [ ] Проверить текущую файловую интеграцию на полной платформенной матрице;
+  завершить task debugger/profile attribution, provider lifetime и UI adapter.
 - [ ] Завершить общий GPU/NPU API, оставшиеся платформы и измерения
   качества/суммарной стоимости задач для нескольких LLM.
 

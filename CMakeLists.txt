@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.113.0 LANGUAGES C CXX)
+project(NEX VERSION 0.114.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -53,6 +53,7 @@ target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
 target_include_directories(nex PRIVATE runtime)
 target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
+target_sources(nex PRIVATE src/task_profile_report.cpp)
 target_sources(nex PRIVATE src/task_package.cpp src/server_workload.cpp src/task_workload.cpp)
 target_sources(nex PRIVATE src/wasm.cpp src/project_build.cpp src/native_images.cpp src/debug_session.cpp src/project_capture.cpp)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
@@ -524,12 +525,51 @@ target_link_libraries(nex_task_external_probe PRIVATE Threads::Threads)
 target_compile_options(nex_task_external_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_external_native COMMAND nex_task_external_probe)
 
-# Private collector foundation only. This does not instrument the scheduler,
-# task driver, emitted code or public task profile commands.
+# This probe exercises the collector API independently of the scheduler bridge.
 add_executable(nex_task_profile_collector_probe tests/task_profile_collector.cpp runtime/nex_task_profile.cpp)
 target_include_directories(nex_task_profile_collector_probe PRIVATE runtime)
 target_link_libraries(nex_task_profile_collector_probe PRIVATE Threads::Threads)
 target_compile_options(nex_task_profile_collector_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_profile_collector_native COMMAND nex_task_profile_collector_probe)
 set_tests_properties(task_profile_collector_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_profile_runtime_probe tests/task_profile_runtime.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp
+  runtime/nex_task_profile.cpp runtime/nex_profile.cpp
+  runtime/third_party/tracy/public/TracyClient.cpp)
+target_include_directories(nex_task_profile_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_profile_runtime_probe PRIVATE
+  NEX_PROFILE_ENABLED NEX_TASK_PROFILE_ENABLED NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS
+  TRACY_ENABLE TRACY_ON_DEMAND TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME
+  TRACY_ONLY_LOCALHOST TRACY_NO_BROADCAST TRACY_NO_CODE_TRANSFER TRACY_NO_CALLSTACK
+  TRACY_NO_SYSTEM_TRACING TRACY_NO_SAMPLING TRACY_NO_CRASH_HANDLER TRACY_NO_FRAME_IMAGE)
+target_link_libraries(nex_task_profile_runtime_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+target_compile_options(nex_task_profile_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_runtime_native COMMAND nex_task_profile_runtime_probe)
+set_tests_properties(task_profile_runtime_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_profile_report_probe tests/task_profile_report.cpp src/task_profile_report.cpp)
+target_link_libraries(nex_task_profile_report_probe PRIVATE nex_frontend)
+target_compile_options(nex_task_profile_report_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_report_native COMMAND nex_task_profile_report_probe)
+set_tests_properties(task_profile_report_native PROPERTIES TIMEOUT 60)
+
+add_test(NAME task_profile_workflow_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_profile_workflow.py $<TARGET_FILE:nex>)
+set_tests_properties(task_profile_workflow_native PROPERTIES TIMEOUT 1800)
+
+add_test(NAME task_profile_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_profile_native.py $<TARGET_FILE:nex>)
+set_tests_properties(task_profile_native PROPERTIES TIMEOUT 900)
+
+add_executable(nex_task_profile_versioned_probe tests/task_profile_versioned.cpp
+  src/profiling.cpp src/task_profile_report.cpp src/task_process.cpp)
+target_link_libraries(nex_task_profile_versioned_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_profile_versioned_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_profile_versioned_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_versioned_native COMMAND nex_task_profile_versioned_probe
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.19-sdk115-tasks.json
+  ${CMAKE_CURRENT_BINARY_DIR}/task-profile-versioned-evidence)
+set_tests_properties(task_profile_versioned_native PROPERTIES TIMEOUT 600)
 set_tests_properties(task_external_native PROPERTIES TIMEOUT 60)

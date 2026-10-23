@@ -25,6 +25,9 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
       throw DataError("E_ENTRY","task application entry must take no arguments and return i64 or unit");
     if(code.abi!=taskCodeABI||(code.requirements&~taskCodeRequirementsMask))
       throw DataError("E_TASK_STATE","invalid task application descriptor ABI/requirements");
+#ifdef NEX_TASK_PROFILE_ENABLED
+    taskProfileEffectiveLimits(limits);
+#endif
     RequestScope request(limits.steps,limits.timeoutMs);
     std::shared_ptr<const TaskFrameHostContext> context;
 #ifndef _WIN32
@@ -63,7 +66,11 @@ int64_t nex_task_application_execute_limits_at(const nexrt::TaskCodeDescriptor *
   return nexrt::hostOperation(location,[&]() -> int64_t {
     if(steps<=0||timeoutMs<=0||workers<=0||workers>nexrt::maximumTaskExecutionWorkers||argc<0||argc>std::numeric_limits<int>::max())
       throw nexrt::DataError("E_OPTION","invalid compiled task limits or application argument count");
-    auto limits=nexrt::parseTaskExecutionArguments({uint64_t(steps),uint64_t(timeoutMs),unsigned(workers)},int(argc),argv);
+    const nexrt::TaskExecutionLimits configured{uint64_t(steps),uint64_t(timeoutMs),unsigned(workers)};
+    auto limits=nexrt::parseTaskExecutionArguments(configured,int(argc),argv);
+#ifdef NEX_TASK_PROFILE_ENABLED
+    nexrt::taskProfileLimits(configured,limits);
+#endif
     if(!code)throw nexrt::DataError("E_ENTRY","task application descriptor is absent");
     return nexrt::executeTaskApplication(*code,limits,location);
   });

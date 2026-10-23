@@ -39,6 +39,10 @@ struct CallDepth {
 }
 NativeTaskFrame::NativeTaskFrame(const TaskCodeDescriptor &input,const std::vector<Value> &args,const Value &environment,std::shared_ptr<const TaskFrameHostContext> context):step(nullptr),host(std::move(context)){
   const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;requirements=d.requirements;
+#ifdef NEX_TASK_PROFILE_ENABLED
+  profileSite=d.profileSite;
+  if(taskProfileCollector()&&(!profileSite||!taskProfileSiteIndex(profileSite)))throw DataError("E_TASK_STATE","task profile descriptor is not registered for this image");
+#endif
   if(d.slotCount)kinds.assign(d.kinds,d.kinds+d.slotCount);slots.resize(kinds.size());
   if(args.size()!=size_t(d.parameterCount))throw DataError("E_TASK_STATE","compiled task argument count differs");
   for(auto kind:kinds)if(kind<0||kind>3)throw DataError("E_TASK_STATE","invalid compiled task slot kind");
@@ -72,7 +76,17 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
   std::vector<NativeTaskFrame> stack;stack.push_back(std::move(frame));
   while(!stack.empty()){
     auto &current=stack.back();int64_t transition;
-    {CallDepth depth(stack.size()-1);transition=current.step(&current);}
+#ifdef NEX_TASK_PROFILE_ENABLED
+    if(!current.profileStarted){
+      current.profileStarted=true;
+      if(auto *collector=taskProfileCollector())if(auto site=taskProfileSiteIndex(current.profileSite))current.profileInvocation=collector->invocation(*site);
+    }
+#endif
+    {CallDepth depth(stack.size()-1);
+#ifdef NEX_TASK_PROFILE_ENABLED
+      TaskProfileSourceScope profile(current.profileInvocation);
+#endif
+      transition=current.step(&current);}
     if(observer)observer(current,transition);
     if(transition==0){
       if(!current.completed||current.pendingCall||current.pendingRequest)throw DataError("E_TASK_STATE","compiled task returned without completing");
@@ -82,6 +96,9 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
         bool failed=result.tag==Value::Object&&result.object&&result.object->kind==Data::Failure;
         co_await group.leaveScope(*current.closingScope,failed).at(current.scopeLocation);
       }
+#ifdef NEX_TASK_PROFILE_ENABLED
+      current.profileInvocation.complete();
+#endif
       stack.pop_back();if(stack.empty())co_return result;
       auto &caller=stack.back();if(destination>=0)caller.write(destination,std::move(result),caller.kinds.at(destination));
     }else if(transition==1){

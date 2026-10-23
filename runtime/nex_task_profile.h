@@ -8,8 +8,9 @@
 #include <vector>
 
 namespace nexrt {
-// Private collector foundation only. No scheduler/frame/profile-hook integration,
-// source capability, execution ABI change, or public report format is implied.
+// Bounded logical invocation collector. Native driver integration and report
+// serialization live separately in nex_profile.cpp; clocks grant no source
+// execution or resource authority.
 struct TaskProfileSite {std::string_view name,file,content;int64_t line=0;};
 struct TaskProfileClockSample {
   uint64_t wallNs=0,cpuNs=0,threadId=0;
@@ -41,6 +42,13 @@ struct TaskProfileTaskRecord {
   uint64_t resumes=0,migrations=0,lastThreadId=0,sourceCpuNs=0,sourceElapsedNs=0,activeInvocations=0;
   bool started=false,cancelledBeforeStart=false,terminal=false;
   TaskProfileTaskOutcome outcome=TaskProfileTaskOutcome::Completed;
+  uint64_t readyNs=0,blockedFutureNs=0,blockedSendNs=0,blockedReceiveNs=0,blockedScopeNs=0,blockedExternalNs=0,drainNs=0;
+  uint64_t executorCpuNs=0,executorElapsedNs=0;
+  bool executorCpuAvailable=true,schedulerElapsedAvailable=true;
+};
+struct TaskProfileSchedulerTotals {
+  uint64_t readyNs=0,blockedFutureNs=0,blockedSendNs=0,blockedReceiveNs=0,blockedScopeNs=0,blockedExternalNs=0,drainNs=0;
+  bool elapsedAvailable=true;
 };
 struct TaskProfileInvocationRecord {
   uint64_t id=0,taskId=0,parentId=0;size_t site=0;
@@ -102,7 +110,7 @@ class TaskProfileResumeGuard {
   TaskProfileResumeGuard *priorGuard=nullptr;
   TaskProfileSourceSegment *priorSegment=nullptr;
   uint64_t thread=0;bool attached=false,suppressing=false;
-  explicit TaskProfileResumeGuard(const TaskProfileTask&,const std::shared_ptr<task_profile_detail::State>&)noexcept;
+  explicit TaskProfileResumeGuard(const TaskProfileTask&,const std::shared_ptr<task_profile_detail::State>&,bool)noexcept;
   void suppress()noexcept;
   friend class TaskProfileCollector;
   friend class TaskProfileSourceSegment;
@@ -140,11 +148,15 @@ public:
   bool enabled()const noexcept{return bool(state);}
   TaskProfileTask task()noexcept;
   TaskProfileTask task(const TaskProfileInvocation &spawningInvocation)noexcept;
-  TaskProfileResumeGuard resume(const TaskProfileTask &task)noexcept;
+  TaskProfileTask taskFromCurrent()noexcept;
+  TaskProfileResumeGuard resume(const TaskProfileTask &task,bool countResume=true)noexcept;
   TaskProfileInvocation invocation(size_t site)noexcept;
   TaskProfileSourceSegment source(const TaskProfileInvocation &invocation)noexcept;
   void cancelBeforeStart(const TaskProfileTask&)noexcept;
   void terminal(const TaskProfileTask&,TaskProfileTaskOutcome)noexcept;
+  TaskProfileClockSample sample()const noexcept;
+  void executor(const TaskProfileTask&,TaskProfileClockSample,TaskProfileClockSample)noexcept;
+  void scheduler(const TaskProfileTask&,const TaskProfileSchedulerTotals&)noexcept;
   TaskProfileSnapshot snapshot()const;
 };
 // TLS access is allocation/clock/lock free. Nested guards restore the prior
@@ -161,4 +173,5 @@ public:
 // migrate after detaching. No live invocation is unwound merely by detachment.
 uint64_t currentTaskProfileTask()noexcept;
 uint64_t currentTaskProfileInvocation()noexcept;
+size_t currentTaskProfileSite()noexcept;
 }

@@ -187,8 +187,8 @@ int run(const Options &o) {
   nexrt::TaskExecutionLimits taskLimits;bool taskLimitsSpecified=false;
   for(const auto &[flag,maximum]:std::vector<std::pair<std::string,uint64_t>>{{"--task-steps",nexrt::maximumTaskExecutionSteps},{"--task-timeout-ms",nexrt::maximumTaskExecutionTimeoutMs},{"--task-workers",nexrt::maximumTaskExecutionWorkers}}){
     if(!o.values.contains(flag))continue;
-    if(o.command!="eval"&&o.command!="build"&&o.command!="run"&&o.command!="test"&&o.command!="package")
-      throw Error("E_OPTION","task limits require eval/build/run/test/package; project limits belong in configuration.task_limits");
+    if(o.command!="eval"&&o.command!="build"&&o.command!="run"&&o.command!="test"&&o.command!="package"&&o.command!="profile")
+      throw Error("E_OPTION","task limits require eval/build/run/test/package/profile; project limits belong in configuration.task_limits");
     auto value=nexrt::parseTaskLimitDecimal(o.get(flag),maximum);
     if(!value)throw Error("E_OPTION","invalid positive decimal value for "+flag);
     taskLimitsSpecified=true;if(flag=="--task-steps")taskLimits.steps=*value;
@@ -196,7 +196,7 @@ int run(const Options &o) {
   }
   if(taskLimitsSpecified&&o.command=="build"&&(o.get("--target")=="web"||o.get("--target")=="wasm"))
     throw Error("E_OPTION","task limits require a native task application build");
-  if(o.values.contains("--steps")&&(o.command=="run"||o.command=="test"||o.command=="build"||o.command=="package"))
+  if(o.values.contains("--steps")&&(o.command=="run"||o.command=="test"||o.command=="build"||o.command=="package"||o.command=="profile"))
     throw Error("E_OPTION","--steps is an interpreter option; use --task-steps for task applications");
   if(o.command=="eval"&&taskLimitsSpecified&&o.values.contains("--steps"))
     throw Error("E_OPTION","use either --steps or --task-steps for task evaluation");
@@ -762,10 +762,11 @@ int run(const Options &o) {
       if(number<minimum||number>maximum)throw Error("E_OPTION",key+" is outside its supported integer range");return unsigned(number);
     };
     profiling={o.get("--output"),o.get("--scenario"),count("--events",100000,0,1000000),count("--timeout",30,1,3600),foreignArguments};
+    if(usesTaskEffects(p,buildOptions.entry))profiling.timeout=supervisorTimeout(taskLimits);
     buildOptions.profile="profile";
   }
-  if((o.command=="debug"||o.command=="profile")&&usesTaskEffects(p,buildOptions.entry))
-    throw Error("E_TASK_UNIMPLEMENTED","source task debugger/profile attribution is not integrated yet",p.function(buildOptions.entry).span);
+  if(o.command=="debug"&&usesTaskEffects(p,buildOptions.entry))
+    throw Error("E_TASK_UNIMPLEMENTED","source task debugger attribution is not integrated yet",p.function(buildOptions.entry).span);
   auto directory=fs::absolute(o.get("--build-directory",(root/".nex/build").string())).string();
   if(o.command=="debug")directory=nativeDebugBuildDirectory(directory);
   if(o.command=="test") {

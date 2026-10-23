@@ -51,11 +51,16 @@ execution are independent cooperative schedulers, with no OS CPU-overlap claim.
 Standalone TypeScript task exports return task.Step<T> and need the generated
 scheduler host; pure modules stay synchronous. UI/worker adapters retain pure
 synchronous entry contracts and reject reachable task effects/callables.
-Broader IO, task debug/profile, binary-provider lifetime, task server/UI
+Broader IO, task debugging, binary-provider lifetime, task server/UI
 adapters, other native targets and current SDK/platform delivery remain pending.
 Do not infer their completion from source_support or a passing scoped probe.
-The private task_profile_collector module is not connected to source task
-execution. It does not enable nex profile for task programs.
+Use native task profiling only when the actual task_profiling descriptor reports
+source_support; read docs/profiling.md for its current CLI language/platform scope.
+Task schema2 separates source CPU, active elapsed and logical lifetime; a resume
+is not a new source call. Inspect each completeness flag before budgets. Event
+truncation alone does not invalidate complete call/shallow-memory aggregates.
+Task Tracy, async debugging and non-native task profilers remain pending.
+The private task_profile_collector module alone does not enable source profiling.
 
 Keep genuine018 source, the matching SDK and a complete graph snapshot. Explicit
 migrate rechecks a separate archived/reviewed source bundle under020 and preserves

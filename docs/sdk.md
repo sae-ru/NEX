@@ -29,6 +29,15 @@ executed with compiler resources unavailable. File access requires no SQLite or
 JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
 
+The0.114 candidate adds a twenty-sixth phase, `structured-task-profile`.
+It requires the matching native task profiler descriptor, exact source-call
+counts across suspension, balanced shallow managed pools and explicit event-only
+timeline loss. It also exercises an archived revision after deleting sources,
+a copied instrumented executable with compiler resources unavailable, source-only
+project limits and reviewed profile capture/replay after deleting the project.
+This candidate workflow is under integration; its existence does not establish a
+passed SDK gate. Each accepted receipt identifies its actual toolchain and phases.
+
 The 0.60 workflow has twenty-three phases. Its `wasm-compute` phase requires
 LLVM 22.1 Clang and `wasm-ld` and current Node.js. It checks exact BigInt results,
 checked overflow and operation attribution, input rejection, bounded loops,

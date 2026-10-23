@@ -1,11 +1,68 @@
+# Native structured-task profiling (toolchain0.114 candidate)
+
+Working121 implements this path; its complete acceptance is pending. Query
+`nex describe --field task_profiling --json` on the compiler you actually use.
+Use the following workflow only when that descriptor reports `source_support`.
+The supported CLI boundary is language0.20 standalone applications and source-only
+native projects on macOS/Linux. Older graph revisions retain their language;
+follow the explicit migration guide before using them through the current CLI.
+
+```sh
+nex profile main.nex --task-workers 2 --task-steps 2000000 \
+  --task-timeout-ms 10000 --events 1000 --scenario "task workload" --json
+nex project --kind profile --component app --events 1000 --json
+```
+
+The direct command sets the same reviewed execution ceilings as build/run.
+Project ceilings come from `configurations.NAME.task_limits`; arguments after
+`--` may lower the executable's embedded ceilings with `--nex-task-*` options.
+Reports preserve configured and effective limits, executor workers and the
+separate outer process timeout. Cooperative task deadlines do not guarantee
+termination of a blocking host syscall or replace process supervision.
+
+Task output uses `nex.profile/2` and bounded `nex.profile-session/2`; copied
+instrumented executables can write `nex.profile-runtime/2` through
+`NEX_PROFILE_OUTPUT`. Synchronous programs retain schema1 and its existing wall
+metrics. A source invocation counts once across yields, parks and worker changes.
+Direct/indirect calls and nested scope callbacks retain logical parent identity;
+spawned jobs have a separate spawn relationship. Each source function is matched
+against the selected immutable graph or captured project before attribution.
+
+`inclusive_cpu_ns` and `self_cpu_ns` accumulate per-thread CPU within active
+source segments. They exclude suspension; spawned-task CPU is not charged to its
+parent invocation. `active_elapsed_ns` includes OS descheduling within a segment.
+`lifetime_ns` includes queueing, waits and descendants, so overlapping lifetimes
+must not be added as whole-process time. Task queue/wait/drain durations and
+executor CPU have separate scheduler fields. Executor CPU includes runtime work
+and owned cleanup on its worker; it is not whole-process CPU or disk latency.
+Scheduler durations use samples around scheduler transactions and can include
+validation/setup overhead; they do not identify exact OS event instants.
+
+`completeness` separately describes aggregates, timeline, memory and each clock
+family. A full timeline buffer, including `--events 0`, preserves source-call
+and shallow-memory totals when their corresponding completeness flags are true.
+Reviewed `max_calls` and peak handle/object budgets require those flags; timeline
+loss alone does not invalidate them. Numeric/clock failures and omitted records
+are explicit. A truncated timeline never proves a complete call tree.
+
+The two managed memory pools retain their shallow handle/object meaning.
+Collector storage is reported separately. Neither measurement is total RAM,
+retained payload ownership, scheduler backing storage or file transport memory.
+Instrumentation changes costs; reports make no speed guarantee.
+
+Task Tracy capture, logical async debugging, reference/TypeScript/browser task
+profiling, task HTTP handlers, binary providers and other platforms remain
+pending. `NEX_TRACY=1` on a task profile image must fail before workers or source
+execution. Synchronous Tracy behavior below remains a separate supported path.
+
 # Private task collector foundation (toolchain0.113)
 
 The source includes `runtime/nex_task_profile.h/.cpp` and a dedicated native
-collector probe. This is a private instrumentation module, with no task scheduler,
-frame driver, generated source hooks or public report/CLI integration yet.
-`nex profile` still rejects source task applications. The task execution ABI2,
-existing synchronous profiler and its Tracy path are unchanged. A module probe
-cannot establish correct profiling of a compiled task program.
+collector probe. Frozen120 verifies this private instrumentation module alone;
+it has no task scheduler, frame-driver, emitted source or public CLI integration.
+Its `nex profile` rejects task applications and its private task execution ABI2
+is unchanged. Working121 integrates a separate ABI3 descriptor/site layout.
+A module probe cannot establish correct profiling of a compiled task program.
 
 The module separates run-local task/invocation identity, logical lifetime,
 per-worker source execution segments and CPU versus elapsed clocks. Its own

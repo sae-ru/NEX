@@ -6,7 +6,9 @@ Native macOS/Linux/source-only projects and independent reference use a root
 FileReadGrant and physical completion fences; TypeScript/browser filesystem
 remains unsupported. Callback/effect rules, first-fatal priority, quotas and
 current pending acceptance are specified in [task file reads](task-file-reads.md).
-This does not enable broader IO/debug/profile/providers/UI. The development
+This does not enable broader IO/debug/providers/UI. Native020 task profiling
+is a separate toolchain0.114 integration; query `task_profiling` and read the
+[profile guide](profiling.md). The development
 stages below retain their original019/private018 scopes and acceptance limits.
 
 # Public019 integration
@@ -20,7 +22,7 @@ checks remain mandatory. See [the current specification](language.md),
 
 The sections below preserve the development history of the private018 stages.
 Their statements about disabled public support describe those older stages.
-Current task IO/debug/profile, binary providers, NEX UI adaptation, full installed
+Broader task IO/debug/non-native profile, binary providers, NEX UI adaptation, full installed
 SDK/platform acceptance and complete static region inference remain pending.
 
 # Private authority-flow diagnostics (working108)

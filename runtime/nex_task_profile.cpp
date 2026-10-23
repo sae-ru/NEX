@@ -37,6 +37,7 @@ struct Task {
   TaskProfileTaskRecord record;
   size_t top=none;
   std::atomic<uint64_t> topId{0};
+  std::atomic<size_t> topSite{none};
   bool attached=false;
 };
 struct Invocation {
@@ -98,6 +99,7 @@ struct State {
   void refreshTop(Task &task)noexcept{
     while(task.top!=none&&invocations[task.top].ending)task.top=invocations[task.top].parent;
     task.topId.store(task.top==none?0:invocations[task.top].record.id,std::memory_order_relaxed);
+    task.topSite.store(task.top==none?none:invocations[task.top].record.site,std::memory_order_relaxed);
   }
   void finalize(size_t index)noexcept{
     while(index!=none){
@@ -185,8 +187,18 @@ TaskProfileTask TaskProfileCollector::task(const TaskProfileInvocation &parent)n
   if(!sample.wallAvailable)state->badClock();
   TaskProfileTask result;result.state=state;result.slot=slot;result.value=task.record.id;return result;
 }
-TaskProfileResumeGuard TaskProfileCollector::resume(const TaskProfileTask &task)noexcept{
-  return TaskProfileResumeGuard(task,state);
+TaskProfileTask TaskProfileCollector::taskFromCurrent()noexcept{
+  if(!state||current.state!=state.get()||current.slot==none)return task();
+  if(task_profile_detail::suppressed(state))return {};
+  const auto sample=state->sample();Lock lock(*state);
+  if(state->taskCount>=state->limits.tasks){state->add(state->drops.tasks);state->drops.incomplete=true;return {};}
+  const auto slot=state->taskCount++;auto &created=state->tasks[slot];
+  created.record.id=uint64_t(slot)+1;created.record.spawningInvocationId=state->tasks[current.slot].topId.load(std::memory_order_relaxed);created.record.createdWallNs=sample.wallNs;
+  if(!sample.wallAvailable)state->badClock();
+  TaskProfileTask result;result.state=state;result.slot=slot;result.value=created.record.id;return result;
+}
+TaskProfileResumeGuard TaskProfileCollector::resume(const TaskProfileTask &task,bool countResume)noexcept{
+  return TaskProfileResumeGuard(task,state,countResume);
 }
 void TaskProfileResumeGuard::suppress()noexcept{
   if(!task_profile_detail::suppressionDepth&&current.segment)current.segment->pause();
@@ -195,7 +207,7 @@ void TaskProfileResumeGuard::suppress()noexcept{
   }
   ++task_profile_detail::suppressionDepth;suppressing=true;
 }
-TaskProfileResumeGuard::TaskProfileResumeGuard(const TaskProfileTask &input,const std::shared_ptr<State> &expected)noexcept{
+TaskProfileResumeGuard::TaskProfileResumeGuard(const TaskProfileTask &input,const std::shared_ptr<State> &expected,bool countResume)noexcept{
   if(!expected)return;
   state=expected;
   if(input.state!=state||!input.value){task_profile_detail::invalid(state);suppress();return;}
@@ -209,9 +221,9 @@ TaskProfileResumeGuard::TaskProfileResumeGuard(const TaskProfileTask &input,cons
     if(input.slot>=owner->taskCount||owner->tasks[input.slot].record.id!=input.value||owner->tasks[input.slot].attached||owner->tasks[input.slot].record.terminal||owner->tasks[input.slot].record.cancelledBeforeStart){owner->invalid();rejected=true;}
     else{
       auto &task=owner->tasks[input.slot];task.attached=true;
-      owner->add(task.record.resumes);
-      if(task.record.lastThreadId&&sample.threadId!=task.record.lastThreadId)owner->add(task.record.migrations);
-      task.record.lastThreadId=sample.threadId;
+      if(countResume){owner->add(task.record.resumes);
+        if(task.record.lastThreadId&&sample.threadId!=task.record.lastThreadId)owner->add(task.record.migrations);
+        task.record.lastThreadId=sample.threadId;}
       if(!sample.threadId)owner->badClock();
     }
   }
@@ -269,7 +281,7 @@ TaskProfileInvocation TaskProfileCollector::invocation(size_t site)noexcept{
   record.lifetimeAvailable=sample.wallAvailable;
   if(!sample.wallAvailable)state->badClock();
   if(entry.parent!=none){auto &parent=state->invocations[entry.parent];record.parentId=parent.record.id;state->add(parent.children);}
-  task.top=index;task.topId.store(record.id,std::memory_order_relaxed);task.record.started=true;state->add(task.record.activeInvocations);
+  task.top=index;task.topId.store(record.id,std::memory_order_relaxed);task.topSite.store(site,std::memory_order_relaxed);task.record.started=true;state->add(task.record.activeInvocations);
   state->add(state->functions[site].calls);
   result.state=state;result.slot=index;result.value=record.id;result.task=record.taskId;return result;
 }
@@ -377,12 +389,37 @@ void TaskProfileCollector::terminal(const TaskProfileTask &input,TaskProfileTask
   if(input.slot>=state->taskCount||state->tasks[input.slot].record.id!=input.value){state->invalid();return;}
   auto &record=state->tasks[input.slot].record;
   if(record.terminal||record.activeInvocations||state->tasks[input.slot].attached||(record.cancelledBeforeStart&&outcome!=TaskProfileTaskOutcome::Cancelled)){state->invalid();return;}
+  if(outcome==TaskProfileTaskOutcome::Cancelled&&!record.started)record.cancelledBeforeStart=true;
   record.terminal=true;record.outcome=outcome;record.terminalWallNs=sample.wallNs;
   if(!sample.wallAvailable||sample.wallNs<record.createdWallNs)state->badClock();
 }
 uint64_t currentTaskProfileTask()noexcept{return task_profile_detail::suppressionDepth?0:current.task;}
 uint64_t currentTaskProfileInvocation()noexcept{
   return !task_profile_detail::suppressionDepth&&current.state&&current.slot!=none?current.state->tasks[current.slot].topId.load(std::memory_order_relaxed):0;
+}
+size_t currentTaskProfileSite()noexcept{
+  return !task_profile_detail::suppressionDepth&&current.state&&current.slot!=none?current.state->tasks[current.slot].topSite.load(std::memory_order_relaxed):none;
+}
+TaskProfileClockSample TaskProfileCollector::sample()const noexcept{return state?state->sample():TaskProfileClockSample{0,0,0,false,false};}
+void TaskProfileCollector::executor(const TaskProfileTask &input,TaskProfileClockSample start,TaskProfileClockSample end)noexcept{
+  if(!state)return;
+  Lock lock(*state);
+  if(input.state!=state||!input.value||input.slot>=state->taskCount){state->invalid();return;}
+  auto &record=state->tasks[input.slot].record;
+  const bool wall=start.wallAvailable&&end.wallAvailable&&end.wallNs>=start.wallNs;
+  const bool cpu=start.cpuAvailable&&end.cpuAvailable&&start.threadId&&start.threadId==end.threadId&&end.cpuNs>=start.cpuNs;
+  if(wall)state->add(record.executorElapsedNs,end.wallNs-start.wallNs);
+  if(cpu)state->add(record.executorCpuNs,end.cpuNs-start.cpuNs);
+  record.executorCpuAvailable&=cpu;record.schedulerElapsedAvailable&=wall;
+  if(!wall||!cpu)state->badClock();
+}
+void TaskProfileCollector::scheduler(const TaskProfileTask &input,const TaskProfileSchedulerTotals &totals)noexcept{
+  if(!state)return;
+  Lock lock(*state);
+  if(input.state!=state||!input.value||input.slot>=state->taskCount){state->invalid();return;}
+  auto &record=state->tasks[input.slot].record;
+  record.readyNs=totals.readyNs;record.blockedFutureNs=totals.blockedFutureNs;record.blockedSendNs=totals.blockedSendNs;record.blockedReceiveNs=totals.blockedReceiveNs;record.blockedScopeNs=totals.blockedScopeNs;record.blockedExternalNs=totals.blockedExternalNs;record.drainNs=totals.drainNs;record.schedulerElapsedAvailable&=totals.elapsedAvailable;
+  if(!totals.elapsedAvailable)state->badClock();
 }
 TaskProfileSnapshot TaskProfileCollector::snapshot()const{
   TaskProfileSnapshot result;if(!state)return result;

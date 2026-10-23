@@ -1,11 +1,33 @@
+# Working121: native source task-profile integration in progress
+
+Toolchain0.114/language0.20 is integrating the private120 collector with native
+jobs, retained source frames, emitted site metadata and checked CLI/project/task
+reports. Complete candidate acceptance remains pending.
+Source language/canonical history/migration remain020; a separate
+private compiled-task ABI3 transition is implemented consistently.
+Initial actual source/profile CLI, five project/capture/replay workflows,
+the60-case report validator and a separately executed installed SDK profile
+phase pass. These mutable scoped results do not replace the complete frozen
+134-group regression, SDK26, sanitizer and platform gates. The final source suite
+passed31 commands, including six successful scenarios, checked failure cleanup
+and strict raw Tracy rejection before source output/report creation.
+Frozen120 independently passed cleanallbuild, focused12, strict42-case macOS
+ASAN/UBSAN/LSAN+TSAN and scoped Linux Clang22 release/GCC13 sanitizer probes;
+its full129 gate passed in1071.867s and its matching installed SDK25/486 commands
+passed in663.640s. Its969 source files and primary081 remain unchanged.
+Frozen119b full128 and its matching installedSDK25/486 commands passed.
+Exact receipts retain all scopes and failed attempts.
+Primary081/source/graph/Git remain preserved. No full-objective completion.
+
 # Working120: private logical task-profile collector foundation
 
 Toolchain0.113/language0.20 is developing a bounded private collector module and
 independent native probe for logical invocation/TLS/clock ownership. No scheduler,
 frame-driver, compiler emission or public task-profile integration is enabled.
 Existing debug/profile rejections, task execution ABI2, semantics, grammar and
-history migration remain unchanged. Allbuild/focused/full/sanitizer/SDK acceptance
-for the final120 source remains pending. Primary081 remains preserved.
+history migration remain unchanged. Its clean allbuild,12 focused groups,
+129 full regression groups and scoped sanitizer/module probes passed.
+Matching installed SDK25/486 commands passed. Primary081 remains preserved.
 Current editor fixtures and verified119b type/proof/intent pin repairs are included.
 A CLI regression checks bundled proof snapshots/task intent, preserving criteria.
 The complete public task profiler requires a later integrated acceptance stage.

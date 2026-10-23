@@ -105,8 +105,17 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
         boundary.write_text('module boundary;' + body)
         assert cli(root, configured, 'check', boundary, success=False)['code'] == 'E_EFFECT'
     boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{return len(unwrap(file_read_text("text")));}')
-    for options, code in [(['--library'], 'E_TASK_PROVIDER'), (['--target', 'server', '--entry', 'main'], 'E_TASK_TARGET'), (['--profile', 'profile'], 'E_TASK_PROFILE')]:
+    for options, code in [(['--library'], 'E_TASK_PROVIDER'), (['--target', 'server', '--entry', 'main'], 'E_TASK_TARGET')]:
         assert cli(root, configured, 'build', boundary, *options, success=False)['code'] == code
+    profiled = cli(root, configured, 'build', boundary, '--profile', 'profile')
+    raw_path = root/'file-read-profile.json'
+    observation = run('/', [profiled['executable']], {**configured,
+        'NEX_PROFILE_OUTPUT':str(raw_path), 'NEX_PROFILE_EVENTS':'0', 'NEX_TRACY':'0'}, 4)
+    assert not observation.stdout and not observation.stderr, observation
+    measured = json.loads(raw_path.read_text())
+    assert measured['schema'] == 'nex.profile-runtime/2', measured
+    assert measured['completeness']['aggregates'] and measured['completeness']['memory'], measured
+    assert all(pool['live'] == 0 and pool['allocations'] == pool['frees'] for pool in measured['memory']), measured
     assert cli(root, configured, 'emit', boundary, '--kind', 'typescript', success=False)['code'] == 'E_REALM'
     checked_test = root / 'checked-test.nex'
     checked_test.write_text('module checked_test;server test fn read_ok()->unit !{task,fs}{assert(len(unwrap(file_read_bytes("data")))==3);}')

@@ -19,7 +19,7 @@ timeout accepts1..3,600,000ms; workers accepts1..16. CLI values are strict decim
 strings, without signs, spaces, suffixes or duplicate options. Ambient environment
 variables do not configure these controls or grant resources.
 
-Build/run/test/package flags set reviewed native application ceilings and enter
+Build/run/test/package/profile flags set reviewed native application ceilings and enter
 the build/cache identity. The copied executable's separate `--nex-task-*` flags
 can only lower its embedded ceilings. Raising a ceiling needs an explicit new
 build. Unknown reserved flags, duplicates and invalid values fail before a task
@@ -69,7 +69,7 @@ the settings through build, run, test, package and replay. Project CLI task flag
 are rejected; edit the reviewed configuration. Standalone executable argv can
 still lower the embedded values.
 
-A nonproject `nex.task/1` build/run/test check may add the same `task_limits`
+A nonproject `nex.task/1` build/run/test/profile check may add the same `task_limits`
 object. It is part of the acceptance intent/hash and captured inputs. Both its
 reference observation and selected native/TypeScript backend receive it.
 Project-backed checks use their captured configuration and reject a second
@@ -79,6 +79,6 @@ the scheduler and accepts the controls.
 
 An independent TypeScript host passes `task.run(invocation,{steps:2000000,
 timeoutMs:10000,workers:2})`; the existing AbortSignal remains separate. Server
-resources, task UI adapters, task providers and async debugger/profiler integration
+resources, task UI adapters, task providers and async debugger/non-native profiler integration
 retain their explicit unsupported boundaries. These limits add no asynchronous
 file/network bridge or accelerator authority.

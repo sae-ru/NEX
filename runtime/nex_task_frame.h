@@ -2,7 +2,9 @@
 #include "nex_tasks.h"
 #include "nex_task_values.h"
 #include "nex_task_protocol.h"
+#include "nex_task_profile_site.h"
 #include "nex_files.h"
+#include "nex_profile.h"
 #include <span>
 namespace nexrt {
 // A compiler-private ABI. Owned Values survive parking; Handles are only leases
@@ -18,10 +20,11 @@ struct TaskFrameDescriptor {
 struct TaskCodeDescriptor {
   TaskFrameDescriptor::Step step;
   const int64_t *kinds,*parameters,*captures;
+  const TaskProfileCodeSite *profileSite=nullptr;
   int64_t abi,slotCount,parameterCount,captureCount,resultKind;
   int64_t requirements=0;
 };
-static_assert(sizeof(TaskCodeDescriptor)==80&&offsetof(TaskCodeDescriptor,abi)==32);
+static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==40);
 struct TaskFrameHostContext {
 #ifndef _WIN32
   FileReadGrant fileReads;
@@ -51,6 +54,11 @@ public:
   std::optional<TaskGroup::Scope> closingScope;
   TaskGroup::Scope parentScope;
   SourceLocation scopeLocation;
+#ifdef NEX_TASK_PROFILE_ENABLED
+  const TaskProfileCodeSite *profileSite=nullptr;
+  bool profileStarted=false;
+  TaskProfileInvocation profileInvocation;
+#endif
   NativeTaskFrame(TaskFrameDescriptor,const std::vector<Value> &arguments);
   NativeTaskFrame(const TaskCodeDescriptor &,const std::vector<Value> &arguments,const Value &environment,
       std::shared_ptr<const TaskFrameHostContext> host={});

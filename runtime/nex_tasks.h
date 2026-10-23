@@ -1,6 +1,7 @@
 #pragma once
 #include "nex_host.h"
 #include "nex_task_external.h"
+#include "nex_profile.h"
 #include <coroutine>
 #include <exception>
 #include <optional>

@@ -12,8 +12,12 @@ Explicit018/019 rechecks retain their original rules and identities. The020
 checker creates distinct revisions and requires history-preserving migration;
 never relabel an old project. Native continuations and independent AST/TypeScript
 schedulers remain separate implementations. Complete static lifetime inference,
-write/stream/db/ffi/network task bridges, task debug/profile, provider lifetime,
+write/stream/db/ffi/network task bridges, task debugging/non-native profiling, provider lifetime,
 UI integration and other task platforms remain pending.
+
+Toolchain0.114 adds native020 task profiling without changing source semantics
+or canonical identities. Query `task_profiling` and read the [profile guide](profiling.md)
+for CLI/project scope, separate CPU/elapsed/lifetime measurements and completeness.
 
 This document describes the implemented language, independently of any LLM provider. Planned features live in `PLAN.md`. The compiler's `nex describe --json` reports its language version and capabilities.
 

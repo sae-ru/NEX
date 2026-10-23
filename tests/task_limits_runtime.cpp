@@ -93,7 +93,7 @@ int main(){
   const char *valid[]={"app","unrelated","--nex-task-steps","200","--nex-task-timeout-ms","1000","--nex-task-workers","1"};
   require(parseTaskExecutionArguments({},8,valid)==TaskExecutionLimits{200,1000,1});
   std::array<int64_t,1> retainedKinds{3};
-  TaskCodeDescriptor descriptor{yielded,retainedKinds.data(),nullptr,nullptr,taskCodeABI,1,0,0,0};
+  TaskCodeDescriptor descriptor{yielded,retainedKinds.data(),nullptr,nullptr,nullptr,taskCodeABI,1,0,0,0};
   require(nex_task_application_execute_limits(&descriptor,8,valid,1000,2000,2)==42);clean();
   entered=0;rejects("E_OPTION",descriptor,{100,1000,2},{"app","--nex-task-workers","3"});require(entered==0);
   rejects("E_LIMIT",descriptor,{1,1000,1},{"app"});require(entered<=1);
@@ -101,9 +101,9 @@ int main(){
   // Real concurrent children prove that the physical executor consumes the
   // configured pool size. Scope permits two; one worker must still serialize.
   std::array<int64_t,1> rootKinds{0};std::array<int64_t,5> scopeKinds{3,3,3,0,0};int64_t parameter=0;
-  childCode={child,nullptr,nullptr,nullptr,taskCodeABI,0,0,0,0};
-  scopeCode={scope,scopeKinds.data(),&parameter,nullptr,taskCodeABI,5,1,0,0};
-  descriptor={root,rootKinds.data(),nullptr,nullptr,taskCodeABI,1,0,0,0};
+  childCode={child,nullptr,nullptr,nullptr,nullptr,taskCodeABI,0,0,0,0};
+  scopeCode={scope,scopeKinds.data(),&parameter,nullptr,nullptr,taskCodeABI,5,1,0,0};
+  descriptor={root,rootKinds.data(),nullptr,nullptr,nullptr,taskCodeABI,1,0,0,0};
   for(unsigned workers:{1u,2u}){
     maximumActive=0;expectedWorkers=workers;
     require(nex_task_application_execute_limits(&descriptor,1,valid,10000,3000,workers)==42);

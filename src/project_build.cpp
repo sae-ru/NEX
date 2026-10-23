@@ -632,6 +632,8 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         llvm::json::Array nodes;
         for(const auto &function:item.program.functions)nodes.push_back(Object{{"name",function.name},{"hash",hash(json(canonical(function),false))},{"file",function.unit},{"id",nullptr}});
         auto profiling=options.profiling;profiling.arguments=arguments;profiling.directory=root.string();
+        if(effectiveTaskLimits&&!options.explicitTimeout)
+          profiling.timeout=std::max(30u,unsigned((effectiveTaskLimits->timeoutMs+999)/1000+5));
         std::unique_ptr<ServerWorkloadRun> workloadRun;
         if(workload){workloadRun=std::make_unique<ServerWorkloadRun>(*workload);profiling.launcher=workloadRun->launcher();profiling.additionalEvidence=[&](){return workloadRun->evidence();};}
         observation=profileNative(item.program,built,Object{{"nodes",std::move(nodes)}},profiling);
@@ -652,7 +654,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else{auto code=runInteractive(arguments,root);observation=Object{{"ok",code==0},{"exit_code",code}};}
       }
     }
-    if(effectiveTaskLimits)(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.machine?options.timeout:0);
+    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.machine?options.timeout:0);
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
       {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",std::move(images.runtime)},

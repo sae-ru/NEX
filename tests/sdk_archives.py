@@ -39,9 +39,28 @@ class DistributionWorkflow(unittest.TestCase):
             'archive-debug-replay-export', 'scalar-proof', 'authenticated-storage', 'browser')]
         self.assertEqual(len(old['phases']), 12)
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
-        for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries', 'structured-task-file-reads'):
+        for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries',
+                     'structured-task-file-reads', 'structured-task-profile'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_task_profile_sdk_requires_measured_and_source_deleted_delivery(self):
+        current = self.report(); current['doctor'] = {'version': '0.114.0'}
+        fields = ('native_reference', 'exact_source_calls', 'managed_cleanup',
+                  'event_only_truncation', 'archived_source_deleted',
+                  'standalone_without_resources', 'source_only_project', 'source_deleted_replay')
+        with self.assertRaisesRegex(RuntimeError, 'task profile delivery'):
+            acceptance.validate_completed_report(current)
+        current['evidence'] = {'structured_task_profile': {name: True for name in fields}}
+        for name in fields:
+            for value in (False, None, 'true'):
+                changed = copy.deepcopy(current)
+                changed['evidence']['structured_task_profile'][name] = value
+                with self.subTest(delivery=name, value=value), self.assertRaisesRegex(RuntimeError, 'task profile delivery'):
+                    acceptance.validate_completed_report(changed)
+        # Profile evidence does not waive existing file-read/migration gates.
+        with self.assertRaisesRegex(RuntimeError, 'public task file-read delivery'):
+            acceptance.validate_completed_report(current)
 
     def test_public_task_read_sdk_requires_delivery_and_genuine019_migration_evidence(self):
         current = self.report(); current['doctor'] = {'version':'0.110.0'}

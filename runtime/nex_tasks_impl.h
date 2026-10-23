@@ -5,6 +5,14 @@
 namespace {
 thread_local const void *activeTaskState=nullptr;
 thread_local size_t activeTaskIndex=static_cast<size_t>(-1);
+#ifdef NEX_TASK_PROFILE_ENABLED
+thread_local uint64_t taskProfileTransactionStamp=0;
+struct TaskProfileTransaction {
+  uint64_t previous=taskProfileTransactionStamp;
+  explicit TaskProfileTransaction(TaskProfileCollector *collector)noexcept{if(collector)taskProfileTransactionStamp=collector->sample().wallNs;}
+  ~TaskProfileTransaction(){taskProfileTransactionStamp=previous;}
+};
+#endif
 void taskValue(TaskGroup &group,const Value &value,const TaskGroup::Scope &target){
   hostOperation({},[&]{
     validateTaskSnapshot(group,value,target);
@@ -61,6 +69,11 @@ struct TaskGroup::Impl {
     std::vector<size_t> ownedScopes;
     std::vector<External> external;size_t externalPending=0;
     bool running=false,queued=false,again=false,done=false,observed=false,finishing=false,cleanupDone=false;
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTask profileTask;TaskProfileSchedulerTotals profileTotals;
+    uint64_t profileReadyAt=0,profileWaitAt=0,profileDrainAt=0;
+    bool profilePending=false;
+#endif
     ~Job(){if(body)body.destroy();}
   };
   struct Pipe {
@@ -90,9 +103,40 @@ struct TaskGroup::Impl {
   bool started=false,stop=false,sealed=false,finished=false;
   std::vector<std::jthread> threads;
   TaskExternalLimits externalLimits;std::once_flag externalInit;std::unique_ptr<TaskExternalPool> externalPool;bool externalRetirementReady=false;
+#ifdef NEX_TASK_PROFILE_ENABLED
+  TaskProfileCollector *profileCollector=taskProfileCollector();
+  uint64_t profileLastStamp=0;
+  std::vector<size_t> profilePending;size_t profileRead=0,profileCount=0;
+  uint64_t profileNow()noexcept{profileLastStamp=std::max(profileLastStamp,taskProfileTransactionStamp);return profileLastStamp;}
+  void profileAdd(Job &job,uint64_t &destination,uint64_t start,uint64_t end)noexcept{
+    if(!start||end<start||end-start>std::numeric_limits<uint64_t>::max()-destination){job.profileTotals.elapsedAvailable=false;return;}destination+=end-start;
+  }
+  void profileWaitEnd(Job &job,Wait reason)noexcept{
+    if(!profileCollector||!job.profileWaitAt)return;
+    auto *destination=reason==Future?&job.profileTotals.blockedFutureNs:reason==Send?&job.profileTotals.blockedSendNs:reason==Receive?&job.profileTotals.blockedReceiveNs:reason==ScopeDrain?&job.profileTotals.blockedScopeNs:&job.profileTotals.blockedExternalNs;
+    profileAdd(job,*destination,job.profileWaitAt,profileNow());job.profileWaitAt=0;
+  }
+  void profilePublish(size_t index)noexcept{
+    if(!profileCollector)return;auto &job=*jobs[index];
+    if(job.profileDrainAt)profileAdd(job,job.profileTotals.drainNs,job.profileDrainAt,profileNow());
+    if(profileCount>=profilePending.size())return; // Incomplete metadata cannot affect execution.
+    profilePending[(profileRead+profileCount)%profilePending.size()]=index;++profileCount;job.profilePending=true;
+  }
+  void flushProfiles()noexcept{
+    if(!profileCollector)return;
+    for(;;){TaskProfileTask task;TaskProfileSchedulerTotals totals;TaskProfileTaskOutcome outcome;
+      {std::lock_guard lock(mutex);if(!profileCount)return;const auto index=profilePending[profileRead];profileRead=(profileRead+1)%profilePending.size();--profileCount;
+        auto &job=*jobs[index];job.profilePending=false;task=job.profileTask;totals=job.profileTotals;outcome=job.failure?(cancellationFailure(job.failure)?TaskProfileTaskOutcome::Cancelled:TaskProfileTaskOutcome::Aborted):TaskProfileTaskOutcome::Completed;}
+      if(task){profileCollector->scheduler(task,totals);profileCollector->terminal(task,outcome);}
+    }
+  }
+#endif
   Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures):control(TaskAccess::control()),ready(maximum),sourceFileReadFailures(fileReadFailures),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
+#ifdef NEX_TASK_PROFILE_ENABLED
+    if(profileCollector)profilePending.resize(maximum);
+#endif
     try{
       for(size_t i=0;i<workers;++i)threads.emplace_back([this]{work();});
       {std::lock_guard lock(mutex);started=true;}changed.notify_all();
@@ -115,6 +159,9 @@ struct TaskGroup::Impl {
     auto &job=*jobs[index];if(job.done||job.finishing||job.queued)return;
     if(job.running){job.again=true;return;}
     ready[(readyStart+readyCount)%ready.size()]=index;++readyCount;job.queued=true;changed.notify_all();
+#ifdef NEX_TASK_PROFILE_ENABLED
+    if(profileCollector)job.profileReadyAt=profileNow();
+#endif
   }
   std::pair<size_t*,size_t*> ends(Job &job){
     if(job.wait==Future)return {&jobs[job.target]->head,&jobs[job.target]->tail};
@@ -124,6 +171,9 @@ struct TaskGroup::Impl {
   }
   void unlink(size_t index){
     auto &job=*jobs[index];if(job.wait==None)return;
+#ifdef NEX_TASK_PROFILE_ENABLED
+    profileWaitEnd(job,job.wait);
+#endif
     if(job.wait==WaitExternal){job.wait=None;job.previous=job.next=job.target=none;return;}
     auto [head,tail]=ends(job);
     if(job.previous==none)*head=job.next;else jobs[job.previous]->next=job.next;
@@ -132,6 +182,9 @@ struct TaskGroup::Impl {
   }
   void link(size_t index,Wait wait,size_t target){
     auto &job=*jobs[index];job.wait=wait;job.target=target;auto [head,tail]=ends(job);
+#ifdef NEX_TASK_PROFILE_ENABLED
+    if(profileCollector)job.profileWaitAt=profileNow();
+#endif
     job.previous=*tail;job.next=none;
     if(*tail==none)*head=index;else jobs[*tail]->next=index;*tail=index;
   }
@@ -230,6 +283,9 @@ struct TaskGroup::Impl {
     for(const auto &entry:job.external)if(!entry.consumed)return;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed)return;
     if(job.failure)job.result={};job.finishing=false;job.done=true;++completed;
+#ifdef NEX_TASK_PROFILE_ENABLED
+    profilePublish(index);
+#endif
     while(job.head!=none)wake(job.head);
     if(job.memberScope!=none){auto &scope=*regions[job.memberScope];if(!scope.pending)throw Trap("E_TASK_STATE","logical task count is unbalanced",0);--scope.pending;closeRegion(job.memberScope);}
     changed.notify_all();
@@ -265,6 +321,9 @@ struct TaskGroup::Impl {
   }
   void beginComplete(size_t index,std::exception_ptr failure){
     auto &job=*jobs[index];unlink(index);job.running=false;job.again=false;job.finishing=true;job.failure=std::move(failure);
+#ifdef NEX_TASK_PROFILE_ENABLED
+    if(profileCollector)job.profileDrainAt=profileNow();
+#endif
     if(!job.failure)job.result=std::move(job.body.promise().value);
     size_t outer=none;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed){if(outer==none)outer=scope;regions[scope]->closing=true;regions[scope]->abort=bool(job.failure);}
@@ -287,27 +346,49 @@ struct TaskGroup::Impl {
     while(count--){
       auto index=ready[readyStart];readyStart=(readyStart+1)%ready.size();--readyCount;auto &job=*jobs[index];bool allowed=true;
       for(auto next=job.scope;next!=none;next=regions[next]->parent)if(regions[next]->active>=regions[next]->limit){allowed=false;break;}
-      if(allowed){job.queued=false;job.running=true;job.again=false;lease(job.scope,1);return index;}
+      if(allowed){job.queued=false;job.running=true;job.again=false;
+#ifdef NEX_TASK_PROFILE_ENABLED
+        if(profileCollector&&job.profileReadyAt){profileAdd(job,job.profileTotals.readyNs,job.profileReadyAt,profileNow());job.profileReadyAt=0;}
+#endif
+        lease(job.scope,1);return index;}
       ready[(readyStart+readyCount)%ready.size()]=index;++readyCount;
     }
     return none;
   }
   void work(){
     for(;;){
+#ifdef NEX_TASK_PROFILE_ENABLED
+      flushProfiles();TaskProfileTransaction profileTransaction(profileCollector);
+#endif
       size_t index;Job *runningJob;
       {
         std::unique_lock lock(mutex);changed.wait(lock,[&]{return started||stop;});
-        while(!stop){retireExternalCompletions();interrupt();index=runnable();if(index!=none)break;changed.wait_for(lock,std::chrono::milliseconds(2));}
+        while(!stop){retireExternalCompletions();interrupt();index=runnable();if(index!=none)break;
+#ifdef NEX_TASK_PROFILE_ENABLED
+          if(profileCollector&&profileCount){lock.unlock();flushProfiles();taskProfileTransactionStamp=profileCollector->sample().wallNs;lock.lock();continue;}
+#endif
+          changed.wait_for(lock,std::chrono::milliseconds(2));
+#ifdef NEX_TASK_PROFILE_ENABLED
+          if(profileCollector){lock.unlock();flushProfiles();taskProfileTransactionStamp=profileCollector->sample().wallNs;lock.lock();}
+#endif
+        }
         if(stop)return;
         runningJob=jobs[index].get();
       }
       auto previousState=activeTaskState;auto previousIndex=activeTaskIndex;
       activeTaskState=this;activeTaskIndex=index;
       std::exception_ptr failure;
-      try{TaskAccess::resume(control,cancelled,runningJob->cancellation,runningJob->body,*runningJob->group,runningJob->memberScope==none?Scope{}:Scope(runningJob->group->impl,runningJob->memberScope),runningJob->location);}
+      try{
+#ifdef NEX_TASK_PROFILE_ENABLED
+        TaskProfileTurnScope profile(runningJob->profileTask);
+#endif
+        TaskAccess::resume(control,cancelled,runningJob->cancellation,runningJob->body,*runningJob->group,runningJob->memberScope==none?Scope{}:Scope(runningJob->group->impl,runningJob->memberScope),runningJob->location);}
       catch(...){failure=std::current_exception();}
       activeTaskState=previousState;activeTaskIndex=previousIndex;
       TaskBody::Handle destroy;
+#ifdef NEX_TASK_PROFILE_ENABLED
+      TaskProfileTransaction profileFinishing(profileCollector);
+#endif
       {
         std::lock_guard lock(mutex);auto &job=*jobs[index];lease(job.scope,-1);job.running=false;
         if(failure||job.body.done()){selectFileReadFatal(failure);beginComplete(index,std::move(failure));destroy=std::exchange(job.body,{});}
@@ -319,10 +400,24 @@ struct TaskGroup::Impl {
       }
       // Destroy all retained native frames before publishing completion, outside
       // the scheduler mutex so owned-value/profile destructors cannot deadlock it.
-      if(destroy){destroy.destroy();std::lock_guard lock(mutex);jobs[index]->cleanupDone=true;tryComplete(index);}
+      if(destroy){
+        {
+#ifdef NEX_TASK_PROFILE_ENABLED
+          TaskProfileTurnScope profile(runningJob->profileTask,false);
+#endif
+          destroy.destroy();
+        }
+#ifdef NEX_TASK_PROFILE_ENABLED
+        TaskProfileTransaction profileRetirement(profileCollector);
+#endif
+        std::lock_guard lock(mutex);jobs[index]->cleanupDone=true;tryComplete(index);
+      }
     }
   }
   bool suspend(size_t index,Awaiter::Kind kind,size_t target,Value value){
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTransaction profileTransaction(profileCollector);
+#endif
     require();
     if(kind==Awaiter::Send){Scope targetScope;TaskGroup *group;{std::lock_guard lock(mutex);if(target>=pipes.size()||index>=jobs.size())throw Trap("E_TASK_SCOPE","invalid channel/task",0);group=jobs[index]->group;if(pipes[target]->scope!=none)targetScope=Scope(group->impl,pipes[target]->scope);}taskValue(*group,value,targetScope);}
     std::lock_guard lock(mutex);
@@ -363,12 +458,18 @@ struct TaskGroup::Impl {
     link(index,Receive,target);return true;
   }
   void drain(bool abort){
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTransaction profileTransaction(profileCollector);
+#endif
     {
       std::lock_guard lock(mutex);if(finished)return;sealed=true;
       if(abort)cancelled=true;interrupt();changed.notify_all();
     }
     std::exception_ptr coordinatorFailure;
     for(;;){
+#ifdef NEX_TASK_PROFILE_ENABLED
+      TaskProfileTransaction profileTick(profileCollector);
+#endif
       std::unique_lock lock(mutex);preferFailure(coordinatorFailure,sourceFileReadFatal);if(completed==jobs.size())break;
       lock.unlock();
       if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();cancelled=true;}
@@ -376,11 +477,20 @@ struct TaskGroup::Impl {
     }
     {std::lock_guard lock(mutex);stop=true;}changed.notify_all();
     for(auto &thread:threads)thread.join();
+#ifdef NEX_TASK_PROFILE_ENABLED
+    flushProfiles();
+#endif
     if(externalPool)externalPool->drain(abort);
     {std::lock_guard lock(mutex);finished=true;}
     // Workers are joined. Frame destructors and profiling hooks run outside the
     // scheduler lock; they cannot deadlock by acquiring another runtime lock.
-    for(auto &job:jobs){if(job->body){job->body.destroy();job->body={};}job->pending={};}
+    for(auto &job:jobs){
+      if(job->body){
+#ifdef NEX_TASK_PROFILE_ENABLED
+        TaskProfileTurnScope profile(job->profileTask,false);
+#endif
+        job->body.destroy();job->body={};
+      }job->pending={};}
     pipes.clear();
     if(sourceFileReadFatal){auto selected=sourceFileReadFatal;preferFailure(selected,coordinatorFailure);coordinatorFailure=std::move(selected);}
     if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal){preferFailure(coordinatorFailure,job->failure);preferFailure(coordinatorFailure,job->externalFatal);}
@@ -461,17 +571,36 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
     }
     auto body=contextFactory?contextFactory(*this,std::move(input),std::move(captures),context):factory(*this,std::move(input),std::move(captures));if(!body.handle)throw Trap("E_TASK_SCOPE","task factory returned no coroutine",0);
     job->body=std::exchange(body.handle,{});
-    std::lock_guard lock(impl->mutex);
-    if(impl->finished||(impl->sealed&&activeTaskState!=impl.get()))throw Trap("E_TASK_SCOPE","task group is sealed",0);
-    if(impl->jobs.size()>=impl->ready.size())throw Trap("E_LIMIT","task group slot limit exceeded",0);
-    impl->scopeAccess(scope);job->scope=job->memberScope=scope;
-    size_t index=impl->jobs.size();if(scope!=none){impl->regions[scope]->members.push_back(index);++impl->regions[scope]->pending;}
-    impl->jobs.push_back(std::move(job));impl->enqueue(index);return Ticket(impl,index);
+    size_t index;
+    {
+      std::lock_guard lock(impl->mutex);
+      if(impl->finished||(impl->sealed&&activeTaskState!=impl.get()))throw Trap("E_TASK_SCOPE","task group is sealed",0);
+      if(impl->jobs.size()>=impl->ready.size())throw Trap("E_LIMIT","task group slot limit exceeded",0);
+      impl->scopeAccess(scope);job->scope=job->memberScope=scope;
+      index=impl->jobs.size();if(scope!=none){impl->regions[scope]->members.push_back(index);++impl->regions[scope]->pending;}
+      impl->jobs.push_back(std::move(job));
+#ifdef NEX_TASK_PROFILE_ENABLED
+      if(!impl->profileCollector){impl->enqueue(index);return Ticket(impl,index);}
+#else
+      impl->enqueue(index);return Ticket(impl,index);
+#endif
+    }
+#ifdef NEX_TASK_PROFILE_ENABLED
+    // The admitted job is counted by its scope but cannot run until metadata is
+    // prepared outside the kernel mutex. Cancellation may mark it meanwhile;
+    // the ordinary first resume still performs all existing control checks.
+    auto profileTask=impl->profileCollector->taskFromCurrent();TaskProfileTransaction profileCommit(impl->profileCollector);
+    {std::lock_guard lock(impl->mutex);impl->jobs[index]->profileTask=std::move(profileTask);impl->enqueue(index);}
+    return Ticket(impl,index);
+#endif
   });
 }
 Value TaskGroup::join(const Ticket &ticket){
   impl->requireContext(true);auto index=taskIndex(ticket);std::exception_ptr coordinatorFailure;
   for(;;){
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTransaction profileTick(impl->profileCollector);
+#endif
     {std::lock_guard lock(impl->mutex);Impl::preferFailure(coordinatorFailure,impl->sourceFileReadFatal);}
     if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(coordinatorFailure);}
     std::unique_lock lock(impl->mutex);impl->interrupt();auto &job=*impl->jobs[index];
@@ -520,14 +649,24 @@ TaskGroup::Channel TaskGroup::channelIn(size_t scope,size_t capacity){
   });
 }
 bool TaskGroup::close(const Channel &channel){
+#ifdef NEX_TASK_PROFILE_ENABLED
+  TaskProfileTransaction profileTransaction(impl->profileCollector);
+#endif
   impl->require();auto index=channelIndex(channel);std::lock_guard lock(impl->mutex);
   if(impl->pipes[index]->closed)return false;impl->closePipe(index);return true;
 }
 bool TaskGroup::cancel(const Ticket &ticket){
+#ifdef NEX_TASK_PROFILE_ENABLED
+  TaskProfileTransaction profileTransaction(impl->profileCollector);
+#endif
   impl->require();auto index=taskIndex(ticket);std::lock_guard lock(impl->mutex);auto &job=*impl->jobs[index];if(job.done)return false;
   bool changed=!job.cancellation->cancelled.exchange(true);impl->interrupt();impl->changed.notify_all();return changed;
 }
-void TaskGroup::cancel(){impl->require();std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
+void TaskGroup::cancel(){
+#ifdef NEX_TASK_PROFILE_ENABLED
+  TaskProfileTransaction profileTransaction(impl->profileCollector);
+#endif
+  impl->require();std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
 namespace {
 struct ControlledExternalOperation final:TaskExternalOperation {
   std::shared_ptr<TaskExternalOperation> operation;TaskExternalControl request;size_t reservation,maximumResultBytes;
@@ -546,6 +685,9 @@ TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperati
       std::weak_ptr<Impl> weak=impl;
       auto pool=std::make_unique<TaskExternalPool>(impl->externalLimits,[weak](const TaskExternalTicket &ticket){
         if(auto state=weak.lock()){
+#ifdef NEX_TASK_PROFILE_ENABLED
+          TaskProfileTransaction profileTransaction(state->profileCollector);
+#endif
           std::lock_guard lock(state->mutex);
           if(ticket.owner()>=state->jobs.size())std::terminate();auto &job=*state->jobs[ticket.owner()];
           for(size_t i=0;i<job.external.size();++i){auto &entry=job.external[i];if(entry.ticket==ticket){
@@ -579,14 +721,22 @@ TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperati
 TaskGroup::ExternalAwaiter TaskGroup::awaitExternal(const TaskExternalTicket &ticket){return ExternalAwaiter(this,ticket);}
 bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
   return hostOperation(location,[&]{
-    auto state=group->impl;state->require();std::lock_guard lock(state->mutex);
+    auto state=group->impl;state->require();
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTransaction profileTransaction(state->profileCollector);
+#endif
+    std::lock_guard lock(state->mutex);
     if(activeTaskState!=state.get()||activeTaskIndex>=state->jobs.size()||state->jobs[activeTaskIndex]->body!=handle||ticket.owner()!=activeTaskIndex)
       throw Trap("E_TASK_SCOPE","external ticket belongs to another task or group",0);
     auto &job=*state->jobs[activeTaskIndex];
     for(size_t i=0;i<job.external.size();++i)if(job.external[i].ticket==ticket){
       auto &entry=job.external[i];if(entry.consumed)throw Trap("E_TASK_STATE","external ticket was already consumed",0);
       job.location=location;if(entry.physical)return false;
-      job.wait=Impl::WaitExternal;job.target=i;return true;
+      job.wait=Impl::WaitExternal;job.target=i;
+#ifdef NEX_TASK_PROFILE_ENABLED
+      if(state->profileCollector)job.profileWaitAt=state->profileNow();
+#endif
+      return true;
     }
     throw Trap("E_TASK_SCOPE","external ticket belongs to another or ended group",0);
   });
@@ -594,6 +744,9 @@ bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
 TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
   return hostOperation(location,[&]{
     auto state=group->impl;state->require();
+#ifdef NEX_TASK_PROFILE_ENABLED
+    TaskProfileTransaction profileTransaction(state->profileCollector);
+#endif
     {std::lock_guard lock(state->mutex);
       if(activeTaskState!=state.get()||activeTaskIndex>=state->jobs.size()||ticket.owner()!=activeTaskIndex)throw Trap("E_TASK_SCOPE","external completion resumed outside its owner",0);
       auto &job=*state->jobs[activeTaskIndex];bool found=false;
@@ -616,5 +769,9 @@ TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
   });
 }
 TaskExternalStats TaskGroup::externalStats()const{std::lock_guard lock(impl->mutex);return impl->externalPool?impl->externalPool->stats():TaskExternalStats{};}
-void TaskGroup::failFileRead(std::exception_ptr failure){impl->requireContext();std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(failure);}
+void TaskGroup::failFileRead(std::exception_ptr failure){
+#ifdef NEX_TASK_PROFILE_ENABLED
+  TaskProfileTransaction profileTransaction(impl->profileCollector);
+#endif
+  impl->requireContext();std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(failure);}
 void TaskGroup::finish(){impl->requireContext(true);impl->drain(false);}

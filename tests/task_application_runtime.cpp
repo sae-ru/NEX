@@ -39,7 +39,7 @@ void rejects(const char *code,const nexrt::TaskCodeDescriptor *descriptor){
 }
 int main(){
   std::array<int64_t,1> kinds{3};
-  nexrt::TaskCodeDescriptor descriptor{successful,kinds.data(),nullptr,nullptr,nexrt::taskCodeABI,1,0,0,0};
+  nexrt::TaskCodeDescriptor descriptor{successful,kinds.data(),nullptr,nullptr,nullptr,nexrt::taskCodeABI,1,0,0,0};
   for(int i=0;i<3;++i){require(nex_task_application_execute(&descriptor)==42);clean();}
   descriptor.step=failed;rejects("E_ITEM",&descriptor);
   descriptor.step=unit;descriptor.resultKind=4;require(nex_task_application_execute(&descriptor)==0);clean();

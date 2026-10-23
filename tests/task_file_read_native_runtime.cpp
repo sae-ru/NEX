@@ -52,7 +52,7 @@ int64_t readStep(void *pointer){
   else {auto bytes=byteBuffer(unwrap(value).object).view();require(std::string(bytes.begin(),bytes.end())==expectedBinary,"compiled byte read changed arbitrary octets or grant");}
   nex_task_frame_return_i64(pointer,42,0);return 0;
 }
-TaskCodeDescriptor descriptor{readStep,kinds.data(),nullptr,nullptr,taskCodeABI,1,0,0,0,requirements};
+TaskCodeDescriptor descriptor{readStep,kinds.data(),nullptr,nullptr,nullptr,taskCodeABI,1,0,0,0,requirements};
 void clean(){require(!inRequestScope()&&liveObjects==0,"compiled file read leaked source ownership");nex_runtime_finish();}
 void execute(TextFiles &files){FileScope scope(files);require(executeTaskApplication(descriptor,{1000000,5000,1},{})==42,"compiled read returned wrong process value");++cases;}
 std::promise<void> *paused=nullptr;std::shared_future<void> resume;

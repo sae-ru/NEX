@@ -6,14 +6,15 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.113.0 / language0.20**.
-Working120 adds a private bounded logical task-profile collector module and its
-independent C++ probe. It is not connected to the task scheduler, compiler or
-public profile command; source task profiling/debugging remains unsupported.
-Execution task ABI2 and language020 semantics are unchanged. Current editor
-fixture corrections and compiler-verified type/proof/intent pins from119b are
-included. A regression checks the bundled proof snapshots and task intent.
-Full current regression, sanitizer and installed SDK acceptance are pending.
+This isolated development source is **toolchain0.114.0 / language0.20**.
+Working121 integrates native source task profiling across compiler, scheduler,
+retained source frames and checked CLI/project/replay reports.
+Complete candidate acceptance is pending. Language020 and
+history-preserving migration remain unchanged; private task ABI3/site metadata
+are being implemented together. Frozen120's collector passed its scoped common,
+strict sanitizer and Linux module gates, full129 regression and its matching
+installed SDK25/486 commands.
+Frozen119b full128 and its matching installed SDK25/486 commands passed.
 The implementation connects the two existing whole-file read operations to structured
 suspension in explicit server `!{task,fs}` functions. Native macOS/Linux
 applications/source-only projects and the independent reference scheduler use
@@ -36,7 +37,7 @@ apply to their exact source snapshots. Primary081 remains preserved.
 Checked source tasks retain native compiled continuations and independent
 AST/TypeScript schedulers, conservative lifetime diagnostics and mandatory
 runtime guards. TypeScript/browser filesystem, task writes/streams/db/ffi/network,
-HTTP task handlers, task debugger/profile, provider lifetime, NEX UI task adapters,
+HTTP task handlers, task debugger/non-native profile, provider lifetime, NEX UI task adapters,
 other task platforms and complete static region inference remain pending.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,

@@ -1,6 +1,7 @@
 #include "nex/task_frontend.h"
 #include "nex/task_native.h"
 #include "nex_task_protocol.h"
+#include "nex_task_profile_site.h"
 #include "nex/backend.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
@@ -34,6 +35,7 @@
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include <cstdlib>
+#include <array>
 #include <filesystem>
 #include <sstream>
 #include <functional>
@@ -189,6 +191,10 @@ class Emitter {
   struct SiteDescription {std::string function,site,kind;int64_t begin,end;};
   std::map<std::string,SiteDescription> siteDescriptions;
   std::map<std::string,std::string> pathSites,byteGlobals,functionGlobals,siteGlobals;
+  struct GlobalElement {std::string global,type;size_t index;};
+  std::map<std::string,GlobalElement> globalElements;
+  std::map<std::string,std::string> taskProfileSites;
+  std::string taskProfileTable;
   std::string rawGlobal(const std::string &text){
     auto [found,inserted]=byteGlobals.emplace(text,"nex_bytes_"+std::to_string(serial++));
     if(inserted){
@@ -205,12 +211,53 @@ class Emitter {
     globals<<"  llvm.mlir.global private constant @"<<symbol<<"() : "<<type<<" {\n    %s0 = llvm.mlir.undef : "<<type<<"\n";
     unsigned n=1,position=0;std::string aggregate="%s0";
     for(const auto &pointer:pointers){auto value="%s"+std::to_string(n++),next="%s"+std::to_string(n++);
-      globals<<"    "<<value<<" = llvm.mlir.addressof @"<<pointer<<" : !llvm.ptr\n    "<<next<<" = llvm.insertvalue "<<value<<", "<<aggregate<<"["<<position++<<"] : "<<type<<"\n";aggregate=next;
+      if(pointer.empty())globals<<"    "<<value<<" = llvm.mlir.zero : !llvm.ptr\n";
+      else if(auto element=globalElements.find(pointer);element!=globalElements.end()){
+        auto base="%s"+std::to_string(n++);
+        globals<<"    "<<base<<" = llvm.mlir.addressof @"<<element->second.global<<" : !llvm.ptr\n"
+          <<"    "<<value<<" = llvm.getelementptr "<<base<<"[0, "<<element->second.index<<"] : (!llvm.ptr) -> !llvm.ptr, "<<element->second.type<<"\n";
+      }else globals<<"    "<<value<<" = llvm.mlir.addressof @"<<pointer<<" : !llvm.ptr\n";
+      globals<<"    "<<next<<" = llvm.insertvalue "<<value<<", "<<aggregate<<"["<<position++<<"] : "<<type<<"\n";aggregate=next;
     }
     for(auto integer:integers){auto value="%s"+std::to_string(n++),next="%s"+std::to_string(n++);
       globals<<"    "<<value<<" = llvm.mlir.constant("<<integer<<" : i64) : i64\n    "<<next<<" = llvm.insertvalue "<<value<<", "<<aggregate<<"["<<position++<<"] : "<<type<<"\n";aggregate=next;
     }
     globals<<"    llvm.return "<<aggregate<<" : "<<type<<"\n  }\n";return symbol;
+  }
+  void taskProfileMetadata(const std::vector<TaskFunctionIR> &functions){
+    if(functions.empty()||functions.size()>nexrt::maximumTaskProfileCodeSites)
+      throw Error("E_PROFILE_INIT","task profile reachable site count exceeds the bounded registry");
+    struct Site {std::array<std::string,3> strings;int64_t line;};std::vector<Site> metadata;
+    size_t textBytes=0;
+    for(const auto &ir:functions){
+      const auto &f=p.function(ir.name);auto file=p.location(f.span),content=hash(json(canonical(f),false));
+      for(const auto &text:{f.name,file,content}){
+        if(text.size()+1>nexrt::maximumTaskProfileCodeTextBytes-textBytes)
+          throw Error("E_PROFILE_INIT","task profile immutable site text exceeds the bounded registry",f.span);
+        textBytes+=text.size()+1;
+      }
+      metadata.push_back({{rawGlobal(f.name),rawGlobal(file),rawGlobal(content)},int64_t(f.span.line)});
+    }
+    auto siteType=std::string("!llvm.struct<(!llvm.ptr, !llvm.ptr, !llvm.ptr, i64)>");
+    auto arrayType="!llvm.array<"+std::to_string(metadata.size())+" x "+siteType+">";
+    taskProfileTable="nex_task_profile_sites_"+std::to_string(serial++);
+    globals<<"  llvm.mlir.global private constant @"<<taskProfileTable<<"() : "<<arrayType<<" {\n"
+      <<"    %p0 = llvm.mlir.undef : "<<arrayType<<"\n";
+    unsigned n=1;std::string array="%p0";
+    for(size_t i=0;i<metadata.size();++i){
+      auto site="%p"+std::to_string(n++);globals<<"    "<<site<<" = llvm.mlir.undef : "<<siteType<<"\n";
+      for(size_t field=0;field<3;++field){auto pointer="%p"+std::to_string(n++),next="%p"+std::to_string(n++);
+        globals<<"    "<<pointer<<" = llvm.mlir.addressof @"<<metadata[i].strings[field]<<" : !llvm.ptr\n"
+          <<"    "<<next<<" = llvm.insertvalue "<<pointer<<", "<<site<<"["<<field<<"] : "<<siteType<<"\n";site=next;
+      }
+      auto line="%p"+std::to_string(n++),complete="%p"+std::to_string(n++),next="%p"+std::to_string(n++);
+      globals<<"    "<<line<<" = llvm.mlir.constant("<<metadata[i].line<<" : i64) : i64\n"
+        <<"    "<<complete<<" = llvm.insertvalue "<<line<<", "<<site<<"[3] : "<<siteType<<"\n"
+        <<"    "<<next<<" = llvm.insertvalue "<<complete<<", "<<array<<"["<<i<<"] : "<<arrayType<<"\n";array=next;
+      auto reference="nex_task_profile_element_"+std::to_string(serial++);
+      globalElements.emplace(reference,GlobalElement{taskProfileTable,arrayType,i});taskProfileSites.emplace(functions[i].name,reference);
+    }
+    globals<<"    llvm.return "<<array<<" : "<<arrayType<<"\n  }\n";
   }
   void selectFunction(const Function &function){
     selectedFunction=&function;
@@ -571,7 +618,7 @@ class Emitter {
     if(scoped)scopes.pop_back();debug.scope=previousDebugScope;return returned;
   }
   void declaration(const std::string &name,const std::string &arguments,const std::string &result=""){
-    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave"&&name!="nex_wasm_leave";
+    bool located=runtimeDeclarations&&name!="nex_profile_enter"&&name!="nex_profile_leave"&&name!="nex_task_profile_prepare"&&name!="nex_wasm_leave";
     if(located)runtimeCalls.insert(name);
     out<<"  func.func private @"<<name<<(located?"_at":"")<<"("<<arguments<<(located?(arguments.empty()?"!llvm.ptr":", !llvm.ptr"):"")<<")"<<(result.empty()?"":" -> "+result)<<"\n";
   }
@@ -697,7 +744,10 @@ public:
     }
     declaration("nex_owned_enter","","i64");declaration("nex_owned_leave","i64, !llvm.ptr");
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
-    if(tasks)declaration("nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
+    if(tasks){
+      declaration("nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
+      if(profiling)declaration("nex_task_profile_prepare","!llvm.ptr, i64");
+    }
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
     declaration("nex_foreign_invoke","!llvm.ptr, i64, !llvm.ptr, i64","!llvm.ptr");declaration("nex_foreign_configure","i64, !llvm.ptr");
     if(profiling){declaration("nex_profile_enter","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr");declaration("nex_profile_leave","");}
@@ -725,6 +775,7 @@ public:
     runtimeDeclarations=false;
     if(tasks){
       taskDeclarations();
+      if(profiling)taskProfileMetadata(*tasks);
       const bool imageFileReads=std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileReadOperation(op.operation);});});
       for(const auto &ir:*tasks){
         std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
@@ -735,7 +786,7 @@ public:
         if(source.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
         if(supportsTaskFileReads(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileRead;
         if(imageFileReads)requirements|=nexrt::taskCodeImageFileRead;
-        taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures)},
+        taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures),profiling?taskProfileSites.at(ir.name):""},
           {nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
       }
     }
@@ -806,6 +857,10 @@ public:
     // C++ owns the application boundary so a runtime failure can unwind host
     // temporaries and release every live managed handle, including caller scopes.
     out<<"  func.func private @nex_application_entry(%nex_argc64: i64, %nex_argv: !llvm.ptr) -> i64 {\n";
+    if(tasks&&profiling){
+      auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
+      call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
+    }
     if(foreign)call("nex_foreign_configure",{{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::Unit,main.span);
     Value value;
     if(tasks){
@@ -972,7 +1027,7 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
   }catch(...){std::filesystem::remove_all(folder);throw;}
 }
 namespace {
-TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={}){
+TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
   const auto &function=p.function(entry);auto ir=lowerTaskFunction(p,function);
   if(!function.captures.empty()||function.realm=="client")throw Error("E_TASK_UNIMPLEMENTED","compiled task step entry cannot have captures or client realm",function.span);
@@ -987,7 +1042,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
   }
   TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.descriptorSymbol=nativeSymbol(function.name)+"__task_code_address";result.parameters=ir.parameters;
   for(const auto &slot:ir.slots)result.slotKinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
-  result.mlir=Emitter(p,optimized).run(entry,function.test,!application,&pure,&complete,false,true,&tasks,taskLimits);return result;
+  result.mlir=Emitter(p,optimized,profiling).run(entry,function.test,!application,&pure,&complete,false,true,&tasks,taskLimits);return result;
 }
 }
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
@@ -1027,7 +1082,6 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
     if(server)throw Error("E_TASK_TARGET","task HTTP request integration remains pending; use a standalone native application",p.function(options.entry).span);
     if(options.libraryEntry||options.codeOnlyLibrary||options.deferredLink||options.functionsOnly||!options.libraries.empty()||!options.libraryExports.empty())
       throw Error("E_TASK_PROVIDER","task descriptors require one standalone image; native libraries, project providers and deferred linking remain pending",p.function(options.entry).span);
-    if(options.profile=="profile")throw Error("E_TASK_PROFILE","logical task profiling remains pending; use debug or release compilation",p.function(options.entry).span);
     for(const auto &name:reachable(p,options.entry)){
       const auto &function=p.function(name);
       validateNativeTaskFunction(p,function);
@@ -1185,7 +1239,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_files.cpp"});
-    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_files.h","nex_task_file_read.h"});
+    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h"});
+    if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
@@ -1295,7 +1350,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(auto &[unitKey,unit]:codeSnapshot.units)unit.path=debugAnchors.at(unitKey);
   codeSnapshot.path=debugAnchors.at(snapshot.units.empty()?"":snapshot.entryUnit);
   auto nativeSeed=json(llvm::json::Object{{"schema","nex.native-toolchain/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},
-    {"position_independent",options.positionIndependent},{"parallel_call_scopes",parallel||options.projectLibraryABI||tasks},{"task_continuations",tasks},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"toolchain_fingerprint",toolchainFingerprint},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
+    {"position_independent",options.positionIndependent},{"parallel_call_scopes",parallel||options.projectLibraryABI||tasks},{"task_continuations",tasks},{"task_profiling",tasks&&profiling},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"toolchain_fingerprint",toolchainFingerprint},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
     {"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false);
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   result.libraryABI=hash(nativeSeed+coreABI+(tasks?runtimeIdentity:std::string()));
@@ -1377,7 +1432,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile(debugFile,debugText);writeFile(formatterFile,formatter);writeFile(adapterFile,dapAdapter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
   const NativeEmissionContext emissionContext{callableTargets,parallel};
-  auto mlir=tasks?emitTaskNative(snapshot,options.entry,true,options.profile!="debug",options.taskLimits).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
+  auto mlir=tasks?emitTaskNative(snapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -1386,7 +1441,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,true,options.profile!="debug",options.taskLimits).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
+        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
@@ -1427,6 +1482,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(options.positionIndependent)arguments.push_back("-fPIC");
       if(profiling){
         arguments.insert(arguments.end(),{"-DNEX_PROFILE_ENABLED","-DTRACY_ENABLE","-DTRACY_ON_DEMAND","-DTRACY_DELAYED_INIT","-DTRACY_MANUAL_LIFETIME","-DTRACY_ONLY_LOCALHOST","-DTRACY_NO_BROADCAST","-DTRACY_NO_CODE_TRANSFER","-DTRACY_NO_CALLSTACK","-DTRACY_NO_SYSTEM_TRACING","-DTRACY_NO_SAMPLING","-DTRACY_NO_CRASH_HANDLER","-DTRACY_NO_FRAME_IMAGE","-pthread"});
+        if(tasks)arguments.push_back("-DNEX_TASK_PROFILE_ENABLED");
       }
       if(executeNativeBuildTool(arguments)!=0)throw Error("E_LINK","runtime compilation failed; artifacts retained at "+cache.string());
       auto digest=hash(readFile(temporary.string()));std::filesystem::rename(temporary,cached);writeFile(marker.string(),digest+"\n");
@@ -1440,6 +1496,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     writeFile(bridge,"#include \"nex_host.h\"\nextern \"C\" nexrt::Handle *"+name+"(nexrt::Handle*);\nextern \"C\" nexrt::Handle *nex_server_dispatch(nexrt::Handle *value){ return "+name+"(value); }\n");
     auto bridgeCompile=command({"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization});
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
+    if(tasks&&profiling)bridgeCompile.push_back("-DNEX_TASK_PROFILE_ENABLED");
     if(options.positionIndependent)bridgeCompile.push_back("-fPIC");
     if(executeNativeBuildTool(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
     link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
@@ -1455,7 +1512,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(profiling&&!options.codeOnlyLibrary&&!options.deferredLink){
     // Whole-build identity lives in a tiny link unit, preserving reuse of NEX
     // module objects across unrelated body edits and different entry programs.
-    auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name}},false);
+    auto identity=json(llvm::json::Object{{"schema","nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"revision",revision(p)},{"build_key",key},{"entry",p.function(options.entry).name},
+      {"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)}},false);
     auto source=(folder/"profile-identity.cpp").string(),object=(folder/"profile-identity.o").string();
     writeFile(source,"extern \"C\" const char *nex_profile_build_info(){return "+json(identity,false)+";}\n");
     if(executeNativeBuildTool(command({"-std=c++20","-c",source,"-o",object,optimization}))!=0)throw Error("E_LINK","profile identity compilation failed");link.push_back(object);
