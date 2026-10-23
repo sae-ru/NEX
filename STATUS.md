@@ -1,3 +1,12 @@
+# Working128: browser structured task hosting
+
+Toolchain0.120/language0.20 connects task-only worker_compute to its own
+cooperative TypeScript scheduler inside a dedicated module Worker. This is an
+adapter change: no syntax, canonical identity, execution ABI or migration change.
+UI entries remain pure; only wire values cross messages. Current focused,
+full regression, actual browsers, installed SDK and physical stands are pending.
+Original primary081 and accepted119 source/compiler/SDKs remain preserved.
+
 # Working126: checked provider logical task debugging
 
 Toolchain0.119.0/language0.20 enables development source-backed static and fixed

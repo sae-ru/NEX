@@ -10,6 +10,48 @@ class Workers(harness.ToolchainCase):
     def example(self):
         self.source((harness.REPO/'examples/workers/main.nex').read_text())
 
+    def test_structured_worker_channels_and_values_agree_across_backends(self):
+        text = (harness.REPO/'examples/task-workers/main.nex').read_text()
+        self.source(text)
+        self.cli('test', self.file, '--target', 'web')
+        self.file.write_text(text.replace('client fn', 'shared fn').replace('client test fn', 'shared test fn'))
+        self.cli('test', self.file)
+        out = self.root/'task-worker'
+        self.cli('web', self.file, '--directory', out)
+        self.assertTrue((out/'src/nex-task-runtime.ts').is_file())
+        self.assertNotIn('function*', (out/'src/program.ts').read_text())
+        self.assertIn('task-generator', (out/'nex-worker-map.json').read_text())
+        self.assertNotIn('Worker 🧠', (out/'src/program.ts').read_text())
+        driver = out/'src/check.ts'
+        driver.write_text('''import assert from 'node:assert/strict';
+const outcomes: any[] = []; let closed = 0;
+(globalThis as any).postMessage = (value: unknown) => outcomes.push(value);
+(globalThis as any).close = () => { ++closed; };
+await import('./worker-entry.ts');
+const input = {seed:'9007199254740993',rounds:'7',mode:'normal'};
+const message = {data:{protocol:'nex.worker/1',ticket:1,body:JSON.stringify(input)}};
+const running = (globalThis as any).onmessage(message);
+await (globalThis as any).onmessage(message);
+await running;
+assert.equal(outcomes.length,1); assert.equal(closed,1);
+assert.equal(outcomes[0].code,'');
+const value = JSON.parse(outcomes[0].body);
+assert.equal(value.value,'9007199254741000'); assert.equal(value.label,'Worker 🧠');
+''')
+        result = subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(driver)],capture_output=True,text=True,timeout=30)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_task_worker_excludes_unreachable_server_code_and_rejects_io(self):
+        text = (harness.REPO/'examples/task-workers/main.nex').read_text().split('client test fn', 1)[0]
+        text += '\nserver fn secret()->str{return "SERVER_TASK_WORKER_SECRET";}\n'
+        self.source(text)
+        out = self.root/'separate'
+        self.cli('web', self.file, '--directory', out)
+        for path in (out/'src').glob('*'):
+            self.assertNotIn('SERVER_TASK_WORKER_SECRET', path.read_text())
+        self.file.write_text(text.replace('worker_compute(input: Input) -> Output !{task}', 'worker_compute(input: Input) -> Output !{task,io}'))
+        self.assertEqual(self.cli('web',self.file,'--directory',self.root/'bad-effects',ok=False)['code'],'E_WEB_SIGNATURE')
+
     def test_compute_and_descriptors_agree_native_reference_typescript(self):
         self.example()
         original = self.file.read_text()

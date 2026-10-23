@@ -1,3 +1,4 @@
+(* Toolchain0.120 task worker hosting accepts existing task-only functions; no syntax, canonical identity or migration change. *)
 (* Toolchain0.119 source-backed provider logical debugging adds only external
    catalog/source-union/debug tooling metadata; execution ABI3, source grammar,
    canonical fields/ordinals and language020/migration remain unchanged. *)

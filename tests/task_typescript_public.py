@@ -145,7 +145,14 @@ try:
         # calling the entry whose effect is deliberately changed here.
         task_text = text.split('client test fn', 1)[0]
         path.write_text(task_text.replace(target, target[:-1]+'!{task}{task_yield();', 1))
-        emit(path, out/(example+'-task-ui'), 'ui', code='E_TASK_UNIMPLEMENTED')
+        if example == 'web':
+            emit(path, out/(example+'-task-ui'), 'ui', code='E_TASK_UNIMPLEMENTED')
+        else:
+            folder = out/(example+'-task-ui')
+            emit(path, folder, 'ui')
+            assert 'function*' not in (folder/'src/program.ts').read_text()
+            assert (folder/'src/nex-task-runtime.ts').is_file()
+            assert 'task.run(task.call(' in (folder/'src/worker-program.ts').read_text()
     path = out/'task-state.nex'
     path.write_text('module task_state;import "std/web.nex" as web;struct State{callback:fn()->i64 !{task};}client fn title()->str{return "pending";}client fn initial()->State{return State(fn()->i64 !{task}{task_yield();return 42;});}client fn update(state:State,event:web::Event)->State{return state;}client fn view(state:State)->web::View{return web::text("ready");}')
     emit(path, out/'task-state-ui', 'ui', code='E_TASK_UNIMPLEMENTED')

@@ -4085,38 +4085,44 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                             'binary server code entered browser assets')
             binary_evidence['dist'] = str(dist)
         report['evidence']['binary_browser'] = binary_evidence
-        worker = root / 'worker-browser'; worker.mkdir()
-        worker_source = (resources/'examples/workers/main.nex').read_text()
-        (worker/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
-            'language':report['doctor']['language'],'entry':'main.nex'}))
-        (worker/'main.nex').write_text(worker_source.replace('client fn','shared fn').replace('client test fn','shared test fn'))
-        cli('test',cwd=worker)
-        (worker/'main.nex').write_text(worker_source+'\nserver fn sdk_worker_secret()->str{return "SDK_WORKER_SERVER_SENTINEL";}\n')
-        worker_tests=cli('test','--target','web',cwd=worker)
-        require('worker_example::worker_values_test' in {t['name'] for t in worker_tests['tests']},
-                'worker browser tests selected another project')
-        worker_generated=root/'generated-worker-web'
-        worker_project=cli('web','--directory',worker_generated,cwd=worker)
-        require((worker_generated/'src/worker-program.ts').is_file() and
-                (worker_generated/'src/worker-entry.ts').is_file(),'worker module was not emitted')
-        require('as compute' not in (worker_generated/'src/program.ts').read_text(),
-                'worker compute entered the main closure')
-        require(not any('SDK_WORKER_SERVER_SENTINEL' in path.read_text()
-                        for path in worker_generated.rglob('*.ts')),'server code entered worker/client source')
-        worker_evidence={'revision':worker_project['revision'],'native_tests':True,
-                         'typescript_tests':True,'generated':str(worker_generated),
-                         'browser_build':args.browser,'actual_worker_execution':False}
-        if args.browser:
-            (worker/'main.nex').unlink()
-            built=cli('build','--revision',worker_project['revision'],'--target','web',
-                      '--profile','release',cwd=worker,timeout=300)
-            dist=Path(built['dist'])
-            require(any(dist.rglob('worker-entry-*.js')),'missing production module worker asset')
-            for path in dist.rglob('*'):
-                if path.is_file():require(b'SDK_WORKER_SERVER_SENTINEL' not in path.read_bytes(),
-                                         'worker server code entered production assets')
-            worker_evidence.update(dist=str(dist),physical_source_deleted=True,archived_build=True)
-        report['evidence']['browser_workers']=worker_evidence
+        for example,module_name,evidence_name in [('workers','worker_example','browser_workers'),
+                                                   ('task-workers','task_worker_example','browser_task_workers')]:
+            worker = root / ('worker-browser' if example=='workers' else 'task-worker-browser'); worker.mkdir()
+            worker_source = (resources/'examples'/example/'main.nex').read_text()
+            (worker/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+                'language':report['doctor']['language'],'entry':'main.nex'}))
+            (worker/'main.nex').write_text(worker_source.replace('client fn','shared fn').replace('client test fn','shared test fn'))
+            cli('test',cwd=worker)
+            (worker/'main.nex').write_text(worker_source+'\nserver fn sdk_worker_secret()->str{return "SDK_WORKER_SERVER_SENTINEL";}\n')
+            worker_tests=cli('test','--target','web',cwd=worker)
+            require(module_name+'::worker_values_test' in {t['name'] for t in worker_tests['tests']},
+                    'worker browser tests selected another project')
+            worker_generated=root/('generated-worker-web' if example=='workers' else 'generated-task-worker-web')
+            worker_project=cli('web','--directory',worker_generated,cwd=worker)
+            require((worker_generated/'src/worker-program.ts').is_file() and
+                    (worker_generated/'src/worker-entry.ts').is_file(),'worker module was not emitted')
+            require('as compute' not in (worker_generated/'src/program.ts').read_text(),
+                    'worker compute entered the main closure')
+            require(not any('SDK_WORKER_SERVER_SENTINEL' in path.read_text()
+                            for path in worker_generated.rglob('*.ts')),'server code entered worker/client source')
+            if example=='task-workers':
+                require((worker_generated/'src/nex-task-runtime.ts').is_file() and
+                        'task.run(task.call(' in (worker_generated/'src/worker-program.ts').read_text(),
+                        'task worker lacks its independent scheduler host')
+            worker_evidence={'revision':worker_project['revision'],'native_tests':True,
+                             'typescript_tests':True,'generated':str(worker_generated),
+                             'browser_build':args.browser,'actual_worker_execution':False}
+            if args.browser:
+                (worker/'main.nex').unlink()
+                built=cli('build','--revision',worker_project['revision'],'--target','web',
+                          '--profile','release',cwd=worker,timeout=300)
+                dist=Path(built['dist'])
+                require(any(dist.rglob('worker-entry-*.js')),'missing production module worker asset')
+                for path in dist.rglob('*'):
+                    if path.is_file():require(b'SDK_WORKER_SERVER_SENTINEL' not in path.read_bytes(),
+                                             'worker server code entered production assets')
+                worker_evidence.update(dist=str(dist),physical_source_deleted=True,archived_build=True)
+            report['evidence'][evidence_name]=worker_evidence
         report['evidence']['browser_build'] = args.browser
 
     def server_debugging():

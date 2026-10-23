@@ -338,7 +338,8 @@
     "result_propagation": "examples/propagation.nex",
     "browser_workers": "examples/workers/main.nex",
     "structured_tasks": "examples/structured-tasks.nex",
-    "task_file_reads": "examples/task-file-reads.nex"
+    "task_file_reads": "examples/task-file-reads.nex",
+    "browser_task_workers": "examples/task-workers/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -818,7 +819,7 @@
     "windows_host_validation": "pending"
   },
   "browser_workers": {
-    "status": "development_browser_jobs",
+    "status": "development_browser_task_jobs",
     "source_support": true,
     "guide": "docs/browser-workers.md",
     "library": "std/worker.nex",
@@ -841,7 +842,18 @@
       "installed_sdk",
       "platform_editor_validation",
       "task IO beyond whole-file reads and task host adapters"
-    ]
+    ],
+    "structured_tasks": true,
+    "compute_effects": "empty or exactly task",
+    "task_execution": "one independent cooperative scheduler per dedicated Worker",
+    "task_limits": {
+      "steps": 1000000,
+      "timeout_ms": 5000,
+      "workers": 16
+    },
+    "task_authority_transport": false,
+    "task_io": false,
+    "main_thread_tasks": false
   },
   "structured_tasks_runtime": {
     "status": "development_source_task_file_reads020",

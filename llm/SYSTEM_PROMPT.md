@@ -104,8 +104,11 @@ an executor pool of16; scopes request1..16 workers and inherit ancestor caps.
 Explicit host controls are described in docs/task-limits.md; check the actual compiler descriptor. Reference and generated TypeScript task
 execution are independent cooperative schedulers, with no OS CPU-overlap claim.
 Standalone TypeScript task exports return task.Step<T> and need the generated
-scheduler host; pure modules stay synchronous. UI/worker adapters retain pure
-synchronous entry contracts and reject reachable task effects/callables.
+scheduler host; pure modules stay synchronous. UI entries remain pure/synchronous and reject reachable task effects/callables.
+Query browser_workers.structured_tasks before using task-only worker_compute.
+That dedicated worker owns a separate cooperative scheduler with fixed1M-step/5s/16-worker
+ceilings; only wire input/output crosses the boundary. No task authority, file/FFI
+or network effects may cross it. Host cancel/timeout terminates the dedicated Worker.
 Broader IO, non-native task debugging, dynamic-provider lifetime, task server/UI
 adapters, other native targets and current SDK/platform delivery remain pending.
 Do not infer their completion from source_support or a passing scoped probe.

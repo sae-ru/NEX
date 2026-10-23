@@ -1,0 +1,80 @@
+module task_worker_example;
+import "std/web.nex" as web;
+import "std/worker.nex" as worker;
+
+struct Input { seed: i64; rounds: i64; mode: str; }
+struct Output { value: i64; label: str; data: bytes; }
+struct State { sequence: i64; current: str; status: str; clicks: i64; }
+client fn title() -> str { return "NEX Workers"; }
+client fn initial() -> State { return State(0, "", "Ready", 0); }
+client fn worker_compute(input: Input) -> Output !{task} {
+  task_yield();
+  if input.mode == "trap" { return Output(1 / 0, "", utf8_bytes("")); }
+  if input.mode == "loop" { while true { task_yield(); } }
+  let value: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{task} {
+    let pipe: channel<i64> = channel_new<i64>(scope, 0);
+    let sender: task<unit> = task_spawn(scope, fn() -> unit !{task} {
+      assert(task_send(pipe, input.seed));
+    });
+    let seed: i64 = unwrap(task_recv(pipe));
+    task_wait(sender);
+    let compute: task<i64> = task_spawn(scope, fn() -> i64 !{task} {
+      var index: i64 = 0; var value: i64 = seed;
+      while index < input.rounds { task_yield(); value = value + 1; index = index + 1; }
+      return value;
+    });
+    return task_wait(compute);
+  });
+  return Output(value, "Worker 🧠", utf8_bytes("A🧠\u0000"));
+}
+client fn update(state: State, event: web::Event) -> State {
+  if event.name == "click" { return State(state.sequence, state.current, state.status, state.clicks + 1); }
+  if event.name == "start" || event.name == "slow" || event.name == "trap" || event.name == "timeout" {
+    return State(state.sequence + 1, str(state.sequence + 1), "Working", state.clicks);
+  }
+  if event.name == "done" {
+    let response: result<worker::Response<Output>> = worker::response<Output>(event);
+    if is_ok(response) {
+      let value: worker::Response<Output> = unwrap(response);
+      if value.id == state.current {
+        if is_ok(value.value) {
+          let output: Output = unwrap(value.value);
+          assert(output.data == utf8_bytes("A🧠\u0000"));
+          return State(state.sequence, "", str(output.value) + " " + output.label, state.clicks);
+        }
+        return State(state.sequence, "", error_code(value.value), state.clicks);
+      }
+    }
+  }
+  return state;
+}
+client fn worker_commands(before: State, after: State, event: web::Event) -> list<worker::Command<Input>> {
+  if event.name == "cancel" { return [worker::cancel<Input>(after.current)]; }
+  if event.name == "stop_all" { return [worker::cancel_all<Input>()]; }
+  if before.sequence != after.sequence {
+    if event.name == "timeout" { return [worker::request(after.current, Input(0, 0, "loop"), "done", 1)]; }
+    if event.name == "trap" { return [worker::request(after.current, Input(0, 0, "trap"), "done", 10000)]; }
+    if event.name == "slow" { return [worker::request(after.current, Input(0, 0, "loop"), "done", 30000)]; }
+    return [worker::request(after.current, Input(9007199254740993, 7, "normal"), "done", 10000)];
+  }
+  return [];
+}
+client fn view(state: State) -> web::View {
+  return web::element("main", [], [], [web::element("h1", [], [], [web::text(title())]),
+    web::element("p", [web::attr("role", "status")], [], [web::text(state.status)]),
+    web::element("p", [web::attr("id", "clicks")], [], [web::text(str(state.clicks))]),
+    web::button("Compute", "start"), web::button("Long task", "slow"), web::button("Click", "click"),
+    web::button("Cancel", "cancel"), web::button("Cancel all", "stop_all"),
+    web::button("Trap", "trap"), web::button("Timeout", "timeout")]);
+}
+client test fn worker_values_test() -> unit !{task} {
+  let input: Input = Input(9007199254740993, 7, "normal");
+  let output: Output = worker_compute(input);
+  assert(output.value == 9007199254741000);
+  assert(decode_utf8(output.data) == ok("A🧠\u0000"));
+  let command: worker::Command<Input> = worker::request("1", input, "done", 1000);
+  assert(unwrap(command.input) == input);
+  assert(unwrap(decode_json<worker::Command<Input>>(encode_json(command))) == command);
+  let response: worker::Response<Output> = worker::Response<Output>("1", ok(output));
+  assert(unwrap(worker::response<Output>(web::Event("done", encode_json(response), "/"))) == response);
+}

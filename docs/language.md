@@ -1,3 +1,11 @@
+Toolchain0.120 lets the browser worker adapter host an existing client/shared
+`worker_compute(Input)->Output !{task}` in its own cooperative scheduler.
+Only wire input/output crosses the dedicated Worker boundary; task authority
+stays internal. Main-thread UI entries remain synchronous and pure, and task
+filesystem/FFI/network operations remain unavailable there. This changes no
+syntax, checked effects/realms, language0.20 identity or migration.
+See [the worker contract](browser-workers.md).
+
 # NEX language specification 0.20
 
 Toolchain0.119 provides development source-backed native task-provider logical debugging
@@ -42,7 +50,7 @@ checker creates distinct revisions and requires history-preserving migration;
 never relabel an old project. Native continuations and independent AST/TypeScript
 schedulers remain separate implementations. Complete static lifetime inference,
 write/stream/db/ffi/network task bridges, non-native task debugging/profiling, dynamic provider lifetime,
-UI integration and other task platforms remain pending.
+Broader UI integration and other task platforms remain pending.
 
 Toolchain0.114 adds native020 task profiling without changing source semantics
 or canonical identities. Query `task_profiling` and read the [profile guide](profiling.md)
@@ -550,7 +558,7 @@ A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitt
 
 Optional `shared`, `server`, or `client` precedes `fn` (and precedes `test` for a test definition); `pub`, when present, precedes the realm. The default is `shared`. A function may directly call shared functions or functions in its own realm. These checks apply across imports. Direct client/server calls and shared/platform-specific calls are rejected with `E_REALM`. This is a static boundary, not a network-call implementation. Client-entry native builds and server-entry TypeScript emission are rejected. Browser applications use the checked state/update/view contract in `docs/web.md`; the browser emitter includes only reachable client/shared functions.
 
-The browser adapter additionally accepts a pure `commands(before: State, after: State, event: web::Event) -> list<net::Command>` entry with `std/net.nex`. Commands are ordinary immutable values describing same-origin HTTP work or cancellation; constructing one performs no I/O in any language backend. The adapter executes them after a UI/response transition and delivers strict typed response envelopes as events. This adds a library/adapter contract in toolchain 0.6.0 without changing the 0.4 grammar, source semantics or revision format. Structured source tasks were introduced in0.19. Language0.20 adds the narrow task/file-read contract; NEX UI task integration remains pending. Language 0.5 endpoints generate typed request/response helpers; see the web/API guides for contracts and limits.
+The browser adapter additionally accepts a pure `commands(before: State, after: State, event: web::Event) -> list<net::Command>` entry with `std/net.nex`. Commands are ordinary immutable values describing same-origin HTTP work or cancellation; constructing one performs no I/O in any language backend. The adapter executes them after a UI/response transition and delivers strict typed response envelopes as events. This adds a library/adapter contract in toolchain 0.6.0 without changing the 0.4 grammar, source semantics or revision format. Structured source tasks were introduced in0.19. Language0.20 adds the narrow task/file-read contract; The dedicated worker task adapter is described in browser-workers.md; main-thread task UI entries remain pending. Language 0.5 endpoints generate typed request/response helpers; see the web/API guides for contracts and limits.
 
 ## Structured task scopes, futures and channels (0.19)
 

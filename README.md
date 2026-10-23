@@ -1,5 +1,13 @@
 # NEX
 
+Toolchain0.120 development adds task-only `worker_compute` hosting in dedicated
+browser Workers, with a separate bounded cooperative scheduler per job. UI
+entries remain pure and synchronous; wire values alone cross the worker boundary.
+See [the contract](docs/browser-workers.md) and
+[the example](examples/task-workers/main.nex). Language0.20 and migration stay
+unchanged. Matching complete acceptance is recorded separately; historical
+checkpoint receipts below do not validate this new candidate.
+
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
 **Главная идея:** минимальное количество токенов для передачи максимального

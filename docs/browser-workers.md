@@ -1,6 +1,7 @@
-# Typed browser worker jobs — toolchain0.97 development
+# Typed browser worker jobs and structured tasks — toolchain0.120 development
 
-The browser adapter accepts two additional ordinary pure client/shared entries:
+The browser adapter accepts these additional ordinary client/shared entries.
+Commands remain pure; compute may be pure or declare exactly `!{task}`:
 
 ```nex
 client fn worker_compute(input: Input) -> Output { /* pure computation */ }
@@ -16,7 +17,9 @@ must pass the existing strict wire schema rules: checked i64, finite f64,
 Unicode scalar strings, bytes, immutable lists/records/enums/results. Functions,
 file handles and unit cannot cross this boundary. The compiler checks the exact
 generic command input against the compute argument and validates library layout.
-Empty effects and the existing realm checker prevent server/IO/FFI capabilities.
+Only empty effects or exactly task are accepted for worker_compute. The existing
+realm checker and wire checks prevent server/IO/filesystem/FFI capabilities and
+task authority from crossing this boundary. Main-thread UI entries remain pure.
 
 `worker::request(id, input, action, timeout_ms)` describes work. The adapter runs
 it in an actual dedicated module Worker and delivers a normal web event to
@@ -24,7 +27,8 @@ update. `worker::response<Output>(event)` returns `result<Response<Output>>`;
 the response has `id: str` and `value: result<Output>`. Check both results and
 the current request ID. If Output is itself a result, its application failure
 remains inside a successful transport result. Source tests only construct these
-values and execute pure compute; they do not launch background workers.
+values and execute compute through the selected backend; they do not launch
+background workers.
 
 The main and worker closures are emitted separately. Each contains only its
 reachable client/shared code, nominal models and mapping metadata. The worker
@@ -55,11 +59,52 @@ produce `E_WORKER`; malformed/wrong-ticket/invalid-output messages produce
 terminates remaining jobs and suppresses late messages/events; stale messages
 cannot affect a reused ID. Work is not automatically retried.
 
-See [the example](../examples/workers/main.nex). Its long task deliberately
+## Structured task computation
+
+Use the existing syntax, without a language migration:
+
+```nex
+client fn worker_compute(input: i64) -> i64 !{task} {
+  return with_tasks(2, fn(scope: task_scope) -> i64 !{task} {
+    let job: task<i64> = task_spawn(scope, fn() -> i64 !{task} {
+      task_yield(); return input + 1;
+    });
+    return task_wait(job);
+  });
+}
+```
+
+Each dedicated Worker creates one root scheduler through the generated
+`execute` host. Scope/future/channel aliases stay inside it; only strict wire
+input/output crosses its messages. The default scheduler limits are1,000,000
+steps,5,000ms after scheduler start and a logical worker cap of16. These are
+independent of the job's host timeout, which includes queue/startup. The
+TypeScript scheduler is cooperative on that Worker's single JavaScript thread;
+it does not create16 CPU threads. The job runner still permits at most2 actual
+Workers at once. Checked errors/limits are returned as transport failures;
+application `result` errors stay nested inside transport success.
+
+Host cancellation/timeout terminates this dedicated realm and emits the existing
+completion once. It does not promise native task-cancellation cleanup hooks or
+resource finalizers: this worker owns no external filesystem/FFI capability.
+Closing the UI suppresses late delivery. React state/update/view and command
+construction remain pure and synchronous. General task-driven DOM/network/IO,
+shared authority across jobs and a main-thread task adapter remain pending.
+
+[The task-worker example](../examples/task-workers/main.nex) exercises an actual
+zero-capacity channel, spawn/send/receive/wait and checked values beyond2^53.
+Its production browser checks are separate from source/backend tests.
+
+After building that example, run
+`python3 tests/workers_browser.py GENERATED_PROJECT --structured-tasks --browsers-path CACHE`
+for the existing five lifecycle cases and the independent scheduler-limit case
+in Chromium, Firefox and WebKit. Without `--structured-tasks`, the runner keeps
+the original pure worker contract tests.
+
+See [the pure example](../examples/workers/main.nex). Its long task deliberately
 loops until cancellation, demonstrating responsive UI rather than benchmarking.
-The adapter does not add source async/await, native tasks/channels, general
-worker pools, shared memory, GPU/NPU execution or change synchronous TypeScript
-parallel_map. Six focused groups and15 actual production cases in Chromium, Firefox and
+The adapter does not add source async/await, general worker pools, shared
+memory, GPU/NPU execution or multi-threaded TypeScript parallel_map. Six focused groups and15 actual production cases in Chromium, Firefox and
 WebKit pass on the recorded macOS ARM64 compiler. See [the exact receipt](evidence/browser-workers-0.97.0.json).
 Full101 regression, source-free installed SDK and platform/editor acceptance
 remain pending. Headless engines are not all released browsers/devices.

@@ -1,17 +1,18 @@
 Language0.20 task file reads are server-only native/reference operations.
 TypeScript/Node and the browser have no source filesystem bridge. Reachable
 server functions remain rejected, and unreachable server readers remain absent
-from emitted client/shared code. This does not widen the synchronous UI/worker
+from emitted client/shared code. Task workers have no filesystem authority. This does not widen the synchronous UI
 entry contract or alter browser dependencies/notices.
 
 Language0.19/0.20 standalone TypeScript modules execute reachable task effects through
 generated resumable functions and the independent event-loop task runtime.
 Ordinary `nex test --target web` awaits that scheduler; source suspension remains
 present. Public maps retain the checked source revision and operation sites.
-The pure synchronous title/initial/update/view and browser-worker contracts stay
-unchanged. Task functions or reachable task callables at those adapter boundaries
-are explicitly rejected with `E_TASK_UNIMPLEMENTED`; an asynchronous NEX UI or
-browser-worker task adapter remains pending. Synchronous standalone exports with
+The pure synchronous title/initial/update/view contracts stay unchanged. Task
+functions or reachable task callables at those UI boundaries are rejected with
+`E_TASK_UNIMPLEMENTED`. Toolchain0.120 additionally hosts task-only worker_compute
+in a dedicated module Worker; read browser-workers.md for its scheduler, limits
+and wire-only boundary. Main-thread asynchronous UI entries remain pending. Synchronous standalone exports with
 task-authority signatures but no reachable task effect are also pending. Pure
 helpers with those signatures work inside an emitted task execution scope.
 See [the task runtime contract](tasks-runtime-design.md).
@@ -19,7 +20,7 @@ See [the task runtime contract](tasks-runtime-design.md).
 Toolchain0.97 adds [typed browser worker jobs](browser-workers.md) through
 ordinary worker_compute/worker_commands entries. Actual worker execution has
 separate production-engine and installed-SDK evidence. Synchronous parallel_map
-keeps the semantics below; task-effect browser-worker integration remains pending.
+keeps the semantics below; task-effect browser-worker integration is described in browser-workers.md.
 
 Language0.18 adds ordered CPU map semantics to the synchronous TypeScript
 backend through serial evaluation, checked closure metadata and bounded group

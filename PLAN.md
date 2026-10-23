@@ -4,7 +4,17 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.119 / язык0.20
+## Текущий шаг: toolchain0.120 / язык0.20
+
+- [ ] Соединить task-only worker_compute с отдельным scheduler в Web Worker,
+  сохранив чистые main-thread UI/command entries и wire-only boundary.
+- [ ] Проверить реальные каналы/spawn/wait, ошибки, отмену/timeout, отзывчивость
+  UI и отсутствие server-кода в Chromium/Firefox/WebKit, затем matching SDK.
+- [ ] Проверить новый SDK на Astra x86-64 и CIX ARM64; GPU/NPU fixed adapters
+  имеют отдельную область и не означают завершение общего accelerator API.
+- [ ] Продолжить общий GPU/NPU API и остальные платформенные этапы после этого блока.
+
+## Сохранённый126–127: toolchain0.119 / язык0.20
 
 - [ ] Связать checked component source union и original runtime registries с
   LLDB/NEX-DAP для static/fixed-shared provider task frames.
