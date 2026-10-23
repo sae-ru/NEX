@@ -85,6 +85,9 @@ def package(args):
                       assembler_sha256=sdk_archive.digest(assembler),
                       archive_helper_sha256=sdk_archive.digest(Path(sdk_archive.__file__)))
         run('assemble', [python, assembler, '--sdk', sdk, '--output', case/'stage', '--notices', notices], environment)
+        # Assembly captures the explicitly selected linker into sdk-host.json.
+        # Relocated checks must use that relative selection, not the old prefix.
+        environment.pop('NEX_WASM_LD', None)
         moved = case/'moved SDK, % 🧠'; (case/'stage').rename(moved)
         manifest, _, _ = sdk_archive.inventory(moved)
         original_paths = [sdk] + [Path(item['source']).resolve() for item in manifest['files'].values() if 'source' in item]

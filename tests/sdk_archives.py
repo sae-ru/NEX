@@ -6,6 +6,7 @@ import io
 import json
 import os
 import shlex
+import shutil
 from pathlib import Path
 import sys
 import tarfile
@@ -20,6 +21,27 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_explicit_wasm_linker_is_captured_without_a_compiled_default(self):
+        spec=importlib.util.spec_from_file_location('wasm_bundle_selection',Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
+        bundle=importlib.util.module_from_spec(spec);spec.loader.exec_module(bundle)
+        doctor={'wasm_linker':'','other':'preserved'}
+        self.assertEqual(bundle.selected_wasm_linker(doctor,{}),doctor)
+        for value in ('','/missing/nex-test-wasm-ld'):
+            with self.subTest(value=value),self.assertRaisesRegex(ValueError,'executable LLVM 22.1'):
+                bundle.selected_wasm_linker(doctor,{'NEX_WASM_LD':value})
+        with tempfile.TemporaryDirectory(prefix='nex-wasm-version-') as directory:
+            wrong=Path(directory)/'wasm-ld'
+            wrong.write_text('#!/bin/sh\nprintf "LLD 21.1.0\\n"\n');wrong.chmod(0o755)
+            with self.assertRaisesRegex(ValueError,'LLVM 22.1.x'):
+                bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':str(wrong)})
+        actual=os.environ.get('NEX_WASM_LD') or shutil.which('wasm-ld')
+        if actual is None:
+            self.skipTest('actual LLVM22.1 wasm-ld was not selected for the packaging regression')
+        selected=bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':actual})
+        self.assertEqual(selected['wasm_linker'],str(Path(actual).absolute()))
+        self.assertEqual(selected['other'],'preserved')
+        self.assertEqual(doctor,{'wasm_linker':'','other':'preserved'})
+
     def test_debug_completion_keeps_exact_darwin_root_symbols(self):
         spec=importlib.util.spec_from_file_location('debug_completion',Path(__file__).resolve().parents[1]/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)

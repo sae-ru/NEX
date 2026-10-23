@@ -33,15 +33,18 @@ def main():
         dependencies=root/'web-dependencies';dependencies.mkdir()
         for name in ('package.json','package-lock.json'):
             shutil.copyfile(Path('/src/web')/name,dependencies/name)
+        cache=os.environ.get('NEX_NPM_CACHE')
+        if not cache or not Path(cache).is_dir():
+            raise RuntimeError('NEX_NPM_CACHE must select the populated locked offline cache')
         run('typescript-dependencies',['npm','--prefix',str(dependencies),'ci',
-            '--offline','--ignore-scripts','--no-audit','--no-fund'])
+            '--cache',cache,'--offline','--ignore-scripts','--no-audit','--no-fund'])
         tsc=dependencies/'node_modules/typescript/bin/tsc'
         if not tsc.is_file():raise RuntimeError('locked TypeScript compiler was not installed')
         os.environ['NEX_TSC']=str(tsc)
         report['typescript']={'compiler':str(tsc),
             'version':json.loads((dependencies/'node_modules/typescript/package.json').read_text())['version'],
             'lock_sha256':hashlib.sha256((dependencies/'package-lock.json').read_bytes()).hexdigest(),
-            'offline':True,'ignore_scripts':True}
+            'cache':cache,'offline':True,'ignore_scripts':True}
         run('ctest',['ctest','--test-dir','/build','--output-on-failure','-j',str(args.jobs)])
         text=(root/'Testing/Temporary/LastTest.log').read_text()
         report['case_counts']=[int(n) for n in re.findall(r'Ran (\d+) tests? in ',text)]

@@ -30,6 +30,19 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def selected_wasm_linker(doctor, environment):
+    """Package the explicit linker used by Wasm builds, even with no CMake default."""
+    if 'NEX_WASM_LD' not in environment:
+        return doctor
+    selected = shutil.which(environment['NEX_WASM_LD'], path=environment.get('PATH'))
+    if not selected:
+        raise ValueError('NEX_WASM_LD must select an executable LLVM 22.1 wasm-ld')
+    # Keep the selected filename for multicall LLVM tools' argv[0] dispatch.
+    if 'LLD 22.1.' not in run([selected, '--version'], env=environment):
+        raise ValueError('NEX_WASM_LD requires wasm-ld from LLVM 22.1.x')
+    return {**doctor, 'wasm_linker': str(Path(selected).absolute())}
+
+
 def system_path(path):
     return str(path).startswith(('/usr/lib/', '/System/Library/'))
 
@@ -210,6 +223,7 @@ class Bundle:
         environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
         environment.pop('NEX_CLANG', None)
         doctor = json.loads(run([self.sdk / 'bin/nex', 'doctor', '--json'], env=environment))
+        doctor = selected_wasm_linker(doctor, environment)
         if doctor.get('sdk_manifest') or not doctor.get('native_archiver'):
             raise ValueError('input must be an unbundled installed SDK with host-tool discovery (0.27+)')
         shutil.copytree(self.sdk, self.output, symlinks=True)
@@ -401,6 +415,7 @@ class LinuxBundle(Bundle):
             environment.pop(name, None)
         self.environment = environment
         doctor = json.loads(run([self.sdk / 'bin/nex', 'doctor', '--json'], env=environment))
+        doctor = selected_wasm_linker(doctor, environment)
         if doctor.get('sdk_manifest') or not doctor.get('native_linker'):
             raise ValueError('input must be an unbundled installed Linux SDK with LLVM LLD')
         if tuple(map(int, doctor['version'].split('.')[:2])) < (0, 28):

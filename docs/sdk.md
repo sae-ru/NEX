@@ -101,6 +101,13 @@ Select the host Apple SDK with `SDKROOT` as above, or use an explicit native
 `--toolchain` configuration with `sysroot`. The bundle does not carry Apple SDK
 headers or depend on Homebrew's machine-specific Clang config files.
 
+If the compiler has no configured Wasm linker, set `NEX_WASM_LD` to an executable
+LLVM22.1 `wasm-ld` when assembling the bundle. The packager validates its actual
+version and captures its bytes/notices under the relative SDK host descriptor;
+an empty, missing or incompatible explicit override fails before copying the
+SDK. The maintained macOS distribution helper clears this assembly override
+before checking moved/restored copies, which must select the bundled linker.
+
 The packager currently runs on macOS. It copies the installed compiler, matching
 resources, Clang/llvm-ar/dsymutil, Clang builtin/runtime resources, libc++ headers,
 SQLite/OpenSSL headers/libraries and their transitive non-system Mach-O libraries.
