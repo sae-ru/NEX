@@ -39,7 +39,15 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(reads['realm'], 'server')
         self.assertEqual(reads['guide'], pack['documents']['task_file_reads'])
         self.assertEqual(self.cli('guide', '--kind', 'task-file-reads')['text'], (REPO/reads['guide']).read_text())
-        for field in ('typescript', 'windows', 'wasm', 'http_task_handlers', 'binary_providers', 'writes', 'streams', 'task_debug_profile'):
+        self.assertIs(reads['binary_providers'], True)
+        self.assertIs(reads['provider_source_required'], True)
+        self.assertEqual(reads['provider_linkage'], ['static'])
+        providers = descriptor['task_providers']
+        self.assertEqual(providers, pack['task_providers'])
+        self.assertIs(providers['public_enabled'], True)
+        self.assertIs(providers['static_linkage'], True)
+        self.assertIs(providers['dynamic_linkage'], False)
+        for field in ('typescript', 'windows', 'wasm', 'http_task_handlers', 'writes', 'streams', 'task_debug_profile'):
             self.assertFalse(reads[field])
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
