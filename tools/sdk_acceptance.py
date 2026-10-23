@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'structured-task-profile', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -138,6 +138,15 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 115, 0):
+        debug = report.get('evidence', {}).get('structured_task_debug', {})
+        require(all(debug.get(key) is True for key in ('descriptor', 'actual_image_identity',
+                'source_deleted_archive', 'source_only_project', 'standalone_without_resources')),
+                'SDK acceptance lacks complete native task debugger delivery evidence')
+        if report.get('evidence', {}).get('live_debugger'):
+            require(all(debug.get(key) is True for key in ('logical_stack', 'initialized_locals',
+                    'pure_watch', 'logical_step', 'stale_references_rejected', 'graceful_exit')),
+                    'SDK acceptance lacks actual logical task debugger execution evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 114, 0):
         profile = report.get('evidence', {}).get('structured_task_profile', {})
         require(all(profile.get(key) is True for key in ('native_reference', 'exact_source_calls',
@@ -2367,6 +2376,125 @@ server fn main()->unit!{fs,io}{
                 else:
                     environment[key] = value
 
+    def structured_task_debug():
+        feature = cli('describe')['task_debugging']
+        require(feature['source_support'] and feature['public_launch'] and feature['catalog_abi'] == 1,
+                'SDK task debugger integration is not enabled')
+        directory = root/'structured-task-debug';directory.mkdir()
+        source = directory/'main.nex'
+        text = '''module task_debug_handoff;
+fn child(input:i64)->i64 !{task} {
+ let payload:list<i64>=[input,input+1];
+ task_yield();
+ let answer:i64=payload[1]; // task-sdk-break
+ return answer;
+}
+fn main()->unit !{task,io} {
+ let answer:i64=child(41);
+ print(answer);
+}
+'''
+        source.write_text(text)
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':'main.nex'}))
+        checked = cli('check',cwd=directory)
+        limits = ['--task-steps','2000000','--task-timeout-ms','60000','--task-workers','2']
+        session = cli('debug','--kind','nex-dap',*limits,cwd=directory)
+        manifest = json.loads(Path(session['manifest']).read_text())
+        metadata = json.loads((Path(manifest['program']).parent/'build.json').read_text())
+        view = manifest['task_debug']
+        require(manifest['schema']=='nex.debug/2' and view['schema']=='nex.task-debug-view/1' and
+                view['abi']==1 and view['deadline_advances_while_stopped'] is True and
+                metadata['task_debug'] is True and metadata['runtime_requirements']['task_debug'] is True,
+                'installed task debug artifact or ABI differs')
+        executable = Path(manifest['program'])
+        require(hashlib.sha256(executable.read_bytes()).hexdigest()==view['image_sha256'] and
+                bool(view['image_uuid']), 'task debug image identity is absent or differs')
+        source.unlink()
+        archived = cli('debug','--revision',checked['revision'],'--kind','nex-dap',*limits,cwd=directory)
+        require(archived['revision']==checked['revision'],'task debug archived revision differs')
+        session = archived;manifest = json.loads(Path(session['manifest']).read_text())
+        projected = manifest['sources'][0]['projection']
+        line = next(i+1 for i,value in enumerate(Path(projected).read_text().splitlines()) if '// task-sdk-break' in value)
+        evidence = {'descriptor':True,'actual_image_identity':True,'source_deleted_archive':True,
+            'source_only_project':False,'standalone_without_resources':False,'logical_stack':False,
+            'initialized_locals':False,'pure_watch':False,'logical_step':False,
+            'stale_references_rejected':False,'graceful_exit':False,'manifest':session['manifest']}
+        standalone = root/'task-debug-independent';shutil.copy2(manifest['program'],standalone)
+        previous = environment.get('NEX_RESOURCE_DIR')
+        try:
+            environment['NEX_RESOURCE_DIR']=str(root/'absent-task-debug-resources')
+            require(run([standalone,'--nex-task-workers','1'])=='42\n',
+                    'instrumented standalone task debug executable differs without resources')
+        finally:
+            if previous is None:environment.pop('NEX_RESOURCE_DIR',None)
+            else:environment['NEX_RESOURCE_DIR']=previous
+        evidence['standalone_without_resources']=True
+        architecture = root/'structured-task-debug-project';(architecture/'app').mkdir(parents=True)
+        (architecture/'app/main.nex').write_text(text)
+        (architecture/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':'app/main.nex'}))
+        (architecture/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1',
+            'default_configuration':'debug','configurations':{'debug':{'profile':'debug',
+                'task_limits':{'steps':2000000,'timeout_ms':60000,'workers':2}}},
+            'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}))
+        prepared = cli('project','--kind','debug','--component','app','--adapter','nex-dap',cwd=architecture)
+        project_session=prepared['observation']
+        evidence['project_manifest']=project_session['manifest']
+        require(prepared['graph_store_opened'] is False and not (architecture/'.nex/graph.db').exists(),
+                'project debug opened a graph store')
+        require(json.loads(Path(project_session['manifest']).read_text())['schema']=='nex.debug/2' and
+                project_session['launch']['nexTaskDebug'] is True,
+                'source-only project debug lost task manifest')
+        evidence['source_only_project']=True
+        if args.live:
+            client = DAP(session['adapter_command'],directory,environment)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True})
+                pending=client.send('launch',dict(session['launch'],disableASLR=False));client.event('initialized')
+                placed=client.request('setBreakpoints',{'source':{'path':projected},'breakpoints':[{'line':line}]})
+                require(placed['breakpoints'][0]['verified'],'logical source breakpoint was not verified')
+                client.request('configurationDone');client.response(pending);client.event('stopped')
+                tasks=client.request('threads');identity=tasks['nex']['selected']
+                require(type(identity) is int and any(t['id']==identity for t in tasks['threads']),
+                        'selected logical task is absent from task threads')
+                initial_stack=client.request('stackTrace',{'threadId':identity})
+                stack=initial_stack['stackFrames']
+                require([f['name'] for f in stack]==['task_debug_handoff::child','task_debug_handoff::main'],
+                        'actual retained child/caller stack differs')
+                frame=stack[0]['id'];scope=client.request('scopes',{'frameId':frame})['scopes'][0]
+                locals_=client.request('variables',{'variablesReference':scope['variablesReference']})['variables']
+                require({'input','payload'} <= {v['name'] for v in locals_} and
+                        'answer' not in {v['name'] for v in locals_},'locals include an uninitialized binding')
+                value=client.request('evaluate',{'expression':'input+1','frameId':frame,'context':'watch'})
+                require(value['nex']['value']=='42','logical pure scalar watch differs')
+                aggregate=client.request('evaluate',{'expression':'payload','frameId':frame,'context':'watch'})
+                reference=aggregate['variablesReference']
+                children=client.request('variables',{'variablesReference':reference})['variables']
+                require([v['value'] for v in children]==['41','42'],'owned immutable watch capture differs')
+                client.request('next',{'threadId':identity});client.event('stopped')
+                advanced_stack=client.request('stackTrace',{'threadId':identity})
+                advanced=advanced_stack['stackFrames'][0]
+                before,after=initial_stack['nex'],advanced_stack['nex']
+                require(advanced['name']=='task_debug_handoff::child' and
+                        before['task_id']==after['task_id']==identity and before['generation']==after['generation'] and
+                        before['frames'][0]['id']==after['frames'][0]['id'] and
+                        int(after['stop_id'])>int(before['stop_id']) and
+                        before['frames'][0]['point_id']!=after['frames'][0]['point_id'] and advanced['line']>line,
+                        'logical next did not advance the same task activation to a later source point')
+                answer=client.request('evaluate',{'expression':'answer','frameId':advanced['id'],'context':'watch'})
+                require(answer['nex']['value']=='42','logical next did not expose the initialized result')
+                try:client.request('variables',{'variablesReference':reference})
+                except RuntimeError as error:require('stale' in str(error),'old watch failed for another reason')
+                else:raise RuntimeError('logical watch reference survived continue')
+                client.request('continue',{'threadId':identity})
+                require(client.event('exited')['exitCode']==0,'logical task debug application failed')
+                evidence.update(logical_stack=True,initialized_locals=True,pure_watch=True,
+                    logical_step=True,stale_references_rejected=True,graceful_exit=True,
+                    step_before=before,step_after=after)
+            finally:client.close()
+        report['evidence']['structured_task_debug']=evidence
+
     def measured():
         measured = cli('profile', '--revision', state['after'], '--scenario', 'installed SDK handoff', cwd=project)
         require(measured['stdout'] == expected and measured['exit_code'] == 0, 'profile changed output')
@@ -2998,6 +3126,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-profile', structured_task_profile),
+                ('structured-task-debug', structured_task_debug),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

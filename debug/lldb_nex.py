@@ -278,8 +278,10 @@ def load(debugger, command, result, internal_dict):
         manifest.pop('_capsule_recorded_program', None)
         manifest.pop('_capsule_recorded_images', None)
         manifest.pop('_owned_images', None)
-        if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
+        if manifest.get("schema") not in ("nex.debug/1", "nex.debug/2") or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
+        if manifest.get('schema') == 'nex.debug/2':
+            _task_manifest(manifest)
         manifest['_owned_images'] = _owned_images(manifest, str(Path(manifest['program']).resolve()))
         mappings = manifest.get("source_map", [])
         if not isinstance(mappings, list) or len(mappings) > 4096:
@@ -311,7 +313,20 @@ def load(debugger, command, result, internal_dict):
         # never from paths supplied by a debug manifest or captured frame.
         manifest["_compiler"] = str(Path(arguments[2]).resolve(strict=True)) if len(arguments) == 3 else None
         manifest["_manifest"] = str(path.resolve())
-        _contexts[str(Path(manifest["program"]).resolve())] = manifest
+        program_key = str(Path(manifest["program"]).resolve())
+        previous = _contexts.get(program_key, {})
+        if previous.get('_task_marker'):
+            debugger.GetSelectedTarget().BreakpointDelete(previous['_task_marker'])
+        _contexts[program_key] = manifest
+        if manifest.get('schema') == 'nex.debug/2':
+            manifest['_task_breakpoints'] = {}
+            manifest['_task_selected'] = None
+            manifest['_task_plan'] = None
+            # lldb-dap initCommands run before target creation. Installing a
+            # breakpoint then fails; defer only the target-bound marker until
+            # the first trusted task request on the actual loaded target.
+            if debugger.GetSelectedTarget().IsValid():
+                _install_task_marker(debugger, manifest)
         result.PutCString("NEX debug views loaded for " + manifest["revision"])
     except Exception as error:
         result.SetError(str(error))
@@ -983,6 +998,10 @@ def _require_frame_image(target, frame, program):
 
 def _stopped(debugger, compiler=True):
     target = debugger.GetSelectedTarget()
+    context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
+    if context and context.get('schema') == 'nex.debug/2' and context.get('_task_selected'):
+        return _task_stopped(debugger, compiler, frame_index=context.get('_task_frame_index', 0))
+    target = debugger.GetSelectedTarget()
     process = target.GetProcess()
     if process.GetState() != lldb.eStateStopped:
         raise ValueError("NEX expressions require a stopped process")
@@ -1045,6 +1064,19 @@ def operation(debugger, command, result, internal_dict):
 
 
 def _fresh(process, snapshot):
+    if snapshot.get('schema') == 'nex.debug-frame/3':
+        if (process.GetState() != lldb.eStateStopped or str(process.GetStopID()) != snapshot['stop']['stop_id'] or
+                str(process.GetProcessID()) != snapshot['stop']['process_id'] or
+                str(process.GetUniqueID()) != snapshot['stop']['process_epoch']):
+            raise ValueError('logical task stop changed during capture/evaluation')
+        view = _TaskCatalog(process.GetTarget().GetDebugger())
+        slot, task = view.find(int(snapshot['stop']['task_id']))
+        if (str(task[3]) != snapshot['stop']['task_generation'] or str(task[0]) != snapshot['stop']['publication'] or
+                str(task[12]) != snapshot['stop']['visit'] or
+                not any(str(record[1]) == snapshot['stop']['frame_id'] and record[7] + 1 == snapshot['stop']['point_id']
+                        for _, record, _ in view.stack(slot, task))):
+            raise ValueError('logical task publication/activation changed during capture/evaluation')
+        return
     if (process.GetState() != lldb.eStateStopped or str(process.GetStopID()) != snapshot["stop"]["stop_id"]
             or str(process.GetSelectedThread().GetThreadID()) != snapshot["stop"]["thread_id"]
             or process.GetSelectedThread().GetSelectedFrame().GetFrameID() != snapshot["stop"]["frame_id"]):
@@ -1083,7 +1115,7 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
             if for_frame:
                 return None
             raise
-        if response.get("schema") == "nex.expression/1":
+        if response.get("schema") in ("nex.expression/1", "nex.task-expression/1"):
             return response
         if read_count >= 128:
             raise ValueError("expression capture exceeded 128 partial reads")
@@ -1140,7 +1172,7 @@ def evaluate_encoded(debugger, command, result, internal_dict):
         if len(command) > 65536:
             raise ValueError("encoded expression exceeds limit")
         payload = json.loads(base64.b64decode(command.strip(), validate=True).decode("utf-8"))
-        if not isinstance(payload, dict) or set(payload) - {"expression", "thread_id", "frame_index"}:
+        if not isinstance(payload, dict) or set(payload) - {"expression", "thread_id", "frame_index", "task_id"}:
             raise ValueError("invalid encoded expression request")
         expression = payload.get("expression")
         if not isinstance(expression, str) or not 1 <= len(expression.encode("utf-8")) <= 8192:
@@ -1148,6 +1180,16 @@ def evaluate_encoded(debugger, command, result, internal_dict):
         process = debugger.GetSelectedTarget().GetProcess()
         if process.GetState() != lldb.eStateStopped:
             raise ValueError("NEX expressions require a stopped process")
+        if 'task_id' in payload:
+            context = _task_context(debugger)
+            task_id, index = payload['task_id'], payload.get('frame_index', 0)
+            if type(task_id) is not int or task_id < 1 or type(index) is not int or not 0 <= index < 256 or 'thread_id' in payload:
+                raise ValueError('invalid logical expression frame')
+            _, _, snapshot, values = _task_stopped(debugger, True, task_id, index)
+            response = _capture(context, process, snapshot, values, expression)
+            _fresh(process, snapshot)
+            result.PutCString(json.dumps(response, ensure_ascii=False))
+            return
         if "thread_id" in payload or "frame_index" in payload:
             thread_id, index = payload.get("thread_id"), payload.get("frame_index")
             if not isinstance(thread_id, str) or not thread_id.isascii() or not thread_id.isdecimal() or not isinstance(index, int) or not 0 <= index < 4096:
@@ -1200,7 +1242,599 @@ def values(debugger, command, result, internal_dict):
         result.SetError(str(error))
 
 
+_TASK_NONE = (1 << 64) - 1
+_TASK_STATES = ('queued', 'running', 'ready', 'blocked', 'draining', 'terminal')
+_TASK_WAITS = ('none', 'future', 'send', 'receive', 'scope', 'external')
+_TASK_PHASES = ('entry', 'statement', 'loop_test', 'call_entry', 'resume', 'return')
+
+
+def _task_manifest(context):
+    view = context.get('task_debug')
+    if (not isinstance(view, dict) or view.get('schema') != 'nex.task-debug-view/1' or
+            view.get('abi') != 1 or view.get('catalog_symbol') != 'nex_task_debug_catalog_v1' or
+            view.get('marker_symbol') != 'nex_task_debug_stop_marker' or
+            not re.fullmatch('[0-9a-f]{64}', view.get('metadata_hash', '')) or
+            view.get('deadline_advances_while_stopped') is not True or
+            any(view.get(key) != value for key, value in (('maximum_codes', 16384), ('maximum_points', 262144),
+                ('maximum_bindings', 65536), ('maximum_visible_bindings', 1048576))) or
+            context.get('expression_protocol') != 'nex.task-debug-expression/1'):
+        raise ValueError('unsupported task debug catalog/manifest')
+    functions = context.get('functions')
+    if not isinstance(functions, list) or len(functions) > 16384:
+        raise ValueError('task debug function table exceeds bound')
+    codes = {}
+    points = bindings = visibility = 0
+    for function in functions:
+        metadata = function.get('task_debug')
+        if metadata is None:
+            continue
+        index = metadata.get('site_id')
+        if type(index) is not int or not 1 <= index <= 16384 or index - 1 in codes:
+            raise ValueError('invalid task debug code index')
+        if (not re.fullmatch('[0-9a-f]{64}', function.get('function_hash', '')) or
+                not re.fullmatch('[0-9a-f]{64}', function.get('function_source_hash', '')) or
+                not isinstance(function.get('name'), str) or not 1 <= len(function['name']) <= 4096 or '\0' in function['name'] or
+                not isinstance(metadata.get('file'), str) or not metadata['file'] or '\0' in metadata['file'] or
+                len(metadata['file'].encode('utf-8')) > 4096 or
+                type(metadata.get('slot_count')) is not int or not 0 <= metadata['slot_count'] <= 65536 or
+                not isinstance(metadata.get('bindings'), list) or not isinstance(metadata.get('points'), list)):
+            raise ValueError('invalid task debug function metadata')
+        ids = set()
+        for binding in metadata['bindings']:
+            identity, slot = binding.get('id'), binding.get('slot')
+            if (type(identity) is not int or identity < 1 or identity in ids or
+                    type(slot) is not int or not (0 <= slot < metadata['slot_count'] or (slot == -1 and binding.get('type') == 'unit')) or
+                    type(binding.get('scope')) is not int or binding['scope'] < 0 or
+                    not isinstance(binding.get('name'), str) or not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,255}', binding['name']) or
+                    not isinstance(binding.get('type'), str) or not 1 <= len(binding['type']) <= 4096):
+                raise ValueError('invalid task debug binding')
+            if type(binding.get('opaque')) is not bool:
+                raise ValueError('task binding requires explicit authority opacity')
+            ids.add(identity)
+        for number, point in enumerate(metadata['points']):
+            if (point.get('id') != number + 1 or type(point.get('pc')) is not int or point['pc'] < 0 or
+                    type(point.get('line')) is not int or point['line'] < 1 or
+                    type(point.get('column')) is not int or point['column'] < 1 or
+                    type(point.get('begin')) is not int or point['begin'] < 0 or
+                    type(point.get('end')) is not int or point['end'] < point['begin'] or
+                    point.get('phase') not in _TASK_PHASES or not isinstance(point.get('site'), str) or
+                    len(point['site']) > 4096 or '\0' in point['site'] or
+                    not isinstance(point.get('visible'), list) or len(point['visible']) > 65536 or
+                    any(type(identity) is not int or identity not in ids for identity in point['visible']) or
+                    len(set(point['visible'])) != len(point['visible'])):
+                raise ValueError('invalid task debug point/visibility')
+            if point.get('kind') != _TASK_PHASES.index(point['phase']):
+                raise ValueError('task point kind/phase differ')
+            visibility += len(point['visible'])
+        points += len(metadata['points']); bindings += len(metadata['bindings'])
+        if points > 262144 or bindings > 65536 or visibility > 1048576:
+            raise ValueError('task debug metadata exceeds total bounds')
+        codes[index - 1] = function
+    if set(codes) != set(range(len(codes))) or not codes:
+        raise ValueError('task debug code indices must be contiguous')
+    context['_task_codes'] = codes
+    return codes
+
+
+class _TaskCatalog:
+    """One borrowed all-stop view; no inferior calls, writes or owned Values."""
+    def __init__(self, debugger):
+        self.target = debugger.GetSelectedTarget()
+        self.process = self.target.GetProcess()
+        if self.process.GetState() != lldb.eStateStopped:
+            raise ValueError('task inspection requires an all-stop process')
+        self.stop_id = self.process.GetStopID()
+        self.program = str(Path(str(self.target.GetExecutable())).resolve())
+        self.context = _contexts.get(self.program)
+        if not self.context or self.context.get('schema') != 'nex.debug/2':
+            raise ValueError('load a matching task debug manifest')
+        process_epoch = (self.process.GetProcessID(), self.process.GetUniqueID())
+        if self.context.get('_task_process_id') != process_epoch:
+            self.context['_task_process_id'] = process_epoch
+            self.context['_task_selected'] = None
+            self.context['_task_plan'] = None
+        self.codes = self.context.get('_task_codes') or _task_manifest(self.context)
+        self.image = self.target.FindModule(self.target.GetExecutable())
+        if not self.image.IsValid() or str(Path(str(self.image.GetFileSpec())).resolve()) != self.program:
+            raise ValueError('task executable image differs')
+        identity = self.context['task_debug']
+        file_stat = os.stat(self.program, follow_symlinks=False)
+        image_stamp = (process_epoch, self.image.GetUUIDString(), file_stat.st_dev,
+                       file_stat.st_ino, file_stat.st_size, file_stat.st_mtime_ns, file_stat.st_ctime_ns)
+        if (self.image.GetUUIDString().replace('-', '').lower() != identity.get('image_uuid') or
+                (self.context.get('_task_verified_image') != image_stamp and
+                 _image_hash(self.program) != identity.get('image_sha256'))):
+            raise ValueError('task executable UUID/bytes differ from retained manifest')
+        self.context['_task_verified_image'] = image_stamp
+        if self.target.GetAddressByteSize() != 8:
+            raise ValueError('task debug ABI1 requires 64-bit pointers')
+        order = self.target.GetByteOrder()
+        if order not in (lldb.eByteOrderLittle, lldb.eByteOrderBig):
+            raise ValueError('unsupported target byte order')
+        self.endian = '<' if order == lldb.eByteOrderLittle else '>'
+        self.remaining = 64 * 1024 * 1024
+        self.deadline = time.monotonic() + 10
+        catalog = self.target.FindFirstGlobalVariable('nex_task_debug_catalog_v1')
+        if not catalog.IsValid() or catalog.GetByteSize() != 168:
+            raise ValueError('task catalog DWARF/global layout unavailable')
+        self.address = catalog.GetLoadAddress()
+        self.image_address(self.address, 168)
+        self.header = self.words(self.address, 21)
+        h = self.header
+        if (h[:8] != (0x4e45584442473031, 1, 168, 128, 80, 96, 72, 40) or
+                h[9] != len(self.codes) or not 0 < h[9] <= 16384 or
+                not 0 < h[11] <= 4096 or h[12] > h[11] or
+                not 0 < h[14] <= 65536 or h[15] > h[14] or h[19:] != (256, 256)):
+            raise ValueError('task catalog ABI/counts exceed checked bounds')
+        self.image_address(h[8], h[9] * 96)
+        if self.context.get('_task_metadata_stamp') != image_stamp:
+            self.context['_task_metadata_stamp'] = image_stamp
+            self.context['_task_metadata'] = {}
+        self._metadata = self.context['_task_metadata']
+
+    def fresh(self):
+        if self.process.GetState() != lldb.eStateStopped or self.process.GetStopID() != self.stop_id:
+            raise ValueError('task process stop changed during capture')
+        if time.monotonic() > self.deadline:
+            raise ValueError('task inspection exceeded ten-second capture bound')
+
+    def read(self, address, size):
+        self.fresh()
+        if (type(address) is not int or not 0 < address < (1 << 64) or
+                type(size) is not int or size < 0 or address + size >= (1 << 64) or size > self.remaining):
+            raise ValueError('task memory range exceeds capture bound')
+        self.remaining -= size
+        error = lldb.SBError()
+        data = self.process.ReadMemory(address, size, error)
+        if error.Fail() or len(data) != size:
+            raise ValueError('task memory is unavailable')
+        return data
+
+    def words(self, address, count):
+        if type(count) is not int or not 0 <= count <= 1048576:
+            raise ValueError('task word count exceeds bound')
+        return struct.unpack(self.endian + 'Q' * count, self.read(address, count * 8))
+
+    def image_address(self, address, size):
+        if not address or size < 1 or address + size >= (1 << 64):
+            raise ValueError('invalid task immutable image range')
+        for point in (address, address + size - 1):
+            if self.target.ResolveLoadAddress(point).GetModule() != self.image:
+                raise ValueError('task metadata pointer is outside retained image')
+
+    def text(self, address, expected):
+        encoded = expected.encode('utf-8') + b'\0'
+        if len(encoded) > 4097:
+            raise ValueError('task metadata string exceeds bound')
+        self.image_address(address, len(encoded))
+        if self.read(address, len(encoded)) != encoded:
+            raise ValueError('task immutable metadata differs from checked manifest')
+
+    def metadata(self, index):
+        if index in self._metadata:
+            return self._metadata[index]
+        function = self.codes.get(index)
+        if function is None:
+            raise ValueError('task frame has an unknown code index')
+        metadata = function['task_debug']
+        code = self.words(self.header[8] + index * 96, 12)
+        if (code[8] != len(metadata['points']) or code[9] != len(metadata['bindings']) or
+                code[10] > 1048576 or code[11] != metadata['slot_count']):
+            raise ValueError('task code counts differ from manifest')
+        self.image_address(code[0], 88)
+        descriptor = self.words(code[0], 11)
+        if descriptor[5] != 0x4e45585400000003 or descriptor[6] != code[11]:
+            raise ValueError('task execution descriptor ABI/slots differ')
+        symbol = function.get('task_continuation_symbol') or function.get('native_symbol')
+        matches = self.target.FindSymbols(symbol)
+        if matches.GetSize() > 128:
+            raise ValueError('task continuation symbol is ambiguous')
+        addresses = {matches.GetContextAtIndex(i).GetSymbol().GetStartAddress().GetLoadAddress(self.target)
+                     for i in range(matches.GetSize())}
+        if descriptor[0] not in addresses:
+            raise ValueError('task code descriptor points to a foreign continuation')
+        for pointer, expected in zip(code[1:5], (function['name'], metadata['file'], function['function_source_hash'], function['function_hash'])):
+            self.text(pointer, expected)
+        if code[8]: self.image_address(code[5], code[8] * 72)
+        if code[9]: self.image_address(code[6], code[9] * 40)
+        if code[10]: self.image_address(code[7], code[10] * 8)
+        bindings = metadata['bindings']
+        for number, binding in enumerate(bindings):
+            raw = self.words(code[6] + number * 40, 5)
+            if (raw[0], raw[3], raw[4]) != (binding['id'], binding['slot'] & _TASK_NONE, binding['scope']):
+                raise ValueError('task binding identity/layout differs')
+            self.text(raw[1], binding['name']); self.text(raw[2], binding['type'])
+        for number, point in enumerate(metadata['points']):
+            raw = self.words(code[5] + number * 72, 9)
+            if (raw[1:7] != (point['pc'], point['line'], point['column'], point['begin'], point['end'], _TASK_PHASES.index(point['phase'])) or
+                    raw[7] > code[10] or raw[8] > code[10] - raw[7]):
+                raise ValueError('task point identity/location differs')
+            self.text(raw[0], point['site'])
+            visible = self.words(code[7] + raw[7] * 8, raw[8]) if raw[8] else ()
+            if any(i >= len(bindings) for i in visible) or [bindings[i]['id'] for i in visible] != point['visible']:
+                raise ValueError('task lexical visibility differs from checked metadata')
+        self._metadata[index] = (function, code)
+        return function, code
+
+    def task(self, slot):
+        if type(slot) is not int or not 0 <= slot < self.header[12]:
+            raise ValueError('unknown task slot')
+        raw = self.words(self.header[10] + slot * 128, 16)
+        if (not raw[2] or not raw[3] or raw[6] >= len(_TASK_STATES) or raw[7] >= len(_TASK_WAITS) or
+                raw[11] > 256 or raw[13] & ~63):
+            raise ValueError('invalid task record')
+        return raw
+
+    def find(self, identity):
+        for slot in range(self.header[12]):
+            task = self.task(slot)
+            if task[2] == identity:
+                return slot, task
+        raise ValueError('unknown logical task')
+
+    def stack(self, slot, task=None):
+        task = self.task(slot) if task is None else task
+        if not task[0] or task[0] & 1 or task[13] & 1:
+            raise ValueError('task source is mutating or debugger capacity is unavailable')
+        frames = []
+        index, identity = task[9:11]
+        while index != _TASK_NONE:
+            if index >= self.header[14] or len(frames) >= 256:
+                raise ValueError('task frame chain exceeds bounds')
+            raw = self.words(self.header[13] + index * 80, 10)
+            if (not raw[0] or raw[0] & 1 or raw[1] != identity or raw[2] != task[2] or raw[9] & ~2 or
+                    raw[8] != task[11] - len(frames) or not raw[6] or raw[6] == _TASK_NONE or
+                    any(old[1] == raw[1] for _, old, _ in frames)):
+                raise ValueError('stale/torn task frame activation')
+            function, _ = self.metadata(raw[5])
+            if raw[7] >= len(function['task_debug']['points']):
+                raise ValueError('task activation has no published source point')
+            frames.append((index, raw, function))
+            index, identity = raw[3:5]
+        if len(frames) != task[11] or self.task(slot) != task:
+            raise ValueError('task publication changed during stack capture')
+        self.fresh()
+        return frames
+
+
+def _task_context(debugger):
+    target = debugger.GetSelectedTarget()
+    context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
+    if not context or context.get('schema') != 'nex.debug/2':
+        raise ValueError('load a task debug manifest')
+    if not context.get('_task_marker'):
+        _install_task_marker(debugger, context)
+    return context
+
+
+def _task_source(context, source):
+    for origin, projection in sorted(context.get('source_map', []), key=lambda pair: len(pair[0]), reverse=True):
+        if source == origin or source.startswith(origin.rstrip('/') + '/'):
+            return projection.rstrip('/') + source[len(origin.rstrip('/')):]
+    return source
+
+
+def _task_source_matches(context, requested, recorded):
+    if requested in (recorded, _task_source(context, recorded)):
+        return True
+    projection = _task_source(context, recorded)
+    return any(entry.get('original') == requested and entry.get('projection') == projection
+               for entry in context.get('sources', []))
+
+
+def _install_task_marker(debugger, context):
+    target = debugger.GetSelectedTarget()
+    breakpoint = target.BreakpointCreateByName('nex_task_debug_stop_marker')
+    if not breakpoint.IsValid():
+        raise ValueError('cannot install task checkpoint breakpoint')
+    breakpoint.SetScriptCallbackFunction(__name__ + '._task_marker')
+    breakpoint.AddName('_NEX_TASK_MARKER')
+    context['_task_marker'] = breakpoint.GetID()
+
+
+def _task_marker(frame, bp_loc, internal_dict):
+    try:
+        debugger = frame.GetThread().GetProcess().GetTarget().GetDebugger()
+        view = _TaskCatalog(debugger)
+        argument = frame.FindVariable('stop', lldb.eDynamicDontRunTarget)
+        if not argument.IsValid():
+            raise ValueError('task stop marker argument unavailable')
+        stop = view.words(_integer(argument), 8)
+        if stop[0] != view.address:
+            raise ValueError('foreign task marker catalog')
+        task = view.task(stop[1]); stack = view.stack(stop[1], task)
+        if not stack or (task[2], stack[0][0], stack[0][1][1], stack[0][1][7], task[12], task[0]) != stop[2:]:
+            raise ValueError('stale task marker publication')
+        _, activation, function = stack[0]
+        point = function['task_debug']['points'][activation[7]]
+        plan = view.context.get('_task_plan')
+        should_stop = False
+        if plan and plan['process_epoch'] == view.process.GetUniqueID() and plan['task_id'] == task[2] and plan['generation'] == task[3] and task[12] != plan['visit']:
+            mode = plan['mode']
+            should_stop = (mode == 'in' or (mode == 'next' and activation[8] <= plan['depth']) or
+                           (mode == 'out' and all(raw[1] != plan['frame_id'] for _, raw, _ in stack)))
+        for points in view.context.get('_task_breakpoints', {}).values():
+            if (activation[5], activation[7]) in points:
+                should_stop = True
+        if should_stop:
+            view.context['_task_selected'] = task[2]
+            view.context['_task_plan'] = None
+        return should_stop
+    except Exception as error:
+        # A failed read never auto-continues past a requested stop. Do not claim
+        # a valid logical frame; the next inspection reports it unavailable.
+        try:
+            context = _task_context(frame.GetThread().GetProcess().GetTarget().GetDebugger())
+            context['_task_error'] = str(error)[:512]
+        except Exception:
+            pass
+        return True
+
+
+def _task_optional(value):
+    engaged = _find_member(value, '__engaged_')
+    if engaged is None:
+        engaged = _find_member(value, '_M_engaged')
+    if engaged is None or _integer(engaged) != 1:
+        raise ValueError('retained slot is disengaged or has an unsupported optional layout')
+    pending = [(value.GetNonSyntheticValue(), 0)]
+    visited = 0
+    while pending:
+        node, depth = pending.pop(0); visited += 1
+        if visited > 128:
+            raise ValueError('retained optional layout exceeds bounds')
+        canonical = node.GetType().GetCanonicalType()
+        if canonical.GetName() == 'nexrt::Value':
+            return node.Cast(canonical)
+        if depth < 8 and not node.GetType().IsPointerType() and not node.GetType().IsArrayType():
+            for index in range(min(node.GetNumChildren(), 32)):
+                pending.append((node.GetChildAtIndex(index), depth + 1))
+    raise ValueError('retained owned Value layout is unavailable')
+
+
+def _task_stopped(debugger, compiler=True, task_id=None, frame_index=0):
+    view = _TaskCatalog(debugger)
+    if compiler and not view.context.get('_compiler'):
+        raise ValueError('task watches require an explicit trusted compiler')
+    identity = task_id or view.context.get('_task_selected')
+    if not identity:
+        raise ValueError('select a logical task with nex-task-select ID')
+    slot, task = view.find(identity)
+    stack = view.stack(slot, task)
+    if type(frame_index) is not int or not 0 <= frame_index < len(stack):
+        raise ValueError('logical task frame is unavailable')
+    index, record, function = stack[frame_index]
+    metadata = function['task_debug']; point = metadata['points'][record[7]]
+    layout = view.target.FindFirstType('nexrt::NativeTaskFrame')
+    if not layout.IsValid() or layout.GetByteSize() > 65536:
+        raise ValueError('matching retained frame DWARF is unavailable')
+    native = view.target.CreateValueFromAddress('task_frame', lldb.SBAddress(record[6], view.target), layout)
+    slots = _member(native, 'slots').GetSyntheticValue()
+    if not slots.IsValid() or slots.GetNumChildren() != metadata['slot_count']:
+        raise ValueError('retained slot vector differs from compiled descriptor')
+    declared = {binding['id']: binding for binding in metadata['bindings']}
+    visible = {}
+    # Lexical order is outer to inner. Keep exact binding IDs and select the
+    # innermost declaration for a name without reading shadowed values.
+    for binding_id in point['visible']:
+        binding = declared[binding_id]
+        visible[binding['name']] = binding
+    bindings, values = [], {}
+    for binding in list(visible.values())[:256]:
+        item = {'name': binding['name'], 'type': binding['type'], 'binding_id': binding['id'],
+                'unavailable': 'not captured'}
+        if record[9] & 2 or binding['slot'] == -1:
+            item['unavailable'] = 'returned activation or non-retained unit binding'
+        elif binding.get('opaque', True):
+            item['unavailable'] = 'opaque authority or effectful callable'
+        else:
+            try:
+                values[binding['name']] = _task_optional(slots.GetChildAtIndex(binding['slot']))
+            except ValueError as error:
+                item['unavailable'] = str(error)[:512]
+        bindings.append(item)
+    snapshot = {'schema': 'nex.debug-frame/3', 'language': view.context['language'],
+                'revision': view.context['revision'], 'build_key': view.context['build_key'],
+                'function': function['name'], 'function_hash': function['function_hash'],
+                'metadata_hash': view.context['task_debug']['metadata_hash'],
+                'stop': {'process_id': str(view.process.GetProcessID()), 'process_epoch': str(view.process.GetUniqueID()), 'stop_id': str(view.stop_id),
+                         'task_id': str(task[2]), 'task_generation': str(task[3]),
+                         'frame_id': str(record[1]), 'publication': str(task[0]),
+                         'visit': str(task[12]), 'point_id': record[7] + 1},
+                'bindings': bindings, 'truncated': len(visible) > 256, 'captures': []}
+    if view.task(slot) != task:
+        raise ValueError('task publication changed during local capture')
+    view.fresh()
+    return view.context, view.process, snapshot, values
+
+
+def _task_summary(view, slot, task):
+    result = {'id': task[2], 'generation': task[3], 'state': _TASK_STATES[task[6]],
+              'wait_reason': _TASK_WAITS[task[7]], 'wait_target': task[8],
+              'worker_id': str(task[5]), 'run_epoch': task[4],
+              'source_available': bool(task[0] and not task[0] & 1 and not task[13] & 1),
+              'not_started': bool(task[13] & 8), 'terminal': bool(task[13] & 16),
+              'origin_task_id': task[14], 'origin_frame_id': task[15]}
+    if task[1] & 1:
+        result['state'] = 'transition'; result['wait_reason'] = 'unavailable'
+    if result['source_available']:
+        try:
+            stack = view.stack(slot, task)
+            if stack:
+                point = stack[0][2]['task_debug']['points'][stack[0][1][7]]
+                result.update(function=stack[0][2]['name'], file=stack[0][2]['task_debug']['file'],
+                              line=point['line'], column=point['column'])
+        except ValueError as error:
+            result['source_available'] = False; result['unavailable'] = str(error)[:512]
+    return result
+
+
+def _task_request(debugger, request):
+    if not isinstance(request, dict) or not isinstance(request.get('command'), str):
+        raise ValueError('invalid logical debugger request')
+    context = _task_context(debugger)
+    command = request['command']; args = request.get('arguments', {})
+    if not isinstance(args, dict):
+        raise ValueError('invalid logical debugger arguments')
+    if command in ('breakpoints', 'function_breakpoints'):
+        entries = args.get('breakpoints', [])
+        if not isinstance(entries, list) or len(entries) > 1024:
+            raise ValueError('logical breakpoint count exceeds bound')
+        selected = set(); responses = []
+        deadline = time.monotonic() + 10
+        scans = 0
+        source = args.get('source', '')
+        for entry in entries:
+            if not isinstance(entry, dict) or any(key in entry for key in ('condition', 'hitCondition', 'logMessage')):
+                responses.append({'verified': False, 'message': 'conditional/hit/logical log breakpoints are pending'})
+                continue
+            matches = []
+            for index, function in context['_task_codes'].items():
+                metadata = function['task_debug']
+                for number, point in enumerate(metadata['points']):
+                    scans += 1
+                    if scans > 1048576 or (scans % 1024 == 0 and time.monotonic() > deadline):
+                        raise ValueError('logical breakpoint resolution exceeded its bounded scan')
+                    if command == 'function_breakpoints':
+                        match = entry.get('name') == function['name'] and point['phase'] == 'entry'
+                    else:
+                        match = (type(entry.get('line')) is int and point['line'] == entry['line'] and
+                                 _task_source_matches(context, source, metadata['file']))
+                        if entry.get('column'):
+                            match = match and point['column'] == entry['column']
+                    if match:
+                        matches.append((index, number))
+            selected.update(matches)
+            candidates = []
+            for code, point_index in matches[:256]:
+                function = context['_task_codes'][code]; point = function['task_debug']['points'][point_index]
+                candidates.append({'function': function['name'], 'point_id': point_index + 1,
+                                   'file': _task_source(context, function['task_debug']['file']),
+                                   'line': point['line'], 'column': point['column'], 'site': point['site']})
+            responses.append({'verified': bool(matches), 'line': candidates[0]['line'] if candidates else entry.get('line', 1),
+                              'message': str(len(matches)) + ' exact logical source points',
+                              'nex': {'points': candidates, 'truncated': len(matches) > len(candidates)}})
+        key = ('functions',) if command == 'function_breakpoints' else ('source', source)
+        groups = context['_task_breakpoints']
+        if (key not in groups and len(groups) >= 1024) or sum(len(value) for group, value in groups.items() if group != key) + len(selected) > 16384:
+            raise ValueError('logical breakpoint storage exceeds bounded point capacity')
+        groups[key] = selected
+        return {'breakpoints': responses}
+    if command == 'continue':
+        process = debugger.GetSelectedTarget().GetProcess()
+        if process.GetState() != lldb.eStateStopped:
+            raise ValueError('continue requires the current all-stop process')
+        context['_task_plan'] = None
+        if args.get('defer_continue') is True:
+            return {'armed': True, 'stop_id': str(process.GetStopID())}
+        error = process.Continue()
+        if error.Fail(): raise ValueError(str(error))
+        return {'continued': True}
+    view = _TaskCatalog(debugger)
+    if command == 'tasks':
+        rows = [_task_summary(view, slot, view.task(slot)) for slot in range(view.header[12])]
+        view.fresh()
+        return {'schema': 'nex.task-debug-tasks/1', 'tasks': rows, 'stop_id': str(view.stop_id),
+                'selected': context.get('_task_selected'), 'dropped_tasks': view.header[16],
+                'dropped_frames': view.header[17], 'invalid_transitions': view.header[18]}
+    identity = args.get('task_id', context.get('_task_selected'))
+    if type(identity) is not int or identity < 1:
+        raise ValueError('select a current logical task ID')
+    slot, task = view.find(identity)
+    if command == 'select':
+        context['_task_selected'] = identity
+        return _task_summary(view, slot, task)
+    stack = view.stack(slot, task)
+    if command == 'stack':
+        rows = []
+        for number, (_, record, function) in enumerate(stack):
+            point = function['task_debug']['points'][record[7]]
+            rows.append({'index': number, 'id': record[1], 'task_id': identity, 'name': function['name'],
+                         'function_hash': function['function_hash'], 'file': _task_source(context, function['task_debug']['file']),
+                         'line': point['line'], 'column': point['column'], 'point_id': record[7] + 1,
+                         'phase': point['phase'], 'site': point['site'], 'depth': record[8]})
+        return {'schema': 'nex.task-debug-stack/1', 'task_id': identity, 'generation': task[3],
+                'stop_id': str(view.stop_id), 'frames': rows}
+    if command == 'values':
+        _, _, snapshot, values = _task_stopped(debugger, False, identity, args.get('frame_index', 0))
+        rows = []
+        for binding in snapshot['bindings']:
+            row = dict(binding)
+            if binding['name'] in values:
+                try:
+                    row['preview'] = _preview(values[binding['name']])[:4096]
+                    row.pop('unavailable', None)
+                except Exception as error:
+                    row['unavailable'] = str(error)[:512]
+            rows.append(row)
+        _fresh(view.process, snapshot)
+        return {'schema': 'nex.task-debug-values/1', 'stop': snapshot['stop'], 'variables': rows,
+                'truncated': snapshot['truncated']}
+    if command in ('next', 'in', 'out'):
+        if not stack or task[13] & (1 | 8 | 16):
+            raise ValueError('logical task cannot be stepped in its current state')
+        if command == 'out' and len(stack) == 1:
+            raise ValueError('logical root activation has no caller; continue or select another task')
+        context['_task_selected'] = identity
+        context['_task_plan'] = {
+            'process_epoch': view.process.GetUniqueID(), 'task_id': identity, 'generation': task[3], 'frame_id': stack[0][1][1],
+            'depth': stack[0][1][8], 'visit': task[12], 'mode': command}
+        if args.get('defer_continue') is True:
+            # lldb-dap owns its event listener. Resuming inside its evaluate
+            # command can consume state events; the bridge sends a native
+            # all-thread continue only after this read-only arming response.
+            return {'armed': True, 'task_id': identity, 'stop_id': str(view.stop_id)}
+        error = view.process.Continue()
+        if error.Fail():
+            context['_task_plan'] = None
+            raise ValueError(str(error))
+        return {'continued': True, 'task_id': identity}
+    raise ValueError('unsupported logical debugger command')
+
+
+def task_request_encoded(debugger, command, result, internal_dict):
+    try:
+        if len(command) > 1048576:
+            raise ValueError('logical debugger request exceeds bound')
+        request = json.loads(base64.b64decode(command.strip(), validate=True).decode('utf-8'))
+        result.PutCString(json.dumps(_task_request(debugger, request), ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
+
+
+def task_command(debugger, command, result, internal_dict):
+    try:
+        words = shlex.split(command)
+        if not words:
+            words = ['tasks']
+        name = words.pop(0)
+        arguments = {}
+        if name == 'break':
+            if len(words) == 2 and words[0] == 'function':
+                request = {'command': 'function_breakpoints', 'arguments': {'breakpoints': [{'name': words[1]}]}}
+            elif len(words) == 3 and words[0] == 'line' and words[2].isascii() and words[2].isdecimal():
+                request = {'command': 'breakpoints', 'arguments': {'source': words[1], 'breakpoints': [{'line': int(words[2])}]}}
+            else:
+                raise ValueError('usage: nex-task-break function NAME | line FILE LINE')
+            result.PutCString(json.dumps(_task_request(debugger, request), ensure_ascii=False))
+            return
+        if words:
+            if len(words) > 2 or any(not word.isascii() or not word.isdecimal() for word in words):
+                raise ValueError('usage: nex-task tasks|select|stack|values|next|in|out [TASK_ID [FRAME_INDEX]]')
+            arguments['task_id'] = int(words[0])
+            if len(words) == 2: arguments['frame_index'] = int(words[1])
+        result.PutCString(json.dumps(_task_request(debugger, {'command': name, 'arguments': arguments}), ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
+
+
 def __lldb_init_module(debugger, internal_dict):
+    debugger.HandleCommand('command script add -f ' + __name__ + '.task_request_encoded nex-task-request-encoded')
+    debugger.HandleCommand('command script add -f ' + __name__ + '.task_command nex-task')
+    for alias, command in (('nex-tasks', 'tasks'), ('nex-task-select', 'select'), ('nex-task-stack', 'stack'),
+                           ('nex-task-values', 'values'), ('nex-task-break', 'break'), ('nex-task-next', 'next'),
+                           ('nex-task-in', 'in'), ('nex-task-out', 'out')):
+        debugger.HandleCommand('command alias ' + alias + ' nex-task ' + command)
     debugger.HandleCommand("command script add -f " + __name__ + ".operation nex-operation")
     debugger.HandleCommand("command script add -f " + __name__ + ".load nex-load-debug")
     debugger.HandleCommand("command script add -f " + __name__ + ".values nex-values")

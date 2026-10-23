@@ -2,7 +2,9 @@
 #include "nex/task_native.h"
 #include "nex_task_protocol.h"
 #include "nex_task_profile_site.h"
+#include "nex_task_debug_site.h"
 #include "nex/backend.h"
+#include "nex/native_images.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
 #include "nex/operations.h"
@@ -19,6 +21,8 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/SHA256.h"
+#include "llvm/ADT/StringExtras.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
@@ -43,6 +47,7 @@
 #include <tuple>
 #include <limits>
 #include <regex>
+#include <variant>
 
 namespace nex {
 namespace {
@@ -176,7 +181,7 @@ struct NativeEmissionContext {
   bool parallel;
 };
 class Emitter {
-  const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false,wasm=false;
+  const Program &p; DebugInfo debug; std::ostringstream out,globals; unsigned serial=0;bool prologue=false,profiling=false,wasm=false,taskDebug=false;
   std::vector<std::map<std::string,Value>> scopes;
   std::map<const Stmt*,std::string> slots;std::map<const Pattern*,std::string> patternSlots;std::map<const Expr*,std::string> shortSlots,matchSlots,matchResults;
   OperationIndex ownedSites;const OperationIndex &sites;std::string activeSite;
@@ -195,6 +200,7 @@ class Emitter {
   std::map<std::string,GlobalElement> globalElements;
   std::map<std::string,std::string> taskProfileSites;
   std::string taskProfileTable;
+  std::string taskDebugTable;
   std::string rawGlobal(const std::string &text){
     auto [found,inserted]=byteGlobals.emplace(text,"nex_bytes_"+std::to_string(serial++));
     if(inserted){
@@ -258,6 +264,48 @@ class Emitter {
       globalElements.emplace(reference,GlobalElement{taskProfileTable,arrayType,i});taskProfileSites.emplace(functions[i].name,reference);
     }
     globals<<"    llvm.return "<<array<<" : "<<arrayType<<"\n  }\n";
+  }
+  using MetadataField=std::variant<std::string,int64_t>;
+  std::string metadataArray(const std::string &prefix,const std::string &recordType,const std::vector<std::vector<MetadataField>> &rows){
+    if(rows.empty())return {};
+    auto name=prefix+std::to_string(serial++),type="!llvm.array<"+std::to_string(rows.size())+" x "+recordType+">";
+    globals<<"  llvm.mlir.global private constant @"<<name<<"() : "<<type<<" {\n    %d0 = llvm.mlir.undef : "<<type<<"\n";
+    unsigned n=1;std::string array="%d0";
+    for(size_t row=0;row<rows.size();++row){
+      auto record="%d"+std::to_string(n++);globals<<"    "<<record<<" = llvm.mlir.undef : "<<recordType<<"\n";
+      for(size_t column=0;column<rows[row].size();++column){
+        auto value="%d"+std::to_string(n++),next="%d"+std::to_string(n++);
+        if(auto pointer=std::get_if<std::string>(&rows[row][column])){
+          if(pointer->empty())globals<<"    "<<value<<" = llvm.mlir.zero : !llvm.ptr\n";
+          else globals<<"    "<<value<<" = llvm.mlir.addressof @"<<*pointer<<" : !llvm.ptr\n";
+        }else globals<<"    "<<value<<" = llvm.mlir.constant("<<std::get<int64_t>(rows[row][column])<<" : i64) : i64\n";
+        globals<<"    "<<next<<" = llvm.insertvalue "<<value<<", "<<record<<"["<<column<<"] : "<<recordType<<"\n";record=next;
+      }
+      auto next="%d"+std::to_string(n++);globals<<"    "<<next<<" = llvm.insertvalue "<<record<<", "<<array<<"["<<row<<"] : "<<type<<"\n";array=next;
+    }
+    globals<<"    llvm.return "<<array<<" : "<<type<<"\n  }\n";return name;
+  }
+  void taskDebugMetadata(const std::vector<TaskFunctionIR> &functions){
+    std::vector<std::vector<MetadataField>> codes;
+    for(const auto &ir:functions){
+      const auto &function=p.function(ir.name);
+      auto description=taskDebugFunctionMetadata(p,function,ir,p.location(function.span));
+      std::vector<std::vector<MetadataField>> bindings,points;std::vector<int64_t> visible;
+      for(const auto &value:*description.getArray("bindings")){const auto &binding=*value.getAsObject();
+        bindings.push_back({*binding.getInteger("id"),rawGlobal(binding.getString("name")->str()),rawGlobal(binding.getString("type")->str()),*binding.getInteger("slot"),*binding.getInteger("scope")});
+      }
+      for(const auto &value:*description.getArray("points")){const auto &point=*value.getAsObject();auto begin=visible.size();
+        for(const auto &id:*point.getArray("visible"))visible.push_back(*id.getAsInteger()-1);
+        points.push_back({rawGlobal(point.getString("site")->str()),*point.getInteger("pc"),*point.getInteger("line"),*point.getInteger("column"),
+          *point.getInteger("begin"),*point.getInteger("end"),*point.getInteger("kind"),int64_t(begin),int64_t(visible.size()-begin)});
+      }
+      auto pointArray=metadataArray("nex_task_debug_points_","!llvm.struct<(!llvm.ptr, i64, i64, i64, i64, i64, i64, i64, i64)>",points);
+      auto bindingArray=metadataArray("nex_task_debug_bindings_","!llvm.struct<(i64, !llvm.ptr, !llvm.ptr, i64, i64)>",bindings);
+      auto visibility=visible.empty()?std::string{}:taskArray(visible);
+      codes.push_back({taskCodes.at(ir.name),rawGlobal(ir.name),rawGlobal(p.location(function.span)),rawGlobal(hash(p.definition(function))),rawGlobal(hash(json(canonical(function),false))),
+        pointArray,bindingArray,visibility,int64_t(points.size()),int64_t(bindings.size()),int64_t(visible.size()),int64_t(ir.slots.size())});
+    }
+    taskDebugTable=metadataArray("nex_task_debug_codes_","!llvm.struct<(!llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, !llvm.ptr, i64, i64, i64, i64)>",codes);
   }
   void selectFunction(const Function &function){
     selectedFunction=&function;
@@ -646,6 +694,7 @@ class Emitter {
     declaration("nex_task_closure_new","!llvm.ptr, i64","!llvm.ptr");
     declaration("nex_task_closure_bind","!llvm.ptr, !llvm.ptr");
     runtimeDeclarations=false;
+    if(taskDebug){declaration("nex_task_debug_prepare","!llvm.ptr, i64");declaration("nex_task_debug_checkpoint","!llvm.ptr, i64");}
   }
   void taskStep(const TaskFunctionIR &ir){
     const auto &function=p.function(ir.name);selectFunction(function);debug.scope.clear();
@@ -664,8 +713,14 @@ class Emitter {
     for(size_t i=0;i<ir.code.size();++i)dispatch+=", "+std::to_string(i)+": ^task_"+std::to_string(i);
     dispatch+="]";line(dispatch,function.span);
     blockLabel("task_invalid");call("nex_task_frame_bad_pc",{frame},Type::Unit,function.span);line("llvm.unreachable",function.span);
+    std::map<size_t,std::vector<size_t>> sourcePoints;
+    if(taskDebug){if(!ir.debug)throw Error("E_TASK_STATE","task debugger metadata missing",function.span);
+      for(size_t point=0;point<ir.debug->points.size();++point)sourcePoints[ir.debug->points[point].pc].push_back(point);
+    }
     for(size_t i=0;i<ir.code.size();++i){
       const auto &op=ir.code[i];blockLabel("task_"+std::to_string(i));
+      if(auto found=sourcePoints.find(i);found!=sourcePoints.end())for(auto point:found->second)
+        call("nex_task_debug_checkpoint",{frame,c(point,ir.debug->points[point].span)},Type::Unit,ir.debug->points[point].span);
       auto site=sites.find(op.source);SiteScope taskSite(activeSite,site==sites.end()?pathSites.at("body"):site->second);
       auto next=[&]{line("cf.br ^task_"+std::to_string(i+1),op.span);};
       switch(op.kind){
@@ -722,7 +777,7 @@ class Emitter {
     out<<"  }\n";ownedToken={};
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={}){
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm);
     const auto computedNames=closure?std::set<std::string>{}:reachable(p,entry);
@@ -789,6 +844,7 @@ public:
         taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures),profiling?taskProfileSites.at(ir.name):""},
           {nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
       }
+      if(taskDebug)taskDebugMetadata(*tasks);
     }
     const auto &names=selected?*selected:completeNames;
     auto ownedBridges=context?std::set<std::string>{}:nativeFunctionBridges(p,completeNames);
@@ -860,6 +916,10 @@ public:
     if(tasks&&profiling){
       auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
       call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
+    }
+    if(tasks&&taskDebug){
+      auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskDebugTable+" : !llvm.ptr",main.span);
+      call("nex_task_debug_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);
     }
     if(foreign)call("nex_foreign_configure",{{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str}},Type::Unit,main.span);
     Value value;
@@ -1027,7 +1087,7 @@ ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSecon
   }catch(...){std::filesystem::remove_all(folder);throw;}
 }
 namespace {
-TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false){
+TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
   const auto &function=p.function(entry);auto ir=lowerTaskFunction(p,function);
   if(!function.captures.empty()||function.realm=="client")throw Error("E_TASK_UNIMPLEMENTED","compiled task step entry cannot have captures or client realm",function.span);
@@ -1035,14 +1095,14 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
   for(const auto &name:complete){
     const auto &f=p.function(name);
     validateNativeTaskFunction(p,f);
-    auto body=lowerTaskFunction(p,f,true);
+    auto body=lowerTaskFunction(p,f,true,taskDebug);
     for(const auto &slot:body.slots)if(containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
     tasks.push_back(std::move(body));
   }
   TaskNativeStep result;result.symbol=nativeSymbol(function.name)+"__task_step";result.descriptorSymbol=nativeSymbol(function.name)+"__task_code_address";result.parameters=ir.parameters;
   for(const auto &slot:ir.slots)result.slotKinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
-  result.mlir=Emitter(p,optimized,profiling).run(entry,function.test,!application,&pure,&complete,false,true,&tasks,taskLimits);return result;
+  result.mlir=Emitter(p,optimized,profiling,nullptr,false,nullptr,taskDebug).run(entry,function.test,!application,&pure,&complete,false,true,&tasks,taskLimits);return result;
 }
 }
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
@@ -1065,6 +1125,8 @@ void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   bool server=options.target=="server";
   bool tasks=usesNativeTasks(p,options.entry);
   for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
+  if(options.taskDebug&&(!tasks||options.profile!="debug"))
+    throw Error("E_OPTION","logical task debugging requires a task debug-profile application",p.function(options.entry).span);
   if(!nexrt::validTaskExecutionLimits(options.taskLimits))throw Error("E_OPTION","invalid task execution limits");
   if(!tasks&&(options.taskLimitsSpecified||options.taskLimits!=nexrt::TaskExecutionLimits{}))
     throw Error("E_OPTION","task execution limits require a reachable task effect",p.function(options.entry).span);
@@ -1241,6 +1303,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_files.cpp"});
     headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
+    if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
@@ -1274,7 +1337,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(storage)runtimeFiles["sqlite3.h"]=readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string());
   if(!options.foreignCatalogue.empty()&&(!foreign||options.libraryEntry||options.foreignCatalogue!="../foreign/host.json"))
     throw Error("E_PACKAGE","invalid packaged foreign catalogue build configuration");
-  std::string runtimeIdentity=options.foreignCatalogue+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
+  std::string runtimeIdentity=options.foreignCatalogue+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks)+":task_debug="+std::to_string(options.taskDebug);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
   if(storage)runtimeIdentity+=std::string(toolchain.sqliteInclude)+toolchain.sqliteLibrary+hash(readFile(toolchain.sqliteLibrary))+hash(readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string()));
   if(server)runtimeIdentity+=std::string(toolchain.opensslInclude)+toolchain.opensslSSL+toolchain.opensslCrypto+hash(readFile(toolchain.opensslSSL))+hash(readFile(toolchain.opensslCrypto))+hash(readFile((std::filesystem::path(toolchain.opensslInclude)/"openssl/ssl.h").string()));
   auto formatter=readFile(resourceFile("debug/lldb_nex.py"));auto dapAdapter=readFile(resourceFile("debug/nex_dap.py"));
@@ -1288,11 +1351,45 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     }
     capturedLibraries.push_back(std::move(bytes));libraryInputs.push_back(llvm::json::Object{{"path",library.path},{"hash",library.digest},{"abi",library.abi},{"contracts",std::move(contracts)},{"parallel",library.parallelCalls}});
   }
+  auto buildRoot=std::filesystem::absolute(directory);
+  auto sourcePaths=[&](const std::string &module,const std::string &source){
+    auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/2"},{"module",module},{"source",source}},false));
+    auto projection=(buildRoot/"source-cache"/sourceKey/"source.nex").string();
+    auto anchor=(buildRoot/"source-anchors"/hash(json(llvm::json::Array{"nex.native-source-anchor/2",module},false))/"source.nex").string();
+    return std::pair{projection,anchor};
+  };
+  std::map<std::string,llvm::json::Object> taskDebugFunctions;
+  llvm::json::Array debugRegistry;std::string taskDebugHash;
+  if(options.taskDebug){
+    if(names.size()>nexrt::maximumTaskDebugCodes)throw Error("E_DEBUG_INIT","task debugger code table exceeds its bound");
+    size_t totalPoints=0,totalBindings=0,totalVisible=0,textBytes=0;
+    auto text=[&](const std::string &value){if(value.size()+1>nexrt::maximumTaskDebugTextBytes-textBytes)throw Error("E_DEBUG_INIT","task debugger text exceeds its bound");textBytes+=value.size()+1;};
+    for(const auto &name:names){
+      const auto &function=p.function(name);auto module=p.units.contains(function.unit)?p.units.at(function.unit).module:p.module;
+      auto source=p.units.contains(function.unit)?p.units.at(function.unit).source:p.source;
+      auto file=sourcePaths(module,source).second;
+      auto metadata=taskDebugFunctionMetadata(p,function,file);metadata["site_id"]=taskDebugFunctions.size()+1;
+      auto points=metadata.getArray("points"),bindings=metadata.getArray("bindings");
+      totalPoints+=points->size();totalBindings+=bindings->size();
+      auto content=hash(p.definition(function)),canonicalHash=hash(json(canonical(function),false));
+      for(const auto &value:{name,file,content,canonicalHash})text(value);
+      for(const auto &value:*points){const auto &point=*value.getAsObject();totalVisible+=point.getArray("visible")->size();text(point.getString("site")->str());}
+      for(const auto &value:*bindings){const auto &binding=*value.getAsObject();text(binding.getString("name")->str());text(binding.getString("type")->str());}
+      if(totalPoints>nexrt::maximumTaskDebugPoints||totalBindings>nexrt::maximumTaskDebugBindings||totalVisible>nexrt::maximumTaskDebugVisibleBindings)
+        throw Error("E_DEBUG_INIT","task debugger source table exceeds its bound",function.span);
+      debugRegistry.push_back(llvm::json::Object{{"name",name},{"function_hash",canonicalHash},{"function_source_hash",content},{"task_debug",llvm::json::Object(metadata)}});
+      taskDebugFunctions.emplace(name,std::move(metadata));
+    }
+    auto bytes=json(llvm::json::Value(std::move(debugRegistry)),false);
+    auto storage=names.size()*sizeof(nexrt::TaskDebugCodeSite)+totalPoints*sizeof(nexrt::TaskDebugPoint)+totalBindings*sizeof(nexrt::TaskDebugBinding)+totalVisible*sizeof(int64_t)+textBytes;
+    if(storage>nexrt::maximumTaskDebugMetadataBytes||bytes.size()>nexrt::maximumTaskDebugMetadataBytes)throw Error("E_DEBUG_INIT","task debugger metadata exceeds its storage bound");
+    taskDebugHash=hash(bytes);
+  }
   llvm::json::Array exportInputs;for(const auto &entry:options.libraryExports)exportInputs.push_back(entry);
-  std::string linkageIdentity=json(llvm::json::Object{{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_limits_specified",options.taskLimitsSpecified},{"project_library_abi",options.projectLibraryABI},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"functions_only",options.functionsOnly},{"code_only",options.codeOnlyLibrary},{"exports",std::move(exportInputs)},{"libraries",llvm::json::Array(libraryInputs)}},false);
+  std::string linkageIdentity=json(llvm::json::Object{{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug},{"task_debug_abi",options.taskDebug?int64_t(nexrt::taskDebugCatalogABI):0},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"project_library_abi",options.projectLibraryABI},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"functions_only",options.functionsOnly},{"code_only",options.codeOnlyLibrary},{"exports",std::move(exportInputs)},{"libraries",llvm::json::Array(libraryInputs)}},false);
   std::string key=hash(revision(p)+json(sourceBundle(p),false)+p.path+options.profile+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+options.entry+std::to_string(options.libraryEntry)+std::to_string(server)+NEX_BUILD_ID+LLVM_VERSION_STRING+compiler+identity.output+runtimeIdentity+hash(formatter)+hash(dapAdapter)+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET")+linkageIdentity);
   auto folder=std::filesystem::absolute(std::filesystem::path(directory)/key);
-  auto buildRoot=std::filesystem::absolute(directory);auto plan=planNative(p,options.entry,options.libraryExports,options.projectLibraryABI);
+  auto plan=planNative(p,options.entry,options.libraryExports,options.projectLibraryABI);
   if(tasks){
     // Descriptors carry pointers into this image. Keep one checked continuation
     // object until a separately versioned provider/lifetime ABI exists.
@@ -1320,16 +1417,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(const auto &f:p.functions)if(names.contains(f.name)){
     collectType(f.result);for(const auto &param:f.params)collectType(param.type);for(const auto &capture:f.captures)collectType(capture.type);collectLocals(f.body);
     auto operations=operationTree(p,f);for(const auto &operation:operations)if(operation.ast)operationIndex[operation.ast]=operation.site;
-    debugFunctions.push_back(llvm::json::Object{{"name",f.name},{"function_hash",hash(json(canonical(f),false))},{"function_source_hash",hash(p.definition(f))},{"native_symbol",nativeSymbol(f.name)+(tasks&&f.effects.contains("task")?"__task_step":"")},{"callable_symbol",tasks&&f.effects.contains("task")?"":f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"task_continuation_symbol",tasks?nativeSymbol(f.name)+"__task_step":""},{"operation_sites",operationSites(f,operations)}});
+    auto function=llvm::json::Object{{"name",f.name},{"function_hash",hash(json(canonical(f),false))},{"function_source_hash",hash(p.definition(f))},{"native_symbol",nativeSymbol(f.name)+(tasks&&f.effects.contains("task")?"__task_step":"")},{"callable_symbol",tasks&&f.effects.contains("task")?"":f.closure||callableTargets.contains(f.name)?closureSymbol(f):""},{"task_continuation_symbol",tasks?nativeSymbol(f.name)+"__task_step":""},{"operation_sites",operationSites(f,operations)}};
+    if(options.taskDebug)function["task_debug"]=llvm::json::Object(taskDebugFunctions.at(f.name));
+    debugFunctions.push_back(std::move(function));
   }
-  auto sourcePaths=[&](const std::string &module,const std::string &source){
-    auto sourceKey=hash(json(llvm::json::Object{{"schema","nex.native-source/2"},{"module",module},{"source",source}},false));
-    auto projection=(buildRoot/"source-cache"/sourceKey/"source.nex").string();
-    // A library's entry and its consumer's package import name the same module.
-    // Its DWARF origin must survive those aliases and entry/import roles.
-    auto anchor=(buildRoot/"source-anchors"/hash(json(llvm::json::Array{"nex.native-source-anchor/2",module},false))/"source.nex").string();
-    return std::pair{projection,anchor};
-  };
   for(auto &[unitKey,unit]:snapshot.units){
     auto [projection,anchor]=sourcePaths(unit.module,unit.source);
     auto original=unit.path;unit.path=projection;
@@ -1350,7 +1441,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(auto &[unitKey,unit]:codeSnapshot.units)unit.path=debugAnchors.at(unitKey);
   codeSnapshot.path=debugAnchors.at(snapshot.units.empty()?"":snapshot.entryUnit);
   auto nativeSeed=json(llvm::json::Object{{"schema","nex.native-toolchain/1"},{"compiler_build",NEX_BUILD_ID},{"llvm",LLVM_VERSION_STRING},
-    {"position_independent",options.positionIndependent},{"parallel_call_scopes",parallel||options.projectLibraryABI||tasks},{"task_continuations",tasks},{"task_profiling",tasks&&profiling},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"toolchain_fingerprint",toolchainFingerprint},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
+    {"position_independent",options.positionIndependent},{"parallel_call_scopes",parallel||options.projectLibraryABI||tasks},{"task_continuations",tasks},{"task_profiling",tasks&&profiling},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_debug_abi",options.taskDebug?int64_t(nexrt::taskDebugCatalogABI):0},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"toolchain_fingerprint",toolchainFingerprint},{"compiler",compiler},{"compiler_identity",identity.output},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},
     {"sdkroot",environment("SDKROOT")},{"deployment",environment("MACOSX_DEPLOYMENT_TARGET")}},false);
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   result.libraryABI=hash(nativeSeed+coreABI+(tasks?runtimeIdentity:std::string()));
@@ -1395,7 +1486,21 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto debugFile=(folder/"debug.json").string(),formatterFile=(folder/"debugger/lldb_nex.py").string(),adapterFile=(folder/"debugger/nex_dap.py").string();
   llvm::json::Array completionInputs;completionInputs.push_back("library-abi.json");
   for(size_t i=0;i<capturedLibraries.size();++i)completionInputs.push_back("libraries/"+std::to_string(i)+".a");
-  auto debugText=json(llvm::json::Object{{"schema","nex.debug/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"runtime_view","nex.runtime-view/3"},{"expression_protocol","nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"source_map",std::move(debugSourceMap)},{"functions",std::move(debugFunctions)}})+"\n";
+  auto debugRecord=llvm::json::Object{{"schema",options.taskDebug?"nex.debug/2":"nex.debug/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},{"runtime_view","nex.runtime-view/3"},{"expression_protocol",options.taskDebug?"nex.task-debug-expression/1":"nex.debug-expression/3"},{"compiler_build",NEX_BUILD_ID},{"source_hash",hash(json(sourceBundle(p),false))},{"revision",revision(p)},{"build_key",key},{"program",result.executable},{"profile",options.profile},{ "target",target},{"compiler_target",compilerTarget},{"host_compatible",toolchain.hostCompatible},{"formatter",formatterFile},{"formatter_hash",hash(formatter)},{"dap_adapter",adapterFile},{"dap_adapter_hash",hash(dapAdapter)},{"heap_types",std::move(heapTypes)},{"sources",std::move(debugSources)},{"source_map",std::move(debugSourceMap)},{"functions",std::move(debugFunctions)}};
+  if(options.taskDebug)debugRecord["task_debug"]=llvm::json::Object{{"schema","nex.task-debug-view/1"},{"abi",nexrt::taskDebugCatalogABI},
+    {"catalog_symbol","nex_task_debug_catalog_v1"},{"marker_symbol","nex_task_debug_stop_marker"},{"metadata_hash",taskDebugHash},
+    {"image_sha256",""},{"image_uuid",""},{"deadline_advances_while_stopped",true},
+    {"maximum_codes",nexrt::maximumTaskDebugCodes},{"maximum_points",nexrt::maximumTaskDebugPoints},
+    {"maximum_bindings",nexrt::maximumTaskDebugBindings},{"maximum_visible_bindings",nexrt::maximumTaskDebugVisibleBindings}};
+  auto debugTextFor=[&]{auto record=llvm::json::Object(debugRecord);
+    if(options.taskDebug&&!objectArchive&&std::filesystem::is_regular_file(result.executable))try{
+      auto data=readFile(result.executable);auto &task=*record.getObject("task_debug");
+      task["image_sha256"]=llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(data)),true);
+      task["image_uuid"]=nativeImageUUID(result.executable);
+    }catch(const Error &){} // A corrupted cached image is repaired below.
+    return json(llvm::json::Value(std::move(record)))+"\n";
+  };
+  auto debugText=debugTextFor();
   auto debugIntact=[&](){
     if(!std::filesystem::is_regular_file(debugFile)||readFile(debugFile)!=debugText||!std::filesystem::is_regular_file(formatterFile)||readFile(formatterFile)!=formatter||!std::filesystem::is_regular_file(adapterFile)||readFile(adapterFile)!=dapAdapter)return false;
     for(const auto &[unitKey,unit]:snapshot.units){
@@ -1432,7 +1537,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile(debugFile,debugText);writeFile(formatterFile,formatter);writeFile(adapterFile,dapAdapter);
   writeFile((folder/"source-bundle.json").string(),json(sourceBundle(p))+"\n");
   const NativeEmissionContext emissionContext{callableTargets,parallel};
-  auto mlir=tasks?emitTaskNative(snapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
+  auto mlir=tasks?emitTaskNative(snapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling,options.taskDebug).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -1441,7 +1546,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
+        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,true,options.profile!="debug",options.taskLimits,profiling,options.taskDebug).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");
@@ -1476,6 +1581,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(foreign)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread","-DNEX_FOREIGN_ENABLED"});
       if(parallel||tasks)arguments.insert(arguments.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
       if(tasks)arguments.push_back("-DNEX_ASYNC_TASKS");
+      if(options.taskDebug)arguments.push_back("-DNEX_TASK_DEBUG_ENABLED");
       if(!options.foreignCatalogue.empty())arguments.push_back("-DNEX_FOREIGN_DEFAULT="+json(options.foreignCatalogue,false));
       if(component=="http_main.cpp")arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread"});
       if(options.profile=="profile")arguments.push_back("-fno-omit-frame-pointer");
@@ -1497,6 +1603,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     auto bridgeCompile=command({"-std=c++20","-c",bridge,"-I",runtimeProjection.string(),"-o",bridgeObject,"-g",optimization});
     if(profiling)bridgeCompile.push_back("-DNEX_PROFILE_ENABLED");
     if(tasks&&profiling)bridgeCompile.push_back("-DNEX_TASK_PROFILE_ENABLED");
+    if(options.taskDebug)bridgeCompile.push_back("-DNEX_TASK_DEBUG_ENABLED");
     if(options.positionIndependent)bridgeCompile.push_back("-fPIC");
     if(executeNativeBuildTool(bridgeCompile)!=0)throw Error("E_LINK","HTTP bridge compilation failed");
     link.push_back(bridgeObject);link.push_back(toolchain.opensslSSL);link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");
@@ -1535,6 +1642,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     for(size_t i=0;i<capturedLibraries.size();++i)link.push_back((folder/"libraries"/(std::to_string(i)+".a")).string());
     if(windows)link.push_back("-static");
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
+    if(options.taskDebug&&driverABI.isOSLinux())link.push_back("-Wl,--build-id=sha1");
     if(storage)link.push_back(toolchain.sqliteLibrary);
     if(driverABI.isOSDarwin()||driverABI.isOSLinux()) {
       // Select configured dynamic dependencies at execution time as well as
@@ -1561,11 +1669,16 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     writeFile((folder/"debug-symbols.complete").string(),hash(readFile(result.executable+".dSYM/Contents/Resources/DWARF/app"))+"\n");
   }
   if(!result.notices.empty())writeFile(result.notices,notices);
+  if(options.taskDebug){
+    debugText=debugTextFor();auto verified=llvm::json::parse(debugText);auto image=verified->getAsObject()->getObject("task_debug");
+    if(image->getString("image_sha256")->empty()||image->getString("image_uuid")->empty())throw Error("E_DEBUG_INIT","linked task debug image has no verified identity");
+    writeFile(debugFile,debugText);
+  }
   llvm::json::Array runtimeComponents;for(const auto &component:components)runtimeComponents.push_back(component);
   llvm::json::Object runtimeInputs;for(const auto &[file,contents]:runtimeFiles)runtimeInputs[file]=hash(contents);
   llvm::json::Object functionContracts;for(const auto &[name,digest]:result.functionContracts)functionContracts[name]=digest;
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Object{{"schema","nex.native-library-abi/1"},{"abi",result.libraryABI},{"compiler_build",NEX_BUILD_ID},{"target",target},{"code_only",options.codeOnlyLibrary},{"function_contracts",std::move(functionContracts)},{"static_libraries",llvm::json::Array(libraryInputs)}})+"\n");
-  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema","nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}}));
+  writeFile((folder/"build.json").string(),json(llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema","nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}}));
   verifyToolchain();writeFile((folder/"complete").string(),completion());return result;
 }
 }

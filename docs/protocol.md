@@ -4,6 +4,16 @@ version migration and consult pending descriptor integration gates.
 
 # NEX CLI and graph protocol 2
 
+Toolchain0.115 adds separate native logical task protocols without changing
+language0.20 or canonical graph identity. Discover `task_debugging` and read
+[logical task debugging](task-debugging.md). Task manifests use `nex.debug/2`,
+catalog views `nex.task-debug-view/1`, and captured frames `nex.debug-frame/3`.
+Pure inspection returns `nex.task-expression/1` with separately versioned task
+plan/demand shapes. The outer `nex.debug-session/1` gains an optional strict
+task branch; synchronous manifests/frames retain their existing protocols.
+Task identity and frame activation are distinct from OS threads, and captures
+expire when the process stop changes. Opaque authority is not a pure watch input.
+
 Toolchain0.87 adds external readonly `describe --kind index` and
 `describe --field PATH` responses (`nex.discovery/1`). See [scoped discovery](discovery.md)
 and `llm/discovery.schema.json`. They project exact values from the complete

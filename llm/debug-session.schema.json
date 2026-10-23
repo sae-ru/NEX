@@ -89,6 +89,65 @@
         "type": "string",
         "pattern": "^[^\\u0000]*$"
       }
+    },
+    "task_debug": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.task-debug-session/1"
+        },
+        "catalog_abi": {
+          "const": 1
+        },
+        "deadline_advances_while_stopped": {
+          "const": true
+        },
+        "task_execution": {
+          "type": "object",
+          "properties": {
+            "configured": {
+              "$ref": "#/$defs/task_limits"
+            },
+            "effective": {
+              "$ref": "#/$defs/task_limits"
+            },
+            "backend": {
+              "const": "native"
+            },
+            "executor_workers": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            },
+            "step_model": {
+              "const": "native resume and runtime polls"
+            },
+            "cooperative_deadline": {
+              "const": true
+            },
+            "identical_step_thresholds": {
+              "const": false
+            }
+          },
+          "required": [
+            "configured",
+            "effective",
+            "backend",
+            "executor_workers",
+            "step_model",
+            "cooperative_deadline",
+            "identical_step_thresholds"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "catalog_abi",
+        "deadline_advances_while_stopped",
+        "task_execution"
+      ],
+      "additionalProperties": false
     }
   },
   "$defs": {
@@ -156,9 +215,116 @@
             "maxLength": 4096,
             "pattern": "^[^\\u0000]*$"
           }
+        },
+        "nexTaskDebug": {
+          "const": true
+        }
+      }
+    },
+    "task_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 3,
+      "properties": {
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      },
+      "required": [
+        "steps",
+        "timeout_ms",
+        "workers"
+      ]
+    }
+  },
+  "description": "A fresh compiler response selects the checked executable/server and matching captured adapter. Paths are absolute compiler metadata, not authority from a saved receipt. Preparing this descriptor does not start the application, read runtime credentials or create its database. Runtime args are UTF-8 without NUL,4 KiB per member and64 KiB total. Project/server debugging preserves declared binary edges and request limits.",
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "task_debug"
+        ]
+      },
+      "then": {
+        "properties": {
+          "adapter": {
+            "const": "nex-dap"
+          },
+          "application_kind": {
+            "const": "executable"
+          },
+          "launch": {
+            "required": [
+              "nexTaskDebug"
+            ],
+            "properties": {
+              "nexTaskDebug": {
+                "const": true
+              },
+              "type": {
+                "const": "nex"
+              },
+              "stopOnEntry": {
+                "const": false
+              }
+            }
+          },
+          "nex_adapter": {
+            "properties": {
+              "launch": {
+                "required": [
+                  "nexTaskDebug"
+                ],
+                "properties": {
+                  "nexTaskDebug": {
+                    "const": true
+                  },
+                  "type": {
+                    "const": "nex"
+                  },
+                  "stopOnEntry": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "launch": {
+            "not": {
+              "required": [
+                "nexTaskDebug"
+              ]
+            }
+          },
+          "nex_adapter": {
+            "properties": {
+              "launch": {
+                "not": {
+                  "required": [
+                    "nexTaskDebug"
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     }
-  },
-  "description": "A fresh compiler response selects the checked executable/server and matching captured adapter. Paths are absolute compiler metadata, not authority from a saved receipt. Preparing this descriptor does not start the application, read runtime credentials or create its database. Runtime args are UTF-8 without NUL,4 KiB per member and64 KiB total. Project/server debugging preserves declared binary edges and request limits."
+  ]
 }

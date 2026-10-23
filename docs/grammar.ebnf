@@ -1,3 +1,5 @@
+(* Toolchain0.115 logical task debugger metadata adds no source syntax,
+   execution instructions, operation ordinals or canonical fields. *)
 (* Language0.20 retains019 syntax and adds semantic whole-file read suspension
    only in server functions declaring task and fs. Scope/spawn callbacks may be
    pure, task-only, or exactly server task/fs with caller task/fs authorization.

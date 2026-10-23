@@ -191,6 +191,77 @@ class Bridge:
         self.epoch = 0
         self.max_client_sequence = 0
         self.stopped_thread = None
+        self.task_mode = False
+        self.next_frame = 1
+        self.native_stopped_thread = None
+
+    def logical(self, request, command, arguments=None):
+        arguments = dict(arguments or {})
+        if command in ('next', 'in', 'out', 'continue'):
+            arguments['defer_continue'] = True
+        payload = base64.b64encode(json.dumps({'command': command, 'arguments': arguments or {}},
+                                            ensure_ascii=False).encode('utf-8')).decode('ascii')
+        backend = {'seq': request['seq'], 'type': 'request', 'command': 'evaluate',
+                   'arguments': {'context': 'repl', 'expression': '`nex-task-request-encoded ' + payload}}
+        self.pending[request['seq']] = {'request': request, 'kind': 'task_' + command, 'epoch': self.epoch}
+        write_packet(self.backend.stdin, backend)
+
+    def logical_response(self, pending, message):
+        request = pending['request']; command = request['command']; args = request.get('arguments', {})
+        if pending['kind'] == 'task_native_continue':
+            return self.response(request, {} if command != 'continue' else message.get('body', {}),
+                                 None if message.get('success') else message.get('message', message.get('body', {})))
+        if pending['epoch'] != self.epoch and command not in ('next', 'stepIn', 'stepOut', 'setBreakpoints', 'setFunctionBreakpoints'):
+            return self.response(request, error='logical task stop changed during inspection')
+        if not message.get('success'):
+            return self.response(request, error=message.get('message', message.get('body', {})))
+        try:
+            result = json.loads(message.get('body', {}).get('result', '').strip())
+            if not isinstance(result, dict):
+                raise ValueError('logical debugger returned a non-object')
+            if command in ('next', 'stepIn', 'stepOut', 'continue'):
+                if result.get('armed') is not True or self.native_stopped_thread is None:
+                    raise ValueError('logical resume requires its current all-stop worker event')
+                self.pending[request['seq']] = {'request': request, 'kind': 'task_native_continue', 'epoch': self.epoch}
+                return write_packet(self.backend.stdin, {'seq': request['seq'], 'type': 'request', 'command': 'continue',
+                    'arguments': {'threadId': self.native_stopped_thread, 'singleThread': False}})
+            if command == 'threads':
+                if result.get('schema') != 'nex.task-debug-tasks/1':
+                    raise ValueError('logical task list schema differs')
+                return self.response(request, {'threads': [{'id': task['id'],
+                    'name': 'task ' + str(task['id']) + ': ' + task.get('function', task['state']) +
+                            (' [' + task['wait_reason'] + ']' if task['wait_reason'] != 'none' else '')}
+                    for task in result['tasks']], 'nex': result})
+            if command == 'stackTrace':
+                if result.get('schema') != 'nex.task-debug-stack/1':
+                    raise ValueError('logical stack schema differs')
+                rows = []
+                start, count = args.get('startFrame', 0), args.get('levels', 0)
+                if type(start) is not int or type(count) is not int or start < 0 or count < 0:
+                    raise ValueError('invalid logical stack page')
+                for frame in result['frames'][start:start + min(count or 256, 256)]:
+                    if self.next_frame > 2147483647 or len(self.frames) >= 65536:
+                        raise ValueError('logical frame reference budget exhausted')
+                    identity = self.next_frame; self.next_frame += 1
+                    self.frames[identity] = {'task_id': result['task_id'], 'frame_index': frame['index']}
+                    rows.append({'id': identity, 'name': frame['name'], 'line': frame['line'], 'column': frame['column'],
+                                 'source': {'path': frame['file'], 'name': os.path.basename(frame['file'])},
+                                 'presentationHint': 'normal'})
+                return self.response(request, {'stackFrames': rows, 'totalFrames': len(result['frames']), 'nex': result})
+            if command == 'variables':
+                if result.get('schema') != 'nex.task-debug-values/1':
+                    raise ValueError('logical values schema differs')
+                start, count = args.get('start', 0), args.get('count', 0)
+                if type(start) is not int or type(count) is not int or start < 0 or count < 0:
+                    raise ValueError('invalid logical variables page')
+                variables = [{'name': entry['name'], 'type': entry['type'],
+                              'value': entry.get('preview', '<' + entry.get('unavailable', 'unavailable') + '>'),
+                              'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
+                             for entry in result['variables'][start:start + min(count or 1000, 1000)]]
+                return self.response(request, {'variables': variables, 'nex': result})
+            return self.response(request, result if command in ('setBreakpoints', 'setFunctionBreakpoints') else {})
+        except (KeyError, TypeError, ValueError) as error:
+            return self.response(request, error=str(error) + ': ' + str(message.get('body', {}))[:4096])
 
     def emit(self, message):
         original = message.get('seq')
@@ -315,6 +386,36 @@ class Bridge:
             return self.response(request, error='too many outstanding DAP requests')
         original = json.loads(json.dumps(request))
         command, args = request['command'], request.get('arguments', {})
+        if command == 'launch':
+            self.task_mode = args.pop('nexTaskDebug', False) is True
+        if self.task_mode:
+            if command in ('setExpression', 'setVariable'):
+                return self.response(request, error='logical task values are read-only')
+            if command == 'threads':
+                return self.logical(original, 'tasks')
+            if command == 'stackTrace':
+                return self.logical(original, 'stack', {'task_id': args.get('threadId')})
+            if command == 'scopes':
+                stored = self.frames.get(args.get('frameId'))
+                if stored is None:
+                    return self.response(request, error='unknown or stale logical frame')
+                reference = self.allocate({'logical': dict(stored)})
+                return self.response(request, {'scopes': [{'name': 'NEX retained locals', 'variablesReference': reference,
+                                                          'expensive': False, 'presentationHint': 'locals'}]})
+            if command == 'variables':
+                stored = self.references.get(args.get('variablesReference'))
+                if stored and 'logical' in stored:
+                    return self.logical(original, 'values', stored['logical'])
+            if command in ('next', 'stepIn', 'stepOut', 'continue'):
+                if any(value['kind'] in ('task_next', 'task_in', 'task_out', 'task_continue', 'task_native_continue') for value in self.pending.values()):
+                    return self.response(request, error='another logical resume is pending')
+                return self.logical(original, {'next': 'next', 'stepIn': 'in', 'stepOut': 'out', 'continue': 'continue'}[command],
+                                    {'task_id': args.get('threadId')})
+            if command == 'setBreakpoints':
+                return self.logical(original, 'breakpoints', {'source': args.get('source', {}).get('path', ''),
+                                                             'breakpoints': args.get('breakpoints', [])})
+            if command == 'setFunctionBreakpoints':
+                return self.logical(original, 'function_breakpoints', {'breakpoints': args.get('breakpoints', [])})
         if command in ('setExpression', 'setVariable'):
             return self.response(request, error='NEX expression adapter does not mutate stopped values')
         reference = args.get('variablesReference')
@@ -348,6 +449,8 @@ class Bridge:
             if not isinstance(expression, str) or not expression or len(expression.encode('utf-8')) > 8192:
                 return self.response(request, error='NEX expression requires 1..8192 UTF-8 bytes')
             native = args.get('context') == 'repl' and expression.startswith('`')
+            if self.task_mode and native:
+                return self.response(request, error='logical task watches accept pure NEX expressions only')
             if not native:
                 payload = {'expression': expression}
                 if 'frameId' in args:
@@ -370,9 +473,19 @@ class Bridge:
             self.references.clear(); self.backend_references.clear(); self.frames.clear()
             thread = message.get('body', {}).get('threadId') if message.get('event') == 'stopped' else None
             self.stopped_thread = thread if type(thread) is int and thread > 0 else None
+            self.native_stopped_thread = self.stopped_thread
+            if self.task_mode:
+                # A physical worker is not a logical task. The subsequent
+                # threads/stack query reads the current verified task catalog.
+                message.setdefault('body', {}).pop('threadId', None)
+                if message['event'] == 'stopped':
+                    message['body']['allThreadsStopped'] = True
+                self.stopped_thread = None
         if message.get('type') == 'response':
             pending = self.pending.pop(message.get('request_seq'), None)
             if pending is not None:
+                if pending['kind'].startswith('task_'):
+                    return self.logical_response(pending, message)
                 request = pending['request']
                 if request['command'] == 'threads' and pending['epoch'] != self.epoch:
                     return self.response(request, error='process stop changed during thread inspection')
@@ -412,7 +525,7 @@ class Bridge:
                     result = message.get('body', {}).get('result', '').strip()
                     try:
                         data = json.loads(result)
-                        if data.get('schema') != 'nex.expression/1' or not data.get('ok'):
+                        if data.get('schema') not in ('nex.expression/1', 'nex.task-expression/1') or not data.get('ok'):
                             raise ValueError('backend did not return a NEX expression result')
                         if data['type'] == 'unit':
                             variable = {'value': 'unit', 'type': 'unit', 'variablesReference': 0}

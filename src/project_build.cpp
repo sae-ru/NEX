@@ -281,7 +281,14 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(!f.test||owner(program.units.at(f.unit).path)!=name)fail("test entry must be a test owned by the selected component","E_TEST");
       native.testEntry=true;
     }
-    if(!native.entry.empty()&&usesTaskEffects(program,native.entry)){native.taskLimits=configuration.taskLimits;native.taskLimitsSpecified=configuration.taskLimitsSpecified;}
+    if(!native.entry.empty()&&usesTaskEffects(program,native.entry)){
+      native.taskLimits=configuration.taskLimits;native.taskLimitsSpecified=configuration.taskLimitsSpecified;
+      if(options.kind=="debug"){
+        if(configuration.profile!="debug"||c.kind!="executable"||!binaryProviders.empty()||!options.foreign.empty())fail("task debug requires a native debug executable with source-only dependencies; HTTP/provider/profile task debugging is pending","E_TASK_DEBUG");
+        if(options.adapter=="dap")fail("logical source task debugging requires lldb or nex-dap; raw DAP is pending","E_TASK_DEBUG");
+        native.taskDebug=true;
+      }
+    }
     native.libraryExports=c.exports;native.projectLibraryABI=c.kind!="source"&&c.kind!="web";
     native.codeOnlyLibrary=binaryProviders.contains(name)||c.kind=="shared_library"||(c.kind=="static_library"&&dynamicClosure.at(name));
     native.positionIndependent=sharedSelected;
@@ -654,7 +661,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }else{auto code=runInteractive(arguments,root);observation=Object{{"ok",code==0},{"exit_code",code}};}
       }
     }
-    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.machine?options.timeout:0);
+    if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0);
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
       {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",std::move(images.runtime)},

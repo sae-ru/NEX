@@ -25,10 +25,7 @@ std::string text(const Object &o,const char *k){auto v=o.getString(k);if(!v)fail
 std::string digest(const fs::path &p){return hash(readFile(p.string()));}
 std::string sha(const fs::path &p){auto data=readFile(p.string());return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(data)),true);}
 std::string uuid(const fs::path &p){
-  auto input=llvm::object::ObjectFile::createObjectFile(p.string());
-  if(!input)fail("cannot inspect linked image: "+llvm::toString(input.takeError()));
-  auto *object=input->getBinary();auto id=llvm::isa<llvm::object::MachOObjectFile>(object)?llvm::cast<llvm::object::MachOObjectFile>(object)->getUuid():llvm::object::getBuildID(object);
-  if(id.empty())fail("linked image has no UUID/build ID: "+p.string());return llvm::toHex(id,true);
+  return nativeImageUUID(p.string());
 }
 struct Temporary {fs::path path=createTemporaryDirectory("nex-native-image");~Temporary(){std::error_code ignored;fs::remove_all(path,ignored);}};
 void run(std::vector<std::string> args){if(executeNativeBuildTool(args)!=0)fail("native image tool failed; retained inputs describe the selected link");}
@@ -113,14 +110,13 @@ void provided(const Captured &stage,std::map<std::string,std::string> &contracts
 }
 }
 
-std::string nativeImageUUID(const std::string &path){return uuid(path);}
 
 NativeImageResults buildNativeImages(const std::string &directory,const std::vector<NativeImageInput> &inputs){
   if(inputs.empty())fail("shared image linking needs checked stages");
   auto root=fs::absolute(directory);auto tools=configureNative(inputs.front().options);llvm::Triple triple(tools.target);
   bool darwin=triple.isMacOSX();if(!darwin&&!triple.isOSLinux())fail("shared native images currently require macOS or Linux");
   std::map<std::string,Captured> stages;std::map<std::string,std::string> sources;std::set<std::string> components,notices;
-  bool storage=false,foreign=false,profiling=false,wire=false,files=false,parallel=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
+  bool storage=false,foreign=false,profiling=false,wire=false,files=false,parallel=false,taskDebug=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
   std::string foreignDefault;
   auto toolchainFingerprint=inspectNativeToolchain(inputs.front().options).hash;
   auto verifyToolchain=[&](){if(inspectNativeToolchain(inputs.front().options).hash!=toolchainFingerprint)fail("native image toolchain changed while linking");};
@@ -134,6 +130,10 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
       foreignDefault=selectedDefault;
     }
     auto requirements=stage.build.getObject("runtime_requirements");if(!requirements)fail("missing shared runtime requirements");
+    auto stageTaskDebug=requirements->getBoolean("task_debug").value_or(false);
+    if(stageTaskDebug!=input.options.taskDebug||stage.build.getBoolean("task_debug").value_or(false)!=stageTaskDebug)fail("captured task debug selection differs from its image stage");
+    if(stageTaskDebug&&(input.kind!="executable"||!input.dynamicDependencies.empty()||!input.staticDependencies.empty()))fail("task debug binary providers remain pending");
+    taskDebug|=stageTaskDebug;
     storage|=requirements->getBoolean("storage").value_or(false);foreign|=requirements->getBoolean("foreign").value_or(false);profiling|=requirements->getBoolean("profiling").value_or(false);
     wire|=requirements->getBoolean("wire").value_or(false);files|=requirements->getBoolean("files").value_or(false);
     parallel|=requirements->getBoolean("parallel").value_or(false);
@@ -148,10 +148,10 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   }
   Object runtimeInputs;for(const auto &[name,data]:sources)runtimeInputs[name]=hash(data);
   Array componentNames;for(const auto &name:components)componentNames.push_back(name);
-  Object requirements{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel}};
+  Object requirements{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"task_debug",taskDebug}};
   Object runtimeSeed{{"schema","nex.native-runtime-input/1"},{"compiler_build",NEX_BUILD_ID},{"abi",abi},{"toolchain",tools.identity},{"toolchain_fingerprint",toolchainFingerprint},{"profile",profile},
     {"cache",root.string()},{"cwd",fs::current_path().string()},{"inputs",std::move(runtimeInputs)},{"components",std::move(componentNames)},
-    {"shared_profile_identity",profiling},{"foreign",foreign},{"storage",storage},{"parallel",parallel},{"foreign_catalogue",foreignDefault}};
+    {"shared_profile_identity",profiling},{"task_debug",taskDebug},{"foreign",foreign},{"storage",storage},{"parallel",parallel},{"foreign_catalogue",foreignDefault}};
   auto runtimeText=json(JSON(Object(runtimeSeed)),false),runtimeKey=hash(runtimeText);auto runtimeFolder=root/("runtime-"+runtimeKey);
   auto extension=darwin?".dylib":".so";auto runtime=runtimeFolder/("libnex_runtime_"+runtimeKey+extension);auto projection=runtimeFolder/"runtime-inputs";
   for(const auto &[name,data]:sources)writeFile((projection/name).string(),data);
@@ -164,6 +164,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   if(!runtimeIntact()){
     std::vector<std::string> objects;auto runtimeFlags=flags(tools,projection,profile,foreign,true);
     if(parallel)runtimeFlags.insert(runtimeFlags.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
+    if(taskDebug)runtimeFlags.insert(runtimeFlags.end(),{"-DNEX_TASK_DEBUG_ENABLED","-DNEX_ASYNC_TASKS","-DNEX_STRUCTURED_WORKERS","-pthread"});
     if(!foreignDefault.empty())runtimeFlags.push_back("-DNEX_FOREIGN_DEFAULT="+json(foreignDefault,false));
     for(const auto &component:components){auto object=runtimeFolder/("runtime-"+std::to_string(objects.size())+".o");compile(tools,projection/component,object,runtimeFlags);objects.push_back(object.string());}
     if(storage)objects.push_back(tools.sqliteLibrary);
@@ -215,7 +216,12 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     auto stageFolder=fs::path(input.stage.executable).parent_path();copyCaptured(stageFolder/"program.mlir",folder/"program.mlir");copyCaptured(stageFolder/"program.ll",folder/"program.ll");copyCaptured(stageFolder/"source-bundle.json",folder/"source-bundle.json");
     auto debug=Object(stage.debug);debug["program"]=executable.string();debug["build_key"]=key;debug["owned_images"]=Array(imageInventory);
     for(const auto *file:{"lldb_nex.py","nex_dap.py"})copyCaptured(stageFolder/"debugger"/file,folder/"debugger"/file);
-    debug["formatter"]=(folder/"debugger/lldb_nex.py").string();debug["dap_adapter"]=(folder/"debugger/nex_dap.py").string();auto debugText=json(JSON(Object(debug)))+"\n";
+    debug["formatter"]=(folder/"debugger/lldb_nex.py").string();debug["dap_adapter"]=(folder/"debugger/nex_dap.py").string();
+    auto debugTextFor=[&]{auto record=Object(debug);if(auto task=record.getObject("task_debug")){
+      (*task)["image_sha256"]="";(*task)["image_uuid"]="";
+      if(fs::is_regular_file(executable))try{(*task)["image_sha256"]=sha(executable);(*task)["image_uuid"]=uuid(executable);}catch(const Error &){}
+    }return json(JSON(std::move(record)))+"\n";};
+    auto debugText=debugTextFor();
     auto compilation=Object(stage.compilation);compilation["build_key"]=key;compilation["image_inputs"]=Object(seed);compilation["owned_images"]=Array(imageInventory);
     compilation["stage_binary_inputs"]=JSON(*stage.compilation.get("static_libraries"));compilation["static_libraries"]=Array(staticInventory);
     compilation["shared_runtime_key"]=runtimeKey;
@@ -234,6 +240,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     }catch(const std::exception &){return false;}};
     if(!intact()){
       auto compileFlags=flags(tools,projection,profile,foreign,false);
+      if(taskDebug)compileFlags.push_back("-DNEX_TASK_DEBUG_ENABLED");
       if(server){
         // The common runtime supports the union of all images. This server
         // entry only configures foreign authority when its own closure needs it.
@@ -265,6 +272,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
       }
       link(tools,executable,std::move(linkInputs),darwin,shared,storage,foreign,server);
       verifyToolchain();
+      debugText=debugTextFor();
       if(darwin)writeFile((folder/"debug-symbols.complete").string(),digest(fs::path(executable.string()+".dSYM")/"Contents/Resources/DWARF"/executable.filename())+"\n");
       writeFile((folder/"debug.json").string(),debugText);writeFile((folder/"compilation.json").string(),json(JSON(Object(compilation)))+"\n");writeFile((folder/"library-abi.json").string(),json(JSON(Object(abiRecord))));writeFile((folder/"image-inputs.json").string(),json(JSON(Object(linkRecord))));writeFile((folder/"build.json").string(),json(JSON(Object(meta))));writeFile(built.notices,noticeText);writeFile((folder/"complete").string(),completionText());
     }else built.cached=true;

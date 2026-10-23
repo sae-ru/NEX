@@ -27,6 +27,9 @@ struct BuildOptions {
   std::vector<NativeLibraryInput> libraries;
   nexrt::TaskExecutionLimits taskLimits;
   bool taskLimitsSpecified=false;
+  // Explicit logical task debugger instrumentation; ordinary debug-profile
+  // builds retain their existing execution and metadata without these hooks.
+  bool taskDebug=false;
 };
 struct BuildResult {
   std::string executable, mlir, llvm, key;

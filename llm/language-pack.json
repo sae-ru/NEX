@@ -231,9 +231,13 @@
     "task_migration": "docs/task-migration.md",
     "task_limits": "docs/task-limits.md",
     "task_external_completion": "docs/task-external.md",
-    "task_file_reads": "docs/task-file-reads.md"
+    "task_file_reads": "docs/task-file-reads.md",
+    "task_debugging": "docs/task-debugging.md",
+    "task_debug_view_schema": "llm/task-debug-view.schema.json",
+    "task_debug_frame_schema": "llm/task-debug-frame.schema.json",
+    "task_debug_expression_schema": "llm/task-debug-expression.schema.json"
   },
-  "document_access": "nex guide --kind task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
+  "document_access": "nex guide --kind task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -846,7 +850,7 @@
     "pending": [
       "complete static region/lifetime inference",
       "asynchronous writes/streams/db/ffi/network",
-      "source-level async debugger and non-native task profiling",
+      "non-native task debugging/profiling",
       "provider ABI/lifetime",
       "full current installed SDK and platform delivery",
       "NEX UI adapter task integration",
@@ -881,7 +885,8 @@
         "file_read_bytes"
       ],
       "root_task_depth": 1,
-      "profile": true
+      "profile": true,
+      "debug": true
     },
     "private_ast_steps": {
       "entry_point": "TaskAstMachine",
@@ -1085,7 +1090,7 @@
       "asynchronous writes and streams",
       "source db/ffi/network task lowering",
       "browser filesystem and task network/UI/worker adapters",
-      "task debugger, Tracy and binary-provider ABI",
+      "combined task debug/profile, Tracy and binary-provider ABI",
       "full current regression, installed SDK and platform acceptance"
     ],
     "public_source_guide": "docs/task-file-reads.md",
@@ -1141,7 +1146,8 @@
       "Linux native source execution",
       "source-only project/replay delivery"
     ],
-    "task_profile": true
+    "task_profile": true,
+    "task_debug": true
   },
   "task_profile_collector": {
     "status": "development_integrated_native_tasks",
@@ -1217,6 +1223,84 @@
       "full current regression",
       "matching installed SDK26",
       "supported native platform acceptance"
+    ]
+  },
+  "task_debugging": {
+    "status": "development_native_source_tasks",
+    "source_support": true,
+    "guide": "docs/task-debugging.md",
+    "language": "0.20",
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "execution_task_abi": 3,
+    "catalog_abi": 1,
+    "manifest_schema": "nex.debug/2",
+    "view_schema": "nex.task-debug-view/1",
+    "frame_schema": "nex.debug-frame/3",
+    "process_model": "LLDB all-stop; read-only borrowed safe-point/accepted-park inspection",
+    "public_launch": true,
+    "nex_dap": true,
+    "raw_dap": false,
+    "source_only_project": true,
+    "logical_step": true,
+    "inferior_function_evaluation": false,
+    "source_value_retention": false,
+    "deadline_advances_while_stopped": true,
+    "limits": {
+      "tasks": 4096,
+      "live_frames": 65536,
+      "stack_depth": 256,
+      "locals": 256,
+      "codes": 16384,
+      "points": 262144,
+      "bindings": 65536,
+      "visible_indices": 1048576,
+      "metadata_text_bytes": 16777216,
+      "metadata_bytes": 67108864,
+      "host_manifest_bytes": 8388608
+    },
+    "pending": [
+      "full current regression",
+      "matching installed SDK27",
+      "supported platform acceptance",
+      "native helper logical-stack merge",
+      "target name before first activation",
+      "binary providers and HTTP task handlers",
+      "browser/TypeScript/reference and other platforms",
+      "combined task debug/profile"
+    ],
+    "schema_files": {
+      "view": "llm/task-debug-view.schema.json",
+      "frame": "llm/task-debug-frame.schema.json",
+      "expression": "llm/task-debug-expression.schema.json"
+    },
+    "source_cli": "nex debug FILE --kind nex-dap --json",
+    "project_cli": "nex project --kind debug --component NAME --adapter nex-dap --json",
+    "combined_debug_profile": false,
+    "queued_target_name": false,
+    "lldb_commands": [
+      "nex-tasks",
+      "nex-task-select TASK_ID",
+      "nex-task-stack [TASK_ID]",
+      "nex-task-values [TASK_ID [FRAME_INDEX]]",
+      "nex-task-break function QUALIFIED_NAME",
+      "nex-task-break line FILE LINE",
+      "nex-task-next [TASK_ID]",
+      "nex-task-in [TASK_ID]",
+      "nex-task-out [TASK_ID]"
+    ],
+    "dap_requests": [
+      "threads",
+      "stackTrace",
+      "scopes",
+      "variables",
+      "evaluate",
+      "next",
+      "stepIn",
+      "stepOut",
+      "continue"
     ]
   }
 }

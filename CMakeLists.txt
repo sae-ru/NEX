@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.114.0 LANGUAGES C CXX)
+project(NEX VERSION 0.115.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -48,7 +48,8 @@ target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3 OpenSSL::Crypto ${CMAKE_DL_LIBS})
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
-add_library(nex_native_backend STATIC src/backend.cpp src/native_toolchain.cpp src/incremental.cpp)
+add_library(nex_native_backend STATIC src/backend.cpp src/native_toolchain.cpp
+  src/native_image_identity.cpp src/incremental.cpp)
 target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
 target_include_directories(nex PRIVATE runtime)
@@ -573,3 +574,45 @@ add_test(NAME task_profile_versioned_native COMMAND nex_task_profile_versioned_p
   ${CMAKE_CURRENT_BINARY_DIR}/task-profile-versioned-evidence)
 set_tests_properties(task_profile_versioned_native PROPERTIES TIMEOUT 600)
 set_tests_properties(task_external_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_debug_build_probe tests/task_debug_build.cpp)
+target_link_libraries(nex_task_debug_build_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_debug_build_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_debug_build_probe PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(nex_task_debug_runtime_probe tests/task_debug_runtime.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp runtime/nex_task_debug.cpp)
+target_include_directories(nex_task_debug_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_debug_runtime_probe PRIVATE
+  NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_TASK_DEBUG_ENABLED)
+target_link_libraries(nex_task_debug_runtime_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_debug_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_runtime_native COMMAND nex_task_debug_runtime_probe)
+set_tests_properties(task_debug_runtime_native PROPERTIES TIMEOUT 120)
+
+add_test(NAME task_debugging_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_debugging.py $<TARGET_FILE:nex>
+  $<TARGET_FILE:nex_task_debug_build_probe>
+  --versioned-probe $<TARGET_FILE:nex_task_debug_versioned_probe>)
+set_tests_properties(task_debugging_native PROPERTIES TIMEOUT 900)
+
+add_executable(nex_task_debug_ir_probe tests/task_debug_ir.cpp)
+target_link_libraries(nex_task_debug_ir_probe PRIVATE nex_frontend)
+target_compile_options(nex_task_debug_ir_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_ir_native COMMAND nex_task_debug_ir_probe)
+set_tests_properties(task_debug_ir_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_debug_versioned_probe tests/task_debug_versioned.cpp)
+target_link_libraries(nex_task_debug_versioned_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_debug_versioned_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_debug_versioned_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_versioned_native COMMAND nex_task_debug_versioned_probe
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.19-sdk115-tasks.json
+  ${CMAKE_CURRENT_BINARY_DIR}/task-debug-versioned-evidence)
+set_tests_properties(task_debug_versioned_native PROPERTIES TIMEOUT 600)
+
+add_test(NAME task_debug_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_debug_native.py
+  $<TARGET_FILE:nex_task_debug_build_probe> $<TARGET_FILE:nex>)
+set_tests_properties(task_debug_native PROPERTIES TIMEOUT 900)

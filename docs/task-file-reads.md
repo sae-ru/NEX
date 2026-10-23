@@ -116,7 +116,7 @@ helpers/scopes cannot renew the root deadline. An outer forced process timeout
 does not establish joined cleanup.
 
 This subset does not enable writes, streaming reads, db/ffi/network bridges,
-task HTTP handlers, binary providers, task debugging/non-native profiling, TypeScript/Node
+task HTTP handlers, binary providers, combined task debugging/profiling, TypeScript/Node
 filesystem, browser filesystem, NEX UI adapters, Windows, Wasm or mobile tasks.
 Browser emission still rejects reachable server code and includes only reachable
 client/shared code. Existing pure/task TypeScript scheduling remains available.

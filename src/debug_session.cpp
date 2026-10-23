@@ -1,5 +1,6 @@
 #include "nex/debug_session.h"
 #include "nex/native_toolchain.h"
+#include "nex/task_limits.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Error.h"
 #include "nex_json.h"
@@ -74,8 +75,27 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(!build||build->getString("key")!=built.key||build->getString("revision")!=revision(p)||build->getString("compiler_build")!=NEX_BUILD_ID||
      (build->getString("kind")!="executable"&&build->getString("kind")!="http_server"))
     throw Error("E_DEBUG","debug launch requires its matching checked native application or HTTP server artifact");
-  if(auto requirements=build->getObject("runtime_requirements");requirements&&requirements->getBoolean("tasks").value_or(false))
-    throw Error("E_TASK_UNIMPLEMENTED","source task debugger attribution is not implemented");
+  auto requirements=build->getObject("runtime_requirements");
+  const bool tasks=requirements&&requirements->getBoolean("tasks").value_or(false);
+  auto debugManifest=llvm::json::parse(readBoundedText(manifest.string(),8*1048576,"debug manifest","E_DEBUG"));
+  if(!debugManifest)throw Error("E_DEBUG","invalid build debug manifest: "+llvm::toString(debugManifest.takeError()));
+  if(!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
+  auto debug=debugManifest->getAsObject();llvm::json::Object taskControl;
+  if(tasks){
+    auto view=debug->getObject("task_debug");auto limits=build->get("task_limits");
+    if(kind=="dap")throw Error("E_TASK_DEBUG","logical source task debugging requires lldb or nex-dap; raw DAP is pending");
+    if(std::string(programLanguage(p))!="0.20"||build->getString("kind")!="executable"||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
+       debug->getString("schema")!="nex.debug/2"||debug->getString("language")!=programLanguage(p)||debug->getString("revision")!=revision(p)||debug->getString("build_key")!=built.key||
+       debug->getString("program")!=built.executable||debug->getString("compiler_build")!=NEX_BUILD_ID||debug->getString("source_hash")!=hash(json(sourceBundle(p),false))||
+       !view||view->getString("schema")!="nex.task-debug-view/1"||view->getInteger("abi")!=1||view->getString("metadata_hash")!=build->getString("task_debug_metadata_hash")||
+       !view->getString("image_sha256")||view->getString("image_sha256")->size()!=64||!view->getString("image_uuid")||view->getString("image_uuid")->empty()||!limits)
+      throw Error("E_TASK_DEBUG","task debug launch requires its matching020 native debug executable and catalog ABI1");
+    auto configured=parseTaskLimitsJSON(*limits,"E_DEBUG");
+    if(json(llvm::json::Value(taskLimitsJSON(configured)),false)!=json(*limits,false))throw Error("E_DEBUG","task debug limits are not canonical");
+    auto argv=arguments;argv.insert(argv.begin(),built.executable);auto effective=taskEffectiveLimits(configured,argv);
+    taskControl=llvm::json::Object{{"schema","nex.task-debug-session/1"},{"catalog_abi",1},{"deadline_advances_while_stopped",true},
+      {"task_execution",taskExecutionJSON(configured,effective,"native")}};
+  }
   llvm::json::Array commands{
     "command script import "+json((folder/"debugger/lldb_nex.py").string(),false),
     "nex-load-debug "+json(manifest.string(),false)+" --compiler "+json(compiler,false)};
@@ -90,18 +110,18 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   if(!available&&!backend){auto result=capture({"xcrun","--find","lldb-dap"});if(result.code==0){dap=llvm::StringRef(result.output).trim().str();available=!dap.empty();}}
 #endif
   llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
-  llvm::json::Object launch{{"type",kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},
+  llvm::json::Object launch{{"type",tasks||kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},
     {"program",built.executable},{"cwd",directory},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
-  auto debugManifest=llvm::json::parse(readFile(manifest.string()));
-  if(!debugManifest||!debugManifest->getAsObject())throw Error("E_DEBUG","invalid build debug manifest");
+  if(tasks)launch["nexTaskDebug"]=true;
   if(auto mappings=debugManifest->getAsObject()->getArray("source_map"))launch["sourceMap"]=llvm::json::Array(*mappings);
   if(!arguments.empty()){llvm::json::Array values;for(const auto &argument:arguments)values.push_back(argument);launch["args"]=std::move(values);}
   auto nexLaunch=launch;nexLaunch["type"]="nex";
   llvm::json::Object session{{"schema","nex.debug-session/1"},{"ok",true},{"revision",revision(p)},{"build_key",built.key},
     {"application_kind",build->getString("kind")->str()},{"host_compatible",built.hostCompatible},
-    {"manifest",manifest.string()},{"adapter",kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
+    {"manifest",manifest.string()},{"adapter",tasks||kind=="nex-dap"?"nex-dap":"lldb-dap"},{"launch",std::move(launch)},
     {"nex_adapter",llvm::json::Object{{"schema","nex.dap-adapter/1"},{"available",available},{"command",llvm::json::Array(adapterCommand)},{"launch",std::move(nexLaunch)}}}};
-  if(kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);
+  if(tasks)session["task_debug"]=std::move(taskControl);
+  if(tasks||kind=="nex-dap")session["adapter_command"]=std::move(adapterCommand);
   return session;
 }
 }

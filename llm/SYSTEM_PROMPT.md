@@ -1,3 +1,10 @@
+When `task_debugging` is present, check its `source_support` and `public_launch`
+fields before using logical task debug commands. Read docs/task-debugging.md.
+An unavailable/odd publication cannot authorize a watch; reacquire after a fresh
+stop. Preserve task IDs separately from native worker IDs and retain explicit
+reviewed task limits; deadlines advance while stopped. Opaque task/file/grant
+authority must not be reconstructed as a pure watch input.
+
 # NEX coding prompt — language 0.20, protocol 2
 
 Query `nex describe --json` for the actual language and structured task support.

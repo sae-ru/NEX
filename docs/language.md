@@ -1,5 +1,11 @@
 # NEX language specification 0.20
 
+Toolchain0.115 is integrating external logical task debug metadata and controls.
+Discover `task_debugging` for current enablement and read
+[the task debugger contract](task-debugging.md). This tooling adds no source
+syntax, effect, realm, operation ordinal or canonical field; language0.20 and
+explicit history-preserving migration stay unchanged.
+
 Language0.20 adds asynchronous whole-file reads in actual server functions
 that declare task and fs. The existing read operations keep their types; there
 is no new syntax or reserved name. Native macOS/Linux applications, source-only
@@ -12,7 +18,7 @@ Explicit018/019 rechecks retain their original rules and identities. The020
 checker creates distinct revisions and requires history-preserving migration;
 never relabel an old project. Native continuations and independent AST/TypeScript
 schedulers remain separate implementations. Complete static lifetime inference,
-write/stream/db/ffi/network task bridges, task debugging/non-native profiling, provider lifetime,
+write/stream/db/ffi/network task bridges, non-native task debugging/profiling, provider lifetime,
 UI integration and other task platforms remain pending.
 
 Toolchain0.114 adds native020 task profiling without changing source semantics

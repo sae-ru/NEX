@@ -1,5 +1,6 @@
 #include "nex/task_ir.h"
 #include "nex/task_frontend.h"
+#include "nex/operations.h"
 #include <algorithm>
 #include <functional>
 
@@ -11,6 +12,74 @@ class Lowering {
   bool fileReads=false;
   TaskFunctionIR result;
   std::vector<std::map<std::string,TaskSlotId>> scopes;
+  std::vector<std::map<std::string,uint32_t>> debugScopes;
+  std::vector<uint32_t> debugScopeIds;
+  uint32_t nextDebugScope=0;
+  size_t debugVisibleCount=0;
+  bool opaqueType(const Type &type,bool unknownFunctions,std::set<std::string> &seen)const{
+    if(type==Type::File||type.kind==Type::Task||type.kind==Type::TaskScope||type.kind==Type::Channel)return true;
+    if(type.kind==Type::Function&&(!type.effects.empty()||unknownFunctions))return true;
+    if(type.element&&opaqueType(*type.element,unknownFunctions,seen))return true;
+    for(const auto &argument:type.arguments)if(opaqueType(argument,unknownFunctions,seen))return true;
+    if(type.kind==Type::Record&&seen.insert(type.name).second)
+      for(auto field:program.structure(type.name).members())if(opaqueType(field->type,unknownFunctions,seen))return true;
+    return false;
+  }
+  bool opaqueType(const Type &type,bool unknownFunctions)const{std::set<std::string> seen;return opaqueType(type,unknownFunctions,seen);}
+  bool opaqueValue(E value)const{
+    if(!value)return true;
+    if(opaqueType(value->type,false))return true;
+    if(!opaqueType(value->type,true))return false;
+    if(value->kind==Expr::Name){
+      for(auto scope=debugScopes.rbegin();scope!=debugScopes.rend();++scope)
+        if(auto found=scope->find(value->text);found!=scope->end())return result.debug->bindings[found->second-1].opaque;
+      return true;
+    }
+    if(value->kind==Expr::FunctionRef||value->kind==Expr::Lambda){
+      const auto &function=program.function(value->text);
+      for(const auto &capture:function.captures){
+        bool known=false;
+        for(auto scope=debugScopes.rbegin();scope!=debugScopes.rend();++scope)
+          if(auto found=scope->find(capture.name);found!=scope->end()){
+            if(result.debug->bindings[found->second-1].opaque)return true;
+            known=true;break;
+          }
+        if(!known&&opaqueType(capture.type,true))return true;
+      }
+      return false;
+    }
+    if(value->kind==Expr::List||(value->kind==Expr::Call&&(program.hasStructure(value->text)||program.variant(value->text)))){
+      for(auto argument:value->args)if(opaqueValue(argument))return true;
+      return false;
+    }
+    if((value->kind==Expr::Index||value->kind==Expr::Field)&&!value->args.empty())return opaqueValue(value->args[0]);
+    return true; // A dynamic function result can carry an unexposed authority capture.
+  }
+  void enter(){
+    scopes.emplace_back();
+    if(result.debug){debugScopes.emplace_back();debugScopeIds.push_back(++nextDebugScope);}
+  }
+  void leaveScope(){
+    scopes.pop_back();if(result.debug){debugScopes.pop_back();debugScopeIds.pop_back();}
+  }
+  void binding(TaskSlotId slot,const std::string &name,const Type &type,Span span,E value={}){
+    if(!result.debug)return;
+    auto &metadata=*result.debug;
+    if(metadata.bindings.size()>=65536)throw Error("E_DEBUG_INIT","task debugger exceeds65536 named bindings",span);
+    auto id=uint32_t(metadata.bindings.size()+1);
+    metadata.bindings.push_back({id,debugScopeIds.back(),uint32_t(debugScopes.size()-1),slot,name,type,span,value?opaqueValue(value):opaqueType(type,true)});
+    debugScopes.back()[name]=id;
+  }
+  void point(TaskDebugPointIR::Kind kind,Span span,const void *source=nullptr){
+    if(!result.debug)return;
+    auto &metadata=*result.debug;
+    if(metadata.points.size()>=262144)throw Error("E_DEBUG_INIT","task debugger exceeds262144 source points",span);
+    TaskDebugPointIR point;point.kind=kind;point.pc=result.code.size();point.span=span;point.source=source;
+    for(const auto &scope:debugScopes)for(const auto &[name,id]:scope)point.visible.push_back(id);
+    if(point.visible.size()>1048576-debugVisibleCount)throw Error("E_DEBUG_INIT","task debugger exceeds1048576 visibility entries",span);
+    debugVisibleCount+=point.visible.size();
+    metadata.points.push_back(std::move(point));
+  }
   size_t emit(TaskInstruction instruction){
     if(result.code.size()>=262144)throw Error("E_TASK_LIMIT","continuation exceeds262144 instructions",instruction.span);
     result.code.push_back(std::move(instruction));return result.code.size()-1;
@@ -38,23 +107,24 @@ class Lowering {
   void constant(TaskSlotId output,bool value,Span span){
     TaskInstruction op;op.kind=TaskInstruction::Eval;op.span=span;op.output=output;op.atom=std::make_shared<Expr>();op.atom->kind=Expr::Boolean;op.atom->number=value;op.atom->type=Type::Bool;op.atom->span=span;emit(std::move(op));
   }
-  void leave(Span span){for(const auto &[name,id]:scopes.back())drop(id,span);scopes.pop_back();}
+  void leave(Span span){for(const auto &[name,id]:scopes.back())drop(id,span);leaveScope();}
   void finish(TaskSlotId value,Span span,const void *source=nullptr,bool propagated=false){
+    point(TaskDebugPointIR::Return,span,source);
     TaskInstruction op;op.kind=TaskInstruction::Return;op.span=span;op.source=source;op.propagatedError=propagated;if(value!=noTaskSlot)op.inputs={value};emit(std::move(op));
   }
   P pattern(P original,std::vector<TaskSlotId> &bindings){
     auto value=std::make_shared<nex::Pattern>(*original);value->args.clear();
-    if(value->kind==nex::Pattern::Binding){auto id=slot(value->type,value->span,value->text,false);scopes.back()[value->text]=id;bindings.push_back(id);value->text=taskSlotName(id);value->binding=id;}
+    if(value->kind==nex::Pattern::Binding){auto id=slot(value->type,value->span,value->text,false);scopes.back()[value->text]=id;binding(id,value->text,value->type,value->span);bindings.push_back(id);value->text=taskSlotName(id);value->binding=id;}
     for(auto child:original->args)value->args.push_back(pattern(child,bindings));return value;
   }
   std::pair<TaskSlotId,bool> matching(E expression){
     auto input=expr(expression->args[0]);auto output=slot(expression->type,expression->span);std::vector<size_t> ends;
     bool allReturn=expression->statementMatch;
     for(const auto &arm:expression->arms){
-      scopes.emplace_back();TaskInstruction test;test.kind=TaskInstruction::Pattern;test.span=arm->span;test.source=arm->pattern.get();test.output=slot(Type::Bool,arm->span);test.inputs={input};test.pattern=pattern(arm->pattern,test.bindings);
+      enter();TaskInstruction test;test.kind=TaskInstruction::Pattern;test.span=arm->span;test.source=arm->pattern.get();test.output=slot(Type::Bool,arm->span);test.inputs={input};test.pattern=pattern(arm->pattern,test.bindings);
       auto condition=test.output;auto bindings=test.bindings;emit(std::move(test));auto matched=branch(condition,arm->span);result.code[matched].yes=result.code.size();drop(condition,arm->span);
       size_t guarded=0;TaskSlotId guard=noTaskSlot;
-      if(arm->guard){guard=expr(expression->args[arm->guard]);guarded=branch(guard,arm->span);result.code[guarded].yes=result.code.size();drop(guard,arm->span);}
+      if(arm->guard){point(TaskDebugPointIR::Statement,expression->args[arm->guard]->span,expression->args[arm->guard].get());guard=expr(expression->args[arm->guard]);guarded=branch(guard,arm->span);result.code[guarded].yes=result.code.size();drop(guard,arm->span);}
       bool returned=false;
       if(expression->statementMatch)returned=block(arm->body,false);
       else{auto value=expr(expression->args[arm->value]);copy(output,value,arm->span);drop(value,arm->span);}
@@ -62,7 +132,7 @@ class Lowering {
       if(!returned){for(const auto &[name,id]:scopes.back())drop(id,arm->span);ends.push_back(jump(arm->span));}
       if(arm->guard){result.code[guarded].no=result.code.size();drop(guard,arm->span);for(const auto &[name,id]:scopes.back())drop(id,arm->span);}
       auto failed=jump(arm->span);result.code[matched].no=result.code.size();drop(condition,arm->span);for(auto id:bindings)drop(id,arm->span);
-      result.code[failed].yes=result.code.size();scopes.pop_back();
+      result.code[failed].yes=result.code.size();leaveScope();
     }
     TaskInstruction failed;failed.kind=TaskInstruction::Fail;failed.operation="E_MATCH";failed.span=expression->span;emit(std::move(failed));
     for(auto end:ends)result.code[end].yes=result.code.size();
@@ -90,15 +160,20 @@ class Lowering {
     if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes")))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
     else if(original->kind==Expr::Invoke&&original->args[0]->type.effects.contains("task")){op.kind=TaskInstruction::Call;op.indirect=true;}
     else if(original->kind==Expr::Call&&!builtinNames(true).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).effects.contains("task")){op.kind=TaskInstruction::Call;op.operation=original->text;}
+    bool sourceCall=original->kind==Expr::Call||original->kind==Expr::Invoke;
+    bool resumes=op.kind==TaskInstruction::Pause||op.kind==TaskInstruction::Call;
+    if(sourceCall)point(TaskDebugPointIR::Call,original->span,original.get());
     op.atom=std::move(atom);auto inputs=op.inputs;emit(std::move(op));
+    if(resumes)point(TaskDebugPointIR::Resume,original->span,original.get());
     if(original->kind!=Expr::Name)for(auto id:inputs)drop(id,original->span);return output;
   }
   bool block(const std::vector<S> &body,bool scoped=true){
-    if(scoped)scopes.emplace_back();bool returned=false;
+    if(scoped)enter();bool returned=false;
     for(const auto &s:body){
+      if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
-      case Stmt::Let:case Stmt::Var:{auto value=expr(s->expr);auto id=slot(s->type,s->span,s->name,false);copy(id,value,s->span);drop(value,s->span);scopes.back()[s->name]=id;break;}
-      case Stmt::Assign:{auto value=expr(s->expr);copy(lookup(s->name,s->span),value,s->span);drop(value,s->span);break;}
+      case Stmt::Let:case Stmt::Var:{auto value=expr(s->expr);auto id=slot(s->type,s->span,s->name,false);copy(id,value,s->span);drop(value,s->span);binding(id,s->name,s->type,s->span,s->expr);scopes.back()[s->name]=id;break;}
+      case Stmt::Assign:{auto value=expr(s->expr);copy(lookup(s->name,s->span),value,s->span);drop(value,s->span);if(result.debug&&opaqueValue(s->expr))for(auto scope=debugScopes.rbegin();scope!=debugScopes.rend();++scope)if(auto found=scope->find(s->name);found!=scope->end()){result.debug->bindings[found->second-1].opaque=true;break;}break;}
       case Stmt::Expression:drop(expr(s->expr),s->span);break;
       case Stmt::Return:finish(s->expr?expr(s->expr):noTaskSlot,s->span,s.get());returned=true;break;
       case Stmt::Match:returned=matching(s->expr).second;break;
@@ -107,29 +182,30 @@ class Lowering {
         result.code[choice].no=result.code.size();drop(condition,s->span);bool no=block(s->alternative);if(!yes)result.code[end].yes=result.code.size();returned=yes&&no;break;
       }
       case Stmt::While:{
-        auto top=result.code.size();TaskInstruction poll;poll.kind=TaskInstruction::Poll;poll.span=s->span;poll.source=s.get();emit(std::move(poll));auto condition=expr(s->expr);auto choice=branch(condition,s->span);result.code[choice].yes=result.code.size();drop(condition,s->span);if(!block(s->body))jump(s->span,top);
+        auto top=result.code.size();point(TaskDebugPointIR::Loop,s->expr->span,s->expr.get());TaskInstruction poll;poll.kind=TaskInstruction::Poll;poll.span=s->span;poll.source=s.get();emit(std::move(poll));auto condition=expr(s->expr);auto choice=branch(condition,s->span);result.code[choice].yes=result.code.size();drop(condition,s->span);if(!block(s->body))jump(s->span,top);
         result.code[choice].no=result.code.size();drop(condition,s->span);break;
       }
       }
       if(returned)break;
     }
-    if(scoped){if(!returned)leave(body.empty()?Span{}:body.back()->span);else scopes.pop_back();}return returned;
+    if(scoped){if(!returned)leave(body.empty()?Span{}:body.back()->span);else leaveScope();}return returned;
   }
 public:
-  Lowering(const Program &program,const Function &function):program(program){
+  Lowering(const Program &program,const Function &function,bool debugMetadata):program(program){
     fileReads=supportsTaskFileReads(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
-    result.name=function.name;result.result=function.result;scopes.emplace_back();
-    for(const auto &capture:function.captures){auto id=slot(capture.type,capture.span,capture.name,false);scopes.back()[capture.name]=id;result.captures.push_back(id);}
-    for(const auto &parameter:function.params){auto id=slot(parameter.type,parameter.span,parameter.name,false);scopes.back()[parameter.name]=id;result.parameters.push_back(id);}
+    result.name=function.name;result.result=function.result;if(debugMetadata)result.debug.emplace();enter();
+    for(const auto &capture:function.captures){auto id=slot(capture.type,capture.span,capture.name,false);scopes.back()[capture.name]=id;binding(id,capture.name,capture.type,capture.span);result.captures.push_back(id);}
+    for(const auto &parameter:function.params){auto id=slot(parameter.type,parameter.span,parameter.name,false);scopes.back()[parameter.name]=id;binding(id,parameter.name,parameter.type,parameter.span);result.parameters.push_back(id);}
+    point(TaskDebugPointIR::Entry,function.span,&function);
     TaskInstruction poll;poll.kind=TaskInstruction::Poll;poll.span=function.span;poll.source=&function;emit(std::move(poll));
     if(!block(function.body,false))finish(noTaskSlot,function.span);validateTaskIR(result);
   }
   TaskFunctionIR take(){return std::move(result);}
 };
 }
-TaskFunctionIR lowerTaskFunction(const Program &program,const Function &function,bool liftPure){
+TaskFunctionIR lowerTaskFunction(const Program &program,const Function &function,bool liftPure,bool debugMetadata){
   if(!program.taskPrototype||(!liftPure&&!function.effects.contains("task"))||function.foreign||!function.typeParameters.empty()||containsParameter(function.result)||std::any_of(function.params.begin(),function.params.end(),[](const auto &p){return containsParameter(p.type);})||std::any_of(function.captures.begin(),function.captures.end(),[](const auto &p){return containsParameter(p.type);}))throw Error("E_TASK_STATE","continuation lowering requires a concrete private task function",function.span);
-  return Lowering(program,function).take();
+  return Lowering(program,function,debugMetadata).take();
 }
 void validateTaskIR(const TaskFunctionIR &function){
   if(function.code.empty())throw Error("E_TASK_STATE","empty continuation");
@@ -145,5 +221,41 @@ void validateTaskIR(const TaskFunctionIR &function){
     if(op.kind==TaskInstruction::Eval){if(!op.atom)throw Error("E_TASK_STATE","missing continuation atom",op.span);for(const auto &argument:op.atom->args)if(argument->kind!=Expr::Name||!argument->text.starts_with("$task_slot_"))throw Error("E_TASK_STATE","continuation atom contains unevaluated operands",op.span);}
     if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
   }
+  if(function.debug){const auto &metadata=*function.debug;
+    for(size_t i=0;i<metadata.bindings.size();++i){const auto &binding=metadata.bindings[i];
+      if(binding.id!=i+1||binding.name.empty()||!binding.scope||
+         (binding.slot==noTaskSlot?binding.type!=Type::Unit:binding.slot>=function.slots.size()||function.slots[binding.slot].temporary||function.slots[binding.slot].type!=binding.type))
+        throw Error("E_TASK_STATE","invalid task debug binding",binding.span);
+    }
+    for(const auto &point:metadata.points){
+      if(point.pc>=function.code.size()||point.kind<TaskDebugPointIR::Entry||point.kind>TaskDebugPointIR::Return)
+        throw Error("E_TASK_STATE","invalid task debug source point",point.span);
+      std::set<uint32_t> seen;
+      for(auto id:point.visible)if(!id||id>metadata.bindings.size()||!seen.insert(id).second)
+        throw Error("E_TASK_STATE","invalid task debug visibility",point.span);
+    }
+  }
+}
+llvm::json::Object taskDebugFunctionMetadata(const Program &program,const Function &function,const TaskFunctionIR &ir,const std::string &file){
+  if(!ir.debug||ir.name!=function.name)throw Error("E_TASK_STATE","task debug metadata requires its checked function",function.span);
+  validateTaskIR(ir);
+  auto operations=operationTree(program,function);std::map<const void*,std::string> sites;std::string body;
+  for(const auto &operation:operations){if(operation.ast)sites[operation.ast]=operation.site;if(operation.path=="body")body=operation.site;}
+  llvm::json::Array bindings,points;
+  for(const auto &binding:ir.debug->bindings)bindings.push_back(llvm::json::Object{
+    {"id",binding.id},{"slot",binding.slot==noTaskSlot?-1:int64_t(binding.slot)},{"name",binding.name},
+    {"type",typeName(binding.type)},{"scope",binding.scope},{"depth",binding.depth},{"opaque",binding.opaque}});
+  static const char *phases[]={"entry","statement","loop_test","call_entry","resume","return"};
+  for(size_t i=0;i<ir.debug->points.size();++i){const auto &point=ir.debug->points[i];llvm::json::Array visible;
+    for(auto id:point.visible)visible.push_back(id);
+    auto found=sites.find(point.source);auto site=found==sites.end()?body:found->second;
+    points.push_back(llvm::json::Object{{"id",i+1},{"pc",point.pc},{"line",point.span.line},{"column",point.span.column},
+      {"begin",point.span.begin},{"end",point.span.end},{"kind",int64_t(point.kind)},{"phase",phases[point.kind]},
+      {"site",site},{"visible",std::move(visible)}});
+  }
+  return llvm::json::Object{{"file",file},{"slot_count",ir.slots.size()},{"bindings",std::move(bindings)},{"points",std::move(points)}};
+}
+llvm::json::Object taskDebugFunctionMetadata(const Program &program,const Function &function,const std::string &file){
+  return taskDebugFunctionMetadata(program,function,lowerTaskFunction(program,function,true,true),file);
 }
 }

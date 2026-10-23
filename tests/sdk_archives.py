@@ -40,9 +40,35 @@ class DistributionWorkflow(unittest.TestCase):
         self.assertEqual(len(old['phases']), 12)
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
         for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries',
-                     'structured-task-file-reads', 'structured-task-profile'):
+                     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_task_debug_sdk_requires_actual_delivery_and_live_execution(self):
+        current = self.report(); current['doctor'] = {'version':'0.115.0'}
+        fields = ('descriptor', 'actual_image_identity', 'source_deleted_archive',
+                  'source_only_project', 'standalone_without_resources')
+        with self.assertRaisesRegex(RuntimeError, 'task debugger delivery'):
+            acceptance.validate_completed_report(current)
+        current['evidence'] = {'structured_task_debug':{name:True for name in fields}}
+        for name in fields:
+            for value in (False, None, 'true'):
+                changed=copy.deepcopy(current);changed['evidence']['structured_task_debug'][name]=value
+                with self.subTest(delivery=name,value=value), self.assertRaisesRegex(RuntimeError, 'task debugger delivery'):
+                    acceptance.validate_completed_report(changed)
+        current['evidence']['live_debugger']=True
+        with self.assertRaisesRegex(RuntimeError, 'task debugger execution'):
+            acceptance.validate_completed_report(current)
+        live=('logical_stack','initialized_locals','pure_watch','logical_step','stale_references_rejected','graceful_exit')
+        current['evidence']['structured_task_debug'].update({name:True for name in live})
+        for name in live:
+            for value in (False, None, 'true'):
+                changed=copy.deepcopy(current);changed['evidence']['structured_task_debug'][name]=value
+                with self.subTest(execution=name,value=value), self.assertRaisesRegex(RuntimeError, 'task debugger execution'):
+                    acceptance.validate_completed_report(changed)
+        # Debugger delivery cannot waive profiling/read/migration checks.
+        with self.assertRaisesRegex(RuntimeError, 'task profile delivery'):
+            acceptance.validate_completed_report(current)
 
     def test_task_profile_sdk_requires_measured_and_source_deleted_delivery(self):
         current = self.report(); current['doctor'] = {'version': '0.114.0'}

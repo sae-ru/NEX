@@ -1,6 +1,10 @@
-# Native debugging — NEX language 0.17
+# Native debugging — NEX language 0.20
 
-Current source language is0.17. Debug information describes real native parameters,
+Current source language is0.20. Logical task debugging has a separate narrow
+native path; discover `task_debugging` and read [its current contract](task-debugging.md).
+Complete current SDK, regression and platform acceptance have separate receipts.
+
+Synchronous debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.

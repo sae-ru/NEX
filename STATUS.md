@@ -1,3 +1,7 @@
+# Working122: logical native task debugger integration in progress
+
+Toolchain0.115/language0.20 is implementing a separately versioned debug catalog, compiled safe points and logical LLDB/nex-dap inspection/stepping. This source is mutable. Narrow native020 standalone/source-only public controls are enabled. Actual10 LLDB/DAP cases,39 native commands/eight scenarios,9 IR cases/183 checks, public source/project/archive preparation and a separate installed SDK task-debug phase pass. Full139/SDK27/platform gates remain pending. Execution ABI3, source semantics and canonical/migration history stay unchanged. Frozen121 passed clean build, strict runtime sanitizers and focused16 via retained14 plus corrected offline browser2; its full134 and scoped Linux profiling gates passed; matching installed SDK26/498 commands passed in710.019s with original compiled source path absent and restored unchanged. Primary081 remains preserved; full objective remains active.
+
 # Working121: native source task-profile integration in progress
 
 Toolchain0.114/language0.20 is integrating the private120 collector with native

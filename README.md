@@ -6,12 +6,14 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.114.0 / language0.20**.
-Working121 integrates native source task profiling across compiler, scheduler,
-retained source frames and checked CLI/project/replay reports.
-Complete candidate acceptance is pending. Language020 and
-history-preserving migration remain unchanged; private task ABI3/site metadata
-are being implemented together. Frozen120's collector passed its scoped common,
+This isolated development source is **toolchain0.115.0 / language0.20**.
+Working122 enables narrow native020 logical task debugging with a separate catalog ABI after actual private LLDB/NEX-DAP inspection and stepping checks. Actual10 LLDB/DAP cases, public source/project/archive preparation and a separate installed SDK task-debug phase passed. Full139, installedSDK27 and platform acceptance remain pending. Language020/history and execution ABI3 remain unchanged. Frozen121 passed full134 and scoped Linux profiling gates; its matching installed SDK26/498 commands passed in710.019s with original compiled source path absent and restored unchanged.
+
+Frozen121 integrates native source task profiling across compiler, scheduler,
+retained source frames and checked CLI/project/replay reports. Its accepted
+development checkpoint retains exact full134/SDK26 and scoped sanitizer/Linux
+receipts. Language020 and history-preserving migration remain unchanged;
+execution ABI3 and its site metadata were checked together. Frozen120's collector passed its scoped common,
 strict sanitizer and Linux module gates, full129 regression and its matching
 installed SDK25/486 commands.
 Frozen119b full128 and its matching installed SDK25/486 commands passed.

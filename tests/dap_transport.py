@@ -29,6 +29,59 @@ class Transport(harness.ToolchainCase):
             if value is None:return messages
             messages.append(value)
 
+    def test_task_mode_uses_logical_ids_and_never_worker_stepping(self):
+        bridge=self.bridge()
+        bridge.client({'seq':1,'type':'request','command':'launch','arguments':{'nexTaskDebug':True,'program':'/owned/app'}})
+        self.assertTrue(bridge.task_mode)
+        self.assertNotIn('nexTaskDebug',self.messages(self.backend.stdin)[0]['arguments'])
+        bridge.server({'seq':80,'type':'event','event':'stopped','body':{'threadId':999,'reason':'breakpoint'}})
+        stop=self.messages(self.output)[-1]
+        self.assertNotIn('threadId',stop['body']);self.assertTrue(stop['body']['allThreadsStopped'])
+        bridge.client({'seq':2,'type':'request','command':'next','arguments':{'threadId':42,'singleThread':True}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['command'],'evaluate')
+        request=json.loads(base64.b64decode(sent['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'command':'next','arguments':{'task_id':42,'defer_continue':True}})
+        bridge.server({'seq':81,'type':'response','request_seq':2,'command':'evaluate','success':True,'body':{'result':'{"armed":true}'}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['command'],'continue')
+        self.assertEqual(sent['arguments'],{'threadId':999,'singleThread':False})
+        bridge.server({'seq':82,'type':'response','request_seq':2,'command':'continue','success':True,'body':{}})
+        bridge.server({'seq':83,'type':'event','event':'continued','body':{'threadId':999}})
+        bridge.server({'seq':84,'type':'event','event':'stopped','body':{'threadId':1000}})
+        bridge.client({'seq':3,'type':'request','command':'continue','arguments':{'threadId':42,'singleThread':True}})
+        bridge.server({'seq':85,'type':'response','request_seq':3,'command':'evaluate','success':True,'body':{'result':'{"armed":true}'}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['arguments'],{'threadId':1000,'singleThread':False})
+
+    def test_task_frames_locals_and_watch_references_expire_with_stop(self):
+        bridge=self.bridge();bridge.task_mode=True
+        bridge.client({'seq':1,'type':'request','command':'stackTrace','arguments':{'threadId':42}})
+        stack={'schema':'nex.task-debug-stack/1','task_id':42,'frames':[{'id':900,'index':0,'name':'mod::child','file':'/frozen/source.nex','line':7,'column':3}]}
+        bridge.server({'seq':10,'type':'response','request_seq':1,'command':'evaluate','success':True,'body':{'result':json.dumps(stack)}})
+        frame=self.messages(self.output)[-1]['body']['stackFrames'][0]['id']
+        bridge.client({'seq':2,'type':'request','command':'scopes','arguments':{'frameId':frame}})
+        reference=self.messages(self.output)[-1]['body']['scopes'][0]['variablesReference']
+        bridge.client({'seq':3,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
+        request=json.loads(base64.b64decode(self.messages(self.backend.stdin)[-1]['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'command':'values','arguments':{'task_id':42,'frame_index':0}})
+        bridge.client({'seq':4,'type':'request','command':'evaluate','arguments':{'expression':'x+1','frameId':frame,'context':'watch'}})
+        request=json.loads(base64.b64decode(self.messages(self.backend.stdin)[-1]['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'expression':'x+1','task_id':42,'frame_index':0})
+        bridge.server({'seq':11,'type':'event','event':'continued','body':{'threadId':999}})
+        bridge.server({'seq':12,'type':'response','request_seq':3,'command':'evaluate','success':True,'body':{'result':'{}'}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+        bridge.client({'seq':5,'type':'request','command':'scopes','arguments':{'frameId':frame}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+
+    def test_task_watch_does_not_forward_native_expression_or_mutation(self):
+        bridge=self.bridge();bridge.task_mode=True
+        for sequence,command,arguments in [(1,'evaluate',{'expression':'`expression dangerous()','context':'repl'}),
+                (2,'setVariable',{'name':'x','value':'99'}),(3,'setExpression',{'expression':'x','value':'99'})]:
+            bridge.client({'seq':sequence,'type':'request','command':command,'arguments':arguments})
+            self.assertFalse(self.messages(self.output)[-1]['success'])
+        self.assertEqual(self.messages(self.backend.stdin),[])
+
     def test_utf8_framing_and_rejected_ambiguous_or_oversized_packets(self):
         stream=io.BytesIO();value={'type':'event','event':'output','body':{'output':'\u0410\x00\U0001f98a'}}
         adapter.write_packet(stream,value);stream.seek(0)

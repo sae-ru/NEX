@@ -4,14 +4,28 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.114 / язык0.20
+## Текущий шаг: toolchain0.115 / язык0.20
+
+- [x] Добавить отдельный bounded debug catalog ABI1 без удержания значений программы;
+  private runtime109 проверок/614 остановок прошёл строгие sanitizers.
+- [x] Сохранить лексические binding IDs и реальные source safe points при TaskIR lowering;
+  9 случаев/183 проверки подтверждают неизменность инструкций исполнения.
+- [x] Подключить логические задачи, стеки, locals и шаги в LLDB/nex-dap;
+  10 настоящих LLDB/DAP сценариев и39 native-команд пройдены.
+- [x] Проверить archived-source inspection, явные лимиты и cleanup;
+  новая фаза установленного SDK отдельно пройдена с настоящим DAP.
+- [ ] Проверить frozen122:139 групп, полный установленный SDK27 и отдельные
+  LinuxARM64 LLDB/DAP/runtime и GCC sanitizer gates.
+
+## Зафиксированный121: toolchain0.114 / язык0.20
 
 - [x] Проверить private bounded task-profile collector: once-per-invocation,
   перенос между потоками, TLS, CPU/elapsed clocks, ownership и явные drops.
 - [x] Подключить проверенный collector к task driver/compiler и public CLI
   для native020; проверить реальные вызовы, отчёты, проектные лимиты и replay.
-- [ ] Завершить общую приёмку единого121:134 группы, установленный SDK26,
-  sanitizers, Linux и оставшиеся проверки интеграции.
+- [x] Проверить точный121:134 группы, установленный SDK26/498 команд,
+  строгие sanitizers и отдельные9 групп Linux с GCC sanitizer runtime probe.
+  Эти платформенные результаты имеют собственные ограниченные области проверки.
 
 - [x] Соединить public019 parser/checker/graph с native compiled continuations,
   независимыми AST/TypeScript schedulers и conservative lifetime checking.

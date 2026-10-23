@@ -74,6 +74,9 @@ struct TaskGroup::Impl {
     uint64_t profileReadyAt=0,profileWaitAt=0,profileDrainAt=0;
     bool profilePending=false;
 #endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+    TaskDebugTask debugTask;
+#endif
     ~Job(){if(body)body.destroy();}
   };
   struct Pipe {
@@ -131,6 +134,9 @@ struct TaskGroup::Impl {
     }
   }
 #endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+  bool debugEnabled=taskDebugEnabled();
+#endif
   Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures):control(TaskAccess::control()),ready(maximum),sourceFileReadFailures(fileReadFailures),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
@@ -159,6 +165,9 @@ struct TaskGroup::Impl {
     auto &job=*jobs[index];if(job.done||job.finishing||job.queued)return;
     if(job.running){job.again=true;return;}
     ready[(readyStart+readyCount)%ready.size()]=index;++readyCount;job.queued=true;changed.notify_all();
+#ifdef NEX_TASK_DEBUG_ENABLED
+    taskDebugKernelState(job.debugTask,TaskDebugState::Ready);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
     if(profileCollector)job.profileReadyAt=profileNow();
 #endif
@@ -182,6 +191,10 @@ struct TaskGroup::Impl {
   }
   void link(size_t index,Wait wait,size_t target){
     auto &job=*jobs[index];job.wait=wait;job.target=target;auto [head,tail]=ends(job);
+#ifdef NEX_TASK_DEBUG_ENABLED
+    auto debugWait=wait==Future?TaskDebugWait::Future:wait==Send?TaskDebugWait::Send:wait==Receive?TaskDebugWait::Receive:TaskDebugWait::Scope;
+    taskDebugKernelState(job.debugTask,TaskDebugState::Blocked,debugWait,wait==Future?jobs[target]->debugTask.id:0);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
     if(profileCollector)job.profileWaitAt=profileNow();
 #endif
@@ -283,6 +296,9 @@ struct TaskGroup::Impl {
     for(const auto &entry:job.external)if(!entry.consumed)return;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed)return;
     if(job.failure)job.result={};job.finishing=false;job.done=true;++completed;
+#ifdef NEX_TASK_DEBUG_ENABLED
+    taskDebugKernelState(job.debugTask,TaskDebugState::Terminal);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
     profilePublish(index);
 #endif
@@ -321,6 +337,9 @@ struct TaskGroup::Impl {
   }
   void beginComplete(size_t index,std::exception_ptr failure){
     auto &job=*jobs[index];unlink(index);job.running=false;job.again=false;job.finishing=true;job.failure=std::move(failure);
+#ifdef NEX_TASK_DEBUG_ENABLED
+    taskDebugKernelState(job.debugTask,TaskDebugState::Draining);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
     if(profileCollector)job.profileDrainAt=profileNow();
 #endif
@@ -347,6 +366,9 @@ struct TaskGroup::Impl {
       auto index=ready[readyStart];readyStart=(readyStart+1)%ready.size();--readyCount;auto &job=*jobs[index];bool allowed=true;
       for(auto next=job.scope;next!=none;next=regions[next]->parent)if(regions[next]->active>=regions[next]->limit){allowed=false;break;}
       if(allowed){job.queued=false;job.running=true;job.again=false;
+#ifdef NEX_TASK_DEBUG_ENABLED
+        taskDebugKernelState(job.debugTask,TaskDebugState::Running);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
         if(profileCollector&&job.profileReadyAt){profileAdd(job,job.profileTotals.readyNs,job.profileReadyAt,profileNow());job.profileReadyAt=0;}
 #endif
@@ -379,6 +401,9 @@ struct TaskGroup::Impl {
       activeTaskState=this;activeTaskIndex=index;
       std::exception_ptr failure;
       try{
+#ifdef NEX_TASK_DEBUG_ENABLED
+        TaskDebugTurn debug(runningJob->debugTask);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
         TaskProfileTurnScope profile(runningJob->profileTask);
 #endif
@@ -402,6 +427,9 @@ struct TaskGroup::Impl {
       // the scheduler mutex so owned-value/profile destructors cannot deadlock it.
       if(destroy){
         {
+#ifdef NEX_TASK_DEBUG_ENABLED
+          TaskDebugTurn debug(runningJob->debugTask);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
           TaskProfileTurnScope profile(runningJob->profileTask,false);
 #endif
@@ -423,7 +451,11 @@ struct TaskGroup::Impl {
     std::lock_guard lock(mutex);
     if(index>=jobs.size()||activeTaskState!=this||activeTaskIndex!=index)throw Trap("E_TASK_SCOPE","awaiter belongs to another task",0);
     auto &job=*jobs[index];job.event={};
-    if(kind==Awaiter::Yield){job.again=true;return true;}
+    if(kind==Awaiter::Yield){job.again=true;
+#ifdef NEX_TASK_DEBUG_ENABLED
+      taskDebugKernelState(job.debugTask,TaskDebugState::Ready);
+#endif
+      return true;}
     if(kind==Awaiter::DrainScope){
       if(target>=regions.size()||regions[target]->closed||regions[target]->owner!=index||job.scope!=target)throw Trap("E_TASK_SCOPE","logical scope exit must belong to its innermost owner",0);
       auto &scope=*regions[target];
@@ -486,6 +518,9 @@ struct TaskGroup::Impl {
     // scheduler lock; they cannot deadlock by acquiring another runtime lock.
     for(auto &job:jobs){
       if(job->body){
+#ifdef NEX_TASK_DEBUG_ENABLED
+        TaskDebugTurn debug(job->debugTask);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
         TaskProfileTurnScope profile(job->profileTask,false);
 #endif
@@ -579,20 +614,33 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
       impl->scopeAccess(scope);job->scope=job->memberScope=scope;
       index=impl->jobs.size();if(scope!=none){impl->regions[scope]->members.push_back(index);++impl->regions[scope]->pending;}
       impl->jobs.push_back(std::move(job));
+      bool metadata=false;
 #ifdef NEX_TASK_PROFILE_ENABLED
-      if(!impl->profileCollector){impl->enqueue(index);return Ticket(impl,index);}
-#else
-      impl->enqueue(index);return Ticket(impl,index);
+      metadata|=bool(impl->profileCollector);
 #endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+      metadata|=impl->debugEnabled;
+#endif
+      if(!metadata){impl->enqueue(index);return Ticket(impl,index);}
     }
+    // The admitted job cannot run until all optional metadata is registered
+    // outside the kernel mutex. Cancellation may mark it before this commit.
 #ifdef NEX_TASK_PROFILE_ENABLED
-    // The admitted job is counted by its scope but cannot run until metadata is
-    // prepared outside the kernel mutex. Cancellation may mark it meanwhile;
-    // the ordinary first resume still performs all existing control checks.
-    auto profileTask=impl->profileCollector->taskFromCurrent();TaskProfileTransaction profileCommit(impl->profileCollector);
-    {std::lock_guard lock(impl->mutex);impl->jobs[index]->profileTask=std::move(profileTask);impl->enqueue(index);}
-    return Ticket(impl,index);
+    auto profileTask=impl->profileCollector?impl->profileCollector->taskFromCurrent():TaskProfileTask{};
+    TaskProfileTransaction profileCommit(impl->profileCollector);
 #endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+    auto debugTask=impl->debugEnabled?taskDebugCreateTask():TaskDebugTask{};
+#endif
+    {std::lock_guard lock(impl->mutex);
+#ifdef NEX_TASK_PROFILE_ENABLED
+      impl->jobs[index]->profileTask=std::move(profileTask);
+#endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+      impl->jobs[index]->debugTask=debugTask;
+#endif
+      impl->enqueue(index);}
+    return Ticket(impl,index);
   });
 }
 Value TaskGroup::join(const Ticket &ticket){
@@ -613,7 +661,7 @@ TaskGroup::Awaiter TaskGroup::yield(){return Awaiter(Awaiter::Yield,this);}
 TaskGroup::Awaiter TaskGroup::send(const Channel &channel,Value value){return Awaiter(Awaiter::Send,this,channelIndex(channel),std::move(value));}
 TaskGroup::Awaiter TaskGroup::receive(const Channel &channel){return Awaiter(Awaiter::Receive,this,channelIndex(channel));}
 bool TaskGroup::Awaiter::await_suspend(TaskBody::Handle handle){
-  return hostOperation(location,[&]{
+  const bool suspended=hostOperation(location,[&]{
   auto impl=group->impl;impl->require();
   {
     std::lock_guard lock(impl->mutex);
@@ -622,8 +670,15 @@ bool TaskGroup::Awaiter::await_suspend(TaskBody::Handle handle){
   }
   return impl->suspend(activeTaskIndex,kind,target,std::move(value));
   });
+#ifdef NEX_TASK_DEBUG_ENABLED
+  if(suspended)taskDebugPublishPark();else taskDebugInvalidate(taskDebugCurrentTask());
+#endif
+  return suspended;
 }
 TaskEvent TaskGroup::Awaiter::await_resume(){
+#ifdef NEX_TASK_DEBUG_ENABLED
+  taskDebugInvalidate(taskDebugCurrentTask());
+#endif
   return hostOperation(location,[&]() -> TaskEvent {
   auto impl=group->impl;impl->require();std::lock_guard lock(impl->mutex);
   if(activeTaskState!=impl.get()||activeTaskIndex>=impl->jobs.size())throw Trap("E_TASK_SCOPE","awaiter resumed outside its task",0);
@@ -720,7 +775,7 @@ TaskExternalTicket TaskGroup::submitExternal(std::shared_ptr<TaskExternalOperati
 }
 TaskGroup::ExternalAwaiter TaskGroup::awaitExternal(const TaskExternalTicket &ticket){return ExternalAwaiter(this,ticket);}
 bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
-  return hostOperation(location,[&]{
+  const bool suspended=hostOperation(location,[&]{
     auto state=group->impl;state->require();
 #ifdef NEX_TASK_PROFILE_ENABLED
     TaskProfileTransaction profileTransaction(state->profileCollector);
@@ -733,6 +788,9 @@ bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
       auto &entry=job.external[i];if(entry.consumed)throw Trap("E_TASK_STATE","external ticket was already consumed",0);
       job.location=location;if(entry.physical)return false;
       job.wait=Impl::WaitExternal;job.target=i;
+#ifdef NEX_TASK_DEBUG_ENABLED
+      taskDebugKernelState(job.debugTask,TaskDebugState::Blocked,TaskDebugWait::External);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
       if(state->profileCollector)job.profileWaitAt=state->profileNow();
 #endif
@@ -740,8 +798,15 @@ bool TaskGroup::ExternalAwaiter::await_suspend(TaskBody::Handle handle){
     }
     throw Trap("E_TASK_SCOPE","external ticket belongs to another or ended group",0);
   });
+#ifdef NEX_TASK_DEBUG_ENABLED
+  if(suspended)taskDebugPublishPark();else taskDebugInvalidate(taskDebugCurrentTask());
+#endif
+  return suspended;
 }
 TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
+#ifdef NEX_TASK_DEBUG_ENABLED
+  taskDebugInvalidate(taskDebugCurrentTask());
+#endif
   return hostOperation(location,[&]{
     auto state=group->impl;state->require();
 #ifdef NEX_TASK_PROFILE_ENABLED

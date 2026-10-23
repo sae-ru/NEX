@@ -5,6 +5,9 @@
 #include "nex_task_profile_site.h"
 #include "nex_files.h"
 #include "nex_profile.h"
+#ifdef NEX_TASK_DEBUG_ENABLED
+#include "nex_task_debug.h"
+#endif
 #include <span>
 namespace nexrt {
 // A compiler-private ABI. Owned Values survive parking; Handles are only leases
@@ -58,6 +61,10 @@ public:
   const TaskProfileCodeSite *profileSite=nullptr;
   bool profileStarted=false;
   TaskProfileInvocation profileInvocation;
+#endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+  uint64_t debugCode=noTaskDebugIndex,debugPoint=noTaskDebugIndex;
+  TaskDebugFrame debugActivation;
 #endif
   NativeTaskFrame(TaskFrameDescriptor,const std::vector<Value> &arguments);
   NativeTaskFrame(const TaskCodeDescriptor &,const std::vector<Value> &arguments,const Value &environment,

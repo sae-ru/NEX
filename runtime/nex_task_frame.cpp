@@ -1,5 +1,8 @@
 #include "nex_task_frame.h"
 #include "nex_task_file_read.h"
+#ifdef NEX_TASK_DEBUG_ENABLED
+#include <array>
+#endif
 namespace nexrt {
 static bool kindMatches(const Value &v,int64_t kind){
   if(kind==2&&v.tag==Value::Floating){(void)v.floating();return true;}
@@ -39,6 +42,10 @@ struct CallDepth {
 }
 NativeTaskFrame::NativeTaskFrame(const TaskCodeDescriptor &input,const std::vector<Value> &args,const Value &environment,std::shared_ptr<const TaskFrameHostContext> context):step(nullptr),host(std::move(context)){
   const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;requirements=d.requirements;
+#ifdef NEX_TASK_DEBUG_ENABLED
+  debugCode=taskDebugCodeIndex(&d);
+  if(taskDebugEnabled()&&debugCode==noTaskDebugIndex)throw DataError("E_TASK_STATE","task debugger descriptor is not registered for this image");
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
   profileSite=d.profileSite;
   if(taskProfileCollector()&&(!profileSite||!taskProfileSiteIndex(profileSite)))throw DataError("E_TASK_STATE","task profile descriptor is not registered for this image");
@@ -74,8 +81,14 @@ Value channelResult(TaskEvent event){
 }
 TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserver observer){
   std::vector<NativeTaskFrame> stack;stack.push_back(std::move(frame));
+#ifdef NEX_TASK_DEBUG_ENABLED
+  TaskDebugStackRegistration debugStack(&stack);
+#endif
   while(!stack.empty()){
     auto &current=stack.back();int64_t transition;
+#ifdef NEX_TASK_DEBUG_ENABLED
+    if(!current.debugActivation&&current.debugCode!=noTaskDebugIndex)current.debugActivation=TaskDebugFrame(current.debugCode);
+#endif
 #ifdef NEX_TASK_PROFILE_ENABLED
     if(!current.profileStarted){
       current.profileStarted=true;
@@ -186,6 +199,27 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
   throw DataError("E_TASK_STATE","compiled task exhausted its logical stack");
 }
 }
+#ifdef NEX_TASK_DEBUG_ENABLED
+namespace nexrt {
+namespace {
+void publishNativeDebugStack(bool checkpoint)noexcept{
+  auto *stack=static_cast<std::vector<NativeTaskFrame>*>(taskDebugCurrentStack());
+  if(!stack){if(!checkpoint)taskDebugPublish({},false);else taskDebugUnavailableCurrent();return;}
+  if(stack->size()>maximumTaskDebugStack){taskDebugUnavailableCurrent();return;}
+  std::array<TaskDebugFrameView,maximumTaskDebugStack> views;
+  for(size_t i=0;i<stack->size();++i){auto &frame=(*stack)[i];views[i]={&frame.debugActivation,&frame,frame.debugPoint,frame.completed?2u:0u};}
+  taskDebugPublish(std::span<const TaskDebugFrameView>(views.data(),stack->size()),checkpoint);
+}
+}
+void taskDebugPublishPark()noexcept{publishNativeDebugStack(false);}
+}
+extern "C" void nex_task_debug_checkpoint(void *pointer,int64_t pointIndex)noexcept{
+  if(!nexrt::taskDebugCurrentTask())return;
+  auto *stack=static_cast<std::vector<nexrt::NativeTaskFrame>*>(nexrt::taskDebugCurrentStack());
+  if(!stack||stack->empty()||&stack->back()!=pointer||pointIndex<0){nexrt::taskDebugUnavailableCurrent();return;}
+  stack->back().debugPoint=uint64_t(pointIndex);nexrt::publishNativeDebugStack(true);
+}
+#endif
 namespace {
 nexrt::NativeTaskFrame &frame(void *p){if(!p)throw nexrt::DataError("E_TASK_STATE","missing compiled task frame");return *static_cast<nexrt::NativeTaskFrame*>(p);}
 void finish(void *p,nexrt::Value value){auto &f=frame(p);if(f.completed)throw nexrt::DataError("E_TASK_STATE","compiled task completed twice");if(f.expectedResult>=0&&f.expectedResult!=4&&!nexrt::kindMatches(value,f.expectedResult))throw nexrt::DataError("E_TASK_STATE","compiled task result kind differs");f.result=std::move(value);f.slots.clear();f.completed=true;}

@@ -50,7 +50,7 @@ Collector storage is reported separately. Neither measurement is total RAM,
 retained payload ownership, scheduler backing storage or file transport memory.
 Instrumentation changes costs; reports make no speed guarantee.
 
-Task Tracy capture, logical async debugging, reference/TypeScript/browser task
+Task Tracy capture, combined task debugging/profiling, reference/TypeScript/browser task
 profiling, task HTTP handlers, binary providers and other platforms remain
 pending. `NEX_TRACY=1` on a task profile image must fail before workers or source
 execution. Synchronous Tracy behavior below remains a separate supported path.

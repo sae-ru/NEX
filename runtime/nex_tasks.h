@@ -2,6 +2,9 @@
 #include "nex_host.h"
 #include "nex_task_external.h"
 #include "nex_profile.h"
+#ifdef NEX_TASK_DEBUG_ENABLED
+#include "nex_task_debug.h"
+#endif
 #include <coroutine>
 #include <exception>
 #include <optional>

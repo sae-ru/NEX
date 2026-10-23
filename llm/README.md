@@ -1,4 +1,4 @@
-Current development source is toolchain0.114/language0.20. Discover actual
+Current development source is toolchain0.115/language0.20. Discover actual
 capabilities before authoring. Read task_file_reads/docs/task-file-reads.md for
 the narrow server task/fs native/reference read subset and explicit019 migration.
 TypeScript/browser filesystem stays unsupported; full current acceptance pending.
@@ -6,7 +6,11 @@ Native020 task profiling uses the `task_profiling` capability and
 [profile guide](../docs/profiling.md): schema2 keeps CPU, active elapsed and
 logical lifetime separate. Calls count logical activations across suspension.
 Check relevant completeness flags before interpreting budgets. Task Tracy,
-logical debugging and non-native task profiling remain pending.
+combined debugging/profiling and non-native task profiling remain pending.
+Logical task debugging has a separate native020 path; query `task_debugging`
+and read [its current contract](../docs/task-debugging.md). Actual private
+LLDB/NEX-DAP checks and a separate installed SDK task-debug phase passed; complete
+current delivery acceptance remains pending.
 Earlier milestone notes below retain their historical scopes.
 
 Development toolchain0.88/language0.17 adds a **candidate** postfix result
