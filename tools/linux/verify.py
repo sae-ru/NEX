@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -26,6 +27,21 @@ def main():
     try:
         run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3'])
         run('build',['cmake','--build','/build','-j',str(args.jobs)])
+        # Private TypeScript runtime probes require a real strict type checker.
+        # Hydrate the same pinned lock already cached by the toolchain image;
+        # the container remains offline and the source mount remains read-only.
+        dependencies=root/'web-dependencies';dependencies.mkdir()
+        for name in ('package.json','package-lock.json'):
+            shutil.copyfile(Path('/src/web')/name,dependencies/name)
+        run('typescript-dependencies',['npm','--prefix',str(dependencies),'ci',
+            '--offline','--ignore-scripts','--no-audit','--no-fund'])
+        tsc=dependencies/'node_modules/typescript/bin/tsc'
+        if not tsc.is_file():raise RuntimeError('locked TypeScript compiler was not installed')
+        os.environ['NEX_TSC']=str(tsc)
+        report['typescript']={'compiler':str(tsc),
+            'version':json.loads((dependencies/'node_modules/typescript/package.json').read_text())['version'],
+            'lock_sha256':hashlib.sha256((dependencies/'package-lock.json').read_bytes()).hexdigest(),
+            'offline':True,'ignore_scripts':True}
         run('ctest',['ctest','--test-dir','/build','--output-on-failure','-j',str(args.jobs)])
         text=(root/'Testing/Temporary/LastTest.log').read_text()
         report['case_counts']=[int(n) for n in re.findall(r'Ran (\d+) tests? in ',text)]
