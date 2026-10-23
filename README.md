@@ -1,3 +1,23 @@
+# Verified local0.121 and experimental models
+
+The unchanged0.121 compiler passed an audited153-group composite (148 original
+plus4 TypeScript repeats and the complete8-case Wasm group), installedSDK32/584
+commands with its original source path absent, and a separate18-case run in
+Chromium/Firefox/WebKit. See [the exact local scope](docs/evidence/compute-0.121-local.json).
+Primary0.81 and graph history are preserved. Full current Linux121/portable
+bundle and remaining PLAN work are separate.
+
+The experimental [named model API](experiments/models/README.md) accepts pinned
+external ONNX artifacts through an isolated CPU/Zhouyi child provider. Its source
+contract passed native/reference/TypeScript checks. On CIX, two small F32 models
+passed actual NPU execution; a two-input MatMul graph correctly refused NPU
+placement and passed explicit CPU fallback. Current receipts contain14 NPU calls,
+28 selected CPU calls,14 separate CPU precision references and17 process cases.
+A separate Vendor-precision check passed3 CPU/3 NPU calls without a CPU oracle.
+See [exact scope and pins](docs/evidence/named-models-0.121-development.json).
+These are compatible0.120/language0.20 provider tests, outside installed0.121;
+they add no compiler builtin, owned model handle or general task/FFI bridge.
+
 # Development: portable common OpenCL preparation
 
 Prepare a complete checked common-GPU project with `--backend gpu --api compute`.
@@ -14,8 +34,8 @@ provider for Add/Affine0..255, including maximum262144-element tensors, overflow
 errors and cancellable device admission. Read [the provider](experiments/rk3588/README.md).
 The current Context is a non-wire opaque NEX callable, without a host FFI grant;
 its passive/opaque forwarding follows existing language0.20 rules.
-Compiler/runtime/library remain identical to the0.121 candidate whose full153
-regression and matchingSDK32 pipeline are running. Actual device receipts use
+Compiler/runtime/library remain identical to the locally verified0.121 core.
+The153-group composite and matchingSDK32 passed as recorded above. Device receipts use
 the compatible0.120 compiler; full0.121 platform delivery is not claimed.
 Primary081 and the full original PLAN remain preserved/open.
 
@@ -24,7 +44,7 @@ Primary081 and the full original PLAN remain preserved/open.
 `std/compute.nex` provides validated immutable tensors, exact integer CPU
 operations, typed device/provider contexts and explicit fallback. Read
 [the contract](docs/compute.md) and query `nex describe --field compute --json`.
-Real common-API accelerator adapters and matching acceptance are in progress.
+Real common-API adapters have the separately scoped device receipts above.
 Language0.20 and primary0.81 remain unchanged. Historical0.120 receipts below
 retain their original scopes and do not validate this candidate.
 

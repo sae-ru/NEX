@@ -2,7 +2,12 @@
 
 The ordinary-source CPU contract, validated Context/fallback and the RK3588
 common GPU/NPU dispatch now have independent receipts. Portable OpenCL preparation
-and common-GPU project generation are being checked on CIX. The earlier design
+and common-GPU projects passed on CIX and RK3588. Local0.121 composite153,
+installedSDK32/584 and three-engine browser18 acceptance passed separately.
+Experimental [named model inference](../experiments/models/README.md) additionally
+passed bounded CPU/Zhouyi tests with explicit precision and actual placement;
+it is outside the installed SDK and arbitrary graphs remain provider-dependent.
+The earlier design
 below records the starting point and does not override the implemented Context
 semantics in [compute.md](compute.md). Full SDK/platform delivery, owned buffers,
 async dispatch, general kernels/models and other PLAN requirements remain open.

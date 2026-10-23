@@ -1,3 +1,26 @@
+# Verified local0.121 and experimental models
+
+The unchanged0.121 compiler passed an audited153-group composite (148 original
+plus4 TypeScript repeats and the complete8-case Wasm group), installedSDK32/584
+commands with its original source path absent, and a separate18-case run in
+Chromium/Firefox/WebKit. See [the exact local scope](docs/evidence/compute-0.121-local.json).
+Primary0.81 and graph history are preserved. Full current Linux121/portable
+bundle and remaining PLAN work are separate.
+
+The experimental [named model API](experiments/models/README.md) passed its
+source contract tests and compatible0.120 CIX provider acceptance. Current
+MatchCPU receipts contain14 actual NPU calls,28 selected CPU calls,14 separately
+attributed CPU references,14588 checked selected output values and126 bit-exact
+reference values. Mul and Add/Sub models ran on NPU; two-input MatMul was refused
+with CPU EP fallback disabled, followed only by explicitly requested CPU fallback.
+Vendor precision separately passed3 CPU/3 NPU calls without a CPU oracle.
+All three application source files were absent for MatchCPU replay/standalone;
+native managed memory balanced and17 controlled production-broker cases passed.
+Returned791 files and118 raw ORT profiles (including retained v2) were verified.
+See [the exact evidence](docs/evidence/named-models-0.121-development.json).
+This remains outside installed0.121; arbitrary graphs, other runtimes/platforms,
+owned model/device resources and source task integration remain pending.
+
 # Current portable common OpenCL development
 
 One preparation workflow generates ordinary-source common compute projects for
@@ -8,8 +31,8 @@ Each pinned worker passed20 boundary cases/14actualGPU calls/524321 validvalues;
 the same broker additionally passed11 CPU transport/cancellation cases on CIX.
 Returned203 files were independently verified. See [scope and hashes](docs/evidence/portable-opencl-0.121-development.json).
 This is compatible0.120/language0.20 source/provider execution. The0.121 core
-full153 and matching SDK32 are still pending; original TypeScript environment
-failures are retained for exact failed-group repeat. Primary0.81 stays preserved.
+passed the composite153 and matching SDK32 described above; original failures
+and their successful targeted repeats are retained. Primary0.81 stays preserved.
 The stdlibrary delta from130 is one comment, with unchanged function text.
 Owned resources/task bridge, generic kernels/models, discovery and PLAN remain open.
 
@@ -21,8 +44,8 @@ experimental full-U8 OpenCL provider on RK3588. Independent returned evidence:
 49GPU calls/1835078 valid values/7 overflow errors and21NPU calls/4480 values;
 20 direct-worker cases plus11 process-boundary cases. All device results use
 the compatible0.120 compiler. See [scope and counts](docs/evidence/compute-opencl-0.121-development.json).
-The unchanged0.121 compiler core full153 run is ongoing; TypeScript task group
-needs a repeat with the pinned TypeScript path. Installed SDK32 remains pending.
+The unchanged0.121 compiler core passed the composite153 and installed SDK32
+described above; the four failed TypeScript groups passed with the pinned path.
 Primary0.81/lang0.16 is preserved. General ownership/resources, task dispatch,
 float/model support, provider discovery and the remaining PLAN are open.
 

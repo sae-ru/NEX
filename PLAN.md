@@ -3,10 +3,11 @@
 - [x] Implement ordinary-source checked Tensor/Request/Response/Device/Context and CPU operations.
 - [x] Check native/TypeScript/reference numerical semantics, overflow/limits, provider selection/response/fallback and realm/wire boundaries.
 - [x] Build LLVM/MLIR22.1 compiler and verify compute/discovery/SDK-report contract focused groups.
-- [ ] Complete matching full153 regression and installed SDK32 workflow.
+- [x] Verify local0.121 via composite153 (148 original +4 TypeScript and actualWasm repeats), installedSDK32/584 and actual three-engine18 browser cases; original failures retained.
 - [x] Verify the common source Context against actual RK3588 GPU/NPU with pinned leafworkers using compatible0.120/language0.20:49GPU calls,21NPU calls. This is not full0.121 platform acceptance.
 - [x] Extend experimental OpenCL U8 Add/Affine to scales0..255,262144 elements and explicit overflow; verify real device, malformed frames, cancellation/reap and CPU oracle.
 - [x] Generate common-GPU projects with an explicitly selected installed OpenCL loader; matching CIX and RK3588 numerical/native/profile/replay/standalone and worker boundary tests passed.
+- [x] Verify an experimental named static-tensor ONNX model contract, finite F32 bytes, explicit MatchCPU/Vendor precision and pinned CPU/Zhouyi child dispatch on CIX; retain unsupported MatMul placement, explicit fallback and17 process cases. This is outside installed0.121 and is not arbitrary-model NPU support.
 - [ ] Add remaining operations/providers, owned buffers/resources, async/task bridge and general kernels/models.
 
 The original complete PLAN scope below remains active. Primary081 is preserved.

@@ -1,3 +1,10 @@
+For the optional source experiment in `experiments/models`, first read its README
+and `model.nex`; it is outside the installed SDK/capability descriptor. Use the
+generated pinned model/port/precision binding, finite binary32LE bytes and explicit
+CPU/NPU selection/fallback. MatchCPU performs an extra attributed CPU inference;
+Vendor does not. Do not invent `std/model`, owned model handles or task support.
+Validate the actual compiler/FFI signature and operator-supplied host catalogue.
+
 When `compute.source_support` is advertised, query `nex describe --field compute --json`
 and read `nex guide --kind compute --json`. Use `std/compute.nex` validated immutable
 tensors and version1 Request/Response. CPU execution requires explicit CPU selection.
