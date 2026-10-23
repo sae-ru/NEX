@@ -36,11 +36,14 @@ def main():
   assert cli('archived','run','--revision',built['revision'],'--profile','release','--foreign',host)['stdout']==expected
   assert run('standalone',[binary,'--nex-foreign',host],cwd='/',extra={'NEX_RESOURCE_DIR':str(out/'unavailable'),'PATH':'/usr/bin:/bin'})==expected
   rows=[json.loads(s) for s in trace.read_text().splitlines()];calls=[r for r in rows if r['backend']==a.backend]
-  assert len(calls)==30 and all(r['cleanup_verified'] and not r['cpu_fallback_allowed'] for r in calls)
+  assert all(r['cleanup_verified'] and not r['cpu_fallback_allowed'] for r in calls)
   if a.backend=='npu':
+   assert len(calls)==30
    assert sum(r['elements'] for r in calls)==6400 and all(r['rknpu_fd_open'] and r['device_driver']=='RKNPU' and r['provider']=='RKNN' for r in calls)
-  else:assert sum(r['elements'] for r in calls)==30720 and all(r['device_type']==4 for r in calls)
-  report.update(ok=True,phase='complete',actual_calls=len(calls),values_checked=sum(r['elements'] for r in calls),source_deleted_replay=True,standalone_without_sdk_resources=True,managed_memory_balanced=True,compiler_sha256=sha(nex),revision=built['revision'],source_preserved_as=str(out/'main.nex'),profile_sha256=sha(out/'native-profile.json'))
+  else:
+   assert len(calls)==90 and sum(bool(r['overflow']) for r in calls)==10 and all(r['device_type']==4 for r in calls)
+   assert sum(r['elements'] for r in calls if not r['overflow'])==30780
+  report.update(ok=True,phase='complete',actual_calls=len(calls),values_checked=sum(r['elements'] for r in calls if not r.get('overflow',False)),rejected_calls=sum(bool(r.get('overflow',False)) for r in calls),source_deleted_replay=True,standalone_without_sdk_resources=True,managed_memory_balanced=True,compiler_sha256=sha(nex),revision=built['revision'],source_preserved_as=str(out/'main.nex'),profile_sha256=sha(out/'native-profile.json'))
  except BaseException as e:
   report.update(error=repr(e),traceback=traceback.format_exc());traceback.print_exc()
  finally:

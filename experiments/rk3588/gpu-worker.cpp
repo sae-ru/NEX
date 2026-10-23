@@ -6,6 +6,7 @@
 #include <CL/cl.h>
 #include "nex_ffi_module.h"
 #include "third_party/json.hpp"
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -70,7 +71,7 @@ class GPU {
   }
 public:
   ~GPU(){cleanup();}
-  std::vector<uint8_t> run(std::vector<uint8_t> &a,std::vector<uint8_t> &b){
+  std::vector<uint8_t> run(std::vector<uint8_t> &a,std::vector<uint8_t> &b,cl_uint scale){
     cl_uint n=0;check(clGetPlatformIDs(0,nullptr,&n),"platform count");if(!n||n>16)throw Failure("E_DEVICE_UNAVAILABLE","no bounded OpenCL platform list");
     std::vector<cl_platform_id> platforms(n);check(clGetPlatformIDs(n,platforms.data(),nullptr),"platform list");cl_device_id device=nullptr;
     for(auto platform:platforms){auto status=clGetDeviceIDs(platform,CL_DEVICE_TYPE_GPU,1,&device,nullptr);if(status==CL_DEVICE_NOT_FOUND)continue;check(status,"GPU selection");if(device)break;}
@@ -82,21 +83,26 @@ public:
     check(clGetDeviceInfo(device,CL_DEVICE_NAME,name.size(),name.data(),nullptr),"device name");
     cl_int status=0;context=clCreateContext(nullptr,1,&device,nullptr,nullptr,&status);check(status,"create context");
     queue=clCreateCommandQueue(context,device,CL_QUEUE_PROFILING_ENABLE,&status);check(status,"create queue");
-    const char *source="__kernel void affine(__global const uchar*a,__global const uchar*b,__global uchar*c){size_t i=get_global_id(0);c[i]=(uchar)(3*(int)a[i]+(int)b[i]);}";
+    const char *source="__kernel void affine(__global const uchar*a,__global const uchar*b,__global uchar*c,__global uchar*overflow,uint scale){size_t i=get_global_id(0);uint value=scale*(uint)a[i]+(uint)b[i];c[i]=(uchar)value;overflow[i]=(uchar)(value>255u);}";
     length=std::strlen(source);program=clCreateProgramWithSource(context,1,&source,&length,&status);check(status,"create program");
     status=clBuildProgram(program,1,&device,"-cl-std=CL1.2",nullptr,nullptr);
     if(status){size_t size=0;clGetProgramBuildInfo(program,device,CL_PROGRAM_BUILD_LOG,0,nullptr,&size);std::vector<char> log(std::min<size_t>(size,16384)+1);clGetProgramBuildInfo(program,device,CL_PROGRAM_BUILD_LOG,log.size()-1,log.data(),nullptr);throw Failure("E_OPENCL_BUILD",log.data());}
     kernel=clCreateKernel(program,"affine",&status);check(status,"create kernel");
     for(auto input:{&a,&b}){auto buffer=clCreateBuffer(context,CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,input->size(),input->data(),&status);check(status,"input buffer");buffers.push_back(buffer);}
     auto output=clCreateBuffer(context,CL_MEM_WRITE_ONLY,a.size(),nullptr,&status);check(status,"output buffer");buffers.push_back(output);
-    for(cl_uint i=0;i<3;++i)check(clSetKernelArg(kernel,i,sizeof(cl_mem),&buffers[i]),"kernel argument");
+    auto overflow=clCreateBuffer(context,CL_MEM_WRITE_ONLY,a.size(),nullptr,&status);check(status,"overflow buffer");buffers.push_back(overflow);
+    for(cl_uint i=0;i<4;++i)check(clSetKernelArg(kernel,i,sizeof(cl_mem),&buffers[i]),"kernel argument");
+    check(clSetKernelArg(kernel,4,sizeof(scale),&scale),"scale argument");
     size_t count=a.size();check(clEnqueueNDRangeKernel(queue,kernel,1,nullptr,&count,nullptr,0,nullptr,&event),"GPU enqueue");check(clFinish(queue),"GPU completion");
     std::vector<uint8_t> result(a.size());check(clEnqueueReadBuffer(queue,output,CL_TRUE,0,result.size(),result.data(),0,nullptr,nullptr),"GPU readback");
+    std::vector<uint8_t> flags(a.size());check(clEnqueueReadBuffer(queue,overflow,CL_TRUE,0,flags.size(),flags.data(),0,nullptr,nullptr),"GPU overflow readback");
+    const bool rejected=std::any_of(flags.begin(),flags.end(),[](uint8_t value){return value!=0;});
     cl_ulong start=0,end=0;check(clGetEventProfilingInfo(event,CL_PROFILING_COMMAND_START,sizeof(start),&start,nullptr),"GPU timestamp start");
     check(clGetEventProfilingInfo(event,CL_PROFILING_COMMAND_END,sizeof(end),&end,nullptr),"GPU timestamp end");
     if(end<start)throw Failure("E_DEVICE_ABI","invalid GPU timestamps");cleanup();if(cleanupError)throw Failure("E_OPENCL_CLEANUP",std::to_string(cleanupError));
     trace(JSON{{"backend","gpu"},{"device",std::string(name.data(),name.size()-1)},{"device_type",type},{"elements",a.size()},
-               {"kernel_ns",end-start},{"cpu_fallback_allowed",false},{"cleanup_verified",true}});
+               {"kernel_ns",end-start},{"scale",scale},{"overflow",rejected},{"cpu_fallback_allowed",false},{"cleanup_verified",true}});
+    if(rejected)throw Failure("E_COMPUTE_OVERFLOW","exact GPU elementwise result does not fit u8");
     return result;
   }
 };
@@ -117,11 +123,11 @@ int main(){
  rlimit files{2097152,2097152};if(setrlimit(RLIMIT_FSIZE,&files))return 3;
  rlimit core{0,0};setrlimit(RLIMIT_CORE,&core);
  try{
-  uint32_t n=rpcReadU32();if(!n||n>65536)throw Failure("E_INPUT_SIZE","bounded worker input required");
+  uint32_t version=rpcReadU32();if(version!=1)throw Failure("E_PROTOCOL","unsupported GPU worker protocol version");
+  uint32_t n=rpcReadU32();uint32_t scale=rpcReadU32();if(scale>255)throw Failure("E_COMPUTE_RANGE","scale outside0..255");if(!n||n>262144)throw Failure("E_INPUT_SIZE","bounded worker input required");
   std::vector<uint8_t>x(n),y(n);std::cin.read(reinterpret_cast<char*>(x.data()),n);std::cin.read(reinterpret_cast<char*>(y.data()),n);
   if(!std::cin||std::cin.peek()!=std::char_traits<char>::eof())throw Failure("E_PROTOCOL","invalid worker input frame");
-  for(size_t i=0;i<n;++i)if(x[i]>60||y[i]>30)throw Failure("E_INPUT_RANGE","invalid worker affine range");
-  std::vector<uint8_t>result;{GPU gpu;result=gpu.run(x,y);}
+  std::vector<uint8_t>result;{GPU gpu;result=gpu.run(x,y,scale);}
   if(result.size()!=n)throw Failure("E_PROTOCOL","invalid worker result length");
   rpcU32(protocol,0);rpcU32(protocol,result.size());rpcWrite(protocol,result.data(),result.size());close(protocol);return 0;
  }catch(const std::exception &e){

@@ -1,3 +1,10 @@
+Toolchain0.121 adds the ordinary-source checked `std/compute.nex` library: immutable
+row-major tensors, typed request/response/device contracts, exact integer CPU
+operations and server/ffi provider contexts with explicit fallback. No syntax,
+reserved name, effect/realm rule, canonical identity format or language0.20
+migration changes. See [the compute contract](compute.md); actual device providers
+and acceptance have their own scopes.
+
 Toolchain0.120 lets the browser worker adapter host an existing client/shared
 `worker_compute(Input)->Output !{task}` in its own cooperative scheduler.
 Only wire input/output crosses the dedicated Worker boundary; task authority

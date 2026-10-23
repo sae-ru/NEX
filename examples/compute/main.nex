@@ -1,0 +1,46 @@
+module compute_example;
+import "std/compute.nex" as compute;
+
+fn matrix()->compute::Request {
+ let a:compute::Tensor=unwrap(compute::from_i8([2,3],[1,-2,3,4,0,-1]));
+ let b:compute::Tensor=unwrap(compute::from_i8([3,2],[2,1,-1,3,4,-2]));
+ return compute::request("matrix-1",compute::Operation::Matmul(),[a,b],compute::Selection(compute::Kind::CPU(),""),compute::Fallback::Deny());
+}
+fn main()->unit!{io}{
+ let response:compute::Response=unwrap(compute::execute_cpu(matrix()));
+ print(compute::to_i32(response.output));
+ print(encode_json(response));
+}
+test fn signed_matrix()->unit {
+ let response:compute::Response=unwrap(compute::execute_cpu(matrix()));
+ assert(response.device.kind==compute::Kind::CPU());assert(!response.fallback_used);
+ assert(response.id=="matrix-1");assert(response.output.shape==[2,2]);
+ assert(unwrap(compute::to_i32(response.output))==[16,-11,4,6]);
+ assert(decode_json<compute::Response>(encode_json(response))==ok(response));
+}
+test fn affine_and_add()->unit {
+ let a:compute::Tensor=unwrap(compute::tensor(compute::DType::U8(),[3],unwrap(bytes([0,20,84]))));
+ let b:compute::Tensor=unwrap(compute::tensor(compute::DType::U8(),[3],unwrap(bytes([7,30,3]))));
+ let job:compute::Request=compute::request("affine",compute::Operation::Affine(3),[a,b],compute::Selection(compute::Kind::CPU(),"cpu"),compute::Fallback::Deny());
+ let value:compute::Response=unwrap(compute::execute_cpu(job));assert(value.output.data==unwrap(bytes([7,90,255])));
+ let add:compute::Request=compute::request("add",compute::Operation::Add(),[a,b],compute::Selection(compute::Kind::CPU(),""),compute::Fallback::Deny());
+ assert(unwrap(compute::execute_cpu(add)).output.data==unwrap(bytes([7,50,87])));
+ assert(a.data==unwrap(bytes([0,20,84])));
+}
+test fn tensor_encoding_and_errors()->unit {
+ let values:list<i64>=[-2147483648,2147483647,-1,0];
+ let tensor:compute::Tensor=unwrap(compute::from_i32([2,2],values));
+ assert(tensor.data==unwrap(bytes([0,0,0,128,255,255,255,127,255,255,255,255,0,0,0,0])));
+ assert(compute::to_i32(tensor)==ok(values));
+ assert(error_code(compute::from_i8([1],[128]))=="E_COMPUTE_RANGE");
+ assert(error_code(compute::from_i8([1],[-129]))=="E_COMPUTE_RANGE");
+ assert(error_code(compute::from_i32([1],[2147483648]))=="E_COMPUTE_RANGE");
+ assert(error_code(compute::elements([9223372036854775807,2]))=="E_COMPUTE_LIMIT");
+ assert(error_code(compute::elements([1024,1024]))=="E_COMPUTE_LIMIT");
+ assert(error_code(compute::elements([1,0]))=="E_COMPUTE_LIMIT");
+ assert(error_code(compute::elements([]))=="E_COMPUTE_SHAPE");
+ assert(error_code(compute::tensor(compute::DType::I32(),[1],unwrap(bytes([0]))))=="E_COMPUTE_SIZE");
+ let job:compute::Request=matrix();
+ assert(error_code(compute::execute_cpu(compute::on(job,compute::Selection(compute::Kind::GPU(),""),compute::Fallback::CPU())))=="E_COMPUTE_DEVICE");
+ assert(error_code(compute::validate_request(compute::Request(2,job.id,job.operation,job.inputs,job.device,job.fallback)))=="E_COMPUTE_VERSION");
+}

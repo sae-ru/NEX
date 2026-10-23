@@ -14,3 +14,12 @@ Acceptance update: optimized bytes fixture PASSED30 calls/6400 values,993161 ref
 5. Дальнейшие обязательные части: owned device buffers/external resources и async/task bridge, generic kernels/models, wgpu/SDL3/graphics и остальные platforms. Перед изменением source types/effects — согласованные checker/reference/native/TypeScript/spec/grammar/discovery/language-pack, explicit history-preserving migration и backend equivalence.
 6. Поставить реально вызываемый NEX example/API и model-independent usage; показать выбор CPU/GPU/NPU и запрет fallback. Доказать обычные/граничные/rejected программы, реальные device placement, cleanup, cancellation/error exits, native/reference agreement и отсутствие privileged client code.
 7. Для compiler/runtime изменения — сборка и соответствующие целевые тесты, затем matching full regression/installed SDK/platform gates, source manifests и recovery backup. Не объявлять всё готовым по узкому probe или одной платформе.
+
+
+Context boundary clarification (verified with actual0.121 checker): the current
+ordinary-source Context is non-wire, not a new opaque resource type. Existing
+opaque callable forwarding through trusted C FFI and resource-free passive CPU
+map captures remain legal. It grants no host permissions and cannot be invoked
+from a pure/client callback. Future owned device contexts/buffers still require
+the planned ownership/non-transfer/device-settlement guards; do not infer these
+from the current source record.

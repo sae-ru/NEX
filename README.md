@@ -1,3 +1,24 @@
+# Development: full-U8 OpenCL provider
+
+The ordinary-source compute contract now has an experimental checked OpenCL
+provider for Add/Affine0..255, including maximum262144-element tensors, overflow
+errors and cancellable device admission. Read [the provider](experiments/rk3588/README.md).
+The current Context is a non-wire opaque NEX callable, without a host FFI grant;
+its passive/opaque forwarding follows existing language0.20 rules.
+Compiler/runtime/library remain identical to the0.121 candidate whose full153
+regression and matchingSDK32 pipeline are running. Actual device receipts use
+the compatible0.120 compiler; full0.121 platform delivery is not claimed.
+Primary081 and the full original PLAN remain preserved/open.
+
+# Development0.121: checked compute contract
+
+`std/compute.nex` provides validated immutable tensors, exact integer CPU
+operations, typed device/provider contexts and explicit fallback. Read
+[the contract](docs/compute.md) and query `nex describe --field compute --json`.
+Real common-API accelerator adapters and matching acceptance are in progress.
+Language0.20 and primary0.81 remain unchanged. Historical0.120 receipts below
+retain their original scopes and do not validate this candidate.
+
 # NEX
 
 Toolchain0.120 development adds task-only `worker_compute` hosting in dedicated

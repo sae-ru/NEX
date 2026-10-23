@@ -1,3 +1,15 @@
+When `compute.source_support` is advertised, query `nex describe --field compute --json`
+and read `nex guide --kind compute --json`. Use `std/compute.nex` validated immutable
+tensors and version1 Request/Response. CPU execution requires explicit CPU selection.
+Server Context holds an ordinary server/ffi callable and cannot cross wire or
+browser messages. It contains no host FFI grant. The existing trusted value C FFI
+may forward a genuine callable opaquely; resource-free passive parallel captures
+are allowed, but executing the callback still requires server/ffi. Hidden file/task
+captures keep their normal ownership guards. This is not an owned device handle. Fallback is explicit and only handles unavailable/unsupported devices;
+never hide invalid data, overflow, malformed responses, traps or host cancellation.
+Device metadata is not an execution attestation. Check actual provider integration;
+old fixed accelerator fixtures do not establish this common API GPU/NPU support.
+
 When `task_provider_debugging` is present, check its actual `public_enabled` and
 `source_support` before preparing provider instrumentation. Read
 docs/task-provider-debugging.md. An ordinary debug-profile build does not select

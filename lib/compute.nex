@@ -1,0 +1,136 @@
+module std::compute;
+
+pub enum DType { U8(); I8(); I32(); }
+pub enum Kind { CPU(); GPU(); NPU(); }
+pub enum OperationKind { Add(); Affine(); Matmul(); }
+pub enum Operation { Add(); Affine(scale:i64); Matmul(); }
+pub enum Fallback { Deny(); CPU(); }
+pub struct Tensor { dtype:DType; shape:list<i64>; data:bytes; }
+pub struct Selection { kind:Kind; id:str; }
+pub struct Capability { operation:OperationKind; input:DType; output:DType; }
+pub struct Device { kind:Kind; id:str; provider:str; version:str; provenance:str; capabilities:list<Capability>; }
+pub struct Request { version:i64; id:str; operation:Operation; inputs:list<Tensor>; device:Selection; fallback:Fallback; }
+pub struct Response { version:i64; id:str; output:Tensor; device:Device; fallback_used:bool; fallback_reason:str; }
+// The callback is source authority. Context cannot satisfy wire or enter FFI/JSON.
+pub struct Context { devices:list<Device>; invoke:server fn(Request,Device)->result<Response> !{ffi}; }
+
+pub fn operation_kind(operation:Operation)->OperationKind {
+ return match operation { Operation::Add()=>OperationKind::Add(), Operation::Affine(scale)=>OperationKind::Affine(), Operation::Matmul()=>OperationKind::Matmul() };
+}
+pub fn elements(shape:list<i64>)->result<i64> {
+ if len(shape)<1 || len(shape)>4{return err("E_COMPUTE_SHAPE","tensor rank must be1..4");}
+ var count:i64=1;var i:i64=0;
+ while i<len(shape){let dimension:i64=shape[i];if dimension<1 || dimension>262144 || count>262144/dimension{return err("E_COMPUTE_LIMIT","tensor dimensions exceed262144 elements");}count=count*dimension;i=i+1;}
+ return ok(count);
+}
+pub fn width(dtype:DType)->i64 {return match dtype {DType::U8()=>1,DType::I8()=>1,DType::I32()=>4};}
+pub fn validate_tensor(value:Tensor)->result<Tensor> {
+ let count:i64=elements(value.shape)?;let size:i64=width(value.dtype);
+ if count>1048576/size{return err("E_COMPUTE_LIMIT","tensor byte limit exceeded");}
+ if len(value.data)!=count*size{return err("E_COMPUTE_SIZE","tensor byte count disagrees with dtype and shape");}
+ return ok(value);
+}
+pub fn tensor(dtype:DType,shape:list<i64>,data:bytes)->result<Tensor>{return validate_tensor(Tensor(dtype,shape,data));}
+pub fn from_i8(shape:list<i64>,values:list<i64>)->result<Tensor> {
+ let count:i64=elements(shape)?;if len(values)!=count{return err("E_COMPUTE_SIZE","int8 element count disagrees with shape");}
+ var data:list<i64>=[];var i:i64=0;
+ while i<count{let v:i64=values[i];if v< -128 || v>127{return err("E_COMPUTE_RANGE","int8 input outside -128..127");}data=push(data,(v+256)%256);i=i+1;}
+ return tensor(DType::I8(),shape,bytes(data)?);
+}
+pub fn from_i32(shape:list<i64>,values:list<i64>)->result<Tensor> {
+ let count:i64=elements(shape)?;if len(values)!=count{return err("E_COMPUTE_SIZE","int32 element count disagrees with shape");}
+ var data:list<i64>=[];var i:i64=0;
+ while i<count{var value:i64=values[i];if value< -2147483648 || value>2147483647{return err("E_COMPUTE_RANGE","int32 input outside signed32 range");}if value<0{value=value+4294967296;}var j:i64=0;while j<4{data=push(data,value%256);value=value/256;j=j+1;}i=i+1;}
+ return tensor(DType::I32(),shape,bytes(data)?);
+}
+pub fn to_i32(tensor:Tensor)->result<list<i64>> {
+ let value:Tensor=validate_tensor(tensor)?;if value.dtype!=DType::I32(){return err("E_COMPUTE_DTYPE","expected signed int32 output");}
+ let count:i64=elements(value.shape)?;var values:list<i64>=[];var i:i64=0;
+ while i<count{let p:i64=4*i;var x:i64=value.data[p]+value.data[p+1]*256+value.data[p+2]*65536+value.data[p+3]*16777216;if x>=2147483648{x=x-4294967296;}values=push(values,x);i=i+1;}
+ return ok(values);
+}
+pub fn request(id:str,operation:Operation,inputs:list<Tensor>,device:Selection,fallback:Fallback)->Request{return Request(1,id,operation,inputs,device,fallback);}
+pub fn on(value:Request,device:Selection,fallback:Fallback)->Request{return Request(value.version,value.id,value.operation,value.inputs,device,fallback);}
+
+// Validate before provider selection/fallback. Invalid requests never execute a backend.
+pub fn validate_request(value:Request)->result<Request> {
+ if value.version!=1{return err("E_COMPUTE_VERSION","unsupported compute contract version");}
+ if len(value.id)<1 || len(value.id)>128 || len(value.device.id)>256{return err("E_COMPUTE_ID","invalid request or device identifier");}
+ if len(value.inputs)!=2{return err("E_COMPUTE_INPUTS","operation requires two input tensors");}
+ let a:Tensor=validate_tensor(value.inputs[0])?;let b:Tensor=validate_tensor(value.inputs[1])?;
+ match value.operation {
+  Operation::Matmul()=>{
+   if a.dtype!=DType::I8() || b.dtype!=DType::I8(){return err("E_COMPUTE_DTYPE","matmul requires int8 inputs and exact int32 output");}
+   if len(a.shape)!=2 || len(b.shape)!=2 || a.shape[1]!=b.shape[0]{return err("E_COMPUTE_SHAPE","matmul requires compatible rank2 row-major inputs");}
+   let count:i64=elements([a.shape[0],b.shape[1]])?;
+   if count>262144{return err("E_COMPUTE_LIMIT","matmul output exceeds limit");}
+  },
+  _=>{
+   if a.dtype!=DType::U8() || b.dtype!=DType::U8(){return err("E_COMPUTE_DTYPE","elementwise operations require u8 inputs");}
+   if a.shape!=b.shape{return err("E_COMPUTE_SHAPE","elementwise shapes must agree; no implicit broadcasting");}
+   match value.operation {Operation::Affine(scale)=>{if scale<0 || scale>255{return err("E_COMPUTE_RANGE","affine scale must be0..255");}},_=>{}}
+  }
+ }
+ return ok(value);
+}
+fn output_shape(value:Request)->list<i64>{return match value.operation{Operation::Matmul()=>[value.inputs[0].shape[0],value.inputs[1].shape[1]],_=>value.inputs[0].shape};}
+fn output_dtype(value:Request)->DType{return match value.operation{Operation::Matmul()=>DType::I32(),_=>DType::U8()};}
+pub fn cpu_device()->Device{return Device(Kind::CPU(),"cpu","nex.compute.cpu","1","checked NEX source std::compute",[Capability(OperationKind::Add(),DType::U8(),DType::U8()),Capability(OperationKind::Affine(),DType::U8(),DType::U8()),Capability(OperationKind::Matmul(),DType::I8(),DType::I32())]);}
+fn cpu_result(value:Request,fallback:bool,reason:str)->result<Response> {
+ let a:Tensor=value.inputs[0];let b:Tensor=value.inputs[1];var result:Tensor=a;
+ match value.operation {
+  Operation::Matmul()=>{
+   let m:i64=a.shape[0];let k:i64=a.shape[1];let n:i64=b.shape[1];let count:i64=m*n;
+   if count>1048576/k{return err("E_COMPUTE_LIMIT","CPU matmul exceeds1048576 multiply-accumulates");}
+   var values:list<i64>=[];var row:i64=0;
+   while row<m{var col:i64=0;while col<n{var sum:i64=0;var j:i64=0;while j<k{var x:i64=a.data[row*k+j];var y:i64=b.data[j*n+col];if x>=128{x=x-256;}if y>=128{y=y-256;}sum=sum+x*y;j=j+1;}if sum< -2147483648 || sum>2147483647{return err("E_COMPUTE_OVERFLOW","exact matmul result does not fit signed32");}values=push(values,sum);col=col+1;}row=row+1;}
+   result=from_i32([m,n],values)?;
+  },
+  _=>{
+   var scale:i64=1;match value.operation{Operation::Affine(x)=>{scale=x;},_=>{}}
+   var octets:list<i64>=[];var i:i64=0;let count:i64=len(a.data);
+   while i<count{let x:i64=a.data[i]*scale+b.data[i];if x>255{return err("E_COMPUTE_OVERFLOW","elementwise output does not fit u8");}octets=push(octets,x);i=i+1;}
+   result=tensor(DType::U8(),a.shape,bytes(octets)?)?;
+  }
+ }
+ return ok(Response(1,value.id,result,cpu_device(),fallback,reason));
+}
+pub fn execute_cpu(request:Request)->result<Response>{
+ let value:Request=validate_request(request)?;
+ if value.device.kind!=Kind::CPU() || (value.device.id!="" && value.device.id!="cpu"){return err("E_COMPUTE_DEVICE","CPU execution requires CPU selection");}
+ return cpu_result(value,false,"");
+}
+
+pub fn validate_device(value:Device)->result<Device> {
+ if len(value.id)<1 || len(value.id)>256 || len(value.provider)<1 || len(value.provider)>128 || len(value.version)<1 || len(value.version)>128 || len(value.provenance)<1 || len(value.provenance)>4096 || len(value.capabilities)<1 || len(value.capabilities)>32{return err("E_COMPUTE_DEVICE","invalid device descriptor");}
+ var i:i64=0;while i<len(value.capabilities){let cap:Capability=value.capabilities[i];var expected:DType=DType::U8();var output:DType=DType::U8();if cap.operation==OperationKind::Matmul(){expected=DType::I8();output=DType::I32();}if cap.input!=expected || cap.output!=output{return err("E_COMPUTE_DEVICE","unsupported capability dtype contract");}var j:i64=0;while j<i{if value.capabilities[j]==cap{return err("E_COMPUTE_DEVICE","duplicate device capability");}j=j+1;}i=i+1;}
+ return ok(value);
+}
+pub server fn context(devices:list<Device>,invoke:server fn(Request,Device)->result<Response> !{ffi})->result<Context>{
+ if len(devices)>16{return err("E_COMPUTE_LIMIT","context exceeds16 external devices");}
+ var i:i64=0;while i<len(devices){let device:Device=validate_device(devices[i])?;if device.kind==Kind::CPU() || device.id=="cpu"{return err("E_COMPUTE_DEVICE","CPU identity is reserved for the checked builtin backend");}var j:i64=0;while j<i{if devices[j].id==device.id{return err("E_COMPUTE_DEVICE","duplicate device id");}j=j+1;}i=i+1;}
+ return ok(Context(devices,invoke));
+}
+fn capable(device:Device,value:Request)->bool{let wanted:Capability=Capability(operation_kind(value.operation),value.inputs[0].dtype,output_dtype(value));var i:i64=0;while i<len(device.capabilities){if device.capabilities[i]==wanted{return true;}i=i+1;}return false;}
+fn fallback_allowed(code:str)->bool{return code=="E_COMPUTE_UNAVAILABLE" || code=="E_COMPUTE_UNSUPPORTED";}
+fn fallback(value:Request,code:str,message:str)->result<Response>{if value.fallback==Fallback::CPU(){return cpu_result(value,true,code+": "+message);}return err(code,message);}
+pub fn validate_response(request:Request,device:Device,value:Response)->result<Response>{
+ let checked:Request=validate_request(request)?;let selected:Device=validate_device(device)?;
+ if selected.kind!=checked.device.kind || (checked.device.id!="" && selected.id!=checked.device.id) || !capable(selected,checked) || value.version!=1 || value.id!=checked.id || value.device!=selected || value.fallback_used || value.fallback_reason!=""{return err("E_COMPUTE_RESPONSE","provider changed correlation, selected device or fallback policy");}
+ let output:result<Tensor>=validate_tensor(value.output);if !is_ok(output) || value.output.shape!=output_shape(checked) || value.output.dtype!=output_dtype(checked){return err("E_COMPUTE_RESPONSE","provider output disagrees with checked tensor contract");}
+ return ok(value);
+}
+pub server fn execute(ctx:Context,request:Request)->result<Response> !{ffi}{
+ let value:Request=validate_request(request)?;
+ // Recheck even a directly constructed Context before calling its authority.
+ let checked:Context=context(ctx.devices,ctx.invoke)?;
+ if value.device.kind==Kind::CPU(){return execute_cpu(value);}
+ var i:i64=0;var found:bool=false;var selected:result<Device>=err("E_COMPUTE_UNAVAILABLE","requested device is unavailable");
+ while i<len(checked.devices){let device:Device=checked.devices[i];if device.kind==value.device.kind && (value.device.id=="" || value.device.id==device.id){found=true;if !is_ok(selected) && (value.device.id!="" || capable(device,value)){selected=ok(device);}}i=i+1;}
+ if !is_ok(selected){if found{return fallback(value,"E_COMPUTE_UNSUPPORTED","available devices lack requested capability");}return fallback(value,"E_COMPUTE_UNAVAILABLE","requested device is unavailable");}
+ let device:Device=selected?;
+ if !capable(device,value){return fallback(value,"E_COMPUTE_UNSUPPORTED","selected device lacks requested capability");}
+ let response:result<Response>=checked.invoke(value,device);
+ if !is_ok(response){let code:str=error_code(response);if fallback_allowed(code){return fallback(value,code,error_message(response));}return err(code,error_message(response));}
+ return validate_response(value,device,response?);
+}

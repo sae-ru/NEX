@@ -93,6 +93,16 @@ class DistributionWorkflow(unittest.TestCase):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
 
+    def test_compute_sdk121_requires_checked_delivery(self):
+        report=self.report();report['doctor']={'version':'0.121.0'}
+        keys=('descriptor','native_reference','typescript_reference','source_deleted_replay','standalone','cpu_device_reported')
+        report['evidence']={'compute_contract':{key:True for key in keys}}
+        for key in keys:
+            for value in (False,None,1,'true'):
+                changed=copy.deepcopy(report);changed['evidence']['compute_contract'][key]=value
+                with self.subTest(key=key,value=value),self.assertRaisesRegex(RuntimeError,'compute contract delivery'):
+                    acceptance.validate_completed_report(changed)
+
     def test_provider_debug_sdk119_requires_owned_delivery_and_actual_protocol(self):
         report={'schema':'nex.sdk-acceptance/1','ok':True,'doctor':{'version':'0.119.0'},
             'phases':[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES],

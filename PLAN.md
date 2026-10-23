@@ -1,3 +1,15 @@
+# Current development: toolchain0.121 / language0.20
+
+- [x] Implement ordinary-source checked Tensor/Request/Response/Device/Context and CPU operations.
+- [x] Check native/TypeScript/reference numerical semantics, overflow/limits, provider selection/response/fallback and realm/wire boundaries.
+- [x] Build LLVM/MLIR22.1 compiler and verify compute/discovery/SDK-report contract focused groups.
+- [ ] Complete matching full153 regression and installed SDK32 workflow.
+- [x] Verify the common source Context against actual RK3588 GPU/NPU with pinned leafworkers using compatible0.120/language0.20:49GPU calls,21NPU calls. This is not full0.121 platform acceptance.
+- [x] Extend experimental OpenCL U8 Add/Affine to scales0..255,262144 elements and explicit overflow; verify real device, malformed frames, cancellation/reap and CPU oracle.
+- [ ] Generalize OpenCL kernels and other real providers, then owned buffers/resources and async/task bridge.
+
+The original complete PLAN scope below remains active. Primary081 is preserved.
+
 # План разработки NEX
 
 Обновлён: 23 октября 2026 года.

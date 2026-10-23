@@ -29,7 +29,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'compute-contract', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'task-provider-debugging', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
@@ -619,6 +619,11 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,121,0):
+        compute=report.get('evidence',{}).get('compute_contract',{})
+        require(all(compute.get(key) is True for key in ('descriptor','native_reference','typescript_reference',
+                'source_deleted_replay','standalone','cpu_device_reported')),
+                'SDK acceptance lacks checked compute contract delivery evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 119, 0):
         provider_debug=report.get('evidence',{}).get('task_provider_debugging',{})
         require(all(provider_debug.get(key) is True for key in ('descriptor','native_reference','static_and_shared_artifacts',
@@ -962,6 +967,40 @@ test fn examples() -> unit {
  assert(model::roundtrip(["A\\u0000🌍"])==["A\\u0000🌍"]);
 }
 '''.replace('CHOOSE', choose.replace('model::normalized(n)', 'model::normalized(n)+1'))
+
+    def compute_contract():
+        descriptor=cli('describe','--field','compute')['value']
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(descriptor==pack['compute'] and descriptor['source_support'] and
+                descriptor['context_wire'] is False, 'compute descriptor differs from installed pack')
+        require(cli('guide','--kind','compute')['text']==(resources/'docs/compute.md').read_text(),
+                'compute guide not selected from installed SDK')
+        directory=root/'compute-contract';directory.mkdir()
+        shutil.copy2(resources/'examples/compute/main.nex',directory/'main.nex')
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':'main.nex'}))
+        expected=cli('eval',cwd=directory)['stdout']
+        cli('test',cwd=directory,timeout=240);cli('test','--target','web',cwd=directory,timeout=240)
+        observed=cli('run','--profile','release',cwd=directory,timeout=240)
+        require(observed['stdout']==expected,'compute native/reference observations differ')
+        response=json.loads(expected.splitlines()[1])
+        require(response['device']['kind']['case']=='CPU' and response['fallback_used'] is False and
+                response['id']=='matrix-1','compute actual CPU response differs')
+        built=cli('build','--profile','release',cwd=directory)
+        copied=root/'compute-standalone';shutil.copy2(built['executable'],copied)
+        (directory/'main.nex').unlink()
+        require(cli('run','--revision',built['revision'],'--profile','release',cwd=directory)['stdout']==expected,
+                'compute archived std library replay failed')
+        before=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']=str(root/'unavailable-compute-resources')
+        try:require(run([copied],cwd=root)==expected,'compute standalone output differs')
+        finally:
+            if before is None:environment.pop('NEX_RESOURCE_DIR',None)
+            else:environment['NEX_RESOURCE_DIR']=before
+        report['evidence']['compute_contract']={'descriptor':True,'native_reference':True,
+            'typescript_reference':True,'source_deleted_replay':True,'standalone':True,'cpu_device_reported':True,
+            'library_sha256':hashlib.sha256((resources/'lib/compute.nex').read_bytes()).hexdigest(),
+            'revision':built['revision'],'copied_executable_resource_override':'unavailable',
+            'generic_gpu_npu_execution_proved':False}
 
     def discover():
         for path in args.forbid_source:
@@ -4486,7 +4525,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
-                ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
+                ('binary-values', binary_values), ('compute-contract', compute_contract), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-profile', structured_task_profile),

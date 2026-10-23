@@ -1,3 +1,25 @@
+# Current compute/OpenCL development
+
+The0.121 ordinary-source compute contract has checked CPU operations and a real
+experimental full-U8 OpenCL provider on RK3588. Independent returned evidence:
+90 rawGPU calls/30780 valid output values/10 overflow errors; common Context
+49GPU calls/1835078 valid values/7 overflow errors and21NPU calls/4480 values;
+20 direct-worker cases plus11 process-boundary cases. All device results use
+the compatible0.120 compiler. See [scope and counts](docs/evidence/compute-opencl-0.121-development.json).
+The unchanged0.121 compiler core full153 run is ongoing; TypeScript task group
+needs a repeat with the pinned TypeScript path. Installed SDK32 remains pending.
+Primary0.81/lang0.16 is preserved. General ownership/resources, task dispatch,
+float/model support, provider discovery and the remaining PLAN are open.
+
+# Working130: common compute contract
+
+Development0.121/language0.20 adds ordinary-source tensors and CPU operations,
+checked provider selection, response validation and explicit fallback. Focused six-case CPU/native/TypeScript/reference, overflow/limits, negative
+provider/context/realm cases and owned profile pass; matching compute/discovery/
+SDK archive workflow groups pass3/3. Compiler build passes;
+complete regression/SDK and actual common GPU/NPU adapters remain pending.
+Primary081 and accepted129 recovery are preserved.
+
 # Working128: browser structured task hosting
 
 Toolchain0.120/language0.20 connects task-only worker_compute to its own

@@ -252,7 +252,8 @@
     "task_debug_source_union_schema": "llm/task-debug-source-union.schema.json",
     "provider_task_debug_view_schema": "llm/provider-task-debug-view.schema.json",
     "provider_task_debug_frame_schema": "llm/provider-task-debug-frame.schema.json",
-    "provider_task_debug_expression_schema": "llm/provider-task-debug-expression.schema.json"
+    "provider_task_debug_expression_schema": "llm/provider-task-debug-expression.schema.json",
+    "compute": "docs/compute.md"
   },
   "document_access": "nex guide --kind task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -339,7 +340,8 @@
     "browser_workers": "examples/workers/main.nex",
     "structured_tasks": "examples/structured-tasks.nex",
     "task_file_reads": "examples/task-file-reads.nex",
-    "browser_task_workers": "examples/task-workers/main.nex"
+    "browser_task_workers": "examples/task-workers/main.nex",
+    "compute": "examples/compute/main.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -1536,6 +1538,52 @@
     "linkage_modes": [
       "static",
       "shared-fixed"
+    ]
+  },
+  "compute": {
+    "status": "development_checked_library_contract",
+    "guide": "docs/compute.md",
+    "import": "std/compute.nex",
+    "contract_version": 1,
+    "source_support": true,
+    "language": "0.20",
+    "language_migration_required": false,
+    "tensor_dtypes": [
+      "u8",
+      "i8",
+      "i32"
+    ],
+    "operations": [
+      "add_u8",
+      "affine_u8",
+      "matmul_i8_i32"
+    ],
+    "immutable_row_major_bytes": true,
+    "maximum_rank": 4,
+    "maximum_elements": 262144,
+    "maximum_bytes": 1048576,
+    "cpu_maximum_multiply_accumulates": 1048576,
+    "cpu_backend": "checked NEX source",
+    "cpu_reference": true,
+    "cpu_native": true,
+    "cpu_typescript": true,
+    "provider_context": true,
+    "provider_realm": "server",
+    "provider_effects": [
+      "ffi"
+    ],
+    "context_wire": false,
+    "explicit_cpu_fallback": true,
+    "builtin_gpu": false,
+    "builtin_npu": false,
+    "source_task_bridge": false,
+    "owned_device_buffers": false,
+    "pending": [
+      "matching full regression and installed SDK acceptance",
+      "real common-API OpenCL/RKNN/Zhouyi providers and device tests",
+      "float tensors and additional operations",
+      "general kernels/models",
+      "owned resources and persistent/async worker lifetime"
     ]
   }
 }

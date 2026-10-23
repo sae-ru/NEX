@@ -1,35 +1,35 @@
-# RK3588: explicit experimental accelerator fixtures
+# Explicit experimental Linux ARM64 compute providers
 
-These Linux ARM64 **trusted native FFI** fixtures are opt-in, with pinned
-module/worker bundles. They do not add language syntax, a stable compute API,
-source task dispatch, asynchronous device resources or CPU fallback. Large
-applications must not treat these fixed tests as a complete accelerator stack.
+These opt-in trusted native FFI providers use pinned module/child-worker bundles.
+They do not add source syntax, a general kernel/model compiler, task/FFI bridge,
+owned device buffers, persistent worker pool or automatic platform support.
 
-The GPU fixture executes byte affine `3*a+b` on an actual OpenCL GPU, with
-explicit bounds and exact NEX result checks. The NPU fixture performs row-major
-signed int8 matmul with int32 output through RKNN. Its checked bounds are
-`1 <= M <= 32`, `K,N` multiples of32 within32..128; source values must be in
--128..127. Products and exact accumulations fit int32. NEX receives immutable
-`list<i64>` values with exact sign extension. A convenience NEX wrapper packs
-inputs as signed int8 bytes and decodes int32 little-endian output; the C FFI
-transports immutable bytes in bulk. It does not create one handle per scalar or
-raise the standard4096-reference/65536-operation limits. The retained initial
-list-per-scalar prototype failed at maximum shape with `NEX_FFI_LIMIT`; its
-original matrices and extrema oracles are preserved in the bytes adapter. Unsupported shapes/ranges fail;
-there is no implicit quantization or CPU substitution.
+The OpenCL provider executes exact U8 `scale*a+b` with scale0..255 on an actual
+GPU. `Add` uses scale1. Inputs cover all0..255 octets; at most262144 elements
+cross the immutable bulk byte transport. A separate GPU overflow flag is written
+for every element. Any result above255 returns `E_COMPUTE_OVERFLOW`; wrapped or
+partially computed output is never published. Context reports CPU fallback only
+when the caller explicitly permits it for unavailable/unsupported devices.
+An overflow remains an error even when fallback is allowed.
 
-Each callback spawns a pinned child worker from its verified bundle. Only
-bounded binary frames cross this boundary. Vendor stdout/stderr is captured in
-the private child; parent machine stdout remains strict JSON. The broker polls
-the host, drains/reaps the child on failure/cancellation and removes private
-files. Current calls are synchronous and serialized; this is not the structured
-task/foreign bridge. A 60-second process deadline bounds a stuck vendor call.
-Diagnostic data is not a device kernel profiler or total RAM measurement.
+The RKNN provider performs exact row-major signed I8 matmul with I32 little-endian
+output. Bounds are M1..32 and K,N multiples of32 in32..128. SDK headers/runtime
+remain private operator dependencies, outside the NEX repository; preparation
+records their hashes and license. CPU initialization of the cached output DMA
+mapping produced stale values on the tested board; output C is left untouched
+before the vendor run, matching the verified upstream allocation discipline.
 
-## Prepare and explicitly execute
+Only bounded binary frames cross the pinned child boundary. Vendor stdout/stderr
+is isolated inside the child and retained separately; parent machine JSON is
+unchanged. Host polling covers both the serialized device lease and child wait.
+Cancellation while queued starts no worker; failure/cancellation after spawn
+reaps the child and removes private files. Device call deadline is60 seconds.
+Process reap is not a claim that all vendor/device settlement or future owned
+buffer lifetimes have been implemented.
 
-Use the actual0.120 SDK on the target, a complete target C++20 compiler, and
-read `nex describe --json` before use. From this source tree:
+## Prepare and run
+
+From this source tree on Linux ARM64, using a complete target C++20 compiler:
 
 ```sh
 python3 experiments/rk3588/prepare.py --sdk /path/to/sdk --backend gpu \
@@ -38,57 +38,64 @@ python3 experiments/rk3588/verify.py --sdk /path/to/sdk --backend gpu \
   --project /new/gpu-project --output /new/gpu-receipts
 ```
 
-The NPU fixture additionally requires operator-provided official RKNN SDK
-headers and their SDK license. These files and the proprietary runtime are
-**not included or relicensed in this repository**. Use an SDK grant appropriate
-for the compatible Rockchip device. Preparation records dependency hashes;
-the child opens the installed `/usr/lib/librknnrt.so`.
+Use `--opencl-include DIRECTORY` for an explicit OpenCL-Headers directory with
+`CL/` and `OPENCL-LICENSE`. Otherwise the checked source headers under
+`experiments/cix-p1/include` are used. This provider currently opens
+`/usr/lib/aarch64-linux-gnu/libOpenCL.so.1` and uses the first actual GPU. Its
+implementation/version metadata and operator ID are not a hardware attestation;
+the numerical/device receipts record the actual selected device separately.
+
+Preparation creates a new directory and validates signature/grants without
+executing hardware. Verification runs reference, native Debug/Release, tests,
+profile, archived source-deleted replay and standalone from `/` with SDK
+resources unavailable. The exact reference budget is16M steps; actual usage is
+reported. Normal FFI quotas are not raised: even maximum inputs/output need
+786432 copied payload bytes, below the default1MiB quota.
+
+NPU preparation additionally requires explicitly supplied private SDK files:
 
 ```sh
 python3 experiments/rk3588/prepare.py --sdk /path/to/sdk --backend npu \
   --vendor-include /private/rknn/include --vendor-license /private/RKNN-SDK-LICENSE \
   --output /new/npu-project --cxx /usr/bin/g++
-python3 experiments/rk3588/verify.py --sdk /path/to/sdk --backend npu \
-  --project /new/npu-project --output /new/npu-receipts
 ```
 
-Preparation creates a new project/bundle and checks signatures/grants without
-executing the accelerator. Verification explicitly runs reference, native
-Debug/Release, tests, profile, source-deleted revision replay and standalone
-execution from `/` with SDK resources unavailable. It restores the test source
-and retains the raw reports; it does not modify an operator's original project.
-The reference check uses an explicit bounded16,000,000-step budget for NEX
-pack/unpack and full CPU-oracle loops, recording actual steps used. The default
-1,000,000-step failures are retained; native and ordinary FFI limits are unchanged.
+`compute-main.nex.in` adapts these raw byte bindings to `std/compute.nex`:
+checked Tensor/Request/Response/Device, server Context, actual-device reporting,
+strict response validation and explicit CPU fallback. Materialize reviewed real
+bundle pins and device descriptors before checking/executing it. Logical device
+IDs describe this configured provider, not general multi-GPU discovery. The
+source Context is an ordinary opaque callable value, not a new owned resource.
 
-On Orange Pi5 Pro/RK3588S, Ubuntu22.04, RKNPU0.9.6 and installed RKNN2.3.0,
-CPU-initializing the cached output DMA buffer caused unchanged zeros/sentinel
-values despite a successful run. The unmodified pinned upstream example passed.
-Leaving the output buffer untouched before the run fixed the original exact
-three-matrix oracle without a driver/runtime/configuration change. Preserve
-this allocation discipline; never weaken the numerical checks to accept stale
-buffers. This observation is specific to the tested device/runtime path.
-
-Pure signed-byte packing, including all256 int8 values and rejected ranges,
-is checked with native/TypeScript/reference agreement:
+## Numerical and process checks
 
 ```sh
-python3 experiments/rk3588/test_pack.py --sdk /path/to/sdk \
-  --output /new/pack-receipts
+python3 experiments/rk3588/test_pack.py --sdk /path/to/sdk --output /new/pack
+python3 experiments/rk3588/test_gpu_process.py --sdk /path/to/sdk \
+  --opencl-include /path/to/OpenCL-Headers --output /new/process
+python3 experiments/rk3588/test_gpu_worker.py --bundle /new/gpu-project/bundle \
+  --output /new/worker
 ```
 
-CPU-only transport regressions use controlled children, not fake accelerators:
+Packing checks fixed signed encodings, all256 I8 values, bounds and immutable
+inputs on native/TypeScript/reference. Eleven controlled-child process tests
+check framing, malformed/truncated/oversized/status/length results, exit/signal,
+cancellation/reap and queued cancellation without spawning. These are transport
+regressions, not simulated hardware acceptance. The worker test explicitly
+executes the real pinned OpenCL worker at representative scale0..255 boundaries,
+maximum arrays and overflow only in the last element; invalid frames are rejected
+before GPU creation.
 
-```sh
-python3 experiments/rk3588/test_process.py --sdk /path/to/sdk \
-  --output /new/transport-receipts
-```
+RK3588S/Mali-G610 receipts retain90 raw GPU calls,30780 exact successful values
+and10 overflow rejections through reference/Debug/Release/test/profile/replay/
+standalone. The worker boundary suite checks524321 successful bytes. The common
+Context receipt adds49 GPU calls (7 intentional overflow errors),21 RKNN calls,
+maximum512x512 tensors, exact CPU oracle, denied/allowed fallback and retained
+cleanup/profile/replay. These source/library tests use the existing0.120/language
+0.20 compiler on the board; they are not a full0.121 compiler/platform gate.
 
-They check exact/structured replies, malformed/truncated/oversized/invalid status
-frames, payload length, abnormal exit/signal and host limit cancellation, with
-physical child reap and private-file cleanup. They do not establish generic
-worker-pool lifetime, source-task cancellation or all vendor timeout paths.
-
-The current standalone worker/broker is Linux ARM64 specific. Actual device
-support must be separately tested; the presence of an OpenCL/RKNN library is
-not a numerical hardware result. See [current acceptance](../../docs/stand-acceptance-0.120.md).
+See [the common contract](../../docs/compute.md) for typed semantics and
+[historical0.120 acceptance](../../docs/stand-acceptance-0.120.md) for the earlier
+fixed fixtures. Float tensors, generalized OpenCL matmul/models, other providers,
+proper runtime discovery, owned buffers and async/persistent execution remain
+planned work.
