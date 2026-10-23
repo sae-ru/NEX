@@ -1,0 +1,5 @@
+module rk_npu_boundaries;
+@API@
+fn filled(count:i64,value:i64)->list<i64>{var result:list<i64>=[];var i:i64=0;while i<count{result=push(result,value);i=i+1;}return result;}
+server fn one(m:i64,k:i64,n:i64,a:i64,b:i64)->unit !{ffi}{let c:list<i64>=unwrap(npu_matmul(filled(m*k,a),filled(k*n,b),m,k,n));assert(len(c)==m*n);var i:i64=0;while i<len(c){assert(c[i]==k*a*b);i=i+1;}}
+server fn main()->unit !{ffi,io}{one(1,32,32,-128,127);one(32,128,128,127,127);one(32,128,128,-128,-128);print("NEX RK3588 NPU BOUNDS OK");}

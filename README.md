@@ -5,8 +5,9 @@ browser Workers, with a separate bounded cooperative scheduler per job. UI
 entries remain pure and synchronous; wire values alone cross the worker boundary.
 See [the contract](docs/browser-workers.md) and
 [the example](examples/task-workers/main.nex). Language0.20 and migration stay
-unchanged. Matching complete acceptance is recorded separately; historical
-checkpoint receipts below do not validate this new candidate.
+unchanged. The matching frozen implementation passed full152 on Mac, installed
+SDK31/575 commands and18 cases in three real browser engines. Physical stand
+checks retain their scoped receipts. See [current acceptance](docs/stand-acceptance-0.120.md).
 
 **NEX — Neural Execution Language** («язык нейронного исполнения»).
 
@@ -14,7 +15,11 @@ checkpoint receipts below do not validate this new candidate.
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.119.0 / language0.20**.
+This isolated development source is **toolchain0.120.0 / language0.20**.
+New [RK3588 opt-in fixtures](experiments/rk3588/README.md) retain separate device
+acceptance; their addition changes no compiler/runtime/language semantics.
+
+The previous0.119 checkpoint is retained below as history.
 Working126 provides development source-backed logical task debugging across
 concrete static and fixed startup-linked shared providers. Actual generated-image
 LLDB/NEX-DAP, relocated delivery and bounded physical-drain/sanitizer preflights
@@ -85,7 +90,7 @@ suspension in explicit server `!{task,fs}` functions. Native macOS/Linux
 applications/source-only projects and the independent reference scheduler use
 a root-captured revocable grant, bounded raw host operations and scheduler-only
 result admission. See [task file reads](docs/task-file-reads.md) and the
-[example](examples/task-file-reads.nex). Full current acceptance is pending.
+[example](examples/task-file-reads.nex). Current0.120 acceptance is recorded above.
 
 Migration explicitly rechecks genuine019 source and a separate020 target before
 mutable destination access; existing history/IDs/schema remain intact. A task
@@ -123,8 +128,8 @@ Language 0.20 retains ordered CPU mapping, introduced in 0.18, through
 `parallel_map(items, callback, workers)`. Native macOS/Linux uses bounded joined
 threads, pure available-realm callbacks and checked resource-free captures.
 Reference and current public TypeScript execute this operation serially. The
-dedicated browser-worker adapter is separate; integrating source tasks with
-that adapter remains pending. See [the contract](docs/concurrency-design.md) and
+dedicated browser-worker adapter is separate; task-only worker_compute is
+now hosted in its own bounded scheduler, with pure synchronous main-thread UI. See [the contract](docs/concurrency-design.md) and
 [example](examples/parallel.nex). Explicit migration preserves genuine 0.17
 history; a declaration named `parallel_map` requires a reviewed repair.
 

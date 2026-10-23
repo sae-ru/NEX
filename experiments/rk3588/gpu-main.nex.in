@@ -1,0 +1,7 @@
+module rk_gpu;
+server extern fn gpu_affine(a:bytes,b:bytes)->result<bytes> !{ffi}=foreign("rk_gpu","gpu_affine","@PIN@");
+fn input(n:i64,seed:i64,range:i64)->bytes{var v:list<i64>=[];var i:i64=0;while i<n{v=push(v,(i+seed)%range);i=i+1;}return unwrap(bytes(v));}
+server fn one(seed:i64)->unit !{ffi}{let a:bytes=input(1024,seed,51);let b:bytes=input(1024,seed+7,21);let c:bytes=unwrap(gpu_affine(a,b));assert(len(c)==1024);var i:i64=0;while i<1024{assert(c[i]==a[i]*3+b[i]);i=i+1;}}
+server fn checks()->unit !{ffi}{one(0);one(17);one(997);assert(error_code(gpu_affine(unwrap(bytes([1,2])),unwrap(bytes([1]))))=="E_INPUT_SIZE");assert(error_code(gpu_affine(unwrap(bytes([61])),unwrap(bytes([1]))))=="E_INPUT_RANGE");}
+server fn main()->unit !{ffi,io}{checks();print("NEX RK3588 GPU OK");}
+server test fn gpu_test()->unit !{ffi}{checks();}

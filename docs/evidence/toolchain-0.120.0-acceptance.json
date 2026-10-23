@@ -1,0 +1,132 @@
+{
+  "schema": "nex.development-acceptance/1",
+  "toolchain": "0.120.0",
+  "language": "0.20",
+  "complete_project": false,
+  "primary_promoted": false,
+  "frozen_source_files": 1041,
+  "frozen_manifest_sha256": "842ec122b53d50b24ee5499384046c48b8a50cf649a873142a6111944578e586",
+  "frozen_mac_compiler_sha256": "0a2e10ad8ffe12a20130a96c1fed452def6b96fb3ce9f0ce7bf36e47b9697079",
+  "frozen_mac_acceptance": {
+    "full_ctest_groups": 152,
+    "installed_sdk_phases": 31,
+    "installed_sdk_commands": 575,
+    "actual_browser_engines": [
+      "Chromium",
+      "Firefox",
+      "WebKit"
+    ],
+    "browser_cases": 18
+  },
+  "source_derivation": "Five preserved documentation clarifications; this derivative reconciles README/STATUS/PLAN, adds scoped acceptance documentation and opt-in RK3588 fixtures. Compiler/runtime/TypeScript/build/grammar/capability/manifests/lock unchanged. No new full152 on derivative claimed.",
+  "physical_stands": {
+    "astra": {
+      "archive_sha256": "bb1b67ca591402c33351b34770245173ac5cc521dc0782f53705f096ae3f9d8c",
+      "archive_bytes": 40072,
+      "files_verified": 46,
+      "compiler_sha256": "9b51e2b239997e18f0d5b48646c92501be5a3e4ac445ecb8fcd3ed09677c632f",
+      "scope": "composite13 scoped groups:10 pristine;3 groups with4 exact packaging cases completed with explicit conda notices; one harness-only Python-version retry retained. Actual LLDB/NEX-DAP. Not pristine13/full152."
+    },
+    "cix": {
+      "archive_sha256": "fa9b0835a23f221044c080ec40a1af4597a3dd1f44cdb0e2295d90923113fd47",
+      "archive_bytes": 105490,
+      "files_verified": 117,
+      "compiler_sha256": "c328bfad4fa5b59f8840059b766040b56924f3d344ca26018de3fa42564c98ee",
+      "scope": "12 pristine scoped CLI groups, productionweb/source-deleted replay;30 actualGPU and20 exclusiveNPU calls. Retained directory-glob harness failure and two-execution continuation. No actual browser engines/LLDB on CIX or genericGPU/NPU API."
+    },
+    "rk3588": {
+      "archive_sha256": "2c539087f84e0e24e4573e08ee967ad2fdf23986ffed39365ce142f9f06e1af0",
+      "archive_bytes": 124712,
+      "files_verified": 200,
+      "compiler_sha256": "c328bfad4fa5b59f8840059b766040b56924f3d344ca26018de3fa42564c98ee",
+      "scope": "CPU/reference/Debug/Release/profile/replay/standalone; composite12 CLI groups (10 pristine and2 exact packaging retests with privatepatchelf); productionweb/replay; actual30GPU/30720bytes with pinned child vendorstdio isolation. RKNN NPU computation NOT verified. No full152, browser engines or LLDB on this host."
+    }
+  },
+  "rk3588_additional": {
+    "installed_rknnrt_sha256": "73993ed4b440460825f21611731564503cc1d5a0c123746477da6cd574f34885",
+    "old_list_adapter": {
+      "actual_npu_calls": 30,
+      "exact_values_checked": 6400,
+      "reference_debug_release_test_profile_replay_standalone": true,
+      "max_shape_failure_retained": "NEX_FFI_LIMIT;4096 scalar references"
+    },
+    "device_submit_trace": {
+      "actual_NEX_bytes_run": true,
+      "successful_RKNPU_card1_submits": 3,
+      "strace_sha256": "e56f8e4226b3512e47b89e85ad811a975836c8646e9ff0570e1d8a858355e714"
+    },
+    "transport_negative_cases": 10,
+    "current_bytes_adapter_acceptance": {
+      "schema": "nex.rk3588-local-npu-receipt-verification/1",
+      "ok": true,
+      "archive_sha256": "94ebe4cdaf3b4c762f31ac5ac93a494447f1ea7879bb22831ce167e7206b5ade",
+      "archive_bytes": 74338,
+      "files_verified": 138,
+      "uncompressed_bytes": 447637,
+      "current_source_module_worker_api_match": true,
+      "NPU_compute_verified": true,
+      "actual_NEX_fixture_calls": 30,
+      "fixture_values_checked": 6400,
+      "extrema_NEX_calls": 6,
+      "extrema_values_checked": 16448,
+      "actual_current_NEX_RKNPU_submits": 3,
+      "process_negative_cases": 10,
+      "source1041_and_installed_runtime_preserved": true,
+      "scope": "Bounded exact int8 matmul RKNN bytes fixture; no generic compute/task/pool or device kernel timing. All earlier failures retained. Max-shape receipt uses same bytes ABI/worker and previous equivalent NEX pack loop; current packing all256 values verified independently on native/TypeScript/reference."
+    },
+    "system_settings_changed": false,
+    "reference_fixture_steps_used": 993161,
+    "pure_current_packing": {
+      "schema": "nex.rk3588-pack-equivalence/1",
+      "ok": true,
+      "api_sha256": "0d6b2432a48fca8395df0c90bb7ef4df01a64a1bf316a6667dff0368d49ed30d",
+      "source_sha256": "7aed867f94d1c724cfb5b45f51117eba50acddb26737f8955e35c4981c44ad5e",
+      "scope": "Pure pack_int8 function from actual adapter; fixed signed encoding, all256 int8 inverse checks, bounds errors, immutable inputs; standard nex test backend agreement",
+      "results": {
+        "native": {
+          "ok": true,
+          "tests": [
+            {
+              "name": "packing::signed_examples",
+              "native": true,
+              "ok": true,
+              "web": false
+            },
+            {
+              "name": "packing::all_int8_values",
+              "native": true,
+              "ok": true,
+              "web": false
+            }
+          ]
+        },
+        "typescript": {
+          "ok": true,
+          "tests": [
+            {
+              "name": "packing::signed_examples",
+              "native": false,
+              "ok": true,
+              "web": true
+            },
+            {
+              "name": "packing::all_int8_values",
+              "native": false,
+              "ok": true,
+              "web": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pending": [
+    "generic compute and external resources",
+    "source task IO/network/DB/FFI bridge",
+    "graphics and remaining real device/OS support",
+    "broader optimized/core/debug/profile",
+    "project conversion",
+    "multi-model end-to-end cost and quality",
+    "Studio completion"
+  ]
+}

@@ -3,8 +3,10 @@
 Toolchain0.120/language0.20 connects task-only worker_compute to its own
 cooperative TypeScript scheduler inside a dedicated module Worker. This is an
 adapter change: no syntax, canonical identity, execution ABI or migration change.
-UI entries remain pure; only wire values cross messages. Current focused,
-full regression, actual browsers, installed SDK and physical stands are pending.
+UI entries remain pure; only wire values cross messages. The matching
+frozen implementation acceptance passed full152, installed SDK31/575 and18
+cases in Chromium/Firefox/WebKit. Astra/CIX/RK3588 physical results have separate
+scopes; see [current acceptance](docs/stand-acceptance-0.120.md).
 Original primary081 and accepted119 source/compiler/SDKs remain preserved.
 
 # Working126: checked provider logical task debugging

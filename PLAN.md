@@ -6,13 +6,19 @@
 
 ## Текущий шаг: toolchain0.120 / язык0.20
 
-- [ ] Соединить task-only worker_compute с отдельным scheduler в Web Worker,
+- [x] Соединить task-only worker_compute с отдельным scheduler в Web Worker,
   сохранив чистые main-thread UI/command entries и wire-only boundary.
-- [ ] Проверить реальные каналы/spawn/wait, ошибки, отмену/timeout, отзывчивость
+- [x] Проверить реальные каналы/spawn/wait, ошибки, отмену/timeout, отзывчивость
   UI и отсутствие server-кода в Chromium/Firefox/WebKit, затем matching SDK.
-- [ ] Проверить новый SDK на Astra x86-64 и CIX ARM64; GPU/NPU fixed adapters
+- [x] Проверить новый SDK на Astra x86-64 и CIX ARM64; GPU/NPU fixed adapters
   имеют отдельную область и не означают завершение общего accelerator API.
 - [ ] Продолжить общий GPU/NPU API и остальные платформенные этапы после этого блока.
+
+Дополнительный RK3588S: CPU/web/packaging и30 GPU-вызовов прошли;
+NPU bytes-FFI после исправления DMA прошёл30 вызовов/6400 значений,
+min/max формы и fullint8 — отдельные6 вызовов/16448 значений. Все результаты
+и отличия documentation/experimental additions от frozen0.120 приведены в
+[текущей приёмке](docs/stand-acceptance-0.120.md). Общая цель остаётся активной.
 
 ## Сохранённый126–127: toolchain0.119 / язык0.20
 
