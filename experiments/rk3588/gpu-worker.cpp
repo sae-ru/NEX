@@ -3,6 +3,9 @@
 #endif
 // Experimental trusted RK3588 OpenCL adapter. No NEX/runtime C++ objects cross its ABI.
 #define CL_TARGET_OPENCL_VERSION 120
+#ifndef NEX_OPENCL_LIBRARY
+#define NEX_OPENCL_LIBRARY "/usr/lib/aarch64-linux-gnu/libOpenCL.so.1"
+#endif
 #include <CL/cl.h>
 #include "nex_ffi_module.h"
 #include "third_party/json.hpp"
@@ -48,7 +51,7 @@ nex_ffi_status error(const nex_ffi_api_v1 *a,nex_ffi_call call,nex_ffi_ref *out,
 std::mutex acceleratorMutex; // Explicit serialized adapter; no source concurrency claim.
 
 class GPU {
-  Library library{"/usr/lib/aarch64-linux-gnu/libOpenCL.so.1"};
+  Library library{NEX_OPENCL_LIBRARY};
 #define LOAD(name) decltype(&::name) name=library.symbol<decltype(&::name)>(#name)
   LOAD(clGetPlatformIDs);LOAD(clGetDeviceIDs);LOAD(clGetDeviceInfo);LOAD(clCreateContext);
   LOAD(clCreateCommandQueue);LOAD(clCreateProgramWithSource);LOAD(clBuildProgram);LOAD(clGetProgramBuildInfo);

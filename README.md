@@ -1,3 +1,12 @@
+# Development: portable common OpenCL preparation
+
+Prepare a complete checked common-GPU project with `--backend gpu --api compute`.
+Select an installed OpenCL loader explicitly with `--opencl-library`; preparation
+embeds its absolute path in the pinned child and records runtime provenance.
+Matching common-GPU runs passed on CIX and RK3588; each checked49 actualGPU calls and20 worker cases with compatible compiler0.120. Read [the usage and exact scope](experiments/rk3588/README.md).
+The only stdlibrary delta is a Context comment correction; executable functions,
+compiler and runtime are unchanged from the0.121 core candidate.
+
 # Development: full-U8 OpenCL provider
 
 The ordinary-source compute contract now has an experimental checked OpenCL
@@ -36,7 +45,7 @@ checks retain their scoped receipts. See [current acceptance](docs/stand-accepta
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.120.0 / language0.20**.
+This isolated development source is **toolchain0.121.0 / language0.20**.
 New [RK3588 opt-in fixtures](experiments/rk3588/README.md) retain separate device
 acceptance; their addition changes no compiler/runtime/language semantics.
 

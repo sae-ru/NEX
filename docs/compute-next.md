@@ -1,3 +1,12 @@
+# Current update: checked compute contract implemented
+
+The ordinary-source CPU contract, validated Context/fallback and the RK3588
+common GPU/NPU dispatch now have independent receipts. Portable OpenCL preparation
+and common-GPU project generation are being checked on CIX. The earlier design
+below records the starting point and does not override the implemented Context
+semantics in [compute.md](compute.md). Full SDK/platform delivery, owned buffers,
+async dispatch, general kernels/models and other PLAN requirements remain open.
+
 # Следующий этап: общий compute API
 
 Acceptance update: optimized bytes fixture PASSED30 calls/6400 values,993161 reference steps, ordinary Debug/Release tests, profile/replay/standalone. Supplemental138 receipt files locally verified. Same bytes ABI/worker min/max and int8 extrema PASSED6 NEX calls/16448 values; current pack checks all256 values on native/TypeScript/reference. This supersedes the earlier in-progress wording below. Generic compute API remains next.

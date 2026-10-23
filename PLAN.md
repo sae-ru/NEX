@@ -6,7 +6,8 @@
 - [ ] Complete matching full153 regression and installed SDK32 workflow.
 - [x] Verify the common source Context against actual RK3588 GPU/NPU with pinned leafworkers using compatible0.120/language0.20:49GPU calls,21NPU calls. This is not full0.121 platform acceptance.
 - [x] Extend experimental OpenCL U8 Add/Affine to scales0..255,262144 elements and explicit overflow; verify real device, malformed frames, cancellation/reap and CPU oracle.
-- [ ] Generalize OpenCL kernels and other real providers, then owned buffers/resources and async/task bridge.
+- [x] Generate common-GPU projects with an explicitly selected installed OpenCL loader; matching CIX and RK3588 numerical/native/profile/replay/standalone and worker boundary tests passed.
+- [ ] Add remaining operations/providers, owned buffers/resources, async/task bridge and general kernels/models.
 
 The original complete PLAN scope below remains active. Primary081 is preserved.
 

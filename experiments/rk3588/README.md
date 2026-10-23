@@ -38,6 +38,33 @@ python3 experiments/rk3588/verify.py --sdk /path/to/sdk --backend gpu \
   --project /new/gpu-project --output /new/gpu-receipts
 ```
 
+For the ordinary-source common compute API, prepare the GPU project directly:
+
+```sh
+python3 experiments/rk3588/prepare.py --sdk /path/to/sdk --backend gpu \
+  --api compute --opencl-library /absolute/path/to/libOpenCL.so.1 \
+  --output /new/common-gpu
+python3 experiments/rk3588/verify_compute.py --sdk /path/to/sdk \
+  --project /new/common-gpu --output /new/common-gpu-receipts
+```
+
+`--api raw` remains the default. Common GPU preparation vendors this tree's
+`lib/compute.nex` under an explicit project library mapping, creates the typed
+Context/CPU oracle/fallback example and generates the pinned foreign catalogue.
+It works with a compatible language0.20 SDK and does not install or modify it.
+The source alias `gpu_raw` and module export `gpu_compute` share the exact typed
+signature; the compiler validates the catalogue before device execution.
+
+`--opencl-library` is an operator-selected existing Linux ARM64 loader, resolved
+to an absolute file and embedded in the pinned worker at compile time. There is
+no environment variable for selecting the top-level loader and no CPU OpenCL fallback. Preparation
+records the installed runtime SHA256 as provenance, without claiming that the
+runtime stays immutable or that all its dependencies are pinned. On CIX the
+installed loader is under `/opt/cixgpu-pro/lib/aarch64-linux-gnu/`; on RK3588 the
+default is `/usr/lib/aarch64-linux-gnu/libOpenCL.so.1`. This selects a runtime,
+not a physical GPU UUID: the worker still selects the first actual GPU device
+and records its real name/type. Automatic multi-device discovery remains open.
+
 Use `--opencl-include DIRECTORY` for an explicit OpenCL-Headers directory with
 `CL/` and `OPENCL-LICENSE`. Otherwise the checked source headers under
 `experiments/cix-p1/include` are used. This provider currently opens
@@ -99,3 +126,35 @@ See [the common contract](../../docs/compute.md) for typed semantics and
 fixed fixtures. Float tensors, generalized OpenCL matmul/models, other providers,
 proper runtime discovery, owned buffers and async/persistent execution remain
 planned work.
+
+## Versioning a generated project
+
+Keep the NEX source, `nex.json`, vendored `stdlib/compute.nex`, provider source,
+preparation recipe and reviewed dependency/license metadata in Git. The generated
+`host.json` and bundle manifest bind exact platform artifacts; retain those
+artifacts in your release storage when retaining their pins. Rebuilding on a new
+machine may produce a different bundle pin: regenerate and validate the source
+binding/catalogue together, then record that change as a new revision. Do not
+edit an old pin to pretend a different binary is the original artifact.
+
+The source graph/replay retains imported NEX source. It does not make a vendor
+SDK, installed driver or external native module part of the language. The tested
+standalone executable runs without SDK resource files but still requires its
+explicit pinned foreign catalogue/bundle, installed vendor runtime and GPU.
+Private RKNN headers/runtime are operator dependencies and are not copied into
+this repository by preparation.
+
+## Portable common-GPU acceptance
+
+The same generator passed on CIX Mali-G720-Immortalis and RK3588 Mali-G610.
+Each common project completed49 actualGPU calls/1835078 exact valid outputs and
+7 intentional overflow errors, including maximum262144 elements, reference and
+Release execution/tests, native profile, source-deleted replay and standalone.
+Each current pinned worker passed20 cases/14actualGPU calls/524321 valid outputs.
+CIX also passed11 CPU broker transport/cancellation cases. Returned203 files
+were independently verified against current source and exact binary outputs;
+see [the bounded proof](../../docs/evidence/portable-opencl-0.121-development.json).
+These receipts use compatible compiler0.120/language0.20 and do not substitute
+for pending full0.121 compiler/SDK/platform acceptance. Initial preparation's
+source/export alias mistake was fixed before hardware execution; its rejection
+logs are retained separately.

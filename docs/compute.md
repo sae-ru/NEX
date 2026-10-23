@@ -104,6 +104,10 @@ fixtures have independent actual numerical/device receipts. Their adaptation
 into this common Context has a separate RK3588 source-library receipt. The
 experimental OpenCL provider now accepts U8 Add and Affine0..255 through its
 pinned worker, including checked overflow and maximum262144-element images.
+The same common-GPU project generator has now passed scoped CIX OpenCL execution
+with its installed Mali-G720 runtime. Use `prepare.py --backend gpu --api compute`
+and an explicit `--opencl-library`; see the provider guide for pinned bundles,
+vendored source, provenance and remaining device-selection limits.
 Provider discovery, broader kernels/models and current full SDK/platform
 acceptance remain separate work. The [scoped common-API receipts](evidence/compute-opencl-0.121-development.json)
 verify actual GPU/NPU dispatch on RK3588 with the compatible0.120 compiler;

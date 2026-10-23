@@ -11,7 +11,7 @@ pub struct Capability { operation:OperationKind; input:DType; output:DType; }
 pub struct Device { kind:Kind; id:str; provider:str; version:str; provenance:str; capabilities:list<Capability>; }
 pub struct Request { version:i64; id:str; operation:Operation; inputs:list<Tensor>; device:Selection; fallback:Fallback; }
 pub struct Response { version:i64; id:str; output:Tensor; device:Device; fallback_used:bool; fallback_reason:str; }
-// The callback is source authority. Context cannot satisfy wire or enter FFI/JSON.
+// Ordinary opaque callable, not a host FFI grant; Context cannot satisfy wire/JSON.
 pub struct Context { devices:list<Device>; invoke:server fn(Request,Device)->result<Response> !{ffi}; }
 
 pub fn operation_kind(operation:Operation)->OperationKind {

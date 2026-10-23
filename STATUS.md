@@ -1,3 +1,18 @@
+# Current portable common OpenCL development
+
+One preparation workflow generates ordinary-source common compute projects for
+CIX and RK3588 using each installed OpenCL loader. Both passed49GPU calls,
+1835078 exact valid outputs,7 explicit overflow errors, nativeRelease tests,
+profile, source-deleted replay and standalone with pinned external bundles.
+Each pinned worker passed20 boundary cases/14actualGPU calls/524321 validvalues;
+the same broker additionally passed11 CPU transport/cancellation cases on CIX.
+Returned203 files were independently verified. See [scope and hashes](docs/evidence/portable-opencl-0.121-development.json).
+This is compatible0.120/language0.20 source/provider execution. The0.121 core
+full153 and matching SDK32 are still pending; original TypeScript environment
+failures are retained for exact failed-group repeat. Primary0.81 stays preserved.
+The stdlibrary delta from130 is one comment, with unchanged function text.
+Owned resources/task bridge, generic kernels/models, discovery and PLAN remain open.
+
 # Current compute/OpenCL development
 
 The0.121 ordinary-source compute contract has checked CPU operations and a real
