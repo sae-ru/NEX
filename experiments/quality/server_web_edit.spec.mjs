@@ -86,8 +86,18 @@ test('network, schema, Unicode, body limit, redirect and timeout errors are reco
   test.skip(restarted);
   await page.goto('/'); await login(page, credential(info, 'bob'));
   async function faulty(handler, message) {
-    await page.route('**/api/tasks', handler, { times: 1 });
+    let entered, release;
+    const started = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { release = resolve; });
+    await page.route('**/api/tasks', async route => {
+      entered(); await gate; await handler(route);
+    }, { times: 1 });
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await started;
+    // Consecutive failures can have the same text. Keep this response held
+    // until the new request's loading state replaces the previous outcome.
+    await expect(page.getByRole('status')).toHaveText('Loading...');
+    release();
     await expect(page.getByRole('status')).toContainText(message);
     await page.unrouteAll({ behavior: 'wait' });
     await expect(rows(page)).toHaveCount(0);
@@ -96,10 +106,7 @@ test('network, schema, Unicode, body limit, redirect and timeout errors are reco
   await faulty(route => route.fulfill({ contentType: 'application/json', body: '[{"id":1,"text":"bad i64","complete":false}]' }), process.env.NEX_TEST_TYPED_API ? 'E_JSON' : 'Invalid task response');
   const noncanonical = [{ id: '1\n', text: 'trailing line terminator', complete: false }];
   await faulty(route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(process.env.NEX_TEST_TYPED_API ? { ok: noncanonical } : noncanonical) }), process.env.NEX_TEST_TYPED_API ? 'E_JSON' : 'Invalid task response');
-  await page.route('**/api/tasks', route => route.fulfill({ contentType: 'application/json', body: '\ufeff' + (process.env.NEX_TEST_TYPED_API ? '{"ok":[]}' : '[]') }), { times: 1 });
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Saved data loaded.');
-  await page.unrouteAll({ behavior: 'wait' });
+  await faulty(route => route.fulfill({ contentType: 'application/json', body: '\ufeff' + (process.env.NEX_TEST_TYPED_API ? '{"ok":[]}' : '[]') }), 'Saved data loaded.');
   await faulty(route => route.fulfill({ body: Buffer.from([0xc0, 0x80]) }), 'E_UTF8');
   await faulty(route => route.fulfill({ body: 'x'.repeat(1048577) }), 'E_LIMIT');
   // WebKit cannot synthesize redirect status with route.fulfill. Use a real
