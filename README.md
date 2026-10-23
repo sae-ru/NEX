@@ -6,12 +6,24 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain0.116.0 / language0.20**.
-Working123 enables candidate concrete static native task providers with checked
-source, real code-only archives and explicit machine ownership. Complete123
-regression, installed SDK28 and platform acceptance remain pending. See [task providers](docs/task-providers.md)
-and query `nex describe --field task_providers --json` before using this slice.
-No source syntax, language identity or task execution descriptor layout changes.
+This isolated development source is **toolchain0.117.0 / language0.20**.
+Working124 enables candidate fixed startup-linked shared native task providers,
+checked per-application image ownership and one common runtime. The11-case actual
+source suite and separate controlled private image fence pass. Full144 regression,
+installedSDK29 and platform acceptance remain pending. Query
+`nex describe --field task_shared_providers --json` and read
+[shared task providers](docs/task-shared-providers.md).
+
+Preserved123 adds concrete static task providers with checked source and real
+code-only archives. Its17-case scoped suite and production SDK phase body passed.
+Its original full141 found one stale capability assertion; a test-only repair
+passed the entire21-case integration group with the same frozen compiler, and
+an explicit140+1 composite is retained. Matching installedSDK28 passed28 phases/523 commands with262 indexed resources;
+four scoped Linux groups passed17 actual cases. See the [exact123b acceptance
+summary](docs/evidence/toolchain-0.116.0-task-providers.json) and
+[static task providers](docs/task-providers.md). These results do not validate
+Working124 shared integration. Source syntax/language history and task execution
+ABI3 remain unchanged.
 
 Preserved122 enables narrow native020 logical task debugging with a separate
 catalog ABI. Its recorded regression is composite139:138 original passed groups
@@ -20,7 +32,7 @@ original numeric-metric/text-marker false-positive failure remains retained;
 there is no claim of a pristine full139 rerun. Matching installedSDK27/504
 commands and three scoped Linux groups passed. See the [exact122 acceptance
 summary](docs/evidence/toolchain-0.115.0-task-debug.json) for hashes and limits.
-These results do not validate the new123 provider integration.
+These results do not validate later provider integration.
 
 Frozen121 passed full134 and scoped Linux profiling gates; its matching
 installedSDK26/498 commands passed with its original compiled source path absent
@@ -56,7 +68,7 @@ apply to their exact source snapshots. Primary081 remains preserved.
 Checked source tasks retain native compiled continuations and independent
 AST/TypeScript schedulers, conservative lifetime diagnostics and mandatory
 runtime guards. TypeScript/browser filesystem, task writes/streams/db/ffi/network,
-HTTP task handlers, non-native task debugging/profiling, dynamic provider lifetime, NEX UI task adapters,
+HTTP task handlers, non-native task debugging/profiling, runtime provider loading/unloading, provider profile/debug, NEX UI task adapters,
 other task platforms and complete static region inference remain pending.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,

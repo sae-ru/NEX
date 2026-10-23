@@ -41,12 +41,21 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(self.cli('guide', '--kind', 'task-file-reads')['text'], (REPO/reads['guide']).read_text())
         self.assertIs(reads['binary_providers'], True)
         self.assertIs(reads['provider_source_required'], True)
-        self.assertEqual(reads['provider_linkage'], ['static'])
+        self.assertEqual(reads['provider_linkage'], ['static','shared-fixed'])
         providers = descriptor['task_providers']
         self.assertEqual(providers, pack['task_providers'])
         self.assertIs(providers['public_enabled'], True)
         self.assertIs(providers['static_linkage'], True)
         self.assertIs(providers['dynamic_linkage'], False)
+        shared=descriptor['task_shared_providers']
+        self.assertEqual(shared,pack['task_shared_providers'])
+        self.assertIs(shared['public_enabled'],True)
+        self.assertEqual((shared['record_schema'],shared['plan_schema'],shared['completion_schema']),
+            ('nex.native-task-provider/2','nex.project-task-linkage/2','nex.native-completion/5'))
+        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(3,88,40))
+        for field in ('authority_transport','callable_transport','imported_function_values','profiling',
+                      'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
+            self.assertIs(shared[field],False)
         for field in ('typescript', 'windows', 'wasm', 'http_task_handlers', 'writes', 'streams', 'task_debug_profile'):
             self.assertFalse(reads[field])
 

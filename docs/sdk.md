@@ -478,3 +478,15 @@ a real last-phase installed102 acceptance failure with --package-notices.
 A separate reviewed corrected driver passes24phases/427commands on the exact
 installed102 compiler; the original102 driver remains unchanged. Matching
 installed acceptance of this source must still be run.
+
+
+Toolchain0.117 adds the29th installed workflow phase, `shared-task-providers`.
+It discovers the distinct shared-fixed descriptor, builds real checked provider
+images, verifies defined accessors/component ownership and executes the loader
+with exactly one common runtime. It separates unused read-code support from the
+root grant, captures ordered completion5 raw pins and original bytes, verifies
+package provenance against relocated image SHA256, deletes source/cache and
+executes both copied and packaged closures with loader tracing before replay.
+The phase body alone is a scoped proof; full matching installedSDK29 acceptance
+and supported platform gates are separately recorded. Static123's phase and
+provider1/completion4 contract remain required and unchanged.

@@ -24,9 +24,10 @@ std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
 void taskLinkage(const JSON &value,const std::string &component){
   const auto &o=object(value);
-  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports")fail("unknown captured task linkage field");
+  const bool shared=o.getString("schema")=="nex.project-task-linkage/2";
+  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
   auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
-  if(o.getString("schema")!="nex.project-static-task-linkage/1"||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
+  if((shared?(o.size()!=8||o.getString("mode")!="shared-fixed"||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
      !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
   auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
   std::set<std::string> defined,imported;
@@ -40,6 +41,18 @@ void taskLinkage(const JSON &value,const std::string &component){
   for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");
     if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskCodeRequirementsMask))fail("invalid captured task export");
     digest(row,"contract");digest(row,"signature");text(row,"accessor");
+  }
+  if(shared&&!o.get("load_closure")->getAsNull()){
+    const auto &closure=object(*o.get("load_closure"));auto images=closure.getArray("images");
+    if(closure.size()!=2||closure.getString("root")!=component||!images||images->empty()||images->size()>129)fail("invalid captured task load closure");
+    std::set<std::string> seenImages,functions;
+    for(const auto &value:*images){const auto &image=object(value);auto name=text(image,"component");auto kind=image.getString("kind");
+      auto definitions=image.getArray("definitions"),statics=image.getArray("static_components"),dynamics=image.getArray("dynamic_components");
+      if(image.size()!=5||!seenImages.insert(name).second||(kind!="application"&&kind!="shared-image")||!definitions||definitions->empty()||definitions->size()>65536||!statics||statics->size()>128||!dynamics||dynamics->size()>128)fail("invalid captured task image owner");
+      for(const auto &definition:*definitions){const auto &row=object(definition);if(row.size()!=3||!functions.insert(text(row,"function")).second||functions.size()>65536)fail("duplicate captured task image definition");text(row,"source_component");digest(row,"contract");}
+      for(const auto *list:{statics,dynamics}){std::set<std::string> seen;for(const auto &entry:*list){auto dependency=entry.getAsString();if(!dependency||dependency->empty()||dependency->size()>64||!seen.insert(dependency->str()).second||*dependency==name||(list==dynamics&&!seenImages.contains(dependency->str())))fail("invalid captured task image dependency");}}
+    }
+    if(images->back().getAsObject()->getString("component")!=component)fail("captured task load root is not last");
   }
 }
 struct Shape {const Object *files,*links,*expectations,*toolchains;std::vector<std::string> directories;std::string root,manifest;};

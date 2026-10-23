@@ -4,7 +4,22 @@
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
-## Текущий шаг: toolchain0.116 / язык0.20
+## Текущий шаг: toolchain0.117 / язык0.20
+
+- [x] Связать конкретные task-экспорты через OS startup-loaded shared images,
+  смешанные static/shared frontiers и один общий runtime/root executor.
+- [x] Проверить реальные accessor symbols, per-application owner ledger,
+  immutable/result/Unicode семантику, root grant/limits и независимые roots.
+- [x] Проверить pins/cache, completion5 и raw retained provenance, capture/replay,
+  source-deleted copied app/package и отдельный physical-drain fence.
+- [x] После действительного native proof включить точную candidate discovery;
+  actual source suite11 и отдельный private shared-image fence пройдены.
+- [ ] Проверить общий frozen144 regression, установленный SDK29 и scoped native
+  platform gates.
+  Runtime load/unload, provider task profile/debug, HTTP/foreign и binary-only
+  providers не входят в этот шаг. Язык020 и execution ABI3 не меняются.
+
+## Сохранённый123: toolchain0.116 / язык0.20
 
 - [x] Связать конкретные task-экспорты через настоящие статические архивы,
   сохранив checked source, единственного machine-owner и один root executor.
@@ -14,7 +29,10 @@
   сохранить существующие синхронные File/callback архивы.
 - [x] После действительного native proof включить точную candidate discovery;
   пройдены17 permanent cases и отдельное тело SDK-фазы19 командами.
-- [ ] Проверить общий frozen regression, установленный SDK28 и платформы.
+- [x] Сохранить честный composite141:140 исходных passed groups плюс исправленный
+  integration21 на том же frozen compiler; исходная ошибка не удалена.
+  Установленный SDK28/523 и отдельные Linux4/17 прошли; см.
+  docs/evidence/toolchain-0.116.0-task-providers.json.
   Shared providers,
   task profile/debug через provider и unload не входят в этот шаг.
 

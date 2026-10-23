@@ -7,6 +7,18 @@ authority must not be reconstructed as a pure watch input.
 
 # NEX coding prompt — language 0.20, protocol 2
 
+For fixed shared task provider projects, first query
+`nex describe --field task_shared_providers --json` and read
+`nex guide --kind task-shared-providers --json`. Public enablement is separate
+from integration work and acceptance. Keep checked source/direct edges,
+selected concrete task exports and per-application final ownership. The final
+executable starts one root executor/grant/limits; all startup-linked providers
+import one common runtime. A static dependency cannot be embedded twice in one
+loaded closure; independent application roots have independent ledgers. Do not
+retag static provider1 records as shared provider2. Exporting unused read code
+adds code support, not root authority. Runtime load/unload, callable/authority
+transport, provider profile/debug, HTTP/foreign and binary-only remain pending.
+
 Toolchain0.116 is integrating concrete static task providers. Before selecting
 that build arrangement, query `nex describe --field task_providers --json` and
 read `nex guide --kind task-providers --json`. Do not treat pending enablement
@@ -74,8 +86,9 @@ Keep concrete direct task/pure signatures resource-free, including nested types;
 do not transport any callable or authority through this cohort. A pure factory
 returning a closure is not an imported task descriptor. Keep provider source and
 the declared static edge available, and inspect task_linkage ownership rather
-than accepting consumer recompilation as a provider proof. Shared task providers,
-provider task profile/logical debug, HTTP/foreign and unload remain unsupported.
+than accepting consumer recompilation as a provider proof. Fixed startup-linked shared task providers have their own task_shared_providers
+descriptor and guide; do not infer support from static task_providers. Provider
+task profile/logical debug, HTTP/foreign and runtime unload remain unsupported.
 Use native task profiling only when the actual task_profiling descriptor reports
 source_support; read docs/profiling.md for its current CLI language/platform scope.
 Task schema2 separates source CPU, active elapsed and logical lifetime; a resume

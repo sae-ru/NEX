@@ -238,9 +238,12 @@
     "task_debug_expression_schema": "llm/task-debug-expression.schema.json",
     "task_providers": "docs/task-providers.md",
     "native_task_provider_schema": "llm/native-task-provider.schema.json",
-    "project_static_task_linkage_schema": "llm/project-static-task-linkage.schema.json"
+    "project_static_task_linkage_schema": "llm/project-static-task-linkage.schema.json",
+    "task_shared_providers": "docs/task-shared-providers.md",
+    "native_shared_task_provider_schema": "llm/native-shared-task-provider.schema.json",
+    "project_task_linkage_schema": "llm/project-task-linkage.schema.json"
   },
-  "document_access": "nex guide --kind task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
+  "document_access": "nex guide --kind task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -854,7 +857,7 @@
       "complete static region/lifetime inference",
       "asynchronous writes/streams/db/ffi/network",
       "non-native task debugging/profiling",
-      "dynamic provider ABI/lifetime and provider task profile/debug",
+      "runtime provider load/unload and provider task profile/debug",
       "full current installed SDK and platform delivery",
       "NEX UI adapter task integration",
       "task limit SDK/platform acceptance"
@@ -986,7 +989,7 @@
       "macOS 64-bit",
       "Linux 64-bit"
     ],
-    "native_application": "compiled continuations in one native image; bounded joined TaskGroup",
+    "native_application": "compiled continuations in standalone or checked fixed-load images; one bounded joined TaskGroup",
     "source_only_project": true,
     "migration_guide": "docs/task-migration.md",
     "standalone_group_steps": 1000000,
@@ -1152,7 +1155,8 @@
     "task_profile": true,
     "task_debug": true,
     "provider_linkage": [
-      "static"
+      "static",
+      "shared-fixed"
     ],
     "provider_source_required": true
   },
@@ -1353,6 +1357,55 @@
       "current focused workflow acceptance",
       "full current regression",
       "matching installed SDK",
+      "supported native platform acceptance"
+    ]
+  },
+  "task_shared_providers": {
+    "status": "development_checked_fixed_native_task_images",
+    "public_enabled": true,
+    "language": "0.20",
+    "guide": "docs/task-shared-providers.md",
+    "record_schema": "nex.native-task-provider/2",
+    "record_schema_file": "llm/native-shared-task-provider.schema.json",
+    "plan_schema": "nex.project-task-linkage/2",
+    "plan_schema_file": "llm/project-task-linkage.schema.json",
+    "completion_schema": "nex.native-completion/5",
+    "retained_build_schema": "nex.retained-native-task-build/2",
+    "execution_task_abi": 3,
+    "descriptor_bytes": 88,
+    "abi_offset": 40,
+    "source_required": true,
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "linkage": "fixed OS startup load closure",
+    "mixed_static_shared": true,
+    "ownership": "checked definitions owned once per application load closure; independent roots have independent ledgers",
+    "runtime_ownership": "one common runtime and one root executor, request control, file grant and limits",
+    "application_entry": "declared task entry in final executable; no application code DSO",
+    "checked_task_io": true,
+    "provider_file_reads": true,
+    "reviewed_capture_replay": true,
+    "supported_actions": [
+      "build",
+      "run",
+      "test",
+      "build-test",
+      "package"
+    ],
+    "authority_transport": false,
+    "callable_transport": false,
+    "imported_function_values": false,
+    "profiling": false,
+    "logical_debugging": false,
+    "http_task_handlers": false,
+    "foreign": false,
+    "binary_only": false,
+    "runtime_load_unload": false,
+    "acceptance_pending": [
+      "full current144-group regression",
+      "matching installed SDK29",
       "supported native platform acceptance"
     ]
   }

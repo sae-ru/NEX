@@ -142,3 +142,10 @@ the actual language field makes019/020 revisions distinct. Explicit018 recheck
 and its original reserved-name repairs remain separate. Older known language
 rechecks without a retained parser are reported as unverified origins, rather
 than certified canonical verification. See [migration](task-migration.md).
+
+Fixed startup-linked shared task providers have a separate capability descriptor
+and [contract](task-shared-providers.md). When enabled, provider reads use the
+same root grant and limits. The common runtime's read-code union can be true
+for an unused export while the selected `task_application.task_file_reads`
+remains false. Neither metadata bit creates authority. Provider profile/debug,
+runtime load/unload and binary-only execution remain unsupported.

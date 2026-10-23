@@ -432,8 +432,18 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
         self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{return mid::answer(41);}')
         original = copy.deepcopy(self.description)
         self.description['components']['mid']['kind']='shared_library'
-        self.description['components']['app']['dependencies']['mid']='dynamic';self.save()
-        self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
+        self.description['components']['app']['dependencies']={'mid':'dynamic'};self.save()
+        shared=self.project('plan')
+        self.assertFalse(shared['external_tools_invoked'])
+        components={row['name']:row['task_linkage'] for row in shared['components']}
+        self.assertEqual(components['app']['schema'],'nex.project-task-linkage/2')
+        self.assertEqual(components['app']['mode'],'shared-fixed')
+        closure=components['app']['load_closure']
+        self.assertEqual(closure['root'],'app')
+        self.assertEqual([row['component'] for row in closure['images']],['mid','app'])
+        self.assertEqual(closure['images'][0]['static_components'],['leaf'])
+        self.assertTrue(any(row['function']=='provider_leaf::hidden' and row['source_component']=='leaf'
+            for row in closure['images'][0]['definitions']))
         self.description=original
         self.save()
         self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')

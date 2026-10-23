@@ -1,18 +1,34 @@
-# Working123: concrete static task providers in progress
+# Working124: fixed shared task providers in progress
 
-Toolchain0.116/language0.20 is integrating source-checked static native task
-provider archives, concrete descriptor accessors and explicit machine ownership.
-Bounded candidate public enablement follows actual archive/accessor/ownership
-and semantic proof. Complete123 regression, SDK28 and platform acceptance remain pending.
-No source language/canonical/history change or execution ABI3 layout change is
-introduced. Dynamic providers, task profile/logical debug across providers,
-exported authority/callables, binary-only checking, HTTP/foreign task hosting and
-unload remain unsupported. Primary081 and frozen122/122b remain unchanged.
-The17-case permanent suite passes actual native/reference chains, real archive/
-accessor ownership, grants/limits, strict callable boundaries, warm export changes
-and source-deleted capture/replay/package. Failed bootstrap/harness attempts are
-retained separately. Final frozen common build/regression, installedSDK28 and
-platform gates still have to finish. See docs/task-providers.md.
+Toolchain0.117/language0.20 enables candidate OS startup-linked task provider
+images, static/shared frontiers, per-application ownership and a single common
+runtime. The11-case actual source suite passes, including real symbols/loader,
+component read requirements, independent roots, grant/limits and source-deleted
+retained replay/package/copy. Failed harness assumptions remain retained. A
+separate controlled private shared-image fence passes without claiming real
+regular-file physical retirement was held deterministically.
+Complete current regression, installedSDK29 and native platform acceptance are
+pending. No source/canonical/migration or execution ABI3 layout change is made.
+Provider profile/logical debug, HTTP/foreign, binary-only checking, callable or
+explicit authority transport and runtime load/unload remain unsupported. See
+[the contract](docs/task-shared-providers.md). Primary081 and frozen123/123b are
+preserved. The123 full141 stale-capability assertion and its same-compiler
+21-case repair/composite140+1 are retained separately. Matching installedSDK28
+passed28 phases/523 commands/262 resources, and four scoped Linux groups passed
+17 actual cases; see [exact123b evidence](docs/evidence/toolchain-0.116.0-task-providers.json).
+
+# Preserved123/123b: concrete static task providers
+
+Toolchain0.116/language0.20 integrates source-checked concrete static task
+archives, descriptor accessors and one root executor/grant/limits. Its17-case
+source suite, strict boundary checks and reviewed capture/replay/package passed.
+Preserved regression is explicit composite141:140 passed original groups plus
+the repaired21-case integration group on the same frozen compiler. The original
+stale capability assertion failure remains retained; no pristine full141 rerun
+is claimed. InstalledSDK28/523 commands/262 indexed resources and four scoped
+Linux groups/17 actual cases passed. Exact hashes and limits are in
+[the123b summary](docs/evidence/toolchain-0.116.0-task-providers.json).
+This does not validate124 shared integration or complete the objective.
 
 # Preserved122: logical native task debugger integration
 

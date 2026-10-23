@@ -408,3 +408,14 @@ No module constructor, application, database or runtime credential is executed
 or created during packaging. Verify relocated output on its destination host.
 Candidate focused checks and full platform/installed SDK acceptance have
 separate evidence; do not infer a completed release from this design contract.
+
+### Fixed startup-linked task image cohort
+
+Toolchain0.117 enables a candidate separate `shared-fixed` task cohort.
+Check `task_shared_providers.public_enabled` before selecting it and read
+[task-shared-providers.md](task-shared-providers.md). Its plan uses
+`nex.project-task-linkage/2` and per-application load ownership; its strict
+provider2 records and completion5 pins preserve source identity and actual image
+provenance. Independent application roots may embed the same static provider;
+multiple copies in one loaded process closure reject before tools. Runtime
+load/unload and provider task debug/profile remain unsupported.

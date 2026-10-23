@@ -2,8 +2,10 @@
 
 Toolchain0.116/language0.20 enables this candidate native macOS/Linux64 slice.
 Query `nex describe --field task_providers --json` for actual enablement.
-Actual archive chains, ownership and source semantics have focused proof;
-complete123 regression, SDK28 and platform acceptance remain pending.
+The preserved123b checkpoint has explicit composite141 regression, matching
+installedSDK28/523 commands and four scoped Linux groups/17 cases; see
+[exact evidence](evidence/toolchain-0.116.0-task-providers.json). Current124
+shared integration and its full/SDK29/platform gates are separate.
 
 Use an existing `nex.build.json` static dependency with available checked source.
 The provider is a real code-only archive. Its selected concrete public task
@@ -114,9 +116,19 @@ and rebuilds; a previous receipt or a sidecar alone is not permission to execute
 an arbitrary binary-only provider. Packaging retains the completed standalone
 application and its normal provenance/notices.
 
-Shared/dynamic task providers, binary-only checking, arbitrary external
+This static cohort does not enable shared task providers; the separate fixed
+shared-image mode is described below. Binary-only checking, arbitrary external
 providers, imported callable transport, exported authority, task profiling or
 logical debugging across providers, task HTTP/foreign hosting, unload, other
 native targets and broader asynchronous IO remain unsupported. Runtime kernel
 drain tests and actual regular-file provider reads have different evidence
 scopes; a process timeout is not a proof of physical IO retirement.
+
+## Separate fixed shared-image mode
+
+Toolchain0.117 integrates a distinct `shared-fixed` cohort described in
+[task-shared-providers.md](task-shared-providers.md). Query
+`task_shared_providers` for its actual enablement. This static descriptor keeps
+`dynamic_linkage:false`: provider1/plan1/completion4 are not reinterpreted as
+provider2/plan2/completion5. Existing synchronous File/callback archives remain
+in their original mode.

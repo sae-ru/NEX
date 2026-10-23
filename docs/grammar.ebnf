@@ -1,3 +1,6 @@
+(* Toolchain0.117 fixed startup-linked task images are external checked build
+   ownership/load-closure metadata; source syntax, ordinals/canonical fields,
+   language020 and history-preserving migration remain unchanged. *)
 (* Toolchain0.116 concrete static task providers are external checked project
    linkage/ownership metadata, with no new syntax, canonical fields or migration. *)
 (* Toolchain0.115 logical task debugger metadata adds no source syntax,

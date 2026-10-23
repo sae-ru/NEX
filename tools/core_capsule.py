@@ -42,7 +42,8 @@ def completion_inputs(build):
         if inputs != expected:
             raise ValueError('invalid retained static task completion path/order')
         return inputs
-    if build.get('completion_schema') == 'nex.native-completion/3':
+    if build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5'):
+        task = build['completion_schema'] == 'nex.native-completion/5'
         if not isinstance(inputs, list) or not 4 <= len(inputs) <= 1024:
             raise ValueError('invalid retained native image completion limit')
         result = []
@@ -50,7 +51,7 @@ def completion_inputs(build):
 
         def take(kind, path):
             nonlocal position
-            if inputs[position] != {'kind': kind, 'path': path}:
+            if position >= len(inputs) or inputs[position] != {'kind': kind, 'path': path}:
                 raise ValueError('invalid retained native image completion path/kind/order')
             result.append(path)
             position += 1
@@ -60,6 +61,8 @@ def completion_inputs(build):
             return value.get('kind') if isinstance(value, dict) else None
 
         take('abi', 'library-abi.json')
+        if task:
+            take('task_provider', 'task-provider.json')
         take('link_inputs', 'image-inputs.json')
         take('objects', 'objects.a')
         archives = 0
@@ -67,6 +70,8 @@ def completion_inputs(build):
             if archives >= 128:
                 raise ValueError('too many retained static libraries')
             take('static_library', 'libraries/%d.a' % archives)
+            if task:
+                take('static_task_provider', 'libraries/%d.task-provider.json' % archives)
             archives += 1
         image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
         images = []
@@ -79,6 +84,15 @@ def completion_inputs(build):
             take('owned_image', path)
         if not images:
             raise ValueError('retained image build requires its runtime')
+        providers = []
+        while task and position < len(inputs) and kind() == 'owned_task_provider':
+            path = inputs[position].get('path')
+            if (not isinstance(path, str) or not path.endswith('.task-provider.json') or
+                    path[:-len('.task-provider.json')] not in images or
+                    (providers and path <= providers[-1]) or len(providers) >= 128):
+                raise ValueError('invalid retained owned task provider')
+            providers.append(path)
+            take('owned_task_provider', path)
         previous = ''
         while position < len(inputs):
             value = inputs[position]
@@ -237,7 +251,7 @@ def system_dependencies(program, owned_names=()):
 
 def owned_image_paths(manifest, build):
     paths = completion_inputs(build)
-    shared = build.get('completion_schema') == 'nex.native-completion/3'
+    shared = build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5')
     if not shared:
         if 'owned_images' in manifest:
             raise ValueError('legacy capsule cannot add owned images')

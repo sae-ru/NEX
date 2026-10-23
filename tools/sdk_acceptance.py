@@ -30,13 +30,133 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def captured_task_build_artifacts(command, expected_linkages):
+    """Bind a retained build to its actual checked command, not another CWD."""
+    require(isinstance(command,dict) and type(command.get('exit_code')) is int and command['exit_code']==0 and
+            type(command.get('interrupted')) is int and command['interrupted']==0 and
+            all(command.get(key) is False for key in ('timed_out','output_limit')),
+            'captured task build command did not complete normally')
+    response=command.get('response',{})
+    require(isinstance(response,dict) and response.get('ok') is True and
+            isinstance(response.get('artifacts'),list) and 1<=len(response['artifacts'])<=128,
+            'captured task build has no bounded successful artifact response')
+    components=response.get('plan',{}).get('components',[])
+    require(isinstance(components,list) and len(components)==len(expected_linkages) and
+            {row.get('name'):row.get('task_linkage') for row in components if isinstance(row,dict)}==expected_linkages,
+            'captured task build checked linkage differs')
+    artifacts={}
+    for row in response['artifacts']:
+        require(isinstance(row,dict) and row.get('component') in expected_linkages and row['component'] not in artifacts and
+                isinstance(row.get('build_key'),str) and re.fullmatch('[0-9a-f]{64}',row['build_key']) and
+                isinstance(row.get('artifact'),str) and '\0' not in row['artifact'] and '\\' not in row['artifact'],
+                'captured task build artifact component/key differs')
+        path=Path(row['artifact'])
+        require(path.is_absolute() and path.parent.name==row['build_key'] and
+                row.get('kind') in ('executable','shared_library','static_library'),
+                'captured task build artifact path/kind differs')
+        artifacts[row['component']]=row
+    require(set(artifacts)==set(expected_linkages),'captured task build artifact component set differs')
+    return artifacts
+
+
+def task_sdk_regular(base,name,maximum=64*1024*1024):
+    require(type(name) is str and 0<len(name.encode())<=16384 and '\\' not in name and '\0' not in name,
+            'invalid task SDK path text')
+    relative=Path(name)
+    require(not relative.is_absolute() and relative.as_posix()==name and
+            all(part not in ('','.','..') for part in relative.parts),'task SDK path escapes its root')
+    path=base;require(not path.is_symlink(),'task SDK root is a symlink')
+    for part in relative.parts:
+        path=path/part;require(not path.is_symlink(),'task SDK path contains a symlink')
+    require(path.is_file() and path.stat().st_size<=maximum,'task SDK input is not a bounded regular file')
+    return path
+
+
+def package_task_provenance(package_root,package_meta,project_root):
+    """Check this package's own completed originals; capture keys may differ.
+
+    The matching compiler verified its completion and produced BLAKE3 pins.
+    This checker independently checks raw bytes/SHA/size, provider pins and the
+    relocated output inventory. It does not recompute BLAKE3 in Python.
+    """
+    key=package_meta.get('build_key')
+    require(isinstance(key,str) and re.fullmatch('[0-9a-f]{64}',key),'packaged task build key differs')
+    prefix='.nex/build/'+key+'/'
+    original=lambda name:task_sdk_regular(project_root,prefix+name,16*1024*1024)
+    metadata=json.loads(original('build.json').read_text());links=json.loads(original('image-inputs.json').read_text())
+    require(metadata.get('key')==key and metadata.get('completion_schema')=='nex.native-completion/5' and
+            metadata.get('compiler_build')==package_meta.get('compiler_build') and
+            links.get('schema')=='nex.native-image-inputs/2','package original completion/build identity differs')
+    provenance=package_meta.get('task_provenance',{})
+    require(isinstance(provenance,dict) and set(provenance)=={'schema','metadata_rewritten','hash_algorithm','files'} and
+            provenance['schema']=='nex.application-task-provenance/1' and provenance['metadata_rewritten'] is False and
+            provenance['hash_algorithm']=='BLAKE3' and isinstance(provenance['files'],list),
+            'packaged raw task provenance differs')
+    providers=links.get('task_providers');images=links.get('images')
+    require(isinstance(providers,list) and len(providers)<=128 and
+            all(isinstance(row,dict) and isinstance(row.get('path'),str) for row in providers) and
+            isinstance(images,list) and all(isinstance(image,dict) for image in images) and
+            sum(image.get('kind')=='runtime' for image in images)==1 and
+            len(providers)==sum(image.get('kind')=='library' for image in images) and
+            [row.get('path') for row in providers]==sorted({row.get('path') for row in providers}),
+            'package original image/provider closure differs')
+    expected=[('application_provider','task-provider.json',metadata.get('task_provider_hash'))]
+    expected += [('owned_provider',row['path'],row['hash']) for row in providers]
+    expected += [(kind,name,None) for kind,name in (('image_inputs','image-inputs.json'),('build','build.json'),('complete','complete'))]
+    require(len(provenance['files'])==len(expected),'packaged task provenance count differs')
+    result=[];total=0
+    for index,(row,(kind,name,pin)) in enumerate(zip(provenance['files'],expected)):
+        require(isinstance(row,dict) and set(row)=={'kind','path','input_hash','input_sha256','bytes','component',
+                'input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'} and
+                row['kind']==kind and row['path']=='provenance/task/%03d-'%index+Path(name).name and
+                type(row['bytes']) is int and 0<=row['bytes']<=16*1024*1024 and
+                isinstance(row['input_hash'],str) and re.fullmatch('[0-9a-f]{64}',row['input_hash']) and
+                (pin is None or row['input_hash']==pin),'packaged task provenance row/order/pin differs')
+        total+=row['bytes'];require(total<=32*1024*1024,'packaged task provenance exceeds aggregate bound')
+        raw=task_sdk_regular(package_root,row['path'],16*1024*1024).read_bytes();source=original(name).read_bytes()
+        sha=hashlib.sha256(raw).hexdigest()
+        require(raw==source and len(raw)==row['bytes'] and sha==row['input_sha256'],
+                'packaged raw provenance changed its own completed original bytes')
+        inventory=package_meta.get('files',{}).get(row['path'],{})
+        require(inventory.get('sha256')==sha and inventory.get('bytes')==len(raw),
+                'packaged raw provenance differs from package inventory')
+        if kind in ('application_provider','owned_provider'):
+            provider=json.loads(raw);image=provider.get('image',{})
+            require(provider.get('schema')=='nex.native-task-provider/2' and provider.get('mode')=='shared-fixed' and
+                    provider.get('component')==row['component'] and provider.get('owner_image')==row['component'] and
+                    image.get('key')==row['input_image_key'] and image.get('sha256')==row['input_image_sha256'] and
+                    image.get('uuid')==row['input_uuid'] and isinstance(row['output_image'],str),
+                    'packaged task original image association differs')
+            if kind=='application_provider':
+                require(provider==metadata.get('task_provider') and image['key']==key and
+                        row['output_image']==package_meta.get('entry') and provider.get('artifact_kind')=='application',
+                        'packaged application provider differs from its own completed root')
+            else:
+                selected=next(value for value in providers if value['path']==name)
+                physical=next((value for value in images if Path(value['path']).name==Path(selected['image']).name),{})
+                require(provider.get('component')==selected['component'] and provider.get('artifact_kind')=='shared-image' and
+                        physical.get('kind')=='library' and all(image.get(k)==physical.get(k) for k in ('key','hash','sha256','uuid')),
+                        'packaged provider differs from its own completed loaded image')
+            output=task_sdk_regular(package_root,row['output_image'])
+            output_sha=hashlib.sha256(output.read_bytes()).hexdigest()
+            indexed=package_meta.get('files',{}).get(row['output_image'],{})
+            require(output_sha==row['output_image_sha256']==indexed.get('sha256') and
+                    output.stat().st_size==indexed.get('bytes'),'packaged relocated task image differs from output inventory')
+        else:
+            require(all(row[name] is None for name in ('component','input_image_key','input_image_sha256','input_uuid',
+                    'output_image','output_image_sha256')),'nonprovider package provenance claims an image')
+        result.append({'kind':kind,'original':str(original(name)),'path':row['path'],'sha256':sha,'bytes':len(raw),
+            'compiler_validated_input_hash':row['input_hash']})
+    return {'build_key':key,'files':result,'verification':'matching compiler validated package completion BLAKE3; independent own-original/copied bytes, SHA256, sizes, provider pins and output inventory; no capture-index equivalence or Python BLAKE3 recomputation'}
 
 
 def merge_notice_components(*groups):
@@ -138,6 +258,14 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 117, 0):
+        providers = report.get('evidence', {}).get('shared_task_providers', {})
+        require(all(providers.get(key) is True for key in ('descriptor','actual_shared_images',
+                'defined_descriptor_accessors','consumer_ownership','actual_loaded_closure','one_runtime',
+                'native_reference','unused_read_excluded','root_file_grant','root_limits','warm_cache',
+                'retained_completion5','raw_package_provenance','source_deleted_replay',
+                'copied_closure_without_resources','source_deleted_package')),
+                'SDK acceptance lacks complete fixed shared task provider delivery evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 116, 0):
         providers = report.get('evidence', {}).get('static_task_providers', {})
         require(all(providers.get(key) is True for key in ('descriptor', 'actual_static_archives',
@@ -1551,6 +1679,268 @@ server fn main()->unit!{task,fs,io}{
             original_archives_sha256=archive_hashes,records=records,receipt=str(receipt),replay=replay['output'],retained=retained,
             retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
             retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation')
+
+    def shared_task_providers():
+        import importlib.util
+        feature=cli('describe')['task_shared_providers']
+        identity=cli('describe','--kind','index')
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(feature==pack['task_shared_providers'] and feature['public_enabled'] and
+                feature['source_required'] and feature['execution_task_abi']==3 and feature['descriptor_bytes']==88 and
+                feature['completion_schema']=='nex.native-completion/5' and not feature['runtime_load_unload'] and
+                not feature['profiling'] and not feature['logical_debugging'],
+                'installed shared task provider descriptor differs')
+        directory=root/'shared-task-providers';directory.mkdir()
+        for name in ('leaf','mid','app'):(directory/name).mkdir()
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        description={'schema':'nex.project-build/1','default_configuration':'release',
+            'configurations':{'release':{'profile':'release','task_limits':{'steps':1000000,'timeout_ms':10000,'workers':2}}},
+            'components':{
+                'leaf':{'kind':'shared_library','root':'leaf','entry':'leaf/value.nex','entry_function':'answer','exports':['read']},
+                'mid':{'kind':'shared_library','root':'mid','entry':'mid/value.nex','entry_function':'answer','dependencies':{'leaf':'dynamic'}},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'mid':'dynamic','leaf':'dynamic'}}}}
+        (directory/'nex.build.json').write_text(json.dumps(description))
+        (directory/'leaf/value.nex').write_text('''module installed_shared_leaf;
+fn pure(value:i64)->i64{return value+1;}
+pub fn answer(value:i64)->i64!{task}{task_yield();return pure(value);}
+pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);}
+''')
+        (directory/'mid/value.nex').write_text('module installed_shared_mid;import "../leaf/value.nex" as leaf;pub fn answer()->i64!{task}{return leaf::answer(41);}')
+        application=directory/'app/main.nex'
+        application.write_text('module installed_shared_app;import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(mid::answer());}')
+        plan=cli('project','--kind','plan','--component','app',cwd=directory)
+        require(not plan['external_tools_invoked'] and not (directory/'.nex').exists(),
+                'shared task provider planning invoked tools/state')
+        source_plan={row['name']:row['task_linkage'] for row in plan['components']}
+        require(all(row['schema']=='nex.project-task-linkage/2' and row['mode']=='shared-fixed' for row in source_plan.values()) and
+                [image['component'] for image in source_plan['app']['load_closure']['images']]==['leaf','mid','app'],
+                'shared task source/final ownership plan differs')
+        require(cli('eval',cwd=directory)['stdout']=='42\n','shared provider independent source result differs')
+        built=cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        artifacts={row['component']:row for row in built['artifacts']}
+        records={};image_sha256={}
+        for name in ('leaf','mid','app'):
+            artifact=Path(artifacts[name]['artifact']);record=json.loads((artifact.parent/'task-provider.json').read_text())
+            records[name]=record;image_sha256[name]=hashlib.sha256(artifact.read_bytes()).hexdigest()
+            require(record['schema']=='nex.native-task-provider/2' and record['mode']=='shared-fixed' and
+                    record['descriptor_abi']==0x4e45585400000003 and record['descriptor_size']==88 and
+                    record['abi_offset']==40 and record['component']==record['owner_image']==name and
+                    record['artifact_kind']==('application' if name=='app' else 'shared-image') and
+                    record['image']['sha256']==image_sha256[name] and record['image']['key']==artifacts[name]['build_key'],
+                    'actual shared image/provider identity differs')
+            if name!='app':
+                symbols={}
+                for line in run(['nm','-g',artifact]).splitlines():
+                    words=line.split()
+                    if len(words)>=2 and len(words[-2])==1:
+                        symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+                require(record['exports'] and all(symbols.get(export['accessor'],set()) & {'T','W'}
+                        for export in record['exports'].values()),'shared image lacks a defined descriptor accessor')
+                require(not symbols.get('main',set()) & {'T','W'} and all(not symbols.get(name,set()) & {'T','W'}
+                        for name in ('nex_task_application_execute_limits_at','nex_application_run_at',
+                                     'nex_release','nex_retain','nex_task_frame_call_at')) and
+                        not any(types & {'T','W'} for name,types in symbols.items() if name.endswith('__task_step')),
+                        'provider defines application/kernel entry')
+        app=artifacts['app'];compilation=json.loads(Path(app['compilation']).read_text())
+        require({name for unit in compilation['units'] for name in unit['functions']}=={'installed_shared_app::main'},
+                'shared consumer recompiled provider definitions')
+        images=compilation['owned_images']
+        require(len(images)==3 and sum(image['kind']=='runtime' for image in images)==1 and
+                len({Path(image['path']).name for image in images})==3,'shared closure/runtime inventory differs')
+        metadata=json.loads(Path(app['metadata']).read_text())
+        require(records['leaf']['task_file_reads'] and not metadata['task_application']['task_file_reads'] and
+                not metadata['stage_runtime_requirements']['task_file_reads'] and
+                built['native_runtime_image']['requirements']['task_file_reads'],
+                'unused provider read code created root authority or was omitted from runtime support')
+        loader_logs=[]
+        def loaded_run(executable,expected_output):
+            old_loader={key:environment.pop(key,None) for key in ('DYLD_PRINT_LIBRARIES','DYLD_PRINT_TO_FILE','LD_DEBUG','LD_DEBUG_OUTPUT')}
+            loader_key='DYLD_PRINT_LIBRARIES' if platform.system()=='Darwin' else 'LD_DEBUG'
+            environment[loader_key]='1' if platform.system()=='Darwin' else 'libs'
+            try:
+                require(run([executable],cwd='/')==expected_output,'loaded shared application result differs')
+                loader_log=Path(report['commands'][-1]['stderr']);loader_logs.append(str(loader_log))
+                loaded=loader_log.read_text().splitlines()
+                if platform.system()=='Linux':loaded=[line.split('calling init:',1)[1].strip() for line in loaded if 'calling init:' in line]
+                require(all(sum(line.rstrip().endswith('/'+Path(image['path']).name) for line in loaded)==1 for image in images),
+                        'executing loader did not map each checked shared image exactly once')
+                actual_runtime={Path(match).name for line in loaded for match in
+                    re.findall(r'\S*libnex_runtime_[0-9a-f]{64}\.(?:dylib|so)',line)}
+                require(actual_runtime=={Path(image['path']).name for image in images if image['kind']=='runtime'},
+                        'executing loader mapped a different/additional task runtime')
+            finally:
+                environment.pop(loader_key,None)
+                for key,value in old_loader.items():
+                    if value is not None:environment[key]=value
+        loaded_run(app['artifact'],'42\n')
+        warm=cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        require(all(row['cached'] for row in warm['artifacts']),'shared task image warm cache missed')
+        lowered=cli('project','--kind','run','--component','app','--','--nex-task-steps','500000',
+            '--nex-task-timeout-ms','5000','--nex-task-workers','1',cwd=directory,timeout=300)
+        require(lowered['observation']['stdout']=='42\n' and lowered['observation']['task_execution']['effective']==
+                {'steps':500000,'timeout_ms':5000,'workers':1},'shared providers did not inherit lowered root controls')
+        application.write_text('''module installed_shared_app;
+import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;
+server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
+ if error_code(read)=="CAPABILITY"{print("CAPABILITY");return;}
+ let text:str=unwrap(read);assert(text=="A🌍\\u0000λ");print(mid::answer());print(len(text));}
+''')
+        read_build=cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
+        read_artifacts={row['component']:row for row in read_build['artifacts']}
+        require(all(hashlib.sha256(Path(read_artifacts[name]['artifact']).read_bytes()).hexdigest()==image_sha256[name]
+                    for name in ('leaf','mid')) and read_build['native_runtime_image']==built['native_runtime_image'],
+                'root read policy changed unchanged provider/runtime machine code')
+        grant=root/'shared-task-provider-files';grant.mkdir();(grant/'text').write_bytes('A🌍\0λ'.encode())
+        previous_grant=environment.pop('NEX_FILES_ROOT',None)
+        try:
+            require(run([read_artifacts['app']['artifact']],cwd='/')=='CAPABILITY\n','missing shared read grant was not typed')
+            environment['NEX_FILES_ROOT']=str(grant)
+            require(run([read_artifacts['app']['artifact']],cwd='/')=='42\n4\n','shared root file grant/Unicode/NUL differs')
+            criteria=cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
+            criteria['checks'].append({'id':'observe','kind':'run','program':'app','target':'native','configuration':'release',
+                'expect':{'stdout':'42\n4\n','exit_code':0},'timeout_seconds':120})
+            criteria['requirements'].append({'id':'observe','text':'Preserve the checked fixed shared task closure',
+                'bindings':[{'program':'app','kind':'function','symbol':'installed_shared_app::main'}],
+                'targets':['native'],'checks':['observe']})
+            taskfile=directory/'task.json';taskfile.write_text(json.dumps(criteria))
+            accepted=cli('task',taskfile,'--kind','run','--directory',root/'shared-task-provider-capture',cwd=directory,timeout=600)
+            require(accepted['ok'],'shared task provider reviewed capture failed')
+            receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
+            native=next(row for row in saved['checks'] if row['id']=='build-native')
+            command_path=task_sdk_regular(receipt.parent,'artifacts/build-native/commands/build.json',16*1024*1024)
+            command_pin=native['artifacts'].get('commands/build.json',{})
+            require(set(command_pin)=={'hash','bytes'} and command_pin['bytes']==command_path.stat().st_size and
+                    re.fullmatch('[0-9a-f]{64}',command_pin['hash']),
+                    'captured project command is absent from its compiler-checked receipt index')
+            captured_artifacts=captured_task_build_artifacts(json.loads(command_path.read_text()),
+                {row['name']:row['task_linkage'] for row in read_build['plan']['components']})
+            spec=importlib.util.spec_from_file_location('sdk_shared_completion',resources/'tools/core_capsule.py')
+            capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
+            retained_sha256={};retained=[];total_bytes=0
+
+            def regular(base,name,maximum=64*1024*1024):
+                require(type(name) is str and 0<len(name.encode())<=16384 and '\\' not in name and '\0' not in name,
+                        'invalid retained shared path text')
+                relative=Path(name)
+                require(not relative.is_absolute() and relative.as_posix()==name and
+                        all(part not in ('','.','..') for part in relative.parts),'retained shared path escapes')
+                path=base;require(not path.is_symlink(),'retained shared root is a symlink')
+                for part in relative.parts:
+                    path=path/part;require(not path.is_symlink(),'retained shared path contains a symlink')
+                require(path.is_file() and path.stat().st_size<=maximum,'retained shared file is not bounded/regular')
+                return path
+
+            require({row['component'] for row in native['components']}=={'leaf','mid','app'} and len(native['components'])==3,
+                    'retained shared component set differs')
+            artifact_base=receipt.parent/'artifacts/build-native'
+            for component in native['components']:
+                prefix='artifacts/build-native/components/'+component['component']+'/retained-build/'
+                require(component['retained_build']==prefix+'retained.json','retained shared record moved')
+                path=regular(receipt.parent,component['retained_build'],2*1024*1024)
+                record=json.loads(path.read_text());retained.append(str(path))
+                require(native['artifacts'].get(path.relative_to(artifact_base).as_posix(),{}).get('bytes')==path.stat().st_size,
+                        'retained shared record is absent from the checked artifact index')
+                require(set(record)=={'schema','compiler_build','build_key','original_directory','metadata_rewritten',
+                        'hash_algorithm','completion_schema','files'} and record['schema']=='nex.retained-native-task-build/2' and
+                        record['completion_schema']=='nex.native-completion/5' and record['metadata_rewritten'] is False and
+                        record['hash_algorithm']=='BLAKE3' and record['compiler_build']==identity['compiler_build'] and
+                        type(record['files']) is list and 13<=len(record['files'])<=1032,
+                        'invalid retained completion5 mapping')
+                original_directory=Path(record['original_directory'])
+                require(original_directory.is_absolute() and original_directory.is_relative_to(directory/'.nex') and
+                        original_directory.name==record['build_key'] and re.fullmatch('[0-9a-f]{64}',record['build_key']),
+                        'retained completion5 original directory differs')
+                metadata=json.loads(regular(receipt.parent,prefix+'build.json',8*1024*1024).read_text())
+                require(metadata['completion_schema']=='nex.native-completion/5' and metadata['key']==record['build_key'] and
+                        metadata['compiler_build']==identity['compiler_build'],'retained shared build identity differs')
+                inputs=capsule.completion_inputs(metadata)
+                require(5<=len(inputs)<=1024 and inputs[:4]==['library-abi.json','task-provider.json','image-inputs.json','objects.a'],
+                        'retained completion5 typed ordered input list differs')
+                own=json.loads(regular(receipt.parent,prefix+'task-provider.json',16*1024*1024).read_text())
+                actual_artifact=Path(captured_artifacts[component['component']]['artifact'])
+                require(actual_artifact.parent==original_directory and
+                        actual_artifact.name==('app' if component['component']=='app' else
+                            'libnex_'+component['component']+'_'+record['build_key']+actual_artifact.suffix) and
+                        metadata['kind']==('executable' if component['component']=='app' else 'shared_library'),
+                        'retained executable does not match the actual captured component artifact')
+                executable=actual_artifact.name
+                names=[executable,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',*inputs,'complete','debug.json']
+                require(len(names)==len(set(names))==len(record['files']),'retained shared map count differs')
+                mapped={}
+                for name,row in zip(names,record['files']):
+                    require(set(row)=={'original','retained','hash','bytes'} and row['original']==str(original_directory/name) and
+                            row['retained']==prefix+name and type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
+                            re.fullmatch('[0-9a-f]{64}',row['hash']),'invalid retained shared map row')
+                    original=regular(directory,original_directory.relative_to(directory).as_posix()+'/'+name).read_bytes()
+                    copied=regular(receipt.parent,row['retained']).read_bytes();total_bytes+=len(copied)
+                    require(total_bytes<=256*1024*1024 and len(original)==len(copied)==row['bytes'] and original==copied,
+                            'retained shared bytes changed/exceeded bound')
+                    key=(receipt.parent/row['retained']).relative_to(artifact_base).as_posix()
+                    require(native['artifacts'].get(key)=={'hash':row['hash'],'bytes':row['bytes']},
+                            'retained shared file differs from compiler-checked BLAKE3 artifact index')
+                    retained_sha256[row['retained']]=hashlib.sha256(copied).hexdigest();mapped[name]=(row,copied)
+                require(re.fullmatch(b'[0-9a-f]{64}\n',mapped['complete'][1]),'retained completion5 raw digest is malformed')
+                abi=json.loads(mapped['library-abi.json'][1]);links=json.loads(mapped['image-inputs.json'][1])
+                require(own==metadata['task_provider'] and own['component']==component['component'] and
+                        own['compiler_build']==identity['compiler_build'] and own['cohort']==abi['abi'] and
+                        own['schema']=='nex.native-task-provider/2' and own['mode']=='shared-fixed' and
+                        metadata['task_provider_hash']==mapped['task-provider.json'][0]['hash'] and
+                        own['image']['sha256']==hashlib.sha256(mapped[executable][1]).hexdigest() and
+                        links['schema']=='nex.native-image-inputs/2','retained shared sidecar/image pins differ')
+                for index,dependency in enumerate(abi['static_libraries']):
+                    archive='libraries/%d.a'%index;sidecar='libraries/%d.task-provider.json'%index
+                    require(dependency['hash']==mapped[archive][0]['hash'] and
+                            dependency['task_provider_hash']==mapped[sidecar][0]['hash'] and
+                            dependency['task_provider']==json.loads(mapped[sidecar][1]),'retained static frontier pins differ')
+                require(sum(image['kind']=='runtime' for image in links['images'])==1 and
+                        len(links['task_providers'])==sum(image['kind']=='library' for image in links['images']),
+                        'retained loaded closure/provider cardinality differs')
+                for image in links['images']:
+                    name='images/'+Path(image['path']).name
+                    require(image['hash']==mapped[name][0]['hash'] and
+                            image['sha256']==hashlib.sha256(mapped[name][1]).hexdigest(),'retained owned image pin differs')
+                for provider in links['task_providers']:
+                    sidecar=json.loads(mapped[provider['path']][1]);image=next(row for row in links['images'] if Path(row['path']).name==Path(provider['image']).name)
+                    require(provider['hash']==mapped[provider['path']][0]['hash'] and sidecar['component']==provider['component'] and
+                            all(sidecar['image'][key]==image[key] for key in ('key','hash','sha256','uuid')) and
+                            sidecar['image']['runtime_key']==own['image']['runtime_key'] and
+                            sidecar['image']['runtime_hash']==own['image']['runtime_hash'],
+                            'retained owned sidecar/raw image/runtime identity differs')
+            package=root/'shared-task-provider-package'
+            cli('project','--kind','package','--component','app','--directory',package,cwd=directory,timeout=300)
+            application_package=package/'apps/app';package_meta=json.loads((application_package/'application.json').read_text())
+            package_provenance=package_task_provenance(application_package,package_meta,directory)
+            # The original-CWD package and captured-workspace build have distinct
+            # valid identities. Trace/copy this package's own completed closure.
+            app_folder=directory/'.nex/build'/package_meta['build_key']
+            images=json.loads((app_folder/'compilation.json').read_text())['owned_images']
+            copied=root/'shared-task-provider-copied';copied.mkdir()
+            shutil.copy2(app_folder/'app',copied/'app')
+            shutil.copytree(app_folder/'images',copied/'images')
+            shutil.rmtree(directory)
+            previous_resources=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']='/absent'
+            try:
+                loaded_run(copied/'app','42\n4\n')
+                loaded_run(application_package/'bin/app','42\n4\n')
+            finally:
+                if previous_resources is None:environment.pop('NEX_RESOURCE_DIR',None)
+                else:environment['NEX_RESOURCE_DIR']=previous_resources
+            replay=cli('task',receipt,'--kind','replay','--directory',root/'shared-task-provider-replay',timeout=600)
+            require(replay['ok'] and replay['programs']==accepted['programs'],'source-deleted shared task provider replay differs')
+        finally:
+            if previous_grant is None:environment.pop('NEX_FILES_ROOT',None)
+            else:environment['NEX_FILES_ROOT']=previous_grant
+        report['evidence']['shared_task_providers']={key:True for key in (
+            'descriptor','actual_shared_images','defined_descriptor_accessors','consumer_ownership','actual_loaded_closure',
+            'one_runtime','native_reference','unused_read_excluded','root_file_grant','root_limits','warm_cache',
+            'retained_completion5','raw_package_provenance','source_deleted_replay',
+            'copied_closure_without_resources','source_deleted_package')}
+        report['evidence']['shared_task_providers'].update(execution_task_abi=3,descriptor_bytes=88,records=records,
+            original_images_sha256=image_sha256,loader_logs=loader_logs,receipt=str(receipt),replay=replay['output'],
+            captured_artifacts=captured_artifacts,package_provenance=package_provenance,
+            retained=retained,retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
+            retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation',
+            physical_file_retirement_claim=False)
 
     def graph_snapshot_recovery():
         original = root / 'snapshot-original'
@@ -3364,6 +3754,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),
                 ('static-task-providers', static_task_providers),
+                ('shared-task-providers', shared_task_providers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

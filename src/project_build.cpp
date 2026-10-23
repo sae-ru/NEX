@@ -338,7 +338,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   };
   std::set<std::string> taskABI;
   for(const auto &item:prepared)if(taskEntries(item)&&
-      (components.at(item.name).kind=="static_library"||!binaryClosures[item.name].empty()))taskABI.insert(item.name);
+      (components.at(item.name).kind=="static_library"||components.at(item.name).kind=="shared_library"||!binaryClosures[item.name].empty()))taskABI.insert(item.name);
   // A task archive and its pure dependencies/consumers use one compatible
   // runtime cohort. Source-only task applications retain their existing path.
   for(bool changed=true;changed;){
@@ -354,20 +354,60 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       include(item.name);
     }
   }
+  std::set<std::string> sharedTaskABI;
+  for(const auto &item:prepared)if(taskABI.contains(item.name)&&
+      (components.at(item.name).kind=="shared_library"||dynamicClosure.at(item.name)))sharedTaskABI.insert(item.name);
+  // One reusable PIC mode for every connected task cohort. Independent roots
+  // may share these stages; final ownership is checked per load closure below.
+  for(bool changed=true;changed;){
+    changed=false;
+    for(const auto &item:prepared)if(taskABI.contains(item.name)){
+      bool connected=sharedTaskABI.contains(item.name);
+      for(const auto &dependency:binaryClosures[item.name])connected|=sharedTaskABI.contains(dependency);
+      if(!connected)continue;
+      changed|=sharedTaskABI.insert(item.name).second;
+      for(const auto &dependency:binaryClosures[item.name])if(taskABI.contains(dependency))changed|=sharedTaskABI.insert(dependency).second;
+    }
+  }
   for(auto &item:prepared)if(taskABI.contains(item.name)){
     const auto &c=components.at(item.name);
-    if((c.kind!="executable"&&c.kind!="static_library")||dynamicClosure.at(item.name)||
+    if((c.kind!="executable"&&c.kind!="static_library"&&c.kind!="shared_library")||
        configuration.profile=="profile"||!options.foreign.empty())
-      fail("task binary providers require static debug/release native applications without HTTP or foreign code","E_TASK_PROVIDER");
+      fail("task binary providers require fixed native debug/release applications without HTTP or foreign code","E_TASK_PROVIDER");
     if(options.kind=="debug"||options.kind=="profile"||item.options.taskDebug)
       fail("logical debugging and profiling of task binary providers remain pending",options.kind=="debug"?"E_TASK_DEBUG":"E_TASK_PROVIDER");
     if(c.kind=="executable"&&!usesTaskEffects(item.program,item.options.entry))
       fail("a pure application cannot consume a task-provider cohort; no implicit task executor is created","E_TASK_PROVIDER");
-    item.options.staticTaskABI=true;item.options.taskComponent=item.name;
-    if(c.kind=="static_library"){
+    const bool shared=sharedTaskABI.contains(item.name);
+    item.options.staticTaskABI=!shared;item.options.taskComponent=item.name;
+    item.options.taskLinkageMode=shared?NativeTaskLinkageMode::SharedFixed:NativeTaskLinkageMode::Static;
+    if(shared){
+      item.options.positionIndependent=true;
+      if(c.kind=="executable"){item.options.deferredLink=true;item.options.functionsOnly=true;}
+    }
+    auto &description=*item.description.getAsObject();description["position_independent"]=item.options.positionIndependent;description["shared_runtime_image"]=item.options.deferredLink;
+    if(c.kind=="static_library"||c.kind=="shared_library"){
       item.options.codeOnlyLibrary=true;
       item.options.taskLimits={};item.options.taskLimitsSpecified=false;
     }
+  }
+  // A physical component has one stage/cohort in a selected architecture.
+  // Unrelated processes may use different cohorts, but no binary dependency
+  // can cross them or silently acquire a second runtime/ABI incarnation.
+  for(const auto &item:prepared)if(components.at(item.name).kind!="source"&&components.at(item.name).kind!="web")
+    for(const auto &dependency:binaryClosures[item.name])if(effectiveNativeTaskLinkage(item.options)!=effectiveNativeTaskLinkage(byName.at(dependency)->options))
+      fail("connected native components require one task linkage mode: "+item.name+" -> "+dependency,"E_TASK_PROVIDER");
+  std::map<std::string,std::vector<std::string>> staticFrontiers,dynamicImages;
+  std::set<std::string> imageStages;
+  for(const auto &item:prepared) {
+    const auto &c=components.at(item.name);if(c.kind=="source"||c.kind=="web")continue;
+    if(!item.options.deferredLink&&!(c.kind=="static_library"&&dynamicClosure.at(item.name))&&effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::SharedFixed)continue;
+    imageStages.insert(item.name);std::set<std::string> statics,dynamics,seen,seenDynamic;
+    std::function<void(const std::string&)> nested=[&](const auto &name){if(!seenDynamic.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic")dynamics.insert(dep);nested(dep);}};
+    std::function<void(const std::string&)> frontier=[&](const auto &name){if(!seen.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic"){dynamics.insert(dep);nested(dep);}else{if(link=="static")statics.insert(dep);frontier(dep);}}};frontier(item.name);
+    for(auto n=order.rbegin();n!=order.rend();++n)if(statics.contains(*n))staticFrontiers[item.name].push_back(*n);
+    for(const auto &n:order)if(dynamics.contains(n))dynamicImages[item.name].push_back(n);
+    imageStages.insert(statics.begin(),statics.end());
   }
   std::map<std::string,std::map<std::string,std::string>> contracts;
   for(auto &item:prepared)if(components.at(item.name).kind!="source"&&components.at(item.name).kind!="web"){
@@ -391,14 +431,14 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(binaries.contains(owned)){
         auto provider=contracts.at(owned).find(function);
         if(provider==contracts.at(owned).end()){
-          if(item.options.staticTaskABI&&usesTaskEffects(item.program,function))
+          if(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&usesTaskEffects(item.program,function))
             fail("static task dependency "+owned+" does not export concrete task definition "+function+"; add the specialization to exports","E_PROJECT_EXPORT");
           instantiate|=!f.templateName.empty();
           if(!instantiate)fail("binary dependency "+owned+" does not export the concrete closure containing "+function+"; add it to exports","E_PROJECT_EXPORT");
           instantiated.insert(function);
         }else{
           if(provider->second!=contract)fail("binary dependency function/type context differs: "+function,"E_PROJECT_ABI");
-          if(item.options.staticTaskABI)item.options.taskImportedFunctions.insert(function);
+          if(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None)item.options.taskImportedFunctions.insert(function);
           instantiate=false;
         }
       }
@@ -407,7 +447,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     validate(item.program.function(item.options.entry).name,false);
     for(const auto &entry:item.options.libraryExports)validate(item.program.function(entry).name,false);
     llvm::json::Array instances;for(const auto &name:instantiated)instances.push_back(name);(*item.description.getAsObject())["consumer_instantiations"]=std::move(instances);
-    if(item.options.staticTaskABI){
+    if(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None){
       // Machine closure ownership also includes checked package/std helpers.
       // Such a helper has no physical component owner, but its actual archive
       // definition must still be imported rather than emitted a second time.
@@ -443,7 +483,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
           imports.push_back(Object{{"function",name},{"provider",provider->second.first},{"contract",contract},{"calling_mode",function.effects.contains("task")?"task-code/3":"sync/1"}});
         }else{definitions.push_back(Object{{"function",name},{"contract",contract}});taskDefinitions[item.name][name]=contract;}
       }
-      if(c.kind=="static_library"){
+      if(c.kind=="static_library"||c.kind=="shared_library"){
         auto entries=item.options.libraryExports;entries.push_back(item.options.entry);
         for(const auto &entry:entries){const auto &function=item.program.function(entry);if(!function.effects.contains("task"))continue;
           auto value=nativeTaskExportInterface(item.program,function.name,contracts.at(item.name).at(function.name));
@@ -454,6 +494,26 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       description["task_linkage"]=Object{{"schema","nex.project-static-task-linkage/1"},{"component",item.name},{"execution_abi",3},
         {"definitions",std::move(definitions)},{"imports",std::move(imports)},{"exports",std::move(exports)}};
     }
+  }
+  for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed){
+    auto &linkage=*item.description.getAsObject()->getObject("task_linkage");
+    linkage["schema"]="nex.project-task-linkage/2";linkage["mode"]="shared-fixed";linkage["load_closure"]=nullptr;
+    const auto &kind=components.at(item.name).kind;if(kind!="executable"&&kind!="shared_library")continue;
+    std::set<std::string> loaded(dynamicImages[item.name].begin(),dynamicImages[item.name].end());loaded.insert(item.name);
+    std::map<std::string,std::string> owners;llvm::json::Array images;
+    for(const auto &name:order)if(loaded.contains(name)){
+      llvm::json::Array definitions,statics,dynamics;
+      auto add=[&](const std::string &component){for(const auto &[function,contract]:taskDefinitions.at(component)){
+        auto [old,inserted]=owners.emplace(function,name);
+        if(!inserted)fail("task load closure "+item.name+" contains duplicate machine definition "+function+" in "+old->second+" and "+name,"E_TASK_PROVIDER");
+        definitions.push_back(Object{{"function",function},{"source_component",component},{"contract",contract}});
+      }};
+      add(name);for(const auto &component:staticFrontiers[name]){add(component);statics.push_back(component);}
+      for(const auto &component:dynamicImages[name])dynamics.push_back(component);
+      images.push_back(Object{{"component",name},{"kind",components.at(name).kind=="executable"?"application":"shared-image"},
+        {"definitions",std::move(definitions)},{"static_components",std::move(statics)},{"dynamic_components",std::move(dynamics)}});
+    }
+    linkage["load_closure"]=Object{{"root",item.name},{"images",std::move(images)}};
   }
   for(auto &item:prepared)if(components.at(item.name).kind!="source"&&components.at(item.name).kind!="web")validateNativeBuildEntry(item.program,item.options);
   for(const auto &item:prepared)descriptions.push_back(item.description);
@@ -689,7 +749,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     for(auto name=order.rbegin();name!=order.rend();++name)if(binaries.contains(*name)){
       const auto &dependency=nativeResults.at(*name);
       NativeLibraryInput library{dependency.executable,hash(readFile(dependency.executable)),dependency.libraryABI,dependency.functionContracts,dependency.parallelCalls,{},{}};
-      if(item.options.staticTaskABI){
+      if(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None){
         if(dependency.taskProviderFile.empty()||dependency.taskProviderDigest.empty()||dependency.taskProvider.component!=*name)
           fail("static task dependency omitted its checked provider record: "+*name,"E_TASK_PROVIDER");
         library.taskProviderPath=dependency.taskProviderFile;library.taskProviderDigest=dependency.taskProviderDigest;
@@ -699,22 +759,17 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     nativeResults[item.name]=build(item.program,cache.string(),item.options);
     if(options.packageProjection)options.packageProjection->verify();
   }
-  std::map<std::string,std::vector<std::string>> staticFrontiers,dynamicImages;
-  std::set<std::string> imageStages;
-  for(const auto &item:prepared) {
-    const auto &c=components.at(item.name);if(c.kind=="source"||c.kind=="web")continue;
-    if(!item.options.deferredLink&&!(c.kind=="static_library"&&dynamicClosure.at(item.name)))continue;
-    imageStages.insert(item.name);std::set<std::string> statics,dynamics,seen,seenDynamic;
-    std::function<void(const std::string&)> nested=[&](const auto &name){if(!seenDynamic.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic")dynamics.insert(dep);nested(dep);}};
-    std::function<void(const std::string&)> frontier=[&](const auto &name){if(!seen.insert(name).second)return;for(const auto &[dep,link]:components.at(name).dependencies){if(link=="dynamic"){dynamics.insert(dep);nested(dep);}else{if(link=="static")statics.insert(dep);frontier(dep);}}};frontier(item.name);
-    for(auto n=order.rbegin();n!=order.rend();++n)if(statics.contains(*n))staticFrontiers[item.name].push_back(*n);
-    for(const auto &n:order)if(dynamics.contains(n))dynamicImages[item.name].push_back(n);
-    imageStages.insert(statics.begin(),statics.end());
-  }
   std::vector<NativeImageInput> imageInputs;
   for(const auto &item:prepared)if(imageStages.contains(item.name))imageInputs.push_back({item.name,components.at(item.name).kind,&item.program,item.options,nativeResults.at(item.name),staticFrontiers[item.name],dynamicImages[item.name]});
   if(options.packageProjection)options.packageProjection->verify();
-  NativeImageResults images;if(!imageInputs.empty())images=buildNativeImages(cache.string(),imageInputs);
+  NativeImageResults images;llvm::json::Array runtimeImages;std::map<std::string,llvm::json::Value> runtimeByComponent;
+  std::map<NativeTaskLinkageMode,std::vector<NativeImageInput>> imageCohorts;
+  for(auto &input:imageInputs)imageCohorts[effectiveNativeTaskLinkage(input.options)].push_back(std::move(input));
+  for(const auto &[mode,cohort]:imageCohorts){(void)mode;auto linked=buildNativeImages(cache.string(),cohort);
+    runtimeImages.push_back(llvm::json::Value(linked.runtime));
+    for(auto &[name,built]:linked.images){runtimeByComponent.emplace(name,llvm::json::Value(linked.runtime));if(!images.images.emplace(name,std::move(built)).second)fail("native image belongs to multiple runtime cohorts","E_INTERNAL");}
+  }
+  if(runtimeImages.size()==1)images.runtime=llvm::json::Value(runtimeImages.front());
   if(options.packageProjection)options.packageProjection->verify();
   for(const auto &item:prepared){
     const auto &c=components.at(item.name);if(c.kind=="source")continue;
@@ -765,7 +820,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(effectiveTaskLimits&&options.kind!="profile")(*observation.getAsObject())["task_execution"]=taskExecutionJSON(configuration.taskLimits,*effectiveTaskLimits,"native",options.kind=="debug"?0:options.machine?options.timeout:0);
     verifyGrant();auto code=observation.getAsObject()->getInteger("exit_code").value_or(0);
     return Object{{"schema","nex.project-session/1"},{"ok",code==0},{"exit_code",code},{"action",options.kind},{"component",selectedComponent},
-      {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",std::move(images.runtime)},
+      {"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},{"native_runtime_image",runtimeByComponent.contains(selectedComponent)?llvm::json::Value(runtimeByComponent.at(selectedComponent)):llvm::json::Value(nullptr)},
       {"observation",std::move(observation)},{"graph_store_opened",false},{"browser_ui_execution_verified",false}};
   }
   if(options.kind=="package"){
@@ -831,7 +886,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       result["directory"]=packageOutput.string();result["manifest"]=(packageOutput/"project.json").string();return result;
     }catch(const std::exception &error){throw Error("E_PROJECT_PACKAGE",std::string(error.what())+"; partial project package retained at "+stage.string());}
   }
-  return Object{{"schema","nex.project-build-result/1"},{"ok",true},{"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},
+  Object buildResult{{"schema","nex.project-build-result/1"},{"ok",true},{"plan_hash",planHash},{"plan",std::move(plan)},{"artifacts",std::move(artifacts)},
     {"native_runtime_image",std::move(images.runtime)},{"graph_store_opened",false},{"external_tools_invoked",true},{"target_execution_verified",false},{"artifact_dependencies_inspected",false}};
+  if(runtimeImages.size()>1)buildResult["native_runtime_images"]=std::move(runtimeImages);
+  return buildResult;
 }
 }

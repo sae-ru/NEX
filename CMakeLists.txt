@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.116.0 LANGUAGES C CXX)
+project(NEX VERSION 0.117.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -95,6 +95,12 @@ target_link_libraries(nex_task_static_provider_boundary_probe PRIVATE nex_native
 target_compile_definitions(nex_task_static_provider_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
 add_test(NAME task_static_provider_boundary_native COMMAND nex_task_static_provider_boundary_probe)
 set_tests_properties(task_static_provider_boundary_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_shared_provider_boundary_probe tests/task_shared_provider_boundary.cpp)
+target_link_libraries(nex_task_shared_provider_boundary_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_shared_provider_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_shared_provider_boundary_native COMMAND nex_task_shared_provider_boundary_probe)
+set_tests_properties(task_shared_provider_boundary_native PROPERTIES TIMEOUT 120)
 set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}")
 install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
@@ -141,6 +147,12 @@ set_tests_properties(frontend_io PROPERTIES COST 10 TIMEOUT 120)
 add_test(NAME project_build COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_build.py $<TARGET_FILE:nex>)
 add_test(NAME task_static_provider_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_static_provider.py $<TARGET_FILE:nex>)
 set_tests_properties(task_static_provider_native PROPERTIES COST 60 TIMEOUT 1200)
+
+add_test(NAME task_shared_provider_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider.py $<TARGET_FILE:nex>)
+set_tests_properties(task_shared_provider_native PROPERTIES COST 60 TIMEOUT 1200)
+
+add_test(NAME task_shared_provider_lifetime_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider_lifetime.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider_lifetime.cpp)
+set_tests_properties(task_shared_provider_lifetime_native PROPERTIES COST 60 TIMEOUT 300)
 add_test(NAME project_actions COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_actions.py $<TARGET_FILE:nex>)
 add_test(NAME project_tasks COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_tasks.py $<TARGET_FILE:nex>)
 add_test(NAME project_package_tasks COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_package_tasks.py $<TARGET_FILE:nex>)

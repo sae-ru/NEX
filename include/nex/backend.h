@@ -2,6 +2,11 @@
 #include "nex/language.h"
 #include "nex_task_limits.h"
 namespace nex {
+enum class NativeTaskLinkageMode { None, Static, SharedFixed };
+enum class NativeTaskArtifactKind { CodeArchive, PicStage, SharedImage, Application };
+struct NativeTaskImageIdentity {
+  std::string key,digest,sha256,uuid,runtimeKey,runtimeDigest;
+};
 // Versioned compiler-private static task interface. Source remains required.
 // Definitions describe physical machine ownership, separately from exports.
 struct NativeTaskExport {
@@ -13,7 +18,22 @@ struct NativeTaskProviderInfo {
   std::string component, cohort, language;
   std::set<std::string> definitions;
   std::map<std::string,NativeTaskExport> exports;
+  NativeTaskLinkageMode mode=NativeTaskLinkageMode::Static;
+  NativeTaskArtifactKind artifact=NativeTaskArtifactKind::CodeArchive;
+  // PIC stages have no final image owner. Final records bind one actual image.
+  std::string ownerImage{};
+  std::map<std::string,std::string> definitionOwners{};
+  std::map<std::string,bool> componentFileReads{};
+  std::optional<NativeTaskImageIdentity> image{};
 };
+struct NativeTaskApplicationStage {
+  bool enabled=false;
+  std::string entry{},descriptorAccessor{};
+  nexrt::TaskExecutionLimits configured;
+  bool fileReads=false;
+};
+llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStage &);
+NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Value &);
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &);
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &);
 NativeTaskExport nativeTaskExportInterface(const Program &,const std::string &function,
@@ -50,7 +70,9 @@ struct BuildOptions {
   bool staticTaskABI=false;
   std::string taskComponent{};
   std::set<std::string> taskImportedFunctions{};
+  NativeTaskLinkageMode taskLinkageMode=NativeTaskLinkageMode::None;
 };
+NativeTaskLinkageMode effectiveNativeTaskLinkage(const BuildOptions &);
 struct BuildResult {
   std::string executable, mlir, llvm, key;
   bool cached = false;
@@ -66,6 +88,7 @@ struct BuildResult {
   bool parallelCalls=false;
   NativeTaskProviderInfo taskProvider{};
   std::string taskProviderFile{},taskProviderDigest{};
+  NativeTaskApplicationStage taskApplication{};
 };
 std::string emitMLIR(const Program &program, const std::string &entry = "main", bool testEntry = false,bool libraryEntry=false);
 // The caller must validate the bounded scalar Wasm closure before emitting it.

@@ -1,5 +1,10 @@
 # NEX language specification 0.20
 
+Toolchain0.117 enables candidate fixed startup-linked shared task images. Discover
+`task_shared_providers` and read [the shared contract](task-shared-providers.md)
+for actual enablement and per-application ownership. This external build slice
+adds no syntax, effect, canonical field, language version or migration.
+
 Toolchain0.116 enables candidate concrete static task provider linkage with checked
 source and code-only archives; discover `task_providers` and read
 [the provider contract](task-providers.md). This is external build metadata,
@@ -635,8 +640,11 @@ reachable task effects/callables. See [the web contract](web.md).
 Native task execution targets macOS/Linux applications and source-only projects.
 Toolchain0.116 adds checked concrete static task archives with resource-free
 direct task/pure interfaces; source remains required and one root owns the
-executor, limits and file grant. Imported callable/authority transport and dynamic
-task providers remain rejected. See [task providers](task-providers.md).
+executor, limits and file grant. Imported callable/authority transport remains
+rejected. Shared task providers use a separate checked fixed-startup mode when the actual
+`task_shared_providers.public_enabled` is true; provider profile/debug and runtime
+load/unload remain unsupported. See [task providers](task-providers.md) and
+[fixed shared providers](task-shared-providers.md).
 Native020 task debugging/profiling retains its separate standalone/source-only
 scope and rejects provider graphs. Task server hosting, other native targets,
 task writes/streams/db/ffi/network, a NEX UI adapter and complete current

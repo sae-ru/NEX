@@ -520,7 +520,8 @@ struct Runner {
   }
   std::string retainTaskProviderBuild(const fs::path &executable,const fs::path &destination){
     const auto folder=executable.parent_path();auto metadata=readJSON(inside(folder,"build.json"),8*1048576);const auto &build=object(metadata);
-    if(build.getString("completion_schema")!="nex.native-completion/4")return {};
+    const bool shared=build.getString("completion_schema")=="nex.native-completion/5";
+    if(!shared&&build.getString("completion_schema")!="nex.native-completion/4")return {};
     if(fs::is_symlink(folder)||build.getString("compiler_build")!=NEX_BUILD_ID)
       throw Error("E_TASK_ARTIFACT","static task build requires its matching compiler and physical artifact directory");
     auto inputNames=nativeCompletionInputs(build);std::vector<std::string> names{executable.filename().string(),"program.mlir","program.ll","compilation.json","build.json","source-bundle.json"};
@@ -543,9 +544,9 @@ struct Runner {
     for(const auto &[name,identity]:inputs)if(hash(readFile(inside(folder,name).string()))!=identity.first)
       throw Error("E_TASK_ARTIFACT","static task build changed after artifact retention");
     if(!completed(retained))throw Error("E_TASK_ARTIFACT","retained static task build completion differs");
-    auto record=retained/"retained.json";atomic(record,Object{{"schema","nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
+    auto record=retained/"retained.json";atomic(record,Object{{"schema",shared?"nex.retained-native-task-build/2":"nex.retained-native-task-build/1"},{"compiler_build",NEX_BUILD_ID},
       {"build_key",text(build,"key")},{"original_directory",folder.string()},{"metadata_rewritten",false},{"hash_algorithm","BLAKE3"},
-      {"completion_schema","nex.native-completion/4"},{"files",std::move(mapping)}});
+      {"completion_schema",shared?"nex.native-completion/5":"nex.native-completion/4"},{"files",std::move(mapping)}});
     return record.lexically_relative(directory).generic_string();
   }
   JSON check(const Object &c){
