@@ -1,5 +1,5 @@
 module model_application;
-import "./model.nex" as m;
+import "std/model.nex" as m;
 import "std/compute.nex" as c;
 server extern fn model_run(values:list<bytes>,kind:i64)->result<list<bytes>> !{ffi}=foreign("model","model_run","@PIN@");
 pub fn definition()->m::Model{return @MODEL@;}

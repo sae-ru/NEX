@@ -1,3 +1,5 @@
+Toolchain0.122 adds the ordinary-source `std/model.nex` contract and provider preparation tooling; no syntax, canonical identity, language0.20 or migration change. See models.md.
+
 Toolchain0.121 adds the ordinary-source checked `std/compute.nex` library: immutable
 row-major tensors, typed request/response/device contracts, exact integer CPU
 operations and server/ffi provider contexts with explicit fallback. No syntax,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a new pinned model provider; never initialize its runtime/device."""
+"""Prepare a new pinned ONNX model provider; never initialize its runtime/device."""
 import argparse,base64,hashlib,json,math,os,platform,shutil,struct,subprocess
 from pathlib import Path
 
@@ -37,7 +37,8 @@ def main():
   q=subprocess.run(list(map(str,args)),cwd=root,env=env,capture_output=True,text=True,timeout=300);index=len(commands);(root/('prepare-'+str(index)+'.stdout')).write_text(q.stdout);(root/('prepare-'+str(index)+'.stderr')).write_text(q.stderr);commands.append({'command':list(map(str,args)),'exit_code':q.returncode});assert q.returncode==0,(q.stdout[-3000:],q.stderr[-3000:]);return q.stdout
  def cli(*args):return json.loads(command([compiler,*args,'--json']))
  descriptor=cli('describe');assert descriptor['version']=='0.20' and descriptor['foreign_boundary']['source_support']
- shutil.copy2(origin/'model.nex',root/'model.nex');(root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex','libraries':{'std':'./stdlib'}},indent=2)+'\n')
+ if 'model' in descriptor:assert descriptor['model']['source_support'] and descriptor['model']['import']=='std/model.nex' and descriptor['model']['contract_version']==1
+ (root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/model.nex',root/'stdlib/model.nex');shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex','libraries':{'std':'./stdlib'}},indent=2)+'\n')
  for name in ['common.h','model-worker.cpp','model-module.cpp','model-broker.inc']:shutil.copy2(origin/name,root/name)
  configuration={**spec,'runtime':str(library),'runtime_sha256_at_preparation':sha(library),'zhouyi':a.enable_zhouyi,'operator_path':operator}
  (root/'model-config.inc').write_text('static constexpr const char modelConfiguration[]='+json.dumps(json.dumps(configuration,ensure_ascii=True,separators=(',',':')))+';\n')
@@ -78,5 +79,5 @@ def main():
  notice='NEX-owned experimental model provider and test graphs. Runtime/driver/operator dependencies remain installed platform inputs.\n'
  for license in [headers/'ONNX-LICENSE',headers/'OPENCL-LICENSE',resources/'runtime/third_party/JSON-LICENSE.MIT']:notice+='\n'+license.read_text()
  (bundle/'NOTICE').write_text(notice);manifest={'schema':'nex.foreign-bundle/1','platform':'linux-arm64','entry':'module.so','files':[{'path':n,'sha256':sha(bundle/n)} for n in ['module.so','model-worker','model.onnx','model.json','NOTICE']],'exports':{'model_run':digest},'notices':['NOTICE']};(bundle/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n');pin=sha(bundle/'manifest.json');(root/'main.nex').write_text(template.replace('@PIN@',pin));(root/'host.json').write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':64,'libraries':{'model':{'directory':'bundle','manifest_sha256':pin,'exports':['model_run']}}},indent=2)+'\n');cli('check');catalogue=cli('foreign',root/'host.json')
- report={'schema':'nex.model-preparation/1','ok':True,'hardware_executed':False,'commands':commands,'compiler_sha256':sha(compiler),'model_sha256':sha(model),'manifest_sha256':pin,'precision':precision,'native_zhouyi_binding':a.enable_zhouyi,'acceptance_expects_NPU_unsupported':a.expect_npu_unsupported,'runtime':str(library),'runtime_sha256_at_preparation':sha(library),'runtime_immutable_pin':False,'operator_path':operator,'catalogue':catalogue,'sources':{n:sha(root/n) for n in ['common.h','model-worker.cpp','model-module.cpp','model-broker.inc','model.nex','model-config.inc']}};(root/'preparation.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='catalogue'}))
+ report={'schema':'nex.model-preparation/1','ok':True,'hardware_executed':False,'commands':commands,'compiler_sha256':sha(compiler),'model_sha256':sha(model),'manifest_sha256':pin,'precision':precision,'native_zhouyi_binding':a.enable_zhouyi,'acceptance_expects_NPU_unsupported':a.expect_npu_unsupported,'runtime':str(library),'runtime_sha256_at_preparation':sha(library),'runtime_immutable_pin':False,'operator_path':operator,'catalogue':catalogue,'sources':{n:sha(root/n) for n in ['common.h','model-worker.cpp','model-module.cpp','model-broker.inc','stdlib/model.nex','model-config.inc']}};(root/'preparation.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='catalogue'}))
 if __name__=='__main__':main()

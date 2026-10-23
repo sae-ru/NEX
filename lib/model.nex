@@ -1,7 +1,7 @@
-module experimental::model;
+module std::model;
 import "std/compute.nex" as c;
 
-// Experimental source contract, not an owned model/device resource or host grant.
+// Checked immutable model contract. Context is not an owned resource or host grant.
 pub enum DType { F32(); U8(); I8(); I32(); }
 pub struct Port { name:str; dtype:DType; shape:list<i64>; }
 pub struct Tensor { name:str; dtype:DType; shape:list<i64>; data:bytes; }
@@ -17,7 +17,7 @@ fn identifier(value:str,limit:i64)->bool {
  let data:bytes=utf8_bytes(value);var i:i64=0;
  while i<len(data){if data[i]==0{return false;}i=i+1;}return true;
 }
-pub fn sha256(value:str)->bool {
+pub fn is_sha256(value:str)->bool {
  let data:bytes=utf8_bytes(value);if len(data)!=64{return false;}
  var i:i64=0;while i<64{let v:i64=data[i];if !(v>=48 && v<=57) && !(v>=97 && v<=102){return false;}i=i+1;}return true;
 }
@@ -44,7 +44,7 @@ fn port_bytes(values:list<Port>)->result<i64>{
  var total:i64=0;var i:i64=0;while i<len(values){let n:i64=size(values[i])?;if n>786432-total{return err("E_MODEL_LIMIT","model bulk IO exceeds786432 bytes");}total=total+n;var j:i64=0;while j<i{if values[j].name==values[i].name{return err("E_MODEL_PORT","duplicate tensor port name");}j=j+1;}i=i+1;}return ok(total);
 }
 pub fn validate_model(value:Model)->result<Model>{
- if !identifier(value.id,128) || !sha256(value.sha256){return err("E_MODEL_ID","model needs a bounded identity and lowercase SHA256");}
+ if !identifier(value.id,128) || !is_sha256(value.sha256){return err("E_MODEL_ID","model needs a bounded identity and lowercase SHA256");}
  let a:i64=port_bytes(value.inputs)?;let b:i64=port_bytes(value.outputs)?;
  if a>786432-b{return err("E_MODEL_LIMIT","combined input/output exceeds786432 bytes");}
  return ok(value);
@@ -57,7 +57,7 @@ pub fn request(id:str,model:Model,inputs:list<Tensor>,device:c::Selection,fallba
 pub fn on(value:Request,device:c::Selection,fallback:c::Fallback)->Request{return Request(value.version,value.id,value.model,value.inputs,device,fallback);}
 pub fn validate_request(value:Request)->result<Request>{
  if value.version!=1{return err("E_MODEL_VERSION","unsupported model contract version");}
- if !identifier(value.id,128) || len(value.device.id)>256{return err("E_MODEL_ID","invalid request/device identity");}
+ if !identifier(value.id,128) || (value.device.id!="" && !identifier(value.device.id,256)){return err("E_MODEL_ID","invalid request/device identity");}
  let model:Model=validate_model(value.model)?;match_tensors(model.inputs,value.inputs)?;return ok(value);
 }
 pub fn validate_device(value:Device)->result<Device>{

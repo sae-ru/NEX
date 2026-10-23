@@ -1,11 +1,11 @@
 # Experimental named model inference
 
-This ordinary language0.20 project executes separately supplied ONNX artifacts
-through a pinned native module and private child worker. It is outside the
-installed0.121 SDK and its capability descriptor. It adds no language syntax,
+This provider uses the ordinary language0.20 standard model contract and executes separately supplied ONNX artifacts
+through a pinned native module and private child worker. Toolchain0.122 installs the source contract, guide and provider preparation files;
+the earlier0.121 experiment and compatible0.120 hardware receipts remain preserved. It adds no language syntax,
 implicit f64 conversion, owned model handle or task/FFI bridge.
 
-`model.nex` defines named Tensor/Port/Model/Request/Response/Device/Context values.
+The canonical `lib/model.nex` (installed as `std/model.nex`) defines named Tensor/Port/Model/Request/Response/Device/Context values.
 Static dense ports use finite IEEE754 binary32 little-endian, U8, I8 or I32;
 rank1..4,262144 elements and786432 combined input/output bytes are explicit
 limits. Model SHA256, complete port metadata and precision are part of the
@@ -122,11 +122,11 @@ archive, current56+6 ORT profiles and retained previous56 profiles were independ
 verified. Native managed-memory balances passed; this does not measure all vendor
 allocations. Read [receipt hashes and limitations](../../docs/evidence/named-models-0.121-development.json).
 
-For an LLM, read this guide and the vendored `model.nex`, then query the actual
+For an LLM, read this guide and the vendored `stdlib/model.nex`, then query the actual
 compiler with `nex describe --json` and `nex ffi --symbol model_run --json`.
 Use the generated pinned definition and `run` function. Keep ordered port names,
-dtype, static shape, model digest and precision together; never infer an implicit
-`std/model` import or general device availability from these experimental files.
+dtype, static shape, model digest and precision together; use the advertised `std/model.nex` contract and do not infer general device
+availability from these preparation files.
 Use `--foreign /absolute/project/host.json` for eval/run/test/profile. A missing
 host catalogue remains an error. Version the source/spec/preparation recipe and
 artifact provenance, and retain the exact pinned model/bundle separately as

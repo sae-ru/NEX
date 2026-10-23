@@ -1,3 +1,10 @@
+# Current0.122 model SDK integration
+
+- [x] Install `std/model.nex` and provider preparation with matching describe/guide/prompt.
+- [x] Verify public import, finite F32, response/precision/fallback and rejected boundaries across native/reference/TypeScript.
+- [ ] Verify source-free installed SDK model phase, full matching regression and platform delivery.
+- [ ] Continue owned model/device resources, task/async bridge and all remaining original PLAN requirements.
+
 # Current development: toolchain0.121 / language0.20
 
 - [x] Implement ordinary-source checked Tensor/Request/Response/Device/Context and CPU operations.

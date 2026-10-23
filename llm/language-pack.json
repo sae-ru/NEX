@@ -253,7 +253,8 @@
     "provider_task_debug_view_schema": "llm/provider-task-debug-view.schema.json",
     "provider_task_debug_frame_schema": "llm/provider-task-debug-frame.schema.json",
     "provider_task_debug_expression_schema": "llm/provider-task-debug-expression.schema.json",
-    "compute": "docs/compute.md"
+    "compute": "docs/compute.md",
+    "model": "docs/models.md"
   },
   "document_access": "nex guide --kind compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1584,6 +1585,71 @@
       "float tensors and additional operations",
       "general kernels/models",
       "owned resources and persistent/async worker lifetime"
+    ]
+  },
+  "model": {
+    "status": "development_checked_model_library",
+    "source_support": true,
+    "contract_version": 1,
+    "language": "0.20",
+    "language_migration_required": false,
+    "guide": "docs/models.md",
+    "import": "std/model.nex",
+    "tensor_dtypes": [
+      "f32",
+      "u8",
+      "i8",
+      "i32"
+    ],
+    "immutable_row_major_bytes": true,
+    "f32_encoding": "finite IEEE754 binary32 little-endian bytes",
+    "implicit_f64_narrowing": false,
+    "maximum_rank": 4,
+    "maximum_elements_per_port": 262144,
+    "maximum_ports_per_direction": 16,
+    "maximum_combined_io_bytes": 786432,
+    "precision_policies": [
+      "match-cpu",
+      "vendor"
+    ],
+    "exact_integer_f32_helper_range": [
+      -16777216,
+      16777216
+    ],
+    "tensor_native": true,
+    "tensor_reference": true,
+    "tensor_typescript": true,
+    "provider_context": true,
+    "provider_realm": "server",
+    "provider_effects": [
+      "ffi"
+    ],
+    "context_wire": false,
+    "context_host_grant": false,
+    "explicit_cpu_fallback": true,
+    "builtin_cpu_inference": false,
+    "builtin_gpu_inference": false,
+    "builtin_npu_inference": false,
+    "owned_model_handles": false,
+    "source_task_bridge": false,
+    "provider_preparation": {
+      "tool": "tools/models/prepare.py",
+      "status": "experimental_pinned_ONNX_child",
+      "native_targets": [
+        "linux-arm64"
+      ],
+      "runtime_C_API": 20,
+      "maximum_model_bytes": 33554432,
+      "device_initialized_during_preparation": false,
+      "candidate_NPU_provider": "ZhouyiExecutionProvider",
+      "runtime_digest_is_immutable_pin": false,
+      "driver_and_operator_dependencies_bundled": false
+    },
+    "pending": [
+      "matching full regression and installed SDK acceptance",
+      "matching compiler/provider platform delivery",
+      "other model formats and dynamic/scalar shapes",
+      "owned model/device resources and persistent/async worker lifetime"
     ]
   }
 }

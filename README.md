@@ -1,3 +1,15 @@
+# Development0.122: installed named model contract
+
+This candidate integrates `std/model.nex`, exact discovery/guide/prompt metadata,
+installed ONNX provider preparation and matching library/SDK checks. Language0.20
+and primary0.81 are unchanged. Build, four focused groups (including9 model
+cases/29 compiler commands) and the exact installed model phase passed. That
+phase used12 commands with the original compiler source path hidden, standard
+model/compute files absent for replay, and standalone resources unavailable.
+See [the scope](docs/evidence/model-sdk-0.122-development.json). Full matching154
+regression, installedSDK33 and platform delivery remain pending. The verified0.121 core and compatible0.120
+experimental provider receipts below retain their original scope.
+
 # Verified local0.121 and experimental models
 
 The unchanged0.121 compiler passed an audited153-group composite (148 original

@@ -1,9 +1,13 @@
-For the optional source experiment in `experiments/models`, first read its README
-and `model.nex`; it is outside the installed SDK/capability descriptor. Use the
-generated pinned model/port/precision binding, finite binary32LE bytes and explicit
-CPU/NPU selection/fallback. MatchCPU performs an extra attributed CPU inference;
-Vendor does not. Do not invent `std/model`, owned model handles or task support.
-Validate the actual compiler/FFI signature and operator-supplied host catalogue.
+When `model.source_support` is advertised, query `nex describe --field model --json`
+and read `nex guide --kind model --json`. Use `std/model.nex` validated immutable
+named tensors, complete artifact/port/precision bindings and explicit placement.
+F32 values use finite binary32LE bytes; there is no implicit NEX f64 narrowing.
+`is_sha256` validates text syntax and does not calculate a digest. MatchCPU asks
+the provider for an extra attributed CPU comparison; Vendor does not. Context
+contains no host grant or owned handle. The library supplies no inference engine;
+use an explicit pinned provider/catalogue. The installed tools/models preparer
+has a separately stated LinuxARM64/ONNX scope and provider-dependent graph support.
+Do not infer model task/async support or NPU placement from device metadata.
 
 When `compute.source_support` is advertised, query `nex describe --field compute --json`
 and read `nex guide --kind compute --json`. Use `std/compute.nex` validated immutable

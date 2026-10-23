@@ -1,6 +1,15 @@
 # Installed SDK acceptance and handoff
 
-The current0.119 workflow has31 phases, including `task-provider-debugging`.
+The current0.122 candidate workflow has33 phases, adding `model-contract` after
+the0.121 compute phase. It checks the installed public model import, finite F32
+bytes, native/reference/TypeScript observations, managed cleanup, installed
+provider preparation files, archived replay with physical standard library files
+absent, and standalone execution with compiler resources unavailable. This is
+library delivery; native model inference keeps its separate provider/device gates.
+The exact0.121 local checkpoint passed32 phases/584 commands. Matching0.122 full
+regression, installed SDK and platform receipts remain pending.
+
+The preserved0.119 workflow has31 phases, including `task-provider-debugging`.
 The preceding0.118/125b installed checkpoint passed30 phases/557 commands;
 that receipt does not certify the current compiler. The new phase verifies
 static/shared debug artifacts, immutable completion7, source-deleted capture,

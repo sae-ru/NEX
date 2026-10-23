@@ -29,7 +29,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'compute-contract', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'compute-contract', 'model-contract', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'task-provider-debugging', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
@@ -619,6 +619,11 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,122,0):
+        model=report.get('evidence',{}).get('model_contract',{})
+        require(all(model.get(key) is True for key in ('descriptor','native_reference','typescript_reference',
+                'source_deleted_replay','standalone','managed_memory_balanced','preparer_installed')),
+                'SDK acceptance lacks checked model contract delivery evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,121,0):
         compute=report.get('evidence',{}).get('compute_contract',{})
         require(all(compute.get(key) is True for key in ('descriptor','native_reference','typescript_reference',
@@ -1001,6 +1006,55 @@ test fn examples() -> unit {
             'library_sha256':hashlib.sha256((resources/'lib/compute.nex').read_bytes()).hexdigest(),
             'revision':built['revision'],'copied_executable_resource_override':'unavailable',
             'generic_gpu_npu_execution_proved':False}
+
+    def model_contract():
+        descriptor=cli('describe','--field','model')['value']
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(descriptor==pack['model'] and descriptor['source_support'] and
+                descriptor['builtin_cpu_inference'] is False and descriptor['context_wire'] is False,
+                'model descriptor differs from installed pack')
+        require(cli('guide','--kind','model')['text']==(resources/'docs/models.md').read_text(),
+                'model guide not selected from installed SDK')
+        preparer=resources/descriptor['provider_preparation']['tool']
+        for name in ('prepare.py','common.h','model-module.cpp','model-worker.cpp','model-broker.inc','main.nex.in'):
+            require((preparer.parent/name).is_file(),'model provider preparation input is missing: '+name)
+        require('ONNX' in run([sys.executable,preparer,'--help']), 'installed model preparer help differs')
+        directory=root/'model-contract';directory.mkdir()
+        shutil.copy2(resources/'examples/models/main.nex',directory/'main.nex')
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['doctor']['language'],'entry':'main.nex'}))
+        expected=base64.b64encode(bytes.fromhex('000000c0000080bf000000000000803f0000004000004040')).decode()+'\n'
+        require(cli('eval',cwd=directory)['stdout']==expected,'model binary32 reference bytes differ')
+        cli('test',cwd=directory,timeout=240);cli('test','--target','web',cwd=directory,timeout=240)
+        require(cli('run','--profile','release',cwd=directory,timeout=240)['stdout']==expected,
+                'model native/reference observations differ')
+        measured=cli('profile','--scenario','installed model tensor',cwd=directory,timeout=240)
+        profile=json.loads(Path(measured['output']).read_text())
+        require(profile['ok'] and profile['exit_code']==0 and all(v['live']==0 and
+                v['allocations']==v['frees'] for v in profile['memory']) and all(v['calls']==v['completed'] and
+                v['aborted']==0 for v in profile['functions']), 'model native managed cleanup differs')
+        built=cli('build','--profile','release',cwd=directory)
+        copied=root/'model-standalone';shutil.copy2(built['executable'],copied)
+        (directory/'main.nex').unlink()
+        held=[]
+        try:
+            for name in ('model.nex','compute.nex'):
+                original=resources/'lib'/name;temporary=root/('held-library-'+name)
+                original.rename(temporary);held.append((original,temporary))
+            require(cli('run','--revision',built['revision'],'--profile','release',cwd=directory)['stdout']==expected,
+                    'model replay depends on physical standard library source')
+            before=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']=str(root/'unavailable-model-resources')
+            try:require(run([copied],cwd=root)==expected,'model standalone output differs')
+            finally:
+                if before is None:environment.pop('NEX_RESOURCE_DIR',None)
+                else:environment['NEX_RESOURCE_DIR']=before
+        finally:
+            for original,temporary in reversed(held):temporary.rename(original)
+        report['evidence']['model_contract']={'descriptor':True,'native_reference':True,
+            'typescript_reference':True,'source_deleted_replay':True,'standalone':True,
+            'managed_memory_balanced':True,'preparer_installed':True,'physical_standard_sources_absent_for_replay':True,
+            'library_sha256':hashlib.sha256((resources/'lib/model.nex').read_bytes()).hexdigest(),
+            'revision':built['revision'],'native_model_inference_proved':False}
 
     def discover():
         for path in args.forbid_source:
@@ -4525,7 +4579,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('backend-agreement', backend_agreement), ('graph-snapshot-recovery', graph_snapshot_recovery),
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
-                ('binary-values', binary_values), ('compute-contract', compute_contract), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
+                ('binary-values', binary_values), ('compute-contract', compute_contract), ('model-contract', model_contract), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-profile', structured_task_profile),

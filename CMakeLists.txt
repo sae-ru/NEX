@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.121.0 LANGUAGES C CXX)
+project(NEX VERSION 0.122.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -123,6 +123,8 @@ install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EX
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py tools/server_workload.py DESTINATION share/nex/tools)
+install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
+  PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)
 install(FILES experiments/quality/scale_100x100.py
   experiments/quality/acceptance_support.py experiments/quality/server_web_edit.py
@@ -150,6 +152,8 @@ add_test(NAME result_propagation COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_S
 set_tests_properties(result_propagation PROPERTIES TIMEOUT 1200)
 add_test(NAME compute_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/compute.py $<TARGET_FILE:nex>)
 set_tests_properties(compute_contract PROPERTIES TIMEOUT 1200)
+add_test(NAME model_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/model.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(model_contract PROPERTIES TIMEOUT 1200)
 add_test(NAME discovery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/discovery.py $<TARGET_FILE:nex>)
 set_tests_properties(discovery PROPERTIES TIMEOUT 120)
 add_test(NAME project_packaging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_packaging.py $<TARGET_FILE:nex>)

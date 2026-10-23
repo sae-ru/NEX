@@ -96,6 +96,10 @@ class Discovery(harness.ToolchainCase):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
+        self.assertEqual(full['model'], pack['model'])
+        self.assertEqual(full['model']['import'], 'std/model.nex')
+        self.assertFalse(full['model']['builtin_cpu_inference'])
+        self.assertFalse(full['model']['source_task_bridge'])
         self.assertEqual(full['structured_tasks_runtime'], pack['structured_tasks_runtime'])
         self.assertEqual(full['task_profile_collector'], pack['task_profile_collector'])
         self.assertTrue(full['task_profile_collector']['source_support'])
@@ -120,7 +124,7 @@ class Discovery(harness.ToolchainCase):
         self.assertEqual(full['scoped_discovery']['path_components'], 8)
         for kind, key in [('discovery', 'scoped_discovery'), ('bootstrap', 'bootstrap_prompt'),
                           ('quality', 'quality_contract'), ('tasks-runtime','tasks_runtime_design'),
-                          ('browser-worker','browser_workers')]:
+                          ('browser-worker','browser_workers'), ('model','model')]:
             guide = self.cli('guide', '--kind', kind)
             self.assertEqual(guide['text'], (harness.REPO / pack['documents'][key]).read_text())
         schema = json.loads((harness.REPO / full['scoped_discovery']['schema_file']).read_text())
