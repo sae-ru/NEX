@@ -38,7 +38,7 @@
       "symbol": "verified::double"
     }
   ],
-  "language": "0.19",
+  "language": "0.20",
   "schema": "nex.verification-contracts/1",
   "source_hash": "a272b7dda1a686bf76367c72143e173002d1376f76bc66ab2d103a26486eb78a"
 }

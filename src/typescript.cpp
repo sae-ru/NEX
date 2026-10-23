@@ -236,7 +236,7 @@ public:
 WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){
   rejectUnloweredTasks(p,"TypeScript emission");
   bool tasks=false;
-  if(p.sourceLanguage==SourceLanguage::Tasks019){
+  if(isPublicTaskLanguage(p)){
     std::set<std::string> visited;
     std::function<void(const Function&)> visit=[&](const Function &function){
       if(!visited.insert(function.name).second)return;

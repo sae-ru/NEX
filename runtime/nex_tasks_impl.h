@@ -86,10 +86,11 @@ struct TaskGroup::Impl {
   std::vector<std::unique_ptr<Pipe>> pipes;
   std::vector<size_t> ready;size_t readyStart=0,readyCount=0,completed=0,reservedSlots=0;
   std::atomic<bool> cancelled{false};
+  const bool sourceFileReadFailures;std::exception_ptr sourceFileReadFatal;
   bool started=false,stop=false,sealed=false,finished=false;
   std::vector<std::jthread> threads;
   TaskExternalLimits externalLimits;std::once_flag externalInit;std::unique_ptr<TaskExternalPool> externalPool;bool externalRetirementReady=false;
-  Impl(size_t workers,size_t maximum,TaskExternalLimits limits):control(TaskAccess::control()),ready(maximum),externalLimits(limits){
+  Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures):control(TaskAccess::control()),ready(maximum),sourceFileReadFailures(fileReadFailures),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
     try{
@@ -164,6 +165,12 @@ struct TaskGroup::Impl {
   static void preferFailure(std::exception_ptr &selected,const std::exception_ptr &candidate){
     if(candidate&&(!selected||(fatalFailure(candidate)&&!fatalFailure(selected))||(!resourceFailure(selected)&&resourceFailure(candidate))))selected=candidate;
   }
+  // Scheduler mutex held. Only canonical runtime failures reach this boundary;
+  // the selected exception stays retained until the group is physically drained.
+  void selectFileReadFatal(const std::exception_ptr &failure){
+    if(!sourceFileReadFailures||!fatalFailure(failure))return;
+    preferFailure(sourceFileReadFatal,failure);cancelled=true;interrupt();changed.notify_all();
+  }
   bool dependencyCycle(size_t index,size_t target,bool scopeRoot){
     // All graph storage is reserved before workers start. Completion/cleanup
     // must not allocate, even when draining after a resource failure.
@@ -234,6 +241,7 @@ struct TaskGroup::Impl {
     catch(const std::bad_alloc &){try{throw Trap("E_MEMORY","external host allocation failed",job.location);}catch(...){failure=std::current_exception();}}
     catch(...){failure=std::current_exception();}
     bool fatal=fatalFailure(failure);
+    if(fatal)selectFileReadFatal(failure);
     if(fatal){preferFailure(job.externalFatal,failure);if(entry.scope!=none)preferFailure(regions[entry.scope]->externalFatal,failure);}
     if(failure&&(fatal||((entry.scope==none||!regions[entry.scope]->abort)&&!(job.failure&&cancellationFailure(failure))))){
       if(job.finishing||entry.scope==none)preferFailure(job.failure,failure);
@@ -302,7 +310,7 @@ struct TaskGroup::Impl {
       TaskBody::Handle destroy;
       {
         std::lock_guard lock(mutex);auto &job=*jobs[index];lease(job.scope,-1);job.running=false;
-        if(failure||job.body.done()){beginComplete(index,std::move(failure));destroy=std::exchange(job.body,{});}
+        if(failure||job.body.done()){selectFileReadFatal(failure);beginComplete(index,std::move(failure));destroy=std::exchange(job.body,{});}
         else if(job.again)enqueue(index);
         else if(job.wait==None){
           try{throw Trap("E_TASK_STATE","coroutine suspended outside its task scheduler",0);}catch(...){beginComplete(index,std::current_exception());destroy=std::exchange(job.body,{});}
@@ -361,10 +369,10 @@ struct TaskGroup::Impl {
     }
     std::exception_ptr coordinatorFailure;
     for(;;){
-      std::unique_lock lock(mutex);if(completed==jobs.size())break;
+      std::unique_lock lock(mutex);preferFailure(coordinatorFailure,sourceFileReadFatal);if(completed==jobs.size())break;
       lock.unlock();
       if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();cancelled=true;}
-      lock.lock();interrupt();changed.wait_for(lock,std::chrono::milliseconds(2));
+      lock.lock();selectFileReadFatal(coordinatorFailure);interrupt();changed.wait_for(lock,std::chrono::milliseconds(2));
     }
     {std::lock_guard lock(mutex);stop=true;}changed.notify_all();
     for(auto &thread:threads)thread.join();
@@ -374,6 +382,7 @@ struct TaskGroup::Impl {
     // scheduler lock; they cannot deadlock by acquiring another runtime lock.
     for(auto &job:jobs){if(job->body){job->body.destroy();job->body={};}job->pending={};}
     pipes.clear();
+    if(sourceFileReadFatal){auto selected=sourceFileReadFatal;preferFailure(selected,coordinatorFailure);coordinatorFailure=std::move(selected);}
     if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal){preferFailure(coordinatorFailure,job->failure);preferFailure(coordinatorFailure,job->externalFatal);}
     if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);
     if(!abort)TaskAccess::poll(control);
@@ -383,10 +392,10 @@ struct TaskGroup::Impl {
     for(const auto &job:jobs)if(!abort&&!job->observed&&job->failure&&!cancelled.load()&&!job->cancellation->stopped())std::rethrow_exception(job->failure);
   }
 };
-TaskGroup::TaskGroup(size_t workers,size_t maximumTasks,TaskExternalLimits externalLimits){impl=hostOperation({},[&]{
+TaskGroup::TaskGroup(size_t workers,size_t maximumTasks,TaskExternalLimits externalLimits,bool sourceFileReadFailures){impl=hostOperation({},[&]{
   if(workers<1||workers>16||maximumTasks<1||maximumTasks>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
   if(!validTaskExternalLimits(externalLimits))throw Trap("E_RANGE","invalid external kernel limits",0);
-  return std::make_shared<Impl>(workers,maximumTasks,externalLimits);
+  return std::make_shared<Impl>(workers,maximumTasks,externalLimits,sourceFileReadFailures);
 });}
 TaskGroup::~TaskGroup(){try{impl->drain(true);}catch(...){/* Destruction cannot replace an active exception. */}}
 size_t TaskGroup::taskIndex(const Ticket &ticket)const{
@@ -434,16 +443,23 @@ TaskGroup::Ticket TaskGroup::spawn(Factory factory,Value input,Value captures){
   return spawnIn(scope,factory,std::move(input),std::move(captures));
 }
 TaskGroup::Ticket TaskGroup::spawn(const Scope &scope,Factory factory,Value input,Value captures){return spawnIn(scopeIndex(scope),factory,std::move(input),std::move(captures));}
-TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Value captures){
+TaskGroup::Ticket TaskGroup::spawnWithContext(ContextFactory factory,const void *context,Value input,Value captures){
+  size_t scope=none;{std::lock_guard lock(impl->mutex);if(activeTaskState==impl.get())scope=impl->jobs[activeTaskIndex]->scope;}
+  return spawnIn(scope,nullptr,std::move(input),std::move(captures),factory,context);
+}
+TaskGroup::Ticket TaskGroup::spawnWithContext(const Scope &scope,ContextFactory factory,const void *context,Value input,Value captures){
+  return spawnIn(scopeIndex(scope),nullptr,std::move(input),std::move(captures),factory,context);
+}
+TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Value captures,ContextFactory contextFactory,const void *context){
   return hostOperation({},[&]{
-    impl->require();if(!factory)throw Trap("E_TASK_SCOPE","task factory is missing",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);
+    impl->require();if(bool(factory)==bool(contextFactory))throw Trap("E_TASK_SCOPE","task factory is missing or ambiguous",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);
     auto job=std::make_unique<Impl::Job>();job->group=this;job->cancellation=std::make_shared<task_detail::Cancellation>();
     if(activeTaskState==impl.get()){
       std::lock_guard lock(impl->mutex);job->cancellation->parent=impl->jobs[activeTaskIndex]->cancellation;
       job->cancellation->depth=job->cancellation->parent->depth+1;
       if(job->cancellation->depth>256)throw Trap("E_LIMIT","task nesting exceeds256",0);
     }
-    auto body=factory(*this,std::move(input),std::move(captures));if(!body.handle)throw Trap("E_TASK_SCOPE","task factory returned no coroutine",0);
+    auto body=contextFactory?contextFactory(*this,std::move(input),std::move(captures),context):factory(*this,std::move(input),std::move(captures));if(!body.handle)throw Trap("E_TASK_SCOPE","task factory returned no coroutine",0);
     job->body=std::exchange(body.handle,{});
     std::lock_guard lock(impl->mutex);
     if(impl->finished||(impl->sealed&&activeTaskState!=impl.get()))throw Trap("E_TASK_SCOPE","task group is sealed",0);
@@ -456,9 +472,10 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
 Value TaskGroup::join(const Ticket &ticket){
   impl->requireContext(true);auto index=taskIndex(ticket);std::exception_ptr coordinatorFailure;
   for(;;){
-    if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;}
+    {std::lock_guard lock(impl->mutex);Impl::preferFailure(coordinatorFailure,impl->sourceFileReadFatal);}
+    if(!coordinatorFailure)try{TaskAccess::poll(impl->control);}catch(...){coordinatorFailure=std::current_exception();impl->cancelled=true;std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(coordinatorFailure);}
     std::unique_lock lock(impl->mutex);impl->interrupt();auto &job=*impl->jobs[index];
-    if(job.done){job.observed=true;Impl::preferFailure(coordinatorFailure,job.failure);Impl::preferFailure(coordinatorFailure,job.externalFatal);if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);return job.result;}
+    if(job.done){job.observed=true;auto selected=impl->sourceFileReadFatal;Impl::preferFailure(selected,coordinatorFailure);Impl::preferFailure(selected,job.failure);Impl::preferFailure(selected,job.externalFatal);if(selected)std::rethrow_exception(selected);return job.result;}
     impl->changed.wait_for(lock,std::chrono::milliseconds(2));
   }
 }
@@ -587,13 +604,17 @@ TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
       if(!found)throw Trap("E_TASK_SCOPE","external completion belongs to another or ended group",0);
     }
     TaskExternalResult result;std::exception_ptr failure;
-    try{result=state->externalPool->take(ticket);}catch(...){failure=std::current_exception();}
+    try{result=state->externalPool->take(ticket);}
+    catch(const DataError &error){try{throw Trap(error.code,error.what(),location);}catch(...){failure=std::current_exception();}}
+    catch(...){failure=std::current_exception();}
     {
       std::lock_guard lock(state->mutex);auto &job=*state->jobs[activeTaskIndex];
+      state->selectFileReadFatal(failure);
       for(auto &entry:job.external)if(entry.ticket==ticket){if(entry.scope!=none){auto &scope=*state->regions[entry.scope];if(!scope.externalPending)std::terminate();--scope.externalPending;state->closeRegion(entry.scope);}break;}
     }
     if(failure)std::rethrow_exception(failure);return result;
   });
 }
 TaskExternalStats TaskGroup::externalStats()const{std::lock_guard lock(impl->mutex);return impl->externalPool?impl->externalPool->stats():TaskExternalStats{};}
+void TaskGroup::failFileRead(std::exception_ptr failure){impl->requireContext();std::lock_guard lock(impl->mutex);impl->selectFileReadFatal(failure);}
 void TaskGroup::finish(){impl->requireContext(true);impl->drain(false);}

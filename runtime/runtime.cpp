@@ -174,6 +174,11 @@ void RequestScope::setCancellation(std::function<bool()> check){
   impl->cancellation=std::move(check);
 }
 void RequestScope::poll(int64_t line,bool forceCancellation){checkExecution(line,forceCancellation,true);}
+std::chrono::steady_clock::time_point RequestScope::deadline()const noexcept{return impl->control->deadline;}
+std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline()noexcept{
+  if(currentRequest)return currentRequest->deadline();
+  return std::nullopt;
+}
 void RequestScope::checkExecution(int64_t line,bool forceCancellation,bool consumeStep){
   auto state=impl;auto control=state->control;
   // The host's cancellation callback belongs to the coordinator thread. Worker

@@ -1,5 +1,9 @@
 #include "nex/task_reference.h"
+#include "nex/task_frontend.h"
+#include "nex/operations.h"
 #include "nex_task_reference_value.h"
+#include "nex_task_file_read.h"
+#include "nex_host.h"
 #include <algorithm>
 #include <chrono>
 #include <deque>
@@ -170,6 +174,15 @@ void TaskReferenceExternalMailbox::wait(){
   if(impl->sealed)impl->changed.wait(lock,available);
   else impl->changed.wait_until(lock,impl->deadline,available);
 }
+void TaskReferenceExternalMailbox::waitForControl(std::chrono::milliseconds maximumPause){
+  impl->coordinatorOnly();
+  if(maximumPause.count()<=0)throw nexrt::DataError("E_OPTION","reference control wait must be positive");
+  std::unique_lock lock(impl->mutex);
+  auto available=[&]{return impl->hasReady()||!impl->counts.pending||
+      (!impl->sealed&&(impl->cancellation.stop_requested()||Clock::now()>=impl->deadline));};
+  if(impl->sealed)impl->changed.wait(lock,available);
+  else impl->changed.wait_until(lock,std::min(impl->deadline,Clock::now()+maximumPause),available);
+}
 void TaskReferenceExternalMailbox::drain(){
   close();std::unique_lock lock(impl->mutex);
   impl->changed.wait(lock,[&]{return impl->counts.retired==impl->counts.submitted;});
@@ -195,6 +208,15 @@ struct TaskReferenceAccess {
   static size_t index(const nexrt::ReferenceTaskData &v){return v.index;}
 };
 namespace {
+void annotateReferenceError(const Program &program,Error &error){
+  if(!isPublicTaskLanguage(program)||!error.operationSite.empty()||error.span.file.empty())return;
+  for(const auto &function:program.functions)for(const auto &operation:operationTree(program,function))
+    if(operation.ast&&operation.span.file==error.span.file&&operation.span.begin==error.span.begin&&
+       operation.span.end==error.span.end){
+      error.operationSite=operation.site;error.operationRevision=revision(program);
+      error.operationSource=hash(json(sourceBundle(program),false));return;
+    }
+}
 // This reference intentionally uses a single coordinator, scanning completion
 // states and FIFO deques. It shares neither native wait lists nor dispatch code.
 struct Reference {
@@ -220,6 +242,9 @@ struct Reference {
     std::vector<size_t> owned;
     std::optional<TaskReferenceExternalTicket> external;
     size_t externalScope=none;
+#ifndef _WIN32
+    std::unique_ptr<nexrt::PreparedTaskFileRead> fileRead;
+#endif
   };
   struct Region {
     size_t parent=none,owner=none,depth=1;
@@ -255,6 +280,9 @@ struct Reference {
   TaskReferenceObserver observer;
   TaskReferenceExternalHost *externalHost;
   std::unique_ptr<TaskReferenceExternalMailbox> external;
+#ifndef _WIN32
+  nexrt::FileReadGrant fileGrant;
+#endif
 
   static nexrt::TaskExecutionLimits selectedLimits(uint64_t legacy,const nexrt::TaskExecutionLimits *requested){
     if(requested){
@@ -266,14 +294,25 @@ struct Reference {
     nexrt::TaskExecutionLimits result;result.steps=legacy;return result;
   }
   Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested,
-      TaskReferenceExternalHost *host)
+      TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant)
     :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
      deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),externalHost(host){
+    if(supportsTaskFileReads(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
     controlPoll=[this](Span span){checkControl(span);};
+#ifndef _WIN32
+    if(grant)fileGrant=*grant;
+#else
+    (void)grant;
+#endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
   }
   void checkControl(Span span={}){
     if(controlFailure)throw *controlFailure;
+    if(supportsTaskFileReads(program))try{nexrt::pollHostOperation(span.line);}
+    catch(const nexrt::Trap &error){
+      if(span.file.empty())span=rootSpan;
+      controlFailure=std::make_shared<Error>(error.code,error.what(),span);throw *controlFailure;
+    }
     if(externalHost&&externalHost->cancellation.stop_requested()){
       if(span.file.empty())span=rootSpan;
       controlFailure=std::make_shared<Error>("E_CANCELLED","reference host cancelled task execution",span);
@@ -465,6 +504,32 @@ struct Reference {
   }
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
+    if(taskFileReadOperation(r.operation)){
+      if(!supportsTaskFileReads(program))throw Error("E_TASK_UNIMPLEMENTED","source task file reads require language020",r.span);
+      const auto expected=Type::result(r.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes));
+      if(r.arguments.size()!=1||r.arguments[0].tag!=RV::Object||!r.arguments[0].object||
+         r.arguments[0].object->kind!=RD::String||r.result!=expected)
+        throw Error("E_TASK_TYPE","reference file read has an invalid checked request shape",r.span);
+#ifdef _WIN32
+      throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",r.span);
+#else
+      try{
+        auto prepared=std::make_unique<nexrt::PreparedTaskFileRead>(fileGrant,r.arguments[0].object->text,r.operation=="file_read_text");
+        auto operation=prepared->operation();checkControl(r.span);
+        if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,
+          externalHost?externalHost->cancellation:std::stop_token{},
+          externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
+        auto ticket=external->submit(i,std::move(operation),nexrt::PreparedTaskFileRead::reservation);
+        j.fileRead=std::move(prepared);j.external=ticket;j.externalScope=j.current;
+        if(j.externalScope!=none)++regions.at(j.externalScope).external;
+        j.state=External;return;
+      }catch(const nexrt::DataError &error){
+        if(!nexrt::ordinaryTaskFileReadError(error.code))
+          throw Error(error.code,error.what(),r.span);
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+      }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file read preparation allocation failed",r.span);}
+#endif
+    }
     if(r.operation=="task_yield"){
       if(externalHost){
         std::optional<TaskReferenceExternalRequest> request;
@@ -548,13 +613,30 @@ struct Reference {
       j.request=std::move(r);dispatch(i);
     }catch(const Error &e){
       auto located=std::make_shared<Error>(e);
+      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)){
+        if(fatal(located))prefer(controlFailure,located);
+        if(fatal(controlFailure))located=controlFailure;
+      }
       // An ordinary failure cannot hide shared resource exhaustion discovered
       // at the same source/host boundary. Already chosen resource errors keep
       // their established precedence during cancellation cleanup.
       try{checkControl(operationSpan);}catch(const Error &control){prefer(located,std::make_shared<Error>(control));}
       if(located->span.file.empty())located->span=operationSpan;beginFinish(i,std::move(located));
     }
-    catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.what(),j.request.span));}
+    catch(const nexrt::DataError &e){
+      auto failure=std::make_shared<Error>(e.code,e.what(),j.request.span);
+      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)&&fatal(failure)){
+        prefer(controlFailure,failure);failure=controlFailure;
+      }
+      beginFinish(i,std::move(failure));
+    }
+    catch(const std::bad_alloc &){
+      auto failure=std::make_shared<Error>("E_MEMORY","reference source preparation allocation failed",operationSpan);
+      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)){
+        prefer(controlFailure,failure);failure=controlFailure;
+      }
+      beginFinish(i,std::move(failure));
+    }
   }
   bool collectExternal(bool discard=false){
     if(!external)return false;
@@ -564,7 +646,11 @@ struct Reference {
       if(ticket->owner>=jobs.size()||!jobs[ticket->owner]->external||*jobs[ticket->owner]->external!=*ticket)
         throw Error("E_TASK_STATE","reference external completion has no matching source owner");
       auto i=ticket->owner;auto &job=*jobs[i];auto span=job.request.span;
+      const bool fileCompletion=taskFileReadOperation(job.request.operation);
       auto raw=external->take(*ticket);job.external.reset();
+#ifndef _WIN32
+      auto prepared=std::move(job.fileRead);
+#endif
       if(job.externalScope!=none){
         auto &scope=regions.at(job.externalScope);
         if(!scope.external||scope.closed)throw Error("E_TASK_STATE","reference external scope retirement ledger is invalid");
@@ -573,6 +659,7 @@ struct Reference {
       std::shared_ptr<Error> physicalFailure;
       if(raw.errorCode=="E_MEMORY"||raw.errorCode=="E_LIMIT"||raw.errorCode=="E_TIMEOUT")
         physicalFailure=std::make_shared<Error>(raw.errorCode,raw.errorMessage,span);
+      if(fileCompletion&&physicalFailure)prefer(controlFailure,physicalFailure);
       if(discard||job.cancelled||job.state==Finishing){
         if(job.state!=Finishing)beginFinish(i,controlFailure?controlFailure:
             std::make_shared<Error>("E_CANCELLED","reference task was cancelled",span));
@@ -581,6 +668,23 @@ struct Reference {
       }
       try{
         checkControl(span);
+#ifndef _WIN32
+        if(prepared){
+          // Fixed adapter and concrete result type only. No source Value or
+          // AST/frame reaches the IO worker, and cancelled completions never
+          // enter this lease/UTF-8/source-admission boundary.
+          if(physicalFailure)throw *physicalFailure;
+          auto value=prepared->admit(std::move(raw));checkControl(span);
+          const auto &item=*job.request.result.element;
+          if(value.tag!=RV::Object||!value.object||
+             (value.object->kind!=RD::Success&&value.object->kind!=RD::Failure)||
+             (value.object->kind==RD::Success&&
+              (value.object->values.size()!=1||value.object->values[0].tag!=RV::Object||
+               !value.object->values[0].object||value.object->values[0].object->kind!=(item==Type::Str?RD::String:RD::Bytes))))
+            throw Error("E_TASK_TYPE","reference file admission has an invalid concrete result",span);
+          answer(i,std::move(value));continue;
+        }
+#endif
         if(!raw.errorCode.empty())throw Error(raw.errorCode,raw.errorMessage,span);
         // The synthetic bridge has only a unit response. Real filesystem
         // values require a separately reviewed, lease-checked source adapter.
@@ -591,8 +695,21 @@ struct Reference {
         catch(const std::bad_alloc &){throw Error("E_MEMORY","reference external host admission allocation failed",span);}
         catch(...){throw Error("E_TASK_HOST","reference external host admission failed",span);}
         checkControl(span);answer(i);
-      }catch(const Error &error){auto selected=std::make_shared<Error>(error);prefer(selected,physicalFailure);beginFinish(i,std::move(selected));}
-      catch(const nexrt::DataError &error){beginFinish(i,std::make_shared<Error>(error.code,error.what(),span));}
+      }catch(const Error &error){
+        auto selected=std::make_shared<Error>(error);prefer(selected,physicalFailure);
+        if(fileCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
+        beginFinish(i,std::move(selected));
+      }
+      catch(const nexrt::DataError &error){
+        auto selected=std::make_shared<Error>(error.code,error.what(),span);
+        if(fileCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
+        beginFinish(i,std::move(selected));
+      }
+      catch(const std::bad_alloc &){
+        auto selected=std::make_shared<Error>("E_MEMORY","reference file admission allocation failed",span);
+        if(fileCompletion){prefer(controlFailure,selected);selected=controlFailure;}
+        beginFinish(i,std::move(selected));
+      }
     }
     return any;
   }
@@ -611,8 +728,33 @@ struct Reference {
     if(jobs[0]->state!=Done)throw Error("E_TASK_STATE","reference control cleanup did not drain all scopes");
     prefer(jobs[0]->failure,controlFailure);jobs[0]->result={};
   }
+  void validateEntry(const std::string &entry){
+    std::vector<std::string> pending{entry};std::set<std::string> seen;
+    while(!pending.empty()){
+      auto name=std::move(pending.back());pending.pop_back();if(!seen.insert(name).second)continue;
+      const auto &function=program.function(name);
+      const bool reads=supportsTaskFileReads(program)&&function.realm=="server"&&
+        function.effects.contains("task")&&function.effects.contains("fs");
+      if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
+        throw Error("E_EFFECT","reference task calls require an explicitly resumable task/fs helper",function.span);
+      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(reads&&effect=="fs"))
+        throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
+      std::function<void(E)> expression=[&](E e){if(!e)return;
+        if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){
+          if(!reads||!taskFileReadOperation(e->text))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
+#ifdef _WIN32
+          throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",e->span);
+#endif
+        }
+        for(auto argument:e->args)expression(argument);
+      };
+      std::function<void(const std::vector<S>&)> body=[&](const auto &statements){for(auto statement:statements){expression(statement->expr);childBlocks(statement,body);}};
+      body(function.body);pending.insert(pending.end(),function.dependencies.begin(),function.dependencies.end());
+    }
+  }
   TaskReferenceResult run(const std::string &entry,const std::vector<RV> &arguments){
     if(!program.taskPrototype)throw Error("E_TASK_STATE","reference scheduler requires checked task source");
+    validateEntry(entry);
     rootSpan=program.function(entry).span;
     for(const auto &v:arguments)snapshot(v,none,none);
     auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));jobs.push_back(std::move(root));enqueue(0);
@@ -629,7 +771,11 @@ struct Reference {
       }
       if(!ran&&!settle()){
         try{checkControl();}catch(const Error &){finishControl();break;}
-        if(external&&external->stats().pending){external->wait();continue;}
+        if(external&&external->stats().pending){
+          if(supportsTaskFileReads(program))external->waitForControl(std::chrono::milliseconds(10));
+          else external->wait();
+          continue;
+        }
         throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
       }
     }
@@ -642,8 +788,27 @@ struct Reference {
   }
 };
 }
-TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost){
-  Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost);
-  try{return scheduler.run(entry,arguments);}catch(Error &e){e.output=scheduler.output;throw;}
+TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant){
+  try{
+    std::unique_ptr<nexrt::RequestScope> request;
+    std::unique_ptr<nexrt::FileScope> files;
+#ifndef _WIN32
+    nexrt::FileReadGrant captured;
+    if(supportsTaskFileReads(p)){
+      const auto limits=Reference::selectedLimits(limit,taskLimits);
+      // The reference owns its exact source-work counter. This host scope
+      // binds grants/control lifetime and never replaces an inherited request.
+      if(!nexrt::inRequestScope())request=std::make_unique<nexrt::RequestScope>(nexrt::maximumTaskExecutionSteps,limits.timeoutMs);
+      if(!fileGrant){
+        if(!nexrt::inFileScope())files=std::make_unique<nexrt::FileScope>(true);
+        captured=nexrt::captureFileReadGrant();fileGrant=&captured;
+      }
+    }
+#endif
+    Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant);
+    try{return scheduler.run(entry,arguments);}catch(Error &e){e.output=scheduler.output;annotateReferenceError(p,e);throw;}
+  }catch(const nexrt::DataError &error){throw Error(error.code,error.what(),p.function(entry).span);}
+  catch(const nexrt::Trap &error){throw Error(error.code,error.what(),p.function(entry).span);}
+  catch(const std::bad_alloc &){throw Error("E_MEMORY","reference host allocation failed",p.function(entry).span);}
 }
 }

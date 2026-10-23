@@ -1,7 +1,13 @@
-Language0.19 standalone TypeScript modules execute reachable task effects through
+Language0.20 task file reads are server-only native/reference operations.
+TypeScript/Node and the browser have no source filesystem bridge. Reachable
+server functions remain rejected, and unreachable server readers remain absent
+from emitted client/shared code. This does not widen the synchronous UI/worker
+entry contract or alter browser dependencies/notices.
+
+Language0.19/0.20 standalone TypeScript modules execute reachable task effects through
 generated resumable functions and the independent event-loop task runtime.
 Ordinary `nex test --target web` awaits that scheduler; source suspension remains
-present. Public maps retain the checked019 revision and operation sites.
+present. Public maps retain the checked source revision and operation sites.
 The pure synchronous title/initial/update/view and browser-worker contracts stay
 unchanged. Task functions or reachable task callables at those adapter boundaries
 are explicitly rejected with `E_TASK_UNIMPLEMENTED`; an asynchronous NEX UI or

@@ -119,6 +119,70 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   auto p=loadBundle(store.bundle(selected),root.string());
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
+bool versionedMigrationLanguage(const std::string &language){return language=="0.18"||language=="0.19"||language=="0.20";}
+void validateMigrationLanguage(const std::string &language){
+  if(versionedMigrationLanguage(language))return;
+  // These historical canonical serializers are not retained. Their existing
+  // explicit recheck path is supported without claiming old-hash verification.
+  for(unsigned i=1;i<=17;++i)if(language=="0."+std::to_string(i))return;
+  throw Error("E_LANGUAGE_VERSION","unsupported migration origin language");
+}
+bool verifyMigrationOrigin(const llvm::json::Value &bundle,const fs::path &root,const std::string &language,const std::string &original){
+  validateMigrationLanguage(language);
+  if(original.size()!=64||!std::all_of(original.begin(),original.end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))
+    throw Error("E_REVISION","migration origin requires a canonical revision hash");
+  if(!versionedMigrationLanguage(language)){
+    // A corrupted modern row must not evade verification by claiming a legacy
+    // version whose serializer is unavailable. Recognize exact modern hashes;
+    // genuine historical hashes remain explicitly unverified.
+    for(const auto *modern:{"0.18","0.19","0.20"}){
+      bool matches=false;
+      try{matches=revision(loadVersionedBundle(bundle,root.string(),modern))==original;}catch(const Error &){}
+      if(matches)throw Error("E_REVISION","migration origin language contradicts its modern semantic revision");
+    }
+    return false;
+  }
+  try{
+    auto old=loadVersionedBundle(bundle,root.string(),language);
+    if(revision(old)!=original)throw Error("E_REVISION","origin source does not match its retained semantic revision");
+  }catch(const Error &error){
+    throw Error("E_REVISION",std::string("invalid archived migration origin: ")+error.what(),error.span);
+  }
+  return true;
+}
+void migrate(const Options &o,const fs::path &root){
+  std::unique_ptr<Store> archive;
+  if(fs::exists(root/".nex/graph.db"))archive=std::make_unique<Store>(root/".nex",StoreOpenMode::ReadOnly);
+  auto previous=archive?archive->headRevision():std::string{};
+  auto expected=o.get("--expected-revision",previous.empty()?"EMPTY":previous);
+  if(expected.empty())throw Error("E_OPTION","migration requires a nonempty expected revision");
+  if(previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+  std::string original,originLanguage;llvm::json::Value bundle=nullptr;bool verified=false;
+  if(o.positional.empty()){
+    if(!archive)throw Error("E_REVISION","migration requires an existing archived revision or graph JSON");
+    original=o.get("--revision","HEAD");if(original=="HEAD")original=previous;
+    originLanguage=archive->revisionLanguage(original);validateMigrationLanguage(originLanguage);
+    bundle=archive->bundle(original);verified=verifyMigrationOrigin(bundle,root,originLanguage,original);
+  }else{
+    auto value=parseJSON(readFile(o.positional[0]));auto object=value.getAsObject();
+    if(!object||(required(*object,"schema")!="nex.graph/1"&&required(*object,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
+    original=required(*object,"revision");originLanguage=required(*object,"language");validateMigrationLanguage(originLanguage);
+    bundle=graphSources(*object);
+    if(archive&&archive->containsRevision(original)){
+      if(archive->revisionLanguage(original)!=originLanguage)throw Error("E_REVISION","graph origin language differs from the retained revision");
+      verified=verifyMigrationOrigin(archive->bundle(original),root,originLanguage,original);
+    }else verified=verifyMigrationOrigin(bundle,root,originLanguage,original);
+  }
+  // No writable Store, schema upgrade or destination creation before both the
+  // origin integrity check and complete current-language target preflight.
+  auto program=loadBundle(bundle,root.string());auto sourceHash=hash(json(bundle,false));
+  archive.reset();
+  Store store(root/".nex");auto selected=store.save(program,expected,true,changeInfo(o,"migrate",sourceHash));
+  print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},
+    {"origin_language",originLanguage},{"origin_verified",verified},{"previous_revision",previous},
+    {"revision",selected},{"language",programLanguage(program)},{"source_hash",sourceHash},
+    {"changed",previous!=selected},{"materialized",false}});
+}
 int run(const Options &o) {
   nexrt::TaskExecutionLimits taskLimits;bool taskLimitsSpecified=false;
   for(const auto &[flag,maximum]:std::vector<std::pair<std::string,uint64_t>>{{"--task-steps",nexrt::maximumTaskExecutionSteps},{"--task-timeout-ms",nexrt::maximumTaskExecutionTimeoutMs},{"--task-workers",nexrt::maximumTaskExecutionWorkers}}){
@@ -245,7 +309,7 @@ int run(const Options &o) {
     }
   }
   if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities"&&!graphQuery)throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
-  for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities"&&!(o.command=="restore"&&std::string(name)=="--expected-revision"))throw Error("E_OPTION",std::string(name)+" is for graph identities or guarded restore");
+  for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities"&&!((o.command=="restore"||o.command=="migrate")&&std::string(name)=="--expected-revision"))throw Error("E_OPTION",std::string(name)+" is for graph identities or guarded restore/migrate");
   if(o.command=="identities"){
     auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve")throw Error("E_OPTION","identities kind must be export, reconcile or resolve");
     if(kind!="export"&&!o.positional.empty())throw Error("E_OPTION","identity mutation/lookup selects an archived graph, without source-file synchronization");
@@ -285,7 +349,7 @@ int run(const Options &o) {
   }
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind task-external|task-limits|tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
+      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind task-file-reads|task-external|task-limits|tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
       "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
@@ -378,9 +442,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -410,6 +474,7 @@ int run(const Options &o) {
   bool physical=sourceCommands.contains(o.command)&&o.get("--revision").empty()&&
     ((o.command!="declarations"&&o.command!="identities")||!o.positional.empty());
   if(physical)validateProjectMetadata(root.string());
+  if(o.command=="migrate"){migrate(o,root);return 0;}
   Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="changes"){
@@ -425,17 +490,6 @@ int run(const Options &o) {
     auto request=llvm::json::Object{{"revision",target},{"expected_revision",expected}};
     auto rev=store.save(candidate,expected,true,changeInfo(o,"restore",hash(json(std::move(request),false))));
     print(llvm::json::Object{{"schema","nex.restore/1"},{"ok",true},{"previous_revision",previous},{"revision",rev},{"source_hash",hash(json(archived,false))},{"changed",previous!=rev},{"materialized",false}});return 0;
-  }
-  if(o.command=="migrate"){
-    auto previous=store.headRevision();std::string original;llvm::json::Value bundle=nullptr;
-    if(o.positional.empty()){original=o.get("--revision","HEAD");if(original=="HEAD")original=previous;bundle=store.bundle(original);}
-    else{
-      auto value=parseJSON(readFile(o.positional[0]));auto obj=value.getAsObject();
-      if(!obj||(required(*obj,"schema")!="nex.graph/1"&&required(*obj,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
-      bundle=graphSources(*obj);original=required(*obj,"revision");
-    }
-    auto p=loadBundle(bundle,root.string());auto rev=store.save(p,previous.empty()?"EMPTY":previous,true,changeInfo(o,"migrate",hash(json(bundle,false))));
-    print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},{"revision",rev},{"language",languageVersion},{"materialized",false}});return 0;
   }
   if(o.command=="export") {
     auto selected=o.get("--revision","HEAD");if(selected=="HEAD")selected=store.headRevision();

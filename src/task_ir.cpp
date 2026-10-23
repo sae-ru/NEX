@@ -8,6 +8,7 @@ std::string taskSlotName(TaskSlotId slot){return "$task_slot_"+std::to_string(sl
 namespace {
 class Lowering {
   const Program &program;
+  bool fileReads=false;
   TaskFunctionIR result;
   std::vector<std::map<std::string,TaskSlotId>> scopes;
   size_t emit(TaskInstruction instruction){
@@ -86,7 +87,7 @@ class Lowering {
     auto atom=std::make_shared<Expr>(*original);atom->args.clear();TaskInstruction op;op.kind=TaskInstruction::Eval;op.span=original->span;op.source=original.get();op.output=output;
     if(original->kind==Expr::Name){auto id=lookup(original->text,original->span);atom->text=taskSlotName(id);atom->localName.clear();op.inputs={id};}
     else for(auto argument:original->args){auto id=expr(argument);op.inputs.push_back(id);atom->args.push_back(reference(id,argument->span));}
-    if(original->kind==Expr::Call&&taskBuiltins().contains(original->text)){op.kind=TaskInstruction::Pause;op.operation=original->text;}
+    if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes")))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
     else if(original->kind==Expr::Invoke&&original->args[0]->type.effects.contains("task")){op.kind=TaskInstruction::Call;op.indirect=true;}
     else if(original->kind==Expr::Call&&!builtinNames(true).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).effects.contains("task")){op.kind=TaskInstruction::Call;op.operation=original->text;}
     op.atom=std::move(atom);auto inputs=op.inputs;emit(std::move(op));
@@ -116,6 +117,7 @@ class Lowering {
   }
 public:
   Lowering(const Program &program,const Function &function):program(program){
+    fileReads=supportsTaskFileReads(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
     result.name=function.name;result.result=function.result;scopes.emplace_back();
     for(const auto &capture:function.captures){auto id=slot(capture.type,capture.span,capture.name,false);scopes.back()[capture.name]=id;result.captures.push_back(id);}
     for(const auto &parameter:function.params){auto id=slot(parameter.type,parameter.span,parameter.name,false);scopes.back()[parameter.name]=id;result.parameters.push_back(id);}
@@ -136,7 +138,10 @@ void validateTaskIR(const TaskFunctionIR &function){
     if(op.output!=noTaskSlot)checkSlot(op.output,op.span);for(auto slot:op.inputs)checkSlot(slot,op.span);for(auto slot:op.bindings)checkSlot(slot,op.span);
     if((op.kind==TaskInstruction::Jump||op.kind==TaskInstruction::Branch)&&op.yes>=function.code.size())throw Error("E_TASK_STATE","invalid continuation successor",op.span);
     if(op.kind==TaskInstruction::Branch&&(op.inputs.size()!=1||op.no>=function.code.size()||function.slots[op.inputs[0]].type!=Type::Bool))throw Error("E_TASK_STATE","invalid continuation branch",op.span);
-    if(op.kind==TaskInstruction::Pause&&!taskBuiltins().contains(op.operation))throw Error("E_TASK_STATE","unknown continuation wait operation",op.span);
+    if(op.kind==TaskInstruction::Pause&&!taskBuiltins().contains(op.operation)){
+      if((op.operation!="file_read_text"&&op.operation!="file_read_bytes")||op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Str||op.output==noTaskSlot||function.slots[op.output].type!=Type::result(op.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes)))
+        throw Error("E_TASK_STATE","invalid continuation file read operation",op.span);
+    }
     if(op.kind==TaskInstruction::Eval){if(!op.atom)throw Error("E_TASK_STATE","missing continuation atom",op.span);for(const auto &argument:op.atom->args)if(argument->kind!=Expr::Name||!argument->text.starts_with("$task_slot_"))throw Error("E_TASK_STATE","continuation atom contains unevaluated operands",op.span);}
     if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
   }

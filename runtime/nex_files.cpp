@@ -363,6 +363,7 @@ Access &access(bool environmentAllowed){
   return *environmentFiles;
 }
 }
+bool inFileScope() noexcept{return currentFiles!=nullptr;}
 struct FileScope::Impl {
   Access value;
   Access *previous;

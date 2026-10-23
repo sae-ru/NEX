@@ -156,6 +156,18 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
     auto id=text(object(value),"id"),selected=options.revision;if(options.candidates.contains(id))selected=options.candidates.at(id);
     if(selected.empty()){validateProjectMetadata(options.root);break;}
   }
+  if(frozen.empty()){
+    std::unique_ptr<Store> archived;
+    for(const auto &value:array(t,"programs")){
+      auto id=text(object(value),"id"),selected=options.revision;
+      if(options.candidates.contains(id))selected=options.candidates.at(id);
+      if(selected.empty())continue;
+      auto directory=fs::path(options.root)/".nex";
+      if(!fs::exists(directory/"graph.db"))throw Error("E_REVISION","task candidate requires an existing archived revision");
+      if(!archived)archived=std::make_unique<Store>(directory,StoreOpenMode::ReadOnly);
+      if(archived->revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
+    }
+  }
   Store store(fs::path(options.root)/".nex");std::map<std::string,std::string> shared;
   for(const auto &value:array(t,"programs")){
     const auto &p=object(value);auto id=text(p,"id"),entry=text(p,"entry"),selected=options.revision;
@@ -163,8 +175,9 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
     JSON bundle=nullptr;Program program;
     if(!frozen.empty()){bundle=readJSON(frozen/("inputs/programs/"+id+".json"),16*1048576);program=loadBundle(bundle,options.root);}
     else if(!selected.empty()){
-      if(p.get("project")&&store.revisionLanguage(selected=="HEAD"?store.headRevision():selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","project candidate requires an explicit language migration");
-      bundle=store.bundle(selected);program=loadBundle(bundle,options.root);if(selected!="HEAD"&&revision(program)!=selected)throw Error("E_REVISION","candidate snapshot does not match its revision");
+      auto chosen=selected=="HEAD"?store.headRevision():selected;
+      if(store.revisionLanguage(chosen)!=languageVersion)throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
+      bundle=store.bundle(chosen);program=loadBundle(bundle,options.root);if(revision(program)!=chosen)throw Error("E_REVISION","candidate snapshot does not match its revision");
     }
     else {program=loadProgram(inside(options.root,entry).string(),options.root);bundle=sourceBundle(program);}
     if(program.entryUnit!=entry)invalid("candidate entry differs from task program: "+id);

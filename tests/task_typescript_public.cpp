@@ -22,10 +22,11 @@ int main(int argc,char **argv)try{
   std::string mode=argv[3],entry=argv[4];
   Program p=mode=="private"?loadTaskPrototype(path.string(),path.parent_path().string()):loadProgram(path.string(),path.parent_path().string(),false);
   if(mode=="historical")p=loadVersionedBundle(sourceBundle(p),path.parent_path().string(),"0.18");
+  if(mode=="retained019")p=loadVersionedBundle(sourceBundle(p),path.parent_path().string(),"0.19");
   if(mode=="ui"){
     auto result=generateWebApp(p,directory.string());std::cout<<json(std::move(result))<<'\n';return 0;
   }
-  if(mode!="emit"&&mode!="test"&&mode!="historical"&&mode!="private")throw Error("E_OPTION","unknown probe mode");
+  if(mode!="emit"&&mode!="test"&&mode!="historical"&&mode!="retained019"&&mode!="private")throw Error("E_OPTION","unknown probe mode");
   auto module=emitTypeScript(p,{{"entry",entry}});
   if(std::filesystem::exists(directory))throw Error("E_EXISTS","public output directory must be new");
   llvm::json::Array sites;

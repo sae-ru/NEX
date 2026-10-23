@@ -12,9 +12,11 @@
 namespace nexrt { struct TaskExecutionLimits; }
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.19";
-inline constexpr const char *taskCandidateLanguageVersion = "0.19";
-enum class SourceLanguage { Language018, Tasks019 };
+inline constexpr const char *languageVersion = "0.20";
+inline constexpr const char *taskCandidateLanguageVersion = "0.20";
+// Append semantic versions: retained ordinal values and archived interpretation
+// must never change when the public compiler default advances.
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020 };
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -152,7 +154,7 @@ struct Program {
   std::vector<Implementation> implementations;
   std::vector<EditorName> editorNames;
   bool traitsPrepared=false;
-  // Task syntax/continuations are shared by public019 and the guarded raw018
+  // Task syntax/continuations are shared by public019/020 and guarded raw018
   // development frontend. sourceLanguage distinguishes their semantic identity.
   bool taskPrototype=false;
   SourceLanguage sourceLanguage=SourceLanguage::Language018;
@@ -174,9 +176,13 @@ struct Program {
   std::string location(const Span &span) const;
 };
 // The checked program's semantic version, separate from the installed public
-// compiler default. Explicit019 candidates must never be persisted as018.
+// compiler default. Historical programs retain their explicit identity.
 const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
+// Select syntax and semantic identity before checking, never by retagging a
+// program already checked under the public default.
+Program parseVersioned(std::string source,std::string path,SourceLanguage language,
+    bool editorNames=false,bool editorDetails=false);
 Program parseLegacy018(std::string source,std::string path,
     bool editorNames=false,bool editorDetails=false);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
@@ -193,7 +199,7 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
 // Explicit versioned recheck; no physical manifest relabel or auto-detection.
-//018 uses the retained legacy parser;019 uses task syntax and lifetime checks.
+//018 uses the retained legacy parser;019/020 keep their own semantic checks.
 Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,
     const std::string &language);
 // Binding-only source syntax for reference projection. Never pass it to a

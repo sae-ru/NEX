@@ -1,3 +1,26 @@
+# Language0.20 and retained019 migration
+
+Current public source is020. Keep the matching019 SDK and a complete graph
+snapshot. Explicit migration rechecks018/019 source with its original parser,
+checker and canonical language, then checks a separate reviewed020 target
+before opening a mutable destination. Known corrupt identities/unknown languages
+fail closed. The new program has a distinct020 revision; original rows/IDs/schema,
+namespace and history remain. A HEAD conflict rolls back and an unchanged recheck
+is idempotent.019 needs no reserved-name renaming; helper effect edits are
+explicit reviewed source changes. Physical manifests/source are never rewritten.
+See [the020 read contract](task-file-reads.md).
+
+The CLI reports origin_language and origin_verified. Retained018/019/020 origins
+are canonical-verified. Known earlier versions without retained parsers remain
+explicit unverified-origin rechecks; do not describe them as certified old hashes.
+Export old revisions with their matching SDK or explicit export support; normal
+current execution never silently reinterprets old source. Source capture is not
+an external filesystem snapshot or a replay permission.
+
+The historical019 procedure below applies to its matching SDK or an explicitly
+selected019 versioned API. Current CLI migration targets020. The genuine018
+reserved-name repairs remain necessary when that older source conflicts.
+
 # Explicit task-language migration
 
 Language0.19 gives checked structured-task programs their own source identity.

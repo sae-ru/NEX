@@ -1,3 +1,10 @@
+(* Language0.20 retains019 syntax and adds semantic whole-file read suspension
+   only in server functions declaring task and fs. Scope/spawn callbacks may be
+   pure, task-only, or exactly server task/fs with caller task/fs authorization.
+   Task callers reject fs-only helper signatures. Callable realm/effect equality
+   stays exact. Explicit018/019 parsing and identities retain their old rules;
+   no new keywords, Expr/Stmt ordinals or canonical fields. See task-file-reads.md. *)
+
 (* Language0.19 adds task_scope, task<T>, channel<T> and effect task.
    Structured operations use ordinary calls; lifetime, callback effect and realm
    checks are semantic. Explicit018 migration preserves old history and IDs.
@@ -14,7 +21,7 @@
 (* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
 (* Project source/static linkage and concrete export roots are external
    nex.build.json metadata, not language syntax or a version migration. *)
-(* NEX 0.19. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.20. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain0.73 native application lifetime adds no syntax or migration. *)
 (* Toolchain0.74 shared native project images are external build metadata;
    language0.16 source grammar and canonical identities are unchanged. *)

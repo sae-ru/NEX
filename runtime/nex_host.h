@@ -2,6 +2,8 @@
 #include "nex_value.h"
 #include <memory>
 #include <functional>
+#include <chrono>
+#include <optional>
 
 namespace nexrt {
 struct Handle;
@@ -43,6 +45,7 @@ public:
   void cancel();
   void setCancellation(std::function<bool()> check);
   void poll(int64_t line=0,bool forceCancellation=true);
+  std::chrono::steady_clock::time_point deadline() const noexcept;
   void track(Handle*);
   void untrack(Handle*);
   ResourceDomain &bindResources(const ResourceDomain &capability);
@@ -52,6 +55,7 @@ Value readHandle(const Handle *handle);
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
 [[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location);
 bool inRequestScope();
+std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline() noexcept;
 void pollHostOperation(int64_t line);
 void registerRuntimeCleanup(void (*cleanup)() noexcept);
 void cleanupRuntimeResources();

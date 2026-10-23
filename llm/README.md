@@ -1,6 +1,7 @@
-Current development source is toolchain0.105/language0.19. Query actual
-source_concurrency before using ordered CPU maps; native threads and serial
-reference/TypeScript are distinct. Full current acceptance remains pending.
+Current development source is toolchain0.111/language0.20. Discover actual
+capabilities before authoring. Read task_file_reads/docs/task-file-reads.md for
+the narrow server task/fs native/reference read subset and explicit019 migration.
+TypeScript/browser filesystem stays unsupported; full current acceptance pending.
 Earlier milestone notes below retain their historical scopes.
 
 Development toolchain0.88/language0.17 adds a **candidate** postfix result

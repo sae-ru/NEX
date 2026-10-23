@@ -2,6 +2,7 @@
 #include "nex_tasks.h"
 #include "nex_task_values.h"
 #include "nex_task_protocol.h"
+#include "nex_files.h"
 #include <span>
 namespace nexrt {
 // A compiler-private ABI. Owned Values survive parking; Handles are only leases
@@ -18,9 +19,15 @@ struct TaskCodeDescriptor {
   TaskFrameDescriptor::Step step;
   const int64_t *kinds,*parameters,*captures;
   int64_t abi,slotCount,parameterCount,captureCount,resultKind;
+  int64_t requirements=0;
 };
-static_assert(sizeof(TaskCodeDescriptor)==72&&offsetof(TaskCodeDescriptor,abi)==32);
-inline constexpr int64_t taskCodeABI=INT64_C(0x4e45585400000001);
+static_assert(sizeof(TaskCodeDescriptor)==80&&offsetof(TaskCodeDescriptor,abi)==32);
+struct TaskFrameHostContext {
+#ifndef _WIN32
+  FileReadGrant fileReads;
+  explicit TaskFrameHostContext(FileReadGrant grant):fileReads(std::move(grant)){}
+#endif
+};
 struct NativeTaskRequest {
   TaskRequestKind operation;
   std::vector<Value> arguments;
@@ -37,13 +44,16 @@ public:
   Value result;
   int64_t expectedResult=-1,returnDestination=-1;
   size_t depth=1;
+  int64_t requirements=0;
+  std::shared_ptr<const TaskFrameHostContext> host;
   std::unique_ptr<NativeTaskFrame> pendingCall;
   std::optional<NativeTaskRequest> pendingRequest;
   std::optional<TaskGroup::Scope> closingScope;
   TaskGroup::Scope parentScope;
   SourceLocation scopeLocation;
   NativeTaskFrame(TaskFrameDescriptor,const std::vector<Value> &arguments);
-  NativeTaskFrame(const TaskCodeDescriptor &,const std::vector<Value> &arguments,const Value &environment);
+  NativeTaskFrame(const TaskCodeDescriptor &,const std::vector<Value> &arguments,const Value &environment,
+      std::shared_ptr<const TaskFrameHostContext> host={});
   Value read(int64_t id,int64_t kind)const;
   void write(int64_t id,Value value,int64_t kind);
   void drop(int64_t id);

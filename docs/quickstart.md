@@ -1,12 +1,9 @@
-Рабочая версия toolchain0.105 использует язык0.19: доступны `?` для result<T>,
-упорядоченный CPU parallel_map и структурированные задачи/каналы. Native task
-applications собираются на macOS/Linux, reference и standalone TypeScript
-исполняют задачи кооперативно. Task IO/debug/profile, binary providers и NEX UI
-интеграция ещё не завершены. Полные проверки текущего выпуска идут.
-Основной установленный проект0.81 остаётся на языке0.16; выбирайте манифест
-для фактически используемого SDK. Эта изолированная копия содержит примеры019.
-Переход018→019 выполняйте [явной миграцией](task-migration.md) с сохранением
-истории, а не заменой поля language.
+Рабочая версия toolchain0.111 использует язык0.20. Помимо структурированных
+задач она добавляет два чтения файлов в server-функциях с явными task/fs.
+Полный прогон и доставка текущей версии проверяются отдельно. Старые019
+проекты требуют явной миграции с сохранением истории и исходного SDK.
+См. [чтение файлов в задачах](task-file-reads.md).
+
 
 # NEX: установка и первый проект
 
@@ -566,3 +563,18 @@ continuations и работает без NEX/LLM; TypeScript используе�
 
 
 The development toolchain0.106 adds [explicit task execution limits](task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.
+
+## Чтение файлов внутри задач (0.20)
+
+Запросите `nex describe --field task_file_reads --json`. В standalone native
+macOS/Linux приложении объявите server `!{task,fs}` и используйте обычные
+`file_read_text`/`file_read_bytes`; вызов приостанавливает задачу до завершения
+чтения. `?` сохраняет границу текущей функции. Для CLI задайте абсолютный
+`NEX_FILES_ROOT` при каждом запуске. Пример — `examples/task-file-reads.nex`;
+полный контракт, ошибки, лимиты и миграция — [в руководстве](task-file-reads.md).
+
+fs-only helper из задачи запрещён с E_EFFECT: проверьте реализацию и явно
+добавьте task/fs. Callback может быть server task/fs только при этих эффектах
+у caller. Запись, streaming, task HTTP, TypeScript/Node/browser filesystem,
+providers и UI task adapters остаются неподдержанными. Архив кода не сохраняет
+содержимое внешних файлов и не даёт replay полномочий читать их.

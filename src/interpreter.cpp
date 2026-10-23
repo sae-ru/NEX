@@ -216,6 +216,8 @@ class Interpreter {
     if(scoped)frames.back().pop_back();
   }
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
+    if(atomRoot&&(f.effects.contains("fs")||f.effects.contains("db")||f.effects.contains("ffi")))
+      throw Error("E_TASK_UNIMPLEMENTED","task atoms cannot execute synchronous resource helpers",f.span);
     if(frames.size()+outerDepth>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
     if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
     frames.emplace_back(1);struct PopFrame {decltype(frames)&stack;~PopFrame(){stack.pop_back();}} pop{frames};
@@ -225,7 +227,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&(!p.taskPrototype||p.sourceLanguage==SourceLanguage::Tasks019))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
@@ -253,13 +255,15 @@ public:
 }
 TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth,const TaskControlPoll *controlPoll){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
+  if(atom&&atom->kind==Expr::Call&&taskFileBuiltin(atom->text))
+    throw Error("E_TASK_UNIMPLEMENTED","file operations cannot enter synchronous task atom evaluation",atom->span);
   return Interpreter(p,limit,true,controlPoll).atom(std::move(atom),values,depth);
 }
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit,const nexrt::TaskExecutionLimits *taskLimits){
   rejectUnloweredTasks(p,"reference execution");
   const auto &function=p.function(entry);
   if(taskLimits&&!nexrt::validTaskExecutionLimits(*taskLimits))throw Error("E_OPTION","invalid task execution limits",function.span);
-  const bool taskExecution=p.sourceLanguage==SourceLanguage::Tasks019&&usesTaskEffects(p,entry);
+  const bool taskExecution=isPublicTaskLanguage(p)&&usesTaskEffects(p,entry);
   if(taskLimits&&!taskExecution)
     throw Error("E_OPTION","task execution limits require a task-effect entry",function.span);
   if(taskExecution){

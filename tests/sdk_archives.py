@@ -39,9 +39,31 @@ class DistributionWorkflow(unittest.TestCase):
             'archive-debug-replay-export', 'scalar-proof', 'authenticated-storage', 'browser')]
         self.assertEqual(len(old['phases']), 12)
         with self.assertRaisesRegex(RuntimeError, 'complete workflow'):acceptance.validate_completed_report(old)
-        for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries'):
+        for name in ('editor-tools', 'traits', 'graph-snapshot-recovery', 'graph-queries', 'structured-task-file-reads'):
             missing = self.report();missing['phases'] = [p for p in missing['phases'] if p['name'] != name]
             with self.subTest(missing=name), self.assertRaises(RuntimeError):acceptance.validate_completed_report(missing)
+
+    def test_public_task_read_sdk_requires_delivery_and_genuine019_migration_evidence(self):
+        current = self.report(); current['doctor'] = {'version':'0.110.0'}
+        with self.assertRaisesRegex(RuntimeError, 'public task file-read delivery'):
+            acceptance.validate_completed_report(current)
+        fields = ('native_reference', 'standalone_without_resources', 'source_only_project',
+                  'source_deleted_package', 'source_deleted_replay')
+        current['evidence'] = {'structured_task_file_reads':{name:True for name in fields}}
+        with self.assertRaisesRegex(RuntimeError, 'genuine019 migration'):
+            acceptance.validate_completed_report(current)
+        current['evidence']['task_file_migration'] = {'ok':True,'genuine019':True,'history_preserved':True}
+        for name in fields:
+            changed = copy.deepcopy(current); changed['evidence']['structured_task_file_reads'][name] = False
+            with self.subTest(delivery=name), self.assertRaisesRegex(RuntimeError, 'public task file-read delivery'):
+                acceptance.validate_completed_report(changed)
+        for name in ('ok', 'genuine019', 'history_preserved'):
+            changed = copy.deepcopy(current); changed['evidence']['task_file_migration'][name] = False
+            with self.subTest(migration=name), self.assertRaisesRegex(RuntimeError, 'genuine019 migration'):
+                acceptance.validate_completed_report(changed)
+        # New public evidence never waives the pre-existing delivery gates.
+        with self.assertRaisesRegex(RuntimeError, 'ordered CPU mapping'):
+            acceptance.validate_completed_report(current)
 
     def test_failed_duplicate_reordered_and_incomplete_workflows_are_rejected(self):
         cases=[]

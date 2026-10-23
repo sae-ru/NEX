@@ -16,20 +16,31 @@ REPO = harness.REPO
 
 
 class Toolchain(harness.ToolchainCase):
-    def test_private_external_completion_descriptor_and_pack_agree(self):
+    def test_external_completion_and_public_file_read_descriptor_and_pack_agree(self):
         descriptor = self.cli('describe')
         pack = json.loads((REPO/'llm/language-pack.json').read_text())
         external = descriptor['task_external_completion']
         self.assertEqual(external, pack['task_external_completion'])
         self.assertEqual(external['status'], 'experimental_private_trusted_host_kernel')
-        for field in ('source_support', 'public_source_async_io', 'source_syntax_changed', 'canonical_formats_changed', 'stable_host_abi'):
+        for field in ('source_support', 'source_syntax_changed', 'canonical_formats_changed', 'stable_host_abi'):
             self.assertIs(external[field], False)
+        self.assertTrue(external['public_source_async_io'])
         self.assertEqual(external['guide'], pack['documents']['task_external_completion'])
         self.assertTrue((REPO/external['guide']).is_file())
         self.assertEqual(self.cli('guide', '--kind', 'task-external')['text'], (REPO/external['guide']).read_text())
         self.assertEqual(external['typescript']['executor_workers'], 1)
-        self.assertFalse(external['file_read_lease']['source_lowering'])
-        self.assertFalse(external['reference']['source_io_lowering'])
+        self.assertTrue(external['file_read_lease']['source_lowering'])
+        self.assertTrue(external['reference']['source_io_lowering'])
+        reads = descriptor['task_file_reads']
+        self.assertEqual(reads, pack['task_file_reads'])
+        self.assertEqual(reads['language'], '0.20')
+        self.assertTrue(reads['source_support'] and reads['reference'] and reads['physical_drain'])
+        self.assertEqual(reads['function_effects'], ['task', 'fs'])
+        self.assertEqual(reads['realm'], 'server')
+        self.assertEqual(reads['guide'], pack['documents']['task_file_reads'])
+        self.assertEqual(self.cli('guide', '--kind', 'task-file-reads')['text'], (REPO/reads['guide']).read_text())
+        for field in ('typescript', 'windows', 'wasm', 'http_task_handlers', 'binary_providers', 'writes', 'streams', 'task_debug_profile'):
+            self.assertFalse(reads[field])
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
         descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())
@@ -239,7 +250,7 @@ test fn branches() -> unit {
 
     def test_pack_and_discovery_match_executable_example(self):
         descriptor = self.cli("describe")
-        self.assertEqual(descriptor["version"], "0.19")
+        self.assertEqual(descriptor["version"], "0.20")
         pack = json.loads((REPO / "llm/language-pack.json").read_text())
         self.assertEqual(pack["language_version"], descriptor["version"])
         self.assertIn("web_ui", descriptor["features"])
@@ -419,11 +430,11 @@ fn main() -> unit !{io} { print(response().message); }
             db.execute("INSERT INTO head VALUES(1,?)", (old,))
         self.assertEqual(self.cli("graph", ok=False)["code"], "E_LANGUAGE_VERSION")
         migrated = self.cli("migrate")
-        self.assertEqual(migrated["language"], "0.19")
+        self.assertEqual(migrated["language"], "0.20")
         self.assertEqual(migrated["declared_original_revision"], old)
         self.assertNotEqual(migrated["revision"], old)
         history = self.cli("history")
-        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.19"})
+        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.20"})
         self.cli("export", "--revision", old, "-o", self.root / "legacy.nex")
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")

@@ -3,11 +3,13 @@
 
 namespace nexrt {
 namespace {
-TaskBody applicationTask(TaskGroup &group,Value,Value closure){
+TaskBody applicationTask(TaskGroup &group,Value,Value closure,const void *context){
   if(closure.tag!=Value::Object||!closure.object||closure.object->kind!=Data::Closure||!closure.object->taskCode)
     throw DataError("E_TASK_STATE","application task descriptor is absent");
   auto &code=*static_cast<const TaskCodeDescriptor*>(closure.object->taskCode);
-  return executeTaskFrame(group,NativeTaskFrame(code,{},closure));
+  if(!context)throw DataError("E_TASK_STATE","application task host context is absent");
+  auto host=*static_cast<const std::shared_ptr<const TaskFrameHostContext>*>(context);
+  return executeTaskFrame(group,NativeTaskFrame(code,{},closure,std::move(host)));
 }
 }
 int64_t executeTaskApplication(const TaskCodeDescriptor &code,SourceLocation location){
@@ -21,11 +23,21 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     // ordinary executable, regardless of whether its entry suspends.
     if(code.parameterCount||code.captureCount||(code.resultKind!=0&&code.resultKind!=4))
       throw DataError("E_ENTRY","task application entry must take no arguments and return i64 or unit");
+    if(code.abi!=taskCodeABI||(code.requirements&~taskCodeRequirementsMask))
+      throw DataError("E_TASK_STATE","invalid task application descriptor ABI/requirements");
     RequestScope request(limits.steps,limits.timeoutMs);
-    TaskGroup group(limits.workers);
+    std::shared_ptr<const TaskFrameHostContext> context;
+#ifndef _WIN32
+    std::unique_ptr<FileScope> files;
+    if(code.requirements&taskCodeImageFileRead){
+      if(!inFileScope())files=std::make_unique<FileScope>(true);
+      context=std::make_shared<TaskFrameHostContext>(captureFileReadGrant(true));
+    }
+#endif
+    TaskGroup group(limits.workers,4096,{},bool(code.requirements&taskCodeImageFileRead));
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;
-    auto root=group.spawn(applicationTask,{},Value(std::move(environment)));
+    auto root=group.spawnWithContext(applicationTask,&context,{},Value(std::move(environment)));
     auto result=group.join(root);
     group.finish();
     if(result.tag!=Value::Integer||(code.resultKind==4&&result.scalar!=0))

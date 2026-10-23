@@ -5,10 +5,15 @@ namespace nex {
 const char *programLanguage(const Program &program){
   switch(program.sourceLanguage){
   case SourceLanguage::Language018:return "0.18";
-  case SourceLanguage::Tasks019:return taskCandidateLanguageVersion;
+  case SourceLanguage::Tasks019:return "0.19";
+  case SourceLanguage::TaskFiles020:return "0.20";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
+bool isPublicTaskLanguage(const Program &program){
+  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020;
+}
+bool supportsTaskFileReads(const Program &program){return program.sourceLanguage==SourceLanguage::TaskFiles020;}
 bool usesTaskEffects(const Program &program,const std::string &entry){
   std::vector<std::string> pending{entry};std::set<std::string> seen;
   while(!pending.empty()){
@@ -41,14 +46,14 @@ bool containsTaskAuthority(const Program &program,const Type &type){
   return visit(type);
 }
 void rejectUnloweredTasks(const Program &program,const char *operation){
-  if(program.taskPrototype&&program.sourceLanguage!=SourceLanguage::Tasks019)throw Error("E_TASK_UNIMPLEMENTED",
+  if(program.taskPrototype&&!isPublicTaskLanguage(program))throw Error("E_TASK_UNIMPLEMENTED",
     std::string(operation)+" requires continuation lowering and an explicit language migration; private task typing is not an executable language0.18 program");
 }
 void rejectUnarchivedTasks(const Program &program,const char *operation){
-  if(program.sourceLanguage==SourceLanguage::Tasks019){
-    if(!program.taskPrototype)throw Error("E_TASK_STATE","language019 candidate requires its checked task frontend");
+  if(isPublicTaskLanguage(program)){
+    if(!program.taskPrototype)throw Error("E_TASK_STATE","public task language requires its checked task frontend");
     for(const auto &function:program.functions)if(!function.checked&&!function.traitSignature)
-      throw Error("E_TASK_STATE","language019 candidate contains an unchecked function",function.span);
+      throw Error("E_TASK_STATE","public task language contains an unchecked function",function.span);
     return;
   }
   rejectUnloweredTasks(program,operation);

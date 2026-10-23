@@ -4,6 +4,9 @@
 
 #ifndef _WIN32
 namespace nexrt {
+inline bool ordinaryTaskFileReadError(const std::string &code){
+  return code=="CAPABILITY"||code=="NOT_FOUND"||code=="PERMISSION"||code=="VALIDATION"||code=="LIMIT"||code=="E_FILE"||code=="E_UTF8";
+}
 // Experimental trusted-host adapter. It does not enable a source operation or
 // supply a grant: capture must run on the explicitly authorized coordinator.
 class PreparedTaskFileRead {
@@ -39,19 +42,25 @@ public:
   Value admit(TaskExternalResult result)const {
     // Revocation can win after the last worker poll or before mailbox delivery.
     // This check and all source Value construction belong to the coordinator.
-    lease.check();
-    if(result.errorCode=="E_LIMIT"||result.errorCode=="E_MEMORY"||result.errorCode=="E_TIMEOUT"||result.errorCode=="E_CANCELLED")
+    validateTaskExternalResult(result,reservation,TextFiles::byteLimit);
+    if(result.errorCode=="E_CANCELLED")
       throw DataError(result.errorCode,result.errorMessage);
-    if(!result.errorCode.empty())return failure(std::move(result.errorCode),std::move(result.errorMessage));
+    lease.check();
+    if(!result.errorCode.empty()){
+      if(!ordinaryTaskFileReadError(result.errorCode))throw DataError("E_TASK_VALUE","unexpected file read diagnostic");
+      auto value=failure(std::move(result.errorCode),std::move(result.errorMessage));lease.check();return value;
+    }
     if(result.bytes.size()>TextFiles::byteLimit)throw DataError("E_TASK_VALUE","external read returned an oversized payload");
     try{
-      if(text)return success(Value(string(std::string(result.bytes.begin(),result.bytes.end()))));
+      Value value;
+      if(text)value=success(Value(string(std::string(result.bytes.begin(),result.bytes.end()))));
       // Published source storage owns only its actual bytes. The worker's
       // maximum-size read reservation need not follow a tiny source value.
-      return success(Value(bytes(ByteBuffer::copy(result.bytes))));
+      else value=success(Value(bytes(ByteBuffer::copy(result.bytes))));
+      lease.check();return value;
     }catch(const DataError &error){
       if(error.code!="E_UTF8")throw;
-      return failure(error.code,error.what());
+      auto value=failure(error.code,error.what());lease.check();return value;
     }
   }
 };

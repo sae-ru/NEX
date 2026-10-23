@@ -30,7 +30,7 @@ ACCEPTANCE_PHASES = (
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
     'string-ranges', 'binary-values', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
-    'archive-debug-replay-export', 'scalar-proof', 'traits',
+    'structured-task-file-reads', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
 
@@ -138,6 +138,15 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 110, 0):
+        reads = report.get('evidence', {}).get('structured_task_file_reads', {})
+        require(all(reads.get(key) is True for key in ('native_reference', 'standalone_without_resources',
+                'source_only_project', 'source_deleted_package', 'source_deleted_replay')),
+                'SDK acceptance lacks actual public task file-read delivery evidence')
+        migration = report.get('evidence', {}).get('task_file_migration', {})
+        require(migration.get('ok') is True and migration.get('genuine019') is True and
+                migration.get('history_preserved') is True,
+                'SDK acceptance lacks genuine019 migration and retained history evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 92, 0):
         cpu = report.get('evidence', {}).get('cpu_mapping', {})
         require(all(cpu.get(key) is True for key in ('native_reference', 'typescript',
@@ -297,7 +306,7 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     # Source commands without a deeper manifest must remain inside this owned
     # evidence project, even when --output is below another NEX workspace.
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'acceptance-scope.nex'})+'\n')
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()
@@ -1070,6 +1079,104 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
             'native_pool_workers':2,'source_deleted':True,'standalone_without_resources':str(standalone),
             'launcher_lowered_limits':True,'launcher_raise_rejected':True,'lowered_budget_enforced':True,
             'identical_step_thresholds':False}
+
+    def structured_task_file_reads():
+        from sdk_task_file_migration import check_installed_task_migration
+        descriptor = state['descriptor']['task_file_reads']
+        pack = json.loads((resources/'llm/language-pack.json').read_text())
+        require(descriptor == pack['task_file_reads'] and descriptor['source_support'] and
+                descriptor['language'] == report['language'] == '0.20' and not descriptor['typescript'],
+                'installed task file-read descriptor/pack differs')
+        report['evidence']['task_file_migration'] = check_installed_task_migration(cli, root, resources)
+        directory = root/'structured-task-file-project'
+        (directory/'app').mkdir(parents=True)
+        (directory/'core').mkdir()
+        data = root/'structured-task-file-inputs'
+        data.mkdir()
+        (data/'text').write_bytes('A🧠\0B'.encode())
+        (data/'bytes').write_bytes(b'A\0\xff')
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+            'language':report['language'],'entry':'app/main.nex'}))
+        (directory/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1',
+            'default_configuration':'release','configurations':{'release':{'profile':'release','target':'native',
+                'task_limits':{'steps':2000000,'timeout_ms':10000,'workers':2}}},
+            'components':{'core':{'kind':'source','root':'core','entry':'core/read.nex'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'source'}}}}))
+        (directory/'core/read.nex').write_text('''module installed_task_files::core;
+pub server fn count(path:str)->result<i64> !{task,fs}{
+ let text:str=file_read_text(path)?;task_yield();return ok(len(text));
+}
+''')
+        (directory/'app/main.nex').write_text('''module installed_task_files::app;
+import "../core/read.nex" as core;
+server fn solve()->result<i64> !{task,fs}{
+ return with_tasks(2,server fn(s:task_scope)->result<i64> !{task,fs}{
+  let child:task<result<i64>>=task_spawn(s,server fn()->result<i64> !{task,fs}{return core::count("text");});
+  let binary:bytes=file_read_bytes("bytes")?;
+  let count:i64=task_wait(child)?;return ok(count+len(binary));
+ });
+}
+server fn main()->unit !{task,fs,io}{print(unwrap(solve()));}
+server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_code(core::count("missing"))=="NOT_FOUND");}
+''')
+        previous = {key:environment.get(key) for key in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_RESOURCE_DIR')}
+        environment['NEX_FILES_ROOT'] = str(data)
+        environment.pop('NEX_FILES_WRITE',None)
+        try:
+            revision = cli('check',cwd=directory)['revision']
+            require(cli('eval',cwd=directory)['stdout']=='7\n','installed reference task read differs')
+            require(cli('run',cwd=directory)['stdout']=='7\n','installed native task read differs')
+            tests = cli('test',cwd=directory)
+            require(tests['tests'] and all(test['native'] and test['ok'] for test in tests['tests']),
+                    'installed read tests did not compare native/reference')
+            built = cli('build','--profile','release',cwd=directory)
+            standalone = root/'task-file-read-standalone'
+            shutil.copy2(built['executable'],standalone)
+            source = directory/'app/main.nex'; hidden = directory/'app/main.hidden'
+            source.rename(hidden)
+            try:
+                environment['NEX_RESOURCE_DIR'] = str(root/'absent-task-file-resources')
+                require(run([standalone],cwd=root)=='7\n','copied task read executable needs compiler resources')
+                environment.pop('NEX_FILES_ROOT')
+                run([standalone],cwd=root,expected_success=False)
+                require('E_RESULT' in Path(report['commands'][-1]['stderr']).read_text(),
+                        'compiled task executable retained an implicit root grant')
+            finally:
+                hidden.rename(source)
+                environment['NEX_FILES_ROOT'] = str(data)
+                environment['NEX_RESOURCE_DIR'] = str(resources)
+            action = cli('project','--kind','run','--component','app',cwd=directory)
+            require(action['observation']['stdout']=='7\n','source-only project task read differs')
+            deployment = root/'task-file-read-package'
+            packaged = cli('project','--kind','package','--component','app','--directory',deployment,cwd=directory,timeout=300)
+            require(not packaged['application_execution'],'packaging executed task file reads')
+            criteria = cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
+            criteria['checks'] = [{'id':'read','program':'app','kind':'run','target':'native',
+                'configuration':'release','entry':'installed_task_files::app::main',
+                'expect':{'stdout':'7\n','exit_code':0},'timeout_seconds':30}]
+            criteria['requirements'] = [{'id':'read','text':'Read explicit external inputs through captured source-only task project',
+                'targets':['native'],'checks':['read'],'bindings':[{'program':'app','kind':'function','symbol':'installed_task_files::app::main'}]}]
+            task = directory/'task.json';task.write_text(json.dumps(criteria))
+            checked = cli('task',task,'--kind','check',cwd=directory)
+            accepted = cli('task',task,'--kind','run','--task-hash',checked['task_hash'],
+                '--directory',root/'task-file-read-capture',cwd=directory,timeout=300)
+            require(accepted['ok'],'source-only task read capture failed')
+            receipt = Path(accepted['output'])
+            shutil.rmtree(directory)
+            environment['NEX_RESOURCE_DIR'] = str(root/'absent-task-file-resources')
+            require(run([deployment/'apps/app/bin/app'],cwd=root)=='7\n','packaged read needs deleted project')
+            environment['NEX_RESOURCE_DIR'] = str(resources)
+            replay = cli('task',receipt,'--kind','replay','--directory',root/'task-file-read-replay',timeout=300)
+            require(replay['ok'] and replay['programs']==accepted['programs'],'source-deleted task read replay differs')
+            report['evidence']['structured_task_file_reads'] = {'native_reference':True,'revision':revision,
+                'standalone_without_resources':True,'source_only_project':True,'source_deleted_package':True,
+                'source_deleted_replay':True,'receipt':str(receipt),'replay':replay['output'],
+                'external_inputs_retained':True,'external_filesystem_snapshot_claim':False,
+                'operator_supplied_root_required':True,'typescript_filesystem':False}
+        finally:
+            for key,value in previous.items():
+                if value is None:environment.pop(key,None)
+                else:environment[key]=value
 
     def graph_snapshot_recovery():
         original = root / 'snapshot-original'
@@ -2760,6 +2867,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
                 ('binary-values', binary_values), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
+                ('structured-task-file-reads', structured_task_file_reads),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
         require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,

@@ -87,12 +87,18 @@ public:
   // Factories take snapshots by value, never borrowed Handle pointers. Bodies
   // may retain Value objects across suspension; raw runtime handles may not.
   using Factory=TaskBody (*)(TaskGroup&,Value,Value);
-  explicit TaskGroup(size_t workers=4,size_t maximumTasks=4096,TaskExternalLimits externalLimits={});
+  // Invoked synchronously outside scheduler locks, before enqueue. The caller
+  // context is borrowed only for this invocation; a coroutine must copy its
+  // typed host state into parameters. No raw context is saved in a Job.
+  using ContextFactory=TaskBody (*)(TaskGroup&,Value,Value,const void*);
+  explicit TaskGroup(size_t workers=4,size_t maximumTasks=4096,TaskExternalLimits externalLimits={},bool sourceFileReadFailures=false);
   ~TaskGroup();
   TaskGroup(const TaskGroup&)=delete;
   TaskGroup &operator=(const TaskGroup&)=delete;
   Ticket spawn(Factory factory,Value input={},Value captures={});
   Ticket spawn(const Scope &,Factory,Value input={},Value captures={});
+  Ticket spawnWithContext(ContextFactory,const void*,Value input={},Value captures={});
+  Ticket spawnWithContext(const Scope &,ContextFactory,const void*,Value input={},Value captures={});
   Scope openScope(size_t workers);
   Scope currentScope()const;
   Scope currentScopeOrEmpty()const;
@@ -114,6 +120,10 @@ public:
   TaskExternalTicket submitExternal(std::shared_ptr<TaskExternalOperation>,size_t reservedBytes);
   ExternalAwaiter awaitExternal(const TaskExternalTicket &);
   TaskExternalStats externalStats()const;
+  // Public020 fixed read bridge only: select a resource fatal before physical
+  // drain and suppress further source execution. Private/019 groups keep their
+  // existing policy unless explicitly constructed for this bridge.
+  void failFileRead(std::exception_ptr);
   // Drain, join OS workers, destroy coroutine frames and surface unobserved
   // failures. Immutable results remain joinable while this group exists.
   void finish();
@@ -121,7 +131,7 @@ private:
   size_t taskIndex(const Ticket&)const;
   size_t channelIndex(const Channel&)const;
   size_t scopeIndex(const Scope&)const;
-  Ticket spawnIn(size_t,Factory,Value,Value);
+  Ticket spawnIn(size_t,Factory,Value,Value,ContextFactory=nullptr,const void*context=nullptr);
   Channel channelIn(size_t,size_t);
 };
 }

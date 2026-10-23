@@ -2,13 +2,13 @@
 
 Development toolchain0.109 / language0.19 introduces experimental trusted-host
 completion kernels in working116, retaining the verified115 transport. Discover their exact scope with
-`nex describe --field task_external_completion --json`. Public source asynchronous
-IO remains unsupported. There is no new source operation, effect, syntax,
-canonical format or history migration. Existing task effects, result propagation,
+`nex describe --field task_external_completion --json`. This private kernel itself is not a source API. Working117/toolchain0.110
+connects exactly two source reads in language020; see [task file reads](task-file-reads.md).
+The underlying private transport adds no syntax or public host ABI. Existing task effects, result propagation,
 realm boundaries and the [task execution limits](task-limits.md) still apply.
 
 Current116 full regression, installed-SDK and platform acceptance remain pending.
-Frozen115 passed122 regression groups; its matching installed SDK is being checked.
+Frozen115 passed122 regression groups and its matching installed SDK24/438.
 The preceding113 full gate passed118 tests and its matching installed SDK
 passed24 phases/438 commands. Earlier receipts and individual kernel checks
 do not establish116
@@ -127,7 +127,8 @@ ordinary yield. A returned operation parks that AST continuation until physical
 retirement. The coordinator's `admit` hook may validate the host result/lease;
 the source response is always unit. This is not a general typed source-I/O
 binding, and it does not widen fs/db/ffi effects or admit file-bearing source
-values. Without this explicitly supplied host, ordinary evaluation is unchanged.
+values. The020 fixed typed read adapter is separate and does not call this
+unit hook; reads do not require a synthetic host parameter.
 
 ## TypeScript trusted-host bridge
 
@@ -206,3 +207,5 @@ allocator metadata are outside the declared retained-payload bound.
 This foundation adds no source fs lowering, callback permission or language
 semantics. Public task/fs integration requires a separate explicit version and
 history-preserving migration; language0.19 keeps its existing boundaries.
+
+The preceding private116 foundation retains019 semantics. Public117 uses a separate020 identity and explicit019 migration; its current acceptance is pending.

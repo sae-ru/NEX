@@ -72,6 +72,8 @@ FileReadGrant captureFileReadGrant(bool environmentAllowed=true);
 #endif
 // An explicit host scope overrides the process environment. Native HTTP calls
 // do not inherit an environment capability unless the trusted host grants one.
+// Host-only lexical authority inspection; this neither grants nor captures it.
+bool inFileScope() noexcept;
 class FileScope {
   struct Impl;
   std::unique_ptr<Impl> impl;

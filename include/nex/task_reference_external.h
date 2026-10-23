@@ -38,6 +38,9 @@ public:
   // a still-running lease. Only this creating coordinator may use the API.
   void close();
   void wait();
+  //020 coordinator controls may be callback-driven rather than stop_token.
+  // Wake to poll them without spinning; sealed physical drain stays blocking.
+  void waitForControl(std::chrono::milliseconds maximumPause);
   void drain();
   TaskReferenceExternalStats stats()const;
 };

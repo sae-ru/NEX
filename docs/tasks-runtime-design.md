@@ -1,3 +1,14 @@
+# Current020 file-read extension
+
+Working117/toolchain0.110 adds exactly file_read_text/file_read_bytes suspension
+in actual server task/fs functions, with explicit019 history-preserving migration.
+Native macOS/Linux/source-only projects and independent reference use a root
+FileReadGrant and physical completion fences; TypeScript/browser filesystem
+remains unsupported. Callback/effect rules, first-fatal priority, quotas and
+current pending acceptance are specified in [task file reads](task-file-reads.md).
+This does not enable broader IO/debug/profile/providers/UI. The development
+stages below retain their original019/private018 scopes and acceptance limits.
+
 # Public019 integration
 
 Language0.19 now uses the checked task frontend for ordinary source programs.

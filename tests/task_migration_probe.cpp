@@ -28,11 +28,12 @@ int main(int argc,char **argv)try{
   if(revision(roundtrip)!=rev)throw Error("E_REVISION","versioned archive failed its semantic roundtrip");
   llvm::json::Object result{{"schema","nex.private-task-migration/1"},{"ok",true},
     {"language",programLanguage(program)},{"installed_language",languageVersion},
-    {"public_source_tasks",language==taskCandidateLanguageVersion},{"revision",rev},{"roundtrip",true},
+    {"public_source_tasks",isPublicTaskLanguage(program)},{"supports_task_file_reads",supportsTaskFileReads(program)},
+    {"revision",rev},{"roundtrip",true},
     {"source_hash",hash(json(archive,false))},{"lock",dependencyLock(program)}};
   if(mode=="run-reference"){
     auto entry=request->getString("entry");auto selected=entry?entry->str():"main";
-    if(language==taskCandidateLanguageVersion){
+    if(isPublicTaskLanguage(program)){
       auto evaluated=evaluateTaskReference(program,selected);
       result["representation"]=nexrt::representation(evaluated.value);result["stdout"]=evaluated.output;
     }else{
@@ -42,10 +43,16 @@ int main(int argc,char **argv)try{
   if(mode=="migrate"){
     auto directory=required(*request,"store_directory"),expected=required(*request,"expected_head");
     if(expected.empty())throw Error("E_OPTION","migration requires an explicit expected HEAD");
-    Store store(directory);std::string origin;
+    std::string origin;
     if(auto original=request->getString("original_revision")){
-      origin=original->str();if(store.revisionLanguage(origin)!="0.18")throw Error("E_LANGUAGE_VERSION","this migration origin must be a retained018 revision");
+      origin=original->str();Store retained(directory,StoreOpenMode::ReadOnly);
+      auto oldLanguage=retained.revisionLanguage(origin);
+      if(oldLanguage!="0.18"&&oldLanguage!="0.19"&&oldLanguage!="0.20")throw Error("E_LANGUAGE_VERSION","migration probe requires an explicit retained018,019 or020 origin");
+      try{if(revision(loadVersionedBundle(retained.bundle(origin),directory,oldLanguage))!=origin)
+        throw Error("E_REVISION","retained origin canonical revision differs");}
+      catch(const Error &error){throw Error("E_REVISION",std::string("invalid retained migration origin: ")+error.what(),error.span);}
     }
+    Store store(directory);
     auto saved=store.save(program,expected,true,{"migrate","private versioned source recheck","","",hash(json(*bundle,false))});
     if(saved!=rev||store.revisionLanguage(saved)!=language||revision(loadVersionedBundle(store.bundle(saved),directory,language))!=saved)
       throw Error("E_REVISION","stored versioned program failed its roundtrip");

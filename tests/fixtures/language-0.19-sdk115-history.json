@@ -1,0 +1,113 @@
+{
+  "schema": "nex.language-019-migration-fixture/1",
+  "language": "0.19",
+  "sdk": {
+    "toolchain": "0.108.0",
+    "binary_sha256": "a327d02e7f0b668962fdece6709cb7d0b91ef4b4b80abdc5e79802c6e8c2b464",
+    "resources_sha256": "cd50321ead3ad170ec8529c68f3622f119ab8a02a3769955ce4cee9356d5a1af",
+    "resource_files": 595,
+    "acceptance_report_sha256": "2e64ed851b0e67e393469bc7183f0d2f01a42769f64816b78cde872c2dc52277",
+    "acceptance_ok": true,
+    "source_manifest_sha256": "29bca51d3b6811dfa6f4fa2078e42a2894aaa280440fd7d8399123eac6bea928"
+  },
+  "origin": "/Users/sae/projects/NEX/build/sdk-115-external-ownership-acceptance-v1/moved-graph-snapshot/graph.db",
+  "database_sha256": "24d2d0148e3ebd14eb17cc427f3193143846edc87e77629f8238fdbd083b8c3d",
+  "sql_sha256": "37b190db84cb8305b867cee383eb7233e124b1aa692b8f7e69876a8903276de8",
+  "head": "a8bb6eb4cab0b4199e24ae5dd6e70c50b720b6335960d96f71adb89b3562eb9f",
+  "metadata": {
+    "schema": "4",
+    "change_base_revision": "",
+    "identity_schema": "1",
+    "identity_namespace": "7ac0817f74f82567c8327428576c3119"
+  },
+  "tables": {
+    "change_journal": 2,
+    "declaration_ids": 1,
+    "declaration_versions": 2,
+    "edges": 4,
+    "graph_edges": 10,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 2,
+    "metadata": 4,
+    "node_ids": 3,
+    "nodes": 6,
+    "operation_functions": 6,
+    "operation_ids": 13,
+    "operation_versions": 26,
+    "revisions": 2,
+    "task_runs": 0
+  },
+  "ddl_sha256": "99e8f255b2a2bfed4fa5e80511d5459bbfc58c4516574cb1785fedc98ec1bfe9",
+  "revisions": [
+    {
+      "revision": "8008fa3e6f3358b775cc0f024b943c38d9924dc2feb4ef5df0bca8e4f8e63dee",
+      "language": "0.19",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module sdk_snapshot;fn value()->i64{return 41;}fn main()->unit!{io}{print(value());}test fn retains_value()->unit{assert(value()>=41);}"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stored_source_sha256": "478bc6d5ae50feb14e88665e27feee4ecfdd2fe75ec9dab2472c61e20b5ba226"
+    },
+    {
+      "revision": "a8bb6eb4cab0b4199e24ae5dd6e70c50b720b6335960d96f71adb89b3562eb9f",
+      "language": "0.19",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module sdk_snapshot;fn value()->i64{return 42;}\nfn main()->unit!{io}{print(value());}test fn retains_value()->unit{assert(value()>=41);}"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stored_source_sha256": "65beb0c79d7e7803d4ee7923ed693038d6c4bb124e92ba3f70d0f3bfd298468d"
+    }
+  ],
+  "physical_files": {},
+  "snapshot": {
+    "compiler_build": "06c889495f75b34d1381e43d03905e4f19a2d188d695ca8aaa4418df30548c69",
+    "contents": [
+      "graph_database",
+      "archived_sources",
+      "local_identities",
+      "identity_aliases",
+      "change_journal",
+      "task_run_index"
+    ],
+    "created": "2026-10-22T23:38:47Z",
+    "database": {
+      "bytes": 172032,
+      "file": "graph.db",
+      "sha256": "24d2d0148e3ebd14eb17cc427f3193143846edc87e77629f8238fdbd083b8c3d"
+    },
+    "external_artifacts_included": false,
+    "schema": "nex.graph-snapshot/1",
+    "state": {
+      "graph_schema": 4,
+      "head": "a8bb6eb4cab0b4199e24ae5dd6e70c50b720b6335960d96f71adb89b3562eb9f",
+      "head_language": "0.19",
+      "namespace": "7ac0817f74f82567c8327428576c3119",
+      "table_counts": {
+        "change_journal": 2,
+        "declaration_ids": 1,
+        "declaration_versions": 2,
+        "edges": 4,
+        "graph_edges": 10,
+        "head": 1,
+        "identity_links": 0,
+        "identity_revisions": 2,
+        "metadata": 4,
+        "node_ids": 3,
+        "nodes": 6,
+        "operation_functions": 6,
+        "operation_ids": 13,
+        "operation_versions": 26,
+        "revisions": 2,
+        "task_runs": 0
+      }
+    },
+    "toolchain": "0.108.0"
+  }
+}

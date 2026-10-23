@@ -80,7 +80,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current0.19. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Explicit declared version; current0.20. Old archived source requires matching SDK or explicit recheck/migration. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |
@@ -114,3 +114,13 @@ type names. Retained018 bundles use the original parser and canonical hashes;
 public019 recheck creates a new revision while preserving old rows/IDs. Conflicting
 declarations need an explicit reviewed source repair. The physical manifest is
 not automatically rewritten. See [the migration procedure](task-migration.md).
+
+## Language0.20 task file reads
+
+The two read builtins suspend only in actual server task/fs functions.019 is
+rechecked under its original rules before a separate020 migration target.
+Callable realm/effects remain exact; fs-only helpers require reviewed task/fs
+declarations before task use. All historical rows/IDs/schema remain unchanged;
+program/14 includes actual language and therefore gives distinct revisions.
+Migration preflight precedes mutable destination access. See [migration](task-migration.md)
+and [the exact source/target boundary](task-file-reads.md).

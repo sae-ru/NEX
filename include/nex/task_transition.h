@@ -18,4 +18,13 @@ struct TaskTransition {
   nexrt::Value value;Span span;Type result;
   uint64_t ticket=0;size_t callDepth=0,pc=0;
 };
+// Existing whole-file calls use a distinct typed host boundary in020; these
+// are not additional scheduling intrinsics or a general host-operation API.
+inline bool taskFileReadOperation(const std::string &operation){
+  return operation=="file_read_text"||operation=="file_read_bytes";
+}
+inline bool taskFileBuiltin(const std::string &operation){
+  return taskFileReadOperation(operation)||operation=="file_write_text"||
+    operation=="file_write_bytes"||operation=="file"||streamFileBuiltins().contains(operation);
+}
 }

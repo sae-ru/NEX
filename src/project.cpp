@@ -20,8 +20,18 @@ void sql(sqlite3 *db,const char *text){char *message=nullptr;if(sqlite3_exec(db,
 std::string head(sqlite3 *db){Statement q(db,"SELECT revision FROM head WHERE id=1");return q.row()?q.text(0):"";}
 std::string nodeId(sqlite3 *db,const std::string &module,const std::string &name){Statement q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,module);q.bind(2,name);return q.row()?q.text(0):"";}
 }
-struct Store::Impl{sqlite3 *db=nullptr;~Impl(){if(db)sqlite3_close(db);}};
-Store::Store(const std::filesystem::path &directory):impl(std::make_unique<Impl>()) {
+struct Store::Impl{sqlite3 *db=nullptr;bool legacyLanguage=false;~Impl(){if(db)sqlite3_close(db);}};
+Store::Store(const std::filesystem::path &directory,StoreOpenMode mode):impl(std::make_unique<Impl>()) {
+  if(mode==StoreOpenMode::ReadOnly){
+    if(sqlite3_open_v2((directory/"graph.db").string().c_str(),&impl->db,SQLITE_OPEN_READONLY,nullptr)!=SQLITE_OK)
+      throw Error("E_STORE","cannot open existing graph database read-only");
+    sqlite3_busy_timeout(impl->db,5000);
+    Statement q(impl->db,"SELECT value FROM metadata WHERE key='schema'");
+    if(!q.row()||(q.text(0)!="1"&&q.text(0)!="2"&&q.text(0)!="3"&&q.text(0)!="4"))
+      throw Error("E_SCHEMA","unsupported graph database schema");
+    impl->legacyLanguage=q.text(0)=="1";
+    return;
+  }
   std::filesystem::create_directories(directory);
   if(sqlite3_open((directory/"graph.db").string().c_str(),&impl->db)!=SQLITE_OK)throw Error("E_STORE","cannot open graph database");
   sqlite3_busy_timeout(impl->db,5000);
@@ -159,9 +169,15 @@ std::string Store::source(const std::string &rev) {
 }
 llvm::json::Value Store::bundle(const std::string &rev){
   std::string text,language;
-  {Statement q(impl->db,"SELECT source,language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);if(!q.row())throw Error("E_REVISION","revision not found; run nex check first");text=q.text(0);language=q.text(1);}
-  if(language=="0.1"||language=="0.2")return llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",text}}}};
-  auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_STORE",llvm::toString(parsed.takeError()));return std::move(*parsed);
+  {Statement q(impl->db,impl->legacyLanguage?"SELECT source FROM revisions WHERE hash=?":"SELECT source,language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);if(!q.row())throw Error("E_REVISION","revision not found; run nex check first");text=q.text(0);language=impl->legacyLanguage?"0.1":q.text(1);}
+  if(language=="0.1"||language=="0.2"){
+    auto structured=llvm::json::parse(text);
+    if(structured){if(auto object=structured->getAsObject();object&&object->getString("schema")=="nex.sources/1")
+      throw Error("E_REVISION","stored legacy language contradicts its structured source bundle");}
+    else llvm::consumeError(structured.takeError());
+    return llvm::json::Object{{"schema","nex.sources/1"},{"entry","main.nex"},{"files",llvm::json::Object{{"main.nex",text}}}};
+  }
+  auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_REVISION",llvm::toString(parsed.takeError()));return std::move(*parsed);
 }
 std::string Store::headRevision(){return head(impl->db);}
 void Store::recordTask(const std::string &id,const std::string &task,const std::string &taskHash,const std::string &status,const std::string &report,const std::string &reportHash){
@@ -174,8 +190,12 @@ llvm::json::Value Store::taskHistory(const std::string &task,unsigned limit){
   return llvm::json::Object{{"schema","nex.task-history/1"},{"task",task},{"runs",std::move(rows)}};
 }
 std::string Store::revisionLanguage(const std::string &rev){
+  if(impl->legacyLanguage){if(!containsRevision(rev))throw Error("E_REVISION","revision not found");return "0.1";}
   Statement q(impl->db,"SELECT language FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);
   if(!q.row())throw Error("E_REVISION","revision not found");return q.text(0);
+}
+bool Store::containsRevision(const std::string &rev){
+  Statement q(impl->db,"SELECT 1 FROM revisions WHERE hash=?");q.bind(1,rev=="HEAD"?head(impl->db):rev);return q.row();
 }
 std::filesystem::path projectRoot(std::filesystem::path start) {
   start=std::filesystem::absolute(start);

@@ -76,7 +76,7 @@ import "../core/main.nex" as c;
 server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
 server test fn granted()->unit !{ffi}{assert(c::exported("test")=="test");}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'measured':{'profile':'profile'}},'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
@@ -112,7 +112,7 @@ server fn main()->unit !{ffi,io}{print(exported("ok"));}
 import "../core/main.nex" as c;
 server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'}},'components':{
                 'core':{'kind':'static_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
@@ -266,7 +266,7 @@ server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
     def test_migration_preserves_genuine_014_history_and_ordinary_identifier_names(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text());self.source(fixture['source']);old=self.historical_store('0.14')['revision'];self.file.unlink()
         with sqlite3.connect(self.root/'.nex/graph.db') as db:ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall();source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
-        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.19');self.assertNotEqual(current['revision'],old)
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.20');self.assertNotEqual(current['revision'],old)
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],fixture['stdout']);self.assertEqual(self.cli('run','--revision','HEAD',timeout=120)['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids);self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source);self.assertEqual(db.execute('SELECT language FROM revisions WHERE hash=?',(old,)).fetchone()[0],'0.14')

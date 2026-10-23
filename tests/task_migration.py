@@ -207,6 +207,57 @@ class MigrationChecks:
         assert data['changes']['head'] == revision and data['materialized'] is False
         assert data['identities']['namespace'] == graph['identity_namespace']
 
+    def current_public(self, project, database, before, physical, candidate, repaired, original, sql_bytes):
+        """Keep the retained019 proof distinct from a new current CLI recheck."""
+        old_head = before['tables']['head'][0][1]
+        for operation in ('graph', 'eval'):
+            rejected = self.cli('retained019-' + operation + '-requires-migration', operation,
+                                '--revision', old_head, cwd=project, ok=False)
+            assert rejected['code'] == 'E_LANGUAGE_VERSION', rejected
+        assert database_state(database) == before
+        old_export = self.output / 'retained019-export'
+        self.cli('retained019-export', 'export', '--revision', old_head, '--directory', old_export, cwd=project)
+        assert json.loads((old_export/'nex.json').read_text())['language'] == TASK_LANGUAGE
+        rejected = self.cli('retained019-physical-check', 'check', cwd=old_export, ok=False)
+        assert rejected['code'] == 'E_LANGUAGE_VERSION' and not (old_export/'.nex').exists()
+        current = self.cli('public-current-migrate-retained019', 'migrate', '--revision', old_head, cwd=project)
+        selected = current['revision']; language = self.installed_language
+        assert current['language'] == language and current['origin_language'] == TASK_LANGUAGE
+        assert current['origin_verified'] and selected != old_head and not current['materialized']
+        after = database_state(database); retained_rows(before, after, selected)
+        graph = self.cli('public-current-selected-graph', 'graph', '--revision', selected, cwd=project)
+        assert graph['language'] == language and graph['revision'] == selected and graph['bundle'] == candidate
+        context = self.cli('public-current-selected-context', 'context', '--symbol', 'legacy_task_names::answer',
+                           '--revision', selected, cwd=project)
+        assert context['language'] == language and context['revision'] == selected
+        assert self.cli('public-current-selected-eval', 'eval', '--revision', selected, cwd=project)['stdout'] == '43\n'
+        exported = self.output / 'public-current-export'
+        self.cli('public-current-export', 'export', '--revision', selected, '--directory', exported, cwd=project)
+        assert json.loads((exported/'nex.json').read_text())['language'] == language
+        assert (exported/'main.nex').read_text() == repaired
+        assert self.cli('public-current-export-check', 'check', cwd=exported)['revision'] == selected
+        self.cli('public-current-export-tests', 'test', cwd=exported)
+        self.cli('public-current-idempotent', 'migrate', '--revision', selected, cwd=project)
+        assert database_state(database) == after
+        for name, content in physical.items(): assert (project/name).read_bytes() == content
+        task_project = self.output/'modular-task-channel'
+        write_json(task_project/'nex.json', {'schema':'nex.project/1','language':TASK_LANGUAGE,'entry':'main.nex'})
+        task = self.cli('public-current-task-migrate', 'migrate', cwd=task_project)
+        assert task['origin_verified'] and task['origin_language'] == TASK_LANGUAGE
+        assert self.cli('public-current-task-eval', 'eval', '--revision', task['revision'], cwd=task_project)['value'] == 42
+        public = self.output/'public-current-from018'; (public/'.nex').mkdir(parents=True)
+        with sqlite3.connect(public/'.nex/graph.db') as db: db.executescript(sql_bytes.decode())
+        for name, content in physical.items(): (public/name).write_bytes(content)
+        start = database_state(public/'.nex/graph.db')
+        reviewed = copy.deepcopy(original); reviewed['source'] = repaired; reviewed['bundle'] = candidate
+        path = self.output/'reviewed-current-from018.graph.json'; write_json(path, reviewed)
+        migrated = self.cli('public-current-reviewed018', 'migrate', path, cwd=public)
+        assert migrated['revision'] == selected and migrated['origin_verified']
+        assert migrated['origin_language'] == OLD_LANGUAGE and migrated['language'] == language
+        retained_rows(start, database_state(public/'.nex/graph.db'), selected)
+        self.checks.append('retained019_remains_explicit_and_public_current_recheck_preserves018_019_history')
+        self.checks.append('public_current_selected_graph_context_eval_export_test_and_genuine018_migrate')
+
     def run(self):
         descriptor = self.cli('describe', 'describe')
         self.installed_language = descriptor['version']
@@ -411,6 +462,11 @@ class MigrationChecks:
             for path, text in sources['files'].items():
                 assert (target / path).read_text() == text
         self.checks.append('real019_tasks_modules_generics_captures_scopes_futures_channels_cancel_roundtrip')
+
+        if self.installed_language != TASK_LANGUAGE:
+            self.current_public(project, database, after, physical, candidate, repaired, original_graph, sql_bytes)
+            assert metadata_path.read_bytes() == metadata_bytes and sql_path.read_bytes() == sql_bytes
+            return
 
         # Public routes must honor the selected archive rather than stale live
         # metadata/source. Query describe for the installed version; do not pin a

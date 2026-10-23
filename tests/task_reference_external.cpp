@@ -366,7 +366,7 @@ fn main()->result<i64> !{task}{return with_tasks(2,fn(scope:task_scope)->result<
     sourceRejected("E_IO",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});require(host.admitted==0,"raw host failure reached unit admission");}
   {Host host;host.raw.bytes={1};host.gate->release();
     sourceRejected("E_TASK_VALUE",[&]{evaluateTaskReference(p,"main",{},1000000,{},nullptr,&host);});require(host.admitted==0,"invalid payload reached unit admission");}
-  {Host host;auto filesystem=source("server fn main()->i64 !{fs,task}{task_yield();return 42;}");
+  {Host host;auto filesystem=parseVersioned("module historical_external;server fn main()->i64 !{fs,task}{task_yield();return 42;}","historical019.nex",SourceLanguage::Tasks019);check(filesystem);
     sourceRejected("E_TASK_UNIMPLEMENTED",[&]{evaluateTaskReference(filesystem,"main",{},1000000,{},nullptr,&host);});
     require(host.prepared==0,"experimental host widened ordinary filesystem constructor support");}
   auto stalled=source("fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{let queue:channel<i64>=channel_new<i64>(scope,0);return unwrap(task_recv(queue));});}");

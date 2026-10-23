@@ -1,4 +1,5 @@
 #include "nex_task_frame.h"
+#include "nex_task_file_read.h"
 namespace nexrt {
 static bool kindMatches(const Value &v,int64_t kind){
   if(kind==2&&v.tag==Value::Floating){(void)v.floating();return true;}
@@ -22,7 +23,12 @@ namespace {
 const TaskCodeDescriptor &checkedCode(const void *pointer){
   if(!pointer)throw DataError("E_TASK_STATE","missing compiled task code descriptor");
   const auto &d=*static_cast<const TaskCodeDescriptor*>(pointer);
-  if(d.abi!=taskCodeABI||!d.step||d.slotCount<0||d.slotCount>65536||d.parameterCount<0||d.parameterCount>d.slotCount||d.captureCount<0||d.captureCount>d.slotCount||d.resultKind<0||d.resultKind>4||(!d.kinds&&d.slotCount)||(!d.parameters&&d.parameterCount)||(!d.captures&&d.captureCount))throw DataError("E_TASK_STATE","invalid compiled task code descriptor");
+  if(d.abi!=taskCodeABI||!d.step||d.slotCount<0||d.slotCount>65536||d.parameterCount<0||d.parameterCount>d.slotCount||d.captureCount<0||d.captureCount>d.slotCount||d.resultKind<0||d.resultKind>4||(!d.kinds&&d.slotCount)||(!d.parameters&&d.parameterCount)||(!d.captures&&d.captureCount)||(d.requirements&~taskCodeRequirementsMask))throw DataError("E_TASK_STATE","invalid compiled task code descriptor");
+  if((d.requirements&taskCodeDeclaredFs)&&!(d.requirements&taskCodeDeclaredTask))
+    throw DataError("E_TASK_STATE","a synchronous filesystem definition cannot be a task continuation");
+  if((d.requirements&taskCodeFileRead)&&
+      (d.requirements&(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))!=(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))
+    throw DataError("E_TASK_STATE","compiled file read descriptor requires an actual server task/fs declaration");
   return d;
 }
 struct CallDepth {
@@ -31,8 +37,8 @@ struct CallDepth {
   ~CallDepth(){exchangeCompiledTaskDepth(previous);}
 };
 }
-NativeTaskFrame::NativeTaskFrame(const TaskCodeDescriptor &input,const std::vector<Value> &args,const Value &environment):step(nullptr){
-  const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;
+NativeTaskFrame::NativeTaskFrame(const TaskCodeDescriptor &input,const std::vector<Value> &args,const Value &environment,std::shared_ptr<const TaskFrameHostContext> context):step(nullptr),host(std::move(context)){
+  const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;requirements=d.requirements;
   if(d.slotCount)kinds.assign(d.kinds,d.kinds+d.slotCount);slots.resize(kinds.size());
   if(args.size()!=size_t(d.parameterCount))throw DataError("E_TASK_STATE","compiled task argument count differs");
   for(auto kind:kinds)if(kind<0||kind>3)throw DataError("E_TASK_STATE","invalid compiled task slot kind");
@@ -49,9 +55,12 @@ const TaskCodeDescriptor &closureCode(const Value &value){
   if(value.tag!=Value::Object||!value.object||value.object->kind!=Data::Closure||!value.object->taskCode)throw DataError("E_TASK_STATE","source task callback has no compiled descriptor");
   return checkedCode(value.object->taskCode);
 }
-thread_local TaskStepObserver spawnedObserver=nullptr;
-struct ObserverScope {TaskStepObserver previous;explicit ObserverScope(TaskStepObserver observer):previous(spawnedObserver){spawnedObserver=observer;}~ObserverScope(){spawnedObserver=previous;}};
-TaskBody executeTaskClosure(TaskGroup &group,Value,Value closure){return executeTaskFrame(group,NativeTaskFrame(closureCode(closure),{},closure),spawnedObserver);}
+struct SpawnContext {std::shared_ptr<const TaskFrameHostContext> host;TaskStepObserver observer;};
+TaskBody executeTaskClosure(TaskGroup &group,Value,Value closure,const void *context){
+  if(!context)throw DataError("E_TASK_STATE","compiled task spawn context is absent");
+  const auto &spawn=*static_cast<const SpawnContext*>(context);
+  return executeTaskFrame(group,NativeTaskFrame(closureCode(closure),{},closure,spawn.host),spawn.observer);
+}
 Value channelResult(TaskEvent event){
   auto data=std::make_shared<Data>(event.present?Data::Success:Data::Failure);
   if(event.present)data->values={std::move(event.value)};
@@ -94,7 +103,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
         auto child=checked([&]{
           if(stack.size()>=256)throw DataError("E_LIMIT","compiled task call depth exceeds 256");
           auto closure=request.arguments[1];const auto &code=closureCode(closure);
-          auto body=std::make_unique<NativeTaskFrame>(code,std::vector<Value>{taskScopeValue(group,scope)},closure);
+          auto body=std::make_unique<NativeTaskFrame>(code,std::vector<Value>{taskScopeValue(group,scope)},closure,current.host);
           body->closingScope=scope;body->parentScope=parent;body->scopeLocation=request.location;body->returnDestination=request.destination;body->depth=stack.size()+1;return body;
         });
         stack.push_back(std::move(*child));continue;
@@ -102,7 +111,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
       case TaskRequestKind::Spawn:result=checked([&]{
         const auto &scope=capability(0,Data::TaskScope);auto closure=request.arguments[1];const auto &code=closureCode(closure);
         if(code.parameterCount)throw DataError("E_TASK_STATE","spawn callback must take no arguments");
-        ObserverScope trace(observer);return taskTicketValue(group,group.spawn(scope.scope,executeTaskClosure,{},closure),code.resultKind);
+        SpawnContext context{current.host,observer};return taskTicketValue(group,group.spawnWithContext(scope.scope,executeTaskClosure,&context,{},closure),code.resultKind);
       });break;
       case TaskRequestKind::Wait:{
         auto ticket=checked([&]{const auto &task=capability(0,Data::Task);group.requireScope(task.scope);if(task.payloadKind!=request.kind)throw DataError("E_TASK_STATE","wait result schema differs");return task.ticket;});
@@ -126,6 +135,33 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
       case TaskRequestKind::Close:result=checked([&]{const auto &pipe=capability(0,Data::Channel);group.requireScope(pipe.scope);return Value(group.close(pipe.channel),true);});break;
       case TaskRequestKind::Cancel:result=checked([&]{const auto &task=capability(0,Data::Task);group.requireScope(task.scope);return Value(group.cancel(task.ticket),true);});break;
       case TaskRequestKind::CurrentScope:result=checked([&]{return taskScopeValue(group,group.currentScope());});break;
+      case TaskRequestKind::FileReadText:case TaskRequestKind::FileReadBytes:{
+        try{
+#ifdef _WIN32
+        checked([&]{throw DataError("E_TASK_TARGET","task file reads require macOS or Linux");});
+#else
+        std::optional<PreparedTaskFileRead> prepared;
+        checked([&]{
+          if(!current.host||!(current.requirements&taskCodeFileRead)||request.kind!=3||request.arguments.size()!=1)
+            throw DataError("E_TASK_STATE","compiled file read has no checked descriptor/host context");
+          const auto &path=request.arguments[0];
+          if(path.tag!=Value::Object||!path.object||path.object->kind!=Data::String)throw DataError("E_TASK_STATE","compiled file read path must be a string");
+          try{prepared.emplace(current.host->fileReads,path.object->text,request.operation==TaskRequestKind::FileReadText);}
+          catch(const DataError &error){
+            if(!ordinaryTaskFileReadError(error.code))throw;result=failure(error.code,error.what());
+            try{current.host->fileReads.check();}catch(const DataError &grantError){if(grantError.code!="CAPABILITY")throw;}
+          }
+        });
+        if(prepared){
+          auto ticket=checked([&]{return group.submitExternal(prepared->operation(),PreparedTaskFileRead::reservation);});
+          auto raw=co_await group.awaitExternal(ticket).at(request.location);
+          result=checked([&]{pollHostOperation(request.location);auto admitted=prepared->admit(std::move(raw));pollHostOperation(request.location);return admitted;});
+        }
+        checked([&]{pollHostOperation(request.location);});
+#endif
+        }catch(...){group.failFileRead(std::current_exception());throw;}
+        break;
+      }
       }
       if(request.destination>=0)checked([&]{current.write(request.destination,std::move(result),current.kinds.at(request.destination));});
     }else throw DataError("E_TASK_STATE","invalid compiled task transition");
@@ -158,7 +194,7 @@ void nex_task_frame_call_at(void *p,void *code,nexrt::Handle *closure,nexrt::Han
     const auto &d=nexrt::checkedCode(code);
     if(destination < -1||(destination<0&&d.resultKind!=4)||(destination>=0&&(size_t(destination)>=caller.slots.size()||caller.kinds[destination]!=d.resultKind)))throw nexrt::DataError("E_TASK_STATE","compiled task call result destination differs");
     auto arguments=nexrt::readHandle(args);if(arguments.tag!=nexrt::Value::Object||!arguments.object||arguments.object->kind!=nexrt::Data::List)throw nexrt::DataError("E_TASK_STATE","compiled task call arguments are not a list");
-    auto child=std::make_unique<nexrt::NativeTaskFrame>(d,arguments.object->values,environment);child->returnDestination=destination;caller.pendingCall=std::move(child);
+    auto child=std::make_unique<nexrt::NativeTaskFrame>(d,arguments.object->values,environment,caller.host);child->returnDestination=destination;caller.pendingCall=std::move(child);
   });
 }
 nexrt::Handle *nex_task_closure_new_at(void *code,int64_t count,const nexrt::NativeSite *site){
@@ -170,10 +206,16 @@ void nex_task_closure_bind_at(nexrt::Handle *closure,void *code,const nexrt::Nat
 void nex_task_frame_pause_at(void *p,int64_t operation,nexrt::Handle *args,int64_t destination,int64_t kind,int64_t line,const nexrt::NativeSite *site){
   nexrt::hostOperation({line,site},[&]{
     auto &current=frame(p);
-    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::CurrentScope)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
+    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::FileReadBytes)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
     if(!args)throw nexrt::DataError("E_TASK_STATE","missing compiled request arguments");
     auto values=nexrt::readHandle(args);if(values.tag!=nexrt::Value::Object||!values.object||values.object->kind!=nexrt::Data::List)throw nexrt::DataError("E_TASK_STATE","compiled request arguments are not a list");
-    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0};if(values.object->values.size()!=counts[operation])throw nexrt::DataError("E_TASK_STATE","compiled request argument count differs");
+    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0,1,1};if(values.object->values.size()!=counts[operation])throw nexrt::DataError("E_TASK_STATE","compiled request argument count differs");
+    if(operation>=int64_t(nexrt::TaskRequestKind::FileReadText)){
+      if(!(current.requirements&nexrt::taskCodeFileRead)||kind!=3||destination<0||current.kinds[destination]!=3)
+        throw nexrt::DataError("E_TASK_STATE","compiled file read requires a server task/fs descriptor and result slot");
+      const auto &path=values.object->values[0];if(path.tag!=nexrt::Value::Object||!path.object||path.object->kind!=nexrt::Data::String)
+        throw nexrt::DataError("E_TASK_STATE","compiled file read path is not a string");
+    }
     current.pendingRequest=nexrt::NativeTaskRequest{nexrt::TaskRequestKind(operation),values.object->values,destination,kind,{line,site}};
   });
 }

@@ -6,38 +6,35 @@
 количества точного смысла при максимальной производительности и безопасности
 исполняемой системы.
 
-This isolated development source is **toolchain 0.109.0 / language 0.19**.
-Working116 adds a private explicit root FileReadGrant to the experimental
-[external-completion kernels](docs/task-external.md). Per-path preparation
-retains the original lexical/request grant across task resumes and never
-uses worker TLS or environment discovery. The bounded retained path uses
-exact owned bytes. Public source asynchronous IO remains unsupported; this
-foundation adds no source syntax, semantic rule or canonical migration.
+This isolated development source is **toolchain0.111.0 / language0.20**.
+Working118 retains the117 public read bridge and corrects its browser-worker
+pending-capability discovery/pack mismatch. Frozen117 is retained with its
+focused discovery failure and passing five-probe sanitizers; it has no full
+acceptance claim. This correction changes no source semantics or migration.
+The implementation connects the two existing whole-file read operations to structured
+suspension in explicit server `!{task,fs}` functions. Native macOS/Linux
+applications/source-only projects and the independent reference scheduler use
+a root-captured revocable grant, bounded raw host operations and scheduler-only
+result admission. See [task file reads](docs/task-file-reads.md) and the
+[example](examples/task-file-reads.nex). Full current acceptance is pending.
 
-Standalone grant checks pass45 scheduler cases and42 non-task compatibility
-cases, with independent code review. Current116 common regression, sanitizers,
-installed SDK and platform acceptance remain pending. Exact115 passed122 groups,
-strict sanitizers, three scoped browser kernels and21 Linux ARM64 groups; its
-installed SDK is still being checked. These are separate receipts and do not
-establish an accepted116 release. The preceding113 installedSDK24/438 also has
-its own passing receipt.
+Migration explicitly rechecks genuine019 source and a separate020 target before
+mutable destination access; existing history/IDs/schema remain intact. A task
+calling an fs-only helper is rejected until its declaration is reviewed. Scope
+and spawn callbacks additionally accept exactly server task/fs with matching
+caller effects. There are no new source keywords or implicit callable upcasts.
 
-Checked source tasks retain native compiled continuations, an independent
-reference scheduler and generated TypeScript.
-`task_scope`, `task<T>`, `channel<T>` and the `task` effect share one contract.
-Known capability escapes are diagnosed before execution; uncertain flows retain
-mandatory runtime owner checks. A [rendezvous example](examples/structured-tasks.nex)
-can be checked and tested in native and web targets. See [the language](docs/language.md),
-[lifetimes](docs/task-lifetimes.md) and [explicit migration](docs/task-migration.md).
+The frozen115 separately passed122 regression groups and matching installed
+SDK24/438 commands, strict sanitizers, three production private-kernel browser
+engines and21 Linux ARM64 groups. Frozen116 passed the shared build,20 focused groups, strict sanitizers,
+full122 and matching installedSDK24/438. These receipts
+apply to their exact source snapshots. Primary081 remains preserved.
 
-Native task applications use bounded joined workers; source-only component
-projects are supported. Reference and TypeScript scheduling are cooperative.
-Their private external-completion experiments do not enable source filesystem,
-network or UI task adapters. Task callbacks accept pure/task effects. Task debugger
-and profile attribution, binary-provider task lifetimes, the NEX UI task adapter,
-full current installed SDK/platform validation and complete static region
-inference remain pending. Linux116, Windows116 and complete116 delivery have no
-acceptance claim here. The approved primary checkout remains 0.81 / 0.16.
+Checked source tasks retain native compiled continuations and independent
+AST/TypeScript schedulers, conservative lifetime diagnostics and mandatory
+runtime guards. TypeScript/browser filesystem, task writes/streams/db/ffi/network,
+HTTP task handlers, task debugger/profile, provider lifetime, NEX UI task adapters,
+other task platforms and complete static region inference remain pending.
 
 **Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
 первый проект, запуск и веб-сборка, что хранить в Git и как работать через LLM.
@@ -52,7 +49,7 @@ and compiler tools. Compiled applications run independently of an LLM.
 Use the [model-independent bootstrap](llm/BOOTSTRAP.md), the
 [language pack](llm/README.md), actual capability discovery and bounded context.
 
-Language 0.19 retains ordered CPU mapping, introduced in 0.18, through
+Language 0.20 retains ordered CPU mapping, introduced in 0.18, through
 `parallel_map(items, callback, workers)`. Native macOS/Linux uses bounded joined
 threads, pure available-realm callbacks and checked resource-free captures.
 Reference and current public TypeScript execute this operation serially. The
@@ -90,7 +87,7 @@ Platform coverage is bounded. Linux/macOS execution, Windows cross-build/Wine,
 iOS archives and mobile WebView generation have separate receipts and remaining
 delivery work. Cross-builds are not evidence of actual device execution.
 [CIX P1](docs/cix-p1.md) fixed trusted FFI experiments do not provide general
-GPU/NPU language APIs. Asynchronous IO, task delivery, general accelerators, source
+GPU/NPU language APIs. Broader asynchronous IO, task delivery, general accelerators, source
 try/catch/throw, broader native targets and cross-model cost measurements remain
 pending in [PLAN.md](PLAN.md). This checkpoint does not complete the objective.
 

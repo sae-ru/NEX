@@ -134,7 +134,7 @@ nex.build.json. План явно перечисляет consumer_instantiations
 отсутствующий обычный экспорт должен быть исправлен в контракте библиотеки.
 
 
-## Исходные задачи и миграция0.19
+## Исходные задачи и миграция0.20
 
 Перед использованием задач запросите `nex describe --json` и прочитайте
 `docs/language.md`, `docs/grammar.ebnf`, `docs/task-lifetimes.md` и
@@ -144,7 +144,10 @@ nex.build.json. План явно перечисляет consumer_instantiations
 `channel_new`, `task_send`, `task_recv`, `task_close`, `task_yield`,
 `current_task_scope`. Callback области получает `task_scope`, callback запуска
 не имеет аргументов. Оба могут быть чистыми или иметь только эффект `task`
-в доступном realm; `io/db/fs/ffi` им не разрешаются. Ключевых слов async/await
+в доступном realm. В020 также разрешён ровно server task/fs callback при
+явных task/fs у вызывающего. Только два чтения файлов поддерживают эту связь;
+читайте docs/task-file-reads.md. fs-only helper из task отклоняется с E_EFFECT;
+`io/db/ffi` callbacks остаются неподдержанными. Ключевых слов async/await
 нет; обычные имена async/await/spawn/send/recv/cancel/close/yield сохраняются.
 
 Компилятор заранее отклоняет известные утечки полномочий через helpers,
@@ -160,7 +163,7 @@ immutable snapshots/closures. Файлы не пересекают task-гран
 В native macOS/Linux приложениях и проектах только с source-связями используются
 компилированные continuations. Общие defaults —1000000 шагов,5000ms и pool16;
 `with_tasks` принимает1..16 workers и сохраняет ограничения предков. Настройки
-этих defaults через CLI приложения пока pending. Reference и TypeScript
+этих defaults через CLI/проект описаны в docs/task-limits.md. Reference и TypeScript
 выполняют независимое cooperative scheduling; это не доказательство физического
 CPU overlap. Standalone task-экспорты TypeScript возвращают task.Step<T> и
 запускаются scheduler host; pure-модули остаются синхронными. UI/worker-adapters

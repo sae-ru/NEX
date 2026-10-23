@@ -349,7 +349,7 @@ struct Index {
     sourceNames();
     for(const auto &f:p.functions)if(!f.closure&&!f.traitSignature&&f.templateName.empty())function(f);
     for(const auto &[_,f]:p.functionTemplates)function(f);
-    Object result{{"schema",details?"nex.analysis/3":references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},
+    Object result{{"schema",details?"nex.analysis/3":references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},
       {"entry",p.entryUnit},{"files",std::move(files)},{"symbols",std::move(symbols)},{"expressions",std::move(expressions)},
       {"graph_written",false},{"source_written",false},{"executed",false}};
     identifierDetails(result);

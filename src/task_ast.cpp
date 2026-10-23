@@ -68,7 +68,10 @@ struct TaskAstMachine::Impl {
     case Type::Str:return actual==nexrt::Data::String;
     case Type::List:return actual==nexrt::Data::List;
     case Type::Record:return actual==nexrt::Data::Record||actual==nexrt::Data::Enum;
-    case Type::Result:return actual==nexrt::Data::Success||actual==nexrt::Data::Failure;
+    case Type::Result:
+      if(value.object->values.size()!=1)return false;
+      if(actual==nexrt::Data::Failure)return kind(Type::Str,value.object->values[0]);
+      return actual==nexrt::Data::Success&&kind(*type.element,value.object->values[0]);
     case Type::Function:return actual==nexrt::Data::Closure;
     case Type::Bytes:return actual==nexrt::Data::Bytes;
     case Type::TaskScope:return actual==nexrt::Data::TaskScope;
@@ -82,7 +85,11 @@ struct TaskAstMachine::Impl {
     for(auto i=body.rbegin();i!=body.rend();++i)add({Action::Statement,{},*i});
   }
   void push(const Function &function,const std::vector<AV> &args,const AV *closure=nullptr){
-    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io")
+    if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
+      throw Error("E_EFFECT","AST task calls require an explicitly resumable task/fs helper",function.span);
+    const bool files=supportsTaskFileReads(program)&&function.realm=="server"&&
+      function.effects.contains("task")&&function.effects.contains("fs");
+    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
     if(function.foreign||containsFile(program,Type::function({},function.result))||
        std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return containsFile(program,p.type);})||
@@ -181,9 +188,17 @@ struct TaskAstMachine::Impl {
             auto closure=std::move(args[0]);args.erase(args.begin());
             if(closure.tag!=AV::Object||!closure.object||closure.object->kind!=nexrt::Data::Closure)
               throw Error("E_FUNCTION","AST call requires a checked closure",e->span);
-            push(program.function(closure.object->text),args,&closure);break;
+            const auto &target=program.function(closure.object->text);
+            std::vector<Type> parameters;for(const auto &parameter:target.params)parameters.push_back(parameter.type);
+            if(Type::function(std::move(parameters),target.result,target.realm,target.effects)!=e->args[0]->type)
+              throw Error("E_FUNCTION","AST callable target differs from its checked signature",e->span);
+            push(target,args,&closure);break;
           }
-          if(e->kind==Expr::Call&&taskBuiltins().contains(e->text)){
+          const bool read=e->kind==Expr::Call&&taskFileReadOperation(e->text);
+          if(read&&(!supportsTaskFileReads(program)||frame.function->realm!="server"||
+             !frame.function->effects.contains("task")||!frame.function->effects.contains("fs")))
+            throw Error("E_TASK_UNIMPLEMENTED","AST file reads require a language020 server task/fs function",e->span);
+          if(e->kind==Expr::Call&&(taskBuiltins().contains(e->text)||read)){
             waiting=true;ticket=++sequence;response=e->type;
             TaskTransition next;next.kind=TaskTransition::Waiting;next.operation=e->text;
             next.arguments=std::move(args);next.result=e->type;next.span=e->span;
@@ -192,6 +207,8 @@ struct TaskAstMachine::Impl {
           if(e->kind==Expr::Call&&functions.contains(e->text)){
             push(*functions.at(e->text),args);break;
           }
+          if(e->kind==Expr::Call&&taskFileBuiltin(e->text))
+            throw Error("E_TASK_UNIMPLEMENTED","AST tasks support only whole-file text/bytes reads",e->span);
           // Only ordinary, already-evaluated atoms enter the shared primitives.
           // All AST control, user calls and suspension remain above this boundary.
           auto atom=std::make_shared<Expr>(*e);atom->args.clear();

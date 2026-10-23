@@ -4,6 +4,7 @@
 #include "nex_task_limits.h"
 #include <functional>
 
+namespace nexrt {class FileReadGrant;}
 namespace nex {
 struct TaskReferenceResult {
   nexrt::Value value;
@@ -22,5 +23,8 @@ using TaskReferenceObserver=std::function<void(size_t,const TaskTransition&)>;
 TaskReferenceResult evaluateTaskReference(const Program &,const std::string &entry="main",
     const std::vector<nexrt::Value> &arguments={},uint64_t limit=1000000,
     TaskReferenceObserver observer={},const nexrt::TaskExecutionLimits *taskLimits=nullptr,
-    TaskReferenceExternalHost *externalHost=nullptr);
+    TaskReferenceExternalHost *externalHost=nullptr,
+    // Trusted hosts capture this under their root RequestScope/FileScope.
+    // Without it,020 owns an evaluation scope and captures current authority.
+    const nexrt::FileReadGrant *fileGrant=nullptr);
 }

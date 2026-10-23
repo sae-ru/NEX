@@ -151,7 +151,9 @@ class Loader {
     }catch(Error &e){if((e.code!="E_LANGUAGE_VERSION"&&e.code!="E_MANIFEST")||e.span.file.empty())e.span=importing;throw;}
     catch(const fs::filesystem_error &e){throw Error("E_IMPORT_FILE",e.what(),importing);}
     Program unit;
-    try{unit=taskPrototype?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails):parseLegacy018(texts.at(key),path.string(),captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
+    try{unit=taskPrototype&&sourceVersion==SourceLanguage::Language018
+      ?parseTaskPrototype(texts.at(key),path.string(),captureNames,captureDetails)
+      :parseVersioned(texts.at(key),path.string(),sourceVersion,captureNames,captureDetails);}catch(Error &e){e.span.file=key;throw;}
     capturedNames+=unit.editorNames.size();if(capturedNames>200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",Span{1,1,0,0,key});
     if(owners.contains(unit.module))throw Error("E_MODULE_DUPLICATE","module '"+unit.module+"' is declared by both "+owners.at(unit.module)+" and "+key,Span{1,1,0,0,key});
     owners[unit.module]=key;
@@ -273,7 +275,7 @@ void validateProjectMetadata(const std::string &root){
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,SourceLanguage::Tasks019).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,SourceLanguage::TaskFiles020).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();
@@ -283,7 +285,7 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
   }
   return p;
 }
-static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=SourceLanguage::Tasks019){
+static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=SourceLanguage::TaskFiles020){
   auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
   auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
   std::map<std::string,std::string> sources;
@@ -293,8 +295,9 @@ static Program bundleProgram(const llvm::json::Value &bundle,const std::string &
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,true);}
 Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,const std::string &language){
   if(language=="0.18")return bundleProgram(bundle,root,true,false,SourceLanguage::Language018);
-  if(language!=taskCandidateLanguageVersion)throw Error("E_LANGUAGE_VERSION","versioned source recheck supports018 or the explicit019 candidate");
-  return bundleProgram(bundle,root,true,true,SourceLanguage::Tasks019);
+  if(language=="0.19")return bundleProgram(bundle,root,true,true,SourceLanguage::Tasks019);
+  if(language=="0.20")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskFiles020);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19 and0.20");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 void bindExpression(const Program &p,const std::string &function,E expression){

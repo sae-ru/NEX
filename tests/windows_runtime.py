@@ -50,7 +50,7 @@ class WindowsRuntimeDescriptor(harness.ToolchainCase):
         self.assertTrue(value['environment_access'] and value['database'] and value['explicit_target_sqlite'])
         self.assertEqual(value['environment_encoding'],'strict_utf8_utf16')
         self.assertFalse(value['files'] or value['source_foreign_loading'] or value['host_execution'])
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex'}))
         self.source('module boundary;client fn main()->result<str>!{io}{return read_env("x");}')
         self.cli('check',ok=False)
         self.source('module boundary;server fn main()->result<str>{return read_env("x");}')
@@ -61,7 +61,7 @@ class WindowsRuntimeDescriptor(harness.ToolchainCase):
 class WindowsRuntimeBuilds(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex'}))
         self.config=self.root/'toolchain.json';self.notices=self.root/'notices.txt'
         licenses=[TOOLS/'LICENSE.TXT',*sorted((TOOLS/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]
         self.notices.write_text('\n\n'.join(str(p.relative_to(TOOLS))+'\n'+p.read_text() for p in licenses))

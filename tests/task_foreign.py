@@ -269,7 +269,7 @@ class TaskForeign(harness.ToolchainCase):
         (self.root/'library').mkdir();self.file.rename(self.root/'library/main.nex');(self.root/'app').mkdir()
         (self.root/'app/main.nex').write_text('''module taskffi;import "../library/main.nex" as l;
 server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->unit!{ffi}{assert(l::invoke()==42);}''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.19','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'profile':{'profile':'profile'}},'components':{
                 'library':{'kind':'shared_library','root':'library','entry':'library/main.nex','entry_function':'invoke'},

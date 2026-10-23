@@ -9,6 +9,8 @@ Program parseTaskPrototype(std::string source,std::string path,
 Program loadTaskPrototype(const std::string &entry,const std::string &root,
     const std::map<std::string,std::string> &overlays={});
 const std::set<std::string> &taskBuiltins();
+bool isPublicTaskLanguage(const Program &program);
+bool supportsTaskFileReads(const Program &program);
 bool containsTaskAuthority(const Program &program,const Type &type);
 bool usesTaskEffects(const Program &program,const std::string &entry);
 void rejectUnloweredTasks(const Program &program,const char *operation);

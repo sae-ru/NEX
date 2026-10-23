@@ -1,10 +1,10 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.19",
+  "language_version": "0.20",
   "source_concurrency": {
     "status": "candidate_ordered_cpu_mapping",
     "guide": "docs/concurrency-design.md",
-    "language": "0.19",
+    "language": "0.20",
     "operation": "parallel_map",
     "source_operations": true,
     "internal_runtime_prototype": true,
@@ -36,7 +36,7 @@
       "installed_sdk",
       "platform_editor_debug_profile_validation",
       "browser_workers",
-      "general_tasks_channels_async",
+      "task IO beyond whole-file reads and task host adapters",
       "other_cpu_targets",
       "gpu",
       "npu"
@@ -230,7 +230,8 @@
     "task_lifetimes": "docs/task-lifetimes.md",
     "task_migration": "docs/task-migration.md",
     "task_limits": "docs/task-limits.md",
-    "task_external_completion": "docs/task-external.md"
+    "task_external_completion": "docs/task-external.md",
+    "task_file_reads": "docs/task-file-reads.md"
   },
   "document_access": "nex guide --kind task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -315,7 +316,8 @@
     "foreign_project_package": "examples/ffi/project/README.md",
     "result_propagation": "examples/propagation.nex",
     "browser_workers": "examples/workers/main.nex",
-    "structured_tasks": "examples/structured-tasks.nex"
+    "structured_tasks": "examples/structured-tasks.nex",
+    "task_file_reads": "examples/task-file-reads.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -554,7 +556,7 @@
   ],
   "editor_source_reference_contract": {
     "format": "nex.analysis/2",
-    "source_language": "0.19",
+    "source_language": "0.20",
     "default_format": "nex.analysis/1",
     "definition_identity": "captured_file_and_exact_declaration_interval",
     "coverage": [
@@ -583,7 +585,7 @@
     "format": "nex.analysis/3",
     "default_format": "nex.analysis/1",
     "reference_format": "nex.analysis/2",
-    "source_language": "0.19",
+    "source_language": "0.20",
     "name_ranges": "actual_lexer_word_tokens",
     "descriptions": "bound_source_declarations_and_checked_value_types",
     "null_detail": "syntax without a semantic hover description",
@@ -817,11 +819,11 @@
       "full_current_regression",
       "installed_sdk",
       "platform_editor_validation",
-      "general_tasks_channels_async"
+      "task IO beyond whole-file reads and task host adapters"
     ]
   },
   "structured_tasks_runtime": {
-    "status": "development_source_tasks019",
+    "status": "development_source_task_file_reads020",
     "source_support": true,
     "guide": "docs/tasks-runtime-design.md",
     "header": "runtime/nex_tasks.h",
@@ -843,7 +845,7 @@
     "task_input_output": "owned immutable Value snapshots; scoped task authority checked by owner ancestry; no raw Handle across suspension",
     "pending": [
       "complete static region/lifetime inference",
-      "asynchronous IO",
+      "asynchronous writes/streams/db/ffi/network",
       "source-level async debugger and profile attribution",
       "provider ABI/lifetime",
       "full current installed SDK and platform delivery",
@@ -874,7 +876,9 @@
         "task_recv",
         "task_close",
         "task_cancel",
-        "current_task_scope"
+        "current_task_scope",
+        "file_read_text",
+        "file_read_bytes"
       ],
       "root_task_depth": 1
     },
@@ -887,7 +891,7 @@
       "transport": "TaskTransition",
       "scheduler_integrated": true,
       "public_build_enabled": false,
-      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected",
+      "host_effects": "pure/io atoms and explicit020 server task/fs whole-file reads; db/ffi/file authority rejected",
       "maximum_pending_actions": 262144
     },
     "private_ast_scheduler": {
@@ -906,7 +910,7 @@
       "maximum_channel_slots": 65536,
       "maximum_pending_actions_per_task": 262144,
       "public_build_enabled": true,
-      "host_effects": "pure/io atoms; fs/db/ffi and file authority rejected",
+      "host_effects": "pure/io atoms and explicit020 server task/fs whole-file reads; db/ffi/file authority rejected",
       "stalled_channels": "E_TASK_DEADLOCK",
       "root_task_depth": 1
     },
@@ -930,7 +934,7 @@
       "scope_graph_validation": true,
       "event_loop": "MessageChannel turns; statement/loop compiler checkpoints",
       "result_propagation": "current generated source function boundary",
-      "source_map": "nex.typescript-map/1 for public019; nex.private-typescript-task-map/1 for private018",
+      "source_map": "nex.typescript-map/1 for public019/020; nex.private-typescript-task-map/1 for private018",
       "public_build_enabled": true,
       "nex_ui_adapter_tasks": false,
       "host_effects": "shared/client pure and io atoms; server/file/foreign rejected",
@@ -957,7 +961,7 @@
       "ordinary_check_invokes_pass": true,
       "public_source_tasks": true
     },
-    "language": "0.19",
+    "language": "0.20",
     "types": [
       "task_scope",
       "task<T>",
@@ -966,7 +970,8 @@
     "effect": "task",
     "callback_effects": [
       "pure",
-      "task"
+      "task",
+      "server task/fs with caller task/fs"
     ],
     "native_platforms": [
       "macOS 64-bit",
@@ -1018,7 +1023,7 @@
     "status": "experimental_private_trusted_host_kernel",
     "guide": "docs/task-external.md",
     "source_support": false,
-    "public_source_async_io": false,
+    "public_source_async_io": true,
     "source_syntax_changed": false,
     "canonical_formats_changed": false,
     "stable_host_abi": false,
@@ -1049,7 +1054,7 @@
       "host": "TaskReferenceExternalHost",
       "coordinator": "independent serial checked AST scheduler",
       "hook": "private checked task_yield interception; source response remains unit",
-      "source_io_lowering": false
+      "source_io_lowering": true
     },
     "typescript": {
       "runtime": "web/nex-task-runtime.ts",
@@ -1067,7 +1072,7 @@
       "adapter_header": "runtime/nex_task_file_read.h",
       "adapter": "PreparedTaskFileRead",
       "grant": "coordinator-captured revocation-aware lexical/request lease; no worker TLS discovery",
-      "source_lowering": false,
+      "source_lowering": true,
       "windows": false,
       "grant_type": "FileReadGrant",
       "capture_grant": "captureFileReadGrant",
@@ -1076,12 +1081,64 @@
       "retained_path_storage": "exact owned bytes up to4096"
     },
     "pending": [
-      "public source asynchronous IO",
-      "source fs/db/ffi task lowering",
       "asynchronous writes and streams",
+      "source db/ffi/network task lowering",
       "browser filesystem and task network/UI/worker adapters",
       "task debugger/profile and binary-provider ABI",
       "full current regression, installed SDK and platform acceptance"
+    ],
+    "public_source_guide": "docs/task-file-reads.md",
+    "public_source_subset": [
+      "file_read_text",
+      "file_read_bytes"
+    ]
+  },
+  "task_file_reads": {
+    "status": "development_public_whole_file_reads",
+    "guide": "docs/task-file-reads.md",
+    "language": "0.20",
+    "source_support": true,
+    "operations": [
+      "file_read_text(str) -> result<str>",
+      "file_read_bytes(str) -> result<bytes>"
+    ],
+    "function_effects": [
+      "task",
+      "fs"
+    ],
+    "realm": "server",
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "reference": true,
+    "typescript": false,
+    "windows": false,
+    "wasm": false,
+    "http_task_handlers": false,
+    "binary_providers": false,
+    "writes": false,
+    "streams": false,
+    "task_debug_profile": false,
+    "authority": "root coordinator captures explicit revocable FileReadGrant; task/fs does not choose an OS root",
+    "fs_only_helpers_in_task": "E_EFFECT; explicitly declare task and fs",
+    "ordinary_errors": "typed result at attempted read, including absent capability and invalid UTF-8",
+    "fatal_errors": "traps, cancellation, revoked authority and execution limits abort/drain; first fatal retained",
+    "physical_drain": true,
+    "source_admission": "owning scheduler after physical settlement and authority/control checks",
+    "io_workers": 2,
+    "maximum_pending": 64,
+    "reserved_transport_bytes": 8388608,
+    "maximum_file_bytes": 1048576,
+    "maximum_path_bytes": 4096,
+    "maximum_whole_file_reservations": 7,
+    "total_process_ram_bound": false,
+    "migration": "explicit019-to020 checked recheck; original rows/IDs/schema retained",
+    "acceptance_pending": [
+      "full current regression",
+      "installed SDK",
+      "Linux native source execution",
+      "source-only project/replay delivery"
     ]
   }
 }

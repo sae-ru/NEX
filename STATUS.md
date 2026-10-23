@@ -1,3 +1,31 @@
+# Working118: consistent pending-capability discovery
+
+Toolchain0.111/language0.20 retains117 public file-read implementation and fixes
+one metadata mismatch: browser_workers.pending had different unfinished-task
+wording in describe and language-pack. Frozen117 passed cleanallbuild,25/26
+focused groups and five strict sanitizer probes per sanitizer, but discovery
+failed on this exact comparison. Its failure receipt is retained; no full117
+or117 SDK acceptance is claimed. Current118 complete acceptance is pending.
+Runtime/compiler semantic source, language020, grammar and history migration
+are unchanged. Primary081 remains preserved. The full objective is active.
+
+# Working117: public task file reads with explicit020 migration
+
+Toolchain0.110/language0.20 connects file_read_text/bytes to actual server task/fs
+suspension. Explicit root FileReadGrant, raw bounded host transport and checked
+scheduler admission preserve cancellation/drain, UTF-8 and result boundaries.
+The independent AST reference and native continuations have separate execution.
+Migration verifies genuine018/019 origins and preserves history/IDs/schema;
+current physical projects and output schemas use020. Implementation and complete
+current acceptance are in progress; no accepted release is claimed.
+
+Frozen115 passed full122 and matching SDK24/438, strict sanitizers, three scoped
+production browser engines and21 Linux ARM64 groups. Frozen116 passed common build, focused20, strict sanitizers, full122 and
+matching installedSDK24/438.
+Older records below describe their own immutable snapshots. Primary081 remains
+preserved; public bridge117 does not inherit acceptance from older kernels.
+Broader IO/debug/profile/providers/UI/accelerators/delivery/quality remain open.
+
 # Working116: private explicit root file-read grant
 
 Toolchain0.109 / language0.19 retains the verified115 transport and adds a

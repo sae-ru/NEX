@@ -15,7 +15,7 @@
       "symbol": "acceptance::increment"
     }
   ],
-  "language": "0.19",
+  "language": "0.20",
   "schema": "nex.verification-contracts/1",
   "source_hash": "08817f5e3da0caac761752577fb5ae50a2814eedf66a8e74a5ad6c1324b519cc"
 }

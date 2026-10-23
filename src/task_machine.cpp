@@ -26,7 +26,7 @@ struct TaskMachine::Impl {
   }
   void push(const std::string &name,const std::vector<TV> &arguments,const TV *environment,TaskSlotId returned){
     const auto &source=program.function(name);
-    for(const auto &effect:source.effects)if(effect!="task"&&effect!="io")throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness has no host resource bridge",source.span);
+    for(const auto &effect:source.effects)if(effect!="task"&&effect!="io"&&!(effect=="fs"&&supportsTaskFileReads(program)&&source.realm=="server"&&source.effects.contains("task")))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness has no host resource bridge",source.span);
     if(containsFile(program,Type::function({},source.result))||std::any_of(source.params.begin(),source.params.end(),[&](const auto &p){return containsFile(program,p.type);}))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness cannot carry file authority",source.span);
     if(frames.size()>=256)throw Error("E_LIMIT","continuation call depth exceeds256",source.span);
     auto found=functions.find(name);if(found==functions.end())found=functions.emplace(name,lowerTaskFunction(program,source)).first;
