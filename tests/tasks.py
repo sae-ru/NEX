@@ -31,6 +31,20 @@ test fn examples()->unit !{task}{assert(solve()==42);}
 
 
 class Tasks(harness.ToolchainCase):
+    def test_new_capture_and_replay_use_canonical_owned_output_directories(self):
+        task=self.scaffold();task['checks']=[];task['requirements']=[]
+        self.requirement(task,{'id':'effects','kind':'effects','target':'source',
+            'symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
+        physical=self.root/'physical-runs';physical.mkdir()
+        alias=self.root/'run-alias';alias.symlink_to(physical,target_is_directory=True)
+        run=self.task('run','--directory',alias/'captured')
+        receipt=Path(run['output'])
+        self.assertEqual(receipt,(physical/'captured/receipt.json').resolve(strict=True))
+        self.assertEqual(receipt,receipt.resolve(strict=True))
+        replay=self.cli('task',receipt,'--kind','replay','--directory',alias/'replayed',timeout=180)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],run['programs'])
+        self.assertEqual(Path(replay['output']),(physical/'replayed/receipt.json').resolve(strict=True))
+
     def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
         ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
         (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'ancestor.nex'}));self.cli('check',outer)

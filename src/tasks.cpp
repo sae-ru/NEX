@@ -776,7 +776,15 @@ struct Runner {
     for(auto &requirement:*value.getArray("requirements"))requirement.getAsObject()->erase("checks");return value;
   }
 };
-fs::path runDirectory(const TaskOptions &options){auto directory=options.directory.empty()?fs::path(options.root)/".nex/tasks/runs"/("run-"+nonce()):fs::absolute(options.directory);fs::create_directories(directory.parent_path());if(!fs::create_directory(directory))throw Error("E_EXISTS","task run requires a new directory");fs::permissions(directory,fs::perms::owner_all,fs::perm_options::replace);return directory;}
+fs::path runDirectory(const TaskOptions &options){
+  auto directory=options.directory.empty()?fs::path(options.root)/".nex/tasks/runs"/("run-"+nonce()):fs::absolute(options.directory);
+  fs::create_directories(directory.parent_path());
+  if(!fs::create_directory(directory))throw Error("E_EXISTS","task run requires a new directory");
+  fs::permissions(directory,fs::perms::owner_all,fs::perm_options::replace);
+  // Bind all subsequent capture paths to this newly owned directory. System
+  // aliases such as macOS /var must not enter immutable artifact namespaces.
+  return fs::canonical(directory);
+}
 struct ReplayPreflight {
   fs::path directory=createTemporaryDirectory("nex-task-replay-preflight");
   ~ReplayPreflight(){std::error_code error;fs::remove_all(directory,error);}

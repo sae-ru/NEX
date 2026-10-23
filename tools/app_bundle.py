@@ -320,14 +320,28 @@ def copy_task_provenance(inputs, stage, application, collector, profile=False, d
         if (source.stat().st_size != row['bytes'] or sha256(source) != row['sha256'] or
                 target.stat().st_size != row['bytes'] or sha256(target) != row['sha256']):
             raise ValueError('task provenance changed during collection')
+        symbols = None
         if debug and row['kind'] == 'root_symbols' and row['relative'] != 'debug-symbols.complete':
-            # The immutable original remains in retained-build. LLDB also needs
-            # the matching root dSYM adjacent to the relocated executable.
             symbols = application.parent/row['relative']
+        elif debug and row['kind'] == 'owned_symbols':
+            owners = [(original, output) for original, output in collector.destinations.items()
+                      if original in collector.owned_inputs and
+                      row['relative'].startswith('images/'+original.name+'.dSYM/')]
+            if len(owners) != 1:
+                raise ValueError('debug symbols have no unique collected image')
+            original, output = owners[0]
+            suffix = row['relative'][len('images/'+original.name+'.dSYM/'):]
+            symbols = Path(str(output)+'.dSYM')/suffix
+        if symbols is not None:
+            # Retain immutable originals and place byte-identical symbols next
+            # to each relocated image. Temporary directories are not indexed
+            # by the system's global dSYM lookup service.
+            if stage not in symbols.parents:
+                raise ValueError('relocated debug symbols escaped the package')
             symbols.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(target, symbols)
             if symbols.stat().st_size != row['bytes'] or sha256(symbols) != row['sha256']:
-                raise ValueError('relocated root debug symbols changed during collection')
+                raise ValueError('relocated debug symbols changed during collection')
         output = None if image is None else application if (image == Path(collector.debug_input_binary) if debug else row['kind'] in ('application_provider', 'application_profile_catalog')) else collector.destinations.get(image)
         if image is not None and (output is None or not output.is_file() or stage not in output.parents):
             raise ValueError('task provider image was not retained by collector')

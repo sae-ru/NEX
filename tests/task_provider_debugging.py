@@ -72,6 +72,7 @@ def reader_module():
 class TaskProviderDebugging(harness.ToolchainCase):
     def setUp(self):
         super().setUp();retained=os.environ.get('NEX_TASK_PROVIDER_DEBUG_OUTPUT')
+        self.root=self.root.resolve()
         if retained:
             self.root=Path(retained).resolve()/self._testMethodName;self.root.mkdir(parents=True,exist_ok=False)
         self.commands=[]
@@ -309,8 +310,11 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertEqual(refused['code'],'E_TASK');self.assertIn('dedicated configuration',refused['message'])
         self.assertFalse((self.root/'.nex/build').exists())
         taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
-        accepted=self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
+        physical=self.root/'capture-parent';physical.mkdir()
+        alias=self.root/'capture-alias';alias.symlink_to(physical,target_is_directory=True)
+        accepted=self.cli('task',taskfile,'--kind','run','--directory',alias/'capture',timeout=900)
         receipt=Path(accepted['output']);record=json.loads(receipt.read_text());check,=record['checks']
+        self.assertEqual(receipt,(physical/'capture/receipt.json').resolve(strict=True))
         self.assertEqual(check['status'],'passed')
         command=json.loads((receipt.parent/check['receipt']).read_text())
         self.assertEqual((command['exit_code'],command['interrupted']),(0,0));self.assertIs(command['timed_out'],False)
@@ -369,11 +373,20 @@ class TaskProviderDebugging(harness.ToolchainCase):
                 for symbol,before in zip(image['symbols'],original['symbols']):
                     self.assertTrue(Path(symbol['path']).is_relative_to(Path(session['manifest']).parent))
                     self.assertTrue(Path(symbol['path']).is_file());self.assertEqual(symbol['hash'],before['hash'])
-            run,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',
+            symbols=[]
+            if sys.platform=='darwin':
+                symbols=['script nex_symbol_target=lldb.debugger.GetSelectedTarget()',
+                    'script print(__import__("json").dumps({"schema":"nex.test-loaded-symbols/1","images":[{"path":str(nex_symbol_target.GetModuleAtIndex(i).GetFileSpec()),"symbols":str(nex_symbol_target.GetModuleAtIndex(i).GetSymbolFileSpec())} for i in range(nex_symbol_target.GetNumModules())]}))']
+            run,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',*symbols,
                 'nex-task-stack','nex-frame input+1','nex-eval pure::offset(input)','nex-task-next','nex-task-in','nex-task-out','continue'],label=label+'-lldb')
             value=next(row for row in rows if row.get('schema')=='nex.task-expression/2')
             self.assertEqual(value['value'],'42');self.assertEqual(value['source_identity']['component'],'leaf')
             self.assertIn('exited with status = 0',run.stdout)
+            if sys.platform=='darwin':
+                loaded=next(row for row in rows if row.get('schema')=='nex.test-loaded-symbols/1')
+                paths={row['path']:row['symbols'] for row in loaded['images']}
+                for path in [relocated['program'],*[row['path'] for row in relocated['owned_images']]]:
+                    self.assertEqual(paths[path],path+'.dSYM/Contents/Resources/DWARF/'+Path(path).name)
             frame=next(row for row in rows if row.get('schema')=='nex.debug-frame/4')
             mutations=[lambda d:d['owned_images'][0].update(path=raw['owned_images'][0]['path'])]
             if relocated['owned_images'][0]['symbols']:
