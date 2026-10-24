@@ -1750,7 +1750,7 @@
     "physical_access": "explicit coordinator-captured grant/request; no per-resume TLS lookup",
     "ancestry": "same scheduler ancestry or genuine request ancestor; sibling groups and foreign requests rejected",
     "promotion": "explicit trusted ancestor transfer, reserving destination ownership before cross-graph return; aliases retain physical identity",
-    "close": "logical revocation under scheduler lock; destructor request outside locks; native task/scope and reference scope publication after complete physical fence",
+    "close": "logical revocation under scheduler lock where applicable; destructor request outside locks; native and independent reference task/scope publication after complete physical fence",
     "root_retirement": "group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement",
     "maximum": {
       "scope_nodes_including_root": 1025,
@@ -1759,21 +1759,21 @@
       "physical_joined_domains": 8,
       "task_nodes": 65536,
       "task_depth": 256,
-      "request_group_links": 1024
+      "request_group_links": 1024,
+      "reference_task_nodes": 4096
     },
     "pending": [
-      "independent reference per-job ownership and request-parent integration",
       "source value input/result/channel/capture transport",
       "source task/FFI completion adapter and explicit language migration",
       "actual device bindings and matching compiler/SDK/platform delivery"
     ],
-    "reference_enable": "TaskReferenceExternalHost::resourceRegions before evaluation",
-    "reference_current_authority": "coordinator-only prepareInRegion/admitInRegion hooks",
-    "reference_cleanup": "scope publication after physical settlement; root and exceptional unwind drain physical operations and resources",
+    "reference_enable": "TaskReferenceExternalHost::resourceRegions and optional genuine resourceRequestParent before evaluation",
+    "reference_current_authority": "task root or owned inner scope via coordinator-only prepareInRegion/admitInRegion",
+    "reference_cleanup": "task/scope publication after complete physical settlement; root and unexpected unwind drain operations, frames and resources",
     "native_task_regions": true,
     "native_request_parent": true,
-    "reference_task_regions": false,
-    "reference_request_parent": false
+    "reference_task_regions": true,
+    "reference_request_parent": true
   },
   "task_value_retirement": {
     "status": "private_native_scheduler",

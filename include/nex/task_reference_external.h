@@ -55,6 +55,9 @@ struct TaskReferenceExternalHost {
   // Private trusted-host opt-in, captured before evaluation begins. This
   // creates Reference-family regions; it permits no source Value transport.
   bool resourceRegions=false;
+  // Optional genuine Request-family caller ancestry, captured once together
+  // with resourceRegions. It grants no physical access or source authority.
+  nexrt::ResourceRegionAuthority resourceRequestParent;
   virtual ~TaskReferenceExternalHost()=default;
   // Invoked only by the source coordinator for a checked task_yield. Returning
   // nullopt keeps ordinary yield semantics. A returned operation can retain
@@ -73,5 +76,8 @@ struct TaskReferenceExternalHost {
   // Private lifecycle observation after logical close, outside mailbox locks.
   // Coordinator-only and non-reentrant; it promises no source authority API.
   virtual void scopeRetired(size_t)noexcept{}
+  // After frame/operation/scope and complete task-resource settlement, before
+  // future publication. Coordinator-only, non-reentrant, no source authority.
+  virtual void taskRetired(size_t)noexcept{}
 };
 }

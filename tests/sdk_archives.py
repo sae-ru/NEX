@@ -78,6 +78,32 @@ class DistributionWorkflow(unittest.TestCase):
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
                 'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
 
+    def test_task_request_resources_require_installed_physical_completion_evidence(self):
+        current=self.report();current['doctor']={'version':'0.129.0'}
+        with self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','native_per_task_ownership','future_publication_waits_physical_settlement','caller_borrow_survives_group',
+                'explicit_request_return_preserves_identity','sibling_authority_refused','single_source_worker_progress_during_cleanup',
+                'cancel_deadline_physical_fence','combined_256_task_scope_depth','ancestor_spawn_preserves_lifetime','unpublished_creation_physical_fence')
+        evidence={**{name:True for name in fields},'primitive_cases':17,'native_cases':13,
+                  'source_value_transport':False,'installed_reference_private_host_gate':False}
+        current['evidence']={'source_resources':{'request_resources':evidence}}
+        for name in fields:
+            for value in (None,False,'true',1):
+                damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['request_resources'][name]=value
+                with self.subTest(name=name,value=value), self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+                    acceptance.validate_completed_report(damaged)
+        for name in ('source_value_transport','installed_reference_private_host_gate'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['request_resources'][name]=True
+            with self.subTest(claim=name), self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+                acceptance.validate_completed_report(damaged)
+        for name in ('primitive_cases','native_cases'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['request_resources'][name]=0
+            with self.subTest(count=name), self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+                acceptance.validate_completed_report(damaged)
+        with self.assertRaisesRegex(RuntimeError,'task value retirement'):
+            acceptance.validate_completed_report(current)
+
     def test_task_value_retirement_requires_actual_installed_cleanup_evidence(self):
         current=self.report();current['doctor']={'version':'0.128.0'}
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):

@@ -1,3 +1,22 @@
+# Development0.129: task/request resource ownership candidate
+
+Both native and independent AST host adapters give tasks separate resource
+roots and wait complete physical cleanup before publishing futures. Genuine
+request ancestry permits caller borrowing and explicit resource returns across
+groups. Source value transport and typed task FFI remain pending; language0.21
+and primary0.81 are unchanged. Main regression includes the new host gates;
+installed SDK acceptance compiles the native and request-primitive probes from
+installed resources. Matching acceptance for this candidate is still required.
+
+# Private145: independent reference task/request resource ownership draft
+
+The serial AST scheduler now assigns each opted-in host task its own resource
+root, captures genuine caller-request ancestry and waits complete physical
+cleanup before future publication. It preserves independent AST dispatch and
+coordinator-only host hooks. Source transport/typed FFI and matching delivery
+remain pending. The private draft retains previous0.128 compiler identity;
+it is not a new accepted SDK. See [the host contract](docs/request-resource-regions.md).
+
 # Private144: native task resource ownership draft
 
 Opted-in native host tasks now have separate resource roots and park completion

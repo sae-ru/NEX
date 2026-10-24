@@ -240,6 +240,8 @@ struct Reference {
     std::shared_ptr<Error> failure;
     std::weak_ptr<RD> capability;
     std::vector<size_t> owned;
+    std::optional<nexrt::ResourceRegion> resources;
+    std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
     std::optional<TaskReferenceExternalTicket> external;
     size_t externalScope=none;
 #ifndef _WIN32
@@ -308,7 +310,12 @@ struct Reference {
     (void)grant;
 #endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
-    if(host&&host->resourceRegions)resourceRoot=std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegionFamily::Reference);
+    if(host&&host->resourceRegions){
+      nexrt::ResourceRegionLimits bounds;bounds.tasks=maximumTasks;
+      const auto parent=host->resourceRequestParent;
+      resourceRoot=parent?std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegion::inRequest(nexrt::ResourceRegionFamily::Reference,parent,bounds)):
+        std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegionFamily::Reference,bounds);
+    }
   }
   // Also cover unexpected observer/host failures. Physical operations stop
   // retaining frames/leases before root revocation waits for finalizers.
@@ -318,12 +325,17 @@ struct Reference {
       jobs.clear();pipes.clear();retireRootResources();
     }
   }
-  nexrt::ResourceRegionAuthority resourceAuthority(size_t scope)const{
+  const nexrt::ResourceRegion &resourceContext(const Job &job)const{
     if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource regions are not enabled");
-    return scope==none?resourceRoot->authority():regions.at(scope).resources->authority();
+    return job.current==job.member?*job.resources:*regions.at(job.current).resources;
+  }
+  nexrt::ResourceRegionAuthority resourceAuthority(const Job &job)const{
+    return resourceContext(job).authority();
   }
   bool resourceRetirementsPending()const{
-    return std::any_of(regions.begin(),regions.end(),[](const Region &r){
+    return std::any_of(jobs.begin(),jobs.end(),[](const auto &job){
+      return job->resourceRetirement&&!job->resourceRetirement->ready();
+    })||std::any_of(regions.begin(),regions.end(),[](const Region &r){
       return r.resourceRetirement&&!r.resourceRetirement->ready();
     });
   }
@@ -491,7 +503,13 @@ struct Reference {
       }
       for(size_t i=0;i<jobs.size();++i){auto &j=*jobs[i];
         if(j.state==Finishing&&!j.external&&std::all_of(j.owned.begin(),j.owned.end(),[&](size_t s){return regions[s].closed;})){
-          j.stack.clear();j.request={};j.pending={};if(j.failure)j.result={};j.state=Done;changed=true;
+          j.stack.clear();j.request={};j.pending={};if(j.failure)j.result={};
+          if(j.resources){
+            if(!j.resourceRetirement){j.resourceRetirement.emplace(j.resources->beginClose());j.resourceRetirement->requestClose();}
+            if(!j.resourceRetirement->ready())continue;
+          }
+          if(externalHost)externalHost->taskRetired(i);
+          j.state=Done;changed=true;
         }else if(j.state==Future&&jobs[j.target]->state==Done){
           auto &target=*jobs[j.target];target.observed=true;
           if(target.failure)beginFinish(i,target.failure);else answer(i,target.result);changed=true;
@@ -524,8 +542,7 @@ struct Reference {
     for(const auto &a:j.stack)pending+=a.machine->pendingActions();
     if(outer>=256||pending>=262144)throw Error("E_LIMIT","reference callback frame/action limit exceeded",r.span);
     size_t s=regions.size();Region region;region.owner=i;region.parent=parent;region.depth=depth;
-    if(resourceRoot)region.resources=std::make_unique<nexrt::ResourceRegion>(
-      parent==none?resourceRoot->child():regions[parent].resources->child());
+    if(resourceRoot)region.resources=std::make_unique<nexrt::ResourceRegion>(resourceContext(j).child());
     regions.push_back(std::move(region));
     if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
@@ -538,6 +555,7 @@ struct Reference {
     if(jobs.size()>=maximumTasks||parent.depth>=256)throw Error("E_LIMIT","reference task slot/nesting limit exceeded",r.span);
     auto job=std::make_unique<Job>();job->member=job->current=s;job->parent=i;job->depth=parent.depth+1;
     Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll);job->stack.push_back(std::move(a));
+    if(resourceRoot)job->resources.emplace(regions[s].resources->taskChild());
     auto id=jobs.size();jobs.push_back(std::move(job));regions[s].members.push_back(id);enqueue(id);answer(i,value(RD::Task,id));
   }
   void dispatch(size_t i){
@@ -571,7 +589,7 @@ struct Reference {
     if(r.operation=="task_yield"){
       if(externalHost){
         std::optional<TaskReferenceExternalRequest> request;
-        try{request=resourceRoot?externalHost->prepareInRegion(i,r.span,resourceAuthority(j.current)):
+        try{request=resourceRoot?externalHost->prepareInRegion(i,r.span,resourceAuthority(j)):
               externalHost->prepare(i,r.span);}
         catch(const Error &){throw;}
         catch(const nexrt::DataError &){throw;}
@@ -729,7 +747,7 @@ struct Reference {
         // values require a separately reviewed, lease-checked source adapter.
         if(!raw.bytes.empty())throw Error("E_TASK_VALUE","reference yield completion requires an empty unit payload",span);
         try{
-          if(resourceRoot)externalHost->admitInRegion(i,raw,resourceAuthority(job.current));
+          if(resourceRoot)externalHost->admitInRegion(i,raw,resourceAuthority(job));
           else externalHost->admit(i,raw);
         }
         catch(const Error &){throw;}
@@ -803,7 +821,9 @@ struct Reference {
     validateEntry(entry);
     rootSpan=program.function(entry).span;
     for(const auto &v:arguments)snapshot(v,none,none);
-    auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));jobs.push_back(std::move(root));enqueue(0);
+    auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<TaskAstMachine>(program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));
+    if(resourceRoot)root->resources.emplace(resourceRoot->taskChild());
+    jobs.push_back(std::move(root));enqueue(0);
     while(jobs[0]->state!=Done){
       try{checkControl();}catch(const Error &){finishControl();break;}
       collectExternal();

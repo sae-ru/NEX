@@ -1,11 +1,12 @@
-# Private144: request-parent resource ownership foundation
+# Development0.129: request-parent and per-task resource ownership
 
-This host-only draft adds `ResourceRegionFamily::Request` and
+This host-only candidate adds `ResourceRegionFamily::Request` and
 `ResourceRegion::inRequest`. It is not an accepted SDK/toolchain release.
-The main compiler still identifies its preceding0.128/language0.21 cohort.
-The native adapter draft includes per-job roots and explicit request-parent
-capture. Its tests and matching compiler delivery remain separate required
-gates. Independent reference per-job/request-parent integration is pending.
+The compiler candidate identifies0.129/language0.21; matching delivery remains
+required. Previous private144/145 foundation probes retained0.128 identity.
+Both the native adapter and independent serial AST adapter drafts include
+per-job roots and explicit request-parent capture. Their tests and matching
+compiler/SDK delivery remain separate required gates.
 
 A request authority is a genuine common ancestor of separately identified
 Native and Reference graphs. Both can borrow a resource owned by their request
@@ -35,4 +36,5 @@ the owner table. Logical depth does not consume the physical eight-domain join.
 The standalone `experiments/resource-regions` CMake project includes the new
 request primitive gate and the existing native region/executor/owned-resource
 gates, plus the native per-job/request-parent gate. These do not establish
-independent AST per-job integration, installed SDK delivery or platforms.
+installed SDK delivery or platforms. Main CMake also registers an independent
+AST request/task resource gate with source programs and separate host callbacks.

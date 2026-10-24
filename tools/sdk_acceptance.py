@@ -619,6 +619,14 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,129,0):
+        ownership=report.get('evidence',{}).get('source_resources',{}).get('request_resources',{})
+        require(ownership.get('primitive_cases')==17 and ownership.get('native_cases')==13 and
+                ownership.get('source_value_transport') is False and ownership.get('installed_reference_private_host_gate') is False and all(ownership.get(key) is True for key in
+                ('ok','native_per_task_ownership','future_publication_waits_physical_settlement','caller_borrow_survives_group',
+                 'explicit_request_return_preserves_identity','sibling_authority_refused','single_source_worker_progress_during_cleanup',
+                 'cancel_deadline_physical_fence','combined_256_task_scope_depth','ancestor_spawn_preserves_lifetime','unpublished_creation_physical_fence')),
+                'SDK acceptance lacks installed native task/request resource ownership evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,128,0):
         values=report.get('evidence',{}).get('source_resources',{}).get('task_value_retirement',{})
         require(values.get('cases')==15 and all(values.get(key) is True for key in

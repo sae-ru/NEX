@@ -40,6 +40,9 @@ server fn main()->unit!{ffi,io}{BODY}
  if 'resource_regions' in pack:
   from sdk_resource_regions import check_installed_resource_regions
   evidence['resource_regions']=check_installed_resource_regions(run,root,resources,driver)
+  if pack['resource_regions'].get('native_request_parent'):
+   from sdk_request_resources import check_installed_request_resources
+   evidence['request_resources']=check_installed_request_resources(run,root,resources,driver)
  for kind in ('C11','CPP20'):
   project=out/kind;project.mkdir();marker=project/'events'
   _write(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})

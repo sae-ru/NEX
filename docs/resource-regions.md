@@ -64,8 +64,7 @@ retires remaining group-owned resources and waits their physical settlement
 before final worker shutdown. Explicitly returned request owners and borrowed
 caller resources survive group finish. Request resource closure follows linked
 groups' physical fences; it does not replace execution-control cancellation.
-Cancellation/deadline errors do not waive cleanup waits. Independent reference
-per-job ownership and request-parent integration are still pending.
+Cancellation/deadline errors do not waive cleanup waits.
 
 The maintained18-case gate checks complete ancestry/depth, alias promotion,
 foreign family/group refusal, logical admission before factories, invisible
@@ -78,7 +77,8 @@ The installed SDK compiles and runs the same18 cases from installed sources.
 
 The independent serial AST coordinator has its own scopes, jobs and FIFO queues;
 it does not dispatch native TaskGroup, TaskIR or compiled frames. A trusted host
-sets `TaskReferenceExternalHost::resourceRegions` before evaluation begins.
+sets `TaskReferenceExternalHost::resourceRegions` and an optional genuine
+`resourceRequestParent` before evaluation begins.
 The coordinator passes the current genuine Reference-family authority to
 `prepareInRegion` and, after physical operation retirement, `admitInRegion`.
 Their default implementations preserve the existing unit-only host hooks.
@@ -87,6 +87,16 @@ new authority. Hosts without it allocate no resource graph. These callbacks are
 coordinator-only, non-reentrant trusted APIs; no authority reaches a source Value,
 raw mailbox result or IO-worker ticket.
 
+Each AST job owns a task region under its member scope or group root. Its
+`with_tasks` regions inherit that current job context. Hosts receive the job
+root when the current source scope is its member scope; an owned inner scope
+supplies its own descendant authority. Explicit ancestor-scope spawns inherit
+the selected member scope, preserving their lifetime beyond the caller job.
+Task completion and `taskRetired` wait for frames, operations, owned scopes and
+complete physical task resource settlement. `taskRetired` observes publication;
+unexpected observer failures drain resources without publishing unfinished jobs.
+Idle/control waits include pending task resource fences. Explicit request returns
+and borrowed caller resources survive evaluator/group destruction.
 Each AST `with_tasks` owns a child logical region. Scope completion and its
 `scopeRetired` notification wait for the whole physical resource fence, including
 executor finalizers. Other ready AST jobs continue while that cleanup is pending.
