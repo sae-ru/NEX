@@ -7,13 +7,14 @@ const char *programLanguage(const Program &program){
   case SourceLanguage::Language018:return "0.18";
   case SourceLanguage::Tasks019:return "0.19";
   case SourceLanguage::TaskFiles020:return "0.20";
+  case SourceLanguage::OwnedResources021:return "0.21";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
 bool isPublicTaskLanguage(const Program &program){
-  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020;
+  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021;
 }
-bool supportsTaskFileReads(const Program &program){return program.sourceLanguage==SourceLanguage::TaskFiles020;}
+bool supportsTaskFileReads(const Program &program){return program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021;}
 bool usesTaskEffects(const Program &program,const std::string &entry){
   std::vector<std::string> pending{entry};std::set<std::string> seen;
   while(!pending.empty()){

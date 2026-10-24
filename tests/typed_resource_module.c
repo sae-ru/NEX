@@ -19,8 +19,11 @@ __attribute__((constructor)) static void loaded(void){
 __attribute__((destructor)) static void unloaded(void){event('D');}
 static void destroy(void *pointer){event('X');free(pointer);}
 static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *user,void **out){
-  int64_t value=*(int64_t*)user;Object *object=malloc(sizeof(*object));if(!object)return NEX_FFI_LIMIT;
+  int64_t value=*(int64_t*)user;Object *object=(Object*)malloc(sizeof(*object));if(!object)return NEX_FFI_LIMIT;
   object->value=value;*out=object;event('F');
+#ifdef __cplusplus
+  if(value==-4)throw 42;
+#endif
   if(value==-1)return NEX_FFI_LIMIT;
   if(value==-3)(void)api->poll(call);
   return NEX_FFI_OK;
@@ -28,7 +31,7 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
 static nex_ffi_status null_factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *user,void **out){(void)api;(void)call;(void)user;(void)out;event('N');return NEX_FFI_OK;}
 #define TRY(expr) do{nex_ffi_status code=(expr);if(code!=NEX_FFI_OK)return code;}while(0)
 typedef struct {const nex_ffi_api_v1 *api;nex_ffi_call call;nex_ffi_ref ref;nex_ffi_type type;nex_ffi_status status;} WrongThread;
-static void *wrong_thread(void *argument){WrongThread *w=argument;void *untouched=(void*)(uintptr_t)123;w->status=w->api->resource_borrow(w->call,w->ref,w->type,&untouched);if(untouched!=(void*)(uintptr_t)123)w->status=NEX_FFI_INTERNAL;return NULL;}
+static void *wrong_thread(void *argument){WrongThread *w=(WrongThread*)argument;void *untouched=(void*)(uintptr_t)123;w->status=w->api->resource_borrow(w->call,w->ref,w->type,&untouched);if(untouched!=(void*)(uintptr_t)123)w->status=NEX_FFI_INTERNAL;return NULL;}
 static nex_ffi_call old_call;
 static nex_ffi_ref old_ref;
 static nex_ffi_type old_type;

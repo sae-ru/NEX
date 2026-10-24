@@ -48,6 +48,7 @@ class Generator {
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
   std::string site(S statement){const auto &s=statement->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(statement.get()))+"]";}
   void needed(const Type &t){
+    if(containsExternalResource(p,t))throw Error("E_REALM","external resource authority cannot enter a browser module");
     if(t.element)needed(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)needed(argument);
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }
@@ -204,6 +205,7 @@ public:
     for(const auto &name:functions)if(usesParallelMap(p.function(name)))parallelEnabled=true;
     for(const auto &name:structures){
       const auto &s=p.structure(name);
+      if(s.opaqueResource)throw Error("E_REALM","opaque resource declarations cannot be emitted to the browser",s.span);
       if(s.enumeration){write("export type "+type(Type::record(name))+" =\n");for(size_t i=0;i<s.variants.size();++i){const auto &variant=s.variants[i];write("  "+std::string(i?"| ":"  ")+"(nex.RecordValue & { readonly [nex.TYPE]: "+quote(name)+"; readonly [nex.CASE]: "+quote(variant.name)+"; ");for(const auto &field:variant.fields)write("readonly "+quote(field.name)+": "+type(field.type)+"; ");write("})\n");}write(";\n\n");continue;}
       write("export type "+type(Type::record(name))+" = nex.RecordValue & {\n  readonly [nex.TYPE]: "+quote(name)+";\n");
       for(const auto &field:s.fields)write("  readonly "+quote(field.name)+": "+type(field.type)+";\n");write("};\n\n");

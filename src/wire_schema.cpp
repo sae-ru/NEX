@@ -3,7 +3,7 @@
 #include <functional>
 namespace nex {
 llvm::json::Value wireSchema(const Program &p,const Type &type){
-  if(containsFile(p,type))throw Error("E_TYPE","file resources cannot cross the JSON boundary");
+  if(containsNonTaskResource(p,type))throw Error("E_TYPE","file resources cannot cross the JSON boundary");
   if(containsTaskAuthority(p,type))throw Error("E_TYPE","task and channel authority cannot cross the JSON boundary");
   llvm::json::Object records,enums;std::set<std::string> seen;
   std::function<llvm::json::Value(const Type&)> describe=[&](const Type &t)->llvm::json::Value{

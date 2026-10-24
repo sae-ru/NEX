@@ -1663,5 +1663,18 @@
     "source_task_bridge": false,
     "actual_GPU_NPU_resources": false,
     "guide": "docs/external-resources-design.md"
+  },
+  "private_source_resource_staging": {
+    "language": "0.21",
+    "public_enabled": false,
+    "default_language": "0.20",
+    "explicit_internal_versioned_bundle_only": true,
+    "opaque_declarations": true,
+    "generic_resources": true,
+    "reference_and_native": true,
+    "source_constructor": false,
+    "wire_browser_task_transport": false,
+    "migration_accepted": false,
+    "guide": "docs/external-resources-design.md"
   }
 }

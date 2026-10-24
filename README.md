@@ -1,3 +1,19 @@
+# Private137: opaque source resource integration
+
+Explicit internal0.21 source staging adds server resource declarations, generic
+resource identities, typed extern owners and server/ffi close/status operations.
+The reference and MLIR backends execute these through actual pinned C11/C++20
+modules. Constructors, wire/browser/task/channel/parallel authority transport
+are rejected. Public CLI/default language remains0.20; migration, public
+resource publication and actual device/task integration remain pending.
+Read [the private boundary](docs/external-resources-design.md).
+
+The first scoped probe passed28 source cases/51 commands, two real native
+applications and C++ factory throw cleanup. All12 genuine020 revisions recheck
+to their original hashes. The maintained gate additionally checks native
+throw/checked-trap exits with live owners. Matching current regression, installed
+SDK, actual resource debugging and migration gates remain separate required work.
+
 # Private136: typed external-resource C and loader integration
 
 This cohort adds an append-only C resource suffix, result-reachable constructors,

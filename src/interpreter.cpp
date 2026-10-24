@@ -123,6 +123,10 @@ class Interpreter {
       if(e->text=="encode_json")return V(nexrt::string(nexrt::encodeJSON(full(args[0]))));
       if(e->text=="decode_json")return nexrt::decodeJSON(full(args[0]).object->text,json(wireSchema(p,e->annotation),false));
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
+      if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text)){
+        auto value=full(args[0]);auto resource=nexrt::externalResource(value.object);step(e->span);
+        return V(e->text=="resource_close"?resource.close():resource.isOpen(),true);
+      }
       if(streamFileBuiltins().contains(e->text)){
         auto poll=[&]{step(e->span);};
         if(e->text=="file_close"||e->text=="file_is_open"){

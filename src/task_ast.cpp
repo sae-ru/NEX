@@ -91,9 +91,9 @@ struct TaskAstMachine::Impl {
       function.effects.contains("task")&&function.effects.contains("fs");
     for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
-    if(function.foreign||containsFile(program,Type::function({},function.result))||
-       std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return containsFile(program,p.type);})||
-       std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &p){return containsFile(program,p.type);}))
+    if(function.foreign||containsNonTaskResource(program,Type::function({},function.result))||
+       std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);})||
+       std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);}))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation cannot carry file or foreign authority",function.span);
     if(!function.typeParameters.empty()||containsParameter(function.result))
       throw Error("E_GENERIC_ENTRY","AST continuation requires concrete functions",function.span);

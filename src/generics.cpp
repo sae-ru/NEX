@@ -47,12 +47,52 @@ bool containsFile(const Program &program,const Type &type){
     return false;
   };return visit(type);
 }
+bool isExternalResource(const Program &program,const Type &type){return type.kind==Type::Record&&program.hasStructure(type.name)&&program.structure(type.name).opaqueResource;}
+bool containsExternalResource(const Program &program,const Type &type){
+  std::set<std::string> seen;
+  std::function<bool(const Type&)> visit=[&](const Type &value){
+    if(isExternalResource(program,value))return true;
+    if(value.element&&visit(*value.element))return true;
+    for(const auto &argument:value.arguments)if(visit(argument))return true;
+    if(value.kind==Type::Record&&program.hasStructure(value.name)&&seen.insert(value.name).second){const auto &record=program.structure(value.name);for(const auto &argument:record.typeArguments)if(visit(argument))return true;for(auto field:record.members())if(visit(field->type))return true;}
+    return false;
+  };return visit(type);
+}
+bool containsNonTaskResource(const Program &program,const Type &type){return containsFile(program,type)||containsExternalResource(program,type);}
+std::pair<std::string,std::string> sourceResourceClass(const Program &program,const Structure &declaration){
+  if(!declaration.opaqueResource)throw Error("E_RESOURCE_TYPE","resource class requires an opaque declaration",declaration.span);
+  llvm::json::Object context;std::set<std::string> seen;size_t nodes=0;
+  std::function<void(const Type&,unsigned)> visit;
+  std::function<void(const Structure&,bool,unsigned)> nominal;
+  nominal=[&](const Structure &value,bool generic,unsigned depth){
+    auto key=(generic?"template:":"type:")+value.name;if(!seen.insert(key).second)return;
+    if(seen.size()>16384)throw Error("E_RESOURCE_TYPE","resource type context exceeds its declaration budget",declaration.span);
+    context[key]=canonical(value);
+    for(const auto &argument:value.typeArguments)visit(argument,depth+1);
+    for(auto field:value.members())visit(field->type,depth+1);
+    if(!value.templateName.empty()){auto found=program.structureTemplates.find(value.templateName);if(found!=program.structureTemplates.end())nominal(found->second,true,depth+1);}
+  };
+  visit=[&](const Type &type,unsigned depth){
+    if(depth>256||++nodes>100000)throw Error("E_RESOURCE_TYPE","resource type context exceeds its depth/node budget",declaration.span);
+    if(type.element)visit(*type.element,depth+1);for(const auto &argument:type.arguments)visit(argument,depth+1);
+    if(type.kind==Type::Record&&program.hasStructure(type.name))nominal(program.structure(type.name),false,depth+1);
+    if(type.kind==Type::Constructor){auto found=program.structureTemplates.find(type.name);if(found!=program.structureTemplates.end())nominal(found->second,true,depth+1);}
+  };
+  for(const auto &argument:declaration.typeArguments)visit(argument,0);
+  if(!declaration.templateName.empty()){auto found=program.structureTemplates.find(declaration.templateName);if(found!=program.structureTemplates.end())nominal(found->second,true,0);}
+  // Names alone do not bind a phantom argument's layout or resource declaration.
+  // Include its complete checked nominal context, including generic templates.
+  auto identity=hash(json(llvm::json::Object{{"format","nex.resource-type/2"},{"module",declaration.owner.empty()?program.module:declaration.owner},{"definition",canonical(declaration)},{"type_context",std::move(context)}},false));
+  // Specialization/source names can contain punctuation and reach4096 bytes.
+  // The complete digest keeps the host class bounded without truncating names.
+  return {"nex_resource::r"+identity,identity};
+}
 bool satisfiesConstraint(const Program &program,const Type &type,const std::string &constraint){
   if(!std::set<std::string>{"wire","add","ordered","number","integer"}.contains(constraint))return hasTraitWitness(program,type,constraint);
   if(type.kind==Type::Projection){auto sep=type.name.rfind("::");const auto &owner=traitDefinition(program,type.name.substr(0,sep));auto found=owner.associated.find(type.name.substr(sep+2));
     if(found!=owner.associated.end()){const auto &bounds=found->second;return bounds.contains(constraint)||((constraint=="add"||constraint=="ordered"||constraint=="wire")&&(bounds.contains("integer")||bounds.contains("number")))||(constraint=="number"&&bounds.contains("integer"))||(constraint=="wire"&&bounds.contains("ordered"));}return false;}
   if(constraint=="wire"){
-    if(containsFile(program,type)||containsTaskAuthority(program,type))return false;
+    if(containsNonTaskResource(program,type)||containsTaskAuthority(program,type))return false;
     std::set<std::string> seen;std::function<bool(const Type&)> visit=[&](const Type &value){
       if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes)return true;
       if(value.kind==Type::Projection)return satisfiesConstraint(program,value,"wire");

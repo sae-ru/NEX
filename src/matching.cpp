@@ -21,6 +21,7 @@ void checkPattern(Program &program,P pattern,Type type,std::vector<Param> &bindi
       else throw Error("E_MATCH_VARIANT","result patterns use ok(value) or err(code,message)",pattern->span);
     }else if(type.kind==Type::Record){
       const auto &expected=program.structure(type.name);
+      if(expected.opaqueResource)throw Error("E_RESOURCE_CONSTRUCTOR","opaque resources support binding/wildcard patterns only",pattern->span);
       if(expected.enumeration){
         const Structure *owner=nullptr;auto variant=program.variant(pattern->text,&owner);
         if(variant&&owner->name!=expected.name&&owner->name==expected.templateName){pattern->text=expected.name+"::"+variant->name;variant=program.variant(pattern->text,&owner);}
@@ -43,6 +44,7 @@ bool wildcard(P p){return p->kind==Pattern::Binding||p->kind==Pattern::Wildcard;
 P any(Type type){auto p=std::make_shared<Pattern>();p->type=type;return p;}
 std::string key(P p){return std::to_string(p->kind)+":"+p->text+":"+std::to_string(p->kind==Pattern::List?int64_t(p->args.size()):p->number);}
 std::optional<Row> constructors(const Program &program,Type type){
+  if(isExternalResource(program,type))return std::nullopt;
   Row values;auto add=[&](Pattern::Kind kind,std::string text,int64_t number,std::vector<Type> children){auto p=std::make_shared<Pattern>();p->kind=kind;p->text=std::move(text);p->number=number;p->type=type;for(auto child:children)p->args.push_back(any(child));values.push_back(std::move(p));};
   if(type==Type::Bool){add(Pattern::Boolean,"",0,{});add(Pattern::Boolean,"",1,{});}
   else if(type.kind==Type::Result){add(Pattern::Constructor,"ok",0,{*type.element});add(Pattern::Constructor,"err",0,{Type::Str,Type::Str});}

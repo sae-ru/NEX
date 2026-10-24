@@ -1,3 +1,9 @@
+Private137 stages opaque source resources under explicit internal source version0.21.
+The public CLI/default language remains0.20; source resource publication and its
+history-preserving migration are not enabled. Read external-resources-design.md
+for the implemented private boundary and remaining delivery gates. Do not change
+an existing project's language field to opt into this staging code.
+
 Toolchain0.122 adds the ordinary-source `std/model.nex` contract and provider preparation tooling; no syntax, canonical identity, language0.20 or migration change. See models.md.
 
 Toolchain0.121 adds the ordinary-source checked `std/compute.nex` library: immutable

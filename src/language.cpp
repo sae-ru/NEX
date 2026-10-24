@@ -41,14 +41,18 @@ std::string typeName(Type t) {
     case Type::Constructor:return t.name;
     default: return "unknown"; }
 }
-const std::set<std::string> &builtinNames(bool tasks){
+const std::set<std::string> &builtinNames(bool tasks,bool resources){
   static const std::set<std::string> names=[] {
     std::set<std::string> result={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes","file"};
     result.insert("parallel_map");result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
   }();
   static const std::set<std::string> extended=[&]{auto result=names;result.insert(taskBuiltins().begin(),taskBuiltins().end());result.insert({"task","channel","task_scope"});return result;}();
-  return tasks?extended:names;
+  static const std::set<std::string> owned=[&]{auto result=names;result.insert(externalResourceBuiltins().begin(),externalResourceBuiltins().end());return result;}();
+  static const std::set<std::string> all=[&]{auto result=extended;result.insert(externalResourceBuiltins().begin(),externalResourceBuiltins().end());return result;}();
+  return resources?(tasks?all:owned):(tasks?extended:names);
 }
+const std::set<std::string> &externalResourceBuiltins(){static const std::set<std::string> names={"resource_close","resource_is_open"};return names;}
+bool supportsExternalResources(const Program &p){return p.sourceLanguage==SourceLanguage::OwnedResources021;}
 const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
@@ -437,8 +441,9 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
+    if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
@@ -464,6 +469,12 @@ public:
         expect("as");auto alias=name();dependency.alias=alias.text;editorName("alias",alias.text,alias.span);dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
+      if(supportsExternalResources(p)&&(peek().text=="resource"||((peek().text=="server"||peek().text=="client"||peek().text=="shared")&&peek(1).text=="resource"))){
+        auto realm=peek().text=="resource"?"shared":take().text;expect("resource");
+        if(realm!="server")throw Error("E_REALM","opaque resource declarations require server realm",start);
+        Structure s;s.span=start;s.exported=exported;s.opaqueResource=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);s.span.end=expect(";").span.end;
+        p.structures.push_back(std::move(s));clearParameters();continue;
+      }
       if(accept("trait")){
         Trait value;value.span=start;value.exported=exported;auto traitName=name();value.name=traitName.text;auto selfOrigin=traitName.span;
         if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity();typeEnd();}
@@ -546,6 +557,7 @@ class Checker {
     if(f)resourceRealm(t,f->realm,span);
   }
   void resourceRealm(const Type &type,const std::string &realm,Span span){
+    if(realm!="server"&&containsExternalResource(p,type))throw Error("E_REALM","external resource values require a server function, including aggregate and capture types",span);
     if(realm!="server"&&containsFile(p,type))throw Error("E_REALM","file values require a server function, including aggregate and capture types",span);
   }
   void unify(Type formal,Type actual,std::map<std::string,Type> &bound,Span span){
@@ -669,10 +681,10 @@ class Checker {
       throw Error("E_EFFECT",supportsTaskFileReads(p)?
         "task callbacks must be pure, task-only, or server task/fs with caller authorization":
         "task callbacks may declare only the task effect",callback->span);
-    if(containsFile(p,type))throw Error("E_TASK_TYPE","task callback signatures cannot carry file resources",callback->span);
+    if(containsNonTaskResource(p,type))throw Error("E_TASK_TYPE","task callback signatures cannot carry file resources",callback->span);
     if(callback->kind==Expr::Lambda||callback->kind==Expr::FunctionRef){
       const auto &target=p.function(callback->text,callback->span);
-      for(const auto &capture:target.captures)if(containsFile(p,capture.type))
+      for(const auto &capture:target.captures)if(containsNonTaskResource(p,capture.type))
         throw Error("E_TASK_TYPE","task callbacks cannot capture file resources",callback->span);
     }
     return *type.element;
@@ -697,7 +709,7 @@ class Checker {
       auto item=e->typeArguments.empty()?(expected.kind==Type::Channel?*expected.element:Type()):e->typeArguments[0];
       if(item==Type::Unknown)throw Error("E_INFER","channel_new needs a payload type or channel<T> context",e->span);
       validType(item,e->span);
-      if(containsFile(p,item))throw Error("E_TASK_TYPE","channel payloads cannot carry file resources",e->span);
+      if(containsNonTaskResource(p,item))throw Error("E_TASK_TYPE","channel payloads cannot carry file resources",e->span);
       return Type::channel(std::move(item));
     }
     arity(e->text=="task_send"?2:1);
@@ -781,9 +793,16 @@ class Checker {
         if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","function values do not accept type arguments at invocation",e->span);
         auto callee=std::make_shared<Expr>();callee->kind=Expr::Name;callee->text=local;callee->span=e->span;e->args.insert(e->args.begin(),std::move(callee));e->kind=Expr::Invoke;e->text.clear();return expr(e,expected);
       }
-      if(!e->typeArguments.empty()&&builtinNames(p.taskPrototype).contains(e->text)&&!(p.taskPrototype&&e->text=="channel_new"))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
+      if(!e->typeArguments.empty()&&builtinNames(p.taskPrototype,supportsExternalResources(p)).contains(e->text)&&!(p.taskPrototype&&e->text=="channel_new"))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
       if(p.taskPrototype&&taskBuiltins().contains(e->text)){e->type=taskCall(e,expected);break;}
+      if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text)){
+        arity(1);auto type=expr(e->args[0]);
+        if(!isExternalResource(p,type))throw Error("E_RESOURCE_TYPE",e->text+" requires an opaque resource owner",e->args[0]->span);
+        if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
+        if(!f->effects.contains("ffi"))throw Error("E_EFFECT",e->text+" requires declared effect ffi",e->span);
+        e->type=Type::Bool;break;
+      }
       if(e->text=="parallel_map"){
         arity(3);Type items,callback;bool callbackTyped=false;
         auto checkCallback=[&](Type value){
@@ -791,7 +810,7 @@ class Checker {
             throw Error("E_PARALLEL_TYPE","parallel_map needs a one-argument value-returning callback",e->args[1]->span);
           callableRealm(value,e->args[1]->span);
           if(!value.effects.empty())throw Error("E_EFFECT","parallel_map callback must have no declared effects",e->args[1]->span);
-          if(containsFile(p,value)||containsTaskAuthority(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file or task resources",e->args[1]->span);
+          if(containsNonTaskResource(p,value)||containsTaskAuthority(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file or task resources",e->args[1]->span);
         };
         try{items=expr(e->args[0]);}catch(const Error &error){
           if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;
@@ -799,7 +818,7 @@ class Checker {
           items=expr(e->args[0],Type::list(callback.arguments[0]));
         }
         if(items.kind!=Type::List)throw Error("E_TYPE","parallel_map input must be a list",e->args[0]->span);
-        if(containsFile(p,items)||containsTaskAuthority(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file or task resources",e->args[0]->span);
+        if(containsNonTaskResource(p,items)||containsTaskAuthority(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file or task resources",e->args[0]->span);
         if(!callbackTyped){
           Type hint;
           if(e->args[1]->kind==Expr::Name&&!hasLocal(e->args[1]->localName.empty()?e->args[1]->text:e->args[1]->localName)&&e->args[1]->typeArguments.empty()){
@@ -814,8 +833,8 @@ class Checker {
         }
         if(p.taskPrototype&&(e->args[1]->kind==Expr::Lambda||e->args[1]->kind==Expr::FunctionRef)){
           const auto &target=p.function(e->args[1]->text,e->args[1]->span);
-          for(const auto &capture:target.captures)if(containsTaskAuthority(p,capture.type))
-            throw Error("E_PARALLEL_TYPE","parallel_map callbacks cannot capture task or channel authority",e->args[1]->span);
+          for(const auto &capture:target.captures)if(containsTaskAuthority(p,capture.type)||containsExternalResource(p,capture.type))
+            throw Error("E_PARALLEL_TYPE","parallel_map callbacks cannot capture task, channel or external resource authority",e->args[1]->span);
         }
         same(*items.element,callback.arguments[0],e->args[0]->span);
         same(expr(e->args[2],Type::I64),Type::I64,e->args[2]->span);
@@ -880,6 +899,7 @@ class Checker {
       }
       if(p.hasStructure(e->text)) {
         const auto &declaration=p.structure(e->text);
+        if(declaration.opaqueResource)throw Error("E_RESOURCE_CONSTRUCTOR","opaque resources have no source constructor; use a granted external factory",e->span);
         if(!declaration.typeParameters.empty()){
           const auto &raw=p.structureTemplates.at(declaration.name);auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
           auto arguments=infer(raw.typeParameters,raw.fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);e->text=instance.name;e->typeArguments=arguments;
@@ -982,8 +1002,9 @@ public:
   void run() {
     prepareTraits(p);prepareGenerics(p);
     std::set<std::string> names;
-    const auto &builtins=builtinNames(p.taskPrototype);
+    const auto &builtins=builtinNames(p.taskPrototype,supportsExternalResources(p));
     for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
+      if(s.opaqueResource&&(!supportsExternalResources(p)||s.enumeration||!s.fields.empty()||!s.variants.empty()))throw Error("E_RESOURCE_DECLARATION","invalid opaque resource declaration or source version",s.span);
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
       auto fields=[&](auto &members){std::set<std::string> seen;for(auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
       fields(s.fields);if(s.enumeration&&s.variants.empty())throw Error("E_ENUM","an enum requires at least one variant",s.span);
@@ -1079,11 +1100,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021).run();
   p.sourceLanguage=language;return p;
 }
 Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){return parseVersioned(std::move(source),std::move(path),SourceLanguage::TaskFiles020,editorNames,editorDetails);}
@@ -1122,7 +1143,7 @@ llvm::json::Value canonical(const Function &f) {
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format",s.enumeration?"nex.enum/4":"nex.structure/5"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  llvm::json::Object result{{"format",s.opaqueResource?"nex.resource/1":s.enumeration?"nex.enum/4":"nex.structure/5"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
   result["type_parameter_kinds"]=canonicalKinds(s.typeParameters,s.typeArities);
   if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}result["variants"]=std::move(variants);}
   else{llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});result["fields"]=std::move(fields);}return result;
@@ -1199,6 +1220,7 @@ llvm::json::Value describe() {
       {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
       {"signature_schema","nex.foreign-signature/1"},{"signature_command","nex ffi FILE --symbol NAME --json"},
       {"owned_external_host",llvm::json::Object{{"source_support",false},{"status","private_typed_C_loader_prototype"},{"guide","docs/external-resources-design.md"},{"header","runtime/nex_ffi_resources.h"},{"value_kind",15},{"C_resource_construction",true},{"result_reachable_construction_only",true},{"actual_module_callback_ownership",true},{"per_image_borrow_origin",true},{"call_thread_borrow_lifetime",true},{"lexical_and_request_revocation",true},{"physical_capacity_retained",true},{"source_resource_types",false},{"source_task_bridge",false},{"device_executor",false},{"actual_GPU_NPU_resources",false}}},
+      {"owned_external_source_staging",llvm::json::Object{{"public_enabled",false},{"language","0.21"},{"default_language","0.20"},{"explicit_internal_versioned_bundle_only",true},{"declarations",true},{"generic_resources",true},{"reference_and_native",true},{"source_constructor",false},{"source_task_bridge",false},{"migration_accepted",false},{"guide","docs/external-resources-design.md"}}},
       {"invocation_context",llvm::json::Object{{"source_support",true},{"host_schema","nex.foreign-host/1"},{"binding_schema","nex.foreign-binding/1"},{"header","runtime/nex_foreign.h"},{"native_header","runtime/nex_foreign_abi.h"},{"features",llvm::json::Array{"explicit_regular_file_catalogue","relative_operator_paths","no_ambient_grants","lexical_thread_contexts","snapshotted_call_storage","bounded_binding_cache","request_rebinding","native_managed_value_bridge","sticky_native_source_traps","terminal_module_cleanup"}},{"limits",llvm::json::Object{{"configuration_bytes",1048576},{"binding_bytes",1048576},{"cached_bindings",4096},{"cached_binding_utf8_bytes",67108864},{"scope_depth",64},{"arguments",4096}}}}},
       {"module_loading",llvm::json::Object{{"source_support",true},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
       {"features",llvm::json::Array{"source_external_declarations","server_ffi_effect","pinned_source_bindings","interpreter_native_calls","browser_server_exclusion","call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},

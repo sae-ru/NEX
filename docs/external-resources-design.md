@@ -131,7 +131,46 @@ request revocation, physical quota retention, concurrent close and a loaded
 provider's actual destruction/unload. Existing file-value and0.37 C transport
 tests run alongside them. They do not prove public resource types or device use.
 
-## Required source and FFI integration
+## Private137 source integration
+
+An explicit internal0.21 versioned-bundle recheck accepts
+`pub server resource Session;` and generic opaque declarations such as
+`server resource Buffer<T>;`. The public/default CLI remains0.20 and rejects
+the new declaration syntax. Migration and source publication remain pending.
+
+Opaque declarations use a separate `nex.resource/1` canonical node while ordinary
+records retain their exact old canonical format and meaning. Generic instances
+retain their declaration flag and arguments. Compiler-exported C resource class
+names use a complete digest in bounded qualified ASCII; semantic identity includes
+the genuine declaration, owning module and specialization. Long/generic source
+names are not truncated or merged into one host registration.
+
+There is no source constructor or constructor pattern. Granted typed extern
+factories create genuine owners. `resource_close(owner)->bool !{ffi}` and
+`resource_is_open(owner)->bool !{ffi}` require server realm and an opaque resource
+type. Aliases, aggregate/result forwarding, identity equality and diagnostic
+formatting preserve the host ownership behavior. Reference execution and MLIR
+native output use the same checked value C ABI with independent source execution.
+
+Nested and phantom resource types/captures are server-only and cannot satisfy
+wire or cross JSON, task, channel, parallel or browser boundaries. Known hidden
+resource captures are rejected before parallel/task entry; runtime guards remain.
+Unreachable resource/server code is absent from emitted client code. Native
+runtime selection also includes resource operations in code without local externs.
+
+Native formatter code can preview only opaque identity. Reconstructing an external
+owner from a watch capture is explicitly unavailable; no diagnostic ID becomes
+authority. Actual resource LLDB/capsule acceptance remains pending.
+
+The maintained private probe/conformance test exercises declaration/type checks,
+generic separation, source refusals, pinned C11/C++20 producers, actual
+reference/native execution, client reachability, C++ throw-after-pointer-transfer
+cleanup and checked native failure with a live owner. The optional genuine020
+fixture gate rechecks all12 original revisions without changing their hashes.
+These checks establish a private integration result, not public021 migration.
+New builtin-name conflicts require a reviewed repair when publication is enabled.
+
+## Required remaining source and FFI integration
 
 1. Add an opaque nominal resource declaration, for example the proposed
    `pub server resource Session;`. `resource` is contextual at declaration

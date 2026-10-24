@@ -115,7 +115,7 @@ bool unsupportedTaskBoundaryType(const Program &p,const Type &type){
 bool unsupportedStaticTaskValue(const Program &p,const Type &type){
   std::set<std::string> seen;
   std::function<bool(const Type&)> visit=[&](const Type &value){
-    if(value.kind==Type::File||value.kind==Type::Task||value.kind==Type::Channel||value.kind==Type::TaskScope||value.kind==Type::Function)return true;
+    if(isExternalResource(p,value)||value.kind==Type::File||value.kind==Type::Task||value.kind==Type::Channel||value.kind==Type::TaskScope||value.kind==Type::Function)return true;
     if(value.element&&visit(*value.element))return true;
     for(const auto &argument:value.arguments)if(visit(argument))return true;
     if(value.kind==Type::Record&&p.hasStructure(value.name)&&seen.insert(value.name).second){
@@ -598,6 +598,7 @@ class Emitter {
         auto schema=json(wireSchema(p,e->annotation),false);auto bytes=rawBytes(schema,e->span);result=call("nex_decode_json",{args[0],bytes,c(schema.size()),c(e->span.line)},e->type,e->span);
       }
       else if(e->text=="read_env")result=call("nex_read_env",args,e->type,e->span);
+      else if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text))result=asBool(call("nex_"+e->text,{args[0],c(e->span.line)},Type::I64,e->span),e->span);
       else if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"||streamFileBuiltins().contains(e->text)){
         auto operands=args;operands.push_back(c(e->span.line));bool scalar=e->type==Type::Bool;
         result=call("nex_"+e->text,operands,scalar?Type(Type::I64):e->type,e->span);if(scalar)result=asBool(result,e->span);
@@ -849,6 +850,7 @@ public:
     for(auto name:{"file_read","file_seek"})declaration("nex_"+std::string(name),"!llvm.ptr, i64, i64","!llvm.ptr");
     declaration("nex_file_write","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
     for(auto name:{"file_close","file_is_open"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","i64");
+    if(supportsExternalResources(p))for(const auto &name:externalResourceBuiltins())declaration("nex_"+name,"!llvm.ptr, i64","i64");
     for(auto name:{"bytes_from_integers","utf8_bytes","decode_utf8","encode_base64","decode_base64"})declaration("nex_"+std::string(name),"!llvm.ptr, i64","!llvm.ptr");
     runtimeDeclarations=false;
     if(taskImports)for(const auto &[name,f]:*taskImports)declaration(f.accessor,"","!llvm.ptr");
@@ -1141,7 +1143,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
     const auto &f=p.function(name);
     validateNativeTaskFunction(p,f);
     auto body=lowerTaskFunction(p,f,true,taskDebug);
-    for(const auto &slot:body.slots)if(containsFile(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
+    for(const auto &slot:body.slots)if(containsNonTaskResource(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
     tasks.push_back(std::move(body));
   }
@@ -1646,7 +1648,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   auto environment=[](const char *name){const char *v=std::getenv(name);return v?std::string(v):std::string();};
   // Keep semantic identity separate from toolchain and source-projection identity.
-  bool wire=server,storage=server,files=false,parallel=false;auto names=reachable(p,options.entry);
+  bool wire=server,storage=server,files=false,parallel=false,resourceOperations=false;auto names=reachable(p,options.entry);
   for(const auto &entry:options.libraryExports){auto more=reachable(p,entry);names.insert(more.begin(),more.end());}
   auto callableTargets=nativeFunctionBridges(p,names);
   if(options.projectLibraryABI)for(const auto &name:names)if(!p.function(name).closure)callableTargets.insert(name);
@@ -1655,7 +1657,12 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   for(const auto &f:p.functions)if(names.contains(f.name))inspectBlock(f.body);
   for(const auto &f:p.functions)if(names.contains(f.name)&&usesParallelMap(f))parallel=true;
   for(const auto &library:options.libraries)parallel|=library.parallelCalls;
-  bool foreign=false;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
+  for(const auto &name:names){const auto &fn=p.function(name);if(supportsExternalResources(p)){
+    std::function<void(E)> visit;std::function<void(const std::vector<S>&)> body;
+    visit=[&](E e){if(!e)return;if(e->kind==Expr::Call&&externalResourceBuiltins().contains(e->text))resourceOperations=true;for(auto a:e->args)visit(a);for(auto arm:e->arms)body(arm->body);};
+    body=[&](const auto &statements){for(auto s:statements){visit(s->expr);if(s->kind!=Stmt::Match)childBlocks(s,body);}};body(fn.body);
+  }}
+  bool foreign=resourceOperations;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
   const bool taskFileReads=tasks&&files;
   if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)

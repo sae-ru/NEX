@@ -41,6 +41,7 @@ JSON debugValueSchema(const Program &program,const Type &type,const std::set<std
   Object records,enums,targets;std::set<std::string> seen,wanted,done;size_t nodes=0;
   std::function<JSON(const Type&)> describe=[&](const Type &value)->JSON{
     if(++nodes>100000)throw Error("E_DEBUG_LIMIT","debug type descriptor exceeds node budget");
+    if(isExternalResource(program,value))return "resource";
     if(value.kind==Type::Function){auto name=typeName(value);wanted.insert(name);return Object{{"function",name}};}
     if(value.kind==Type::List)return Object{{"list",describe(*value.element)}};
     if(value.kind==Type::Result)return Object{{"result",describe(*value.element)}};
@@ -118,6 +119,7 @@ DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned de
     text+=buffer.length();budget(depth);observe(id,prefix,"shape",Object{{"length",std::to_string(buffer.length())}});observe(id,prefix,"value",wire);observeBytes(id,prefix,buffer);
     return V(nexrt::bytes(std::move(buffer)));
   }
+  if(isExternalResource(program,type))throw Error("E_DEBUG_UNAVAILABLE","opaque external resources cannot be reconstructed as watch inputs");
   if(type==Type::File){
     const auto &value=object(wire);if(value.size()!=1)invalid("debug file requires only its opaque identity");
     auto text=field(value,"file");auto canonical=nex::identity(Object{{"identity",text}});uint64_t number=0;
@@ -150,6 +152,7 @@ DebugValues::JSON DebugValues::encode(const Type &type,const V &original,unsigne
   budget(depth);auto value=materialize?materialize(original):original;
   if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::F64){if(value.tag!=V::Floating)invalid("computed f64 lost its scalar tag");return value.floating();}if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
   if(type==Type::Bytes){const auto &buffer=nexrt::byteBuffer(value.object);text+=uint64_t(buffer.length());budget(depth);auto encoded=buffer.base64();text+=encoded.size();budget(depth);return encoded;}
+  if(isExternalResource(program,type))return Object{{"resource",std::to_string(nexrt::externalResource(value.object).identity())}};
   if(type==Type::File)return Object{{"file",std::to_string(nexrt::fileIdentity(value.object))}};
   if(type.kind==Type::Function){
     const auto &fn=checkedDebugCallable(program,value.object->text,type);if(value.object->values.size()!=fn.captures.size()||value.object->names.size()!=fn.captures.size())invalid("computed callable capture layout differs");

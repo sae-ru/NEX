@@ -16,7 +16,7 @@ inline constexpr const char *languageVersion = "0.20";
 inline constexpr const char *taskCandidateLanguageVersion = "0.20";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020 };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021 };
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -94,6 +94,7 @@ struct Variant { std::string name; std::vector<Param> fields; Span span; int64_t
 struct Structure {
   std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit;
   bool enumeration=false; std::vector<Variant> variants;
+  bool opaqueResource=false;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
@@ -124,7 +125,7 @@ struct Endpoint {
   std::string name,localName,owner,unit,method,path,target;
   int64_t successStatus=200; Span span;
 };
-struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; bool taskPrototype=false; };
+struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; bool taskPrototype=false; SourceLanguage sourceLanguage=SourceLanguage::Language018; };
 struct Trait {
   std::string name,localName,owner,unit;Span span;bool exported=false;
   unsigned selfArity=0;
@@ -230,7 +231,13 @@ std::string json(const llvm::json::Value &value, bool pretty = true);
 std::string hash(const std::string &text);
 std::string revision(const Program &program);
 llvm::json::Value describe();
-const std::set<std::string> &builtinNames(bool tasks=true);
+const std::set<std::string> &builtinNames(bool tasks=true,bool resources=false);
+const std::set<std::string> &externalResourceBuiltins();
+bool supportsExternalResources(const Program &program);
+bool isExternalResource(const Program &program,const Type &type);
+bool containsExternalResource(const Program &program,const Type &type);
+bool containsNonTaskResource(const Program &program,const Type &type);
+std::pair<std::string,std::string> sourceResourceClass(const Program &program,const Structure &declaration);
 const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);

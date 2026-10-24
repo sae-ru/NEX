@@ -16,6 +16,7 @@ llvm::json::Value foreignSignature(const Program &p,const Function &fn){
     auto index=int64_t(types.size());indices.emplace(key,index);types.push_back(nullptr);llvm::json::Object row;
     if(t.kind==Type::List||t.kind==Type::Result){row["kind"]=t.kind==Type::List?"list":"result";row["item"]=add(*t.element);}
     else if(t.kind==Type::Function){row["kind"]="function";row["name"]=key;}
+    else if(isExternalResource(p,t)){auto [name,identity]=sourceResourceClass(p,p.structure(t.name));row["kind"]="resource";row["name"]=name;row["identity"]=identity;}
     else if(t.kind==Type::Record){const auto &s=p.structure(t.name);row["kind"]=s.enumeration?"enum":"record";row["name"]=s.name;
       auto fields=[&](const auto &fields){llvm::json::Array out;for(const auto &f:fields){if(++members>65536)throw Error("E_FFI_SIGNATURE","foreign signature exceeds its field budget",f.span);out.push_back(llvm::json::Object{{"name",f.name},{"type",add(f.type)}});}return out;};
       if(s.enumeration){llvm::json::Array cases;for(const auto &v:s.variants)cases.push_back(llvm::json::Object{{"name",v.name},{"fields",fields(v.fields)}});row["variants"]=std::move(cases);}else row["fields"]=fields(s.fields);

@@ -159,7 +159,7 @@ class Lowering {
     else for(auto argument:original->args){auto id=expr(argument);op.inputs.push_back(id);atom->args.push_back(reference(id,argument->span));}
     if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes")))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
     else if(original->kind==Expr::Invoke&&original->args[0]->type.effects.contains("task")){op.kind=TaskInstruction::Call;op.indirect=true;}
-    else if(original->kind==Expr::Call&&!builtinNames(true).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).effects.contains("task")){op.kind=TaskInstruction::Call;op.operation=original->text;}
+    else if(original->kind==Expr::Call&&!builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).effects.contains("task")){op.kind=TaskInstruction::Call;op.operation=original->text;}
     bool sourceCall=original->kind==Expr::Call||original->kind==Expr::Invoke;
     bool resumes=op.kind==TaskInstruction::Pause||op.kind==TaskInstruction::Call;
     if(sourceCall)point(TaskDebugPointIR::Call,original->span,original.get());

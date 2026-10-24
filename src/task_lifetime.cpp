@@ -35,7 +35,7 @@ struct Analysis {
   V unknown(const Type &type){
     auto value=std::make_shared<Value>();
     value->opaque=containsAuthority(type)||type.kind==Type::Function||containsParameter(type);
-    value->file=containsFile(p,type);
+    value->file=containsNonTaskResource(p,type);
     return value;
   }
   bool containsAuthority(const Type &type)const{

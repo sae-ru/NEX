@@ -1,3 +1,8 @@
+(* Private137: only explicit internal source version0.21 additionally accepts
+   ["pub"], "server", "resource", identifier, [type_parameters], ";".
+   The published start production/default language below remains0.20 until
+   explicit migration/publication gates finish. resource is contextual at this
+   declaration position; ordinary resource identifiers remain valid. *)
 (* Toolchain0.122 model contracts are an ordinary checked-source library; no syntax/canonical/language0.20 migration change. *)
 (* Toolchain0.121 compute is an ordinary checked-source library. No syntax, canonical format or language0.20 migration change. *)
 (* Toolchain0.120 task worker hosting accepts existing task-only functions; no syntax, canonical identity or migration change. *)

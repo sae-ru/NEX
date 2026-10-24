@@ -84,6 +84,13 @@ target_link_libraries(nex_task_native_emit_probe PRIVATE nex_native_backend)
 add_executable(nex_task_typescript_emit_probe tests/task_typescript_emit.cpp src/typescript.cpp)
 target_link_libraries(nex_task_typescript_emit_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
 target_compile_options(nex_task_typescript_emit_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(nex_source_resource_probe tests/source_resource_probe.cpp src/typescript.cpp)
+target_link_libraries(nex_source_resource_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_source_resource_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_external_resources_private COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resources.py $<TARGET_FILE:nex_source_resource_probe>
+  ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_external_resources_private PROPERTIES TIMEOUT 600)
 add_test(NAME task_typescript_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript.py $<TARGET_FILE:nex_task_typescript_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
 set_tests_properties(task_typescript_steps PROPERTIES TIMEOUT 600)
 add_test(NAME task_native_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_native.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_task_native_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)

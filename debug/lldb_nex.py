@@ -261,6 +261,8 @@ def _preview(value, depth=0, budget=None):
         return "bytes[%d] " % binary.size + json.dumps(base64.b64encode(prefix).decode('ascii')) + ("…" if len(prefix) < binary.size else "")
     if kind == 8:
         return "<file " + _file_identity(data) + ">"
+    if kind == 12:
+        return "<resource " + _external_resource_identity(data) + ">"
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -769,6 +771,20 @@ def _file_identity(data):
     return str(identity)
 
 
+def _external_resource_identity(data):
+    if _integer(_member(data, "kind")) != 12:
+        raise ValueError("runtime resource kind differs from checked NEX type")
+    layout = data.GetTarget().FindFirstType("nexrt::ExternalData")
+    if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
+        raise ValueError("unavailable external owner layout for this build")
+    value = data.CreateValueFromAddress("resource", data.GetLoadAddress(), layout)
+    control = _shared(_member(_member(_member(value, "resource"), "owner"), "control"))
+    identity = _integer(_member(control, "identity"))
+    if not 0 < identity <= 18446744073709551615:
+        raise ValueError("invalid stopped external resource identity")
+    return str(identity)
+
+
 def _wire(value, descriptor, records, budget, depth=0):
     if descriptor == "str" and isinstance(value, _RawText):
         return _raw_string(value.value, budget)
@@ -806,6 +822,12 @@ def _wire(value, descriptor, records, budget, depth=0):
             raise ValueError("file identity exceeds byte budget")
         budget["bytes"] -= len(identity)
         return {"file": identity}
+    if descriptor == "resource":
+        identity = _external_resource_identity(data)
+        if len(identity) > budget["bytes"]:
+            raise ValueError("resource identity exceeds byte budget")
+        budget["bytes"] -= len(identity)
+        return {"resource": identity}
     if descriptor == "bytes":
         binary = _ExactBytes(data)
         encoded_size = (binary.size + 2) // 3 * 4
