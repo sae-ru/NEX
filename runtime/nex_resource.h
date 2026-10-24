@@ -145,6 +145,7 @@ public:
 template<class T> class ResourceOwner {
   friend class ResourceDomain;
   friend class ResourceAccess;
+  friend class ExternalResource;
   std::shared_ptr<resource_detail::Control<T>> control;
   explicit ResourceOwner(std::shared_ptr<resource_detail::Control<T>> control):control(std::move(control)){}
 public:

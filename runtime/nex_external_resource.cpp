@@ -1,5 +1,6 @@
 #include "nex_external_resource.h"
 #include "nex_value.h"
+#include <unordered_set>
 
 namespace nexrt {
 namespace external_detail {
@@ -27,19 +28,47 @@ struct Charge {
     reserved=true;
   }
 };
+struct Dependencies {
+  struct Entry {uint64_t identity;ResourceRegionOwner region;resource_detail::Bindings grants;};
+  std::vector<Entry> entries;
+  size_t depth=0;
+  bool active()const noexcept{
+    for(const auto &entry:entries){
+      for(const auto &grant:entry.grants)if(!grant->active.load())return false;
+      if(entry.region&&!entry.region.active())return false;
+    }
+    return true;
+  }
+  void check(const ResourceRegionAuthority &actor)const{
+    for(const auto &entry:entries){
+      {auto locks=resource_detail::lock(entry.grants);resource_detail::check(entry.grants);}
+      if(actor)entry.region.check(actor);
+      else if(entry.region)throw DataError("E_RESOURCE_SCOPE","scoped dependency requires explicit logical authority");
+    }
+  }
+};
+struct ParentCapture {
+  std::vector<ResourceLease<State>> leases;
+  std::shared_ptr<const Dependencies> metadata;
+};
 struct State {
   // Object destructor and code-pin cleanup finish before physical capacity is returned.
   const std::shared_ptr<Charge> charge;
+  // Release dependent native data first, then parent payloads/code pins. Parent
+  // leases retain their original physical tickets even after logical close.
+  const std::vector<ResourceLease<State>> parents;
   ExternalResourceObject object;
-  State(std::shared_ptr<Charge> charge,ExternalResourceObject object):charge(std::move(charge)),object(std::move(object)){}
+  State(std::shared_ptr<Charge> charge,std::vector<ResourceLease<State>> parents,ExternalResourceObject object)
+      :charge(std::move(charge)),parents(std::move(parents)),object(std::move(object)){}
 };
 struct BorrowState {
   ResourceLease<State> lease;
   const std::shared_ptr<const ClassState> type;
   const ResourceRegionOwner region;
   const ResourceRegionAuthority access;
-  BorrowState(ResourceLease<State> lease,std::shared_ptr<const ClassState> type,ResourceRegionOwner region={},ResourceRegionAuthority access={})
-    :lease(std::move(lease)),type(std::move(type)),region(std::move(region)),access(std::move(access)){}
+  const std::shared_ptr<const Dependencies> dependencies;
+  BorrowState(ResourceLease<State> lease,std::shared_ptr<const ClassState> type,ResourceRegionOwner region={},ResourceRegionAuthority access={},std::shared_ptr<const Dependencies> dependencies={})
+    :lease(std::move(lease)),type(std::move(type)),region(std::move(region)),access(std::move(access)),dependencies(std::move(dependencies)){}
 };
 }
 ResourceByteBudget::ResourceByteBudget(uint64_t maximum){
@@ -67,25 +96,70 @@ ExternalResourceObject::ExternalResourceObject(ExternalResourceObject &&other)no
 ExternalResourceObject::~ExternalResourceObject(){if(pointer)destroy(pointer);}
 ExternalResource::ExternalResource(ResourceOwner<external_detail::State> owner,std::shared_ptr<const external_detail::ClassState> type,uint64_t capacity)
     :owner(std::move(owner)),type(std::move(type)),capacity(capacity){}
-bool ExternalResource::isOpen()const noexcept{return owner.isOpen()&&(!region||region.active());}
+bool ExternalResource::isOpen()const noexcept{return owner.isOpen()&&(!region||region.active())&&(!dependencies||dependencies->active());}
 bool ExternalResource::close()const noexcept{return owner.close();}
+size_t ExternalResource::dependencyCount()const noexcept{return dependencies?dependencies->entries.size():0;}
+size_t ExternalResource::dependencyDepth()const noexcept{return dependencies?dependencies->depth:0;}
+void ExternalResource::checkRegion(const ResourceRegionAuthority &actor)const{
+  region.check(actor);if(dependencies)dependencies->check(actor);
+}
+void ExternalResource::promoteRegion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{
+  region.checkPromotion(actor,target);transferRegions(std::span<const ExternalResource>(this,1),actor,target);
+}
 void ExternalResource::transferRegions(std::span<const ExternalResource> values,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit){
   if(values.size()>4096)throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer batch exceeds4096 owners");
   std::vector<ResourceRegionOwner> owners;owners.reserve(values.size());
-  for(const auto &value:values)owners.push_back(value.region);
+  std::unordered_set<uint64_t> unique;
+  auto append=[&](uint64_t identity,const ResourceRegionOwner &owner){
+    if(!identity)throw DataError("E_RESOURCE_SCOPE","resource transfer requires a genuine physical identity");
+    if(!unique.insert(identity).second)return;
+    if(owners.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","resource dependency transfer exceeds4096 owners");
+    owners.push_back(owner);
+  };
+  for(const auto &value:values){
+    append(value.identity(),value.region);
+    if(value.dependencies){
+      value.dependencies->check(actor);
+      for(const auto &entry:value.dependencies->entries)append(entry.identity,entry.region);
+    }
+  }
   ResourceRegionOwner::transfer(owners,actor,target,commit);
 }
 const std::string &ExternalResource::typeName()const noexcept{static const std::string empty;return type?type->name:empty;}
 const std::string &ExternalResource::typeHash()const noexcept{static const std::string empty;return type?type->hash:empty;}
 ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const ExternalResourceClass &key,
-    std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory){
+    std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory,std::span<const ExternalResource> parents){
   auto access=domain.access();
   if(auto bind=resource_detail::requestBinder)if(auto *request=bind(domain))access=request->access();
-  return makeInAccessErased(std::move(access),key,budgets,bytes,std::move(factory));
+  return makeInAccessErased(std::move(access),key,budgets,bytes,std::move(factory),{}, {},false,parents);
+}
+external_detail::ParentCapture ExternalResource::captureParents(std::span<const ExternalResource> parents,const ResourceRegionAuthority &actor){
+  external_detail::ParentCapture result;if(parents.empty())return result;
+  if(parents.size()>16)throw DataError("E_RESOURCE_DEPENDENCY_LIMIT","external resource accepts at most16 parents");
+  auto metadata=std::make_shared<external_detail::Dependencies>();std::unordered_set<uint64_t> captured,unique;
+  auto append=[&](external_detail::Dependencies::Entry entry){
+    if(!unique.insert(entry.identity).second)return;
+    if(metadata->entries.size()==4095)throw DataError("E_RESOURCE_DEPENDENCY_LIMIT","external dependency graph exceeds4096 objects");
+    metadata->entries.push_back(std::move(entry));
+  };
+  for(const auto &parent:parents){
+    if(!parent.identity())throw DataError("E_RESOURCE_CLOSED","external parent is unavailable");
+    if(!captured.insert(parent.identity()).second)continue;
+    if(actor)parent.checkRegion(actor);
+    else if(parent.region)throw DataError("E_RESOURCE_SCOPE","scoped parent requires explicit logical authority");
+    if(parent.dependencies)parent.dependencies->check(actor);
+    result.leases.push_back(parent.owner.acquire());
+    const size_t depth=parent.dependencyDepth()+1;
+    if(depth>256)throw DataError("E_RESOURCE_DEPENDENCY_LIMIT","external dependency depth exceeds256");
+    metadata->depth=std::max(metadata->depth,depth);
+    append({parent.identity(),parent.region,parent.owner.control->bindings});
+    if(parent.dependencies)for(const auto &entry:parent.dependencies->entries)append(entry);
+  }
+  metadata->check(actor);result.metadata=std::move(metadata);return result;
 }
 ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,const ExternalResourceClass &key,
     std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory,
-    std::shared_ptr<ResourceExecutor> executor,ResourceSettlement settlement,bool localFactory){
+    std::shared_ptr<ResourceExecutor> executor,ResourceSettlement settlement,bool localFactory,std::span<const ExternalResource> parents,ResourceRegionAuthority parentActor){
   if(budgets.empty()||budgets.size()>8)throw DataError("E_RESOURCE_BYTES","external resource needs1..8 capacity budgets");
   auto type=key.state;
   if(!type)throw DataError("E_RESOURCE_TYPE","external class is unavailable");
@@ -93,32 +167,38 @@ ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,cons
   for(const auto &budget:budgets){if(!budget.state)throw DataError("E_RESOURCE_BYTES","external capacity budget is unavailable");states.push_back(budget.state);}
   std::sort(states.begin(),states.end(),[](const auto &a,const auto &b){return std::less<>{}(a.get(),b.get());});
   states.erase(std::unique(states.begin(),states.end()),states.end());
+  auto captured=captureParents(parents,parentActor);
   auto create=[&](const ResourcePermit &permit){
     auto charge=std::make_shared<external_detail::Charge>(states,bytes);charge->reserve();permit.check();
+    if(captured.metadata)captured.metadata->check(parentActor);
     auto object=factory(permit);
     if(!object.pointer)throw DataError("E_RESOURCE_CLOSED","external resource factory returned no object");
-    return std::make_unique<external_detail::State>(std::move(charge),std::move(object));
+    if(captured.metadata)captured.metadata->check(parentActor);
+    return std::make_unique<external_detail::State>(std::move(charge),captured.leases,std::move(object));
   };
   auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create,settlement,localFactory):access.make<external_detail::State>(create,settlement);
-  return ExternalResource(std::move(resource),std::move(type),bytes);
+  auto result=ExternalResource(std::move(resource),std::move(type),bytes);result.dependencies=std::move(captured.metadata);return result;
 }
 ExternalResourceBorrow::ExternalResourceBorrow(std::shared_ptr<external_detail::BorrowState> impl):impl(std::move(impl)){}
 ExternalResourceBorrow ExternalResource::borrowErased(const ExternalResourceClass &expected)const{
   if(region)throw DataError("E_RESOURCE_SCOPE","scoped external resource requires explicit logical authority");
   auto lease=owner.acquire();lease.check();
   if(!type||type!=expected.state)throw DataError("E_RESOURCE_TYPE","external class registration differs");
-  return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type));
+  if(dependencies)dependencies->check({});
+  return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type,ResourceRegionOwner{},ResourceRegionAuthority{},dependencies));
 }
 ExternalResourceBorrow ExternalResource::borrowInRegionErased(const ResourceRegionAuthority &access,const ExternalResourceClass &expected)const{
   if(!region)throw DataError("E_RESOURCE_SCOPE","external resource has no matching logical owner");
   region.check(access);auto lease=owner.acquire();lease.check();
   if(!type||type!=expected.state)throw DataError("E_RESOURCE_TYPE","external class registration differs");
-  return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type,region,access));
+  if(dependencies)dependencies->check(access);
+  return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type,region,access,dependencies));
 }
 void ExternalResourceBorrow::check()const{
   if(!impl)throw DataError("E_RESOURCE_CLOSED","external borrow has ended");
   if(impl->region)impl->region.check(impl->access);
   impl->lease.check();
+  if(impl->dependencies)impl->dependencies->check(impl->access);
 }
 void *ExternalResourceBorrow::data(const ExternalResourceClass &expected)const{
   check();if(impl->type!=expected.state)throw DataError("E_RESOURCE_TYPE","external borrow class differs");

@@ -128,3 +128,32 @@ admission and the actual source/backend lifetime checks. Keep current source
 snapshot guards until that bridge and explicit migration are complete.
 Actual devices additionally require their owning executor and
 vendor-specific fence/IPC settlement. Process reap is not a generic GPU DMA fence.
+
+
+## Private host dependency graph
+
+The private C++ constructors in `nex_external_resource.h` accept an optional
+trailing span of parent resources. `makeInRegion` places it after `localFactory`.
+This is not a source-language constructor or a C-table operation. It does not
+provide GPU/NPU sessions or buffers by itself.
+
+Admission captures genuine physical parent leases before invoking a child
+factory. Parent logical close denies fresh parent access while already admitted
+children keep the payload, code pin and original capacity ticket alive. Child
+native destruction and its code pin finish before those parent leases are
+released. Closed child aliases retain only ancestry/grant metadata, not parent
+payloads. Original grant revocation still denies fresh child borrows and is
+rechecked before publication; dependency leases do not mint host permission.
+
+Logical parent owners and their transitive dependencies participate in the same
+atomic ancestor transfer as the child. All destination slots are checked before
+any owner moves. Creation rejects mixed scoped/unscoped ancestry, ended grants,
+more than16 supplied parents, dependency depth above256, or more than4096 unique
+objects including the new child. Physical grant domains and logical scope depth
+keep their existing independent limits. A failed factory/promotion does not
+publish a partial dependency graph.
+
+`dependencyCount` and `dependencyDepth` are host diagnostics. Numeric identities
+never construct authority. Stable C construction, ordinary-source parent
+factories, actual device objects, and complete compiler/SDK/platform acceptance
+remain pending.

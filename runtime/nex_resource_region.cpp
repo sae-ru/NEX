@@ -131,6 +131,15 @@ void ResourceRegionOwner::check(const ResourceRegionAuthority &access)const{
   if(!owner->published||!resource_region_detail::ancestor(owner->graph,owner->node,access.graph,access.node))
     throw DataError("E_RESOURCE_SCOPE","resource is outside the current logical ancestry");
 }
+void ResourceRegionOwner::checkPromotion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{
+  if(!owner||!actor.graph||!target.graph||actor.graph->forest!=owner->forest||target.graph->forest!=owner->forest)
+    throw DataError("E_RESOURCE_SCOPE","resource transfer belongs to another request or group");
+  std::lock_guard lock(owner->forest->mutex);auto previous=owner->graph;
+  previous->check(owner->node);actor.graph->check(actor.node);target.graph->check(target.node);
+  if(!owner->published||!resource_region_detail::ancestor(previous,owner->node,actor.graph,actor.node)||
+     !resource_region_detail::ancestor(target.graph,target.node,previous,owner->node))
+    throw DataError("E_RESOURCE_SCOPE","resource transfer requires an admitted borrower and an ancestor target");
+}
 void ResourceRegionOwner::promote(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{
   if(!owner||!actor.graph||!target.graph||actor.graph->forest!=owner->forest||target.graph->forest!=owner->forest)
     throw DataError("E_RESOURCE_SCOPE","resource transfer belongs to another request or group");

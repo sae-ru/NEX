@@ -4,7 +4,7 @@
 #include <string>
 
 namespace nexrt {
-namespace external_detail {struct ByteState;struct ClassState;struct State;struct BorrowState;struct Charge;}
+namespace external_detail {struct ByteState;struct ClassState;struct State;struct BorrowState;struct Charge;struct Dependencies;struct ParentCapture;}
 
 // Host accounting for declared external capacity, not total process/vendor RAM.
 class ResourceByteBudget {
@@ -65,30 +65,36 @@ class ExternalResource {
   std::shared_ptr<const external_detail::ClassState> type;
   uint64_t capacity=0;
   ResourceRegionOwner region;
+  std::shared_ptr<const external_detail::Dependencies> dependencies;
   ExternalResource(ResourceOwner<external_detail::State>,std::shared_ptr<const external_detail::ClassState>,uint64_t);
   static ExternalResource makeErased(const ResourceDomain&,const ExternalResourceClass&,
-      std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
+      std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>,
+      std::span<const ExternalResource> parents={});
   static ExternalResource makeInAccessErased(ResourceAccess,const ExternalResourceClass&,
       std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>,
-      std::shared_ptr<ResourceExecutor> executor={},ResourceSettlement settlement={},bool localFactory=false);
+      std::shared_ptr<ResourceExecutor> executor={},ResourceSettlement settlement={},bool localFactory=false,
+      std::span<const ExternalResource> parents={},ResourceRegionAuthority parentActor={});
+  static external_detail::ParentCapture captureParents(std::span<const ExternalResource>,const ResourceRegionAuthority&);
 public:
   ExternalResource()=default;
   uint64_t identity()const noexcept{return owner.identity();}
   bool isOpen()const noexcept;
   bool close()const noexcept;
   uint64_t capacityBytes()const noexcept{return capacity;}
-  void checkRegion(const ResourceRegionAuthority &actor)const{region.check(actor);}
+  void checkRegion(const ResourceRegionAuthority &actor)const;
+  size_t dependencyCount()const noexcept;
+  size_t dependencyDepth()const noexcept;
   const std::string &typeName()const noexcept;
   const std::string &typeHash()const noexcept;
   template<class T> ExternalResourceBorrow borrow(const ExternalResourceType<T> &key)const{return borrowErased(key.key);}
   ExternalResourceBorrow borrowErased(const ExternalResourceClass&)const;
   ExternalResourceBorrow borrowInRegionErased(const ResourceRegionAuthority&,const ExternalResourceClass&)const;
   template<class T> ExternalResourceBorrow borrowInRegion(const ResourceRegionAuthority &access,const ExternalResourceType<T> &key)const{return borrowInRegionErased(access,key.key);}
-  void promoteRegion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{region.check(actor);region.promote(actor,target);}
+  void promoteRegion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const;
   static void transferRegions(std::span<const ExternalResource>,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit=true);
   template<class T,class Factory> static ExternalResource make(const ResourceDomain &domain,
       const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
-      std::shared_ptr<void> codePin,Factory factory){
+      std::shared_ptr<void> codePin,Factory factory,std::span<const ExternalResource> parents={}){
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     auto snapshot=key.key;
@@ -96,12 +102,12 @@ public:
       [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
-      });
+      },parents);
   }
   // Host-only prepared authority. The C table never accepts an access object.
   template<class T,class Factory> static ExternalResource makeInAccess(ResourceAccess access,
       const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
-      std::shared_ptr<void> codePin,Factory factory){
+      std::shared_ptr<void> codePin,Factory factory,std::span<const ExternalResource> parents={}){
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     auto snapshot=key.key;
@@ -109,11 +115,11 @@ public:
       [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
-      });
+      },{}, {},false,parents);
   }
   template<class T,class Factory> static ExternalResource makeOnExecutor(const ResourceDomain &domain,
       const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
-      std::shared_ptr<void> codePin,std::shared_ptr<ResourceExecutor> executor,Factory factory){
+      std::shared_ptr<void> codePin,std::shared_ptr<ResourceExecutor> executor,Factory factory,std::span<const ExternalResource> parents={}){
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     if(!executor)throw DataError("E_RESOURCE_EXECUTOR","external resource requires an explicit executor");
@@ -123,14 +129,14 @@ public:
       [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
-      },std::move(executor));
+      },std::move(executor),{},false,parents);
   }
   // Trusted task adapters capture the physical grant/request access on their
   // coordinator. This path never discovers a per-resume worker's TLS scope.
   template<class T,class Factory> static ExternalResource makeInRegion(ResourceAccess access,
       const ResourceRegionAuthority &region,const ExternalResourceType<T> &key,
       std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::shared_ptr<void> codePin,
-      std::shared_ptr<ResourceExecutor> executor,Factory factory,bool localFactory=false){
+      std::shared_ptr<ResourceExecutor> executor,Factory factory,bool localFactory=false,std::span<const ExternalResource> parents={}){
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     auto logical=region.reserve();
@@ -141,7 +147,7 @@ public:
         logical.checkCreation();permit.check();
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
-      },std::move(executor),std::move(settlement),localFactory);
+      },std::move(executor),std::move(settlement),localFactory,parents,region);
     logical.publish(resource.owner.revocation());resource.region=std::move(logical);return resource;
   }
 };

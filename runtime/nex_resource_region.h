@@ -59,6 +59,7 @@ public:
   bool active()const noexcept;
   void checkCreation()const;
   void check(const ResourceRegionAuthority&)const;
+  void checkPromotion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const;
   void promote(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const;
   // Validate the entire bounded batch before changing any owner. Ancestor
   // borrowing is unchanged; promotion reserves every destination slot first.
