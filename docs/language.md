@@ -1,3 +1,20 @@
+# Current language0.22
+
+Language022 retains the syntax below and enables server task/ffi callbacks,
+direct checked extern suspension and genuine external-resource transport through
+task captures/results/futures/channels/closures. Calls preserve original physical
+grants; complete value graphs are checked before atomic ancestor owner transfer.
+Ended logical regions cannot be revived. Cleanup and admitted C operations must
+physically settle before completion. File authority, unstructured parallel and
+wire/browser resource transport remain rejected; fixed binary providers retain
+their separate resource-free ABI. See [the task/FFI contract](task-foreign-prototype.md).
+
+Explicit migration rechecks retained018/019/020/021 source before producing022
+revisions. Original rows/schema/IDs remain; changing nex.json alone is not a
+migration. SDK/platform acceptance is separate from enabled compiler support.
+Earlier development notes below retain their historical scopes; this section
+and the current semantic sections govern022.
+
 Private150 resolves logical resource authority only for actual resource-bearing
 task snapshots or FFI signatures. Pure snapshots do not consult that authority;
 physical FFI/request grants and ordinary execution cancellation still apply.
@@ -119,7 +136,7 @@ Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language 0.16.
 
-Physical projects can declare `nex.project/1` and language `0.21` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+Physical projects can declare `nex.project/1` and language `0.22` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
 Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
@@ -269,7 +286,7 @@ rather than structural equality. File formatting is `<file>`. Source has no raw
 descriptor, pointer or file constructor. `file` is contextual in type positions;
 its declaration/generic-parameter name and streaming builtin names are reserved.
 Explicit migration from 0.13 preserves old snapshots and requires reviewed
-repairs for conflicting user declarations. General external resources and callbacks into NEX remain pending. The separate020 server task/fs read subset is described in task-file-reads.md.
+repairs for conflicting user declarations. Thread-affine device resources and callbacks into NEX remain pending. The separate020 server task/fs read subset is described in task-file-reads.md.
 
 Language 0.15 adds experimental source external functions:
 
@@ -613,10 +630,14 @@ it does not grant `io`, `db`, `fs`, `ffi` or asynchronous IO. Existing realm
 boundaries remain in force. `with_tasks` and `task_spawn` callbacks must be in
 an available realm and declare either no effects or exactly `task`. In0.20,
 server callbacks may additionally declare exactly `task,fs` if their caller
-also declares both effects. `io`, `db` and `ffi` callbacks remain unsupported.
+also declares both effects. Language022 additionally accepts server task/ffi
+callbacks with optional fs when the caller declares every callback effect.
+`io` and `db` callbacks remain unsupported.
 Callable effect/realm equality stays exact; this acceptance does not introduce
 general function subtyping. A task function calling an fs-only helper directly
-or indirectly is E_EFFECT in020; the helper must explicitly declare task and fs.
+or indirectly is E_EFFECT in020 and later; the helper must explicitly declare
+task and fs. The same rule applies to ordinary ffi-only helpers in022; resumable
+source helpers declare task and ffi, while extern leaves retain their C signature.
 
 | Intrinsic | Checked signature and behavior |
 | --- | --- |
@@ -715,7 +736,7 @@ Provider logical debugging and runtime load/unload remain unsupported. See
 [task providers](task-providers.md) and [fixed shared providers](task-shared-providers.md).
 Native020 logical task debugging retains its standalone/source-only scope and
 rejects provider graphs. Task server hosting, other native targets,
-task writes/streams/db/ffi/network, a NEX UI adapter and complete current
+task writes/streams/db/network, a NEX UI adapter and complete current
 SDK/platform delivery remain pending. Emitted TypeScript includes only reachable
 client/shared code. Language0.18 programs require explicit migration under the
 new checker, preserving original source/history/IDs and repairing reserved names
@@ -939,11 +960,17 @@ validation status and remaining browser/async/accelerator work. `parallel_map`
 is newly reserved for declaration names; migration from genuine0.17 is explicit
 and history-preserving, and conflicting old names require a reviewed repair.
 
-## Private task/FFI data-call experiment
+## Task/FFI calls and owned values (0.22)
 
-The explicit022 C++ API prototype has no new syntax. It accepts authorized
-server task/ffi callbacks and direct checked extern calls with capability-free
-typed copied snapshots. Ordinary CLI programs remain language021 and retain
-their previous rejection rules. Public022 history migration, resource/callable/
-file transport and matching delivery remain pending. See
-[the exact private contract](task-foreign-prototype.md).
+Ordinary CLI source supports authorized server task/ffi callbacks and direct
+checked extern calls. Copied typed data uses bounded byte snapshots; genuine
+resources use a separate typed owner table. Source values, borrowed payloads,
+frames and C tokens never enter a generic byte completion. Callables, files and
+task authority cannot cross that FFI transport. Resource captures/results and
+channels use mandatory dynamic ancestry checks and atomic promotion. An already
+closed channel validates without extending resource ownership. Pure snapshots
+do not request logical resource authority. Physical FFI/module/request grants
+and execution cancellation remain independent checks. Read the
+[complete contract](task-foreign-prototype.md) and use explicit history-preserving
+`nex migrate` for older graphs. Broader IO, device ownership and matching current
+SDK/platform delivery remain pending.

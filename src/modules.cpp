@@ -299,7 +299,7 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.20")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskFiles020);
   if(language=="0.21")return bundleProgram(bundle,root,true,true,SourceLanguage::OwnedResources021);
   if(language=="0.22")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskForeign022);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20 and0.21");
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21 and0.22");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 void bindExpression(const Program &p,const std::string &function,E expression){

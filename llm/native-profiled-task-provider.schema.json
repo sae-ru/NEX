@@ -42,7 +42,7 @@
           "$ref": "#/$defs/hash"
         },
         "language": {
-          "const": "0.21"
+          "const": "0.22"
         },
         "component": {
           "type": "string",
@@ -183,7 +183,7 @@
           "$ref": "#/$defs/hash"
         },
         "language": {
-          "const": "0.21"
+          "const": "0.22"
         },
         "component": {
           "type": "string",

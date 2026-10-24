@@ -1,3 +1,13 @@
+# Current152: publish source task/FFI and owned transfer in language022
+
+- [x] Enable ordinary022 parse/load and retain old semantic parsers/IDs.
+- [x] Extend deliberate provider/debug/version formats without widening ABI3.
+- [ ] Verify real public CLI021->022 migration, actual C11/C++20 calls/owners,
+  native/reference agreement, client isolation and rejected boundaries.
+- [ ] Complete matching full regression, installed SDK and platform delivery.
+- [ ] Continue all original IO/device/GPU/NPU/UI/mobile/Studio/converter and
+  quality/multi-LLM requirements; this release is not the full objective.
+
 # Current141: logical resources in the private native scheduler
 
 - [x] Separate logical ancestry from bounded physical grants; retain256 native scope depth.

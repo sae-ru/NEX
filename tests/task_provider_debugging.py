@@ -80,7 +80,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         for name,text in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(text)
         self.file=self.root/'app/main.nex';self.file.write_text(APP)
         (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(1));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
         self.description={'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{

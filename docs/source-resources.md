@@ -1,4 +1,4 @@
-# Opaque source resources in language0.21
+# Opaque source resources in language0.22
 
 The0.124 development compiler adds opaque server resource declarations. Query
 `nex describe --field source_resources --json` on the actual compiler. Full
@@ -34,9 +34,11 @@ new access after close/revocation fails. Object slots, declared capacity and cod
 pins return only after physical destruction.
 
 Nested, phantom and captured owners cannot cross wire/JSON/API/storage, parallel
-or structured-task transport. TypeScript rejects reachable resource authority;
-unreachable server declarations/grants are absent from clients. Source task/FFI
-completion, owned GPU/NPU sessions and thread-affine device cleanup remain pending.
+transport. Language022 permits genuine resources in structured tasks with checked
+ancestor transfer and physical cleanup; see task-foreign-prototype.md. TypeScript
+rejects reachable server resource authority; unreachable server declarations/grants
+are absent from clients. Owned GPU/NPU sessions and thread-affine device cleanup
+remain pending.
 
 ## Native producer and operator grant
 
@@ -82,14 +84,14 @@ Keep the old SDK, graph snapshot and physical files. A version edit does not
 migrate a project. From its existing root:
 
 ```sh
-/path/to/sdk123/bin/nex migrate --expected-revision OLD_HEAD --json
-/path/to/sdk123/bin/nex test --revision HEAD --json
-/path/to/sdk123/bin/nex test --revision HEAD --target web --json
-/path/to/sdk123/bin/nex export --revision HEAD --directory ../project021 --json
+/path/to/sdk/bin/nex migrate --expected-revision OLD_HEAD --json
+/path/to/sdk/bin/nex test --revision HEAD --json
+/path/to/sdk/bin/nex test --revision HEAD --target web --json
+/path/to/sdk/bin/nex export --revision HEAD --directory ../project022 --json
 ```
 
-Migration verifies retained018/019/020/021 origins with their original parser,
-then checks the target before opening a writable Store. The new hash includes021.
+Migration verifies retained018/019/020/021/022 origins with their original parser,
+then checks the target before opening a writable Store. The new hash includes022.
 Historical rows, IDs, schema and namespace remain; HEAD advances transactionally.
 Old physical metadata/source stay unchanged, so use --revision HEAD until export.
 Retain matching SDKs for original artifacts and regenerate task/proof pins through

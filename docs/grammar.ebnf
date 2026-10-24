@@ -1,3 +1,9 @@
+(* Current language022 retains this syntax and adds checked server task/ffi
+   callbacks and genuine resource captures/results/futures/channels/closures.
+   Mandatory runtime ancestry/physical cleanup checks still apply; file/wire/
+   browser/unstructured parallel boundaries and fixed provider ABI remain.
+   Explicit migration preserves retained018/019/020/021 source and identities.
+   Historical development comments below retain their original version scope. *)
 (* Private150 acquires logical resource authority only for actual resource-bearing
    task graphs/FFI signatures; pure snapshots remain independent of revocation.
    No syntax, public021 identity or public022 migration changes. *)

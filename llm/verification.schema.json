@@ -16,7 +16,7 @@
       "const": "nex.verification-contracts/1"
     },
     "language": {
-      "const": "0.21"
+      "const": "0.22"
     },
     "expected_revision": {
       "$ref": "#/$defs/hash"

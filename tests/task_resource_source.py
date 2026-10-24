@@ -7,6 +7,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -143,13 +144,15 @@ static void destroy(void *pointer){
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe',type=Path);parser.add_argument('--context-probe',type=Path);parser.add_argument('--output',type=Path);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe',type=Path);parser.add_argument('--context-probe',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--compiler',type=Path);args=parser.parse_args()
  temporary=None
  destination=args.output or os.environ.get('NEX_TASK_RESOURCE_EVIDENCE')
  if destination:out=Path(destination).resolve();out.mkdir(parents=True)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex source task resources ');out=Path(temporary.name)
  probe=args.probe.resolve();env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic()
- report={'ok':False,'private_language':'0.22','public_language':'0.21','public_enabled':False,'commands':[],'checks':[],'probe_sha256':sha(probe)}
+ report={'ok':False,'private_language':'0.22','public_language':'0.22','public_enabled':True,'commands':[],'checks':[],'probe_sha256':sha(probe)}
+ report['public_cli_execution']=bool(args.compiler)
+ if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,marker=None):
   row={'label':label,'command':list(map(str,command))};report['commands'].append(row);write(out/'report.json',report)
   result=subprocess.run(row['command'],cwd=out,env={**env,'NEX_TYPED_RESOURCE_MARKER':str(marker or out/(label+'.events'))},text=True,capture_output=True,timeout=240)
@@ -161,9 +164,11 @@ def main():
   return '\n'.join(lines)+'\n'+body+'\n'
  def bundle(label,body,pin='0'*64):
   path=out/(label+'.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source(pin,body)}});return path
- def command(action,path,value='-',language='0.22'):return [probe,action,path,out,value,language]
+ def command(action,path,value='-',language='0.22'):
+  if args.compiler and language=='0.22':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,value,language]
+  return [probe,action,path,out,value,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
   template=bundle('signature-template',CASES['aliases_and_closed_owner']);api=json.loads(run('signatures',command('check',template)).stdout)
   signatures=api['signatures'];assert set(signatures)==set(DECLARATIONS)
   module=(REPO/'tests/typed_resource_module.c').read_text().replace('#include <stdint.h>','#include <stdint.h>\n#include <time.h>')

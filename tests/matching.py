@@ -174,13 +174,13 @@ test fn cases() -> unit {assert(take(ok(Maybe::Some(42)))==42);assert(take<i64>(
         project=self.root/'export';self.cli('export','--revision',after,'--directory',project);self.assertEqual(self.cli('check',cwd=project)['revision'],after)
 
     def test_actual_021_migration_preserves_legacy_match_operation_ids(self):
-        fixture=json.loads((harness.REPO/'tests/fixtures/language-0.8.json').read_text());self.source(fixture['source']);old_binary=harness.REPO/'build/sdk-0.21.0/bin/nex'
+        fixture=json.loads((harness.REPO/'tests/fixtures/language-0.8.json').read_text());self.source(fixture['source']);old_binary=harness.REPO/'build/sdk-0.22.0/bin/nex'
         if sys.platform=='darwin' and old_binary.is_file():
             def old_cli(*args):return json.loads(subprocess.check_output([str(old_binary),*args,'--json'],cwd=self.root))
             old=old_cli('check')['revision'];graph=old_cli('graph');nodes=old_cli('operations','--symbol','value')['nodes']
         else:saved=self.historical_store('0.8');old=saved['revision'];graph=saved['graph'];nodes=saved['operations']
-        self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.21');self.assertNotEqual(old,current['revision'])
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.8','0.21'})
+        self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.22');self.assertNotEqual(old,current['revision'])
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.8','0.22'})
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in self.cli('graph')['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in self.cli('operations','--symbol','value')['nodes']})
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
@@ -192,7 +192,7 @@ fn observe(value:result<Maybe<i64>>) -> unit !{io} {print(1);}
 fn main() -> unit !{io} {observe(ok(Maybe::Some(41,["unread"])));}
 ''')
         session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text())
-        frame={'schema':'nex.debug-frame/2','language':'0.21','revision':session['revision'],'build_key':manifest['build_key'],'function':'match_watch::observe','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},'bindings':[{'name':'value','type':'result<match_watch::Maybe<i64>>','unavailable':'not captured'}],'captures':[],'truncated':False}
+        frame={'schema':'nex.debug-frame/2','language':'0.22','revision':session['revision'],'build_key':manifest['build_key'],'function':'match_watch::observe','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},'bindings':[{'name':'value','type':'result<match_watch::Maybe<i64>>','unavailable':'not captured'}],'captures':[],'truncated':False}
         path=self.root/'frame.json';expression='match value {ok(Maybe::Some(n,_)) if n>0 => n+1,_=>0}'
         expected=[([],{'ok':True}),(['ok'],{'case':'Some'}),(['ok','Some::number'],'41')]
         for selected,value in expected:

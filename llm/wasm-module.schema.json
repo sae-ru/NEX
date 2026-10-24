@@ -1,27 +1,188 @@
 {
- "$schema":"https://json-schema.org/draft/2020-12/schema",
- "title":"NEX scalar Wasm module ABI 1",
- "type":"object","additionalProperties":false,
- "required":["schema","toolchain","language","compiler_build","revision","build_key","entry","target","abi","parameters","result","native_symbol","module_sha256","exports","functions","memory_bytes","max_call_depth","max_budget"],
- "properties":{
-  "schema":{"const":"nex.wasm-module/1"},"toolchain":{"type":"string"},"language":{"const":"0.21"},
-  "compiler_build":{"$ref":"#/$defs/hash"},"revision":{"$ref":"#/$defs/hash"},"build_key":{"$ref":"#/$defs/hash"},
-  "entry":{"type":"string","minLength":1},"target":{"const":"wasm32-unknown-unknown"},"abi":{"const":1},
-  "parameters":{"type":"array","maxItems":32,"items":{"enum":["i64","bool"]}},"result":{"enum":["i64","bool","unit"]},
-  "native_symbol":{"type":"string","minLength":1},"module_sha256":{"$ref":"#/$defs/hash"},
-  "exports":{"type":"array","minItems":6,"maxItems":6,"uniqueItems":true,"items":{"type":"string","minLength":1}},
-  "functions":{"type":"array","minItems":1,"maxItems":128,"items":{"$ref":"#/$defs/function"}},
-  "memory_bytes":{"const":16777216},"max_call_depth":{"const":64},"max_budget":{"const":10000000}
- },
- "$defs":{
-  "hash":{"type":"string","pattern":"^[0-9a-f]{64}$"},
-  "function":{"type":"object","additionalProperties":false,"required":["symbol","function_hash","source_hash","operations"],"properties":{
-   "symbol":{"type":"string","minLength":1},"function_hash":{"$ref":"#/$defs/hash"},"source_hash":{"$ref":"#/$defs/hash"},
-   "operations":{"type":"array","maxItems":512,"items":{"$ref":"#/$defs/operation"}}
-  }},
-  "operation":{"type":"object","additionalProperties":false,"required":["site","path","parent","kind","file","line","column","byte_begin","byte_end"],"properties":{
-   "site":{"$ref":"#/$defs/hash"},"path":{"type":"string"},"parent":{"type":"string"},"kind":{"type":"string"},"file":{"type":"string"},
-   "line":{"type":"integer","minimum":1},"column":{"type":"integer","minimum":1},"byte_begin":{"type":"integer"},"byte_end":{"type":"integer"}
-  }}
- }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NEX scalar Wasm module ABI 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "toolchain",
+    "language",
+    "compiler_build",
+    "revision",
+    "build_key",
+    "entry",
+    "target",
+    "abi",
+    "parameters",
+    "result",
+    "native_symbol",
+    "module_sha256",
+    "exports",
+    "functions",
+    "memory_bytes",
+    "max_call_depth",
+    "max_budget"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.wasm-module/1"
+    },
+    "toolchain": {
+      "type": "string"
+    },
+    "language": {
+      "const": "0.22"
+    },
+    "compiler_build": {
+      "$ref": "#/$defs/hash"
+    },
+    "revision": {
+      "$ref": "#/$defs/hash"
+    },
+    "build_key": {
+      "$ref": "#/$defs/hash"
+    },
+    "entry": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "const": "wasm32-unknown-unknown"
+    },
+    "abi": {
+      "const": 1
+    },
+    "parameters": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "enum": [
+          "i64",
+          "bool"
+        ]
+      }
+    },
+    "result": {
+      "enum": [
+        "i64",
+        "bool",
+        "unit"
+      ]
+    },
+    "native_symbol": {
+      "type": "string",
+      "minLength": 1
+    },
+    "module_sha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "exports": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/function"
+      }
+    },
+    "memory_bytes": {
+      "const": 16777216
+    },
+    "max_call_depth": {
+      "const": 64
+    },
+    "max_budget": {
+      "const": 10000000
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbol",
+        "function_hash",
+        "source_hash",
+        "operations"
+      ],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "function_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "operations": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "site",
+        "path",
+        "parent",
+        "kind",
+        "file",
+        "line",
+        "column",
+        "byte_begin",
+        "byte_end"
+      ],
+      "properties": {
+        "site": {
+          "$ref": "#/$defs/hash"
+        },
+        "path": {
+          "type": "string"
+        },
+        "parent": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "byte_begin": {
+          "type": "integer"
+        },
+        "byte_end": {
+          "type": "integer"
+        }
+      }
+    }
+  }
 }

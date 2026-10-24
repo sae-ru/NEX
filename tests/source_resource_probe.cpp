@@ -8,10 +8,10 @@
 int main(int argc,char **argv)try{
   using namespace nex;using Object=llvm::json::Object;
   if(argc<5||argc>6)throw Error("E_OPTION","usage: private source resource probe COMMAND BUNDLE ROOT OUTPUT [LANGUAGE]");
-  std::string command=argv[1],language=argc==6?argv[5]:"0.21";
+  std::string command=argv[1],language=argc==6?argv[5]:languageVersion;
   auto bundle=llvm::json::parse(readFile(argv[2]));if(!bundle)throw Error("E_JSON","invalid probe input bundle");
   auto p=loadVersionedBundle(*bundle,std::filesystem::absolute(argv[3]).string(),language);
-  Object result{{"ok",true},{"public_source_resources",std::string(languageVersion)=="0.21"},{"language",programLanguage(p)},{"revision",revision(p)}};
+  Object result{{"ok",true},{"public_source_resources",supportsExternalResources(p)},{"language",programLanguage(p)},{"revision",revision(p)}};
   if(command=="check"){
     Object resources,signatures;
     for(const auto &s:p.structures)if(s.opaqueResource&&s.typeParameters.empty()&&std::none_of(s.typeArguments.begin(),s.typeArguments.end(),containsParameter)){

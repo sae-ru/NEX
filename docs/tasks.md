@@ -1,3 +1,9 @@
+Language022 adds source task/ffi and genuine external-resource transfer to the
+structured scheduler; read task-foreign-prototype.md. This is distinct from the
+acceptance-task JSON format below. Acceptance contracts and proof snapshots must
+be regenerated for the current semantic revision while retaining reviewed
+requirements, clauses and budgets. Source/SDK/platform receipts remain separate.
+
 # Tasks and acceptance evidence
 
 Language0.19 structured source tasks can be checked, executed and replayed by

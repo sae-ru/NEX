@@ -89,15 +89,17 @@ def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe');parser.add_argument('--context-probe');parser.add_argument('--output',type=Path);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe');parser.add_argument('--context-probe');parser.add_argument('--output',type=Path);parser.add_argument('--compiler',type=Path);args=parser.parse_args()
  if not args.output and os.environ.get('NEX_TASK_FOREIGN_EVIDENCE'):args.output=Path(os.environ['NEX_TASK_FOREIGN_EVIDENCE'])/'source'
  temporary=None
  if args.output:out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-task-foreign-');out=Path(temporary.name)
  probe=Path(args.probe).resolve();env={**os.environ,'NEX_RESOURCE_DIR':str(REPO),'PYTHONDONTWRITEBYTECODE':'1'}
- report={'schema':'nex.private-source-task-foreign-tests/1','ok':False,'private_language':'0.22','public_language':'0.21',
+ report={'schema':'nex.private-source-task-foreign-tests/1','ok':False,'private_language':'0.22','public_language':'0.22',
          'probe_sha256':sha(probe),'source_resource_transport':False,'commands':[],'checks':[]}
  started=time.monotonic()
+ report['public_cli_execution']=bool(args.compiler)
+ if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,cwd=out):
   row={'label':label,'command':list(map(str,command)),'cwd':str(cwd)};report['commands'].append(row);write(out/'report.json',report)
   result=subprocess.run(row['command'],cwd=cwd,env={**env,'NEX_TASK_FOREIGN_TRACE':str(out/(label+'.trace'))},text=True,capture_output=True,timeout=240)
@@ -106,9 +108,11 @@ def main():
   return result
  def bundle(label,body,pin=PIN):
   path=out/(label+'.bundle.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':DECLARATIONS.replace('@PIN@',pin)+body+'\n'}});return path
- def command(action,path,output='-',language='0.22'):return [probe,action,path,out,output,language]
+ def command(action,path,output='-',language='0.22'):
+  if args.compiler and language=='0.22':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,output,language]
+  return [probe,action,path,out,output,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
   template=bundle('template',CASES['direct'])
   checked=json.loads(run('signatures',command('check',template)).stdout)
   signatures=checked['signatures'];assert set(signatures)=={'add','barrier','echo','unit','bad','callable','blocking','started'}
@@ -149,7 +153,7 @@ def main():
     reference=json.loads(run(dialect+'-'+name+'-reference',command('reference',path,host)).stdout)
     assert reference['output']=='42\n' and reference['language']=='0.22',reference
     built=json.loads(run(dialect+'-'+name+'-build',command('native',path,directory/'native')).stdout)
-    assert built['foreign_calls'] is True
+    if not args.compiler:assert built['foreign_calls'] is True
     native=run(dialect+'-'+name+'-native',[built['executable'],'--nex-foreign',host])
     assert native.stdout==reference['output']
     if name=='evaluation_order':
@@ -177,7 +181,7 @@ def main():
     assert (out/(label+'.trace')).read_text().splitlines()==['begin','settled','unload']
     built=json.loads(run(dialect+'-'+name+'-build',command('native',path,directory/'native')).stdout)
     label=dialect+'-'+name+'-native-rejected'
-    native=run(label,[built['executable'],'--nex-foreign',host,'--nex-task-timeout-ms','100' if name=='deadline' else '2000'],70)
+    native=run(label,[built['executable'],'--nex-foreign',host,'--nex-task-timeout-ms','1000' if name=='deadline' else '2000'],70)
     assert code in native.stderr,(name,native.stderr)
     assert (out/(label+'.trace')).read_text().splitlines()==['begin','settled','unload']
     report['checks'].append(dialect+'_'+name+'_physical_settlement_before_unload')

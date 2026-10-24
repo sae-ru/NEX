@@ -21,7 +21,7 @@ try:
     path.write_text('module external_spin;fn helper()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return helper();}\n')
     folder = out/'host'
     emitted = json.loads(run([probe, path, folder, 'emit', 'main']))
-    assert emitted['ok'] and emitted['language'] == '0.21' and emitted['asynchronous'], emitted
+    assert emitted['ok'] and emitted['language'] == '0.22' and emitted['asynchronous'], emitted
     assert (folder/'nex-task-runtime.ts').read_bytes() == (source/'web/nex-task-runtime.ts').read_bytes()
     (folder/'package.json').write_text('{"type":"module"}\n')
     shutil.copyfile(source/'tests/task_typescript_external.mjs', folder/'external.mjs')

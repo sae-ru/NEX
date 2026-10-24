@@ -1,9 +1,10 @@
-# Private022 task/FFI data calls
+# Task/FFI and owned values in language0.22
 
-This is an explicit C++-API source experiment. Public CLI language021, its
-archives and callback rejection rules stay separate. `task_foreign_prototype`
-reports `source_support:false` and `public_enabled:false`. No public022 release
-or installed SDK/platform acceptance is established by these tests.
+The development compiler enables this contract through ordinary CLI source.
+`task_foreign_prototype` retains its descriptor key and reports source_support
+and public_enabled true. Explicit retained021 interpretation keeps its old rules;
+use `nex migrate` to create current022 revisions while preserving old history.
+Matching full compiler/installed SDK/platform acceptance is recorded separately.
 
 The frontend accepts server task/ffi callbacks when the server caller declares
 their complete effect set. Optional fs retains the020 whole-file read contract.
@@ -28,8 +29,8 @@ admission of already completed bytes. Active calls retain their physical image
 lease until C and checked result processing finish.
 
 The request validates the actual source argument graph against the exact pinned
-ForeignSignature before native loading. TaskCodec rejects function, file and
-external resource types. It copies checked scalars, finite f64, strict Unicode,
+ForeignSignature before native loading. The copied-data codec rejects function, file and
+external resource types; resource-bearing signatures use the separate owned mode below. It copies checked scalars, finite f64, strict Unicode,
 bytes and immutable list/result/nominal/enum data through strict schema-bound
 snapshots. Nominal reconstruction uses checked names, fields and variants.
 The worker reconstructs its own Values and creates fresh call-local C tokens on
@@ -46,7 +47,7 @@ token or copied payload. Result decoding and authority checks run again before
 resuming source code. Checked traps, cancellation and canonical host resource
 exhaustion drain physical operations before scope/application completion.
 
-Private148 adds task-local source resources through a separate typed owned-result
+Task-local source resources use a separate typed owned-result
 channel. The ordinary TaskExternalResult still carries only octets/errors; its
 owned-call completion is an empty wakeup. An invocation's sealed state holds its
 checked signature, copied snapshots and genuine ExternalResource owner table,
@@ -73,7 +74,7 @@ publication. Existing task/inner-scope resource regions wait actual physical
 cleanup, object/capacity tickets and code pins before publishing completion.
 Logical close is immediate; it does not return physical capacity early.
 
-Private149 extends the same explicit022 API to resource callback captures/results,
+Language022 supports resource callback captures/results,
 futures, channels and returned closures. A fresh resource belongs to the current
 task root or its current owned inner scope. Passing an immutable value graph
 collects genuine owners only after validating every nested task capability and
@@ -83,7 +84,7 @@ An already longer-lived ancestor owner remains borrowed. Otherwise the genuine
 owner moves to the admitted ancestor destination, preserving every alias and
 physical identity. Siblings, foreign requests and ended owners cannot be revived.
 
-Private150 defers acquiring logical actor/receiver authority until the complete
+Snapshots defer acquiring logical actor/receiver authority until the complete
 graph has been checked and actually contains external owners. Pure scalar,
 aggregate, future and channel values do not consult unrelated resource grants.
 Task/FFI preparation also resolves the current logical owner only when the exact
@@ -103,7 +104,7 @@ fences. Source aliases can close one shared identity while a previously admitted
 C borrow retains its physical storage until the call ends.
 
 The native kernel opts into source resource values separately from host resource
-regions. Public021 and old host defaults retain resource rejection. The independent
+regions. Retained021 programs and old host defaults retain resource rejection. The independent
 AST scheduler applies the same primitive from its own dispatch/region graph; it
 never runs native TaskGroup or TaskIR. Its lifetime analysis tracks opaque resources
 separately from forbidden files and records mandatory dynamic transfer obligations.
@@ -112,8 +113,8 @@ parallel_map, file authority, wire/browser resources and arbitrary callable FFI
 snapshots remain unsupported. Source phantom resource types have no native access
 by themselves; their server realm and other checks still apply.
 
-This adds no syntax and is available only through explicit private022 APIs.
-Public CLI language021 still rejects these task/FFI/resource-transport programs.
+This adds no syntax. Ordinary CLI language022 accepts these source programs;
+retained021 parsing preserves rejection and never silently upgrades old graphs.
 Thread-affine device construction, driver/DMA fences and general GPU/NPU resources
 need their own adapters and actual device evidence.
 
@@ -122,7 +123,8 @@ The genuine021 fixtures were produced by accepted SDK128 compiler
 Five histories contain15 real revisions and16 tables each; that SDK executed
 their native/reference and TypeScript tests. Separate current probes authenticate
 all original021 hashes, preserve resource nominal identities and derive distinct
-private022 revisions. They do not perform or certify public history migration.
+private022 revisions. That origin-only check does not perform public history migration; the CLI
+migration gate separately validates actual retained databases and exported graphs.
 The original SQL and sources remain unchanged; do not relabel them as022.
 
 `tests/task_foreign_source.py` compiles real C11/C++20 modules and actual NEX

@@ -119,7 +119,7 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   auto p=loadBundle(store.bundle(selected),root.string());
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
-bool versionedMigrationLanguage(const std::string &language){return language=="0.18"||language=="0.19"||language=="0.20"||language=="0.21";}
+bool versionedMigrationLanguage(const std::string &language){return language=="0.18"||language=="0.19"||language=="0.20"||language=="0.21"||language=="0.22";}
 void validateMigrationLanguage(const std::string &language){
   if(versionedMigrationLanguage(language))return;
   // These historical canonical serializers are not retained. Their existing
@@ -135,7 +135,7 @@ bool verifyMigrationOrigin(const llvm::json::Value &bundle,const fs::path &root,
     // A corrupted modern row must not evade verification by claiming a legacy
     // version whose serializer is unavailable. Recognize exact modern hashes;
     // genuine historical hashes remain explicitly unverified.
-    for(const auto *modern:{"0.18","0.19","0.20","0.21"}){
+    for(const auto *modern:{"0.18","0.19","0.20","0.21","0.22"}){
       bool matches=false;
       try{matches=revision(loadVersionedBundle(bundle,root.string(),modern))==original;}catch(const Error &){}
       if(matches)throw Error("E_REVISION","migration origin language contradicts its modern semantic revision");
@@ -444,9 +444,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"task-value-retirement","docs/task-value-retirement.md"},{"resource-regions","docs/resource-regions.md"},{"resource-executor","docs/resource-executor.md"},{"source-resources","docs/source-resources.md"},{"model","docs/models.md"},{"compute","docs/compute.md"},{"task-provider-debug","docs/task-provider-debugging.md"},{"task-provider-profile","docs/task-provider-profiling.md"},{"task-shared-providers","docs/task-shared-providers.md"},{"task-providers","docs/task-providers.md"},{"task-debug","docs/task-debugging.md"},{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"task-foreign-source","docs/task-foreign-prototype.md"},{"task-value-retirement","docs/task-value-retirement.md"},{"resource-regions","docs/resource-regions.md"},{"resource-executor","docs/resource-executor.md"},{"source-resources","docs/source-resources.md"},{"model","docs/models.md"},{"compute","docs/compute.md"},{"task-provider-debug","docs/task-provider-debugging.md"},{"task-provider-profile","docs/task-provider-profiling.md"},{"task-shared-providers","docs/task-shared-providers.md"},{"task-providers","docs/task-providers.md"},{"task-debug","docs/task-debugging.md"},{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-value-retirement, resource-regions, resource-executor, task-provider-debug, task-provider-profile, task-shared-providers, task-providers, task-debug, task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-foreign-source, task-value-retirement, resource-regions, resource-executor, task-provider-debug, task-provider-profile, task-shared-providers, task-providers, task-debug, task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -720,7 +720,9 @@ int run(const Options &o) {
     if(o.has("--json"))print(std::move(result));else std::cout<<"Wasm module: "<<result.getAsObject()->getString("module")->str()<<'\n';return 0;
   }
   if(o.command=="eval") {
-    std::unique_ptr<nexrt::ForeignScope> foreign;if(!o.get("--foreign").empty())foreign=std::make_unique<nexrt::ForeignScope>(foreignLibraries(o.get("--foreign")));
+    std::shared_ptr<nexrt::ForeignLibraries> libraries;
+    std::unique_ptr<nexrt::ForeignScope> foreign;
+    if(!o.get("--foreign").empty()){libraries=foreignLibraries(o.get("--foreign"));foreign=std::make_unique<nexrt::ForeignScope>(libraries);}
     uint64_t limit=1000000;
     if(!o.get("--steps").empty()){try{size_t used;auto raw=o.get("--steps");limit=std::stoull(raw,&used);if(used!=raw.size()||raw.starts_with("-"))throw std::invalid_argument("steps");}catch(...){throw Error("E_OPTION","--steps requires a nonnegative integer");}}
     auto entry=o.get("--entry","main");bool taskEntry=usesTaskEffects(p,entry);
@@ -730,8 +732,12 @@ int run(const Options &o) {
     try{result=evaluate(p,entry,limit,taskLimitsSpecified?&taskLimits:nullptr);}catch(Error &error){
       if(!error.operationSite.empty()){auto mapped=store.operations(p,"",error.operationSite,0,1);error.operationId=(*mapped.getAsObject()->getArray("nodes"))[0].getAsObject()->getString("id")->str();}throw;
     }
+    foreign.reset();
+    const auto foreignCapacity=libraries?libraries->resourceBytesUsed():0;
+    const bool hadForeign=bool(libraries);libraries.reset();
     if(o.has("--json")){
       llvm::json::Object response{{"ok",true},{"value",result.value},{"stdout",result.output},{"steps",int64_t(result.steps)}};
+      if(hadForeign)response["foreign_resource_bytes_after_scope"]=int64_t(foreignCapacity);
       if(taskEntry){auto configured=taskLimits;configured.steps=limit;response["task_execution"]=taskExecutionJSON(configured,configured,"reference");}
       print(std::move(response));
     }else std::cout<<result.output;return 0;

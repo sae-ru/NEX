@@ -72,7 +72,9 @@ struct Operation:TaskExternalOperation {
   Operation(std::shared_ptr<Gate> gate,ExternalResourceBorrow borrow):gate(std::move(gate)),borrow(std::move(borrow)){}
   TaskExternalResult run(const TaskExternalControl &)override{gate->enter();return {};}
 };
-Program source(const std::string &body){auto p=parse("module reference_regions;\n"+body,"reference_regions.nex");check(p);return p;}
+// These host-compatibility cases retain their original021 contract. Source022
+// cases select TaskForeign022 explicitly, including revocation regressions.
+Program source(const std::string &body){auto p=parseVersioned("module reference_regions;\n"+body,"reference_regions.nex",SourceLanguage::OwnedResources021);check(p);return p;}
 auto evaluate(const Program &p,Host &host,TaskReferenceObserver observer={},const TaskExecutionLimits *limits=nullptr){
   return evaluateTaskReference(p,"main",{},1000000,std::move(observer),limits,&host);
 }

@@ -63,7 +63,7 @@ import "std/http.nex" as http;
 import "../core/main.nex" as c;
 server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_response(200,str(c::answer(42)));}
 ''')
-        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'first/main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'first/main.nex'}))
         self.manifest = {'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{p:{'profile':p} for p in ('release','profile')}, 'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'answer','exports':['alternate']},

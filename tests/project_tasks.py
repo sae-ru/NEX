@@ -10,9 +10,9 @@ class ProjectTasks(harness.ToolchainCase):
         for name in ('core','producer','app','browser','unused'):(self.root/name).mkdir()
         self.package=self.root.parent/'external words';self.package.mkdir()
         (self.package/'text.nex').write_text('module words;pub fn decorate(value:str)->str{return value+" 🧠";}')
-        (self.package/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'text.nex'}))
+        (self.package/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'text.nex'}))
         (self.package/'secret.txt').write_text('NEX_UNRELATED_PACKAGE_FILE_078')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex','libraries':{'words':str(self.package)}}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex','libraries':{'words':str(self.package)}}))
         (self.root/'core/value.nex').write_text('module core;pub fn compute(n:i64)->i64{return n*2;}test fn twice()->unit{assert(compute(21)==42);}')
         (self.root/'producer/main.nex').write_text('''module producer;import "../core/value.nex" as c;import "words/text.nex" as w;
 pub fn render()->str{return w::decorate(str(c::compute(21)));}test fn rendered()->unit{assert(render()=="42 🧠");}''')
@@ -109,7 +109,7 @@ client test fn correct()->unit{assert(initial()==42);}''')
         self.assertEqual(rejected['code'],'E_TASK_INTEGRITY');self.assertFalse((self.root/'rejected-replay').exists())
 
     def test_source_deleted_project_replay_does_not_use_an_enclosing_project_graph(self):
-        ancestor=self.root.parent;(ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'ancestor.nex'}))
+        ancestor=self.root.parent;(ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'ancestor.nex'}))
         (ancestor/'ancestor.nex').write_text('module outer;fn main()->i64{return 77;}');self.cli('check',ancestor/'ancestor.nex',cwd=ancestor)
         task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.add(task,{'id':'effects','kind':'effects','target':'source','configuration':'debug','symbols':['app::main'],'allowed_effects':['io']},'app::main');self.save_task(task)

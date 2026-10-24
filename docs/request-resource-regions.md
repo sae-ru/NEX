@@ -1,3 +1,8 @@
+Language022 source execution enables its internal owned-resource regions automatically.
+The older trusted-host opt-in contract below is retained for explicit021 programs;
+source022 and old host-only modes are distinct. A supplied source request parent
+must be genuine even when the host-only switch is off. No stable host ABI is promised.
+
 # Development0.129: request-parent and per-task resource ownership
 
 This host-only candidate adds `ResourceRegionFamily::Request` and

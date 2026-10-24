@@ -8,7 +8,7 @@ if cli.output:OUT.mkdir()
 if cli.legacy_fixtures is None and os.environ.get('NEX_TEST_RESOURCE020_FIXTURES'):cli.legacy_fixtures=Path(os.environ['NEX_TEST_RESOURCE020_FIXTURES'])
 
 ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};ENV.pop('NEX_RESOURCE_DIR',None)
-report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.21','source_language':'0.21','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
+report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.22','source_language':'0.22','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def save():report.update(seconds=round(time.monotonic()-started,3),updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
@@ -21,7 +21,7 @@ def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
  return result
 def bundle(name,files):
  root=OUT/name;root.mkdir();doc={'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':files} if isinstance(files,str) else files};path=root/'sources.json';path.write_text(json.dumps(doc,ensure_ascii=False,indent=2)+'\n');return root,path
-def check(name,text,error=None,language='0.21'):
+def check(name,text,error=None,language='0.22'):
  root,path=bundle(name,text);r=command(name,[PROBE,'check',path,root,'-',language],expected=1 if error else 0,code=error);report['cases'].append({'name':name,'expected_error':error,'revision':r.get('revision')});save();return r,root,path
 try:
  assert PROBE.is_file();report['probe_sha256']=sha(PROBE)
@@ -68,13 +68,16 @@ try:
   ('parallel-captured-owner',resource+'server fn bad(r:Session)->list<i64>{return parallel_map([1],server fn(x:i64)->i64{let held:Session=r;return x;},1);}','E_PARALLEL_TYPE'),
   ('task-captured-owner',resource+'server fn bad(r:Session)->i64 !{task}{return with_tasks(1,server fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,server fn()->i64{let held:Session=r;return 1;});return task_wait(t);});}','E_TASK_TYPE'),
   ('channel-owner',resource+'server fn bad()->i64 !{task}{return with_tasks(1,server fn(s:task_scope)->i64 !{task}{let c:channel<Session>=channel_new<Session>(s,1);return 0;});}','E_TASK_TYPE'),
- ]:check(name,text,error)
+ ]:
+  if name in ('task-captured-owner','channel-owner'):
+   check(name+'-retained021',text,error,'0.21');check(name+'-current022',text)
+  else:check(name,text,error)
  check('020-resource-syntax-rejected',resource,'E_PARSE','0.20')
  # Ordinary identifiers retain their interpretation in both explicit versions.
  legacy='module a; struct resource{value:i64;} fn resource_close(resource:i64)->i64{return resource+1;} fn main()->i64{return resource_close(resource(41).value);}'
  check('020-ordinary-resource-names',legacy,language='0.20')
- check('021-ordinary-resource-nominal','module a; struct resource{value:i64;} fn preserve<resource>(value:resource)->resource{return value;} fn main()->i64{return preserve<i64>(resource(42).value);}')
- check('021-builtin-name-conflict',legacy,'E_DUPLICATE')
+ check('current022-ordinary-resource-nominal','module a; struct resource{value:i64;} fn preserve<resource>(value:resource)->resource{return value;} fn main()->i64{return preserve<i64>(resource(42).value);}')
+ check('current022-builtin-name-conflict',legacy,'E_DUPLICATE')
  if cli.legacy_fixtures:
   old=json.loads(cli.legacy_fixtures.read_text())
   for f in old['fixtures']:
@@ -114,7 +117,7 @@ try:
   if cli.nex:
    sources=json.loads(compiled_bundle.read_text())
    for name,text in sources['files'].items():(root/name).write_text(text)
-   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':sources['entry']})+'\n')
+   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':sources['entry']})+'\n')
    compiler=cli.nex.resolve()
    checked=command('public-check-'+kind,[compiler,'check','main.nex','--json'],cwd=root)
    exported=command('public-ffi-'+kind,[compiler,'ffi','main.nex','--symbol','fixture::create','--json'],cwd=root)

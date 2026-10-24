@@ -195,7 +195,7 @@ def compiled_output():
  else:shutil.rmtree(tmp)
 with compiled_output() as tmp:
  root=Path(tmp);runtime=source/'runtime';objects=[]
- for name in ('runtime.cpp','nex_files.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp'):
+ for name in ('runtime.cpp','nex_files.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp'):
   obj=root/(name+'.o')
   run([clang,'-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,'-c',runtime/name,'-o',obj]);objects.append(obj)
  mirrors=0;typescript_mirrors=0;asynchronous_ast=0;fixture_hashes={}

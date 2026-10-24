@@ -11,6 +11,7 @@ cases = [
     ('yield', 'fn main()->i64 !{task,io}{print(7);task_yield();return 42;}', 42, '7\n', None),
     ('negative-exit', 'fn main()->i64 !{task}{task_yield();return -1;}', 255, '', None),
     ('unit', 'fn main()->unit !{task}{task_yield();}', 0, '', None),
+    ('unused-ffi', 'server fn main()->i64 !{task,ffi}{return with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return 42;});return task_wait(child);});}', 42, '', None),
     ('calls', 'fn item(n:i64)->i64 !{task,io}{print(n);task_yield();return n;}fn sum(a:i64,b:i64)->i64 !{task}{task_yield();return a+b;}fn main()->i64 !{task,io}{return sum(item(20),item(22));}', 42, '20\n22\n', None),
     ('short', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task}{if true||false{return 42;}return 0;}', 42, '', None),
     ('short-call', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task,io}{let value:bool=(true||bad())&&(false&&bad());assert(!value);return 42;}', 42, '', None),
@@ -103,7 +104,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     # A clean primary entry does not make an additional public ABI export safe.
     exports = root / 'export-project'
     (exports / 'library').mkdir(parents=True)
-    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.21', 'entry': 'library/main.nex'}))
+    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.22', 'entry': 'library/main.nex'}))
     (exports / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -115,7 +116,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     project = root / 'source-project'
     (project / 'app').mkdir(parents=True)
     (project / 'core').mkdir()
-    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.21', 'entry': 'app/main.nex'}))
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.22', 'entry': 'app/main.nex'}))
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},

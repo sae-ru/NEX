@@ -12,7 +12,7 @@ class Actions(harness.ToolchainCase):
         super().setUp()
         self.root=self.root/'project % 🧠';self.root.mkdir()
         for name in ('core','mixer','app','browser'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
         (self.root/'core/value.nex').write_text('''module core;
 pub struct Payload{text:str;data:bytes;callback:fn(i64)->i64;}
 pub fn create()->Payload{let offset:i64=40;return Payload("Я",utf8_bytes("🧠"),fn(x:i64)->i64{return offset+x;});}

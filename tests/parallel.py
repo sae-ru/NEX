@@ -149,7 +149,7 @@ server fn main()->unit!{fs}{
             if name!='head':self.assertLessEqual(set(map(repr,rows)),set(map(repr,after[1][name])),name)
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD',timeout=180);self.cli('test','--revision','HEAD','--target','web',timeout=180)
         old=self.root/'old';new=self.root/'new';self.cli('export','--revision',fixture['revision'],'--directory',old);self.cli('export','--directory',new)
-        self.assertEqual(json.loads((old/'nex.json').read_text())['language'],'0.17');self.assertEqual(json.loads((new/'nex.json').read_text())['language'],'0.21')
+        self.assertEqual(json.loads((old/'nex.json').read_text())['language'],'0.17');self.assertEqual(json.loads((new/'nex.json').read_text())['language'],'0.22')
         self.assertEqual((old/'main.nex').read_text(),(new/'main.nex').read_text())
         self.assertEqual(self.cli('graph','--revision',fixture['reserved_revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
         repaired=copy.deepcopy(fixture['reserved_graph'])
@@ -164,7 +164,7 @@ server fn main()->unit!{fs}{
 
     def test_binary_providers_propagate_parallel_runtime_and_opaque_callbacks(self):
         (self.root/'core').mkdir();(self.root/'app').mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
         (self.root/'core/value.nex').write_text('''module cpu_provider;
 pub fn ordinary(x:i64)->i64{return x+1;}
 pub fn mapped(callback:fn(i64)->i64)->list<i64>{return parallel_map([1,2],callback,2);}

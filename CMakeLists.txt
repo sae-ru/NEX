@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.129.0 LANGUAGES C CXX)
+project(NEX VERSION 0.130.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -114,9 +114,21 @@ target_compile_options(nex_task_foreign_context_probe PRIVATE -Wall -Wextra -Wpe
 add_test(NAME source_task_foreign_genuine021_origins COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_origins.py $<TARGET_FILE:nex_source_resource_probe>)
 set_tests_properties(source_task_foreign_genuine021_origins PROPERTIES TIMEOUT 120)
+add_test(NAME public_task_foreign_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_foreign_context_probe> --compiler $<TARGET_FILE:nex>)
+add_test(NAME public_task_resource_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_resource_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_owned_foreign_context_probe> --compiler $<TARGET_FILE:nex>)
+set_tests_properties(public_task_foreign_source public_task_resource_source PROPERTIES TIMEOUT 1800)
+
 add_test(NAME source_task_foreign_genuine021_history COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_history.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex_source_resource_probe> $<TARGET_FILE:nex>)
 set_tests_properties(source_task_foreign_genuine021_history PROPERTIES TIMEOUT 900)
+add_test(NAME public_task_foreign_language_migration COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(public_task_foreign_language_migration PROPERTIES TIMEOUT 1800)
+
 add_test(NAME resource_language_migration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
 set_tests_properties(resource_language_migration PROPERTIES TIMEOUT 600)
@@ -227,6 +239,10 @@ file(GLOB NEX_RESOURCE_MIGRATION_FIXTURES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.json"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.sql")
 install(FILES ${NEX_RESOURCE_MIGRATION_FIXTURES} DESTINATION share/nex/examples/resource-migration)
+file(GLOB NEX_TASK_FOREIGN_MIGRATION_FIXTURES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.21-sdk128-task-foreign-*.json"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.21-sdk128-task-foreign-*.sql")
+install(FILES ${NEX_TASK_FOREIGN_MIGRATION_FIXTURES} DESTINATION share/nex/examples/task-foreign-migration)
 install(FILES experiments/quality/scale_100x100.py
   experiments/quality/acceptance_support.py experiments/quality/server_web_edit.py
   experiments/quality/server_web_edit.spec.mjs experiments/quality/type_edit_workflow.py

@@ -69,8 +69,8 @@ class Discovery(harness.ToolchainCase):
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
             (self.root / 'nex.json').write_text(text)
-            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.21')
-            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.21')
+            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.22')
+            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.22')
             self.assertFalse((self.root / '.nex').exists())
 
     def test_existing_graph_rows_ids_and_readonly_inputs_stay_unchanged(self):
@@ -97,7 +97,7 @@ class Discovery(harness.ToolchainCase):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
         self.assertEqual(full['task_value_retirement'], pack['task_value_retirement'])
-        self.assertFalse(full['task_value_retirement']['source_resource_transport'])
+        self.assertTrue(full['task_value_retirement']['source_resource_transport'])
         self.assertEqual(full['resource_regions'], pack['resource_regions'])
         self.assertTrue(full['resource_regions']['native_scheduler'])
         self.assertFalse(full['resource_regions']['source_support'])
@@ -109,7 +109,7 @@ class Discovery(harness.ToolchainCase):
         self.assertEqual(full['resource_regions']['maximum']['scope_depth'], 256)
         self.assertEqual(full['resource_executor'], pack['resource_executor'])
         self.assertFalse(full['resource_executor']['source_support'])
-        self.assertFalse(full['resource_executor']['source_task_bridge'])
+        self.assertTrue(full['resource_executor']['source_task_bridge'])
         self.assertFalse(full['resource_executor']['actual_GPU_NPU_resources'])
         self.assertIn('pre-reserved', full['resource_executor']['cleanup_admission'])
         self.assertEqual(full['model'], pack['model'])
@@ -123,7 +123,7 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(full['task_profile_collector']['public_profile_enabled'])
         self.assertEqual(full['task_profiling'], pack['task_profiling'])
         self.assertTrue(full['task_profiling']['source_support'])
-        self.assertEqual(full['task_profiling']['cli_language'], '0.21')
+        self.assertEqual(full['task_profiling']['cli_language'], '0.22')
         self.assertEqual(full['task_profiling']['execution_task_abi'], 3)
         self.assertEqual(full['task_profiling']['report_schema'], 'nex.profile/2')
         self.assertFalse(full['task_profiling']['tracy'])

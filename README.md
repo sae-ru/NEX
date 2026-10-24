@@ -1,3 +1,19 @@
+# Development0.130 / language0.22
+
+This development compiler enables ordinary CLI source task/FFI calls and genuine
+resource captures, results, futures, channels and returned closures. Native and
+independent AST execution keep checked effects/realms, original physical grants,
+atomic owner transfer and physical cleanup before completion. Pure values do not
+acquire unrelated logical authority. Fixed binary task providers retain their
+resource-free ABI; browser/wire/file/parallel guards remain. Read
+[the current contract](docs/task-foreign-prototype.md).
+
+Use explicit `nex migrate` for retained021 graphs; archived parsers, old rows,
+schema and IDs remain. Compiler/CLI support is enabled in this tree; matching
+full regression, installed SDK and platform acceptance remain pending. The last
+accepted local SDK129/021 and approved primary081/016 are separate checkpoints.
+Earlier development notes below retain their original historical scopes.
+
 # Private150: acquire logical resource authority on demand
 
 The independent AST scheduler validates a complete task value graph before

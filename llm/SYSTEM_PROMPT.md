@@ -1,35 +1,25 @@
-Private task_foreign_prototype.resource_authority_on_demand means only actual
-resource-bearing snapshots/FFI signatures acquire logical owner authority.
-Pure values remain independent of that resource revocation; execution cancellation
-and physical FFI/request/module grants still apply. Ended owners remain rejected.
-This does not enable public022 migration or installed/device support.
+Query the actual compiler with nex describe --json before writing code. Current
+language022 enables ordinary CLI task/ffi when task_foreign_prototype reports
+source_support/public_enabled true. The descriptor key retains its historical
+name. Server task/ffi callbacks may also declare fs when their caller has every
+effect. Ordinary resumable helpers declare task and ffi; extern leaves keep their
+ordinary C signature. No effect declaration creates an operator grant.
 
-Private task_foreign_prototype.private_cross_task_resource_transport additionally
-describes explicit022 resource captures/results/futures/channels and closures.
-Complete graph validation precedes atomic genuine-owner ancestor transfer; original
-physical grants/code pins remain. Already-closed channel sends do not move owners.
-Resource lifetime may require runtime checks; the analysis does not infer C factory
-owners. File/unstructured parallel/wire/browser authority remains rejected. This
-is still not a public021 program or a public022 migration/SDK acceptance claim.
+Genuine opaque resources may be captured, returned or sent through source task
+scopes/futures/channels/closures. Complete graph validation precedes atomic owner
+transfer to an admitted ancestor. Already-closed channels do not extend ownership.
+Pure values do not acquire logical resource authority. Ended logical regions
+cannot be revived; physical grants and cancellation still apply. Task/FFI uses a
+separate genuine owner table, never fabricated indices, source frames, borrowed
+payloads or C tokens in the generic byte completion. Cleanup and active C calls
+must physically settle before publication. Read docs/task-foreign-prototype.md.
 
-Private task_foreign_prototype.private_task_local_resources reports the explicit022
-C++ API experiment. It is not available in public CLI021. Its genuine typed owner
-table is separate from the generic byte completion; it cannot fabricate owners
-from indices or hashes. The original task-local slice is extended only when the private cross-task flag
-above is present; public021 still rejects resource task transport. Published resource cleanup uses a pre-reserved executor
-slot, while factories keep C invocation tokens on their own IO thread. Query the
-actual descriptor and read docs/task-foreign-prototype.md; do not generate these
-private programs for ordinary public users or claim device/SDK support.
-
-Private task_foreign_prototype.module_value_quotas_separate reports distinct module and external-object capacity. Module authorizations do not consume external object slots. Public task/ffi source remains disabled; use actual capabilities.
-
-Query task_foreign_prototype for the private022 experiment. Public source_support/public_enabled remain false: current CLI language021 still rejects task/ffi callbacks. Do not generate these private programs for ordinary users. Genuine021 fixtures precede the experiment; public022 history migration/public resource publication and matching installed delivery remain pending. Read docs/task-foreign-prototype.md.
-
-Query task_value_retirement for native scheduler cleanup. Its source_resource_transport/source_task_FFI_bridge remain false. Cleanup outside locks and physical scope fences do not grant source authority or permit an FFI/task adapter. Read docs/task-value-retirement.md.
-
-Query resource_regions for private host scheduler capabilities. Its source_support/source_task_bridge/frame_value_transport are false; do not invent source intrinsics or transport resource authority in tasks. Native and independent AST reference host task/scope completion await complete physical cleanup. Hosts may capture genuine request-parent authority for caller borrowing and explicit return promotion. Reference regions retain a separate family and coordinator-only prepareInRegion/admitInRegion hooks. Public source resource task/FFI publication remains pending; explicit private022 capabilities are described above.
-
-Query resource_executor for trusted-host cleanup support. Its source_support, source_task_bridge and actual_GPU_NPU_resources are false; no source builtin or C executor token exists. A driver adapter must settle its actual fence/IPC and release retained host operation storage before publishing completion. Cancellation is not physical completion. Read docs/resource-executor.md.
+Fixed static/shared task providers keep separate resource-free signatures and
+ABI3 mask31. Source support does not enable FFI provider exports, wire/browser/
+file authority, unstructured parallel resources, callbacks from C into NEX,
+device executors or arbitrary runtime unload. General GPU/NPU ownership and
+matching current SDK/platform acceptance remain separate. Use explicit nex migrate
+for older graphs; preserve genuine old rows/schema/IDs and retained parsers.
 
 For native debug launch metadata, pass launch.args once. initCommands only load
 the checked formatter/context; do not add target.run-args to a DAP launch. The
@@ -39,7 +29,8 @@ resource watch proxy authority remains unavailable.
 For opaque resources query source_resources on the actual compiler. Language021
 supports `[pub] server resource Name<T...>;`, genuine granted typed extern results,
 server/ffi resource_close(value)->bool and resource_is_open(value)->bool. Resources
-have no source fields/constructor/pattern or wire/browser/task transport. Aliases
+have no source fields/constructor/pattern or wire/browser transport. Language022
+structured tasks use the checked ownership contract above. Aliases
 share close/identity; pure server forwarding grants no authority. Use
 `context --entity type --symbol NAME` and type patches; editor kind is resource.
 Follow docs/source-resources.md for explicit history-preserving migration and
@@ -142,8 +133,9 @@ All ten intrinsics require the explicit `task` effect:
 `with_tasks(workers,fn(scope:task_scope)->R{...})` creates/drains a child scope;
 `task_spawn(scope,fn()->T{...})` returns a future. Scope/spawn callbacks must be
 pure or task-only in an available realm.020 additionally allows exactly server
-task/fs callbacks when their caller declares task and fs. No io/db/ffi callback
-is added. Read docs/task-file-reads.md before using file_read_text/bytes in tasks.
+task/fs callbacks when their caller declares task and fs.022 additionally allows
+server task/ffi callbacks with optional fs and complete caller authorization.
+io/db callbacks remain unsupported. Read docs/task-file-reads.md before using file_read_text/bytes in tasks.
 A task caller rejects fs-only helpers; explicitly review task/fs declarations.
 Native macOS/Linux standalone/source-only projects, checked concrete static task
 provider projects and independent reference support these reads. Providers use
@@ -185,14 +177,15 @@ Broader IO, non-native task debugging, dynamic-provider lifetime, task server/UI
 adapters, other native targets and current SDK/platform delivery remain pending.
 Do not infer their completion from source_support or a passing scoped probe.
 For checked static providers, query task_providers and read task-providers.md.
-Keep concrete direct task/pure signatures resource-free, including nested types;
+For fixed binary providers keep concrete direct task/pure signatures resource-free, including nested types;
 do not transport any callable or authority through this cohort. A pure factory
 returning a closure is not an imported task descriptor. Keep provider source and
 the declared static edge available, and inspect task_linkage ownership rather
 than accepting consumer recompilation as a provider proof. Fixed startup-linked shared task providers have their own task_shared_providers
 descriptor and guide; do not infer support from static task_providers. Provider
 logical debugging uses the separate task_provider_debugging contract.
-HTTP/foreign tasks and runtime unload remain unsupported.
+HTTP/foreign task provider exports and runtime unload remain unsupported.
+Source-only task/ffi calls follow the022 contract above.
 Instrumented provider3 builds use the distinct `task_provider_profiling` contract.
 Use native task profiling only when the actual task_profiling descriptor reports
 source_support; read docs/profiling.md for its current CLI language/platform scope.
@@ -388,7 +381,7 @@ JSON/API, browser state and scalar proofs, including phantom type arguments.
 Native HTTP has no implicit environment file grant. Pure watches may inspect
 opaque identities and compare aliases, but cannot run any filesystem operation.
 Use explicit history-preserving migration from 0.13; repair newly reserved old
-user names in an exported graph. Broader task IO, general foreign resources and callbacks into NEX remain pending. Structured tasks use the019/020 contract;020 native/reference whole-file reads are described in docs/task-file-reads.md.
+user names in an exported graph. Broader task IO, device resource adapters and callbacks into NEX remain pending. Structured tasks use the019/020 contract;020 native/reference whole-file reads are described in docs/task-file-reads.md.
 
 For native extensions, query `foreign_boundary` and retrieve `nex guide --kind ffi`.
 Declare a concrete server function such as `server extern fn transform(data:bytes)

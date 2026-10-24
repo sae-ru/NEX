@@ -1,3 +1,13 @@
+# Development0.130 / language022: publication candidate
+
+Ordinary parse/load/CLI now selects TaskForeign022. Retained018/019/020/021
+origins keep their parsers and identities; explicit migration preflights source
+and origin before writes. Native provider/debug readers accept022 alongside
+retained formats without widening ABI3 mask31. Capability metadata, grammar,
+language pack and model-independent instructions describe the source-only
+task/FFI owned-resource bridge. Full current delivery is pending; no primary,
+installed SDK or hardware acceptance is implied. Earlier receipts retain scope.
+
 # Development0.126: private native logical resource regions
 
 The trusted native TaskGroup adapter can enable explicit logical resource regions.

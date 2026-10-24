@@ -31,7 +31,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         (self.root/'mid/value.nex').write_text(fixture.MID)
         self.file.write_text(fixture.APP)
         (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -93,7 +93,7 @@ class SharedTaskProviders(harness.ToolchainCase):
             'owner_image','definition_owners','component_file_reads','image'})
         self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/2','shared-fixed'))
         self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000003,88,40))
-        self.assertEqual((value['language'],value['component']),('0.21',component))
+        self.assertEqual((value['language'],value['component']),('0.22',component))
         self.assertEqual(set(value['definitions']),set(value['definition_owners']))
         self.assertEqual(value['task_file_reads'],any(value['component_file_reads'].values()))
         if kind is None:kind='application' if component in ('app','other') else 'shared-image'
@@ -382,7 +382,9 @@ server fn main()->unit!{task,fs,io}{
         (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(x:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}')
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}')
         self.description['components']['app'].update(kind='executable',entry_function='main');self.save()
-        self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_UNIMPLEMENTED')
+        rejected=self.project('plan',ok=False)
+        self.assertEqual(rejected['code'],'E_TASK_PROVIDER')
+        self.assertIn('task provider FFI authorization',rejected['message'])
         self.assertFalse((self.root/'.nex').exists())
 
     def test_checked_failure_matches_reference_without_resuming_source(self):

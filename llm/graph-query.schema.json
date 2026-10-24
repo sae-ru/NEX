@@ -414,7 +414,7 @@
           "const": "nex.graph-query/1"
         },
         "language": {
-          "const": "0.21"
+          "const": "0.22"
         },
         "namespace": {
           "type": "string",
@@ -515,7 +515,7 @@
           "const": "nex.graph-query/1"
         },
         "language": {
-          "const": "0.21"
+          "const": "0.22"
         },
         "namespace": {
           "type": "string",

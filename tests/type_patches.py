@@ -20,7 +20,7 @@ test fn value_test()->unit{assert(m::make().value==41);}
 
 class TypePatches(harness.ToolchainCase):
     def project(self, model=MODEL, main=MAIN):
-        (self.root / 'nex.json').write_text(json.dumps({'language':'0.21','entry':'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'language':'0.22','entry':'main.nex'}))
         self.source(main)
         (self.root / 'model.nex').write_text(model)
         return self.cli('check')['revision']

@@ -83,7 +83,7 @@ def main():
  if args.output:out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-foreign-history-');out=Path(temporary.name)
  write_json(out/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})
- checks=HistoryChecks(args.probe,args.compiler,out);report={'schema':'nex.private022-genuine021-history/1','ok':False,'public022_enabled':False,'public022_CLI_migration_verified':False};started=time.monotonic()
+ checks=HistoryChecks(args.probe,args.compiler,out);report={'schema':'nex.private022-genuine021-history/1','ok':False,'public022_enabled':True,'public022_CLI_migration_verified':False};started=time.monotonic()
  try:
   checks.run(Path(args.source_probe).resolve())
   report.update(ok=True,genuine021_histories=5,original_revisions=15,original_tables_each=16,native_archived_programs=15,reference_archived_programs=30,checks=checks.checks,requests=checks.sequence,seconds=time.monotonic()-started)

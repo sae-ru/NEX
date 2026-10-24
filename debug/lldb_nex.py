@@ -1453,7 +1453,7 @@ def _provider_task_manifest(context, codes=None):
                 not isinstance(owner, str) or owner not in by_owner or
                 registry['accessor'] != 'nex_task_debug_registry_' + name + '_v1' or
                 component['component'] != name or component['owner_image'] != owner or
-                component['language'] not in ('0.19', '0.20', '0.21') or
+                component['language'] not in ('0.19', '0.20', '0.21', '0.22') or
                 any(not _task_digest(component[key]) for key in ('revision', 'source_hash', 'bundle_hash')) or
                 not isinstance(component['entry'], str) or not 1 <= len(component['entry']) <= 4096 or '\0' in component['entry'] or
                 not isinstance(component['exports'], list) or len(component['exports']) > 16384 or

@@ -8,7 +8,7 @@ class ProjectPackages(harness.ToolchainCase):
     def setUp(self):
         super().setUp();self.root=self.root.resolve()/'project % 🧠';self.root.mkdir()
         for name in ('core','bridge','app','browser'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
         (self.root/'core/math.nex').write_text('''module model;
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
 pub fn decorate(x:str)->str{return x+" 🧠";}
