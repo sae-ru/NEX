@@ -43,6 +43,13 @@ int main(int argc,char **argv)try{
   if(mode=="migrate"){
     auto directory=required(*request,"store_directory"),expected=required(*request,"expected_head");
     if(expected.empty())throw Error("E_OPTION","migration requires an explicit expected HEAD");
+    {
+      std::string previous;
+      if(std::filesystem::exists(std::filesystem::path(directory)/"graph.db")){
+        Store retained(directory,StoreOpenMode::ReadOnly);previous=retained.headRevision();
+      }
+      if(previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed before versioned migration");
+    }
     std::string origin;
     if(auto original=request->getString("original_revision")){
       origin=original->str();Store retained(directory,StoreOpenMode::ReadOnly);

@@ -114,6 +114,9 @@ target_compile_options(nex_task_foreign_context_probe PRIVATE -Wall -Wextra -Wpe
 add_test(NAME source_task_foreign_genuine021_origins COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_origins.py $<TARGET_FILE:nex_source_resource_probe>)
 set_tests_properties(source_task_foreign_genuine021_origins PROPERTIES TIMEOUT 120)
+add_test(NAME source_task_foreign_genuine021_history COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_history.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex_source_resource_probe> $<TARGET_FILE:nex>)
+set_tests_properties(source_task_foreign_genuine021_history PROPERTIES TIMEOUT 900)
 add_test(NAME resource_language_migration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
 set_tests_properties(resource_language_migration PROPERTIES TIMEOUT 600)
