@@ -31,6 +31,9 @@ server fn main()->unit!{ffi,io}{BODY}
 '''
  body='let owner:Session=create(42);let alias:Session=owner;assert(owner==alias);assert(resource_is_open(owner));assert(read(owner)==42);assert(resource_close(alias));assert(!resource_is_open(owner));assert(!resource_close(owner));let second:Session=create(7);assert(read(second)==7);print(42);'
  evidence={'descriptor':True,'producers':[],'migration':{}}
+ if 'resource_executor' in pack:
+  from sdk_resource_executor import check_installed_resource_executor
+  evidence['resource_executor']=check_installed_resource_executor(run,root,resources,driver)
  for kind in ('C11','CPP20'):
   project=out/kind;project.mkdir();marker=project/'events'
   _write(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})

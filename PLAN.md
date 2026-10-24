@@ -1,3 +1,9 @@
+# Current140: physical resource executor integration
+
+- [x] Implement a bounded owning-thread host executor, pre-reserved cleanup and complete physical owner retirement.
+- [ ] Complete cancellation/physical fence/module unload/quota tests and strict sanitizers, matching compiler/SDK/platform delivery.
+- [ ] Connect logical source-task ownership, trusted FFI completion and actual model/device resources; retain all remaining original requirements.
+
 Development0.123/language021 now implements opaque source resource declarations,
 checked native/reference operations, graph/editor context and explicit migration.
 Focused source, genuine020-history and installed-resource-phase acceptance are

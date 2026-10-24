@@ -1,3 +1,5 @@
+Query resource_executor for trusted-host cleanup support. Its source_support, source_task_bridge and actual_GPU_NPU_resources are false; no source builtin or C executor token exists. A driver adapter must settle its actual fence/IPC and release retained host operation storage before publishing completion. Cancellation is not physical completion. Read docs/resource-executor.md.
+
 For native debug launch metadata, pass launch.args once. initCommands only load
 the checked formatter/context; do not add target.run-args to a DAP launch. The
 CLI manages raw LLDB arguments separately. Resource previews expose opaque IDs;

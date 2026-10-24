@@ -68,7 +68,8 @@ class ExternalResource {
   static ExternalResource makeErased(const ResourceDomain&,const ExternalResourceClass&,
       std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
   static ExternalResource makeInAccessErased(ResourceAccess,const ExternalResourceClass&,
-      std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
+      std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>,
+      std::shared_ptr<ResourceExecutor> executor={});
 public:
   ExternalResource()=default;
   uint64_t identity()const noexcept{return owner.identity();}
@@ -103,6 +104,20 @@ public:
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
       });
+  }
+  template<class T,class Factory> static ExternalResource makeOnExecutor(const ResourceDomain &domain,
+      const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
+      std::shared_ptr<void> codePin,std::shared_ptr<ResourceExecutor> executor,Factory factory){
+    static_assert(std::is_nothrow_destructible_v<T>);
+    if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
+    if(!executor)throw DataError("E_RESOURCE_EXECUTOR","external resource requires an explicit executor");
+    auto access=domain.access();
+    if(auto bind=resource_detail::requestBinder)if(auto *request=bind(domain))access=request->access();
+    return makeInAccessErased(std::move(access),key.key,budgets,bytes,
+      [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
+        std::unique_ptr<T> object=create(permit);
+        return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
+      },std::move(executor));
   }
 };
 }

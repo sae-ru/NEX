@@ -75,7 +75,8 @@ ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const
   return makeInAccessErased(std::move(access),key,budgets,bytes,std::move(factory));
 }
 ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,const ExternalResourceClass &key,
-    std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory){
+    std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory,
+    std::shared_ptr<ResourceExecutor> executor){
   if(budgets.empty()||budgets.size()>8)throw DataError("E_RESOURCE_BYTES","external resource needs1..8 capacity budgets");
   auto type=key.state;
   if(!type)throw DataError("E_RESOURCE_TYPE","external class is unavailable");
@@ -83,12 +84,13 @@ ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,cons
   for(const auto &budget:budgets){if(!budget.state)throw DataError("E_RESOURCE_BYTES","external capacity budget is unavailable");states.push_back(budget.state);}
   std::sort(states.begin(),states.end(),[](const auto &a,const auto &b){return std::less<>{}(a.get(),b.get());});
   states.erase(std::unique(states.begin(),states.end()),states.end());
-  auto resource=access.make<external_detail::State>([&](const ResourcePermit &permit){
+  auto create=[&](const ResourcePermit &permit){
     auto charge=std::make_shared<external_detail::Charge>(states,bytes);charge->reserve();permit.check();
     auto object=factory(permit);
     if(!object.pointer)throw DataError("E_RESOURCE_CLOSED","external resource factory returned no object");
     return std::make_unique<external_detail::State>(std::move(charge),std::move(object));
-  });
+  };
+  auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create):access.make<external_detail::State>(create);
   return ExternalResource(std::move(resource),std::move(type),bytes);
 }
 ExternalResourceBorrow::ExternalResourceBorrow(std::shared_ptr<external_detail::BorrowState> impl):impl(std::move(impl)){}

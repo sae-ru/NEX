@@ -78,6 +78,27 @@ class DistributionWorkflow(unittest.TestCase):
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
                 'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
 
+    def test_current_executor_delivery_cannot_be_omitted_from_a_green_report(self):
+        current=self.report();current['doctor']={'version':'0.125.0'}
+        with self.assertRaisesRegex(RuntimeError,'physical resource executor'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','owning_thread_factory_cleanup','physical_fence_and_quota_retention',
+                'queued_running_cancellation','actual_module_destructor_unload','module_exceptions_destroyed_before_unload')
+        current['evidence']={'source_resources':{'resource_executor':{**{name:True for name in fields},'cases':21}}}
+        for name in fields:
+            for value in (False,None,'true'):
+                damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_executor'][name]=value
+                with self.subTest(name=name,value=value),self.assertRaisesRegex(RuntimeError,'physical resource executor'):
+                    acceptance.validate_completed_report(damaged)
+        for count in (0,20,22,True,'21'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_executor']['cases']=count
+            with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'physical resource executor'):
+                acceptance.validate_completed_report(damaged)
+        # A complete executor receipt still owes the earlier opaque-resource and
+        # genuine-history evidence; it must not bypass any existing delivery gate.
+        with self.assertRaisesRegex(RuntimeError,'opaque resource'):
+            acceptance.validate_completed_report(current)
+
     def test_distribution_requires_current_complete_workflow(self):
         acceptance.validate_completed_report(self.report())
         old = self.report()

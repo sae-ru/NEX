@@ -1,5 +1,6 @@
 #pragma once
 #include "nex_error.h"
+#include "nex_resource_executor.h"
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -199,6 +200,45 @@ public:
     }
     return ResourceOwner<T>(std::move(control));
   }
+  template<class T,class Factory> ResourceOwner<T> makeOnExecutor(
+      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory)const{
+    static_assert(std::is_nothrow_destructible_v<T>);
+    if(!executor)throw DataError("E_RESOURCE_EXECUTOR","resource executor is unavailable");
+    auto retained=bindings;
+    auto ticket=std::make_shared<resource_detail::Ticket>(retained);
+    auto cleanup=std::make_shared<ResourceCleanupTicket>(executor->reserveCleanup());
+    {
+      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
+      for(const auto &state:retained)
+        if(state->used.load()>=state->limit)throw DataError("E_RESOURCE_LIMIT","resource domain quota exceeded");
+      for(const auto &state:retained)state->used.fetch_add(1);
+      ticket->reserved=true;
+    }
+    auto identity=resource_detail::nextIdentity();
+    auto create=std::forward<Factory>(factory);
+    using Payload=resource_detail::Payload<T>;
+    std::shared_ptr<Payload> payload;
+    executor->invoke([&]{
+      ResourcePermit permit(retained);permit.check();
+      auto value=create(permit);
+      if(!value)throw DataError("E_RESOURCE_CLOSED","resource factory returned no value");
+      // Unpublished factory objects also die on this executor if allocation or
+      // publication fails. The deleter moves the complete physical ticket,
+      // including object quota, to its reserved cleanup slot.
+      payload=std::shared_ptr<Payload>(new Payload(ticket,std::move(value)),
+        [cleanup](Payload *p)noexcept{cleanup->retire(p,[](void *raw)noexcept{delete static_cast<Payload*>(raw);});});
+    });
+    auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));
+    {
+      auto locks=resource_detail::lock(retained);resource_detail::check(retained);
+      for(const auto &state:retained){
+        auto &resources=state->resources;
+        std::erase_if(resources,[](const auto &entry){return entry.resource.expired()||entry.closed->load();});
+        resources.push_back({control,control->closed});
+      }
+    }
+    return ResourceOwner<T>(std::move(control));
+  }
 };
 
 // A domain wrapper has unique lexical ownership; resource handles retain only
@@ -259,6 +299,10 @@ public:
   ResourceAccess access()const{return ResourceAccess(bindings,own);}
   template<class T,class Factory> ResourceOwner<T> make(Factory &&factory) const {
     return access().make<T>(std::forward<Factory>(factory));
+  }
+  template<class T,class Factory> ResourceOwner<T> makeOnExecutor(
+      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory)const{
+    return access().makeOnExecutor<T>(executor,std::forward<Factory>(factory));
   }
 };
 namespace resource_detail {

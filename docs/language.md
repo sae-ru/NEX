@@ -1,3 +1,5 @@
+Toolchain0.125 adds a private trusted host cleanup executor, without changing source syntax, canonical identity, language0.21 or migration. Source task/FFI/device bridges remain unavailable; see resource-executor.md.
+
 Language0.21 adds `[pub] server resource Name<T...>;` and server/ffi
 resource_close/resource_is_open operations on genuine opaque owners. Explicit
 018/019/020 parsers and history-preserving migration remain available; never

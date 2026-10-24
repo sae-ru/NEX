@@ -258,7 +258,8 @@
     "external_resource_design": "docs/external-resources-design.md",
     "external_resource_host_header": "runtime/nex_external_resource.h",
     "external_resource_C_host_header": "runtime/nex_ffi_resources.h",
-    "source_resources": "docs/source-resources.md"
+    "source_resources": "docs/source-resources.md",
+    "resource_executor": "docs/resource-executor.md"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1700,5 +1701,35 @@
       "resource_watch_proxy_authority": false,
       "runtime_arguments": "DAP launch.args; raw LLDB CLI run-args exactly once"
     }
+  },
+  "resource_executor": {
+    "status": "private_trusted_host",
+    "source_support": false,
+    "source_task_bridge": false,
+    "C_resource_executor_binding": false,
+    "actual_GPU_NPU_resources": false,
+    "stable_host_abi": false,
+    "guide": "docs/resource-executor.md",
+    "header": "runtime/nex_resource_executor.h",
+    "construction_and_cleanup": "one owning thread",
+    "cleanup_admission": "pre-reserved bounded slot before factory; finalizer cannot be rejected after close",
+    "quota_release": "after destructor and code-pin release; admitted borrows retain complete physical owner",
+    "operation_completion": "run returns only after actual fence/IPC settlement; operation destructor precedes completion publication",
+    "cancellation": "queued work does not start; running work retains leases and reservations until physical settlement",
+    "close": "reject new admission; retain all previously reserved finalizers",
+    "drain": "current queue/running work only; idle owners remain live",
+    "finish": "close admission, wait all reserved resources/operations, join worker",
+    "declared_capacity_only": true,
+    "maximum": {
+      "resources": 4096,
+      "operations": 64,
+      "reserved_bytes": 8388608
+    },
+    "pending": [
+      "logical source-task ownership and FFI completion adapter",
+      "actual model/device session and buffer bindings",
+      "vendor-specific fences and failure settlement",
+      "matching full compiler, installed SDK and platform delivery"
+    ]
   }
 }

@@ -1,3 +1,4 @@
+(* Toolchain0.125 private host cleanup executor adds no source syntax, canonical identity or language0.21 migration. Source task/device transport remains rejected. *)
 (* Language0.21 adds opaque server resources. resource is contextual at this
    declaration position; ordinary resource identifiers remain valid. Explicit
    historical018/019/020 parsing remains unchanged for migration. *)
