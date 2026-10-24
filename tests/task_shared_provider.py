@@ -31,7 +31,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         (self.root/'mid/value.nex').write_text(fixture.MID)
         self.file.write_text(fixture.APP)
         (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -93,7 +93,7 @@ class SharedTaskProviders(harness.ToolchainCase):
             'owner_image','definition_owners','component_file_reads','image'})
         self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/2','shared-fixed'))
         self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000003,88,40))
-        self.assertEqual((value['language'],value['component']),('0.20',component))
+        self.assertEqual((value['language'],value['component']),('0.21',component))
         self.assertEqual(set(value['definitions']),set(value['definition_owners']))
         self.assertEqual(value['task_file_reads'],any(value['component_file_reads'].values()))
         if kind is None:kind='application' if component in ('app','other') else 'shared-image'

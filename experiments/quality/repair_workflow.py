@@ -64,13 +64,13 @@ def main():
               'Source paths removed for replay; no kernel isolation or model-cost claim.')
     try:
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.20'
+        assert actual['value'] == '0.21'
         run.report.update(toolchain=actual['toolchain'], language=actual['value'], compiler_build=actual['compiler_build'])
         project = run.output / 'project'
         project.mkdir()
         source = project / 'main.nex'
         source.write_text(SOURCE)
-        (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.20', 'entry': 'main.nex'}) + '\n')
+        (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.21', 'entry': 'main.nex'}) + '\n')
         task = run.cli('init-contract', project, 'task', source, '--kind', 'init')
         task['goal'] = 'Return42 from input41; preserve the original test and reviewed limits.'
         for check in task['checks']:

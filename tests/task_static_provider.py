@@ -76,7 +76,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         (self.root/'mid/value.nex').write_text(MID)
         self.file.write_text(APP)
         (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':'0.20', 'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':'0.21', 'entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1', 'default_configuration':'debug',
             'configurations':{mode:{'profile':mode, 'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -150,7 +150,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertEqual(value['mode'],'static')
         self.assertEqual(value['descriptor_abi'],0x4e45585400000003)
         self.assertEqual((value['descriptor_size'],value['abi_offset']),(88,40))
-        self.assertEqual(value['language'],'0.20')
+        self.assertEqual(value['language'],'0.21')
         self.assertEqual(value['component'],component)
         self.assertTrue(value['code_only'])
         self.assertRegex(value['cohort'],r'^[0-9a-f]{64}$')
@@ -219,7 +219,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertEqual(actual,pack['task_providers'])
         self.assertTrue(actual['public_enabled'])
         self.assertTrue(actual['static_linkage'])
-        self.assertEqual(actual['language'],'0.20')
+        self.assertEqual(actual['language'],'0.21')
         self.assertEqual((actual['execution_task_abi'],actual['descriptor_bytes'],actual['abi_offset']),(3,88,40))
         self.assertTrue(actual['source_required'])
         for key in ('dynamic_linkage','profiling','logical_debugging','http_task_handlers','foreign','binary_only',

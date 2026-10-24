@@ -17,7 +17,7 @@ def accept(compiler, output):
     source = project / 'main.nex'
     original = 'module editor_sdk;\nfn twice(n:i64)->i64{return n*2;}\nfn main()->i64{return twice(21);}\n'
     source.write_text(original, encoding='utf-8')
-    (project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':source.name}))
+    (project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':source.name}))
     report = {'schema':'nex.lsp-acceptance/1','ok':False,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
               'messages_sent':0,'checks':[],'source_and_graph_unchanged':False}
     process = subprocess.Popen([str(compiler),'lsp'],cwd=project,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
@@ -139,6 +139,23 @@ def accept(compiler, output):
         report['checks'].append('exact alias, generic, associated-member, method and builtin-type descriptions; no invented builtin definition')
         report['type_reference_checks']=True
         report['checks'].append('checked type parameters, import aliases, trait member contracts and implementation bindings')
+        resource_library='module model;pub server resource resource<T>;'
+        resource_main='module editor_resources;import "./new module 🧠.nex" as m;server fn alive(value:m::resource<i64>)->bool!{ffi}{return resource_is_open(value);}fn main()->i64{return 42;}'
+        send('textDocument/didChange',{'textDocument':{'uri':helper.as_uri(),'version':3},'contentChanges':[{'text':resource_library}]})
+        send('textDocument/didChange',{'textDocument':{'uri':source.as_uri(),'version':5},'contentChanges':[{'text':resource_main}]})
+        assert diagnostics(5)==[] and diagnostics(3,helper)==[]
+        symbols=request('textDocument/documentSymbol',{'textDocument':{'uri':helper.as_uri()}})
+        at=resource_library.index('resource<T>')
+        assert len(symbols)==1 and symbols[0]['kind']==5 and symbols[0]['selectionRange']=={'start':{'line':0,'character':at},'end':{'line':0,'character':at+8}},symbols
+        use=typed_query(resource_main,source,resource_main.index('resource<i64>'))
+        hover=request('textDocument/hover',use)
+        assert hover['contents']=={'kind':'plaintext','value':'pub server resource model::resource<T>'},hover
+        definitions=request('textDocument/definition',use)
+        assert definitions==[{'uri':helper.as_uri(),'range':symbols[0]['selectionRange']}],definitions
+        references=request('textDocument/references',{**use,'context':{'includeDeclaration':True}})
+        assert len(references)==2 and {r['uri'] for r in references}=={source.as_uri(),helper.as_uri()},references
+        report['checks'].append('opaque generic resource symbols, exact contextual name token, cross-file hover/definition/references')
+        report['resource_checks']=True
         send('textDocument/didClose',{'textDocument':{'uri':helper.as_uri()}})
         report['checks'].append('new unsaved imported module, overlay repair and cross-file definition')
         request('shutdown')

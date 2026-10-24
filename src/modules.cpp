@@ -161,7 +161,7 @@ class Loader {
     expr=[&](E e){if(e){e->span.file=key;if(e->lambda){auto &fn=*e->lambda;fn.span.file=key;for(auto &param:fn.params)param.span.file=key;block(fn.body);}for(auto arm:e->arms){arm->span.file=key;visitPattern(arm->pattern,[&](P pattern){pattern->span.file=key;});}for(auto a:e->args)expr(a);}};
     block=[&](const auto &body){for(auto s:body){s->span.file=key;for(auto arm:s->arms){arm->span.file=key;for(auto &binding:arm->bindings)binding.span.file=key;}expr(s->expr);childBlocks(s,block);}};
     for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
-    for(auto &s:unit.structures){s.span.file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
+    for(auto &s:unit.structures){s.span.file=key;if(s.nameOrigin)s.nameOrigin->file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
     for(auto &value:unit.traits){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &method:value.methods){method.span.file=key;method.owner=unit.module;method.unit=key;method.localName=value.localName+"::"+method.name;for(auto &parameter:method.params)parameter.span.file=key;}}
     for(auto &value:unit.implementations){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &[name,method]:value.methods)method.span.file=key;}
     for(auto &endpoint:unit.endpoints){endpoint.span.file=key;endpoint.owner=unit.module;endpoint.localName=endpoint.name;endpoint.unit=key;}
@@ -275,7 +275,7 @@ void validateProjectMetadata(const std::string &root){
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,SourceLanguage::TaskFiles020).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,currentSourceLanguage).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();
@@ -285,7 +285,7 @@ Program loadProgram(const std::string &entry,const std::string &root,bool enforc
   }
   return p;
 }
-static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=SourceLanguage::TaskFiles020){
+static Program bundleProgram(const llvm::json::Value &bundle,const std::string &root,bool validate,bool tasks=true,SourceLanguage version=currentSourceLanguage){
   auto obj=bundle.getAsObject();if(!obj||required(*obj,"schema")!="nex.sources/1")throw Error("E_BUNDLE","expected nex.sources/1");
   auto files=obj->getObject("files");if(!files||files->empty())throw Error("E_BUNDLE","snapshot requires source files");
   std::map<std::string,std::string> sources;
@@ -298,7 +298,7 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.19")return bundleProgram(bundle,root,true,true,SourceLanguage::Tasks019);
   if(language=="0.20")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskFiles020);
   if(language=="0.21")return bundleProgram(bundle,root,true,true,SourceLanguage::OwnedResources021);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20 and private0.21");
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20 and0.21");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 void bindExpression(const Program &p,const std::string &function,E expression){

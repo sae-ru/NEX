@@ -280,10 +280,10 @@ test fn codec()->unit{assert(unwrap(sample()).value==EXPECTED);OLD_REJECT}
     try:
         save()
         actual = nex('describe', 'describe', '--field', 'version')
-        assert actual['value'] == '0.20', actual
+        assert actual['value'] == '0.21', actual
         report.update(toolchain=actual['toolchain'], language=actual['value'], compiler_build=actual['compiler_build'])
         report['cohort_note'] = 'Evidence is for these actual selected identities; no inference of126 or another source cohort.'
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'})+'\n')
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'})+'\n')
         (project/'model/value.nex').write_text(MODEL)
         (project/'app/main.nex').write_text(APP)
         original = nex('check-original', 'check')['revision']

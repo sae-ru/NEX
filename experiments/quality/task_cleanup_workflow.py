@@ -90,7 +90,7 @@ def main():
               'Q4 additionally requires matching controlled external-operation/DSO fence evidence.')
     try:
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.20'
+        assert actual['value'] == '0.21'
         run.report.update(language=actual['value'], toolchain=actual['toolchain'],
                           compiler_build=actual['compiler_build'])
         cases = [('cpu', CPU, '2029000\n', None), ('cancel', CANCEL, '42\n', None),
@@ -104,7 +104,7 @@ def main():
             entry = project / 'main.nex'
             entry.write_text(source)
             (project / 'nex.json').write_text(json.dumps({
-                'schema': 'nex.project/1', 'language': '0.20', 'entry': 'main.nex'}) + '\n')
+                'schema': 'nex.project/1', 'language': '0.21', 'entry': 'main.nex'}) + '\n')
             checked = run.cli(name + '-check', project, 'check')
             row = {'name': name, 'revision': checked['revision'], 'source_sha256': sha(entry),
                    'expected_stdout': stdout, 'expected_error': error}

@@ -125,7 +125,7 @@ server fn main(s:task_scope,f:file)->unit !{task}{
     require(loaded.function("app::main").effects.contains("task"),"task effect lost during module binding");++cases;
     rejects("E_TASK_UNIMPLEMENTED",[&]{sourceBundle(loaded);});
     auto publicProgram=loadProgram((directory/"main.nex").string(),directory.string());
-    require(publicProgram.sourceLanguage==SourceLanguage::TaskFiles020&&publicProgram.taskPrototype&&std::string(programLanguage(publicProgram))=="0.20","ordinary loader did not select public020 task syntax");++cases;
+    require(publicProgram.sourceLanguage==currentSourceLanguage&&publicProgram.taskPrototype&&std::string(programLanguage(publicProgram))==languageVersion,"ordinary loader did not select the current public source syntax");++cases;
     require(evaluate(publicProgram,"app::main",10000).value==llvm::json::Value(int64_t(42)),"public020 reference execution lost task module semantics");++cases;
     require(!std::filesystem::exists(directory/".nex"),"private source checking opened a graph store");++cases;
     std::filesystem::remove_all(directory);

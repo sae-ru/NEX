@@ -40,7 +40,7 @@ def main():
               'no task UI adapter, general platform or model-cost claim.')
     try:
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.20', actual
+        assert actual['value'] == '0.21', actual
         run.report.update(language=actual['value'], toolchain=actual['toolchain'],
                           compiler_build=actual['compiler_build'])
         fixtures = {}
@@ -56,7 +56,7 @@ def main():
                     text = text.replace('2000', '64')
                 (fixture / name).write_text(text)
             (fixture / 'nex.json').write_text(json.dumps({
-                'schema': 'nex.project/1', 'language': '0.20', 'entry': 'service.nex'}) + '\n')
+                'schema': 'nex.project/1', 'language': '0.21', 'entry': 'service.nex'}) + '\n')
             fixtures[stage] = {'path': str(fixture), 'maximum_unicode_scalars': maximum,
                 'sources': {p.name: sha(p) for p in sorted(fixture.glob('*.nex'))}}
         assert fixtures['before']['sources']['model.nex'] == fixtures['after']['sources']['model.nex']

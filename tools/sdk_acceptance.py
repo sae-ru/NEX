@@ -29,7 +29,7 @@ ACCEPTANCE_PHASES = (
     'discovery', 'editor-tools', 'new-project', 'reviewed-failure',
     'graph-repair-import', 'backend-agreement', 'graph-snapshot-recovery',
     'project-version-boundaries', 'frontend-diagnostics', 'graph-queries',
-    'string-ranges', 'binary-values', 'compute-contract', 'model-contract', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'text-files', 'profile',
+    'string-ranges', 'binary-values', 'compute-contract', 'model-contract', 'native-indexed-pages', 'core-reports', 'wasm-compute', 'foreign-boundary', 'source-resources', 'text-files', 'profile',
     'structured-task-file-reads', 'structured-task-profile', 'structured-task-debug', 'static-task-providers', 'shared-task-providers', 'task-provider-profiling', 'task-provider-debugging', 'archive-debug-replay-export', 'scalar-proof', 'traits',
     'authenticated-storage', 'browser', 'project-build')
 
@@ -619,6 +619,11 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,123,0):
+        resources=report.get('evidence',{}).get('source_resources',{})
+        require(all(resources.get(key) is True for key in ('ok','descriptor','genuine020','history_preserved','native_reference','actual_C11_CPP20','checked_cleanup')) and
+                resources.get('original_revisions_preserved')==15 and len(resources.get('producers',[]))==2,
+                'SDK acceptance lacks actual opaque resource, checked cleanup and genuine020 migration evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,122,0):
         model=report.get('evidence',{}).get('model_contract',{})
         require(all(model.get(key) is True for key in ('descriptor','native_reference','typescript_reference',
@@ -844,7 +849,7 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     # Source commands without a deeper manifest must remain inside this owned
     # evidence project, even when --output is below another NEX workspace.
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'acceptance-scope.nex'})+'\n')
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()
@@ -1706,7 +1711,7 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         descriptor = state['descriptor']['task_file_reads']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_file_reads'] and descriptor['source_support'] and
-                descriptor['language'] == report['language'] == '0.20' and not descriptor['typescript'],
+                descriptor['language'] == report['language'] == '0.21' and not descriptor['typescript'],
                 'installed task file-read descriptor/pack differs')
         report['evidence']['task_file_migration'] = check_installed_task_migration(cli, root, resources)
         directory = root/'structured-task-file-project'
@@ -1803,7 +1808,7 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
         descriptor = state['descriptor']['task_profiling']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_profiling'] and descriptor['source_support'] and
-                descriptor['cli_language'] == report['language'] == '0.20',
+                descriptor['cli_language'] == report['language'] == '0.21',
                 'installed task profiler descriptor/pack differs')
         limits = {'steps':2000000,'timeout_ms':10000,'workers':2}
         controls = ['--task-steps','2000000','--task-timeout-ms','10000','--task-workers','2']
@@ -1828,7 +1833,7 @@ fn main()->unit!{io,task}{
 
         def measured(profile, effective=limits):
             require(profile['schema']=='nex.profile/2' and profile['stdout']=='42\n' and
-                    profile['language']=='0.20' and profile['build']['language']=='0.20' and
+                    profile['language']=='0.21' and profile['build']['language']=='0.21' and
                     not profile['tracy'], 'installed task profile identity/output differs')
             require(all(profile['completeness'][key] for key in ('aggregates','memory','cpu','elapsed','lifetime')),
                     'installed task profile lost required measurements')
@@ -1917,7 +1922,7 @@ fn main()->unit!{io,task}{
         report['evidence']['structured_task_profile'] = {'native_reference':True,
             'exact_source_calls':True,'managed_cleanup':True,'event_only_truncation':True,
             'archived_source_deleted':True,'standalone_without_resources':True,
-            'source_only_project':True,'source_deleted_replay':True,'cli_language':'0.20',
+            'source_only_project':True,'source_deleted_replay':True,'cli_language':'0.21',
             'revision':revision,'profile':str(public_profile),'raw_profile':str(raw_path),
             'receipt':str(receipt),'replay':replay['output'],'configured_task_limits':limits,
             'lowered_workers':1,'memory_scope':'managed shallow handles/objects; not total heap/RAM'}
@@ -1934,7 +1939,7 @@ fn main()->unit!{io,task}{
                 'installed static task provider capability differs')
         directory = root/'static-task-providers';directory.mkdir()
         for name in ('leaf','mid','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
         limits = {'steps':1000000,'timeout_ms':10000,'workers':2}
         description = {'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{mode:{'profile':mode,'task_limits':limits} for mode in ('debug','release','profile')},
@@ -2104,7 +2109,7 @@ server fn main()->unit!{task,fs,io}{
                 compiled = json.loads(mapped['compilation.json'][1])
                 require(own==metadata['task_provider'] and own['component']==component['component'] and
                         own['compiler_build']==identity['compiler_build'] and own['cohort']==abi['abi'] and
-                        own['cohort']==records['leaf']['cohort'] and own['language']=='0.20' and
+                        own['cohort']==records['leaf']['cohort'] and own['language']=='0.21' and
                         own['code_only']==(executable_name=='libnex.a') and
                         metadata['task_provider_hash']==mapped['task-provider.json'][0]['hash'] and
                         compiled['static_libraries']==abi['static_libraries'] and
@@ -2163,7 +2168,7 @@ server fn main()->unit!{task,fs,io}{
                 'installed shared task provider descriptor differs')
         directory=root/'shared-task-providers';directory.mkdir()
         for name in ('leaf','mid','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
         description={'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{'release':{'profile':'release','task_limits':{'steps':1000000,'timeout_ms':10000,'workers':2}}},
             'components':{
@@ -2425,7 +2430,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
                 'installed task provider debugger descriptor differs')
         directory=root/'task-provider-debug';directory.mkdir()
         for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
         (directory/'leaf/value.nex').write_text('''module installed_debug_leaf;
 pub fn work(input:i64)->i64!{task}{
  let value:i64=input;
@@ -2585,7 +2590,7 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         evidence.update({name:bool(args.live) for name in ('provider_locals','component_pure_watch','next_in_out','stale_references',
             'retained_live_debug','package_live_debug','replay_live_debug')})
         evidence.update(receipt=str(receipt),replay=str(replay_path),retained=retention,package=package_proof,live=live,
-            execution_task_abi=3,catalog_abi=2,source_language='0.20',inferior_function_calls=False)
+            execution_task_abi=3,catalog_abi=2,source_language='0.21',inferior_function_calls=False)
         report['evidence']['task_provider_debugging']=evidence
 
     def task_provider_profiles():
@@ -2600,7 +2605,7 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
                 'installed task provider profiling descriptor differs')
         directory=root/'task-provider-profile';directory.mkdir()
         for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'}))
         limits={'steps':1000000,'timeout_ms':10000,'workers':2}
         description={'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile','task_limits':limits}},'components':{
@@ -4573,6 +4578,11 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
             'requests_per_measurement':16,'synthetic_runtime_state':True,'operator_credentials_captured':False,'receipt':str(task_receipt),
             'replay':replayed_task['output'],'definition_sha256':expected_workload_hash}
 
+    def source_resources():
+        from sdk_source_resources import check_installed_source_resources
+        report['evidence']['source_resources']=check_installed_source_resources(
+            cli,run,lambda:report['commands'][-1],root,resources,report['doctor']['native_compiler'])
+
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
@@ -4580,7 +4590,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('project-version-boundaries', project_version_boundaries), ('frontend-diagnostics', frontend_diagnostics),
                 ('graph-queries', graph_queries), ('string-ranges', string_ranges),
                 ('binary-values', binary_values), ('compute-contract', compute_contract), ('model-contract', model_contract), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
-                ('foreign-boundary', foreign_boundary), ('text-files', text_files), ('profile', measured),
+                ('foreign-boundary', foreign_boundary), ('source-resources', source_resources), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),

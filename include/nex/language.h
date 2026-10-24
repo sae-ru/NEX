@@ -12,11 +12,12 @@
 namespace nexrt { struct TaskExecutionLimits; }
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.20";
-inline constexpr const char *taskCandidateLanguageVersion = "0.20";
+inline constexpr const char *languageVersion = "0.21";
+inline constexpr const char *taskCandidateLanguageVersion = "0.21";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
 enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021 };
+inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::OwnedResources021;
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -98,6 +99,9 @@ struct Structure {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  // Non-semantic physical name origin. In particular, the contextual word in
+  // `server resource resource;` is not the declaration's identifier token.
+  std::optional<Span> nameOrigin;
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };

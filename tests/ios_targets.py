@@ -21,7 +21,7 @@ class IOSTargets(harness.ToolchainCase):
             self.sdks[name] = Path(result.stdout.strip()).resolve()
         self.doctor = self.cli('doctor')
         self.config = self.root / 'toolchain.json'
-        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'main.nex'}))
         self.source('''module ios_logic;
 trait Read {type Item;fn get(value:Self)->Read::Item<Self>;}
 struct Box<T> {value:T;}

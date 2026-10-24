@@ -1,8 +1,9 @@
-Private137 stages opaque source resources under explicit internal source version0.21.
-The public CLI/default language remains0.20; source resource publication and its
-history-preserving migration are not enabled. Read external-resources-design.md
-for the implemented private boundary and remaining delivery gates. Do not change
-an existing project's language field to opt into this staging code.
+Language0.21 adds `[pub] server resource Name<T...>;` and server/ffi
+resource_close/resource_is_open operations on genuine opaque owners. Explicit
+018/019/020 parsers and history-preserving migration remain available; never
+relabel old metadata. Read [source resources](source-resources.md) for graph/editor
+context, grants, cleanup, migration and remaining task/device/debug delivery gates.
+This0.123 development source is separate from the approved primary0.81 checkout.
 
 Toolchain0.122 adds the ordinary-source `std/model.nex` contract and provider preparation tooling; no syntax, canonical identity, language0.20 or migration change. See models.md.
 
@@ -21,7 +22,7 @@ filesystem/FFI/network operations remain unavailable there. This changes no
 syntax, checked effects/realms, language0.20 identity or migration.
 See [the worker contract](browser-workers.md).
 
-# NEX language specification 0.20
+# NEX language specification 0.21
 
 Toolchain0.119 provides development source-backed native task-provider logical debugging
 with separate component catalogs/source unions and debug protocols. Discover
@@ -90,7 +91,7 @@ Native core capsules are external development artifacts described by
 `docs/core-debugging.md`; they introduce no source type, effect, syntax or
 canonical-format change. Their tooling version does not migrate language 0.16.
 
-Physical projects can declare `nex.project/1` and language `0.20` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
+Physical projects can declare `nex.project/1` and language `0.21` in `nex.json`. Toolchain 0.51 rejects explicit noncurrent root or reachable configured-library language declarations before source loading. Root preflight occurs before store initialization; archived operations/migration retain their own version checks independently of physical metadata. See [compatibility](compatibility.md) for legacy omitted metadata and the explicit migration/export workflow. The project metadata guards themselves do not change source syntax; the 0.16 source/canonical extension is described below.
 
 Language 0.16 adds [traits, associated value types and constructor parameters](traits.md).
 Its canonical formats are function/13, structure/5, enum/4 and program/14.
@@ -732,7 +733,7 @@ SQLite stores revisions, function nodes, and call edges. Local node IDs remain s
 
 Graph import reparses and checks every archived source and verifies its revision. Imported derived AST data is informational and never trusted as executable compiler input. See `docs/protocol.md` for optimistic graph updates and source materialization.
 
-Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 4; supported schema 1–3 upgrades preserve rows and local IDs and establish an explicit HEAD journal base. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11/0.12/0.13/0.14/0.15 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under language 0.16, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
+Revision identity includes the language version. Graph database schema 1 upgrades preserve old sources, marking their language as 0.1; the current database schema is 4; supported schema 1–3 upgrades preserve rows and local IDs and establish an explicit HEAD journal base. Stored 0.1/0.2 single-file sources remain exportable and are wrapped as a one-file bundle for migration; 0.3/0.4/0.5/0.6/0.7/0.8/0.9/0.10/0.11/0.12/0.13/0.14/0.15 bundles remain complete archived bundles. `nex migrate` explicitly reparses/checks archived sources under current language 0.21, creates a current revision and preserves history and existing local function IDs; `nex migrate GRAPH.json` adopts checked sources from an older exported graph. Re-export the current revision for a new manifest/lock. Review and regenerate task/proof snapshots and pinned test hashes under the new language, retaining their reviewed acceptance properties. Old receipts/debug frames require their matching archived compiler/resources (language 0.5 uses toolchain 0.15; language 0.6 uses 0.16; language 0.7 uses 0.20; language 0.8 uses 0.21; language 0.9 uses 0.22; language 0.10 uses 0.23). Migration does not rewrite old receipts, prove an old claimed hash or silently change acceptance intent. Ordinary import requires a current-language `nex.graph/2` bundle and a matching recomputed revision.
 
 ## Native debug representation
 

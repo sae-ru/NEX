@@ -47,7 +47,7 @@ int main(int argc,char **argv)try{
     if(auto original=request->getString("original_revision")){
       origin=original->str();Store retained(directory,StoreOpenMode::ReadOnly);
       auto oldLanguage=retained.revisionLanguage(origin);
-      if(oldLanguage!="0.18"&&oldLanguage!="0.19"&&oldLanguage!="0.20")throw Error("E_LANGUAGE_VERSION","migration probe requires an explicit retained018,019 or020 origin");
+      if(oldLanguage!="0.18"&&oldLanguage!="0.19"&&oldLanguage!="0.20"&&oldLanguage!="0.21")throw Error("E_LANGUAGE_VERSION","migration probe requires an explicit retained018,019,020 or021 origin");
       try{if(revision(loadVersionedBundle(retained.bundle(origin),directory,oldLanguage))!=origin)
         throw Error("E_REVISION","retained origin canonical revision differs");}
       catch(const Error &error){throw Error("E_REVISION",std::string("invalid retained migration origin: ")+error.what(),error.span);}

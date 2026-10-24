@@ -1,8 +1,6 @@
-(* Private137: only explicit internal source version0.21 additionally accepts
-   ["pub"], "server", "resource", identifier, [type_parameters], ";".
-   The published start production/default language below remains0.20 until
-   explicit migration/publication gates finish. resource is contextual at this
-   declaration position; ordinary resource identifiers remain valid. *)
+(* Language0.21 adds opaque server resources. resource is contextual at this
+   declaration position; ordinary resource identifiers remain valid. Explicit
+   historical018/019/020 parsing remains unchanged for migration. *)
 (* Toolchain0.122 model contracts are an ordinary checked-source library; no syntax/canonical/language0.20 migration change. *)
 (* Toolchain0.121 compute is an ordinary checked-source library. No syntax, canonical format or language0.20 migration change. *)
 (* Toolchain0.120 task worker hosting accepts existing task-only functions; no syntax, canonical identity or migration change. *)
@@ -42,7 +40,7 @@
 (* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
 (* Project source/static linkage and concrete export roots are external
    nex.build.json metadata, not language syntax or a version migration. *)
-(* NEX 0.20. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* NEX 0.21. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
 (* Toolchain0.73 native application lifetime adds no syntax or migration. *)
 (* Toolchain0.74 shared native project images are external build metadata;
    language0.16 source grammar and canonical identities are unchanged. *)
@@ -54,7 +52,8 @@
 (* Toolchain0.65 Windows environment/SQLite adapters add no source syntax. *)
 (* Toolchain0.69 editor name origins add no source syntax or semantic identity. *)
 (* Toolchain0.70 identifier descriptions add no source syntax or semantic identity. *)
-program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint | trait | implementation } ;
+program       = "module", qualified_name, ";", { import | function | structure | enumeration | resource | endpoint | trait | implementation } ;
+resource      = [ "pub" ], "server", "resource", identifier, [ type_parameters ], ";" ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
 import        = "import", string, "as", identifier, ";" ;

@@ -1,0 +1,64 @@
+{
+  "schema": "nex.language-020-resource-migration-fixture/1",
+  "language": "0.20",
+  "sdk": {
+    "toolchain": "0.122.0",
+    "compiler_sha256": "fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d",
+    "native_reference_and_TypeScript": true
+  },
+  "sql_sha256": "ff0afe6e96f26241fd9cfef444aee5f99cfb99d5a2aca57fc3efceafcbf7b91b",
+  "head": "651fbf4b884674493d462ccdb85d21e5c1886260ab257c6031091638d495fc56",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 9,
+    "graph_edges": 21,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 4,
+    "nodes": 12,
+    "operation_functions": 12,
+    "operation_ids": 22,
+    "operation_versions": 66,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "revisions": [
+    {
+      "revision": "cdc8cd1e6c8ed4256d99bfed6383d36d876f778e5a6038d6404474e6d202cae7",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::function_names;\nfn resource(resource:i64)->i64{return resource+1;}\nfn answer()->i64{return resource(42-1);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "240796ba98b31410c318c16e0620aab385dbfc34e98c035ffbddb9598f77dd44",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::function_names;\nfn resource(resource:i64)->i64{return resource+1;}\nfn answer()->i64{return resource(43-1);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "651fbf4b884674493d462ccdb85d21e5c1886260ab257c6031091638d495fc56",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::function_names;\nfn resource(resource:i64)->i64{return resource+1;}\nfn answer()->i64{return resource(44-1);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    }
+  ]
+}

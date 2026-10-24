@@ -4,24 +4,210 @@
   "title": "NEX checked source editor projection",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "ok", "language", "compiler", "revision", "entry", "files", "symbols", "expressions", "graph_written", "source_written", "executed"],
+  "required": [
+    "schema",
+    "ok",
+    "language",
+    "compiler",
+    "revision",
+    "entry",
+    "files",
+    "symbols",
+    "expressions",
+    "graph_written",
+    "source_written",
+    "executed"
+  ],
   "properties": {
-    "schema": {"const": "nex.analysis/1"},
-    "ok": {"const": true},
-    "language": {"const": "0.20"},
-    "compiler": {"type": "object", "additionalProperties": false, "required": ["version", "build"], "properties": {"version": {"type": "string"}, "build": {"$ref": "#/$defs/hash"}}},
-    "revision": {"$ref": "#/$defs/hash"},
-    "entry": {"type": "string"},
-    "graph_written": {"const": false},
-    "source_written": {"const": false},
-    "executed": {"const": false},
-    "files": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["key", "path", "hash", "text"], "properties": {"key": {"type": "string"}, "path": {"type": "string"}, "hash": {"$ref": "#/$defs/hash"}, "text": {"type": "string"}}}},
-    "symbols": {"type": "array", "maxItems": 200000, "items": {"type": "object", "additionalProperties": false, "required": ["symbol", "name", "kind", "file", "range", "selection", "detail"], "properties": {"symbol": {"type": "string"}, "name": {"type": "string"}, "kind": {"enum": ["function", "struct", "enum", "trait", "impl", "endpoint"]}, "file": {"type": "string"}, "range": {"$ref": "#/$defs/range"}, "selection": {"$ref": "#/$defs/range"}, "detail": {"type": "string"}}}},
-    "expressions": {"type": "array", "maxItems": 200000, "items": {"type": "object", "additionalProperties": false, "required": ["file", "range", "type", "definition"], "properties": {"file": {"type": "string"}, "range": {"$ref": "#/$defs/range"}, "type": {"type": "string"}, "definition": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/location"}]}}}}
+    "schema": {
+      "const": "nex.analysis/1"
+    },
+    "ok": {
+      "const": true
+    },
+    "language": {
+      "const": "0.21"
+    },
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "build"
+      ],
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "revision": {
+      "$ref": "#/$defs/hash"
+    },
+    "entry": {
+      "type": "string"
+    },
+    "graph_written": {
+      "const": false
+    },
+    "source_written": {
+      "const": false
+    },
+    "executed": {
+      "const": false
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "path",
+          "hash",
+          "text"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "hash": {
+            "$ref": "#/$defs/hash"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "maxItems": 200000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "name",
+          "kind",
+          "file",
+          "range",
+          "selection",
+          "detail"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "function",
+              "struct",
+              "enum",
+              "trait",
+              "impl",
+              "endpoint",
+              "resource"
+            ]
+          },
+          "file": {
+            "type": "string"
+          },
+          "range": {
+            "$ref": "#/$defs/range"
+          },
+          "selection": {
+            "$ref": "#/$defs/range"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "expressions": {
+      "type": "array",
+      "maxItems": 200000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "range",
+          "type",
+          "definition"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "range": {
+            "$ref": "#/$defs/range"
+          },
+          "type": {
+            "type": "string"
+          },
+          "definition": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/location"
+              }
+            ]
+          }
+        }
+      }
+    }
   },
   "$defs": {
-    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])"},
-    "range": {"type": "object", "additionalProperties": false, "required": ["begin", "end"], "properties": {"begin": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}}},
-    "location": {"type": "object", "additionalProperties": false, "required": ["file", "range"], "properties": {"file": {"type": "string"}, "range": {"$ref": "#/$defs/range"}}}
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "begin",
+        "end"
+      ],
+      "properties": {
+        "begin": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "range"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/$defs/range"
+        }
+      }
+    }
   }
 }

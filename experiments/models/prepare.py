@@ -36,9 +36,9 @@ def main():
  def command(args):
   q=subprocess.run(list(map(str,args)),cwd=root,env=env,capture_output=True,text=True,timeout=300);index=len(commands);(root/('prepare-'+str(index)+'.stdout')).write_text(q.stdout);(root/('prepare-'+str(index)+'.stderr')).write_text(q.stderr);commands.append({'command':list(map(str,args)),'exit_code':q.returncode});assert q.returncode==0,(q.stdout[-3000:],q.stderr[-3000:]);return q.stdout
  def cli(*args):return json.loads(command([compiler,*args,'--json']))
- descriptor=cli('describe');assert descriptor['version']=='0.20' and descriptor['foreign_boundary']['source_support']
+ descriptor=cli('describe');assert descriptor['version'] in ('0.20','0.21') and descriptor['foreign_boundary']['source_support']
  if 'model' in descriptor:assert descriptor['model']['source_support'] and descriptor['model']['import']=='std/model.nex' and descriptor['model']['contract_version']==1
- (root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/model.nex',root/'stdlib/model.nex');shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.20','entry':'main.nex','libraries':{'std':'./stdlib'}},indent=2)+'\n')
+ (root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/model.nex',root/'stdlib/model.nex');shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':descriptor['version'],'entry':'main.nex','libraries':{'std':'./stdlib'}},indent=2)+'\n')
  for name in ['common.h','model-worker.cpp','model-module.cpp','model-broker.inc']:shutil.copy2(origin/name,root/name)
  configuration={**spec,'runtime':str(library),'runtime_sha256_at_preparation':sha(library),'zhouyi':a.enable_zhouyi,'operator_path':operator}
  (root/'model-config.inc').write_text('static constexpr const char modelConfiguration[]='+json.dumps(json.dumps(configuration,ensure_ascii=True,separators=(',',':')))+';\n')

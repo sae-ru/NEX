@@ -66,7 +66,7 @@ def main():
         output.mkdir(parents=True, exist_ok=False)
     workspace = output / "work"
     workspace.mkdir()
-    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.20", "entry": "calls.nex"}))
+    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.21", "entry": "calls.nex"}))
     grant = workspace / "grant"
     grant.mkdir()
     (grant / "text").write_bytes("A🧠\0B".encode())
@@ -117,7 +117,7 @@ def main():
         saved = json.loads(Path(session["output"]).read_text())
         assert saved["build"]["revision"] == session["revision"], saved
         assert saved["build"]["build_key"] == session["build_key"], saved
-        assert saved["build"]["language"] == "0.20", saved
+        assert saved["build"]["language"] == "0.21", saved
         assert saved["build"]["compiler_build"] and saved["build"]["source_hash"], saved
         for complete in ("aggregates", "memory", "cpu", "elapsed", "lifetime"):
             assert saved["completeness"][complete], (complete, saved)

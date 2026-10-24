@@ -27,12 +27,12 @@ def main():
   return r.stdout
  def cli(*args):return json.loads(run([compiler,*args,'--json']))
  descriptor=cli('describe')
- if descriptor['version']!='0.20' or not descriptor['foreign_boundary']['source_support']:raise RuntimeError('requires language0.20 with source FFI')
+ if descriptor['version'] not in ('0.20','0.21') or not descriptor['foreign_boundary']['source_support']:raise RuntimeError('requires language0.20 with source FFI')
  backend=a.backend;symbol='gpu_compute' if backend=='gpu' else 'npu_matmul_bytes';library='rk_'+backend
  template=(origin/('compute-gpu-main.nex.in' if a.api=='compute' else backend+'-main.nex.in')).read_text()
  if backend=='npu':template=template.replace('@API@',(origin/'npu-api.nex.in').read_text())
  main=root/'main.nex'
- project={'schema':'nex.project/1','language':'0.20','entry':'main.nex'}
+ project={'schema':'nex.project/1','language':descriptor['version'],'entry':'main.nex'}
  if a.api=='compute':
   (root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');project['libraries']={'std':'./stdlib'}
  placeholder='c::Device(c::Kind::GPU(),"pending","OpenCL","3","preparation-only",[])'

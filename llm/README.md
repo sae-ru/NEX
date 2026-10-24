@@ -1,3 +1,8 @@
+Language021 adds opaque server resources and explicit migration from genuine020
+archives. Query source_resources and read docs/source-resources.md before writing
+resource code. Source constructors, browser/task authority transport and owned
+GPU/NPU execution are unavailable. Current prompt, grammar and pack agree on021.
+
 Current development source is toolchain0.119/language0.20. Start with
 `llm/BOOTSTRAP.md` and actual scoped discovery. The language, grammar and
 compiler checks define support independently of the LLM provider.

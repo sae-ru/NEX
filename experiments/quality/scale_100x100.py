@@ -78,7 +78,7 @@ def main():
     parser.add_argument('--resources', type=Path,
                         help='default: COMPILER/../../share/nex (installed SDK)')
     parser.add_argument('--output', type=Path, required=True, help='must not exist')
-    parser.add_argument('--language', default='0.20', help='must match actual describe')
+    parser.add_argument('--language', default='0.21', help='must match actual describe')
     args = parser.parse_args()
     compiler = args.compiler.resolve(strict=True)
     resources = (args.resources or compiler.parent.parent / 'share/nex').resolve(strict=True)

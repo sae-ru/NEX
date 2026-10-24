@@ -1,0 +1,64 @@
+{
+  "schema": "nex.language-020-resource-migration-fixture/1",
+  "language": "0.20",
+  "sdk": {
+    "toolchain": "0.122.0",
+    "compiler_sha256": "fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d",
+    "native_reference_and_TypeScript": true
+  },
+  "sql_sha256": "c25073ea5b05ac8763d7a28fb2e17c09acb97fd50e18fb95260d8bfdbc1b347c",
+  "head": "ce6d96094ccda26d43bab7a732cee1d31832da581c73324283018a0d665d6dde",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 2,
+    "declaration_versions": 6,
+    "edges": 6,
+    "graph_edges": 21,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 3,
+    "nodes": 9,
+    "operation_functions": 9,
+    "operation_ids": 15,
+    "operation_versions": 45,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "revisions": [
+    {
+      "revision": "8fc720efab64e02a179713d9c9e27f8665904d4ab9c541b1be5354cd866a0640",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::resource;\npub struct resource { value:i64; }\nfn answer()->i64{return resource(42).value;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "1a25a02f95a17739a8c753af4622079a7eb7eb849fd86f747ad4d5334a4b5b05",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::resource;\npub struct resource { value:i64; }\nfn answer()->i64{return resource(43).value;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "ce6d96094ccda26d43bab7a732cee1d31832da581c73324283018a0d665d6dde",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::resource;\npub struct resource { value:i64; }\nfn answer()->i64{return resource(44).value;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    }
+  ]
+}

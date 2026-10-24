@@ -1,14 +1,14 @@
-"""Private021 source resources: checked successes/refusals and real C/CPP/native boundary."""
+"""Source resources: checked successes/refusals and real C/CPP/native boundary."""
 import argparse,datetime,hashlib,json,os,platform,subprocess,tempfile,time,traceback
 from pathlib import Path
 parser=argparse.ArgumentParser()
-parser.add_argument('probe',type=Path);parser.add_argument('source',type=Path);parser.add_argument('--compiler',type=Path,required=True);parser.add_argument('--output',type=Path);parser.add_argument('--legacy-fixtures',type=Path)
+parser.add_argument('probe',type=Path);parser.add_argument('source',type=Path);parser.add_argument('--compiler',type=Path,required=True);parser.add_argument('--output',type=Path);parser.add_argument('--legacy-fixtures',type=Path);parser.add_argument('--nex',type=Path)
 cli=parser.parse_args();SOURCE=cli.source.resolve();PROBE=cli.probe.resolve();OUT=cli.output.resolve() if cli.output else Path(tempfile.mkdtemp(prefix='nex-source-resources-'))
 if cli.output:OUT.mkdir()
 if cli.legacy_fixtures is None and os.environ.get('NEX_TEST_RESOURCE020_FIXTURES'):cli.legacy_fixtures=Path(os.environ['NEX_TEST_RESOURCE020_FIXTURES'])
 
 ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};ENV.pop('NEX_RESOURCE_DIR',None)
-report={'schema':'nex.private021-source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':False,'public_language':'0.20','private_source_language':'0.21','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
+report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.21','source_language':'0.21','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def save():report.update(seconds=round(time.monotonic()-started,3),updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
@@ -111,6 +111,20 @@ try:
   web=OUT/('client-'+kind);command('web-isolation-'+kind,[PROBE,'web',compiled_bundle,root,web]);text=(web/'program.ts').read_text();assert 'fixture::Session' not in text and pin not in text and node['identity'] not in text
   native=command('native-build-'+kind,[PROBE,'native',compiled_bundle,root,OUT/('native-'+kind)]);assert native['foreign_calls']
   output=command('native-run-'+kind,[native['executable'],'--nex-foreign',host],parse=False);assert output=='<resource>\n'
+  if cli.nex:
+   sources=json.loads(compiled_bundle.read_text())
+   for name,text in sources['files'].items():(root/name).write_text(text)
+   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':sources['entry']})+'\n')
+   compiler=cli.nex.resolve()
+   checked=command('public-check-'+kind,[compiler,'check','main.nex','--json'],cwd=root)
+   exported=command('public-ffi-'+kind,[compiler,'ffi','main.nex','--symbol','fixture::create','--json'],cwd=root)
+   assert exported==api['signatures']['create']
+   evaluated=command('public-reference-'+kind,[compiler,'eval','main.nex','--foreign',host,'--json'],cwd=root)
+   assert evaluated['stdout']=='<resource>\n' and evaluated['value']==0
+   built=command('public-build-'+kind,[compiler,'build','main.nex','--profile','release','-o',OUT/('public-native-'+kind),'--json'],cwd=root)
+   output=command('public-native-'+kind,[built['executable'],'--nex-foreign',host],parse=False)
+   assert output=='<resource>\n'
+   report.setdefault('public_CLI',[]).append({'producer':kind,'revision':checked['revision'],'executable':built['executable'],'signature_equal':True,'reference_native_equal':True});save()
   if kind=='CPP':
    throwing='server fn main()->i64 !{ffi}{let r:Session=create(-4);return read(r);}'
    badroot,bad=bundle('throwing-factory',program(pin,throwing));marker=OUT/'throwing-events';env={**ENV,'NEX_TYPED_RESOURCE_MARKER':str(marker)}
@@ -123,7 +137,7 @@ try:
    trapped=command('CPP-owned-trap-build',[PROBE,'native',trapsource,traproot,OUT/'native-CPP-owned-trap'])
    marker.unlink();command('CPP-owned-trap-native',[trapped['executable'],'--nex-foreign',host],expected=70,parse=False,env=env);assert marker.read_text()=='IFXD';assert 'E_DIV_ZERO' in (OUT/'CPP-owned-trap-native.stderr').read_text()
   report.setdefault('execution',[]).append({'producer':kind,'source_class':node['identity'],'reference_native_output':'<resource>\n','actual_native_binary':native['executable'],'module_sha256':sha(module),'pin':pin,'reachable_client_isolation':True});save()
- report.update(ok=True,state='passed',new_source_resources_private=True,nominal_and_generic_resources=True,source_constructor_rejected=True,wire_realm_task_parallel_rejections=True,native_reference_actual_producers=['C11','C++20'],CPP_throw_after_transfer_cleanup=True,source_and_runtime_owned_aliases=True)
+ report.update(ok=True,state='passed',source_resources_enabled=True,nominal_and_generic_resources=True,source_constructor_rejected=True,wire_realm_task_parallel_rejections=True,native_reference_actual_producers=['C11','C++20'],CPP_throw_after_transfer_cleanup=True,source_and_runtime_owned_aliases=True)
 except BaseException as e:
  report.update(state='failed',error=repr(e),traceback=traceback.format_exc());traceback.print_exc()
 finally:save();print(json.dumps({k:report.get(k) for k in ('ok','state','output','genuine020_unchanged_revisions','execution','error')}))

@@ -1,3 +1,9 @@
+Development0.123/language021 now implements opaque source resource declarations,
+checked native/reference operations, graph/editor context and explicit migration.
+Focused source, genuine020-history and installed-resource-phase acceptance are
+recorded separately; full current delivery is still required. Logical task/device
+ownership, actual resource debugging and the remaining full plan below stay open.
+
 # Current private135 resource integration
 
 - [x] Verify the host owned-value/byte-budget/module lifetime foundation and existing file/C compatibility under sanitizers.

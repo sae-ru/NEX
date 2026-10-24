@@ -59,7 +59,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
 
     def test_project_configuration_limits_capture_run_tests_and_replay(self):
         app=self.root/'app';app.mkdir();self.file=app/'main.nex';self.source(SOURCE)
-        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'})
+        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'})
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{'debug':{'profile':'debug','task_limits':LIMITS}},
           'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}
@@ -89,7 +89,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         self.file=self.root/'app/main.nex'
         self.source(SOURCE.replace('module capped;','module capped;import "../core/value.nex" as c;').replace('return 42;','return c::value();'))
         (self.root/'core/value.nex').write_text('module value;pub fn value()->i64{return 42;}')
-        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.20','entry':'app/main.nex'})
+        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'})
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{'debug':{'profile':'debug','task_limits':LIMITS}},
           'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}},

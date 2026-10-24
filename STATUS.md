@@ -1,4 +1,14 @@
-# Private137: opaque source resource integration
+# Development0.123 / language0.21: opaque source resources
+
+The current candidate enables server resource declarations, genuine typed extern
+owners, server/ffi alias close/status and explicit history-preserving migration.
+Graph type identities remain stable; editor/LSP projections distinguish resource
+declarations and exact name tokens. See [source resources](docs/source-resources.md).
+Matching full compiler/SDK/platform acceptance is still in progress. Source task
+completion, owned GPU/NPU resources and actual resource debugging remain pending.
+The approved primary0.81 checkout is separate and is not promoted by this work.
+
+# Historical private137 source integration
 
 Explicit internal0.21 source staging adds server resource declarations, generic
 resource identities, typed extern owners and server/ffi close/status operations.

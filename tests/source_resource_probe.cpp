@@ -11,7 +11,7 @@ int main(int argc,char **argv)try{
   std::string command=argv[1],language=argc==6?argv[5]:"0.21";
   auto bundle=llvm::json::parse(readFile(argv[2]));if(!bundle)throw Error("E_JSON","invalid probe input bundle");
   auto p=loadVersionedBundle(*bundle,std::filesystem::absolute(argv[3]).string(),language);
-  Object result{{"ok",true},{"public_source_resources",false},{"language",programLanguage(p)},{"revision",revision(p)}};
+  Object result{{"ok",true},{"public_source_resources",std::string(languageVersion)=="0.21"},{"language",programLanguage(p)},{"revision",revision(p)}};
   if(command=="check"){
     Object resources,signatures;
     for(const auto &s:p.structures)if(s.opaqueResource&&s.typeParameters.empty()&&std::none_of(s.typeArguments.begin(),s.typeArguments.end(),containsParameter)){

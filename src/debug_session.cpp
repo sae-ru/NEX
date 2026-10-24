@@ -1,6 +1,7 @@
 #include "nex/debug_session.h"
 #include "nex/native_toolchain.h"
 #include "nex/task_limits.h"
+#include "nex/task_frontend.h"
 #include "nex/task_provider_debug.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/Error.h"
@@ -89,7 +90,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
     const bool provider=debug->getString("schema")=="nex.debug/3";
     auto view=debug->getObject("task_debug");auto limits=build->get("task_limits");
     if(kind=="dap")throw Error("E_TASK_DEBUG","logical source task debugging requires lldb or nex-dap; raw DAP is pending");
-    if(std::string(programLanguage(p))!="0.20"||build->getString("kind")!="executable"||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
+    if(!supportsTaskFileReads(p)||build->getString("kind")!="executable"||build->getString("profile")!="debug"||build->getBoolean("task_debug")!=true||
        debug->getString("schema")!=(provider?"nex.debug/3":"nex.debug/2")||debug->getString("language")!=programLanguage(p)||debug->getString("revision")!=revision(p)||debug->getString("build_key")!=built.key||
        debug->getString("program")!=built.executable||debug->getString("compiler_build")!=NEX_BUILD_ID||debug->getString("source_hash")!=hash(json(sourceBundle(p),false))||
        !view||view->getString("schema")!=(provider?"nex.task-debug-view/2":"nex.task-debug-view/1")||view->getInteger("abi")!=(provider?2:1)||view->getString("metadata_hash")!=build->getString("task_debug_metadata_hash")||

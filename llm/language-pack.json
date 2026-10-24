@@ -1,10 +1,10 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.20",
+  "language_version": "0.21",
   "source_concurrency": {
     "status": "development_ordered_cpu_mapping",
     "guide": "docs/concurrency-design.md",
-    "language": "0.20",
+    "language": "0.21",
     "operation": "parallel_map",
     "source_operations": true,
     "internal_runtime_prototype": true,
@@ -257,9 +257,10 @@
     "model": "docs/models.md",
     "external_resource_design": "docs/external-resources-design.md",
     "external_resource_host_header": "runtime/nex_external_resource.h",
-    "external_resource_C_host_header": "runtime/nex_ffi_resources.h"
+    "external_resource_C_host_header": "runtime/nex_ffi_resources.h",
+    "source_resources": "docs/source-resources.md"
   },
-  "document_access": "nex guide --kind compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
+  "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -345,7 +346,8 @@
     "structured_tasks": "examples/structured-tasks.nex",
     "task_file_reads": "examples/task-file-reads.nex",
     "browser_task_workers": "examples/task-workers/main.nex",
-    "compute": "examples/compute/main.nex"
+    "compute": "examples/compute/main.nex",
+    "source_resources": "examples/source-resources.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -584,7 +586,7 @@
   ],
   "editor_source_reference_contract": {
     "format": "nex.analysis/2",
-    "source_language": "0.20",
+    "source_language": "0.21",
     "default_format": "nex.analysis/1",
     "definition_identity": "captured_file_and_exact_declaration_interval",
     "coverage": [
@@ -613,7 +615,7 @@
     "format": "nex.analysis/3",
     "default_format": "nex.analysis/1",
     "reference_format": "nex.analysis/2",
-    "source_language": "0.20",
+    "source_language": "0.21",
     "name_ranges": "actual_lexer_word_tokens",
     "descriptions": "bound_source_declarations_and_checked_value_types",
     "null_detail": "syntax without a semantic hover description",
@@ -1002,7 +1004,7 @@
       "ordinary_check_invokes_pass": true,
       "public_source_tasks": true
     },
-    "language": "0.20",
+    "language": "0.21",
     "types": [
       "task_scope",
       "task<T>",
@@ -1137,7 +1139,7 @@
   "task_file_reads": {
     "status": "development_public_whole_file_reads",
     "guide": "docs/task-file-reads.md",
-    "language": "0.20",
+    "language": "0.21",
     "source_support": true,
     "operations": [
       "file_read_text(str) -> result<str>",
@@ -1202,7 +1204,7 @@
     "status": "development_native_source_tasks",
     "source_support": true,
     "guide": "docs/profiling.md",
-    "cli_language": "0.20",
+    "cli_language": "0.21",
     "native_platforms": [
       "macOS 64-bit",
       "Linux 64-bit"
@@ -1266,7 +1268,7 @@
     "status": "development_native_source_tasks",
     "source_support": true,
     "guide": "docs/task-debugging.md",
-    "language": "0.20",
+    "language": "0.21",
     "native_platforms": [
       "macOS 64-bit",
       "Linux 64-bit"
@@ -1343,7 +1345,7 @@
   "task_providers": {
     "status": "development_static_native_tasks",
     "public_enabled": true,
-    "language": "0.20",
+    "language": "0.21",
     "guide": "docs/task-providers.md",
     "record_schema": "nex.native-task-provider/1",
     "record_schema_file": "llm/native-task-provider.schema.json",
@@ -1387,7 +1389,7 @@
   "task_shared_providers": {
     "status": "development_checked_fixed_native_task_images",
     "public_enabled": true,
-    "language": "0.20",
+    "language": "0.21",
     "guide": "docs/task-shared-providers.md",
     "record_schema": "nex.native-task-provider/2",
     "record_schema_file": "llm/native-shared-task-provider.schema.json",
@@ -1436,7 +1438,7 @@
     "status": "development_checked_native_task_provider_profiles",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.20",
+    "language": "0.21",
     "guide": "docs/task-provider-profiling.md",
     "configuration": "profile",
     "source_required": true,
@@ -1494,7 +1496,7 @@
     "status": "development_checked_native_task_provider_debugging",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.20",
+    "language": "0.21",
     "guide": "docs/task-provider-debugging.md",
     "source_required": true,
     "configuration": "debug",
@@ -1550,7 +1552,7 @@
     "import": "std/compute.nex",
     "contract_version": 1,
     "source_support": true,
-    "language": "0.20",
+    "language": "0.21",
     "language_migration_required": false,
     "tensor_dtypes": [
       "u8",
@@ -1594,7 +1596,7 @@
     "status": "development_checked_model_library",
     "source_support": true,
     "contract_version": 1,
-    "language": "0.20",
+    "language": "0.21",
     "language_migration_required": false,
     "guide": "docs/models.md",
     "import": "std/model.nex",
@@ -1656,7 +1658,7 @@
     ]
   },
   "private_owned_external_host": {
-    "source_support": false,
+    "source_support": true,
     "C_resource_construction": true,
     "actual_module_pin": true,
     "result_reachable_construction_only": true,
@@ -1664,17 +1666,32 @@
     "actual_GPU_NPU_resources": false,
     "guide": "docs/external-resources-design.md"
   },
-  "private_source_resource_staging": {
+  "source_resources": {
+    "source_support": true,
+    "public_enabled": true,
     "language": "0.21",
-    "public_enabled": false,
-    "default_language": "0.20",
-    "explicit_internal_versioned_bundle_only": true,
+    "syntax": "[pub] server resource Name<T...>;",
+    "operations": [
+      "resource_close(Resource) -> bool",
+      "resource_is_open(Resource) -> bool"
+    ],
+    "server_only": true,
+    "effect": "ffi",
     "opaque_declarations": true,
     "generic_resources": true,
-    "reference_and_native": true,
     "source_constructor": false,
-    "wire_browser_task_transport": false,
-    "migration_accepted": false,
-    "guide": "docs/external-resources-design.md"
+    "reference": true,
+    "native": true,
+    "typescript": false,
+    "wire": false,
+    "source_task_bridge": false,
+    "async_completion": false,
+    "migration": "explicit origin recheck; retained old rows/schema/IDs; reviewed graph repairs for builtin conflicts",
+    "guide": "docs/source-resources.md",
+    "acceptance_pending": [
+      "matching full compiler regression",
+      "installed SDK and supported native platforms",
+      "actual resource LLDB/DAP display"
+    ]
   }
 }

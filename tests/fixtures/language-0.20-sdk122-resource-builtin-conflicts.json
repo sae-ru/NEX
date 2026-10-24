@@ -1,0 +1,64 @@
+{
+  "schema": "nex.language-020-resource-migration-fixture/1",
+  "language": "0.20",
+  "sdk": {
+    "toolchain": "0.122.0",
+    "compiler_sha256": "fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d",
+    "native_reference_and_TypeScript": true
+  },
+  "sql_sha256": "48d352534b4a6f16332c17573a4bebe9bbce8ec8f30a462e6e77daa077ac5134",
+  "head": "aa8cf88a47d27a1f729ad6296e8d2f3796801f55ad9f1b7892b9e3ef2645cad1",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 15,
+    "graph_edges": 36,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 7,
+    "nodes": 21,
+    "operation_functions": 21,
+    "operation_ids": 44,
+    "operation_versions": 132,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "revisions": [
+    {
+      "revision": "df9c0752519e7fd9d036eb5527ad3fe9827fb6ff543e34ada47358923d851d26",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old_resource_names;\n// Ordinary identifiers under actual source language0.20.\npub fn resource_close(x:i64)->i64{return x+1;}\npub fn resource_is_open(x:i64)->bool{return x==41;}\nfn note()->str{return \"resource_close and resource_is_open\";}\nfn solve()->i64{if resource_is_open(41){return resource_close(41);}return 0;}\nfn main()->unit!{io}{print(solve());}\ntest fn check_old_names()->unit{assert(solve()==42);assert(note()==\"resource_close and resource_is_open\");}\nfn revision_marker()->i64{return 0;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "27510780535137b720009767ce0c98f17bc5597cb147946436a822c3fe4b1dd4",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old_resource_names;\n// Ordinary identifiers under actual source language0.20.\npub fn resource_close(x:i64)->i64{return x+1;}\npub fn resource_is_open(x:i64)->bool{return x==41;}\nfn note()->str{return \"resource_close and resource_is_open\";}\nfn solve()->i64{if resource_is_open(41){return resource_close(41);}return 0;}\nfn main()->unit!{io}{print(solve());}\ntest fn check_old_names()->unit{assert(solve()==42);assert(note()==\"resource_close and resource_is_open\");}\nfn revision_marker()->i64{return 1;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "aa8cf88a47d27a1f729ad6296e8d2f3796801f55ad9f1b7892b9e3ef2645cad1",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old_resource_names;\n// Ordinary identifiers under actual source language0.20.\npub fn resource_close(x:i64)->i64{return x+1;}\npub fn resource_is_open(x:i64)->bool{return x==41;}\nfn note()->str{return \"resource_close and resource_is_open\";}\nfn solve()->i64{if resource_is_open(41){return resource_close(41);}return 0;}\nfn main()->unit!{io}{print(solve());}\ntest fn check_old_names()->unit{assert(solve()==42);assert(note()==\"resource_close and resource_is_open\");}\nfn revision_marker()->i64{return 2;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    }
+  ]
+}

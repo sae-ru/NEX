@@ -27,7 +27,7 @@
       "const": true
     },
     "language": {
-      "const": "0.20"
+      "const": "0.21"
     },
     "compiler": {
       "type": "object",
@@ -116,7 +116,8 @@
               "enum",
               "trait",
               "impl",
-              "endpoint"
+              "endpoint",
+              "resource"
             ]
           },
           "file": {

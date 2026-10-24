@@ -33,7 +33,7 @@ class Toolchain(harness.ToolchainCase):
         self.assertTrue(external['reference']['source_io_lowering'])
         reads = descriptor['task_file_reads']
         self.assertEqual(reads, pack['task_file_reads'])
-        self.assertEqual(reads['language'], '0.20')
+        self.assertEqual(reads['language'], '0.21')
         self.assertTrue(reads['source_support'] and reads['reference'] and reads['physical_drain'])
         self.assertEqual(reads['function_effects'], ['task', 'fs'])
         self.assertEqual(reads['realm'], 'server')
@@ -60,7 +60,7 @@ class Toolchain(harness.ToolchainCase):
             self.assertFalse(reads[field])
         profiled=descriptor['task_provider_profiling']
         self.assertEqual(profiled,pack['task_provider_profiling'])
-        self.assertEqual((profiled['language'],profiled['configuration']),('0.20','profile'))
+        self.assertEqual((profiled['language'],profiled['configuration']),('0.21','profile'))
         self.assertEqual((profiled['execution_task_abi'],profiled['descriptor_bytes'],profiled['registry_abi'],profiled['registry_bytes']),
             (3,88,1,32))
         for field,value in {'record_schema':'nex.native-task-provider/3','catalog_schema':'nex.task-profile-catalog/1',
@@ -81,7 +81,7 @@ class Toolchain(harness.ToolchainCase):
             self.assertIs(profiled[field],False)
         debugging=descriptor['task_provider_debugging']
         self.assertEqual(debugging,pack['task_provider_debugging'])
-        self.assertEqual((debugging['language'],debugging['configuration']),('0.20','debug'))
+        self.assertEqual((debugging['language'],debugging['configuration']),('0.21','debug'))
         self.assertEqual((debugging['execution_task_abi'],debugging['descriptor_bytes'],debugging['registry_abi'],
             debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(3,88,1,32,2,200))
         self.assertEqual(debugging['maximum_total_registries_including_root'],128)
@@ -307,7 +307,7 @@ test fn branches() -> unit {
 
     def test_pack_and_discovery_match_executable_example(self):
         descriptor = self.cli("describe")
-        self.assertEqual(descriptor["version"], "0.20")
+        self.assertEqual(descriptor["version"], "0.21")
         pack = json.loads((REPO / "llm/language-pack.json").read_text())
         self.assertEqual(pack["language_version"], descriptor["version"])
         self.assertIn("web_ui", descriptor["features"])
@@ -487,11 +487,11 @@ fn main() -> unit !{io} { print(response().message); }
             db.execute("INSERT INTO head VALUES(1,?)", (old,))
         self.assertEqual(self.cli("graph", ok=False)["code"], "E_LANGUAGE_VERSION")
         migrated = self.cli("migrate")
-        self.assertEqual(migrated["language"], "0.20")
+        self.assertEqual(migrated["language"], "0.21")
         self.assertEqual(migrated["declared_original_revision"], old)
         self.assertNotEqual(migrated["revision"], old)
         history = self.cli("history")
-        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.20"})
+        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.21"})
         self.cli("export", "--revision", old, "-o", self.root / "legacy.nex")
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")

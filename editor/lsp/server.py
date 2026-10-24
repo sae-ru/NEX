@@ -528,7 +528,7 @@ class Server:
             text, key = unit['text'], unit['key']
             symbols = [s for s in index['symbols'] if s['file'] == key]
             if method == 'textDocument/documentSymbol':
-                kinds = {'function': 12, 'struct': 23, 'enum': 10, 'trait': 11, 'impl': 5, 'endpoint': 12}
+                kinds = {'function': 12, 'struct': 23, 'enum': 10, 'resource': 5, 'trait': 11, 'impl': 5, 'endpoint': 12}
                 return [{'name': s['name'], 'detail': s['detail'], 'kind': kinds[s['kind']],
                          'range': source_range(text, s['range']), 'selectionRange': source_range(text, s['selection'])} for s in symbols]
             offset = byte_offset(text, params.get('position'))
@@ -541,7 +541,7 @@ class Server:
             if method == 'textDocument/hover' and occurrence:
                 target = occurrence['definition']
                 symbol = next((s for s in index['symbols'] if s['file'] == target['file'] and s['selection'] == target['range']), None)
-                if symbol and symbol['kind'] in ('struct', 'enum', 'trait') and occurrence['role'] != 'call':
+                if symbol and symbol['kind'] in ('struct', 'enum', 'resource', 'trait') and occurrence['role'] != 'call':
                     return {'contents': {'kind': 'plaintext', 'value': symbol['detail']}, 'range': source_range(text, occurrence['range'])}
             candidates = [e for e in index['expressions'] if e['file'] == key and e['range']['begin'] <= offset < e['range']['end']]
             hit = min(candidates, key=lambda e: e['range']['end'] - e['range']['begin'], default=None)

@@ -8,7 +8,7 @@
       "const": "nex.debug-frame/1"
     },
     "language": {
-      "const": "0.20"
+      "const": "0.21"
     },
     "revision": {
       "type": "string",

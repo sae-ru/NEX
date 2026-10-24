@@ -1,3 +1,10 @@
+# Source publication update
+
+Development0.123/language021 enables the opaque source contract described in
+[source resources](source-resources.md). The private135/136/137 stages below
+record the host design and its historical gates. Public support must be queried
+on the actual compiler; source task/device completion remains pending.
+
 # Owned external resources: implementation and source integration
 
 This is an active design and private host implementation. Language0.20 cannot

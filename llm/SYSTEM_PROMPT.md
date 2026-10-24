@@ -1,11 +1,13 @@
-Private host external-resource C/loader support does not enable source resource
-declarations or task/FFI operations. Check `foreign_boundary.owned_external_host`
-and its `source_support` flag. Do not invent source resource types/constructors,
-retain C call/type/value tokens, or infer GPU/NPU resource execution from this
-host foundation. Follow docs/external-resources-design.md for the actual boundary.
-Private explicit021 source staging is not the default CLI or a migration option.
-Keep existing project language metadata unchanged until the actual public
-compiler advertises source support and the explicit migration path is verified.
+For opaque resources query source_resources on the actual compiler. Language021
+supports `[pub] server resource Name<T...>;`, genuine granted typed extern results,
+server/ffi resource_close(value)->bool and resource_is_open(value)->bool. Resources
+have no source fields/constructor/pattern or wire/browser/task transport. Aliases
+share close/identity; pure server forwarding grants no authority. Use
+`context --entity type --symbol NAME` and type patches; editor kind is resource.
+Follow docs/source-resources.md for explicit history-preserving migration and
+reviewed token repairs of old resource_close/resource_is_open declarations.
+Keep old SDKs/artifacts. Source task completion, owned GPU/NPU handles and generic
+T:resource bounds remain pending. Never retain C call/type/value tokens.
 
 When `model.source_support` is advertised, query `nex describe --field model --json`
 and read `nex guide --kind model --json`. Use `std/model.nex` validated immutable
@@ -47,7 +49,7 @@ stop. Preserve task IDs separately from native worker IDs and retain explicit
 reviewed task limits; deadlines advance while stopped. Opaque task/file/grant
 authority must not be reconstructed as a pure watch input.
 
-# NEX coding prompt — language 0.20, protocol 2
+# NEX coding prompt — language 0.21, protocol 2
 
 For native task-provider profiling, query `task_provider_profiling` and read
 `nex guide --kind task-provider-profile --json`. Treat pending enablement as
@@ -93,7 +95,7 @@ Acceptance checks capture their own nonproject task_limits or the reviewed proje
 configuration. A copied launcher can lower embedded ceilings with --nex-task-*;
 environment variables grant no controls. Steps count backend-specific work;
 reference/TypeScript execute serially. Outer process timeout remains separate.
-For0.20 tasks, read `docs/language.md`, `docs/task-lifetimes.md` and
+For0.21 tasks, read `docs/language.md`, `docs/task-lifetimes.md` and
 `docs/task-migration.md` alongside the grammar. Source types are `task_scope`,
 `task<T>` (including `task<unit>`) and `channel<T>` with non-unit payload T.
 All ten intrinsics require the explicit `task` effect:
@@ -404,7 +406,7 @@ For native acceptance across platforms, use `nex toolchain FILE --json` to inspe
 
 For native platform selection, retrieve `nex guide --kind build --json`. `--target native` uses the host ABI; macOS hosts can cross-build arm64/x86_64 with `--target TRIPLE`. `--toolchain FILE` (`nex.toolchain/1`, `llm/toolchain.schema.json`) selects a target compiler/SDK/dependencies and also works with `--target server`. Read `target`, `compiler_target` and `host_compatible` in build responses. A successful cross-build does not verify execution: local run/test/debug/profile reject a foreign architecture with E_TARGET_RUN. Supply target SQLite/OpenSSL dependencies when needed. Do not infer mobile/Linux/Windows cross-support from LLVM backend availability. Task contracts can pin native toolchains and accept foreign build artifacts; foreign native execution checks remain unsupported.
 
-NEX 0.20 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>`, `task_scope`, `task<T>`, `channel<T>`, named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Structured scheduling uses the task effect and ten checked intrinsics; async/await keywords are not introduced. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
+NEX 0.21 files start with `module NAME;`, where NAME can be qualified, for example `example::model`. Functions use `fn NAME(x: i64) -> i64 { return x; }`. Types are `i64`, `f64`, `bool`, `unit`, `str`, `bytes`, `file` (server-only), `list<T>`, `result<T>`, `task_scope`, `task<T>`, `channel<T>`, named structures/enums and function types such as fn(i64)->i64. `let` is immutable; `var` is mutable. Locals require types and initializers. Effects follow the result: `-> unit !{io}` or `!{db, io}`. `print(non-unit value)` requires io. `assert(bool)` is pure. Arithmetic is checked and logical operators short-circuit. Native, native HTTP/HTTPS and TypeScript/browser targets are available. Structured scheduling uses the task effect and ten checked intrinsics; async/await keywords are not introduced. Explicit endpoint contracts can generate typed request/response helpers; the browser executes request-command values.
 
 Import files with `import "./model.nex" as model;` and call `model::create(...)` or use `model::User` as a type. A library import such as `import "std/math.nex" as math;` exposes `math::min`, `math::max`, `math::clamp`, `math::abs`. Register other library roots in `nex.json` under `libraries`. Definitions are private by default; export with `pub fn` or `pub struct`/`pub enum`. `pub` precedes a function realm, for example `pub server fn`. Public APIs cannot expose private structures. Each reachable file declares a distinct logical module. Imports are not re-exports; cyclic module imports are rejected. Preserve existing import aliases and visibility when replacing a function. Use `nex lock` to record or explicitly update reviewed dependency pins; respect E_LOCK rather than silently updating dependencies.
 
@@ -447,7 +449,7 @@ Use compiler diagnostics (code, file, line, column) to repair errors. Report the
 
 For native debugging, query `debug_features` and `nex guide --kind debug --json`. `nex debug FILE --json` returns the frozen executable, manifest and `lldb-dap` launch settings without starting a debugger. At a stopped LLDB frame, `nex-values` returns bounded `nex.debug-values/1` previews with the revision and logical/native function mapping. Shadowed names can occur more than once. Previews can be truncated or unavailable and are not lossless JSON wire values. Fetch fresh frame data after every stop. For pure NEX watch expressions, use `nex-eval EXPR`, `nex-frame EXPR` and `nex guide --kind expression --json`. `--kind nex-dap` supplies an external stdio adapter command for standard DAP watches. It requires client adapter registration. The compiler interprets checked expressions over exact wire snapshots; it never executes an effectful call in the inferior. Results preserve revision/function/stop identity. For large aggregates, `nex-frame EXPR` returns a bounded `nex.debug-frame/2` snapshot with only demanded shape/value captures. Offline `inspect --kind demand` requests the first missing checked path; supply exact wire data from the same stop and replay, or report unavailable. List lengths, record fields, result tags and dynamic indices propagate through pure helpers without reading siblings. Whole-value operations and strings still need complete bounded values. Missing captures are explicit failures; never fabricate an omitted value. Read both frame schemas and the expression guide before implementing a capture provider.
 
-For native build changes, query `build_features` and `nex guide --kind build --json`. `nex build FILE --json` reports compiled/reused function and module counts and a `nex.compilation/1` report path. Each concrete function/closure/specialization has its own object; same-file body edits can reuse other functions, while changed call contracts, layouts or emitted source coordinates invalidate consumers. A module counts as compiled if any selected function compiled, otherwise reused. The frontend still checks the complete program. A warm cache or green reuse count does not prove behavior: check/test the selected revision and compare relevant observations with a clean build when investigating invalidation. Keep the build workspace's source cache and matching source maps for old debug sessions. Current source language is0.20; native ABI metadata is toolchain-specific.
+For native build changes, query `build_features` and `nex guide --kind build --json`. `nex build FILE --json` reports compiled/reused function and module counts and a `nex.compilation/1` report path. Each concrete function/closure/specialization has its own object; same-file body edits can reuse other functions, while changed call contracts, layouts or emitted source coordinates invalidate consumers. A module counts as compiled if any selected function compiled, otherwise reused. The frontend still checks the complete program. A warm cache or green reuse count does not prove behavior: check/test the selected revision and compare relevant observations with a clean build when investigating invalidation. Keep the build workspace's source cache and matching source maps for old debug sessions. Current source language is0.21; native ABI metadata is toolchain-specific.
 
 For native performance work, inspect `profile_features` and `nex guide --kind profile --json`. Run `nex profile FILE --scenario TEXT --json` on a defined workload, follow its report path for details, and use the recorded revision/name with `nex context`. Inspect dropped-record counts. Report measured wall time, call counts and shallow memory sizes with the host/scenario; do not present them as CPU utilization, total RSS, GPU timing or a general performance guarantee. Compare observable outputs/tests before and after an optimization.
 

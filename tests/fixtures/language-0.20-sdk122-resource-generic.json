@@ -1,0 +1,64 @@
+{
+  "schema": "nex.language-020-resource-migration-fixture/1",
+  "language": "0.20",
+  "sdk": {
+    "toolchain": "0.122.0",
+    "compiler_sha256": "fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d",
+    "native_reference_and_TypeScript": true
+  },
+  "sql_sha256": "dee0f152357a44e12e305e91b164028b23b54b2471d06b9b6773395c0ccea7cf",
+  "head": "17567ad44c97c8938931e7357dce1a2a4e1b17a55c7ca5bb76c5955ee53ed329",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 9,
+    "graph_edges": 24,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 5,
+    "nodes": 15,
+    "operation_functions": 15,
+    "operation_ids": 22,
+    "operation_versions": 66,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "revisions": [
+    {
+      "revision": "d451f0086cff69f05064be0e3a13580d416ab7410414b61b0b24307665cf1a06",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::generic_names;\nfn preserve<resource>(value:resource)->resource{return value;}\nfn answer()->i64{return preserve<i64>(42);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "94c84d0654179df6ad20a92b5358070b30f1b97e65d78f65f9e8080b63aeb763",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::generic_names;\nfn preserve<resource>(value:resource)->resource{return value;}\nfn answer()->i64{return preserve<i64>(43);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "17567ad44c97c8938931e7357dce1a2a4e1b17a55c7ca5bb76c5955ee53ed329",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::generic_names;\nfn preserve<resource>(value:resource)->resource{return value;}\nfn answer()->i64{return preserve<i64>(44);}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    }
+  ]
+}

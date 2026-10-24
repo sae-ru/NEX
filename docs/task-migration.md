@@ -1,6 +1,10 @@
+Current language021 also requires the explicit [resource migration](source-resources.md).
+The019-to020 campaign below remains historical evidence; current CLI migration
+rechecks to021 while preserving the same original019 history.
+
 # Language0.20 and retained019 migration
 
-Current public source is020. Keep the matching019 SDK and a complete graph
+The historical020 public source checkpoint follows. Keep the matching019 SDK and a complete graph
 snapshot. Explicit migration rechecks018/019 source with its original parser,
 checker and canonical language, then checks a separate reviewed020 target
 before opening a mutable destination. Known corrupt identities/unknown languages

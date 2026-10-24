@@ -1,0 +1,67 @@
+{
+  "schema": "nex.language-020-resource-migration-fixture/1",
+  "language": "0.20",
+  "sdk": {
+    "toolchain": "0.122.0",
+    "compiler_sha256": "fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d",
+    "native_reference_and_TypeScript": true
+  },
+  "sql_sha256": "d713d1f6f892cffb4d5584c5f0476101fa0b9c1e47f2b82ff859fa7b608ba051",
+  "head": "bbeb003982a0b2492b62ff060944d4f39e5754e189e197058a523ac983db8283",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 3,
+    "declaration_versions": 9,
+    "edges": 9,
+    "graph_edges": 33,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 4,
+    "nodes": 12,
+    "operation_functions": 12,
+    "operation_ids": 18,
+    "operation_versions": 54,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "revisions": [
+    {
+      "revision": "69dfd30a7af682b3e59f3b178c9e9cda4e7be21c13d8c5118cee954c6eeac13c",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::import_names;\nimport \"./resource.nex\" as resource;\nfn answer()->i64{return resource::create().resource;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==42);}\n",
+          "resource.nex": "module resource::data;\npub struct Packet { resource:i64; }\npub fn create()->Packet{return Packet(42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "2adc758b625fada831f6cefa4f81f66241d669f2267a1c735279f3072f952686",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::import_names;\nimport \"./resource.nex\" as resource;\nfn answer()->i64{return resource::create().resource;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==43);}\n",
+          "resource.nex": "module resource::data;\npub struct Packet { resource:i64; }\npub fn create()->Packet{return Packet(43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    },
+    {
+      "revision": "bbeb003982a0b2492b62ff060944d4f39e5754e189e197058a523ac983db8283",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module migration::import_names;\nimport \"./resource.nex\" as resource;\nfn answer()->i64{return resource::create().resource;}\nfn main()->unit !{io}{print(answer());}\ntest fn ordinary_resource_names()->unit{assert(answer()==44);}\n",
+          "resource.nex": "module resource::data;\npub struct Packet { resource:i64; }\npub fn create()->Packet{return Packet(44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "language": "0.20"
+    }
+  ]
+}

@@ -124,7 +124,7 @@ fn main()->unit!{io}{print(sibling());print(broken());}
         self.file.unlink()
         child=subprocess.run([standalone],capture_output=True,text=True,timeout=30)
         self.assertEqual(child.returncode,70)
-        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.20","entry":"main.nex"}');self.cli('import',archive,cwd=other)
+        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.21","entry":"main.nex"}');self.cli('import',archive,cwd=other)
         log=self.root/'standalone.log';log.write_text(child.stderr)
         mapped=self.cli('diagnose','--revision','HEAD','--manifest',built['debug_manifest'],'--log',log,cwd=other)['diagnostics'][0]
         self.assertEqual(mapped['status'],'mapped')

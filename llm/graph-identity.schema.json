@@ -320,7 +320,7 @@
           "const": "nex.identities/1"
         },
         "language": {
-          "const": "0.20"
+          "const": "0.21"
         },
         "identity_policy": {
           "const": "nex.graph-identity/1"
@@ -405,7 +405,7 @@
           "const": "nex.declarations/1"
         },
         "language": {
-          "const": "0.20"
+          "const": "0.21"
         },
         "revision": {
           "type": "string",
@@ -453,7 +453,7 @@
           "const": "nex.declaration-context/1"
         },
         "language": {
-          "const": "0.20"
+          "const": "0.21"
         },
         "revision": {
           "type": "string",
@@ -492,7 +492,7 @@
           "const": true
         },
         "language": {
-          "const": "0.20"
+          "const": "0.21"
         },
         "revision": {
           "type": "string",
@@ -545,7 +545,7 @@
           "const": "nex.identity-resolution/1"
         },
         "language": {
-          "const": "0.20"
+          "const": "0.21"
         },
         "source": {
           "$ref": "#/$defs/snapshot"

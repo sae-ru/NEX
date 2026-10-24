@@ -64,7 +64,7 @@ def main():
     try:
         assert run.resources == run.compiler.parent.parent / 'share/nex', 'the complete pack requires an installed SDK'
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.20'
+        assert actual['value'] == '0.21'
         run.report.update(language=actual['value'], toolchain=actual['toolchain'], compiler_build=actual['compiler_build'])
         scripts = [('Q1', 'type_edit_workflow.py', 'nex.quality-type-edit-workflow/1'),
                    ('Q2', 'server_web_edit.py', 'nex.quality-server-web-edit/1'),
