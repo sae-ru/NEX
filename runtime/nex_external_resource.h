@@ -70,13 +70,14 @@ class ExternalResource {
       std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
   static ExternalResource makeInAccessErased(ResourceAccess,const ExternalResourceClass&,
       std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>,
-      std::shared_ptr<ResourceExecutor> executor={},ResourceSettlement settlement={});
+      std::shared_ptr<ResourceExecutor> executor={},ResourceSettlement settlement={},bool localFactory=false);
 public:
   ExternalResource()=default;
   uint64_t identity()const noexcept{return owner.identity();}
   bool isOpen()const noexcept;
   bool close()const noexcept;
   uint64_t capacityBytes()const noexcept{return capacity;}
+  void checkRegion(const ResourceRegionAuthority &actor)const{region.check(actor);}
   const std::string &typeName()const noexcept;
   const std::string &typeHash()const noexcept;
   template<class T> ExternalResourceBorrow borrow(const ExternalResourceType<T> &key)const{return borrowErased(key.key);}
@@ -128,7 +129,7 @@ public:
   template<class T,class Factory> static ExternalResource makeInRegion(ResourceAccess access,
       const ResourceRegionAuthority &region,const ExternalResourceType<T> &key,
       std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::shared_ptr<void> codePin,
-      std::shared_ptr<ResourceExecutor> executor,Factory factory){
+      std::shared_ptr<ResourceExecutor> executor,Factory factory,bool localFactory=false){
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     auto logical=region.reserve();
@@ -139,7 +140,7 @@ public:
         logical.checkCreation();permit.check();
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
-      },std::move(executor),std::move(settlement));
+      },std::move(executor),std::move(settlement),localFactory);
     logical.publish(resource.owner.revocation());resource.region=std::move(logical);return resource;
   }
 };

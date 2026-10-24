@@ -1,3 +1,12 @@
+Private task_foreign_prototype.private_task_local_resources reports the explicit022
+C++ API experiment. It is not available in public CLI021. Its genuine typed owner
+table is separate from the generic byte completion; it cannot fabricate owners
+from indices or hashes. Resource callbacks/captures/results and channel/future
+transport remain rejected. Published resource cleanup uses a pre-reserved executor
+slot, while factories keep C invocation tokens on their own IO thread. Query the
+actual descriptor and read docs/task-foreign-prototype.md; do not generate these
+private programs for ordinary public users or claim device/SDK support.
+
 Private task_foreign_prototype.module_value_quotas_separate reports distinct module and external-object capacity. Module authorizations do not consume external object slots. Public task/ffi source remains disabled; use actual capabilities.
 
 Query task_foreign_prototype for the private022 experiment. Public source_support/public_enabled remain false: current CLI language021 still rejects task/ffi callbacks. Do not generate these private programs for ordinary users. Genuine021 fixtures precede the experiment; public022 history migration, owned external-resource transport and matching installed delivery remain pending. Read docs/task-foreign-prototype.md.

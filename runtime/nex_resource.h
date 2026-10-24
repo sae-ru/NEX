@@ -222,7 +222,7 @@ public:
     return ResourceOwner<T>(std::move(control));
   }
   template<class T,class Factory> ResourceOwner<T> makeOnExecutor(
-      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory,ResourceSettlement settlement={})const{
+      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory,ResourceSettlement settlement={},bool localFactory=false)const{
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!executor)throw DataError("E_RESOURCE_EXECUTOR","resource executor is unavailable");
     if(!settlement.state)settlement=ResourceSettlement::pending();
@@ -242,16 +242,20 @@ public:
     auto create=std::forward<Factory>(factory);
     using Payload=resource_detail::Payload<T>;
     std::shared_ptr<Payload> payload;
-    executor->invoke([&]{
+    auto construct=[&]{
       ResourcePermit permit(retained);permit.check();
       auto value=create(permit);
       if(!value)throw DataError("E_RESOURCE_CLOSED","resource factory returned no value");
-      // Unpublished factory objects also die on this executor if allocation or
-      // publication fails. The deleter moves the complete physical ticket,
-      // including object quota, to its reserved cleanup slot.
+      // Once wrapped, publication failures also use this reserved cleanup slot
+      // for the complete payload/ticket. A failure within the factory itself
+      // unwinds on its construction thread before physical call completion.
       payload=std::shared_ptr<Payload>(new Payload(std::move(retirement),ticket,std::move(value)),
         [cleanup](Payload *p)noexcept{cleanup->retire(p,[](void *raw)noexcept{delete static_cast<Payload*>(raw);});});
-    });
+    };
+    // C factories need their invocation's thread-local tokens. Construction
+    // may stay on the admitted IO thread; final release still consumes the
+    // cleanup slot reserved before the factory and settles on the executor.
+    if(localFactory)construct();else executor->invoke(construct);
     auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));
     {
       auto locks=resource_detail::lock(retained);resource_detail::check(retained);

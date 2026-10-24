@@ -40,11 +40,13 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     if(code.requirements&taskCodeImageForeign){
 #ifdef NEX_FOREIGN_ENABLED
       context->foreign=captureForeignScope(true);
+      context->foreignCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{4096,64,8*1048576});
 #else
       throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
 #endif
     }
     TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageForeign)));
+    if(code.requirements&taskCodeImageForeign)group.enableResourceRegions();
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;
     std::shared_ptr<const TaskFrameHostContext> retained=context;

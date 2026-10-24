@@ -1155,7 +1155,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
     validateNativeTaskFunction(p,f);
     if(f.foreign)continue;
     auto body=lowerTaskFunction(p,f,true,taskDebug);
-    for(const auto &slot:body.slots)if(containsNonTaskResource(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
+    for(const auto &slot:body.slots)if(supportsTaskForeignCalls(p)?containsFile(p,slot.type):containsNonTaskResource(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
     tasks.push_back(std::move(body));
   }
@@ -1186,8 +1186,8 @@ NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &n
     throw Error("E_TASK_PROVIDER","static task exports require an explicit public concrete task function without captures",f.span);
   if(unsupportedStaticTaskValue(p,f.result)||std::any_of(f.params.begin(),f.params.end(),[&](const auto &v){return unsupportedStaticTaskValue(p,v.type);}))
     throw Error("E_TASK_PROVIDER","static task export values cannot contain File, task/scope/channel authority or callable types",f.span);
-  if(f.effects.contains("ffi"))throw Error("E_TASK_PROVIDER","task provider FFI authorization and suspension contracts remain unsupported",f.span);
   validateNativeTaskFunction(p,f);
+  if(f.effects.contains("ffi"))throw Error("E_TASK_PROVIDER","task provider FFI authorization and suspension contracts remain unsupported",f.span);
   llvm::json::Array parameters,kinds,effects;
   for(const auto &v:f.params){parameters.push_back(typeName(v.type));kinds.push_back(v.type==Type::Unit?4:v.type.heap()?3:scalarTag(v.type));}
   for(const auto &effect:f.effects)effects.push_back(effect);

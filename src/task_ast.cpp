@@ -57,7 +57,7 @@ struct TaskAstMachine::Impl {
       if(auto found=i->find(name);found!=i->end())return found->second;
     throw Error("E_TASK_STATE","checked AST local is missing: "+name,activeSpan);
   }
-  static bool kind(const Type &type,const AV &value){
+  bool kind(const Type &type,const AV &value)const{
     if(type==Type::Unit)return value.tag==AV::Integer&&value.scalar==0;
     if(type==Type::I64)return value.tag==AV::Integer;
     if(type==Type::Bool)return value.tag==AV::Boolean&&(value.scalar==0||value.scalar==1);
@@ -67,7 +67,7 @@ struct TaskAstMachine::Impl {
     switch(type.kind){
     case Type::Str:return actual==nexrt::Data::String;
     case Type::List:return actual==nexrt::Data::List;
-    case Type::Record:return actual==nexrt::Data::Record||actual==nexrt::Data::Enum;
+    case Type::Record:return isExternalResource(program,type)?actual==nexrt::Data::External:actual==nexrt::Data::Record||actual==nexrt::Data::Enum;
     case Type::Result:
       if(value.object->values.size()!=1)return false;
       if(actual==nexrt::Data::Failure)return kind(Type::Str,value.object->values[0]);
@@ -92,9 +92,10 @@ struct TaskAstMachine::Impl {
     const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
     for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
-    if(function.foreign||containsNonTaskResource(program,Type::function({},function.result))||
-       std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);})||
-       std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);}))
+    auto unsupported=[&](const Type &type){return supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type);};
+    if(function.foreign||unsupported(Type::function({},function.result))||
+       std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return unsupported(p.type);})||
+       std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &p){return unsupported(p.type);}))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation cannot carry file or foreign authority",function.span);
     if(!function.typeParameters.empty()||containsParameter(function.result))
       throw Error("E_GENERIC_ENTRY","AST continuation requires concrete functions",function.span);
@@ -297,7 +298,7 @@ void TaskAstMachine::restrictBudget(uint64_t remaining){impl->limit=impl->used+s
 size_t TaskAstMachine::pendingActions()const{return impl->pending;}
 void TaskAstMachine::resume(uint64_t ticket,AV value){
   if(!impl->waiting||ticket!=impl->ticket)throw Error("E_TASK_STATE","AST continuation response ticket differs");
-  if(!Impl::kind(impl->response,value))throw Error("E_TASK_TYPE","AST continuation response kind differs",impl->activeSpan);
+  if(!impl->kind(impl->response,value))throw Error("E_TASK_TYPE","AST continuation response kind differs",impl->activeSpan);
   impl->frames.back().values.push_back(std::move(value));impl->waiting=false;
 }
 bool TaskAstMachine::finished()const{return impl->done;}

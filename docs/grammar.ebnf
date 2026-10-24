@@ -276,3 +276,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Private146 explicit022 C++ API experiment adds no grammar. Its authorized
    server task/ffi callbacks and copied direct extern requests remain unavailable
    in public CLI language021. See task-foreign-prototype.md. *)
+
+(* Private148 adds typed owned completion for task-local opaque resources in
+   that explicit022 API, without new syntax. Resource callback capture/result,
+   future/channel transport and public022 migration remain unsupported. *)

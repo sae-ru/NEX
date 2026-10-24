@@ -286,6 +286,7 @@ struct Reference {
   TaskReferenceObserver observer;
   TaskReferenceExternalHost *externalHost;
   std::unique_ptr<nexrt::ResourceRegion> resourceRoot;
+  std::shared_ptr<nexrt::ResourceExecutor> foreignCleanup;
   std::unique_ptr<TaskReferenceExternalMailbox> external;
   nexrt::CapturedForeignScope foreignScope;
 #ifndef _WIN32
@@ -314,12 +315,13 @@ struct Reference {
     (void)grant;
 #endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
-    if(host&&host->resourceRegions){
+    if((host&&host->resourceRegions)||supportsTaskForeignCalls(program)){
       nexrt::ResourceRegionLimits bounds;bounds.tasks=maximumTasks;
-      const auto parent=host->resourceRequestParent;
+      const auto parent=host?host->resourceRequestParent:nexrt::ResourceRegionAuthority{};
       resourceRoot=parent?std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegion::inRequest(nexrt::ResourceRegionFamily::Reference,parent,bounds)):
         std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegionFamily::Reference,bounds);
     }
+    if(supportsTaskForeignCalls(program))foreignCleanup=std::make_shared<nexrt::ResourceExecutor>(nexrt::ResourceExecutorLimits{4096,64,8*1048576});
   }
   // Also cover unexpected observer/host failures. Physical operations stop
   // retaining frames/leases before root revocation waits for finalizers.
@@ -569,7 +571,7 @@ struct Reference {
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
     if(supportsTaskForeignCalls(program)&&!taskBuiltins().contains(r.operation)&&!taskFileReadOperation(r.operation)&&program.function(r.operation).foreign){
-      auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);});
+      auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);},resourceAuthority(j),foreignCleanup);
       if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,
           externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
       auto ticket=external->submit(i,prepared.operation(),nexrt::PreparedTaskForeignCall::reservation);

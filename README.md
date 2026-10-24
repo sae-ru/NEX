@@ -1,3 +1,16 @@
+# Private148: task-local source resources
+
+The explicit022 C++ source API now connects actual opaque resource factories,
+ordinary helper frames and nested data to native/independent AST task cleanup.
+A separate typed genuine-owner completion never inserts owners into the generic
+byte ticket. Published resources reserve cleanup before their C factory and
+task/scope outcomes wait physical destruction; factories keep call tokens on
+their admitted IO thread. Callback capture/result and channel/future resource
+transport, public022 migration, installed delivery and device resources remain
+pending. CLI language021 and the approved primary are unchanged. Read
+[the exact private scope](docs/task-foreign-prototype.md). Matching full regression
+and sanitizers are required separately from exploratory source preflights.
+
 # Private147: separate task FFI authorization quotas
 
 Captured task FFI module grants now use module_limit independently of the external-value resource_limit. Real source C11/C++20 native/AST tests cover two granted data-only libraries under a one-object limit and retain rejection under a one-module limit. Public CLI language021 and the private copied-data-only022 boundary remain unchanged; matching validation is required.

@@ -59,6 +59,7 @@ struct State {
   const std::shared_ptr<ForeignLibraries> libraries;const ForeignScopeLimits limits;
   ResourceDomain modules;
   ResourceDomain resources;
+  ResourceDomain transports{2};
   std::mutex metadataMutex;
   uint64_t metadata=0;std::map<std::string,std::shared_ptr<Binding>> bindings;
   State(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits):libraries(std::move(libraries)),limits(limits),modules(this->libraries->moduleLimit()),resources(this->libraries->resourceLimit()){}
@@ -126,6 +127,7 @@ ForeignScope::~ForeignScope(){if(impl){impl->state->active=false;impl->state->re
 struct CapturedForeignScope::Impl {
   std::shared_ptr<State> state;
   ResourceAccess access;
+  ResourceAccess values;
 };
 CapturedForeignScope::CapturedForeignScope(std::shared_ptr<const Impl> value):impl(std::move(value)){}
 CapturedForeignScope captureForeignScope(bool unavailableDeferred){
@@ -133,14 +135,23 @@ CapturedForeignScope captureForeignScope(bool unavailableDeferred){
   try{state=current();}catch(const DataError &error){if(unavailableDeferred&&error.code=="E_FFI_GRANT")return {};throw;}
   auto *domain=&state->modules;
   if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
-  return CapturedForeignScope(std::make_shared<CapturedForeignScope::Impl>(CapturedForeignScope::Impl{state,domain->access()}));
+  auto *values=&state->resources;
+  if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*values))values=joined;
+  return CapturedForeignScope(std::make_shared<CapturedForeignScope::Impl>(CapturedForeignScope::Impl{state,domain->access(),values->access()}));
 }
 void CapturedForeignScope::check()const{
   if(!impl)invalid("E_FFI_GRANT","task foreign calls require a captured explicit host scope");
   if(!impl->state->active.load())invalid("E_FFI_SCOPE","captured foreign scope has ended");
-  impl->access.check();
+  impl->access.check();impl->values.check();
 }
 ForeignCallLimits CapturedForeignScope::callLimits()const{check();return impl->state->limits.call;}
+ResourceAccess CapturedForeignScope::valueAccess()const{check();return impl->values;}
+std::shared_ptr<void> CapturedForeignScope::reserveTransport()const{
+  check();struct Reservation{};
+  auto owner=impl->state->transports.make<Reservation>([](const ResourcePermit &permit){permit.check();return std::make_unique<Reservation>();});
+  // A physical lease retains the bounded slot even if its domain is revoked.
+  return std::make_shared<ResourceLease<Reservation>>(owner.acquire());
+}
 ForeignSignature CapturedForeignScope::signature(const std::string &text)const{check();return resolve(impl->state,text)->signature;}
 ForeignFunction CapturedForeignScope::bind(const std::string &text,std::function<void()> poll)const{
   check();auto retained=*this;

@@ -32,6 +32,10 @@ public:
   ForeignSignature signature(const std::string &)const;
   ForeignFunction bind(const std::string &,std::function<void()> poll={})const;
   ForeignCallLimits callLimits()const;
+  ResourceAccess valueAccess()const;
+  // The bounded transport reservation survives raw IO-ticket admission. It
+  // remains held until the prepared typed snapshot is admitted or discarded.
+  std::shared_ptr<void> reserveTransport()const;
 };
 CapturedForeignScope captureForeignScope(bool unavailableDeferred=false);
 // Used by the interpreter and native value bridge. A retained context cannot

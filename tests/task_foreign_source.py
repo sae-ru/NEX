@@ -52,6 +52,7 @@ struct WrongThread {const nex_ffi_api_v1 *api;nex_ffi_call call;nex_ffi_ref ref;
 static void *wrong_thread(void *opaque){struct WrongThread *w=(struct WrongThread*)opaque;w->status=w->api->get_i64(w->call,w->ref,&w->sentinel);return 0;}
 static nex_ffi_status add(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user){
   (void)user;if(count!=1)return NEX_FFI_ARGUMENT;int64_t value=0;nex_ffi_status status=api->get_i64(call,args[0],&value);if(status)return status;
+  if(value==19)trace("eval:left");if(value==21)trace("eval:right");
   struct WrongThread wrong={api,call,args[0],NEX_FFI_OK,918273};pthread_t thread;
   if(pthread_create(&thread,0,wrong_thread,&wrong)||pthread_join(thread,0))return NEX_FFI_INTERNAL;
   if(wrong.status!=NEX_FFI_THREAD||wrong.sentinel!=918273)return NEX_FFI_INTERNAL;
@@ -151,6 +152,9 @@ def main():
     assert built['foreign_calls'] is True
     native=run(dialect+'-'+name+'-native',[built['executable'],'--nex-foreign',host])
     assert native.stdout==reference['output']
+    if name=='evaluation_order':
+     for target in ('reference','native'):
+      assert (out/(dialect+'-'+name+'-'+target+'.trace')).read_text().splitlines()==['eval:left','eval:right','unload']
     report['checks'].append(dialect+'_'+name+'_actual_native_independent_AST')
    for name,body,code,grant in (
        ('bad_result','server fn main()->unit !{task,ffi}{let value:i64=bad();}', 'E_FFI_TYPE',host),
@@ -190,11 +194,11 @@ def main():
    error=json.loads(run(name+'-rejected',command('check',path),1).stdout)
    assert error['code'] in ('E_EFFECT','E_TASK_TYPE'),error
    report['checks'].append(name+'_checked_before_execution')
-  path=bundle('resource_factory','server resource Session;server extern fn create()->Session !{ffi}=foreign("calls","create","'+PIN+'");server fn main()->unit !{task,ffi}{let owner:Session=create();}')
+  path=bundle('file_factory','server extern fn create()->file !{ffi}=foreign("calls","create","'+PIN+'");server fn main()->unit !{task,ffi}{let owner:file=create();}')
   for action in ('check','reference','native'):
-   error=json.loads(run('resource_factory-'+action+'-rejected',command(action,path),1).stdout)
+   error=json.loads(run('file_factory-'+action+'-rejected',command(action,path),1).stdout)
    assert error['code']=='E_TASK_TYPE',error
-  report['checks'].append('known_resource_factory_same_source_rejection_for_all_entry_paths')
+  report['checks'].append('known_file_factory_same_source_rejection_for_all_entry_paths')
   old=bundle('old021-unchanged',CASES['helper'])
   error=json.loads(run('old021-still-rejects',command('check',old,language='0.21'),1).stdout)
   assert error['code']=='E_EFFECT',error

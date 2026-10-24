@@ -24,17 +24,29 @@ public:
   bool resourceConstructible(size_t type)const;
   bool resourceDeclared(const std::string &name,const std::string &identity)const;
 };
-// Private task bridge for capability-free typed snapshots. These codecs use
-// the exact checked nominal layouts and reject function/file/resource types.
-// Only bounded copied octets, never Values or call-local C tokens, enter IO.
+// A typed host-only owner table accompanies copied data. Indices in bytes are
+// never authorities: reconstruction needs the genuine table and logical region.
+// No source Value, borrowed pointer or C invocation token is retained here.
+struct TaskForeignSnapshot {
+  std::vector<uint8_t> bytes;
+  std::vector<ExternalResource> owners;
+};
+// Exact checked nominal layouts. The default copied-data codec continues to
+// reject resources. Its explicit owned mode requires a genuine region on each
+// conversion; file/function values remain unavailable in either mode.
 class TaskCodec {
   struct Impl;std::shared_ptr<const Impl> impl;
 public:
-  explicit TaskCodec(const ForeignSignature &);
+  explicit TaskCodec(const ForeignSignature &,bool owned=false);
   std::vector<uint8_t> encodeArguments(std::span<const Value>,const std::function<void()> &poll={})const;
   std::vector<Value> decodeArguments(std::span<const uint8_t>,const std::function<void()> &poll={})const;
   std::vector<uint8_t> encodeResult(const Value &,const std::function<void()> &poll={})const;
   Value decodeResult(std::span<const uint8_t>,const std::function<void()> &poll={})const;
+  TaskForeignSnapshot snapshotArguments(std::span<const Value>,const ResourceRegionAuthority&,const std::function<void()> &poll={})const;
+  std::vector<Value> restoreArguments(const TaskForeignSnapshot&,const ResourceRegionAuthority&,const std::function<void()> &poll={})const;
+  TaskForeignSnapshot snapshotResult(const Value&,const ResourceRegionAuthority&,const std::function<void()> &poll={})const;
+  Value restoreResult(const TaskForeignSnapshot&,const ResourceRegionAuthority&,const std::function<void()> &poll={})const;
   static constexpr size_t byteLimit=1048576;
+  static constexpr size_t ownerLimit=64;
 };
 }

@@ -171,8 +171,8 @@ const std::string &TypedContext::description()const{return impl->layout->descrip
 struct TaskCodec::Impl {
   ForeignSignature signature;
   std::string argumentsSchema,resultSchema;
-  bool unit;
-  explicit Impl(const ForeignSignature &value):signature(value),unit(false){
+  bool unit,owned;
+  explicit Impl(const ForeignSignature &value,bool owned):signature(value),unit(false),owned(owned){
     if(!value.layout)schemaError("foreign signature has no layout");
     unit=value.layout->types[value.layout->result].kind==NEX_FFI_UNIT;
     const auto &layout=*value.layout;
@@ -183,6 +183,8 @@ struct TaskCodec::Impl {
       switch(shape.kind){
       case NEX_FFI_I64:return "i64";case NEX_FFI_F64:return "f64";
       case NEX_FFI_BOOL:return "bool";case NEX_FFI_STRING:return "str";case NEX_FFI_BYTES:return "bytes";
+      case NEX_FFI_EXTERNAL_RESOURCE:if(owned)return "i64";[[fallthrough]];
+      case NEX_FFI_FUNCTION:case NEX_FFI_FILE:throw DataError("E_TASK_VALUE","task foreign snapshots cannot carry this authority");
       case NEX_FFI_LIST:return J{{"list",type(shape.item,depth+1)}};
       case NEX_FFI_RESULT:return J{{"result",type(shape.item,depth+1)}};
       case NEX_FFI_RECORD:return J{{"record",shape.name}};
@@ -195,7 +197,7 @@ struct TaskCodec::Impl {
       if(shape.kind==NEX_FFI_UNIT)continue;
       if(shape.kind==NEX_FFI_RECORD)records[shape.name]=fields(shape.fields);
       else if(shape.kind==NEX_FFI_ENUM){J cases=J::array();for(const auto &variant:shape.variants)cases.push_back(J{{"name",variant.name},{"fields",fields(variant.fields)}});enums[shape.name]=std::move(cases);}
-      else if(shape.kind==NEX_FFI_FILE||shape.kind==NEX_FFI_FUNCTION||shape.kind==NEX_FFI_EXTERNAL_RESOURCE)
+      else if(shape.kind==NEX_FFI_FILE||shape.kind==NEX_FFI_FUNCTION||(!owned&&shape.kind==NEX_FFI_EXTERNAL_RESOURCE))
         throw DataError("E_TASK_VALUE","task foreign snapshots cannot carry function, file or external authority");
     }
     // '$' is unavailable in checked nominal source names, so the internal
@@ -223,8 +225,54 @@ struct TaskCodec::Impl {
     TypedContext::Impl context(signature);TypedContext::Impl::Validation validation{context,poll,false};
     validation.check(value,signature.layout->result);
   }
+  // Values here are transient, local to the invoking scheduler/IO thread.
+  // Only bytes and genuine owners survive the conversion. Checked layout,
+  // rather than payload names or numeric identities, selects every recursion.
+  Value convert(const Value &value,size_t type,TaskForeignSnapshot &snapshot,bool restore,
+      const ResourceRegionAuthority &region,const std::function<void()> &poll,
+      std::set<size_t> &used,size_t &nodes,size_t depth=0)const{
+    if(depth>64||++nodes>100000)throw DataError("E_FFI_LIMIT","owned task snapshot exceeds its depth/node budget");
+    if(poll&&(nodes==1||nodes%64==0))poll();
+    const auto &shape=signature.layout->types.at(type);
+    if(shape.kind==NEX_FFI_EXTERNAL_RESOURCE){
+      if(!owned||!region)throw DataError("E_RESOURCE_SCOPE","owned task snapshot requires explicit logical authority");
+      if(restore){
+        if(value.tag!=Value::Integer||value.scalar<0||uint64_t(value.scalar)>=snapshot.owners.size())
+          throw DataError("E_FFI_TYPE","owned task snapshot index is outside its genuine owner table");
+        auto index=size_t(value.scalar);const auto &owner=snapshot.owners[index];
+        if(owner.typeName()!=shape.name||owner.typeHash()!=shape.identity)
+          throw DataError("E_FFI_TYPE","owned task snapshot class identity differs");
+        owner.checkRegion(region);used.insert(index);return Value(externalValue(owner));
+      }
+      const auto &owner=externalResource(value.object);owner.checkRegion(region);
+      size_t index=0;
+      for(;index<snapshot.owners.size();++index)if(snapshot.owners[index].identity()==owner.identity())break;
+      if(index==snapshot.owners.size()){
+        if(index==ownerLimit)throw DataError("E_FFI_LIMIT","owned task snapshot exceeds64 external owners");
+        snapshot.owners.push_back(owner);
+      }
+      return Value(int64_t(index));
+    }
+    if(shape.kind!=NEX_FFI_LIST&&shape.kind!=NEX_FFI_RECORD&&shape.kind!=NEX_FFI_ENUM&&shape.kind!=NEX_FFI_RESULT)return value;
+    // Failure contains only the checked error code/string, never a success owner.
+    if(shape.kind==NEX_FFI_RESULT&&value.object->kind==Data::Failure)return value;
+    auto data=std::make_shared<Data>(*value.object);data->values.clear();
+    for(size_t i=0;i<value.object->values.size();++i){
+      size_t child=(shape.kind==NEX_FFI_LIST||shape.kind==NEX_FFI_RESULT)?shape.item:
+        shape.kind==NEX_FFI_RECORD?shape.fields.at(i).type:shape.variants.at(size_t(value.object->ordinal)).fields.at(i).type;
+      data->values.push_back(convert(value.object->values[i],child,snapshot,restore,region,poll,used,nodes,depth+1));
+    }
+    return Value(std::move(data));
+  }
+  void checkSnapshot(const TaskForeignSnapshot &snapshot)const{
+    if(snapshot.bytes.size()>byteLimit||snapshot.owners.size()>ownerLimit)
+      throw DataError("E_FFI_LIMIT","owned task snapshot exceeds its bounded transport");
+    std::set<uint64_t> identities;
+    for(const auto &owner:snapshot.owners)if(!owner.identity()||!identities.insert(owner.identity()).second)
+      throw DataError("E_FFI_TYPE","owned task snapshot table has absent or duplicate owners");
+  }
 };
-TaskCodec::TaskCodec(const ForeignSignature &signature):impl(std::make_shared<Impl>(signature)){}
+TaskCodec::TaskCodec(const ForeignSignature &signature,bool owned):impl(std::make_shared<Impl>(signature,owned)){}
 std::vector<uint8_t> TaskCodec::encodeArguments(std::span<const Value> values,const std::function<void()> &poll)const{
   TypedContext typed(impl->signature);typed.arguments(values,poll);
   auto envelope=std::make_shared<Data>(Data::Record);envelope->text="$task_foreign_arguments";
@@ -243,6 +291,33 @@ Value TaskCodec::decodeResult(std::span<const uint8_t> bytes,const std::function
   if(impl->unit){if(!bytes.empty())throw DataError("E_FFI_TYPE","task foreign unit response contains payload");}
   else value=Impl::decoded(bytes,impl->resultSchema);
   impl->result(value,poll);if(poll)poll();return value;
+}
+TaskForeignSnapshot TaskCodec::snapshotArguments(std::span<const Value> values,const ResourceRegionAuthority &region,const std::function<void()> &poll)const{
+  TypedContext typed(impl->signature);typed.arguments(values,poll);TaskForeignSnapshot result;
+  auto envelope=std::make_shared<Data>(Data::Record);envelope->text="$task_foreign_arguments";
+  std::set<size_t> used;size_t nodes=0;
+  for(size_t i=0;i<values.size();++i){envelope->names.push_back("a"+std::to_string(i));envelope->values.push_back(impl->convert(values[i],impl->signature.layout->parameters[i],result,false,region,poll,used,nodes));}
+  result.bytes=Impl::octets(Value(envelope));impl->checkSnapshot(result);if(poll)poll();return result;
+}
+std::vector<Value> TaskCodec::restoreArguments(const TaskForeignSnapshot &snapshot,const ResourceRegionAuthority &region,const std::function<void()> &poll)const{
+  impl->checkSnapshot(snapshot);if(poll)poll();auto envelope=Impl::decoded(snapshot.bytes,impl->argumentsSchema);
+  TaskForeignSnapshot table;table.owners=snapshot.owners;std::vector<Value> result;std::set<size_t> used;size_t nodes=0;
+  for(size_t i=0;i<envelope.object->values.size();++i)result.push_back(impl->convert(envelope.object->values[i],impl->signature.layout->parameters.at(i),table,true,region,poll,used,nodes));
+  if(used.size()!=snapshot.owners.size())throw DataError("E_FFI_TYPE","owned task arguments contain an unused owner");
+  TypedContext typed(impl->signature);typed.arguments(result,poll);return result;
+}
+TaskForeignSnapshot TaskCodec::snapshotResult(const Value &value,const ResourceRegionAuthority &region,const std::function<void()> &poll)const{
+  impl->result(value,poll);TaskForeignSnapshot result;if(impl->unit)return result;
+  std::set<size_t> used;size_t nodes=0;auto copied=impl->convert(value,impl->signature.layout->result,result,false,region,poll,used,nodes);
+  result.bytes=Impl::octets(copied);impl->checkSnapshot(result);if(poll)poll();return result;
+}
+Value TaskCodec::restoreResult(const TaskForeignSnapshot &snapshot,const ResourceRegionAuthority &region,const std::function<void()> &poll)const{
+  impl->checkSnapshot(snapshot);if(poll)poll();Value result;
+  if(impl->unit){if(!snapshot.bytes.empty()||!snapshot.owners.empty())throw DataError("E_FFI_TYPE","unit owned task completion contains a payload");return result;}
+  auto copied=Impl::decoded(snapshot.bytes,impl->resultSchema);TaskForeignSnapshot table;table.owners=snapshot.owners;std::set<size_t> used;size_t nodes=0;
+  result=impl->convert(copied,impl->signature.layout->result,table,true,region,poll,used,nodes);
+  if(used.size()!=snapshot.owners.size())throw DataError("E_FFI_TYPE","owned task result contains an unused owner");
+  impl->result(result,poll);if(poll)poll();return result;
 }
 }
 }

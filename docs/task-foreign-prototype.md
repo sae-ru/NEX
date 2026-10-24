@@ -46,12 +46,39 @@ token or copied payload. Result decoding and authority checks run again before
 resuming source code. Checked traps, cancellation and canonical host resource
 exhaustion drain physical operations before scope/application completion.
 
-Source resources, nested/phantom resource types and resource captures remain
-rejected at task value boundaries. External ownership needs a separate typed
-owned-result channel authenticated to logical owners, expected class/hash/realm,
-the physical grant and actual operation fence. Do not insert external owners,
-borrowed payloads, source frames or task/channel capabilities into this copied
-byte transport. VM cleanup does not prove driver/DMA settlement.
+Private148 adds task-local source resources through a separate typed owned-result
+channel. The ordinary TaskExternalResult still carries only octets/errors; its
+owned-call completion is an empty wakeup. An invocation's sealed state holds its
+checked signature, copied snapshots and genuine ExternalResource owner table,
+captured physical value authority, original logical task/scope authority and
+cleanup executor. No source Value, borrowed payload, source frame or C token
+enters that retained state. Snapshot indices never construct an owner.
+
+Typed reconstruction checks the exact nominal layout, class/hash and logical
+ancestry against the genuine owner table. Actual C borrowing additionally checks
+the loaded image's class registration; matching metadata from another image is
+insufficient. One-shot publication rejects duplicate execution/admission. Late
+lexical/request/catalogue/region revocation rejects admission; a worker's new
+RequestScope never renews the captured authority. A separate two-slot transport
+reservation survives generic IO-ticket consumption until typed admission/drop;
+each slot accounts for4 MiB of retained transport, independently of external
+object/capacity quotas and VM/vendor memory. Each snapshot has at most64 owners.
+
+Opaque source owners can be created/used/closed inside one task, nested immutable
+data and its ordinary helper frames. Factories execute on their C invocation's
+IO thread so call tokens remain valid. Published resources have a cleanup slot
+reserved before factory entry and final destruction is dispatched separately.
+An unpublished factory failure cleans on the admitted IO path before error
+publication. Existing task/inner-scope resource regions wait actual physical
+cleanup, object/capacity tickets and code pins before publishing completion.
+Logical close is immediate; it does not return physical capacity early.
+
+Source callback captures/results, futures and channels still reject resource
+types, including phantom types. Full cross-task/ancestor transfer remains pending.
+The source-local slice adds no new syntax and is available only through explicit
+private022 APIs. Public CLI language021 still rejects these task/FFI programs.
+Thread-affine device construction, driver/DMA fences and general GPU/NPU resources
+need their own adapters and actual device evidence.
 
 The genuine021 fixtures were produced by accepted SDK128 compiler
 40fcbef8657a74f1f51339ed45876808f2d657ed93da8e22a7838c9234b70975.
@@ -70,6 +97,16 @@ The context probe checks worker request turnover and late lexical/request/module
 revocation. `tests/task_foreign_origins.py` checks the authentic retained origins.
 Sanitizer, full regression, owned-resource transport, public migration and SDK/
 platform evidence retain their separate required gates.
+
+`tests/task_resource_source.py` uses actual C11/C++20 modules and emitted native
+applications plus the independent AST scheduler. It checks resource aliases,
+closed-owner status, nested aggregates, ordinary helper frames, task/inner-scope
+cleanup, single-CPU progress during destruction, retained physical quotas,
+unpublished errors and cancellation/deadline settlement before module unload.
+`task_owned_foreign_context.cpp` also checks genuine and forged tables, image
+registration identity, duplicate execution/admission, ancestor/sibling/request
+boundaries and late revocation. These tests do not certify public migration,
+all task transport boundaries, installed SDKs or device support.
 
 Module authorizations use their own captured module domain and module_limit.
 The separate resource_limit applies to external value objects. A data-only call

@@ -79,7 +79,7 @@ ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const
 }
 ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,const ExternalResourceClass &key,
     std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory,
-    std::shared_ptr<ResourceExecutor> executor,ResourceSettlement settlement){
+    std::shared_ptr<ResourceExecutor> executor,ResourceSettlement settlement,bool localFactory){
   if(budgets.empty()||budgets.size()>8)throw DataError("E_RESOURCE_BYTES","external resource needs1..8 capacity budgets");
   auto type=key.state;
   if(!type)throw DataError("E_RESOURCE_TYPE","external class is unavailable");
@@ -93,7 +93,7 @@ ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,cons
     if(!object.pointer)throw DataError("E_RESOURCE_CLOSED","external resource factory returned no object");
     return std::make_unique<external_detail::State>(std::move(charge),std::move(object));
   };
-  auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create,settlement):access.make<external_detail::State>(create,settlement);
+  auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create,settlement,localFactory):access.make<external_detail::State>(create,settlement);
   return ExternalResource(std::move(resource),std::move(type),bytes);
 }
 ExternalResourceBorrow::ExternalResourceBorrow(std::shared_ptr<external_detail::BorrowState> impl):impl(std::move(impl)){}

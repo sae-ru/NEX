@@ -29,6 +29,8 @@ public:
   Value invoke(std::span<const Value> arguments,std::function<void()> poll={},ForeignCallLimits limits={})const;
   Value invokeWithResourceScope(std::span<const Value> arguments,ResourceAccess scope,
       std::function<void()> poll={},ForeignCallLimits limits={})const;
+  Value invokeInRegion(std::span<const Value>,ResourceAccess,ResourceRegionAuthority,
+      std::shared_ptr<ResourceExecutor>,std::function<void()> poll={},ForeignCallLimits limits={})const;
 };
 class ForeignLibraries {
   struct Impl;std::shared_ptr<Impl> impl;

@@ -17,12 +17,13 @@ ExternalResourceType<ForeignResourceObject> ResourceRegistry::type(const std::st
 }
 ResourceByteBudget ResourceRegistry::budget()const{return impl->imageBytes;}
 ResourceContext::ResourceContext(std::shared_ptr<ResourceRegistry> registry,ResourceAccess access,
-    ResourceByteBudget hostBytes,std::shared_ptr<void> pin,std::function<bool(const void*)> owns)
-    :registry(std::move(registry)),access(std::move(access)),budgets{std::move(hostBytes)},codePin(std::move(pin)),ownsCode(std::move(owns)){
+    ResourceByteBudget hostBytes,std::shared_ptr<void> pin,std::function<bool(const void*)> owns,
+    ResourceRegionAuthority region,std::shared_ptr<ResourceExecutor> cleanup)
+    :registry(std::move(registry)),access(std::move(access)),budgets{std::move(hostBytes)},codePin(std::move(pin)),ownsCode(std::move(owns)),region(std::move(region)),cleanup(std::move(cleanup)){
   if(!this->registry||!codePin||!ownsCode)throw DataError("E_FFI_GRANT","resource context requires actual module ownership");
   budgets.push_back(this->registry->budget());
 }
-void ResourceContext::check()const{access.check();}
+void ResourceContext::check()const{access.check();if(region)region.check();}
 void ResourceContext::callbacks(nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy)const{
   check();if(!factory||!destroy||!ownsCode(reinterpret_cast<const void*>(factory))||!ownsCode(reinterpret_cast<const void*>(destroy)))
     throw DataError("E_FFI_TYPE","resource callbacks must belong to the current pinned module snapshot");
@@ -30,14 +31,19 @@ void ResourceContext::callbacks(nex_ffi_resource_factory_v1 factory,nex_ffi_reso
 ExternalResource ResourceContext::create(const std::string &name,const std::string &hash,uint64_t bytes,
     nex_ffi_resource_destroy_v1 destroy,const std::function<void(void**,const ResourcePermit&)> &initialize)const{
   check();auto key=registry->type(name,hash);
-  return ExternalResource::makeInAccess(access,key,budgets,bytes,codePin,[&](const ResourcePermit &permit){
+  auto factory=[&](const ResourcePermit &permit){
     auto object=std::make_unique<ForeignResourceObject>(destroy);initialize(&object->pointer,permit);
     if(!object->pointer)throw DataError("E_RESOURCE_CLOSED","resource factory returned no native object");
     return object;
-  });
+  };
+  if(region){
+    if(!cleanup)throw DataError("E_RESOURCE_EXECUTOR","task resource creation requires a reserved cleanup executor");
+    return ExternalResource::makeInRegion(access,region,key,budgets,bytes,codePin,cleanup,factory,true);
+  }
+  return ExternalResource::makeInAccess(access,key,budgets,bytes,codePin,factory);
 }
 ExternalResourceBorrow ResourceContext::borrow(const ExternalResource &value,const std::string &name,const std::string &hash)const{
-  check();return value.borrow(registry->type(name,hash));
+  check();auto type=registry->type(name,hash);return region?value.borrowInRegion(region,type):value.borrow(type);
 }
 void *ResourceContext::pointer(const ExternalResourceBorrow &lease,const std::string &name,const std::string &hash)const{
   check();return lease.value(registry->type(name,hash)).pointer;

@@ -244,15 +244,22 @@ Value ForeignFunction::invoke(std::span<const Value> arguments,Poll poll,Foreign
   return invokeWithResourceScope(arguments,{},std::move(poll),limits);
 }
 Value ForeignFunction::invokeWithResourceScope(std::span<const Value> arguments,ResourceAccess scope,Poll poll,ForeignCallLimits limits)const{
+  auto retained=impl;if(!retained)fail("E_RESOURCE_CLOSED","foreign function is unavailable");
+  if(!retained->signature.hasResources())return invokeInRegion(arguments,{},{},{},std::move(poll),limits);
+  auto *domain=retained->values.get();if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
+  auto access=domain->access();if(scope.scopeKey())access=access.combine(scope);
+  return invokeInRegion(arguments,std::move(access),{},{},std::move(poll),limits);
+}
+Value ForeignFunction::invokeInRegion(std::span<const Value> arguments,ResourceAccess scope,ResourceRegionAuthority region,
+    std::shared_ptr<ResourceExecutor> cleanup,Poll poll,ForeignCallLimits limits)const{
   auto retained=impl;if(!retained)fail("E_RESOURCE_CLOSED","foreign function is unavailable");auto lease=retained->owner.acquire();
   auto checked=[lease,poll=std::move(poll)]{lease.check();pollNow(poll);lease.check();};
   if(!retained->signature.hasResources())return invokeForeignTyped(retained->callback,arguments,retained->signature,retained->user,std::move(checked),limits);
-  auto *domain=retained->values.get();if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
-  auto access=domain->access();if(scope.scopeKey())access=access.combine(scope);
+  auto access=retained->values->access().combine(scope);
   auto image=lease.value().image;auto manifest=retained->manifest;
   auto pin=std::make_shared<ResourceLease<Module>>(lease);
   auto resources=std::make_shared<foreign_detail::ResourceContext>(image->resourceTypes,access,retained->bytes,pin,
-      [image,manifest](const void *address){return ownedAddress(address,*image,*manifest);});
+      [image,manifest](const void *address){return ownedAddress(address,*image,*manifest);},std::move(region),std::move(cleanup));
   auto valuePoll=[checked=std::move(checked),access]{access.check();checked();access.check();};
   return foreign_detail::invokeForeignTypedResources(retained->callback,arguments,retained->signature,retained->user,std::move(valuePoll),limits,std::move(resources));
 }

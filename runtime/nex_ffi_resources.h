@@ -22,9 +22,11 @@ class ResourceContext {
   std::vector<ResourceByteBudget> budgets;
   std::shared_ptr<void> codePin;
   std::function<bool(const void*)> ownsCode;
+  ResourceRegionAuthority region;
+  std::shared_ptr<ResourceExecutor> cleanup;
 public:
   ResourceContext(std::shared_ptr<ResourceRegistry>,ResourceAccess,ResourceByteBudget,
-      std::shared_ptr<void>,std::function<bool(const void*)>);
+      std::shared_ptr<void>,std::function<bool(const void*)>,ResourceRegionAuthority={},std::shared_ptr<ResourceExecutor> = {});
   void check()const;
   void callbacks(nex_ffi_resource_factory_v1,nex_ffi_resource_destroy_v1)const;
   ExternalResource create(const std::string&,const std::string&,uint64_t,nex_ffi_resource_destroy_v1,

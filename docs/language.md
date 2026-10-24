@@ -1,3 +1,9 @@
+Private148 explicit022 C++ APIs add task-local opaque resource calls through a
+separate typed owned-completion channel. Ordinary task helper frames can retain
+these owners; source callback captures/results and channel/future transfer remain
+rejected. Public CLI language021, its canonical identities and migration rules
+stay unchanged. Read task-foreign-prototype.md for authority, cleanup and bounds.
+
 Toolchain0.128 retires native scheduler-owned Value roots outside its mutex and fences task/scope publication and buffer-slot reuse. This changes no source syntax, language0.21, canonical identity or migration; source resource transport stays unavailable. See task-value-retirement.md.
 
 Toolchain0.127 adds private independent AST reference resource-region scheduling and physical cleanup fences. Source task/FFI transport stays unavailable; language0.21, canonical identities and migration remain unchanged. See resource-regions.md.

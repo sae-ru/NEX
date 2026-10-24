@@ -215,7 +215,9 @@ class TaskForeign(harness.ToolchainCase):
         self.catalogue_report=self.cli('foreign',self.host)
         task=self.cli('task',self.file,'--kind','init');task['checks']=[];task['requirements']=[]
         self.add(task,{'id':'timeout','kind':'run','target':'native','entry':'taskffi::main',
-            'timeout_seconds':1,'expect':{'stdout':'42\n','exit_code':0}})
+            # Integrity checks and module loading share this budget. Allow
+            # startup so this case actually tests reaping entered native code.
+            'timeout_seconds':5,'expect':{'stdout':'42\n','exit_code':0}})
         self.save(task)
         ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
         directory=self.root/'controlled-timeout'

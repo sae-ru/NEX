@@ -1794,7 +1794,7 @@
     "suspending_api_cleanup": "Suspending calls transfer their tagged roots to a Job-owned fence before unlock; source workers remain available"
   },
   "task_foreign_prototype": {
-    "status": "private022_capability_free_source_calls",
+    "status": "private022_task_local_owned_calls",
     "source_support": false,
     "public_enabled": false,
     "private_source_language": "0.22",
@@ -1806,6 +1806,10 @@
     "external_resource_transport": false,
     "public022_migration_complete": false,
     "installed_SDK_accepted": false,
-    "module_value_quotas_separate": true
+    "module_value_quotas_separate": true,
+    "private_task_local_resources": true,
+    "owned_completion_channel": true,
+    "generic_completion_contains_owners": false,
+    "private_cross_task_resource_transport": false
   }
 }

@@ -183,7 +183,8 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           if(binding.tag!=Value::Object||!binding.object||binding.object->kind!=Data::String)
             throw DataError("E_TASK_STATE","compiled foreign binding must be text");
           return PreparedTaskForeignCall(current.host->foreign,binding.object->text,
-              std::span<const Value>(request.arguments).subspan(1),[&]{pollHostOperation(request.location);});
+              std::span<const Value>(request.arguments).subspan(1),[&]{pollHostOperation(request.location);},
+              group.resourceAuthority(),current.host->foreignCleanup);
         });
         auto ticket=checked([&]{return group.submitExternal(prepared.operation(),PreparedTaskForeignCall::reservation);});
         auto raw=co_await group.awaitExternal(ticket).at(request.location);

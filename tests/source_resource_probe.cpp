@@ -19,11 +19,12 @@ int main(int argc,char **argv)try{
     }
     for(const auto &f:p.functions)if(f.foreign)signatures[f.foreign->symbol]=foreignSignature(p,f);
     result["resources"]=std::move(resources);result["signatures"]=std::move(signatures);if(std::string(argv[4])!="-")writeFile(argv[4],json(Object(result))+"\n");
-  }else if(command=="reference"){
+  }else if(command=="reference"||command=="reference-timeout"){
     std::shared_ptr<nexrt::ForeignLibraries> libraries;
     std::unique_ptr<nexrt::ForeignScope> scope;
     if(std::string(argv[4])!="-"){libraries=nexrt::loadForeignLibraries(argv[4]);scope=std::make_unique<nexrt::ForeignScope>(libraries);}
-    auto evaluated=evaluate(p,"main");result["output"]=evaluated.output;result["value"]=std::move(evaluated.value);result["steps"]=int64_t(evaluated.steps);
+    nexrt::TaskExecutionLimits limits;limits.timeoutMs=1000;limits.workers=1;
+    auto evaluated=evaluate(p,"main",1000000,command=="reference-timeout"?&limits:nullptr);result["output"]=evaluated.output;result["value"]=std::move(evaluated.value);result["steps"]=int64_t(evaluated.steps);
     scope.reset();if(libraries){if(libraries->resourceBytesUsed()!=0)throw Error("E_RESOURCE_BYTES","reference exit retained external capacity");result["external_capacity_after_scope"]=int64_t(libraries->resourceBytesUsed());}
   }else if(command=="native"){
     BuildOptions options;options.profile="release";auto built=build(p,argv[4],options);

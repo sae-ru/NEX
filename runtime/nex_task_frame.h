@@ -34,6 +34,7 @@ static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==
 struct TaskFrameHostContext {
 #ifdef NEX_FOREIGN_ENABLED
   CapturedForeignScope foreign;
+  std::shared_ptr<ResourceExecutor> foreignCleanup;
 #endif
   TaskFrameHostContext()=default;
 #ifndef _WIN32
