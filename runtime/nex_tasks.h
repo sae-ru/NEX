@@ -6,6 +6,7 @@
 #include "nex_task_debug.h"
 #endif
 #include <coroutine>
+#include <array>
 #include <exception>
 #include <optional>
 #include <utility>

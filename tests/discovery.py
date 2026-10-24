@@ -96,6 +96,8 @@ class Discovery(harness.ToolchainCase):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
+        self.assertEqual(full['task_value_retirement'], pack['task_value_retirement'])
+        self.assertFalse(full['task_value_retirement']['source_resource_transport'])
         self.assertEqual(full['resource_regions'], pack['resource_regions'])
         self.assertTrue(full['resource_regions']['native_scheduler'])
         self.assertFalse(full['resource_regions']['source_support'])

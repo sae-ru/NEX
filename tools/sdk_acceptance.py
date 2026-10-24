@@ -619,6 +619,12 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,128,0):
+        values=report.get('evidence',{}).get('source_resources',{}).get('task_value_retirement',{})
+        require(values.get('cases')==13 and all(values.get(key) is True for key in
+                ('ok','destructors_outside_scheduler_mutex','cancelled_event_cleanup','task_scope_publication_fence',
+                 'buffer_storage_quota_fence','nested_reentrant_cleanup','root_results_remain_joinable','iterative_256_scope_retirement')),
+                'SDK acceptance lacks installed task value retirement evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,126,0):
         regions=report.get('evidence',{}).get('source_resources',{}).get('resource_regions',{})
         require(regions.get('cases')==18 and all(regions.get(key) is True for key in

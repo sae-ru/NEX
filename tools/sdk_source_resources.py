@@ -31,6 +31,9 @@ server fn main()->unit!{ffi,io}{BODY}
 '''
  body='let owner:Session=create(42);let alias:Session=owner;assert(owner==alias);assert(resource_is_open(owner));assert(read(owner)==42);assert(resource_close(alias));assert(!resource_is_open(owner));assert(!resource_close(owner));let second:Session=create(7);assert(read(second)==7);print(42);'
  evidence={'descriptor':True,'producers':[],'migration':{}}
+ if 'task_value_retirement' in pack:
+  from sdk_task_value_retirement import check_installed_task_value_retirement
+  evidence['task_value_retirement']=check_installed_task_value_retirement(run,root,resources,driver)
  if 'resource_executor' in pack:
   from sdk_resource_executor import check_installed_resource_executor
   evidence['resource_executor']=check_installed_resource_executor(run,root,resources,driver)

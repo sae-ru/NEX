@@ -1,3 +1,5 @@
+Query task_value_retirement for native scheduler cleanup. Its source_resource_transport/source_task_FFI_bridge remain false. Cleanup outside locks and physical scope fences do not grant source authority or permit an FFI/task adapter. Read docs/task-value-retirement.md.
+
 Query resource_regions for private host scheduler capabilities. Its source_support/source_task_bridge/frame_value_transport are false; do not invent source intrinsics or transport resource authority in tasks. Native and independent AST reference host scopes await physical cleanup. Reference regions use a separate family and coordinator-only prepareInRegion/admitInRegion hooks; source completion and request-parent transfer remain pending.
 
 Query resource_executor for trusted-host cleanup support. Its source_support, source_task_bridge and actual_GPU_NPU_resources are false; no source builtin or C executor token exists. A driver adapter must settle its actual fence/IPC and release retained host operation storage before publishing completion. Cancellation is not physical completion. Read docs/resource-executor.md.

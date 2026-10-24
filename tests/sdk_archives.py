@@ -78,6 +78,25 @@ class DistributionWorkflow(unittest.TestCase):
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
                 'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
 
+    def test_task_value_retirement_requires_actual_installed_cleanup_evidence(self):
+        current=self.report();current['doctor']={'version':'0.128.0'}
+        with self.assertRaisesRegex(RuntimeError,'task value retirement'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','destructors_outside_scheduler_mutex','cancelled_event_cleanup','task_scope_publication_fence',
+                'buffer_storage_quota_fence','nested_reentrant_cleanup','root_results_remain_joinable','iterative_256_scope_retirement')
+        current['evidence']={'source_resources':{'task_value_retirement':{**{name:True for name in fields},'cases':13}}}
+        for name in fields:
+            for value in (False,None,'true'):
+                damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_value_retirement'][name]=value
+                with self.subTest(name=name,value=value),self.assertRaisesRegex(RuntimeError,'task value retirement'):
+                    acceptance.validate_completed_report(damaged)
+        for count in (0,12,14,True,'13'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_value_retirement']['cases']=count
+            with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'task value retirement'):
+                acceptance.validate_completed_report(damaged)
+        with self.assertRaisesRegex(RuntimeError,'logical resource region'):
+            acceptance.validate_completed_report(current)
+
     def test_current_resource_region_delivery_requires_physical_scope_evidence(self):
         current=self.report();current['doctor']={'version':'0.126.0'}
         with self.assertRaisesRegex(RuntimeError,'logical resource region'):

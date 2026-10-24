@@ -1,3 +1,5 @@
+Toolchain0.128 retires native scheduler-owned Value roots outside its mutex and fences task/scope publication and buffer-slot reuse. This changes no source syntax, language0.21, canonical identity or migration; source resource transport stays unavailable. See task-value-retirement.md.
+
 Toolchain0.127 adds private independent AST reference resource-region scheduling and physical cleanup fences. Source task/FFI transport stays unavailable; language0.21, canonical identities and migration remain unchanged. See resource-regions.md.
 
 Toolchain0.126 adds private host logical resource regions in native TaskGroup; source task/FFI transport and reference integration remain unavailable. Language0.21/canonical identities/migration stay unchanged. See resource-regions.md.

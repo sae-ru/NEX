@@ -100,10 +100,11 @@ cmake --build build-resource-regions -j 4
 ctest --test-dir build-resource-regions --output-on-failure
 ```
 
-Before public source enablement, complete transport and
-cleanup of resource-bearing Values on every scheduler path, checked transfer to
-the request parent, captured FFI grants and typed physical completion admission.
-Keep the current source snapshot guards: dropping those guards would permit
-ordinary synchronous external destructors to execute under existing Value queue
-cleanup locks. Actual devices additionally require their owning executor and
+Toolchain0.128 adds separate native [Value retirement](task-value-retirement.md):
+queued roots and buffer storage leave outside the scheduler mutex, and task/scope
+publication waits for their retirement. Source transport still needs checked
+transfer to the request parent, captured FFI grants, typed physical completion
+admission and the actual source/backend lifetime checks. Keep current source
+snapshot guards until that bridge and explicit migration are complete.
+Actual devices additionally require their owning executor and
 vendor-specific fence/IPC settlement. Process reap is not a generic GPU DMA fence.

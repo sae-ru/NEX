@@ -1,3 +1,7 @@
+# Development0.128: native owned-value retirement
+
+Native scheduler queues retire managed values outside the scheduler mutex. Task and scope publication wait for the relevant cleanup; channel buffer slots are recycled only after actual values and storage are destroyed. Cleanup uses admitted job/pipe storage, with no allocation needed during retirement. Source resource task transport and the FFI/device bridge remain pending. See [the cleanup contract](docs/task-value-retirement.md). Matching regression, SDK and platform acceptance remain required; primary0.81 and language0.21 are unchanged.
+
 # Development0.127: independent reference resource regions
 
 The serial AST scheduler now has an explicit trusted-host resource-region opt-in.

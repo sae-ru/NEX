@@ -62,6 +62,9 @@ struct TaskGroup::Impl {
   struct External {TaskExternalTicket ticket;size_t scope=none;bool physical=false,consumed=false;};
   struct Job {
     TaskBody::Handle body;Value result,pending;TaskGroup *group=nullptr;std::weak_ptr<Data> capability;SourceLocation location;TaskEvent event;
+    Value retiredResult,retiredPending,retiredEvent;
+    size_t valueRetirementNext=none,valueRetirementsInFlight=0,retiredResultScope=none;
+    bool valueRetirementQueued=false;
     std::exception_ptr failure,externalFatal;
     std::shared_ptr<task_detail::Cancellation> cancellation;
     Wait wait=None;size_t target=none,previous=none,next=none,head=none,tail=none;
@@ -81,6 +84,9 @@ struct TaskGroup::Impl {
   };
   struct Pipe {
     std::vector<std::optional<Value>> buffer;size_t start=0,count=0;
+    std::vector<std::optional<Value>> retiredBuffer;
+    size_t valueRetirementNext=none,retirementScope=none;
+    bool valueRetirementQueued=false;
     size_t sendHead=none,sendTail=none,receiveHead=none,receiveTail=none;
     bool closed=false;size_t scope=none;std::weak_ptr<Data> capability;
     explicit Pipe(size_t capacity):buffer(capacity){}
@@ -90,6 +96,8 @@ struct TaskGroup::Impl {
   struct Region {
     size_t parent=none,owner=none,limit=1,active=0,pending=0,nested=0,externalPending=0,depth=1,head=none,tail=none;
     bool closing=false,closed=false,abort=false;
+    bool valuesRetirementStarted=false;
+    size_t valueRetirementsPending=0;
     std::vector<size_t> members,pipes,children;
     std::exception_ptr failure,externalFatal;std::weak_ptr<Data> capability;
     std::unique_ptr<ResourceRegion> resources;
@@ -105,6 +113,9 @@ struct TaskGroup::Impl {
   std::vector<std::unique_ptr<Job>> jobs;
   std::vector<std::unique_ptr<Pipe>> pipes;
   std::vector<size_t> ready;size_t readyStart=0,readyCount=0,completed=0,reservedSlots=0;
+  size_t valueJobHead=none,valueJobTail=none,valuePipeHead=none,valuePipeTail=none,valueRetirementsInFlight=0;
+  std::vector<size_t> completionWork;std::vector<uint8_t> completionQueued;
+  size_t completionStart=0,completionCount=0;bool completing=false;
   std::atomic<bool> cancelled{false};
   const bool sourceFileReadFailures;std::exception_ptr sourceFileReadFatal;
   bool started=false,stop=false,sealed=false,finished=false;
@@ -144,6 +155,7 @@ struct TaskGroup::Impl {
   Impl(size_t workers,size_t maximum,TaskExternalLimits limits,bool fileReadFailures):control(TaskAccess::control()),ready(maximum),sourceFileReadFailures(fileReadFailures),externalLimits(limits){
     if(workers<1||workers>16||maximum<1||maximum>65536)throw Trap("E_RANGE","task group requires1..16 workers and1..65536 task slots",0);
     jobs.reserve(maximum);pipes.reserve(1024);regions.reserve(1024);graphSeen.resize(maximum+1024);graphWork.reserve(maximum+1024);threads.reserve(workers);
+    completionWork.resize(maximum+1024);completionQueued.resize(maximum+1024);
 #ifdef NEX_TASK_PROFILE_ENABLED
     if(profileCollector)profilePending.resize(maximum);
 #endif
@@ -165,6 +177,98 @@ struct TaskGroup::Impl {
     TaskAccess::poll(control);
     if(cancelled.load()&&worker)throw Trap("E_CANCELLED","task group was cancelled",0);
   }
+  // Intrusive queues use admitted Job/Pipe storage. No cleanup admission or
+  // allocation can fail after a value has to be discarded under the mutex.
+  void queueValueRetirement(size_t index)noexcept{
+    auto &job=*jobs[index];if(job.valueRetirementQueued)return;
+    job.valueRetirementQueued=true;job.valueRetirementNext=none;
+    if(valueJobTail==none)valueJobHead=index;else jobs[valueJobTail]->valueRetirementNext=index;
+    valueJobTail=index;changed.notify_all();
+  }
+  void retireValue(size_t index,Value &value,Value &retired)noexcept{
+    if(value.object){
+      if(retired.object)std::terminate(); // A reusable field must be flushed before reuse.
+      retired=std::move(value);queueValueRetirement(index);
+    }
+    value={};
+  }
+  void retirePending(size_t index)noexcept{auto &job=*jobs[index];retireValue(index,job.pending,job.retiredPending);}
+  void retireEvent(size_t index)noexcept{auto &job=*jobs[index];retireValue(index,job.event.value,job.retiredEvent);job.event.present=false;}
+  void setEvent(size_t index,TaskEvent event)noexcept{retireEvent(index);jobs[index]->event=std::move(event);}
+  void retireResult(size_t index,size_t scope=none)noexcept{
+    auto &job=*jobs[index];
+    if(job.result.object&&scope!=none){
+      if(job.retiredResultScope!=none)std::terminate();
+      job.retiredResultScope=scope;++regions[scope]->valueRetirementsPending;
+    }
+    retireValue(index,job.result,job.retiredResult);
+  }
+  void retirePipeBuffer(size_t index,size_t scope)noexcept{
+    auto &pipe=*pipes[index];
+    if(pipe.valueRetirementQueued||!pipe.retiredBuffer.empty())std::terminate();
+    pipe.buffer.swap(pipe.retiredBuffer);pipe.count=pipe.start=0;
+    if(pipe.retiredBuffer.empty())return;
+    pipe.retirementScope=scope;++regions[scope]->valueRetirementsPending;
+    pipe.valueRetirementQueued=true;pipe.valueRetirementNext=none;
+    if(valuePipeTail==none)valuePipeHead=index;else pipes[valuePipeTail]->valueRetirementNext=index;
+    valuePipeTail=index;changed.notify_all();
+  }
+  void flushValueRetirements(){
+    for(;;){
+      size_t jobIndex=none,pipeIndex=none,scope=none,slots=0;
+      std::array<Value,3> values;std::vector<std::optional<Value>> buffer;
+#ifdef NEX_TASK_PROFILE_ENABLED
+      TaskProfileTask profileTask;
+#endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+      TaskDebugTask debugTask;
+#endif
+      {
+        std::lock_guard lock(mutex);
+        size_t metadataOwner=none;
+        if(valueJobHead!=none){
+          jobIndex=valueJobHead;auto &job=*jobs[jobIndex];valueJobHead=job.valueRetirementNext;
+          if(valueJobHead==none)valueJobTail=none;
+          job.valueRetirementQueued=false;job.valueRetirementNext=none;++job.valueRetirementsInFlight;
+          values[0]=std::move(job.retiredResult);values[1]=std::move(job.retiredPending);values[2]=std::move(job.retiredEvent);
+          scope=std::exchange(job.retiredResultScope,none);metadataOwner=jobIndex;
+        }else if(valuePipeHead!=none){
+          pipeIndex=valuePipeHead;auto &pipe=*pipes[pipeIndex];valuePipeHead=pipe.valueRetirementNext;
+          if(valuePipeHead==none)valuePipeTail=none;
+          pipe.valueRetirementQueued=false;pipe.valueRetirementNext=none;buffer.swap(pipe.retiredBuffer);
+          scope=std::exchange(pipe.retirementScope,none);slots=buffer.size();metadataOwner=regions[scope]->owner;
+        }else return;
+        ++valueRetirementsInFlight;
+#ifdef NEX_TASK_PROFILE_ENABLED
+        profileTask=jobs[metadataOwner]->profileTask;
+#endif
+#ifdef NEX_TASK_DEBUG_ENABLED
+        debugTask=jobs[metadataOwner]->debugTask;
+#endif
+        (void)metadataOwner;
+      }
+      {
+#ifdef NEX_TASK_DEBUG_ENABLED
+        TaskDebugTurn debug(debugTask);
+#endif
+#ifdef NEX_TASK_PROFILE_ENABLED
+        TaskProfileTurnScope profile(profileTask,false);
+#endif
+        // Last aliases, actual payloads and buffer storage all leave outside
+        // the scheduler mutex. Reentrant cleanup may enqueue another batch.
+        values={};std::vector<std::optional<Value>>().swap(buffer);
+      }
+      {
+        std::lock_guard lock(mutex);
+        if(!valueRetirementsInFlight)std::terminate();--valueRetirementsInFlight;
+        if(jobIndex!=none){auto &job=*jobs[jobIndex];if(!job.valueRetirementsInFlight)std::terminate();--job.valueRetirementsInFlight;tryComplete(jobIndex);}
+        if(pipeIndex!=none){if(slots>reservedSlots)std::terminate();reservedSlots-=slots;}
+        if(scope!=none){auto &region=*regions[scope];if(!region.valueRetirementsPending)std::terminate();--region.valueRetirementsPending;closeRegion(scope);}
+        changed.notify_all();
+      }
+    }
+  }
+  struct ValueFlush {Impl *state;~ValueFlush(){state->flushValueRetirements();}};
   void enqueue(size_t index){
     auto &job=*jobs[index];if(job.done||job.finishing||job.queued)return;
     if(job.running){job.again=true;return;}
@@ -211,7 +315,7 @@ struct TaskGroup::Impl {
     for(size_t i=0;i<jobs.size();++i){auto &job=*jobs[i];
       if(!job.done&&(global||job.cancellation->stopped())){
         if(externalPool)for(auto &entry:job.external)if(!entry.consumed)externalPool->cancel(entry.ticket);
-        if(job.wait!=None){job.pending={};wake(i);}
+        if(job.wait!=None){retirePending(i);wake(i);}
       }
     }
   }
@@ -272,23 +376,45 @@ struct TaskGroup::Impl {
   }
   void closePipe(size_t index){
     auto &pipe=*pipes[index];if(pipe.closed)return;pipe.closed=true;
-    while(pipe.sendHead!=none){auto sender=pipe.sendHead;jobs[sender]->pending={};jobs[sender]->event={};wake(sender);}
-    while(pipe.receiveHead!=none){auto receiver=pipe.receiveHead;jobs[receiver]->event=pipe.count?TaskEvent{true,pipe.pop()}:TaskEvent{};wake(receiver);}
+    while(pipe.sendHead!=none){auto sender=pipe.sendHead;retirePending(sender);retireEvent(sender);wake(sender);}
+    while(pipe.receiveHead!=none){auto receiver=pipe.receiveHead;setEvent(receiver,pipe.count?TaskEvent{true,pipe.pop()}:TaskEvent{});wake(receiver);}
   }
-  void closeRegion(size_t index){
+  void queueCompletion(size_t index,bool scope)noexcept{
+    const auto node=scope?ready.size()+index:index;
+    if(node>=completionQueued.size())std::terminate();
+    if(completionQueued[node])return;
+    if(completionCount>=completionWork.size())std::terminate();
+    completionQueued[node]=1;completionWork[(completionStart+completionCount)%completionWork.size()]=node;++completionCount;
+  }
+  void completeQueued(){
+    if(completing)return;
+    completing=true;struct Reset {bool &value;~Reset(){value=false;}}reset{completing};
+    while(completionCount){
+      const auto node=completionWork[completionStart];completionStart=(completionStart+1)%completionWork.size();--completionCount;completionQueued[node]=0;
+      if(node>=ready.size())closeRegionStep(node-ready.size());else tryCompleteStep(node);
+    }
+  }
+  void closeRegion(size_t index){queueCompletion(index,true);completeQueued();}
+  void tryComplete(size_t index){queueCompletion(index,false);completeQueued();}
+  void closeRegionStep(size_t index){
     auto &scope=*regions[index];if(scope.closed||!scope.closing||scope.pending||scope.nested||scope.externalPending)return;
     if(scope.resources){
       if(!scope.resourceRetirementStarted){scope.resourceRetirement.emplace(scope.resources->beginClose());scope.resourceRetirementStarted=true;}
       if(scope.resourceRetirementInFlight||!scope.resourceRetirement->ready()){changed.notify_all();return;}
     }
+    if(!scope.valuesRetirementStarted){
+      scope.valuesRetirementStarted=true;
+      for(auto member:scope.members)retireResult(member,index);
+      for(auto pipe:scope.pipes){closePipe(pipe);retirePipeBuffer(pipe,index);}
+    }
+    if(scope.valueRetirementsPending)return;
     scope.closed=true;
     if(scope.externalFatal)preferFailure(scope.failure,scope.externalFatal);
     for(auto member:scope.members){auto &job=*jobs[member];
       if(!scope.abort&&!job.observed&&!job.cancellation->stopped())preferFailure(scope.failure,job.failure);
-      job.observed=true;job.result={};job.capability.reset();
+      job.observed=true;job.capability.reset();
     }
     scope.capability.reset();
-    for(auto pipe:scope.pipes){closePipe(pipe);auto &state=*pipes[pipe];reservedSlots-=state.buffer.size();std::vector<std::optional<Value>>().swap(state.buffer);state.count=state.start=0;}
     auto &owner=*jobs[scope.owner];
     if(scope.externalFatal)preferFailure(owner.externalFatal,scope.externalFatal);
     if(owner.scope==index){if(owner.running){if(!scope.active)throw Trap("E_TASK_STATE","logical task lease is unbalanced",0);--scope.active;}owner.scope=scope.parent;}
@@ -317,12 +443,14 @@ struct TaskGroup::Impl {
         scope.resourceRetirementInFlight=false;scope.resourceRetirementRequested=true;closeRegion(index);changed.notify_all();}
     }
   }
-  void tryComplete(size_t index){
+  void tryCompleteStep(size_t index){
     auto &job=*jobs[index];if(!job.finishing||!job.cleanupDone)return;
+    if(job.valueRetirementQueued||job.valueRetirementsInFlight)return;
     if(job.externalPending)return;
     for(const auto &entry:job.external)if(!entry.consumed)return;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed)return;
-    if(job.failure)job.result={};job.finishing=false;job.done=true;++completed;
+    if(job.failure){retireResult(index);if(job.valueRetirementQueued)return;}
+    job.finishing=false;job.done=true;++completed;
 #ifdef NEX_TASK_DEBUG_ENABLED
     taskDebugKernelState(job.debugTask,TaskDebugState::Terminal);
 #endif
@@ -364,6 +492,7 @@ struct TaskGroup::Impl {
   }
   void beginComplete(size_t index,std::exception_ptr failure){
     auto &job=*jobs[index];unlink(index);job.running=false;job.again=false;job.finishing=true;job.failure=std::move(failure);
+    retirePending(index);retireEvent(index);
 #ifdef NEX_TASK_DEBUG_ENABLED
     taskDebugKernelState(job.debugTask,TaskDebugState::Draining);
 #endif
@@ -391,6 +520,7 @@ struct TaskGroup::Impl {
     size_t count=readyCount;
     while(count--){
       auto index=ready[readyStart];readyStart=(readyStart+1)%ready.size();--readyCount;auto &job=*jobs[index];bool allowed=true;
+      if(job.valueRetirementQueued||job.valueRetirementsInFlight)allowed=false;
       for(auto next=job.scope;next!=none;next=regions[next]->parent)if(regions[next]->active>=regions[next]->limit){allowed=false;break;}
       if(allowed){job.queued=false;job.running=true;job.again=false;
 #ifdef NEX_TASK_DEBUG_ENABLED
@@ -413,7 +543,8 @@ struct TaskGroup::Impl {
       {
         std::unique_lock lock(mutex);changed.wait(lock,[&]{return started||stop;});
         while(!stop){
-          if(resourceRoot){lock.unlock();flushResourceRetirements();lock.lock();}
+          const bool resourceRegionsEnabled=bool(resourceRoot);
+          lock.unlock();flushValueRetirements();if(resourceRegionsEnabled)flushResourceRetirements();lock.lock();
           retireExternalCompletions();interrupt();index=runnable();if(index!=none)break;
 #ifdef NEX_TASK_PROFILE_ENABLED
           if(profileCollector&&profileCount){lock.unlock();flushProfiles();taskProfileTransactionStamp=profileCollector->sample().wallNs;lock.lock();continue;}
@@ -476,10 +607,11 @@ struct TaskGroup::Impl {
     TaskProfileTransaction profileTransaction(profileCollector);
 #endif
     require();
+    ValueFlush flush{this};
     if(kind==Awaiter::Send){Scope targetScope;TaskGroup *group;{std::lock_guard lock(mutex);if(target>=pipes.size()||index>=jobs.size())throw Trap("E_TASK_SCOPE","invalid channel/task",0);group=jobs[index]->group;if(pipes[target]->scope!=none)targetScope=Scope(group->impl,pipes[target]->scope);}taskValue(*group,value,targetScope);}
     std::lock_guard lock(mutex);
     if(index>=jobs.size()||activeTaskState!=this||activeTaskIndex!=index)throw Trap("E_TASK_SCOPE","awaiter belongs to another task",0);
-    auto &job=*jobs[index];job.event={};
+    auto &job=*jobs[index];retireEvent(index);
     if(kind==Awaiter::Yield){job.again=true;
 #ifdef NEX_TASK_DEBUG_ENABLED
       taskDebugKernelState(job.debugTask,TaskDebugState::Ready);
@@ -505,16 +637,16 @@ struct TaskGroup::Impl {
     auto &pipe=*pipes[target];scopeAccess(pipe.scope);
     if(kind==Awaiter::Send){
       if(pipe.closed)return false;
-      if(pipe.receiveHead!=none){size_t receiver=pipe.receiveHead;jobs[receiver]->event={true,std::move(value)};wake(receiver);job.event.present=true;return false;}
+      if(pipe.receiveHead!=none){size_t receiver=pipe.receiveHead;setEvent(receiver,{true,std::move(value)});wake(receiver);job.event.present=true;return false;}
       if(pipe.count<pipe.buffer.size()){pipe.push(std::move(value));job.event.present=true;return false;}
       job.pending=std::move(value);link(index,Send,target);return true;
     }
     if(pipe.count){
-      job.event={true,pipe.pop()};
-      if(pipe.sendHead!=none){auto sender=pipe.sendHead;pipe.push(std::move(jobs[sender]->pending));jobs[sender]->pending={};jobs[sender]->event.present=true;wake(sender);}
+      setEvent(index,{true,pipe.pop()});
+      if(pipe.sendHead!=none){auto sender=pipe.sendHead;pipe.push(std::move(jobs[sender]->pending));retirePending(sender);jobs[sender]->event.present=true;wake(sender);}
       return false;
     }
-    if(pipe.sendHead!=none){auto sender=pipe.sendHead;job.event={true,std::move(jobs[sender]->pending)};jobs[sender]->pending={};jobs[sender]->event.present=true;wake(sender);return false;}
+    if(pipe.sendHead!=none){auto sender=pipe.sendHead;setEvent(index,{true,std::move(jobs[sender]->pending)});retirePending(sender);jobs[sender]->event.present=true;wake(sender);return false;}
     if(pipe.closed)return false;
     link(index,Receive,target);return true;
   }
@@ -531,7 +663,9 @@ struct TaskGroup::Impl {
 #ifdef NEX_TASK_PROFILE_ENABLED
       TaskProfileTransaction profileTick(profileCollector);
 #endif
-      std::unique_lock lock(mutex);preferFailure(coordinatorFailure,sourceFileReadFatal);if(completed==jobs.size())break;
+      flushValueRetirements();
+      std::unique_lock lock(mutex);preferFailure(coordinatorFailure,sourceFileReadFatal);
+      if(completed==jobs.size()&&valueJobHead==none&&valuePipeHead==none&&!valueRetirementsInFlight)break;
       lock.unlock();
       if(!abort&&!coordinatorFailure)try{TaskAccess::poll(control);}catch(...){coordinatorFailure=std::current_exception();cancelled=true;}
       lock.lock();selectFileReadFatal(coordinatorFailure);interrupt();changed.wait_for(lock,std::chrono::milliseconds(2));
@@ -561,7 +695,7 @@ struct TaskGroup::Impl {
         TaskProfileTurnScope profile(job->profileTask,false);
 #endif
         job->body.destroy();job->body={};
-      }job->pending={};}
+      }job->pending={};job->event={};}
     pipes.clear();
     if(sourceFileReadFatal){auto selected=sourceFileReadFatal;preferFailure(selected,coordinatorFailure);coordinatorFailure=std::move(selected);}
     if(!abort)for(const auto &job:jobs)if(!job->observed&&job->externalFatal){preferFailure(coordinatorFailure,job->failure);preferFailure(coordinatorFailure,job->externalFatal);}
@@ -762,21 +896,21 @@ bool TaskGroup::close(const Channel &channel){
 #ifdef NEX_TASK_PROFILE_ENABLED
   TaskProfileTransaction profileTransaction(impl->profileCollector);
 #endif
-  impl->require();auto index=channelIndex(channel);std::lock_guard lock(impl->mutex);
+  impl->require();auto index=channelIndex(channel);Impl::ValueFlush flush{impl.get()};std::lock_guard lock(impl->mutex);
   if(impl->pipes[index]->closed)return false;impl->closePipe(index);return true;
 }
 bool TaskGroup::cancel(const Ticket &ticket){
 #ifdef NEX_TASK_PROFILE_ENABLED
   TaskProfileTransaction profileTransaction(impl->profileCollector);
 #endif
-  impl->require();auto index=taskIndex(ticket);std::lock_guard lock(impl->mutex);auto &job=*impl->jobs[index];if(job.done)return false;
+  impl->require();auto index=taskIndex(ticket);Impl::ValueFlush flush{impl.get()};std::lock_guard lock(impl->mutex);auto &job=*impl->jobs[index];if(job.done)return false;
   bool changed=!job.cancellation->cancelled.exchange(true);impl->interrupt();impl->changed.notify_all();return changed;
 }
 void TaskGroup::cancel(){
 #ifdef NEX_TASK_PROFILE_ENABLED
   TaskProfileTransaction profileTransaction(impl->profileCollector);
 #endif
-  impl->require();std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
+  impl->require();Impl::ValueFlush flush{impl.get()};std::lock_guard lock(impl->mutex);impl->cancelled=true;impl->interrupt();impl->changed.notify_all();}
 namespace {
 struct ControlledExternalOperation final:TaskExternalOperation {
   std::shared_ptr<TaskExternalOperation> operation;TaskExternalControl request;size_t reservation,maximumResultBytes;
