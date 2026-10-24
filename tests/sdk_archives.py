@@ -78,6 +78,64 @@ class DistributionWorkflow(unittest.TestCase):
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
                 'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
 
+    def test_public_task_foreign_resources_require_installed_source_and_history_evidence(self):
+        current=self.report()
+        current.update(version='0.130.0',language='0.22',doctor={'version':'0.130.0'})
+        with self.assertRaisesRegex(RuntimeError,'public source task/FFI'):
+            acceptance.validate_completed_report(current)
+        fields=('native_reference','destruction_before_unload','checked_exit70_cleanup','source_task_FFI',
+                'scope_channel_result_transfer','physical_quota_settled','source_deleted_task_replay')
+        producers=[{'language':language,**{name:True for name in fields}} for language in ('C11','CPP20')]
+        current['evidence']={'source_resources':{'ok':True,'producers':producers}}
+        with self.assertRaisesRegex(RuntimeError,'genuine021 public task/FFI migration'):
+            acceptance.validate_completed_report(current)
+        migration_fields=('origin_verified','all16_tables_schema_rows_ids_preserved','native_reference','actual_retained_tests')
+        current['evidence']['source_resources']['task_foreign_migration']={
+            name:{'original_revisions':3,**{field:True for field in migration_fields}}
+            for name in ('resources','nominal','callable','imports','tasks')}
+        # The new source gate passes; older physical task/request requirements
+        # remain mandatory and are checked next, rather than bypassed.
+        with self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+            acceptance.validate_completed_report(current)
+        for index in (0,1):
+            for name in fields:
+                for value in (None,False,'true',1):
+                    damaged=copy.deepcopy(current)
+                    damaged['evidence']['source_resources']['producers'][index][name]=value
+                    with self.subTest(producer=index,field=name,value=value),self.assertRaisesRegex(RuntimeError,'public source task/FFI'):
+                        acceptance.validate_completed_report(damaged)
+        for producers in ([],[current['evidence']['source_resources']['producers'][0]]*2,[None,None],{}):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['producers']=producers
+            with self.subTest(producers=producers),self.assertRaisesRegex(RuntimeError,'public source task/FFI'):
+                acceptance.validate_completed_report(damaged)
+        for value in (None,0,[],{}):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['producers'][0]['language']=value
+            with self.subTest(language=value),self.assertRaisesRegex(RuntimeError,'public source task/FFI'):
+                acceptance.validate_completed_report(damaged)
+        for name in migration_fields:
+            for value in (None,False,'true',1):
+                damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_foreign_migration']['tasks'][name]=value
+                with self.subTest(field=name,value=value),self.assertRaisesRegex(RuntimeError,'genuine021 public task/FFI migration'):
+                    acceptance.validate_completed_report(damaged)
+        for count in (0,2,4,True,'3'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_foreign_migration']['tasks']['original_revisions']=count
+            with self.subTest(revisions=count),self.assertRaisesRegex(RuntimeError,'genuine021 public task/FFI migration'):
+                acceptance.validate_completed_report(damaged)
+        for replacement in ({},None,{'tasks':{}},dict(current['evidence']['source_resources']['task_foreign_migration'],extra={})):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_foreign_migration']=replacement
+            with self.subTest(migration=replacement),self.assertRaisesRegex(RuntimeError,'genuine021 public task/FFI migration'):
+                acceptance.validate_completed_report(damaged)
+        for field,value in [('language','0.21'),('version','0.129.0')]:
+            damaged=copy.deepcopy(current);damaged[field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'version identities differ'):
+                acceptance.validate_completed_report(damaged)
+        damaged=copy.deepcopy(current);del damaged['doctor']
+        with self.assertRaisesRegex(RuntimeError,'version identities differ'):
+            acceptance.validate_completed_report(damaged)
+        damaged=copy.deepcopy(current);damaged['doctor']['version']='0.129.0'
+        with self.assertRaisesRegex(RuntimeError,'version identities differ'):
+            acceptance.validate_completed_report(damaged)
+
     def test_task_request_resources_require_installed_physical_completion_evidence(self):
         current=self.report();current['doctor']={'version':'0.129.0'}
         with self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):

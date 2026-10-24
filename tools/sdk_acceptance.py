@@ -618,7 +618,30 @@ def validate_completed_report(report):
     # recorded status comes from the acceptance action's expected outcome.
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
-    version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    doctor_version=report.get('doctor',{}).get('version')
+    if report.get('version') is not None and doctor_version is not None:
+        require(report['version']==doctor_version,'SDK acceptance version identities differ')
+    version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,130,0):
+        require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')=='0.22',
+                'SDK acceptance source task/FFI version identities differ')
+        resources=report.get('evidence',{}).get('source_resources',{})
+        require(isinstance(resources,dict),'SDK acceptance lacks installed public source task/FFI resource transport evidence')
+        producers=resources.get('producers',[])
+        require(resources.get('ok') is True and isinstance(producers,list) and len(producers)==2 and
+                all(isinstance(row,dict) and isinstance(row.get('language'),str) for row in producers) and
+                {row.get('language') for row in producers}=={'C11','CPP20'} and
+                all(row.get(key) is True for row in producers for key in
+                    ('native_reference','destruction_before_unload','checked_exit70_cleanup','source_task_FFI',
+                     'scope_channel_result_transfer','physical_quota_settled','source_deleted_task_replay')),
+                'SDK acceptance lacks installed public source task/FFI resource transport evidence')
+        migrations=resources.get('task_foreign_migration',{})
+        require(isinstance(migrations,dict) and set(migrations)=={'resources','nominal','callable','imports','tasks'} and
+                all(isinstance(row,dict) and type(row.get('original_revisions')) is int and
+                    row['original_revisions']==3 and all(row.get(key) is True for key in
+                    ('origin_verified','all16_tables_schema_rows_ids_preserved','native_reference','actual_retained_tests'))
+                    for row in migrations.values()),
+                'SDK acceptance lacks installed genuine021 public task/FFI migration evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,129,0):
         ownership=report.get('evidence',{}).get('source_resources',{}).get('request_resources',{})
         require(ownership.get('primitive_cases')==17 and ownership.get('native_cases')==13 and
