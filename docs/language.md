@@ -1,3 +1,8 @@
+Toolchain0.132 adds ordinary `std/device.nex` source contracts without syntax,
+canonical identity or language-version changes. Session/Buffer remain server
+resources; task/ffi operations retain physical dependencies and completion rules.
+The experimental OpenCL provider and delivery limits are described in device.md.
+
 # Current language0.22
 
 The development host C API can construct dependent opaque resources through a

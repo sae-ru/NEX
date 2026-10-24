@@ -1,3 +1,12 @@
+# Current development0.132: owned devices
+
+- [x] Add ordinary checked Session/Buffer/Tensor library and persistent pinned OpenCL worker.
+- [x] Test real GPU ownership/hidden parents and cancellation/deadline after physical enqueue.
+- [ ] Complete matching frozen regression, sanitizers and installed SDK acceptance.
+- [ ] Verify matching Linux/stand delivery, recovery/reset, owned NPU and remaining operations.
+
+The original full project scope below remains active.
+
 # Current152: publish source task/FFI and owned transfer in language022
 
 - [x] Enable ordinary022 parse/load and retain old semantic parsers/IDs.

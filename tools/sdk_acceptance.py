@@ -622,6 +622,21 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,0):
+        device=report.get('evidence',{}).get('owned_device_contract',{})
+        require(isinstance(device,dict) and all(device.get(key) is True for key in
+                ('descriptor','native_reference','typescript_reference','installed_provider_source_checked')),
+                'SDK acceptance lacks installed owned device contract evidence')
+        preparation=device.get('preparation',{})
+        require(isinstance(preparation,dict) and preparation.get('schema')=='nex.owned-opencl-preparation/1' and
+                preparation.get('ok') is True and preparation.get('source_checked') is True and
+                preparation.get('compiler_sha256')==report.get('compiler_sha256') and
+                preparation.get('source_language')==report.get('language') and
+                all(preparation.get(key) is False for key in ('native_provider_built','driver_initialized','hardware_executed')) and
+                isinstance(preparation.get('signature_sha256'),dict) and
+                set(preparation['signature_sha256'])=={'open','upload','dispatch','download','name','kernel_ns','busy'} and
+                all(isinstance(pin,str) and re.fullmatch('[0-9a-f]{64}',pin) for pin in preparation['signature_sha256'].values()),
+                'SDK acceptance lacks actual owned device preparation evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,131,0):
         dependent=report.get('evidence',{}).get('dependent_resource_ffi',{})
         require(isinstance(dependent,dict) and type(dependent.get('source_checks')) is int and dependent['source_checks']==37 and
@@ -1079,6 +1094,27 @@ test fn examples() -> unit {
             'library_sha256':hashlib.sha256((resources/'lib/compute.nex').read_bytes()).hexdigest(),
             'revision':built['revision'],'copied_executable_resource_override':'unavailable',
             'generic_gpu_npu_execution_proved':False}
+        owned=cli('describe','--field','device')['value']
+        require(owned==pack['device'] and owned['source_support'] and owned['source_task_bridge'] and
+                owned['context_wire'] is False,'owned device descriptor differs from installed pack')
+        require(cli('guide','--kind','device')['text']==(resources/'docs/device.md').read_text(),
+                'owned device guide not selected from installed SDK')
+        directory=root/'owned-device-contract';directory.mkdir()
+        shutil.copy2(resources/'examples/device/main.nex',directory/'main.nex')
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':report['doctor']['language'],'entry':'main.nex'}))
+        expected=cli('eval',cwd=directory)['stdout'];require(expected=='42\n','owned device metadata example failed')
+        cli('test','--target','web',cwd=directory,timeout=240)
+        require(cli('run','--profile','release',cwd=directory,timeout=240)['stdout']==expected,
+                'owned device metadata native/reference differs')
+        prepared=root/'owned-device-preparation'
+        run([sys.executable,'-B',resources/'tools/owned-opencl/prepare.py','--sdk',sdk,'--output',prepared,'--check-sdk'],cwd=root,timeout=240)
+        preparation=json.loads((prepared/'preparation/report.json').read_text())
+        require(preparation['compiler_sha256']==report['compiler_sha256'] and preparation['source_checked'] is True,
+                'owned device preparer did not check the installed compiler')
+        report['evidence']['owned_device_contract']={'descriptor':True,'native_reference':True,'typescript_reference':True,
+            'installed_provider_source_checked':True,'preparation':preparation,
+            'library_sha256':hashlib.sha256((resources/'lib/device.nex').read_bytes()).hexdigest(),
+            'hardware_execution_proved':False}
 
     def model_contract():
         descriptor=cli('describe','--field','model')['value']

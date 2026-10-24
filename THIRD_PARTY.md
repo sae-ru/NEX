@@ -1,3 +1,11 @@
+# Owned OpenCL preparation
+
+The experimental owned-device preparation installs the existing unmodified
+Khronos OpenCL headers and OPENCL-LICENSE from experiments/cix-p1/include.
+Prepared bundles retain that notice and the MIT notice for the installed
+nlohmann/json header compiled into their provider. The OpenCL vendor loader
+and driver remain operator-selected external platform dependencies.
+
 # Third-party components in the current implementation
 
 | Component | Current use | License/source |

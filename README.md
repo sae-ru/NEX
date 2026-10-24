@@ -1,3 +1,12 @@
+# Development0.132: owned device library and pinned worker executables
+
+`std/device.nex` exposes checked server task/ffi Session/Buffer/Tensor operations
+with physical parent retention. The experimental operator-prepared OpenCL
+provider uses a persistent pinned worker and exact U8 Add/Affine. Query `device`
+and read [the device guide](docs/device.md). It is not a builtin universal GPU/NPU
+backend. Matching full regression, installed SDK and platform acceptance remain
+required; primary081 and language022 history stay separate.
+
 # Development0.130 / language0.22
 
 This development compiler enables ordinary CLI source task/FFI calls and genuine

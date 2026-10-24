@@ -1,3 +1,17 @@
+For owned accelerator code query `device` and read `nex guide --kind device`.
+Use ordinary std/device.nex server task/ffi wrappers and explicitly pinned
+provider factories; never treat tensor metadata as native authority. Buffer
+cleanup retains the hidden Session until physical device completion. Only
+unavailable/unsupported operations permit an explicitly requested CPU fallback.
+Do not claim arbitrary GPU/NPU support from the experimental U8 OpenCL adapter.
+
+For pinned helper executables query
+`foreign_boundary.module_loading.executable_members`. Only paths explicitly
+listed in the manifest `executables` array acquire owner execution permission
+in a readonly snapshot. Every helper must also occur in hashed `files`; never
+change snapshot permissions or launch an unpinned substitute. Child protocol,
+physical device fences, cancellation and original resource grants still apply.
+
 Query the actual compiler with nex describe --json before writing code. Current
 language022 enables ordinary CLI task/ffi when task_foreign_prototype reports
 source_support/public_enabled true. The descriptor key retains its historical

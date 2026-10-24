@@ -183,6 +183,25 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk132_requires_checked_owned_provider_without_claiming_hardware(self):
+        current=self.report();current.update(version='0.132.0',language='0.22',doctor={'version':'0.132.0'},compiler_sha256='a'*64)
+        fields=('descriptor','native_reference','typescript_reference','installed_provider_source_checked')
+        prepared={'schema':'nex.owned-opencl-preparation/1','ok':True,'source_checked':True,
+            'source_language':'0.22','compiler_sha256':'a'*64,'native_provider_built':False,'driver_initialized':False,'hardware_executed':False,
+            'signature_sha256':{name:'b'*64 for name in ('open','upload','dispatch','download','name','kernel_ns','busy')}}
+        current['evidence']={'owned_device_contract':{**{name:True for name in fields},'preparation':prepared}}
+        for field in fields:
+            damaged=copy.deepcopy(current);damaged['evidence']['owned_device_contract'][field]=False
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'owned device contract evidence'):
+                acceptance.validate_completed_report(damaged)
+        for field,value in [('ok',1),('source_checked',False),('compiler_sha256','c'*64),('source_language','0.21'),
+                ('native_provider_built',True),('driver_initialized',True),('hardware_executed',True),('signature_sha256',{})]:
+            damaged=copy.deepcopy(current);damaged['evidence']['owned_device_contract']['preparation'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'owned device preparation evidence'):
+                acceptance.validate_completed_report(damaged)
+        with self.assertRaisesRegex(RuntimeError,'dependent resource FFI evidence'):
+            acceptance.validate_completed_report(current)
+
     def test_sdk131_requires_actual_installed_dependent_resource_execution(self):
         current=self.report();current.update(version='0.131.0',language='0.22',doctor={'version':'0.131.0'},compiler_sha256='a'*64)
         fields=('ok','native_reference','genuine_previous_C_prefix','hidden_parent_scope_future_channel_closure',

@@ -69,7 +69,7 @@ template<class Consume> size_t readFile(int fd,size_t limit,const Poll &poll,Con
     if(size_t(n)>limit-total)fail("E_FFI_LIMIT","bundle member exceeds byte limit");consume(buffer.data(),size_t(n));total+=size_t(n);
   }return total;
 }
-struct Manifest {FD root;std::string pin,entry,text;std::map<std::string,std::string> files,exports;};
+struct Manifest {FD root;std::string pin,entry,text;std::map<std::string,std::string> files,exports;std::set<std::string> executables;};
 std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Poll &poll){
   auto result=std::make_shared<Manifest>();result->pin=grant.manifestSha256;pollNow(poll);
   result->root=FD(::open(grant.directory.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));if(result->root.fd<0)fail("E_FFI_IO","configured bundle directory is unavailable");
@@ -77,7 +77,9 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
   readFile(file.fd,1048576,poll,[&](const char *data,size_t size){text.append(data,size);});
   if(digest(text)!=result->pin)fail("E_FFI_HASH","foreign bundle manifest hash differs");
   try{
-    validateJSONText(text);auto doc=J::parse(text);keys(doc,{"schema","platform","entry","files","exports","notices"});
+    validateJSONText(text);auto doc=J::parse(text);
+    if(doc.contains("executables"))keys(doc,{"schema","platform","entry","files","exports","notices","executables"});
+    else keys(doc,{"schema","platform","entry","files","exports","notices"});
     if(doc.at("schema")!="nex.foreign-bundle/1")fail("E_FFI_MANIFEST","unsupported foreign bundle schema");
     if(string(doc.at("platform"))!=foreignPlatform())fail("E_FFI_PLATFORM","foreign bundle platform differs from the host");
     result->entry=string(doc.at("entry"));pathParts(result->entry);
@@ -86,6 +88,10 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
       if(path=="manifest.json"||!hash(sha)||!result->files.emplace(path,sha).second)fail("E_FFI_MANIFEST","duplicate file or invalid bundle hash");}
     for(const auto &[path,sha]:result->files){(void)sha;auto parts=pathParts(path);std::string prefix;for(size_t i=0;i+1<parts.size();++i){if(i)prefix+='/';prefix+=parts[i];if(result->files.contains(prefix))fail("E_FFI_MANIFEST","bundle file is also a parent directory");}}
     if(!result->files.contains(result->entry))fail("E_FFI_MANIFEST","bundle entry is missing from inventory");
+    if(doc.contains("executables")){
+      const auto &list=doc.at("executables");if(!list.is_array()||list.size()>128)fail("E_FFI_MANIFEST","executable inventory must be a bounded array");
+      for(const auto &value:list){auto path=string(value);pathParts(path);if(!result->files.contains(path)||!result->executables.insert(path).second)fail("E_FFI_MANIFEST","executable must be a unique pinned bundle member");}
+    }
     const auto &exports=doc.at("exports");if(!exports.is_object()||exports.empty()||exports.size()>1024)fail("E_FFI_MANIFEST","foreign bundle exports must contain 1..1024 items");
     for(auto item=exports.begin();item!=exports.end();++item){auto sha=string(item.value());if(!identifier(item.key())||!hash(sha))fail("E_FFI_MANIFEST","invalid foreign export name or signature hash");result->exports.emplace(item.key(),sha);}
     const auto &notices=doc.at("notices");if(!notices.is_array()||notices.empty()||notices.size()>128)fail("E_FFI_MANIFEST","foreign bundle requires notices");std::set<std::string> unique;
@@ -118,7 +124,7 @@ std::shared_ptr<Image> loadImage(const Manifest &manifest,const Poll &poll){
     auto size=readFile(source.fd,std::min<size_t>(64*1048576,256*1048576-total),poll,[&](const char *data,size_t size){
       d.add(data,size);for(size_t offset=0;offset<size;){pollNow(poll);auto n=::write(output.fd,data+offset,size-offset);if(n<0){if(errno==EINTR)continue;fail("E_FFI_IO","module snapshot write failed");}if(!n)fail("E_FFI_IO","module snapshot write made no progress");offset+=size_t(n);}
     });total+=size;if(d.finish()!=sha)fail("E_FFI_HASH","foreign bundle member hash differs");
-    if(::fchmod(output.fd,0400))fail("E_FFI_IO","cannot seal module snapshot member");
+    if(::fchmod(output.fd,manifest.executables.contains(name)?0500:0400))fail("E_FFI_IO","cannot seal module snapshot member");
   }
   std::error_code ec;for(fs::recursive_directory_iterator it(image->directory,ec),end;!ec&&it!=end;it.increment(ec))if(it->is_directory())directories.push_back(it->path());
   if(ec)fail("E_FFI_IO","cannot inspect module snapshot directories");std::sort(directories.rbegin(),directories.rend());

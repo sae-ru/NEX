@@ -1,3 +1,5 @@
+(* Toolchain0.132 std/device.nex is an ordinary owned-resource library;
+   it adds no grammar, AST/canonical identity or language-version change. *)
 (* Development dependent-resource C factories add no NEX syntax or canonical
    identity change. Pinned server/ffi externs return ordinary opaque resources;
    task transfers preserve hidden physical parent dependencies. *)

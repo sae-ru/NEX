@@ -1,3 +1,11 @@
+# Development0.132 device candidate
+
+The ordinary owned-device library and experimental persistent OpenCL worker
+are implemented. Physical GPU tests, full regression, sanitizers and installed
+SDK delivery have separate receipts; no general accelerator/platform completion
+is implied. Cancellation waits physical completion rather than killing a worker.
+Recovery/reset, owned NPU and additional operations remain open. Read docs/device.md.
+
 # Development0.130 / language022: publication candidate
 
 Ordinary parse/load/CLI now selects TaskForeign022. Retained018/019/020/021
