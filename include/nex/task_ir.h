@@ -15,7 +15,7 @@ struct TaskInstruction {
   size_t yes=0,no=0;
   E atom;P pattern;
   std::string operation;
-  bool indirect=false,propagatedError=false;
+  bool indirect=false,propagatedError=false,foreign=false;
 };
 // Optional source debugger metadata. It never adds execution instructions or
 // changes continuation PCs. Binding IDs and point indices are separate from

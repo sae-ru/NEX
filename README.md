@@ -1,3 +1,7 @@
+# Private146: source task/FFI data calls
+
+A separate explicit022 C++-API prototype now suspends checked direct extern calls from server task/ffi functions. Native compiled continuations and the independent AST scheduler use caller-captured lexical/request grants and typed copied data. C tokens are created on the IO worker. External owners, callable/file transport and public022 migration remain rejected or pending; CLI language021 is unchanged. Query `task_foreign_prototype` and read [the private contract](docs/task-foreign-prototype.md). Matching regression and SDK/platform acceptance are still required.
+
 # Development0.129: task/request resource ownership candidate
 
 Both native and independent AST host adapters give tasks separate resource

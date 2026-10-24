@@ -8,13 +8,15 @@ const char *programLanguage(const Program &program){
   case SourceLanguage::Tasks019:return "0.19";
   case SourceLanguage::TaskFiles020:return "0.20";
   case SourceLanguage::OwnedResources021:return "0.21";
+  case SourceLanguage::TaskForeign022:return "0.22";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
 bool isPublicTaskLanguage(const Program &program){
-  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021;
+  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022;
 }
-bool supportsTaskFileReads(const Program &program){return program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021;}
+bool supportsTaskFileReads(const Program &program){return program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022;}
+bool supportsTaskForeignCalls(const Program &program){return program.sourceLanguage==SourceLanguage::TaskForeign022;}
 bool usesTaskEffects(const Program &program,const std::string &entry){
   std::vector<std::string> pending{entry};std::set<std::string> seen;
   while(!pending.empty()){

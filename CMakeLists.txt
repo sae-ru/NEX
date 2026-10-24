@@ -91,6 +91,16 @@ add_test(NAME source_external_resources COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resources.py $<TARGET_FILE:nex_source_resource_probe>
   ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --nex $<TARGET_FILE:nex>)
 set_tests_properties(source_external_resources PROPERTIES TIMEOUT 600)
+add_test(NAME source_task_foreign_prototype COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_foreign_context_probe>)
+set_tests_properties(source_task_foreign_prototype PROPERTIES TIMEOUT 600)
+add_executable(nex_task_foreign_context_probe tests/task_foreign_context.cpp)
+target_link_libraries(nex_task_foreign_context_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_foreign_context_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_task_foreign_genuine021_origins COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_origins.py $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(source_task_foreign_genuine021_origins PROPERTIES TIMEOUT 120)
 add_test(NAME resource_language_migration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
 set_tests_properties(resource_language_migration PROPERTIES TIMEOUT 600)

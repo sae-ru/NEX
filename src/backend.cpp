@@ -70,7 +70,8 @@ bool usesNativeTasks(const Program &p,const std::string &entry){
 bool taskFileReadOperation(const std::string &name){return name=="file_read_text"||name=="file_read_bytes";}
 void validateNativeTaskFunction(const Program &p,const Function &function){
   const bool reads=supportsTaskFileReads(p)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
-  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="fs"&&reads)){
+  const bool foreign=supportsTaskForeignCalls(p)&&function.realm=="server"&&function.effects.contains("ffi")&&(function.effects.contains("task")||function.foreign);
+  for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(effect=="fs"&&reads)&&!(effect=="ffi"&&foreign)){
     if(effect=="fs"&&supportsTaskFileReads(p)&&!function.effects.contains("task"))throw Error("E_EFFECT","filesystem helpers in a task execution graph must explicitly declare task and fs",function.span);
     throw Error("E_TASK_UNIMPLEMENTED","compiled task application has no asynchronous host bridge for effect "+effect,function.span);
   }
@@ -764,9 +765,15 @@ class Emitter {
           {"channel_new",nexrt::TaskRequestKind::ChannelNew},{"task_send",nexrt::TaskRequestKind::Send},{"task_recv",nexrt::TaskRequestKind::Receive},{"task_close",nexrt::TaskRequestKind::Close},{"task_cancel",nexrt::TaskRequestKind::Cancel},{"current_task_scope",nexrt::TaskRequestKind::CurrentScope},
           {"file_read_text",nexrt::TaskRequestKind::FileReadText},{"file_read_bytes",nexrt::TaskRequestKind::FileReadBytes}};
         auto arguments=call("nex_list_new",{},Type::list(Type::I64),op.span);
+        if(op.foreign){
+          const auto &target=p.function(op.operation);
+          if(!supportsTaskForeignCalls(p)||!target.foreign)throw Error("E_TASK_STATE","invalid checked task foreign target",op.span);
+          auto binding=text(json(foreignBinding(p,target),false),op.span);
+          call("nex_list_append_heap",{arguments,binding},Type::Unit,op.span);release(binding,op.span);
+        }
         for(auto id:op.inputs){auto value=read(id,op.span);if(value.type.heap())call("nex_list_append_heap",{arguments,value},Type::Unit,op.span);else call("nex_list_append_i64",{arguments,asI64(value,op.span),c(scalarTag(value.type),op.span)},Type::Unit,op.span);release(value,op.span);}
         auto type=op.operation=="channel_new"?*op.atom->type.element:op.atom->type;int64_t kind=type==Type::Unit?4:type.heap()?3:scalarTag(type);
-        call("nex_task_frame_pause",{frame,c(int64_t(requests.at(op.operation)),op.span),arguments,c(op.output==noTaskSlot?-1:int64_t(op.output),op.span),c(kind,op.span),c(op.span.line,op.span)},Type::Unit,op.span);
+        call("nex_task_frame_pause",{frame,c(int64_t(op.foreign?nexrt::TaskRequestKind::Foreign:requests.at(op.operation)),op.span),arguments,c(op.output==noTaskSlot?-1:int64_t(op.output),op.span),c(kind,op.span),c(op.span.line,op.span)},Type::Unit,op.span);
         release(arguments,op.span);call("nex_task_frame_set_pc",{frame,c(i+1,op.span)},Type::Unit,op.span);finish(3,op.span);break;
       }
       case TaskInstruction::Return:{
@@ -862,6 +869,7 @@ public:
         out<<"  func.func @"<<profileRegistryAccessor<<"() -> !llvm.ptr {\n";auto value=fresh();line(value+" = llvm.mlir.addressof @"+registry+" : !llvm.ptr",main.span);line("func.return "+value+" : !llvm.ptr",main.span);out<<"  }\n";
       }}
       const bool imageFileReads=taskImageFileReads||std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileReadOperation(op.operation);});});
+      const bool imageForeign=std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&op.foreign;});});
       for(const auto &ir:*tasks){
         std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
         for(const auto &slot:ir.slots)kinds.push_back(slot.type.heap()?3:scalarTag(slot.type));
@@ -871,6 +879,9 @@ public:
         if(source.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
         if(supportsTaskFileReads(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileRead;
         if(imageFileReads)requirements|=nexrt::taskCodeImageFileRead;
+        if(source.effects.contains("ffi"))requirements|=nexrt::taskCodeDeclaredFfi;
+        if(supportsTaskForeignCalls(p)&&source.realm=="server"&&source.effects.contains("task")&&source.effects.contains("ffi"))requirements|=nexrt::taskCodeForeign;
+        if(imageForeign)requirements|=nexrt::taskCodeImageForeign;
         taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures),profiling?taskProfileSites.at(ir.name):""},
           {nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
       }
@@ -1142,6 +1153,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
   for(const auto &name:linkage?linkage->local:complete){
     const auto &f=p.function(name);
     validateNativeTaskFunction(p,f);
+    if(f.foreign)continue;
     auto body=lowerTaskFunction(p,f,true,taskDebug);
     for(const auto &slot:body.slots)if(containsNonTaskResource(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
@@ -1685,7 +1697,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
   if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
-  if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h"});}
+  if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"});}
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;
@@ -1921,7 +1933,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
     if(profiling)runtimeABI+="nex_profile.cpp"+hash(runtimeFiles.at("nex_profile.cpp"));
     if(unit.wire)for(const auto &file:{"wire_runtime.cpp","nex_json.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.storage)runtimeABI+="store_runtime.cpp"+hash(runtimeFiles.at("store_runtime.cpp"));
-    if(unit.foreign)for(const auto &file:{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp","nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
+    if(unit.foreign)for(const auto &file:{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp","nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(unit.files)for(const auto &file:{"files_runtime.cpp","nex_files.h","nex_file_abi.h"})runtimeABI+=file+hash(runtimeFiles.at(file));
     if(tasks)runtimeABI+=runtimeIdentity;
     auto wrapper=!options.libraryEntry&&!server&&!options.functionsOnly&&unit.functions.contains(p.function(options.entry).name)?p.function(options.entry).name:"";

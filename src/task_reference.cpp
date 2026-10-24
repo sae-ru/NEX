@@ -3,6 +3,7 @@
 #include "nex/operations.h"
 #include "nex_task_reference_value.h"
 #include "nex_task_file_read.h"
+#include "nex_task_foreign.h"
 #include "nex_host.h"
 #include <algorithm>
 #include <chrono>
@@ -243,6 +244,7 @@ struct Reference {
     std::optional<nexrt::ResourceRegion> resources;
     std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
     std::optional<TaskReferenceExternalTicket> external;
+    std::optional<nexrt::PreparedTaskForeignCall> foreignCall;
     size_t externalScope=none;
 #ifndef _WIN32
     std::unique_ptr<nexrt::PreparedTaskFileRead> fileRead;
@@ -285,6 +287,7 @@ struct Reference {
   TaskReferenceExternalHost *externalHost;
   std::unique_ptr<nexrt::ResourceRegion> resourceRoot;
   std::unique_ptr<TaskReferenceExternalMailbox> external;
+  nexrt::CapturedForeignScope foreignScope;
 #ifndef _WIN32
   nexrt::FileReadGrant fileGrant;
 #endif
@@ -304,6 +307,7 @@ struct Reference {
      deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),externalHost(host){
     if(supportsTaskFileReads(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
     controlPoll=[this](Span span){checkControl(span);};
+    if(supportsTaskForeignCalls(program))foreignScope=nexrt::captureForeignScope(true);
 #ifndef _WIN32
     if(grant)fileGrant=*grant;
 #else
@@ -558,8 +562,21 @@ struct Reference {
     if(resourceRoot)job->resources.emplace(regions[s].resources->taskChild());
     auto id=jobs.size();jobs.push_back(std::move(job));regions[s].members.push_back(id);enqueue(id);answer(i,value(RD::Task,id));
   }
+  bool sourceHostRequest(const std::string &operation)const{
+    if(supportsTaskFileReads(program)&&taskFileReadOperation(operation))return true;
+    return supportsTaskForeignCalls(program)&&!operation.empty()&&!taskBuiltins().contains(operation)&&!taskFileBuiltin(operation)&&program.function(operation).foreign.has_value();
+  }
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
+    if(supportsTaskForeignCalls(program)&&!taskBuiltins().contains(r.operation)&&!taskFileReadOperation(r.operation)&&program.function(r.operation).foreign){
+      auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);});
+      if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,
+          externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
+      auto ticket=external->submit(i,prepared.operation(),nexrt::PreparedTaskForeignCall::reservation);
+      j.foreignCall=std::move(prepared);j.external=ticket;j.externalScope=j.current;
+      if(j.externalScope!=none)++regions.at(j.externalScope).external;
+      return;
+    }
     if(taskFileReadOperation(r.operation)){
       if(!supportsTaskFileReads(program))throw Error("E_TASK_UNIMPLEMENTED","source task file reads require language020",r.span);
       const auto expected=Type::result(r.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes));
@@ -670,7 +687,7 @@ struct Reference {
       j.request=std::move(r);dispatch(i);
     }catch(const Error &e){
       auto located=std::make_shared<Error>(e);
-      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)){
+      if(sourceHostRequest(j.request.operation)){
         if(fatal(located))prefer(controlFailure,located);
         if(fatal(controlFailure))located=controlFailure;
       }
@@ -682,14 +699,14 @@ struct Reference {
     }
     catch(const nexrt::DataError &e){
       auto failure=std::make_shared<Error>(e.code,e.what(),j.request.span);
-      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)&&fatal(failure)){
+      if(sourceHostRequest(j.request.operation)&&fatal(failure)){
         prefer(controlFailure,failure);failure=controlFailure;
       }
       beginFinish(i,std::move(failure));
     }
     catch(const std::bad_alloc &){
       auto failure=std::make_shared<Error>("E_MEMORY","reference source preparation allocation failed",operationSpan);
-      if(supportsTaskFileReads(program)&&taskFileReadOperation(j.request.operation)){
+      if(sourceHostRequest(j.request.operation)){
         prefer(controlFailure,failure);failure=controlFailure;
       }
       beginFinish(i,std::move(failure));
@@ -705,6 +722,8 @@ struct Reference {
       auto i=ticket->owner;auto &job=*jobs[i];auto span=job.request.span;
       const bool fileCompletion=taskFileReadOperation(job.request.operation);
       auto raw=external->take(*ticket);job.external.reset();
+      auto foreignPrepared=std::move(job.foreignCall);job.foreignCall.reset();
+      const bool sourceHostCompletion=fileCompletion||foreignPrepared.has_value();
 #ifndef _WIN32
       auto prepared=std::move(job.fileRead);
 #endif
@@ -716,7 +735,7 @@ struct Reference {
       std::shared_ptr<Error> physicalFailure;
       if(raw.errorCode=="E_MEMORY"||raw.errorCode=="E_LIMIT"||raw.errorCode=="E_TIMEOUT")
         physicalFailure=std::make_shared<Error>(raw.errorCode,raw.errorMessage,span);
-      if(fileCompletion&&physicalFailure)prefer(controlFailure,physicalFailure);
+      if(sourceHostCompletion&&physicalFailure)prefer(controlFailure,physicalFailure);
       if(discard||job.cancelled||job.state==Finishing){
         if(job.state!=Finishing)beginFinish(i,controlFailure?controlFailure:
             std::make_shared<Error>("E_CANCELLED","reference task was cancelled",span));
@@ -725,6 +744,10 @@ struct Reference {
       }
       try{
         checkControl(span);
+        if(foreignPrepared){
+          auto value=foreignPrepared->admit(std::move(raw),[&]{checkControl(span);});
+          checkControl(span);answer(i,std::move(value));continue;
+        }
 #ifndef _WIN32
         if(prepared){
           // Fixed adapter and concrete result type only. No source Value or
@@ -757,17 +780,17 @@ struct Reference {
         checkControl(span);answer(i);
       }catch(const Error &error){
         auto selected=std::make_shared<Error>(error);prefer(selected,physicalFailure);
-        if(fileCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
+        if(sourceHostCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
         beginFinish(i,std::move(selected));
       }
       catch(const nexrt::DataError &error){
         auto selected=std::make_shared<Error>(error.code,error.what(),span);
-        if(fileCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
+        if(sourceHostCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
         beginFinish(i,std::move(selected));
       }
       catch(const std::bad_alloc &){
-        auto selected=std::make_shared<Error>("E_MEMORY","reference file admission allocation failed",span);
-        if(fileCompletion){prefer(controlFailure,selected);selected=controlFailure;}
+        auto selected=std::make_shared<Error>("E_MEMORY","reference source host admission allocation failed",span);
+        if(sourceHostCompletion){prefer(controlFailure,selected);selected=controlFailure;}
         beginFinish(i,std::move(selected));
       }
     }
@@ -799,9 +822,11 @@ struct Reference {
       const auto &function=program.function(name);
       const bool reads=supportsTaskFileReads(program)&&function.realm=="server"&&
         function.effects.contains("task")&&function.effects.contains("fs");
+      const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("ffi")&&
+        (function.effects.contains("task")||function.foreign);
       if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
         throw Error("E_EFFECT","reference task calls require an explicitly resumable task/fs helper",function.span);
-      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(reads&&effect=="fs"))
+      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){

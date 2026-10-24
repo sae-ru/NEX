@@ -158,6 +158,10 @@ class Lowering {
     if(original->kind==Expr::Name){auto id=lookup(original->text,original->span);atom->text=taskSlotName(id);atom->localName.clear();op.inputs={id};}
     else for(auto argument:original->args){auto id=expr(argument);op.inputs.push_back(id);atom->args.push_back(reference(id,argument->span));}
     if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes")))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
+    else if(supportsTaskForeignCalls(program)&&original->kind==Expr::Call&&
+        !builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).foreign){
+      op.kind=TaskInstruction::Pause;op.foreign=true;op.operation=original->text;
+    }
     else if(original->kind==Expr::Invoke&&original->args[0]->type.effects.contains("task")){op.kind=TaskInstruction::Call;op.indirect=true;}
     else if(original->kind==Expr::Call&&!builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).effects.contains("task")){op.kind=TaskInstruction::Call;op.operation=original->text;}
     bool sourceCall=original->kind==Expr::Call||original->kind==Expr::Invoke;
@@ -215,7 +219,10 @@ void validateTaskIR(const TaskFunctionIR &function){
     if((op.kind==TaskInstruction::Jump||op.kind==TaskInstruction::Branch)&&op.yes>=function.code.size())throw Error("E_TASK_STATE","invalid continuation successor",op.span);
     if(op.kind==TaskInstruction::Branch&&(op.inputs.size()!=1||op.no>=function.code.size()||function.slots[op.inputs[0]].type!=Type::Bool))throw Error("E_TASK_STATE","invalid continuation branch",op.span);
     if(op.kind==TaskInstruction::Pause&&!taskBuiltins().contains(op.operation)){
-      if((op.operation!="file_read_text"&&op.operation!="file_read_bytes")||op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Str||op.output==noTaskSlot||function.slots[op.output].type!=Type::result(op.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes)))
+      if(op.foreign){
+        if(op.operation.empty()||!op.atom||op.atom->kind!=Expr::Call||op.atom->text!=op.operation||op.inputs.size()!=op.atom->args.size())
+          throw Error("E_TASK_STATE","invalid continuation foreign call operation",op.span);
+      }else if((op.operation!="file_read_text"&&op.operation!="file_read_bytes")||op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Str||op.output==noTaskSlot||function.slots[op.output].type!=Type::result(op.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes)))
         throw Error("E_TASK_STATE","invalid continuation file read operation",op.span);
     }
     if(op.kind==TaskInstruction::Eval){if(!op.atom)throw Error("E_TASK_STATE","missing continuation atom",op.span);for(const auto &argument:op.atom->args)if(argument->kind!=Expr::Name||!argument->text.starts_with("$task_slot_"))throw Error("E_TASK_STATE","continuation atom contains unevaluated operands",op.span);}

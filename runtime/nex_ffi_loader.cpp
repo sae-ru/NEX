@@ -216,11 +216,16 @@ size_t ForeignLibraries::resourceLimit()const noexcept{return impl->valueLimit;}
 uint64_t ForeignLibraries::resourceBytesLimit()const noexcept{return impl->bytes.limit();}
 uint64_t ForeignLibraries::resourceBytesUsed()const noexcept{return impl->bytes.used();}
 ForeignFunction ForeignLibraries::bind(const std::string &library,const std::string &name,const ForeignSignature &signature,const std::string &expectedManifestSha256,Poll poll)const{
+  auto retained=impl;auto *domain=&retained->resources;
+  if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
+  return bindWithResourceScope(library,name,signature,expectedManifestSha256,domain->access(),std::move(poll));
+}
+ForeignFunction ForeignLibraries::bindWithResourceScope(const std::string &library,const std::string &name,const ForeignSignature &signature,const std::string &expectedManifestSha256,ResourceAccess scope,Poll poll)const{
   auto retained=impl;auto libraryName=library,exportName=name,expectedPin=expectedManifestSha256;auto contract=signature;
   const auto &grant=retained->grants;auto it=grant.find(libraryName);
   if(it==grant.end()||!it->second.exports.contains(exportName))fail("E_FFI_GRANT","host has not authorized this library/export");
   if(expectedPin!=it->second.manifestSha256)fail("E_FFI_HASH","requested bundle pin differs from host grant");
-  auto *domain=&retained->resources;if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;auto access=domain->access();
+  auto access=scope.combine(retained->resources.access());
   auto checked=[access,poll=std::move(poll)]{access.check();pollNow(poll);access.check();};checked();
   std::shared_ptr<Manifest> manifest;{std::lock_guard guard(retained->mutex);auto cached=retained->manifests.find(libraryName);if(cached!=retained->manifests.end())manifest=cached->second;}
   if(!manifest){auto read=readManifest(it->second,checked);std::lock_guard guard(retained->mutex);manifest=retained->manifests.try_emplace(libraryName,std::move(read)).first->second;}
@@ -234,6 +239,7 @@ ForeignFunction ForeignLibraries::bind(const std::string &library,const std::str
   return ForeignFunction(std::make_shared<ForeignFunction::Impl>(ForeignFunction::Impl{owner,std::move(contract),item.callback,item.user,retained->values,retained->bytes,manifest}));
 }
 bool ForeignFunction::isOpen()const noexcept{auto retained=impl;return retained&&retained->owner.isOpen();}
+const ForeignSignature &ForeignFunction::signature()const{if(!impl)fail("E_RESOURCE_CLOSED","foreign function is unavailable");return impl->signature;}
 Value ForeignFunction::invoke(std::span<const Value> arguments,Poll poll,ForeignCallLimits limits)const{
   return invokeWithResourceScope(arguments,{},std::move(poll),limits);
 }

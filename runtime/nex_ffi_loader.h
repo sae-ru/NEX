@@ -25,6 +25,7 @@ class ForeignFunction {
 public:
   ForeignFunction()=default;
   bool isOpen()const noexcept;
+  const ForeignSignature &signature()const;
   Value invoke(std::span<const Value> arguments,std::function<void()> poll={},ForeignCallLimits limits={})const;
   Value invokeWithResourceScope(std::span<const Value> arguments,ResourceAccess scope,
       std::function<void()> poll={},ForeignCallLimits limits={})const;
@@ -47,5 +48,10 @@ public:
   ForeignFunction bind(const std::string &library,const std::string &name,
                        const ForeignSignature &signature,const std::string &expectedManifestSha256,
                        std::function<void()> poll={})const;
+  // Explicit coordinator-captured physical request authority. This overload
+  // never looks up the calling worker's transient RequestScope.
+  ForeignFunction bindWithResourceScope(const std::string &library,const std::string &name,
+                       const ForeignSignature &signature,const std::string &expectedManifestSha256,
+                       ResourceAccess,std::function<void()> poll={})const;
 };
 }

@@ -4,7 +4,7 @@
 #include <functional>
 #include <span>
 namespace nexrt {
-namespace foreign_detail { class TypedContext; }
+namespace foreign_detail { class TypedContext; class TaskCodec; }
 class ForeignSignature {
 public:
   struct Layout;
@@ -14,6 +14,7 @@ public:
 private:
   std::shared_ptr<const Layout> layout;
   friend class foreign_detail::TypedContext;
+  friend class foreign_detail::TaskCodec;
 };
 struct ForeignCallLimits {
   uint64_t references=4096;

@@ -136,6 +136,9 @@ public:
   // drain and suppress further source execution. Private/019 groups keep their
   // existing policy unless explicitly constructed for this bridge.
   void failFileRead(std::exception_ptr);
+  // Canonical fatal from a checked source host adapter, after hostOperation
+  // attached its source location. The group must opt in at construction.
+  void failHostOperation(std::exception_ptr);
   // Drain, join OS workers, destroy coroutine frames and surface unobserved
   // failures. Immutable results remain joinable while this group exists.
   void finish();

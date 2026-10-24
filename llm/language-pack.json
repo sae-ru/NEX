@@ -1792,5 +1792,19 @@
     "scope_closure": "deduplicated preallocated completion queue;256 nested scopes without recursive native closure",
     "api_cleanup": "API guards retire only their own tagged roots; stack-owned fences survive batches taken by other workers",
     "suspending_api_cleanup": "Suspending calls transfer their tagged roots to a Job-owned fence before unlock; source workers remain available"
+  },
+  "task_foreign_prototype": {
+    "status": "private022_capability_free_source_calls",
+    "source_support": false,
+    "public_enabled": false,
+    "private_source_language": "0.22",
+    "public_source_language": "0.21",
+    "guide": "docs/task-foreign-prototype.md",
+    "native": true,
+    "independent_reference": true,
+    "copied_typed_data": true,
+    "external_resource_transport": false,
+    "public022_migration_complete": false,
+    "installed_SDK_accepted": false
   }
 }

@@ -29,18 +29,26 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     taskProfileEffectiveLimits(limits);
 #endif
     RequestScope request(limits.steps,limits.timeoutMs);
-    std::shared_ptr<const TaskFrameHostContext> context;
+    auto context=std::make_shared<TaskFrameHostContext>();
 #ifndef _WIN32
     std::unique_ptr<FileScope> files;
     if(code.requirements&taskCodeImageFileRead){
       if(!inFileScope())files=std::make_unique<FileScope>(true);
-      context=std::make_shared<TaskFrameHostContext>(captureFileReadGrant(true));
+      context->fileReads=captureFileReadGrant(true);
     }
 #endif
-    TaskGroup group(limits.workers,4096,{},bool(code.requirements&taskCodeImageFileRead));
+    if(code.requirements&taskCodeImageForeign){
+#ifdef NEX_FOREIGN_ENABLED
+      context->foreign=captureForeignScope(true);
+#else
+      throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
+#endif
+    }
+    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageForeign)));
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;
-    auto root=group.spawnWithContext(applicationTask,&context,{},Value(std::move(environment)));
+    std::shared_ptr<const TaskFrameHostContext> retained=context;
+    auto root=group.spawnWithContext(applicationTask,&retained,{},Value(std::move(environment)));
     auto result=group.join(root);
     group.finish();
     if(result.tag!=Value::Integer||(code.resultKind==4&&result.scalar!=0))

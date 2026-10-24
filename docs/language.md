@@ -918,3 +918,12 @@ See [the full contract](concurrency-design.md) for limits, scheduling, resources
 validation status and remaining browser/async/accelerator work. `parallel_map`
 is newly reserved for declaration names; migration from genuine0.17 is explicit
 and history-preserving, and conflicting old names require a reviewed repair.
+
+## Private task/FFI data-call experiment
+
+The explicit022 C++ API prototype has no new syntax. It accepts authorized
+server task/ffi callbacks and direct checked extern calls with capability-free
+typed copied snapshots. Ordinary CLI programs remain language021 and retain
+their previous rejection rules. Public022 history migration, resource/callable/
+file transport and matching delivery remain pending. See
+[the exact private contract](task-foreign-prototype.md).

@@ -89,7 +89,8 @@ struct TaskAstMachine::Impl {
       throw Error("E_EFFECT","AST task calls require an explicitly resumable task/fs helper",function.span);
     const bool files=supportsTaskFileReads(program)&&function.realm=="server"&&
       function.effects.contains("task")&&function.effects.contains("fs");
-    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs"))
+    const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
+    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
     if(function.foreign||containsNonTaskResource(program,Type::function({},function.result))||
        std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);})||
@@ -205,6 +206,15 @@ struct TaskAstMachine::Impl {
             next.ticket=ticket;next.callDepth=frames.size();next.pc=used;return next;
           }
           if(e->kind==Expr::Call&&functions.contains(e->text)){
+            const auto &target=*functions.at(e->text);
+            if(supportsTaskForeignCalls(program)&&target.foreign){
+              if(frame.function->realm!="server"||!frame.function->effects.contains("task")||!frame.function->effects.contains("ffi"))
+                throw Error("E_EFFECT","AST foreign task request requires a declared server task/ffi caller",e->span);
+              waiting=true;ticket=++sequence;response=e->type;
+              TaskTransition next;next.kind=TaskTransition::Waiting;next.operation=target.name;
+              next.arguments=std::move(args);next.result=e->type;next.span=e->span;
+              next.ticket=ticket;next.callDepth=frames.size();next.pc=used;return next;
+            }
             push(*functions.at(e->text),args);break;
           }
           if(e->kind==Expr::Call&&taskFileBuiltin(e->text))

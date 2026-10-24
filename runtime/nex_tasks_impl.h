@@ -1165,6 +1165,9 @@ TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
 }
 TaskExternalStats TaskGroup::externalStats()const{std::lock_guard lock(impl->mutex);return impl->externalPool?impl->externalPool->stats():TaskExternalStats{};}
 void TaskGroup::failFileRead(std::exception_ptr failure){
+  failHostOperation(std::move(failure));
+}
+void TaskGroup::failHostOperation(std::exception_ptr failure){
 #ifdef NEX_TASK_PROFILE_ENABLED
   TaskProfileTransaction profileTransaction(impl->profileCollector);
 #endif

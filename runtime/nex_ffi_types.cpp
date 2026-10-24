@@ -168,5 +168,81 @@ Value TypedContext::nominal(size_t type,uint64_t variant,std::span<const Value> 
   for(size_t i=0;i<values.size();++i){data->names.push_back(fields[i].name);data->values.push_back(values[i]);}return Value(std::move(data));
 }
 const std::string &TypedContext::description()const{return impl->layout->description;}
+struct TaskCodec::Impl {
+  ForeignSignature signature;
+  std::string argumentsSchema,resultSchema;
+  bool unit;
+  explicit Impl(const ForeignSignature &value):signature(value),unit(false){
+    if(!value.layout)schemaError("foreign signature has no layout");
+    unit=value.layout->types[value.layout->result].kind==NEX_FFI_UNIT;
+    const auto &layout=*value.layout;
+    J records=J::object(),enums=J::object();
+    std::function<J(size_t,size_t)> type=[&](size_t id,size_t depth)->J{
+      if(depth>64)throw DataError("E_FFI_LIMIT","task foreign type nesting exceeds64");
+      const auto &shape=layout.types.at(id);
+      switch(shape.kind){
+      case NEX_FFI_I64:return "i64";case NEX_FFI_F64:return "f64";
+      case NEX_FFI_BOOL:return "bool";case NEX_FFI_STRING:return "str";case NEX_FFI_BYTES:return "bytes";
+      case NEX_FFI_LIST:return J{{"list",type(shape.item,depth+1)}};
+      case NEX_FFI_RESULT:return J{{"result",type(shape.item,depth+1)}};
+      case NEX_FFI_RECORD:return J{{"record",shape.name}};
+      case NEX_FFI_ENUM:return J{{"enum",shape.name}};
+      default:throw DataError("E_TASK_VALUE","task foreign snapshots cannot carry function, file or external authority");
+      }
+    };
+    auto fields=[&](const auto &items){J result=J::array();for(const auto &field:items)result.push_back(J{{"name",field.name},{"type",type(field.type,0)}});return result;};
+    for(const auto &shape:layout.types){
+      if(shape.kind==NEX_FFI_UNIT)continue;
+      if(shape.kind==NEX_FFI_RECORD)records[shape.name]=fields(shape.fields);
+      else if(shape.kind==NEX_FFI_ENUM){J cases=J::array();for(const auto &variant:shape.variants)cases.push_back(J{{"name",variant.name},{"fields",fields(variant.fields)}});enums[shape.name]=std::move(cases);}
+      else if(shape.kind==NEX_FFI_FILE||shape.kind==NEX_FFI_FUNCTION||shape.kind==NEX_FFI_EXTERNAL_RESOURCE)
+        throw DataError("E_TASK_VALUE","task foreign snapshots cannot carry function, file or external authority");
+    }
+    // '$' is unavailable in checked nominal source names, so the internal
+    // argument envelope cannot collide with a source declaration.
+    J parameters=J::array();for(size_t i=0;i<layout.parameters.size();++i)parameters.push_back(J{{"name","a"+std::to_string(i)},{"type",type(layout.parameters[i],0)}});
+    if(records.contains("$task_foreign_arguments")||enums.contains("$task_foreign_arguments"))
+      throw DataError("E_FFI_SIGNATURE","task foreign signature uses a reserved transport identity");
+    auto argumentRecords=records;argumentRecords["$task_foreign_arguments"]=std::move(parameters);
+    argumentsSchema=J{{"schema","nex.wire/2"},{"root",J{{"record","$task_foreign_arguments"}}},{"records",argumentRecords},{"enums",enums}}.dump();
+    if(!unit)resultSchema=J{{"schema","nex.wire/2"},{"root",type(layout.result,0)},{"records",records},{"enums",enums}}.dump();
+    if(argumentsSchema.size()>byteLimit||resultSchema.size()>byteLimit-argumentsSchema.size())
+      throw DataError("E_FFI_LIMIT","task foreign codec metadata exceeds1 MiB");
+  }
+  static std::vector<uint8_t> octets(const Value &value){
+    auto text=encodeJSON(value);std::vector<uint8_t> bytes(text.begin(),text.end());
+    if(bytes.capacity()>byteLimit)throw DataError("E_FFI_LIMIT","task foreign snapshot exceeds1 MiB");return bytes;
+  }
+  static Value decoded(std::span<const uint8_t> bytes,const std::string &schema){
+    if(bytes.size()>byteLimit)throw DataError("E_FFI_LIMIT","task foreign snapshot exceeds1 MiB");
+    auto value=decodeJSON(std::string(bytes.begin(),bytes.end()),schema);
+    if(!isSuccess(value))throw DataError("E_FFI_TYPE","invalid typed task foreign snapshot");return unwrap(value);
+  }
+  void result(const Value &value,const std::function<void()> &poll)const{
+    if(unit){if(value.tag!=Value::Integer||value.scalar)throw DataError("E_FFI_TYPE","task foreign unit result differs");return;}
+    TypedContext::Impl context(signature);TypedContext::Impl::Validation validation{context,poll,false};
+    validation.check(value,signature.layout->result);
+  }
+};
+TaskCodec::TaskCodec(const ForeignSignature &signature):impl(std::make_shared<Impl>(signature)){}
+std::vector<uint8_t> TaskCodec::encodeArguments(std::span<const Value> values,const std::function<void()> &poll)const{
+  TypedContext typed(impl->signature);typed.arguments(values,poll);
+  auto envelope=std::make_shared<Data>(Data::Record);envelope->text="$task_foreign_arguments";
+  for(size_t i=0;i<values.size();++i){envelope->names.push_back("a"+std::to_string(i));envelope->values.push_back(values[i]);}
+  if(poll)poll();auto bytes=Impl::octets(Value(envelope));if(poll)poll();return bytes;
+}
+std::vector<Value> TaskCodec::decodeArguments(std::span<const uint8_t> bytes,const std::function<void()> &poll)const{
+  if(poll)poll();auto value=Impl::decoded(bytes,impl->argumentsSchema);
+  TypedContext typed(impl->signature);typed.arguments(value.object->values,poll);return std::move(value.object->values);
+}
+std::vector<uint8_t> TaskCodec::encodeResult(const Value &value,const std::function<void()> &poll)const{
+  impl->result(value,poll);if(impl->unit)return {};auto bytes=Impl::octets(value);if(poll)poll();return bytes;
+}
+Value TaskCodec::decodeResult(std::span<const uint8_t> bytes,const std::function<void()> &poll)const{
+  if(poll)poll();Value value;
+  if(impl->unit){if(!bytes.empty())throw DataError("E_FFI_TYPE","task foreign unit response contains payload");}
+  else value=Impl::decoded(bytes,impl->resultSchema);
+  impl->result(value,poll);if(poll)poll();return value;
+}
 }
 }

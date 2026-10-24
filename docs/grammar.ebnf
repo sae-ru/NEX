@@ -272,3 +272,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    ownership flow retains runtime guards; ancestor borrowing stays legal.
    018 source is rechecked by explicit migration without relabeling old archives.
    See language.md, task-lifetimes.md and task-migration.md for normative rules. *)
+
+(* Private146 explicit022 C++ API experiment adds no grammar. Its authorized
+   server task/ffi callbacks and copied direct extern requests remain unavailable
+   in public CLI language021. See task-foreign-prototype.md. *)

@@ -3,6 +3,7 @@
 namespace nexrt::foreign_detail {
 // Per-call authorities are separate from the immutable, reusable type layout.
 class TypedContext {
+  friend class TaskCodec;
   struct Impl;std::unique_ptr<Impl> impl;
 public:
   explicit TypedContext(const ForeignSignature &signature);
@@ -22,5 +23,18 @@ public:
   std::pair<std::string,std::string> resource(size_t type)const;
   bool resourceConstructible(size_t type)const;
   bool resourceDeclared(const std::string &name,const std::string &identity)const;
+};
+// Private task bridge for capability-free typed snapshots. These codecs use
+// the exact checked nominal layouts and reject function/file/resource types.
+// Only bounded copied octets, never Values or call-local C tokens, enter IO.
+class TaskCodec {
+  struct Impl;std::shared_ptr<const Impl> impl;
+public:
+  explicit TaskCodec(const ForeignSignature &);
+  std::vector<uint8_t> encodeArguments(std::span<const Value>,const std::function<void()> &poll={})const;
+  std::vector<Value> decodeArguments(std::span<const uint8_t>,const std::function<void()> &poll={})const;
+  std::vector<uint8_t> encodeResult(const Value &,const std::function<void()> &poll={})const;
+  Value decodeResult(std::span<const uint8_t>,const std::function<void()> &poll={})const;
+  static constexpr size_t byteLimit=1048576;
 };
 }

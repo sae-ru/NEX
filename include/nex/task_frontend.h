@@ -11,6 +11,8 @@ Program loadTaskPrototype(const std::string &entry,const std::string &root,
 const std::set<std::string> &taskBuiltins();
 bool isPublicTaskLanguage(const Program &program);
 bool supportsTaskFileReads(const Program &program);
+// Private022 source prototype; current public language021 remains unchanged.
+bool supportsTaskForeignCalls(const Program &program);
 bool containsTaskAuthority(const Program &program,const Type &type);
 bool usesTaskEffects(const Program &program,const std::string &entry);
 void rejectUnloweredTasks(const Program &program,const char *operation);

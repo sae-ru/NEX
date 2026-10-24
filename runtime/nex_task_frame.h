@@ -5,6 +5,9 @@
 #include "nex_task_profile_site.h"
 #include "nex_files.h"
 #include "nex_profile.h"
+#ifdef NEX_FOREIGN_ENABLED
+#include "nex_foreign.h"
+#endif
 #ifdef NEX_TASK_DEBUG_ENABLED
 #include "nex_task_debug.h"
 #endif
@@ -29,6 +32,10 @@ struct TaskCodeDescriptor {
 };
 static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==40);
 struct TaskFrameHostContext {
+#ifdef NEX_FOREIGN_ENABLED
+  CapturedForeignScope foreign;
+#endif
+  TaskFrameHostContext()=default;
 #ifndef _WIN32
   FileReadGrant fileReads;
   explicit TaskFrameHostContext(FileReadGrant grant):fileReads(std::move(grant)){}

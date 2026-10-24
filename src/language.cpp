@@ -52,7 +52,7 @@ const std::set<std::string> &builtinNames(bool tasks,bool resources){
   return resources?(tasks?all:owned):(tasks?extended:names);
 }
 const std::set<std::string> &externalResourceBuiltins(){static const std::set<std::string> names={"resource_close","resource_is_open"};return names;}
-bool supportsExternalResources(const Program &p){return p.sourceLanguage==SourceLanguage::OwnedResources021;}
+bool supportsExternalResources(const Program &p){return p.sourceLanguage==SourceLanguage::OwnedResources021||p.sourceLanguage==SourceLanguage::TaskForeign022;}
 const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
@@ -619,10 +619,12 @@ class Checker {
   }
   Type signature(const Function &fn){std::vector<Type> args;for(const auto &param:fn.params)args.push_back(param.type);return Type::function(std::move(args),fn.result,fn.realm,fn.effects);}
   void callableRealm(const Type &type,Span span){if(type.realm!="shared"&&type.realm!=f->realm)throw Error("E_REALM","callable realm "+type.realm+" is unavailable from "+f->realm,span);}
-  void taskFileCall(const std::set<std::string> &effects,Span span){
+  void taskFileCall(const std::set<std::string> &effects,Span span,bool foreignLeaf=false){
     if(supportsTaskFileReads(p)&&f->effects.contains("task")&&
         effects.contains("fs")&&!effects.contains("task"))
       throw Error("E_EFFECT","a filesystem helper called from a task must explicitly declare both task and fs",span);
+    if(supportsTaskForeignCalls(p)&&f->effects.contains("task")&&effects.contains("ffi")&&!effects.contains("task")&&!foreignLeaf)
+      throw Error("E_EFFECT","a source ffi helper called from a task must explicitly declare both task and ffi",span);
   }
   Type reference(E e,Type expected){
     const Function *target=&p.function(e->text,e->span);
@@ -674,7 +676,12 @@ class Checker {
     callableRealm(type,callback->span);
     const bool fileCallback=supportsTaskFileReads(p)&&type.realm=="server"&&
       type.effects==std::set<std::string>{"fs","task"};
-    if(fileCallback){
+    const bool foreignCallback=supportsTaskForeignCalls(p)&&type.realm=="server"&&type.effects.contains("task")&&type.effects.contains("ffi")&&
+      std::all_of(type.effects.begin(),type.effects.end(),[](const auto &effect){return effect=="task"||effect=="ffi"||effect=="fs";});
+    if(foreignCallback){
+      if(f->realm!="server"||!std::includes(f->effects.begin(),f->effects.end(),type.effects.begin(),type.effects.end()))
+        throw Error("E_EFFECT","a task/ffi callback requires the server caller's complete declared effects",callback->span);
+    }else if(fileCallback){
       if(f->realm!="server"||!f->effects.contains("fs")||!f->effects.contains("task"))
         throw Error("E_EFFECT","a task/fs callback requires a server caller declaring task and fs",callback->span);
     }else for(const auto &effect:type.effects)if(effect!="task")
@@ -948,7 +955,10 @@ class Checker {
       if(callee.params.size()!=e->args.size())throw Error("E_ARITY","incorrect number of arguments to '"+e->text+"'",e->span);
       for(size_t j=0;j<e->args.size();++j)same(expr(e->args[j],callee.params[j].type),callee.params[j].type,e->args[j]->span);
       for(const auto &effect:callee.effects)if(!f->effects.contains(effect))throw Error("E_EFFECT","call requires declared effect "+effect,e->span);
-      taskFileCall(callee.effects,e->span);
+      taskFileCall(callee.effects,e->span,callee.foreign.has_value());
+      if(supportsTaskForeignCalls(p)&&f->effects.contains("task")&&callee.foreign&&
+          (containsNonTaskResource(p,callee.result)||std::any_of(callee.params.begin(),callee.params.end(),[&](const auto &parameter){return containsNonTaskResource(p,parameter.type);})))
+        throw Error("E_TASK_TYPE","task foreign calls cannot transport file or external resource authority",e->span);
       if(callee.realm!="shared" && callee.realm!=f->realm)throw Error("E_REALM","direct call from "+f->realm+" to "+callee.realm+" is forbidden",e->span);
       f->dependencies.insert(callee.name);e->type=callee.result;break;
     }
@@ -1100,11 +1110,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022).run();
   p.sourceLanguage=language;return p;
 }
 Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){return parseVersioned(std::move(source),std::move(path),currentSourceLanguage,editorNames,editorDetails);}
@@ -1175,6 +1185,7 @@ std::string revision(const Program &p) {
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
+    {"task_foreign_prototype",llvm::json::Object{{"status","private022_capability_free_source_calls"},{"source_support",false},{"public_enabled",false},{"private_source_language","0.22"},{"public_source_language","0.21"},{"guide","docs/task-foreign-prototype.md"},{"native",true},{"independent_reference",true},{"copied_typed_data",true},{"external_resource_transport",false},{"public022_migration_complete",false},{"installed_SDK_accepted",false}}},
     {"task_value_retirement",llvm::json::Object{{"status","private_native_scheduler"},{"source_syntax",false},{"source_resource_transport",false},{"stable_host_abi",false},{"guide","docs/task-value-retirement.md"},{"destruction","outside scheduler mutex"},{"cleanup_admission","intrusive queues and three retained root slots per admitted job; no allocation during retirement"},{"completion","task, logical scope and group publication wait their retired value roots"},{"channel_slot_reuse","after actual retired values and buffer storage destruction"},{"aliases","independently retained passive aliases and successful root results keep existing ownership"},{"retained_roots_per_job",int64_t(3)},{"suspending_api_cleanup","Suspending calls transfer their tagged roots to a Job-owned fence before unlock; source workers remain available"},{"api_cleanup","API guards retire only their own tagged roots; stack-owned fences survive batches taken by other workers"},{"scope_closure","deduplicated preallocated completion queue;256 nested scopes without recursive native closure"},{"source_task_FFI_bridge",false},{"actual_GPU_NPU_resources",false}}},
     {"resource_regions",llvm::json::Object{{"status","private_trusted_host_native_and_reference_schedulers"},{"source_support",false},{"source_task_bridge",false},{"frame_value_transport",false},{"native_scheduler",true},{"reference_scheduler",true},{"actual_GPU_NPU_resources",false},{"stable_host_abi",false},{"guide","docs/resource-regions.md"},{"header","runtime/nex_resource_region.h"},{"native_group_enable","TaskGroup::enableResourceRegions(optional genuine request parent) before spawning"},{"native_current_authority","task root or owned inner scope on workers; group root on coordinator"},{"physical_access","explicit coordinator-captured grant/request; no per-resume TLS lookup"},{"ancestry","same scheduler ancestry or genuine request ancestor; sibling groups and foreign requests rejected"},{"promotion","explicit trusted ancestor transfer, reserving destination ownership before cross-graph return; aliases retain physical identity"},{"close","logical revocation under scheduler lock where applicable; destructor request outside locks; native and independent reference task/scope publication after complete physical fence"},{"root_retirement","group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement"},{"maximum",llvm::json::Object{{"scope_nodes_including_root",int64_t(1025)},{"scope_depth",int64_t(256)},{"owners",int64_t(4096)},{"physical_joined_domains",int64_t(8)},{"task_nodes",int64_t(65536)},{"task_depth",int64_t(256)},{"request_group_links",int64_t(1024)},{"reference_task_nodes",int64_t(4096)}}},{"pending",llvm::json::Array{"source value input/result/channel/capture transport","source task/FFI completion adapter and explicit language migration","actual device bindings and matching compiler/SDK/platform delivery"}},{"reference_enable","TaskReferenceExternalHost::resourceRegions and optional genuine resourceRequestParent before evaluation"},{"reference_current_authority","task root or owned inner scope via coordinator-only prepareInRegion/admitInRegion"},{"reference_cleanup","task/scope publication after complete physical settlement; root and unexpected unwind drain operations, frames and resources"},{"native_task_regions",true},{"native_request_parent",true},{"reference_task_regions",true},{"reference_request_parent",true}}},
     {"resource_executor",llvm::json::Object{{"status","private_trusted_host"},{"source_support",false},{"source_task_bridge",false},{"C_resource_executor_binding",false},{"actual_GPU_NPU_resources",false},{"stable_host_abi",false},{"guide","docs/resource-executor.md"},{"header","runtime/nex_resource_executor.h"},{"construction_and_cleanup","one owning thread"},{"cleanup_admission","pre-reserved bounded slot before factory; finalizer cannot be rejected after close"},{"quota_release","after destructor and code-pin release; admitted borrows retain complete physical owner"},{"operation_completion","run returns only after actual fence/IPC settlement; operation destructor precedes completion publication"},{"cancellation","queued work does not start; running work retains leases and reservations until physical settlement"},{"close","reject new admission; retain all previously reserved finalizers"},{"drain","current queue/running work only; idle owners remain live"},{"finish","close admission, wait all reserved resources/operations, join worker"},{"declared_capacity_only",true},{"maximum",llvm::json::Object{{"resources",int64_t(4096)},{"operations",int64_t(64)},{"reserved_bytes",int64_t(8388608)}}},{"pending",llvm::json::Array{"logical source-task ownership and FFI completion adapter","actual model/device session and buffer bindings","vendor-specific fences and failure settlement","matching full compiler, installed SDK and platform delivery"}}}},
