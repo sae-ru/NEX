@@ -1,4 +1,32 @@
-# Private logical resource regions
+# Logical resource regions and dependent FFI resources
+
+Toolchain0.131 development C table appends `resource_create_with_parents` after the old
+resource prefix. Negotiate `NEX_FFI_V1_RESOURCE_PARENTS_SIZE` before using it.
+`NEX_FFI_V1_RESOURCE_SIZE` retains its previous byte offset; old transport,
+typed and resource producers keep their original prefixes and ABI major1.
+
+Parent refs must be genuine resource tokens of the same active call/thread and
+declared signature. The child type must remain result-reachable, with factory
+and destructor owned by the current pinned image. Passing a parent never grants
+permission to reinterpret another image's payload. Up to16 supplied parents
+are admitted before factory entry; the transitive graph is deduplicated and
+bounded to4096 objects including the child and depth256. Invalid/closed parents,
+incompatible logical regions and quota exhaustion refuse construction before
+entering the factory. Count/graph quota failures return `NEX_FFI_LIMIT`.
+
+Admitted children retain physical parent payloads, code pins and capacity until
+their own destruction finishes, including after a parent alias is closed.
+Fresh parent borrowing then fails. Original grant revocation still prevents
+new child access; an already admitted operation must physically settle.
+Source task capture/result/channel/closure transfers promote the full hidden
+dependency closure atomically to the genuine target ancestor. Returning a buffer
+alone therefore retains its required session without exposing that session in
+the NEX value graph. Factory failure/exception and checked exits destroy children
+before releasing parent storage. This adds no direct NEX resource constructor,
+syntax change or language migration; a pinned server/ffi extern produces the
+dependent owner in both native execution and the independent AST interpreter.
+Browser/wire resource transport stays rejected. Actual GPU/NPU bindings remain
+pending: these tests use real C/C++ payloads, not device allocations.
 
 Toolchain0.126 connects trusted host resource regions to the native TaskGroup
 scheduler. Query `nex describe --field resource_regions --json`. This changes no
@@ -128,3 +156,32 @@ admission and the actual source/backend lifetime checks. Keep current source
 snapshot guards until that bridge and explicit migration are complete.
 Actual devices additionally require their owning executor and
 vendor-specific fence/IPC settlement. Process reap is not a generic GPU DMA fence.
+
+
+## Private host dependency graph
+
+The private C++ constructors in `nex_external_resource.h` accept an optional
+trailing span of parent resources. `makeInRegion` places it after `localFactory`.
+This is not a source-language constructor or a C-table operation. It does not
+provide GPU/NPU sessions or buffers by itself.
+
+Admission captures genuine physical parent leases before invoking a child
+factory. Parent logical close denies fresh parent access while already admitted
+children keep the payload, code pin and original capacity ticket alive. Child
+native destruction and its code pin finish before those parent leases are
+released. Closed child aliases retain only ancestry/grant metadata, not parent
+payloads. Original grant revocation still denies fresh child borrows and is
+rechecked before publication; dependency leases do not mint host permission.
+
+Logical parent owners and their transitive dependencies participate in the same
+atomic ancestor transfer as the child. All destination slots are checked before
+any owner moves. Creation rejects mixed scoped/unscoped ancestry, ended grants,
+more than16 supplied parents, dependency depth above256, or more than4096 unique
+objects including the new child. Physical grant domains and logical scope depth
+keep their existing independent limits. A failed factory/promotion does not
+publish a partial dependency graph.
+
+`dependencyCount` and `dependencyDepth` are host diagnostics. Numeric identities
+never construct authority. Stable C construction, ordinary-source parent
+factories, actual device objects, and complete compiler/SDK/platform acceptance
+remain pending.

@@ -1,3 +1,6 @@
+(* Development dependent-resource C factories add no NEX syntax or canonical
+   identity change. Pinned server/ffi externs return ordinary opaque resources;
+   task transfers preserve hidden physical parent dependencies. *)
 (* Current language022 retains this syntax and adds checked server task/ffi
    callbacks and genuine resource captures/results/futures/channels/closures.
    Mandatory runtime ancestry/physical cleanup checks still apply; file/wire/

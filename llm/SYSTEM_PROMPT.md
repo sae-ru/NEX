@@ -78,6 +78,14 @@ stop. Preserve task IDs separately from native worker IDs and retain explicit
 reviewed task limits; deadlines advance while stopped. Opaque task/file/grant
 authority must not be reconstructed as a pure watch input.
 
+When `resource_regions.dependency_graph.C_table_parent_creation` is true, a
+pinned C producer may use `resource_create_with_parents` after negotiating
+`NEX_FFI_V1_RESOURCE_PARENTS_SIZE`. Parents are current-call genuine resource
+tokens, not reconstructed identities. The host retains parent storage/code/quota
+through child cleanup and promotes hidden dependencies with source task values.
+This does not grant cross-image payload access, source resource constructors,
+browser/wire transport or actual GPU/NPU bindings. Read resource-regions.md.
+
 # NEX coding prompt — language 0.21, protocol 2
 
 For native task-provider profiling, query `task_provider_profiling` and read

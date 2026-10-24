@@ -117,7 +117,7 @@ template<class F> nex_ffi_status guarded(nex_ffi_call call,F body) noexcept {
     if(e.code=="E_RESOURCE_TYPE")return NEX_FFI_TYPE;
     if(e.code=="E_RESOURCE_SCOPE")return NEX_FFI_SCOPE;
     if(e.code=="E_RESOURCE_CLOSED")return NEX_FFI_RESOURCE_CLOSED;
-    if(e.code=="E_RESOURCE_LIMIT"||e.code=="E_RESOURCE_BYTES")return NEX_FFI_LIMIT;
+    if(e.code=="E_RESOURCE_LIMIT"||e.code=="E_RESOURCE_BYTES"||e.code=="E_RESOURCE_DEPENDENCY_LIMIT"||e.code=="E_RESOURCE_REGION_LIMIT")return NEX_FFI_LIMIT;
     return NEX_FFI_INTERNAL;
   }catch(const std::bad_alloc &){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_LIMIT;}
   catch(...){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_INTERNAL;}
@@ -205,10 +205,13 @@ const ExternalResource &resource(State &s,nex_ffi_ref ref){
   const auto &r=externalResource(v.object);
   require(r.identity()&&s.typed().resourceDeclared(r.typeName(),r.typeHash()),NEX_FFI_TYPE);return r;
 }
-nex_ffi_status resourceCreate(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy,void *user,nex_ffi_ref *o)noexcept{return guarded(c,[&](State &s){
+nex_ffi_status resourceCreateWithParents(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,const nex_ffi_ref *parents,uint64_t parentCount,nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy,void *user,nex_ffi_ref *o)noexcept{return guarded(c,[&](State &s){
   output(o);auto type=s.type(t);auto [name,identity]=s.typed().resource(type);
   require(s.typed().resourceConstructible(type)&&bool(s.resources),NEX_FFI_TYPE);
   require(s.creating<16&&s.refs.size()+s.creating<s.limits.references,NEX_FFI_LIMIT);
+  require(parentCount<=16,NEX_FFI_LIMIT);require(!parentCount||parents,NEX_FFI_ARGUMENT);
+  std::vector<ExternalResource> captured;captured.reserve(size_t(parentCount));
+  for(uint64_t i=0;i<parentCount;++i)captured.push_back(resource(s,parents[i]));
   s.resources->callbacks(factory,destroy);s.charge(sizeof(ExternalData));
   struct Creating {unsigned &count;explicit Creating(unsigned &n):count(n){++count;}~Creating(){--count;}} creating(s.creating);
   s.hostPoll();auto value=s.resources->create(name,identity,bytes,destroy,[&](void **object,const ResourcePermit &permit){
@@ -216,9 +219,12 @@ nex_ffi_status resourceCreate(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,nex_f
     try{status=factory(&api,c,user,object);}
     catch(...){if(s.hostTrap)std::rethrow_exception(s.hostTrap);throw DataError("E_FFI_EXCEPTION","resource factory threw across its C boundary");}
     s.hostPoll();permit.check();if(status!=NEX_FFI_OK)fail(status);
-  });
+  },captured);
   s.hostPoll();*o=s.add(Value(externalValue(std::move(value))));
 });}
+nex_ffi_status resourceCreate(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy,void *user,nex_ffi_ref *o)noexcept{
+  return resourceCreateWithParents(c,t,bytes,nullptr,0,factory,destroy,user,o);
+}
 nex_ffi_status resourceBorrow(nex_ffi_call c,nex_ffi_ref r,nex_ffi_type t,void **o)noexcept{return guarded(c,[&](State &s){
   output(o);auto [name,identity]=s.typed().resource(s.type(t));
   require(bool(s.resources),NEX_FFI_TYPE);require(s.borrows.size()<s.limits.references,NEX_FFI_LIMIT);
@@ -232,7 +238,7 @@ nex_ffi_status resourceBorrow(nex_ffi_call c,nex_ffi_ref r,nex_ffi_type t,void *
 nex_ffi_status resourceClose(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);s.hostPoll();auto value=resource(s,r);*o=value.close()?1:0;});}
 nex_ffi_status resourceIsOpen(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).isOpen()?1:0;});}
 nex_ffi_status resourceIdentity(nex_ffi_call c,nex_ffi_ref r,uint64_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).identity();});}
-const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature,resourceCreate,resourceBorrow,resourceClose,resourceIsOpen,resourceIdentity};
+const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature,resourceCreate,resourceBorrow,resourceClose,resourceIsOpen,resourceIdentity,resourceCreateWithParents};
 }
 
 extern "C" const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi,uint32_t minimum){

@@ -622,6 +622,18 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,131,0):
+        dependent=report.get('evidence',{}).get('dependent_resource_ffi',{})
+        require(isinstance(dependent,dict) and type(dependent.get('source_checks')) is int and dependent['source_checks']==37 and
+                all(dependent.get(key) is True for key in ('ok','native_reference','genuine_previous_C_prefix',
+                    'hidden_parent_scope_future_channel_closure','physical_parent_quota','cancel_deadline_borrow_fence','source_deleted_replay','client_exclusion')),
+                'SDK acceptance lacks installed dependent resource FFI evidence')
+        proof=dependent.get('source_report',{})
+        require(isinstance(proof,dict) and proof.get('schema')=='nex.dependent-resource-source/1' and
+                proof.get('ok') is True and proof.get('source_parent_FFI') is True and proof.get('compiler_sha256')==report.get('compiler_sha256') and
+                isinstance(proof.get('checks'),list) and len(proof['checks'])==37 and
+                proof.get('actual_producers')==['C11','CPP20'] and proof.get('actual_GPU_NPU_resources') is False,
+                'SDK acceptance lacks actual dependent resource source report')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,130,0):
         require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')=='0.22',
                 'SDK acceptance source task/FFI version identities differ')
@@ -4650,6 +4662,18 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         from sdk_source_resources import check_installed_source_resources
         report['evidence']['source_resources']=check_installed_source_resources(
             cli,run,lambda:report['commands'][-1],root,resources,report['doctor']['native_compiler'],compiler=compiler,live=args.live)
+        tool=resources/'tests/resource_dependency_source.py'
+        require(tool.is_file(),'installed dependent resource acceptance source is missing')
+        destination=root/'dependent-resource-source'
+        run([sys.executable,'-B',tool,'--compiler',compiler,'--output',destination],timeout=1800)
+        dependent=json.loads((destination/'report.json').read_text())
+        require(dependent.get('ok') is True and dependent.get('compiler_sha256')==report['compiler_sha256'] and
+                dependent.get('actual_producers')==['C11','CPP20'] and len(dependent.get('checks',[]))==37,
+                'installed dependent resources differ from actual compiler/source checks')
+        report['evidence']['dependent_resource_ffi']={key:True for key in ('ok','native_reference','genuine_previous_C_prefix',
+            'hidden_parent_scope_future_channel_closure','physical_parent_quota','cancel_deadline_borrow_fence','source_deleted_replay','client_exclusion')}
+        report['evidence']['dependent_resource_ffi'].update(source_checks=37,source_report=dependent,
+            source_report_sha256=hashlib.sha256((destination/'report.json').read_bytes()).hexdigest())
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),

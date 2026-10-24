@@ -29,7 +29,8 @@ void ResourceContext::callbacks(nex_ffi_resource_factory_v1 factory,nex_ffi_reso
     throw DataError("E_FFI_TYPE","resource callbacks must belong to the current pinned module snapshot");
 }
 ExternalResource ResourceContext::create(const std::string &name,const std::string &hash,uint64_t bytes,
-    nex_ffi_resource_destroy_v1 destroy,const std::function<void(void**,const ResourcePermit&)> &initialize)const{
+    nex_ffi_resource_destroy_v1 destroy,const std::function<void(void**,const ResourcePermit&)> &initialize,
+    std::span<const ExternalResource> parents)const{
   check();auto key=registry->type(name,hash);
   auto factory=[&](const ResourcePermit &permit){
     auto object=std::make_unique<ForeignResourceObject>(destroy);initialize(&object->pointer,permit);
@@ -38,9 +39,9 @@ ExternalResource ResourceContext::create(const std::string &name,const std::stri
   };
   if(region){
     if(!cleanup)throw DataError("E_RESOURCE_EXECUTOR","task resource creation requires a reserved cleanup executor");
-    return ExternalResource::makeInRegion(access,region,key,budgets,bytes,codePin,cleanup,factory,true);
+    return ExternalResource::makeInRegion(access,region,key,budgets,bytes,codePin,cleanup,factory,true,parents);
   }
-  return ExternalResource::makeInAccess(access,key,budgets,bytes,codePin,factory);
+  return ExternalResource::makeInAccess(access,key,budgets,bytes,codePin,factory,parents);
 }
 ExternalResourceBorrow ResourceContext::borrow(const ExternalResource &value,const std::string &name,const std::string &hash)const{
   check();auto type=registry->type(name,hash);return region?value.borrowInRegion(region,type):value.borrow(type);

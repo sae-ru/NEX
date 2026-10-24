@@ -1,5 +1,12 @@
 # Current language0.22
 
+The development host C API can construct dependent opaque resources through a
+pinned server/ffi extern. Existing task transfers promote their hidden parent
+closure; native and independent AST execution share this C boundary. This adds
+no NEX constructor, syntax, canonical identity or migration. Query
+`resource_regions.dependency_graph`; read resource-regions.md for bounds and
+physical parent retention. Actual GPU/NPU resource bindings remain pending.
+
 Language022 retains the syntax below and enables server task/ffi callbacks,
 direct checked extern suspension and genuine external-resource transport through
 task captures/results/futures/channels/closures. Calls preserve original physical

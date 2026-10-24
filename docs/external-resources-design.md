@@ -68,7 +68,10 @@ actual device buffers/sessions are exposed.
 
 ## Private136 typed C and loader extension
 
-The appended table suffix is negotiated with `NEX_FFI_V1_RESOURCE_SIZE`.
+The original resource suffix is negotiated with `NEX_FFI_V1_RESOURCE_SIZE`.
+Dependent factories additionally negotiate `NEX_FFI_V1_RESOURCE_PARENTS_SIZE`
+and call `resource_create_with_parents`; see [resource dependencies](resource-regions.md).
+Both prefixes preserve ABI major1 and their original byte offsets.
 `NEX_FFI_V1_TYPED_SIZE` preserves the exact preceding typed table boundary;
 the0.37 transport prefix and major1 remain usable. This is a trusted host
 prototype, not public source resource syntax or a stable ABI claim.

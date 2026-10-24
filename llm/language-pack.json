@@ -1668,9 +1668,10 @@
     "C_resource_construction": true,
     "actual_module_pin": true,
     "result_reachable_construction_only": true,
-    "source_task_bridge": false,
+    "source_task_bridge": true,
     "actual_GPU_NPU_resources": false,
-    "guide": "docs/external-resources-design.md"
+    "guide": "docs/external-resources-design.md",
+    "C_parent_construction": true
   },
   "source_resources": {
     "source_support": true,
@@ -1774,7 +1775,23 @@
     "native_request_parent": true,
     "reference_task_regions": true,
     "reference_request_parent": true,
-    "source_language": "0.22"
+    "source_language": "0.22",
+    "dependency_graph": {
+      "status": "development_typed_C_and_Cpp_host_API",
+      "source_parent_creation": false,
+      "C_table_parent_creation": true,
+      "physical_parent_leases": true,
+      "original_parent_grants_rechecked": true,
+      "atomic_logical_dependency_promotion": true,
+      "metadata_retains_no_payload": true,
+      "maximum_direct_parents": 16,
+      "maximum_objects_including_child": 4096,
+      "maximum_dependency_depth": 256,
+      "guide": "docs/resource-regions.md",
+      "source_FFI_parent_construction": true,
+      "C_table_prefix": "NEX_FFI_V1_RESOURCE_PARENTS_SIZE",
+      "introduced_toolchain": "0.131.0"
+    }
   },
   "task_value_retirement": {
     "status": "private_native_scheduler",

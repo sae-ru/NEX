@@ -183,6 +183,30 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk131_requires_actual_installed_dependent_resource_execution(self):
+        current=self.report();current.update(version='0.131.0',language='0.22',doctor={'version':'0.131.0'},compiler_sha256='a'*64)
+        fields=('ok','native_reference','genuine_previous_C_prefix','hidden_parent_scope_future_channel_closure',
+                'physical_parent_quota','cancel_deadline_borrow_fence','source_deleted_replay','client_exclusion')
+        current['evidence']={'dependent_resource_ffi':{**{key:True for key in fields},'source_checks':37,
+            'source_report':{'schema':'nex.dependent-resource-source/1','ok':True,'source_parent_FFI':True,'compiler_sha256':'a'*64,
+                             'checks':[{}]*37,'actual_producers':['C11','CPP20'],'actual_GPU_NPU_resources':False}}}
+        for field in fields:
+            for value in [None,False,1,'true']:
+                damaged=copy.deepcopy(current);damaged['evidence']['dependent_resource_ffi'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(RuntimeError,'dependent resource FFI evidence'):
+                    acceptance.validate_completed_report(damaged)
+        for count in [None,'37',True,36,38]:
+            damaged=copy.deepcopy(current);damaged['evidence']['dependent_resource_ffi']['source_checks']=count
+            with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'dependent resource FFI evidence'):
+                acceptance.validate_completed_report(damaged)
+        for field,value in [('ok',1),('checks',[{}]*36),('source_parent_FFI',False),('compiler_sha256','b'*64),
+                            ('actual_producers',['C11']),('actual_GPU_NPU_resources',True)]:
+            damaged=copy.deepcopy(current);damaged['evidence']['dependent_resource_ffi']['source_report'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'actual dependent resource source report'):
+                acceptance.validate_completed_report(damaged)
+        with self.assertRaisesRegex(RuntimeError,'public source task/FFI resource transport'):
+            acceptance.validate_completed_report(current)
+
     def test_task_value_retirement_requires_actual_installed_cleanup_evidence(self):
         current=self.report();current['doctor']={'version':'0.128.0'}
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):

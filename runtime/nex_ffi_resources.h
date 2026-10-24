@@ -30,7 +30,7 @@ public:
   void check()const;
   void callbacks(nex_ffi_resource_factory_v1,nex_ffi_resource_destroy_v1)const;
   ExternalResource create(const std::string&,const std::string&,uint64_t,nex_ffi_resource_destroy_v1,
-      const std::function<void(void**,const ResourcePermit&)> &)const;
+      const std::function<void(void**,const ResourcePermit&)> &,std::span<const ExternalResource> parents={})const;
   ExternalResourceBorrow borrow(const ExternalResource&,const std::string&,const std::string&)const;
   void *pointer(const ExternalResourceBorrow&,const std::string&,const std::string&)const;
 };

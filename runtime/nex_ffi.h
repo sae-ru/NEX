@@ -71,10 +71,15 @@ typedef struct nex_ffi_api_v1 {
   nex_ffi_status (*resource_close)(nex_ffi_call,nex_ffi_ref,uint32_t*);
   nex_ffi_status (*resource_is_open)(nex_ffi_call,nex_ffi_ref,uint32_t*);
   nex_ffi_status (*resource_identity)(nex_ffi_call,nex_ffi_ref,uint64_t*);
+  /* Parent tokens belong to this call. The host admits physical parent leases
+     before factory entry and retains them until the child destructor finishes.
+     At most16 supplied parents; transitive identities are deduplicated. */
+  nex_ffi_status (*resource_create_with_parents)(nex_ffi_call,nex_ffi_type,uint64_t,const nex_ffi_ref*,uint64_t,nex_ffi_resource_factory_v1,nex_ffi_resource_destroy_v1,void*,nex_ffi_ref*);
 } nex_ffi_api_v1;
 #define NEX_FFI_V1_TRANSPORT_SIZE ((uint32_t)offsetof(nex_ffi_api_v1,argument_type))
 #define NEX_FFI_V1_TYPED_SIZE ((uint32_t)offsetof(nex_ffi_api_v1,resource_create))
-#define NEX_FFI_V1_RESOURCE_SIZE ((uint32_t)sizeof(nex_ffi_api_v1))
+#define NEX_FFI_V1_RESOURCE_SIZE ((uint32_t)offsetof(nex_ffi_api_v1,resource_create_with_parents))
+#define NEX_FFI_V1_RESOURCE_PARENTS_SIZE ((uint32_t)sizeof(nex_ffi_api_v1))
 
 /* Require this major ABI and a table prefix at least minimum_size bytes long. */
 const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi_version,uint32_t minimum_size);
