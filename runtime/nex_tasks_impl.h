@@ -125,6 +125,7 @@ struct TaskGroup::Impl {
     bool resourceRetirementStarted=false,resourceRetirementRequested=false,resourceRetirementInFlight=false;
   };
   std::unique_ptr<ResourceRegion> resourceRoot;
+  bool sourceResourceValues=false;
   size_t resourceJobHead=none,resourceJobTail=none;
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
@@ -738,7 +739,12 @@ struct TaskGroup::Impl {
 #endif
     require();
     ValueFlush flush{this};
-    if(kind==Awaiter::Send){Scope targetScope;TaskGroup *group;{std::lock_guard lock(mutex);if(target>=pipes.size()||index>=jobs.size())throw Trap("E_TASK_SCOPE","invalid channel/task",0);group=jobs[index]->group;if(pipes[target]->scope!=none)targetScope=Scope(group->impl,pipes[target]->scope);}taskValue(*group,value,targetScope);}
+    std::vector<ExternalResource> transfer;
+    if(kind==Awaiter::Send){Scope targetScope;TaskGroup *group;bool resourceValues;
+      {std::lock_guard lock(mutex);if(target>=pipes.size()||index>=jobs.size())throw Trap("E_TASK_SCOPE","invalid channel/task",0);group=jobs[index]->group;resourceValues=sourceResourceValues;if(pipes[target]->scope!=none)targetScope=Scope(group->impl,pipes[target]->scope);}
+      if(resourceValues){transfer=collectTaskSnapshot(*group,value,targetScope);group->transferSourceResources(transfer,targetScope,false,false);}
+      else taskValue(*group,value,targetScope);
+    }
     std::lock_guard lock(mutex);
     ValueMutation mutation{this,flush};
     if(index>=jobs.size()||activeTaskState!=this||activeTaskIndex!=index)throw Trap("E_TASK_SCOPE","awaiter belongs to another task",0);
@@ -768,6 +774,7 @@ struct TaskGroup::Impl {
     auto &pipe=*pipes[target];scopeAccess(pipe.scope);
     if(kind==Awaiter::Send){
       if(pipe.closed)return false;
+      if(!transfer.empty())ExternalResource::transferRegions(transfer,resourceContext(job).authority(),pipe.scope==none?resourceRoot->authority():regions[pipe.scope]->resources->authority());
       if(pipe.receiveHead!=none){size_t receiver=pipe.receiveHead;setEvent(receiver,{true,std::move(value)});wake(receiver);job.event.present=true;return false;}
       if(pipe.count<pipe.buffer.size()){pipe.push(std::move(value));job.event.present=true;return false;}
       job.pending=std::move(value);link(index,Send,target);return parkValues(index,flush);
@@ -862,13 +869,13 @@ TaskGroup::Scope TaskGroup::currentScopeOrEmpty()const{
   return Scope(impl,impl->jobs[activeTaskIndex]->scope);
 }
 TaskGroup::Scope TaskGroup::currentScope()const{auto scope=currentScopeOrEmpty();if(scope.empty())throw Trap("E_TASK_SCOPE","no current logical task scope",0);return scope;}
-void TaskGroup::enableResourceRegions(ResourceRegionAuthority requestParent){
+void TaskGroup::enableResourceRegions(ResourceRegionAuthority requestParent,bool sourceValues){
   impl->require(true);ResourceRegionLimits limits;limits.tasks=impl->ready.size();
   auto resources=requestParent?std::make_unique<ResourceRegion>(ResourceRegion::inRequest(ResourceRegionFamily::Native,requestParent,limits)):
     std::make_unique<ResourceRegion>(ResourceRegionFamily::Native,limits);
   std::lock_guard lock(impl->mutex);
   if(impl->resourceRoot||!impl->jobs.empty()||impl->sealed||impl->finished)throw Trap("E_TASK_SCOPE","resource regions must be enabled once before spawning tasks",0);
-  impl->resourceRoot=std::move(resources);
+  impl->resourceRoot=std::move(resources);impl->sourceResourceValues=sourceValues;
 }
 ResourceRegionAuthority TaskGroup::resourceAuthority()const{
   return hostOperation({},[&]{
@@ -881,6 +888,23 @@ ResourceRegionAuthority TaskGroup::resourceAuthority()const{
   });
 }
 
+void TaskGroup::transferSourceResources(std::span<const ExternalResource> values,const Scope &target,bool scopeReturn,bool commit)const{
+  if(values.empty())return;
+  impl->require();const auto destination=target.empty()?none:scopeIndex(target);
+  ResourceRegionAuthority actor,receiver;
+  {
+    std::lock_guard lock(impl->mutex);
+    if(!impl->sourceResourceValues||!impl->resourceRoot||impl->finished)
+      throw DataError("E_TASK_VALUE","task snapshot cannot contain external resource authority");
+    impl->scopeAccess(destination);
+    if(activeTaskState==impl.get()&&activeTaskIndex<impl->jobs.size()){
+      auto &job=*impl->jobs[activeTaskIndex];impl->scopeAccess(job.scope);actor=impl->resourceContext(job).authority();
+      if(scopeReturn&&destination==job.memberScope)receiver=job.resources->region->authority();
+    }else actor=impl->resourceRoot->authority();
+    if(!receiver)receiver=destination==none?impl->resourceRoot->authority():impl->regions[destination]->resources->authority();
+  }
+  ExternalResource::transferRegions(values,actor,receiver,commit);
+}
 void TaskGroup::requireScope(const Scope &scope)const{impl->require();auto index=scopeIndex(scope);std::lock_guard lock(impl->mutex);impl->scopeAccess(index);}
 bool TaskGroup::scopeContains(const Scope &ancestor,const Scope &descendant)const{
   impl->require();auto a=scopeIndex(ancestor),d=scopeIndex(descendant);std::lock_guard lock(impl->mutex);return impl->within(a,d);
@@ -917,7 +941,10 @@ TaskGroup::Ticket TaskGroup::spawnWithContext(const Scope &scope,ContextFactory 
 }
 TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Value captures,ContextFactory contextFactory,const void *context){
   return hostOperation({},[&]{
-    impl->require();if(bool(factory)==bool(contextFactory))throw Trap("E_TASK_SCOPE","task factory is missing or ambiguous",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);
+    impl->require();if(bool(factory)==bool(contextFactory))throw Trap("E_TASK_SCOPE","task factory is missing or ambiguous",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);
+    bool resourceValues;{std::lock_guard lock(impl->mutex);resourceValues=impl->sourceResourceValues;}
+    if(resourceValues){auto combined=std::make_shared<Data>(Data::List);combined->values={input,captures};taskValue(*this,Value(std::move(combined)),targetScope);}
+    else{taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);}
     auto job=std::make_unique<Impl::Job>();job->group=this;job->cancellation=std::make_shared<task_detail::Cancellation>();
     bool resourcesEnabled;
     {std::lock_guard lock(impl->mutex);resourcesEnabled=bool(impl->resourceRoot);

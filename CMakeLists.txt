@@ -99,6 +99,12 @@ add_test(NAME source_task_resource_prototype COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_resource_source.py $<TARGET_FILE:nex_source_resource_probe>
   --context-probe $<TARGET_FILE:nex_task_owned_foreign_context_probe>)
 set_tests_properties(source_task_resource_prototype PROPERTIES TIMEOUT 900)
+add_executable(nex_resource_transfers_probe tests/resource_transfers.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_resource_transfers_probe PRIVATE runtime)
+target_link_libraries(nex_resource_transfers_probe PRIVATE Threads::Threads)
+target_compile_options(nex_resource_transfers_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_definitions(nex_resource_transfers_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+add_test(NAME atomic_resource_transfers COMMAND nex_resource_transfers_probe)
 add_executable(nex_task_owned_foreign_context_probe tests/task_owned_foreign_context.cpp)
 target_link_libraries(nex_task_owned_foreign_context_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_task_owned_foreign_context_probe PRIVATE -Wall -Wextra -Wpedantic)
@@ -793,13 +799,17 @@ add_test(NAME task_debug_native COMMAND ${Python3_EXECUTABLE}
   $<TARGET_FILE:nex_task_debug_build_probe> $<TARGET_FILE:nex>)
 set_tests_properties(task_debug_native PROPERTIES TIMEOUT 900)
 
-# The private resource-region lifecycle is now part of TaskGroup. Standalone
-# native runtime probes compile that implementation even when the optional
-# region authority has not been enabled at run time.
+# Resource-region/value transfer is part of TaskGroup. Standalone runtimes need
+# the same host resource implementation, including when source transport is off.
 get_directory_property(NEX_LOCAL_TARGETS BUILDSYSTEM_TARGETS)
 foreach(NEX_LOCAL_TARGET IN LISTS NEX_LOCAL_TARGETS)
   get_target_property(NEX_LOCAL_DEFINITIONS ${NEX_LOCAL_TARGET} COMPILE_DEFINITIONS)
   if("NEX_ASYNC_TASKS" IN_LIST NEX_LOCAL_DEFINITIONS)
-    target_sources(${NEX_LOCAL_TARGET} PRIVATE runtime/nex_resource_region.cpp)
+    get_target_property(NEX_LOCAL_SOURCES ${NEX_LOCAL_TARGET} SOURCES)
+    foreach(NEX_OWNED_RUNTIME runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+      if(NOT NEX_OWNED_RUNTIME IN_LIST NEX_LOCAL_SOURCES)
+        target_sources(${NEX_LOCAL_TARGET} PRIVATE ${NEX_OWNED_RUNTIME})
+      endif()
+    endforeach()
   endif()
 endforeach()

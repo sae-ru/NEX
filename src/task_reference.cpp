@@ -400,8 +400,9 @@ struct Reference {
     if(auto cached=weak.lock())return RV(std::move(cached));
     auto result=TaskReferenceAccess::create(kind,identity,scope,i);weak=result.object;return result;
   }
-  void snapshot(const RV &root,size_t target,size_t current){
+  void snapshot(const RV &root,size_t target,size_t current,nexrt::ResourceRegionAuthority actor={},nexrt::ResourceRegionAuthority receiver={},bool transfer=true){
     std::vector<RV> work{root};std::unordered_set<const RD*> seen;size_t members=1;
+    std::vector<nexrt::ExternalResource> owners;std::unordered_set<uint64_t> ownerIds;
     while(!work.empty()){
       auto v=std::move(work.back());work.pop_back();charge(1);
       if(v.tag==RV::Integer)continue;
@@ -411,7 +412,14 @@ struct Reference {
       if(!seen.insert(v.object.get()).second)continue;
       if(seen.size()>262144||v.object->values.size()>262144-members)throw Error("E_LIMIT","reference snapshot graph exceeds262144 members");
       auto kind=v.object->kind;
-      if(kind==RD::External)throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
+      if(kind==RD::External){
+        if(!supportsTaskForeignCalls(program))throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
+        const auto &owner=nexrt::externalResource(v.object);
+        if(ownerIds.insert(owner.identity()).second){
+          if(owners.size()==4096)throw Error("E_RESOURCE_REGION_LIMIT","reference snapshot exceeds4096 distinct resource owners");
+          owners.push_back(owner);
+        }
+      }
       if(kind==RD::File)throw Error("E_TASK_VALUE","reference task cannot transport file authority");
       if(kind==RD::TaskScope||kind==RD::Task||kind==RD::Channel){
         capability(v,kind,current);
@@ -419,6 +427,12 @@ struct Reference {
         if(target==none||!within(scope,target))throw Error("E_TASK_SCOPE","reference task capability escapes its logical owner scope");
       }
       members+=v.object->values.size();work.insert(work.end(),v.object->values.begin(),v.object->values.end());
+    }
+    if(!owners.empty()){
+      if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource transfer requires enabled ownership regions");
+      if(!actor)actor=resourceRoot->authority();
+      if(!receiver)receiver=target==none?resourceRoot->authority():regions.at(target).resources->authority();
+      nexrt::ExternalResource::transferRegions(owners,actor,receiver,transfer);
     }
   }
   void enqueue(size_t i){auto &j=*jobs[i];if(j.state==Ready&&!j.queued){ready.push_back(i);j.queued=true;}}
@@ -550,14 +564,16 @@ struct Reference {
     size_t s=regions.size();Region region;region.owner=i;region.parent=parent;region.depth=depth;
     if(resourceRoot)region.resources=std::make_unique<nexrt::ResourceRegion>(resourceContext(j).child());
     regions.push_back(std::move(region));
-    if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);j.current=s;
+    if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);
+    snapshot(r.arguments.at(1),s,parent,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},resourceRoot?regions[s].resources->authority():nexrt::ResourceRegionAuthority{});
+    j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
     a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll);
     j.stack.push_back(std::move(a));j.request={};enqueue(i);
   }
   void spawn(size_t i,const TaskTransition &r){
     auto &parent=*jobs[i];auto s=capability(r.arguments.at(0),RD::TaskScope,parent.current);
-    auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current);
+    auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current,resourceRoot?resourceAuthority(parent):nexrt::ResourceRegionAuthority{});
     if(jobs.size()>=maximumTasks||parent.depth>=256)throw Error("E_LIMIT","reference task slot/nesting limit exceeded",r.span);
     auto job=std::make_unique<Job>();job->member=job->current=s;job->parent=i;job->depth=parent.depth+1;
     Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll);job->stack.push_back(std::move(a));
@@ -644,7 +660,7 @@ struct Reference {
     auto p=capability(r.arguments.at(0),RD::Channel,j.current);auto &pipe=pipes[p];
     if(r.operation=="task_close"){auto closed=closePipe(p);answer(i,RV(closed,true));return;}
     if(r.operation=="task_send"){
-      auto item=r.arguments.at(1);snapshot(item,pipe.scope,j.current);
+      auto item=r.arguments.at(1);snapshot(item,pipe.scope,j.current,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},{},!pipe.closed);
       if(pipe.closed){answer(i,RV(0,true));return;}
       auto receiver=first(pipe.receivers,Receive,p);
       if(receiver!=none){answer(receiver,nexrt::success(std::move(item)));answer(i,RV(1,true));return;}
@@ -679,7 +695,9 @@ struct Reference {
       if(observer)observer(i,r);
       checkControl(operationSpan);
       if(r.kind==TaskTransition::Done){
-        auto target=a.region==none?j.member:a.parent;snapshot(r.value,target,j.current);
+        auto target=a.region==none?j.member:a.parent;
+        auto destination=(resourceRoot&&a.region!=none&&target==j.member)?j.resources->authority():nexrt::ResourceRegionAuthority{};
+        snapshot(r.value,target,j.current,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},destination);
         if(a.region==none){beginFinish(i,{},std::move(r.value));return;}
         auto s=a.region;auto &region=regions[s];bool failed=r.value.tag==RV::Object&&r.value.object&&r.value.object->kind==RD::Failure;
         if(!failed&&cycle(i,s,true))throw Error("E_TASK_CYCLE","cyclic reference scope drain");

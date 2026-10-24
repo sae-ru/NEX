@@ -21,6 +21,68 @@ DECLARATIONS={
  'probe_create':('x:i64','result<Session>',16),
 }
 CASES={
+ 'resource_closed_channel_single_CPU_progress':'''server fn main()->unit !{task,ffi,io}{
+ let value:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{
+ let ch:channel<Session>=channel_new<Session>(s,1);assert(task_close(ch));
+ let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{let r:Session=create(777);assert(!task_send(ch,r));return 42;});
+ while cleanup_started(0)==0{task_yield();}assert(release_cleanup(0)==42);return task_wait(child);
+ });print(value);}''',
+ 'resource_buffer_drop_single_CPU_progress':'''server fn main()->unit !{task,ffi,io}{
+ let value:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{
+ let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{
+ return with_tasks(1,server fn(inner:task_scope)->i64 !{task,ffi}{
+ let ch:channel<Session>=channel_new<Session>(inner,1);
+ let sender:task<bool>=task_spawn(inner,server fn()->bool !{task,ffi}{let r:Session=create(777);return task_send(ch,r);});
+ assert(task_wait(sender));assert(cleanup_started(0)==0);return 42;
+ });});while cleanup_started(0)==0{task_yield();}assert(release_cleanup(0)==42);return task_wait(child);
+ });print(value);}''',
+ 'resource_admitted_borrow_survives_close':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=create(42);let answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{
+ let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{return hold(r);});
+ while started(0)==0{task_yield();}assert(resource_close(r));assert(!resource_is_open(r));return task_wait(child);
+ });assert(answer==42);print(42);}''',
+ 'resource_closed_owner_through_channel':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=create(42);assert(resource_close(r));
+ let alias:Session=with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{
+ let ch:channel<Session>=channel_new<Session>(s,1);assert(task_send(ch,r));let got:Session=unwrap(task_recv(ch));assert(status(got)==13);return got;
+ });assert(alias==r);assert(!resource_is_open(alias));print(42);}''',
+ 'resource_closure_scope_return':'''server fn main()->unit !{task,ffi,io}{
+ let callback:server fn()->i64 !{task,ffi}=with_tasks(1,server fn(s:task_scope)->server fn()->i64 !{task,ffi} !{task,ffi}{
+ let owner:Session=create(42);return server fn()->i64 !{task,ffi}{task_yield();return read(owner);};
+ });assert(callback()==42);print(42);}''',
+ 'resource_scope_return':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{return create(42);});
+ task_yield();assert(resource_is_open(r));assert(read(r)==42);print(42);}''',
+ 'resource_future_return':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{
+ let child:task<Session>=task_spawn(s,server fn()->Session !{task,ffi}{return create(42);});
+ let owner:Session=task_wait(child);assert(read(owner)==42);return owner;
+ });assert(read(r)==42);print(42);}''',
+ 'resource_parent_capture':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=create(42);let answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{
+ let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(r);});return task_wait(child);
+ });assert(read(r)==answer);print(answer);}''',
+ 'resource_sibling_channel':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{
+ let ch:channel<Session>=channel_new<Session>(s,0);
+ let producer:task<bool>=task_spawn(s,server fn()->bool !{task,ffi}{let owner:Session=create(42);return task_send(ch,owner);});
+ let consumer:task<Session>=task_spawn(s,server fn()->Session !{task,ffi}{let owner:Session=unwrap(task_recv(ch));assert(read(owner)==42);return owner;});
+ let owner:Session=task_wait(consumer);assert(task_wait(producer));return owner;
+ });assert(read(r)==42);print(42);}''',
+ 'resource_nested_scope_capture_and_return':'''server fn main()->unit !{task,ffi,io}{
+ let r:Session=with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{
+ let child:task<Session>=task_spawn(s,server fn()->Session !{task,ffi}{
+ let first:Session=create(42);
+ return with_tasks(1,server fn(inner:task_scope)->Session !{task,ffi}{
+ let second:task<Session>=task_spawn(inner,server fn()->Session !{task,ffi}{assert(read(first)==42);return first;});return task_wait(second);
+ });});return task_wait(child);
+ });assert(read(r)==42);print(42);}''',
+ 'resource_aggregate_channel_and_aliases':'''server fn main()->unit !{task,ffi,io}{
+ let p:Packet=with_tasks(2,server fn(s:task_scope)->Packet !{task,ffi}{
+ let ch:channel<Packet>=channel_new<Packet>(s,1);
+ let producer:task<bool>=task_spawn(s,server fn()->bool !{task,ffi}{let owner:Session=create(42);let p:Packet=Packet("owners",[owner,owner],ok(owner),Maybe::Some(owner));return task_send(ch,echo(p));});
+ let p:Packet=unwrap(task_recv(ch));assert(task_wait(producer));return p;
+ });assert(p.items[0]==p.items[1]);assert(resource_close(p.items[0]));assert(!resource_is_open(p.items[1]));print(42);}''',
  'aliases_and_closed_owner':'''server fn main()->unit !{task,ffi,io}{
  let r:Session=create(42);let alias:Session=forward(r);assert(alias==r);
  assert(read(alias)==42);assert(tokens(r)==42);assert(tokens(alias)==42);
@@ -94,7 +156,7 @@ def main():
   (out/(label+'.stdout')).write_text(result.stdout);(out/(label+'.stderr')).write_text(result.stderr);row['exit_code']=result.returncode
   assert result.returncode==expected,(label,result.returncode,result.stdout[-2500:],result.stderr[-2500:]);return result
  def source(pin,body):
-  lines=['module owned_task;server resource Session;enum Maybe{Some(value:Session);None;}struct Packet{name:str;items:list<Session>;outcome:result<Session>;tag:Maybe;}']
+  lines=['module owned_task;server resource Session;enum Maybe{Some(value:Session);None;}struct Packet{name:str;items:list<Session>;outcome:result<Session>;tag:Maybe;}client fn client_value()->i64{return 42;}']
   for name,(argument,result,_) in DECLARATIONS.items():lines.append('server extern fn '+name+'('+argument+')->'+result+' !{ffi}=foreign("test","'+name+'","'+pin+'");')
   return '\n'.join(lines)+'\n'+body+'\n'
  def bundle(label,body,pin='0'*64):
@@ -138,7 +200,7 @@ def main():
     for suffix in ('reference','native'):
      events=(out/(label+'-'+suffix+'.events')).read_text();assert events.startswith('I') and events.endswith('D') and events.count('F')==events.count('X'),(label,suffix,events)
      if 'single_CPU_progress' in name:assert events=='IFBRXD',events
-     if name in ('cancel','deadline'):assert events=='IFHPXD',events
+     if name in ('cancel','deadline','resource_admitted_borrow_survives_close'):assert events=='IFHPXD',events
     report['checks'].append(dialect+'_'+name+'_native_and_independent_AST');write(out/'report.json',report)
    for name,body in CASES.items():execute(name,body)
    execute('checked_failure','server fn main()->unit !{task,ffi}{let r:Session=create(42);assert(read(r)==43);}','E_ASSERT')
@@ -154,12 +216,25 @@ def main():
     });print(42);}''',configuration=quota)
    execute('cancel','''server fn main()->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{let child:task<unit>=task_spawn(s,server fn()->unit !{task,ffi}{let r:Session=create(42);let value:i64=hold(r);});while started(0)==0{task_yield();}assert(task_cancel(child));task_wait(child);});}''','E_CANCELLED')
    execute('deadline','server fn main()->unit !{task,ffi}{let r:Session=create(42);let value:i64=hold(r);}','E_TIMEOUT',True)
+   web=directory/'web';run(dialect+'-client-isolation',command('web',bundle(dialect+'-client-isolation',CASES['resource_sibling_channel'],pin),web))
+   client='\n'.join(path.read_text() for path in web.rglob('*.ts'))
+   assert 'client_value' in client and pin not in client and 'owned_task::Session' not in client and 'resource_create' not in client
+   report['checks'].append(dialect+'_only_reachable_client_code_emitted')
   for name,body in {
-   'capture':'server fn bad(r:Session)->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{assert(resource_is_open(r));});}',
-   'future_result':'server fn main()->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->Session !{task,ffi}{return create(42);});}',
-   'channel':'server fn main()->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{let ch:channel<Session>=channel_new<Session>(s,1);});}',
+   'file_capture':'server fn bad(r:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:file=r;});}',
+   'file_future_result':'server fn bad(r:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->file !{task}{return r;});}',
+   'file_channel':'server fn main()->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let ch:channel<file>=channel_new<file>(s,1);});}',
   }.items():
    error=json.loads(run(name+'-rejected',command('check',bundle(name,body)),1).stdout);assert error['code']=='E_TASK_TYPE',error;report['checks'].append(name+'_still_rejected_before_execution')
+  for name,body in {
+   '021-resource-capture':'server fn bad(r:Session)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:Session=r;});}',
+   '021-resource-result':'server fn bad(r:Session)->unit !{task}{with_tasks(1,server fn(s:task_scope)->Session !{task}{return r;});}',
+   '021-resource-channel':'server fn main()->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let ch:channel<Session>=channel_new<Session>(s,1);});}',
+   '021-phantom-resource-capture':'struct Box<T>{id:i64;}server fn bad(r:Box<Session>)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{assert(r.id==42);});}',
+  }.items():
+   error=json.loads(run(name+'-rejected',command('check',bundle(name,body),language='0.21'),1).stdout);assert error['code']=='E_TASK_TYPE',error;report['checks'].append(name+'_original_semantics_retained')
+  body='server fn bad(r:list<Session>)->list<i64>{return parallel_map(r,server fn(x:Session)->i64{return 0;},1);}'
+  error=json.loads(run('parallel-owner-rejected',command('check',bundle('parallel-owner',body)),1).stdout);assert error['code']=='E_PARALLEL_TYPE',error;report['checks'].append('unstructured_parallel_resources_still_rejected')
   report['ok']=True
  finally:
   report['seconds']=time.monotonic()-started;write(out/'report.json',report);print(json.dumps({k:report[k] for k in ('ok','private_language','checks','seconds')}),flush=True)

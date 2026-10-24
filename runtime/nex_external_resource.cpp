@@ -69,6 +69,12 @@ ExternalResource::ExternalResource(ResourceOwner<external_detail::State> owner,s
     :owner(std::move(owner)),type(std::move(type)),capacity(capacity){}
 bool ExternalResource::isOpen()const noexcept{return owner.isOpen()&&(!region||region.active());}
 bool ExternalResource::close()const noexcept{return owner.close();}
+void ExternalResource::transferRegions(std::span<const ExternalResource> values,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit){
+  if(values.size()>4096)throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer batch exceeds4096 owners");
+  std::vector<ResourceRegionOwner> owners;owners.reserve(values.size());
+  for(const auto &value:values)owners.push_back(value.region);
+  ResourceRegionOwner::transfer(owners,actor,target,commit);
+}
 const std::string &ExternalResource::typeName()const noexcept{static const std::string empty;return type?type->name:empty;}
 const std::string &ExternalResource::typeHash()const noexcept{static const std::string empty;return type?type->hash:empty;}
 ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const ExternalResourceClass &key,

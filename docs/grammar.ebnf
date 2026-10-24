@@ -280,3 +280,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Private148 adds typed owned completion for task-local opaque resources in
    that explicit022 API, without new syntax. Resource callback capture/result,
    future/channel transport and public022 migration remain unsupported. *)
+
+(* Private149 explicit022 API adds resource capture/result/future/channel and
+   closure transfer without syntax changes. Atomic genuine-owner ancestry rules
+   apply; file/wire/browser authority and public022 migration remain separate. *)

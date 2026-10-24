@@ -30,8 +30,9 @@ struct TaskValueAccess {
 Value taskScopeValue(TaskGroup &group,const TaskGroup::Scope &scope){return TaskValueAccess::scope(group,scope);}
 Value taskTicketValue(TaskGroup &group,const TaskGroup::Ticket &ticket,int64_t kind){return TaskValueAccess::ticket(group,ticket,kind);}
 Value taskChannelValue(TaskGroup &group,const TaskGroup::Channel &channel,int64_t kind){return TaskValueAccess::channel(group,channel,kind);}
-void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target){
+std::vector<ExternalResource> collectTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target){
   std::vector<Value> pending{value};std::unordered_set<const Data*> seen;size_t members=1;
+  std::vector<ExternalResource> resources;std::unordered_set<uint64_t> resourceIds;
   while(!pending.empty()){
     auto next=std::move(pending.back());pending.pop_back();
     if(next.tag==Value::Floating){(void)next.floating();continue;}
@@ -42,7 +43,12 @@ void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::S
     if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","task snapshot exceeds its object limit");
     if(seen.size()%64==0)pollHostOperation(0);
     auto kind=next.object->kind;
-    if(kind==Data::External)throw DataError("E_TASK_VALUE","task snapshot cannot contain external resource authority");
+    if(kind==Data::External){const auto &owner=externalResource(next.object);
+      if(resourceIds.insert(owner.identity()).second){
+        if(resources.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","task snapshot exceeds4096 distinct resource owners");
+        resources.push_back(owner);
+      }
+    }
     if(kind==Data::File)throw DataError("E_TASK_VALUE","task snapshot cannot contain file authority");
     if(kind==Data::TaskScope||kind==Data::Task||kind==Data::Channel){
       const auto &cap=taskData(next,kind);group.requireScope(cap.scope);
@@ -51,4 +57,8 @@ void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::S
     if(next.object->values.size()>parallelMaximumNodes-members)throw DataError("E_LIMIT","task snapshot exceeds its member limit");
     members+=next.object->values.size();pending.insert(pending.end(),next.object->values.begin(),next.object->values.end());
   }
+  return resources;
+}
+void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target,bool scopeReturn){
+  auto resources=collectTaskSnapshot(group,value,target);group.transferSourceResources(resources,target,scopeReturn);
 }

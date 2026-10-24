@@ -188,8 +188,8 @@ def main():
   for name,body in (
       ('caller_authorization','server fn main()->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{});}'),
       ('synchronous_helper','server fn helper()->i64 !{ffi}{return add(41);}server fn main()->unit !{task,ffi}{let value:i64=helper();}'),
-      ('resource_callback','server resource Session;server fn helper(owner:Session)->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{assert(resource_is_open(owner));});}fn main()->unit{}'),
-      ('phantom_callback','server resource Session;struct Box<T>{id:i64;}server fn helper(owner:Box<Session>)->unit !{task,ffi}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{assert(owner.id==42);});}fn main()->unit{}')):
+      ('file_callback','server fn helper(owner:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:file=owner;});}fn main()->unit{}'),
+      ('phantom_file_callback','struct Box<T>{id:i64;}server fn helper(owner:Box<file>)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{assert(owner.id==42);});}fn main()->unit{}')):
    path=bundle(name,body)
    error=json.loads(run(name+'-rejected',command('check',path),1).stdout)
    assert error['code'] in ('E_EFFECT','E_TASK_TYPE'),error

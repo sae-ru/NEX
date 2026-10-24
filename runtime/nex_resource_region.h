@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
+#include <span>
 
 namespace nexrt {
 template<class> class ResourceOwner;
@@ -59,6 +60,10 @@ public:
   void checkCreation()const;
   void check(const ResourceRegionAuthority&)const;
   void promote(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const;
+  // Validate the entire bounded batch before changing any owner. Ancestor
+  // borrowing is unchanged; promotion reserves every destination slot first.
+  static void transfer(std::span<const ResourceRegionOwner>,const ResourceRegionAuthority &actor,
+      const ResourceRegionAuthority &target,bool commit=true);
 };
 class ResourceRegionAuthority {
   std::shared_ptr<resource_region_detail::Graph> graph;

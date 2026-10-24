@@ -113,7 +113,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
       if(!current.completed||current.pendingCall||current.pendingRequest)throw DataError("E_TASK_STATE","compiled task returned without completing");
       auto result=std::move(current.result);auto destination=current.returnDestination;
       if(current.closingScope){
-        hostOperation(current.scopeLocation,[&]{validateTaskSnapshot(group,result,current.parentScope);});
+        hostOperation(current.scopeLocation,[&]{validateTaskSnapshot(group,result,current.parentScope,true);});
         bool failed=result.tag==Value::Object&&result.object&&result.object->kind==Data::Failure;
         co_await group.leaveScope(*current.closingScope,failed).at(current.scopeLocation);
       }
@@ -141,6 +141,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
         auto child=checked([&]{
           if(stack.size()>=256)throw DataError("E_LIMIT","compiled task call depth exceeds 256");
           auto closure=request.arguments[1];const auto &code=closureCode(closure);
+          validateTaskSnapshot(group,closure,scope);
           auto body=std::make_unique<NativeTaskFrame>(code,std::vector<Value>{taskScopeValue(group,scope)},closure,current.host);
           body->closingScope=scope;body->parentScope=parent;body->scopeLocation=request.location;body->returnDestination=request.destination;body->depth=stack.size()+1;return body;
         });

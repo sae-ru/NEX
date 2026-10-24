@@ -73,10 +73,38 @@ publication. Existing task/inner-scope resource regions wait actual physical
 cleanup, object/capacity tickets and code pins before publishing completion.
 Logical close is immediate; it does not return physical capacity early.
 
-Source callback captures/results, futures and channels still reject resource
-types, including phantom types. Full cross-task/ancestor transfer remains pending.
-The source-local slice adds no new syntax and is available only through explicit
-private022 APIs. Public CLI language021 still rejects these task/FFI programs.
+Private149 extends the same explicit022 API to resource callback captures/results,
+futures, channels and returned closures. A fresh resource belongs to the current
+task root or its current owned inner scope. Passing an immutable value graph
+collects genuine owners only after validating every nested task capability and
+the bounded graph. A forest-locked batch validates all owner/actor/target
+ancestries and reserves every cross-graph destination slot before any mutation.
+An already longer-lived ancestor owner remains borrowed. Otherwise the genuine
+owner moves to the admitted ancestor destination, preserving every alias and
+physical identity. Siblings, foreign requests and ended owners cannot be revived.
+
+Spawn captures and future results use their admitted scope; an inner scope result
+uses its actual enclosing scope or the current task root when returning to its
+member scope. The latter must not accidentally target the enclosing member's
+owner or whole group. Open-channel sends transfer to the channel owner on queue
+admission. An admitted pending send retains this ownership even if later cancelled
+or closed before delivery. A send to an already closed channel validates the graph
+but does not move owners. Dropped buffers and canceled tasks keep physical cleanup
+fences. Source aliases can close one shared identity while a previously admitted
+C borrow retains its physical storage until the call ends.
+
+The native kernel opts into source resource values separately from host resource
+regions. Public021 and old host defaults retain resource rejection. The independent
+AST scheduler applies the same primitive from its own dispatch/region graph; it
+never runs native TaskGroup or TaskIR. Its lifetime analysis tracks opaque resources
+separately from forbidden files and records mandatory dynamic transfer obligations.
+It still rejects known escaping task/channel/scope authority. Unstructured
+parallel_map, file authority, wire/browser resources and arbitrary callable FFI
+snapshots remain unsupported. Source phantom resource types have no native access
+by themselves; their server realm and other checks still apply.
+
+This adds no syntax and is available only through explicit private022 APIs.
+Public CLI language021 still rejects these task/FFI/resource-transport programs.
 Thread-affine device construction, driver/DMA fences and general GPU/NPU resources
 need their own adapters and actual device evidence.
 
@@ -95,7 +123,7 @@ aggregate/channel transfer, unit, evaluation/short-circuit behavior, errors,
 cancellation, deadline settlement/unload and browser reachability exclusion.
 The context probe checks worker request turnover and late lexical/request/module
 revocation. `tests/task_foreign_origins.py` checks the authentic retained origins.
-Sanitizer, full regression, owned-resource transport, public migration and SDK/
+Sanitizer, full regression, public resource publication/migration and SDK/
 platform evidence retain their separate required gates.
 
 `tests/task_resource_source.py` uses actual C11/C++20 modules and emitted native

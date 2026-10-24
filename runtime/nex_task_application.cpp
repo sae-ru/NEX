@@ -46,7 +46,7 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
 #endif
     }
     TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageForeign)));
-    if(code.requirements&taskCodeImageForeign)group.enableResourceRegions();
+    if(code.requirements&taskCodeImageForeign)group.enableResourceRegions({},true);
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;
     std::shared_ptr<const TaskFrameHostContext> retained=context;

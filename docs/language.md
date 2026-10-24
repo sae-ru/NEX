@@ -1,3 +1,10 @@
+Private149 explicit022 C++ APIs add genuine resource capture/result/future/channel
+and closure transfer with atomic ancestor ownership and original physical grants.
+Files, unstructured parallel_map and browser/wire authority remain rejected;
+public021 source semantics and public022 migration stay separate. Runtime guards
+remain mandatory for dynamic resource ownership; task capability escapes retain
+their own static/runtime checks. Read task-foreign-prototype.md.
+
 Private148 explicit022 C++ APIs add task-local opaque resource calls through a
 separate typed owned-completion channel. Ordinary task helper frames can retain
 these owners; source callback captures/results and channel/future transfer remain

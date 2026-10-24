@@ -1690,7 +1690,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(profiling)components.insert(components.end(),{"nex_profile.cpp","third_party/tracy/public/TracyClient.cpp"});
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
-    components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_files.cpp"});
+    components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp","nex_files.cpp"});
     headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
     if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
@@ -1703,7 +1703,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;
   for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
-  const std::vector<std::string> taskCohortFiles={"nex_resource_region.h","nex_resource_region.cpp","nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_parallel.h","nex_parallel_value.h"};
+  const std::vector<std::string> taskCohortFiles={"nex_resource.h","nex_resource_region.h","nex_resource_region.cpp","nex_external_resource.h","nex_external_resource.cpp","nex_resource_executor.h","nex_resource_executor.cpp","nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_parallel.h","nex_parallel_value.h"};
   if(taskProviders&&profiling){for(const auto &file:{"nex_task_profile.h","nex_task_profile.cpp","nex_task_profile_site.h"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));if(std::find(components.begin(),components.end(),"nex_task_profile.cpp")==components.end())components.push_back("nex_task_profile.cpp");}
   if(taskProviders&&options.taskDebug)for(const auto &file:{"nex_task_debug.h","nex_task_debug_site.h","nex_task_debug.cpp"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));
   if(taskProviders)for(const auto &file:taskCohortFiles)if(!runtimeFiles.contains(file))runtimeFiles[file]=readFile(resourceFile("runtime/"+file));

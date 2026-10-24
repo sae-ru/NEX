@@ -3,6 +3,7 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 namespace nexrt {
 namespace resource_region_detail {
@@ -143,6 +144,56 @@ void ResourceRegionOwner::promote(const ResourceRegionAuthority &actor,const Res
   }
   const auto next=target.graph->freeSlot();auto &destination=target.graph->owners[next];destination=previous->owners[owner->slot];destination.node=target.node;
   target.graph->count(target.node,true);previous->clearSlot(owner->slot);owner->graph=target.graph;owner->node=target.node;owner->slot=next;
+}
+void ResourceRegionOwner::transfer(std::span<const ResourceRegionOwner> values,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit){
+  if(values.empty())return;
+  if(values.size()>4096)throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer batch exceeds4096 owners");
+  using namespace resource_region_detail;
+  std::vector<std::shared_ptr<Owner>> owners;owners.reserve(values.size());std::unordered_set<const Owner*> unique;
+  for(const auto &value:values){
+    if(!value.owner)throw DataError("E_RESOURCE_SCOPE","resource transfer requires a genuine logical owner");
+    if(unique.insert(value.owner.get()).second)owners.push_back(value.owner);
+  }
+  if(!actor.graph||!target.graph||actor.graph->forest!=target.graph->forest)
+    throw DataError("E_RESOURCE_SCOPE","resource transfer belongs to another request or group");
+  struct Move {std::shared_ptr<Owner> owner;std::shared_ptr<Graph> previous;size_t destination;};
+  std::vector<Move> moves;moves.reserve(owners.size());
+  std::lock_guard lock(actor.graph->forest->mutex);actor.graph->check(actor.node);target.graph->check(target.node);
+  size_t cursor=0;
+  for(const auto &owner:owners){
+    if(owner->forest!=actor.graph->forest||!owner->published)
+      throw DataError("E_RESOURCE_SCOPE","resource transfer requires a published owner in this request");
+    auto previous=owner->graph;previous->check(owner->node);
+    if(!ancestor(previous,owner->node,actor.graph,actor.node))
+      throw DataError("E_RESOURCE_SCOPE","resource transfer requires an admitted borrower");
+    if(ancestor(previous,owner->node,target.graph,target.node))continue;
+    if(!ancestor(target.graph,target.node,previous,owner->node))
+      throw DataError("E_RESOURCE_SCOPE","resource transfer target must be an ancestor owner");
+    if(!commit)continue;
+    size_t destination=owner->slot;
+    if(previous!=target.graph){
+      for(;cursor<target.graph->owners.size();++cursor){const auto &slot=target.graph->owners[cursor];
+        if(!slot.occupied||(slot.owner.expired()&&(!slot.attached||slot.settlement.ready())))break;
+      }
+      if(cursor==target.graph->owners.size())throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer destination capacity exhausted");
+      destination=cursor++;
+    }
+    moves.push_back({owner,std::move(previous),destination});
+  }
+  if(!commit)return;
+  // No allocation, callbacks or failing admission beyond this point. Preserve
+  // all physical objects, aliases, grants and their actual settlement fences.
+  for(auto &move:moves){auto &owner=*move.owner;
+    if(move.previous==target.graph){
+      move.previous->count(owner.node,false);owner.node=target.node;
+      move.previous->owners[owner.slot].node=target.node;move.previous->count(owner.node,true);
+    }else{
+      target.graph->clearSlot(move.destination);
+      auto &slot=target.graph->owners[move.destination];slot=move.previous->owners[owner.slot];slot.node=target.node;
+      target.graph->count(target.node,true);move.previous->clearSlot(owner.slot);
+      owner.graph=target.graph;owner.node=target.node;owner.slot=move.destination;
+    }
+  }
 }
 ResourceRegionAuthority::ResourceRegionAuthority(std::shared_ptr<resource_region_detail::Graph> graph,size_t node):graph(std::move(graph)),node(node){}
 void ResourceRegionAuthority::check()const{

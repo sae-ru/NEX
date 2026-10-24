@@ -16,7 +16,7 @@ struct Value {
   std::set<int> origins;
   std::vector<V> fields;
   std::map<std::string,Callable> calls;
-  bool opaque=false,file=false,shape=false;
+  bool opaque=false,file=false,resource=false,shape=false;
   std::optional<int64_t> integer;
   std::optional<bool> boolean;
 };
@@ -35,7 +35,8 @@ struct Analysis {
   V unknown(const Type &type){
     auto value=std::make_shared<Value>();
     value->opaque=containsAuthority(type)||type.kind==Type::Function||containsParameter(type);
-    value->file=containsNonTaskResource(p,type);
+    value->file=supportsTaskForeignCalls(p)?containsFile(p,type):containsNonTaskResource(p,type);
+    value->resource=supportsTaskForeignCalls(p)&&containsExternalResource(p,type);
     return value;
   }
   bool containsAuthority(const Type &type)const{
@@ -47,7 +48,7 @@ struct Analysis {
     auto value=std::make_shared<Value>();value->fields=std::move(fields);value->shape=true;
     for(const auto &field:value->fields){
       value->origins.insert(field->origins.begin(),field->origins.end());
-      value->opaque|=field->opaque;value->file|=field->file;
+      value->opaque|=field->opaque;value->file|=field->file;value->resource|=field->resource;
     }
     return value;
   }
@@ -60,7 +61,7 @@ struct Analysis {
     tick();if(a==b)return a;
     auto value=std::make_shared<Value>();value->origins=a->origins;
     value->origins.insert(b->origins.begin(),b->origins.end());
-    value->opaque=a->opaque||b->opaque;value->file=a->file||b->file;
+    value->opaque=a->opaque||b->opaque;value->file=a->file||b->file;value->resource=a->resource||b->resource;
     if(a->integer==b->integer)value->integer=a->integer;
     if(a->boolean==b->boolean)value->boolean=a->boolean;
     if(depth>=32){value->opaque=true;++report.widenings;return value;}
@@ -101,7 +102,9 @@ struct Analysis {
   void transfer(V value,const std::set<int> &targets,Span span,const char *operation){
     tick();++report.transfers;
     if(value->file)throw Error("E_TASK_VALUE",std::string(operation)+" cannot transport file authority",span);
-    bool deferred=value->opaque;
+    // Resource factories carry genuine runtime owners, not inferred task
+    // capability regions. Promotion/borrowing remains a runtime obligation.
+    bool deferred=value->opaque||value->resource;
     for(int origin:value->origins){
       bool allInvalid=!targets.empty(),allSafe=!targets.empty();
       for(int target:targets){auto r=relation(origin,target);allInvalid&=r==Invalid;allSafe&=r==Safe;}
@@ -144,7 +147,7 @@ struct Analysis {
     auto value=std::make_shared<Value>();
     for(auto capture:captures){
       value->origins.insert(capture->origins.begin(),capture->origins.end());
-      value->opaque|=capture->opaque;value->file|=capture->file;
+      value->opaque|=capture->opaque;value->file|=capture->file;value->resource|=capture->resource;
     }
     value->calls.emplace(fn.name,Callable{&fn,std::move(captures)});return value;
   }

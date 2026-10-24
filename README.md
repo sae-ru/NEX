@@ -1,3 +1,15 @@
+# Private149: source resource transfers
+
+The explicit022 C++ API now transfers genuine resources in callback captures,
+scope/task results, channels and returned closures. A bounded atomic batch checks
+the complete owner ancestry before changing ownership; aliases keep physical
+identity/grants and cleanup fences. Native and independent AST schedulers retain
+their own execution. Closed-channel sends do not extend resource lifetime, and
+file/parallel/wire/browser guards remain. Public021 and future022 history migration,
+installed SDK/platform/device acceptance are separate. Read
+[the private contract](docs/task-foreign-prototype.md); matching full validation
+and sanitizers are required before accepting this draft.
+
 # Private148: task-local source resources
 
 The explicit022 C++ source API now connects actual opaque resource factories,

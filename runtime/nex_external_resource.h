@@ -85,6 +85,7 @@ public:
   ExternalResourceBorrow borrowInRegionErased(const ResourceRegionAuthority&,const ExternalResourceClass&)const;
   template<class T> ExternalResourceBorrow borrowInRegion(const ResourceRegionAuthority &access,const ExternalResourceType<T> &key)const{return borrowInRegionErased(access,key.key);}
   void promoteRegion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{region.check(actor);region.promote(actor,target);}
+  static void transferRegions(std::span<const ExternalResource>,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit=true);
   template<class T,class Factory> static ExternalResource make(const ResourceDomain &domain,
       const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
       std::shared_ptr<void> codePin,Factory factory){
