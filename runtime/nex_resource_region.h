@@ -13,7 +13,7 @@ namespace resource_detail {
 struct ControlBase;struct SettlementGuard;
 struct SettlementState {std::mutex mutex;size_t guards=0;bool ready=false;};
 }
-namespace resource_region_detail {struct Graph;struct Owner;}
+namespace resource_region_detail {struct Forest;struct Graph;struct Owner;}
 
 class ResourceSettlement {
   std::shared_ptr<resource_detail::SettlementState> state;
@@ -39,8 +39,11 @@ public:
   bool expired()const noexcept;
   bool settled()const noexcept{return settlement.ready();}
 };
-enum class ResourceRegionFamily {Native,Reference};
-struct ResourceRegionLimits {size_t regions=1025,depth=256,owners=4096;};
+// Request authority is the common caller ancestry. Attached scheduler graphs
+// retain distinct Native/Reference identities until explicit ancestor transfer.
+// Logical ancestry never creates a physical grant or drains source execution.
+enum class ResourceRegionFamily {Native,Reference,Request};
+struct ResourceRegionLimits {size_t regions=1025,depth=256,owners=4096,tasks=0,groups=1024;};
 class ResourceRegionAuthority;
 class ResourceRegionOwner {
   std::shared_ptr<resource_region_detail::Owner> owner;
@@ -65,6 +68,7 @@ class ResourceRegionAuthority {
   ResourceRegionAuthority(std::shared_ptr<resource_region_detail::Graph>,size_t);
 public:
   ResourceRegionAuthority()=default;
+  explicit operator bool()const noexcept{return bool(graph);}
   void check()const;
   ResourceRegionOwner reserve()const;
   bool contains(const ResourceRegionAuthority&)const;
@@ -94,11 +98,13 @@ class ResourceRegion {
   ResourceRegion(std::shared_ptr<resource_region_detail::Graph>,size_t);
 public:
   explicit ResourceRegion(ResourceRegionFamily=ResourceRegionFamily::Native,ResourceRegionLimits={});
+  static ResourceRegion inRequest(ResourceRegionFamily,const ResourceRegionAuthority &,ResourceRegionLimits={});
   ResourceRegion(ResourceRegion&&)noexcept;
   ResourceRegion &operator=(ResourceRegion&&)noexcept;
   ResourceRegion(const ResourceRegion&)=delete;
   ~ResourceRegion();
   ResourceRegion child()const;
+  ResourceRegion taskChild()const;
   ResourceRegionAuthority authority()const;
   ResourceRegionRetirement beginClose()noexcept;
   void close()noexcept;

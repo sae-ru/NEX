@@ -1,3 +1,13 @@
+# Private144: native task resource ownership draft
+
+Opted-in native host tasks now have separate resource roots and park completion
+until their actual payload/pin/quota/executor cleanup settles. A captured genuine
+request parent supports caller borrowing and explicit return promotion across
+group completion. Independent reference per-job/request-parent integration,
+source transport/typed FFI and matching delivery remain pending. This private
+draft still has the preceding0.128 compiler identity; it is not a new accepted
+SDK release. See [the host contract](docs/request-resource-regions.md).
+
 # Development0.128: native owned-value retirement
 
 Native scheduler queues retire managed values outside the scheduler mutex. Task and scope publication wait for the relevant cleanup; channel buffer slots are recycled only after actual values and storage are destroyed. Cleanup uses admitted job/pipe storage, with no allocation needed during retirement. Source resource task transport and the FFI/device bridge remain pending. See [the cleanup contract](docs/task-value-retirement.md). Matching regression, SDK and platform acceptance remain required; primary0.81 and language0.21 are unchanged.

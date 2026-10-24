@@ -1745,28 +1745,35 @@
     "stable_host_abi": false,
     "guide": "docs/resource-regions.md",
     "header": "runtime/nex_resource_region.h",
-    "native_group_enable": "TaskGroup::enableResourceRegions before spawning",
-    "native_current_authority": "TaskGroup::resourceAuthority",
+    "native_group_enable": "TaskGroup::enableResourceRegions(optional genuine request parent) before spawning",
+    "native_current_authority": "task root or owned inner scope on workers; group root on coordinator",
     "physical_access": "explicit coordinator-captured grant/request; no per-resume TLS lookup",
-    "ancestry": "same graph/family; owner or descendant borrowers; siblings and foreign groups rejected",
-    "promotion": "explicit trusted ancestor transfer before region closure; aliases retain physical identity",
-    "close": "logical revocation under scheduler lock; destructor request outside locks; scope publication after complete physical fence",
-    "root_retirement": "group finish closes promoted/root resources and waits physical settlement",
+    "ancestry": "same scheduler ancestry or genuine request ancestor; sibling groups and foreign requests rejected",
+    "promotion": "explicit trusted ancestor transfer, reserving destination ownership before cross-graph return; aliases retain physical identity",
+    "close": "logical revocation under scheduler lock; destructor request outside locks; native task/scope and reference scope publication after complete physical fence",
+    "root_retirement": "group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement",
     "maximum": {
       "scope_nodes_including_root": 1025,
       "scope_depth": 256,
       "owners": 4096,
-      "physical_joined_domains": 8
+      "physical_joined_domains": 8,
+      "task_nodes": 65536,
+      "task_depth": 256,
+      "request_group_links": 1024
     },
     "pending": [
+      "independent reference per-job ownership and request-parent integration",
       "source value input/result/channel/capture transport",
       "source task/FFI completion adapter and explicit language migration",
-      "request-parent transfer across whole task-group boundaries",
       "actual device bindings and matching compiler/SDK/platform delivery"
     ],
     "reference_enable": "TaskReferenceExternalHost::resourceRegions before evaluation",
     "reference_current_authority": "coordinator-only prepareInRegion/admitInRegion hooks",
-    "reference_cleanup": "scope publication after physical settlement; root and exceptional unwind drain physical operations and resources"
+    "reference_cleanup": "scope publication after physical settlement; root and exceptional unwind drain physical operations and resources",
+    "native_task_regions": true,
+    "native_request_parent": true,
+    "reference_task_regions": false,
+    "reference_request_parent": false
   },
   "task_value_retirement": {
     "status": "private_native_scheduler",

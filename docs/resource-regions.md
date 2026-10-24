@@ -48,14 +48,24 @@ creation guard. Scheduling cleanup, entering a destructor, losing a wrapper or
 receiving a cancellation request is not physical settlement.
 
 A trusted coordinator calls `TaskGroup::enableResourceRegions` once before
-spawning. `resourceAuthority` then returns the actual current logical scope's
-authority, or the group's root on its coordinator/root task. Existing host tasks
-without enablement keep their previous behavior. Each opened logical scope owns
-a child region. Leaving it parks the source coroutine until all resource fences
-settle. The scheduler requests cleanup outside its mutex and continues running
+spawning, optionally capturing a genuine Request-family parent authority.
+`resourceAuthority` returns a separate task root on workers, an owned inner
+scope while inside it, and the group's root on its coordinator. Existing host
+tasks without enablement keep their previous behavior. Each task root is a child
+of its admitted member scope or group root; an explicit ancestor-scope spawn
+does not inherit its caller job's shorter lifetime. Each opened logical scope
+owns a child of the current resource context. Leaving scopes and publishing
+native futures wait for complete physical resource retirement after frames,
+managed values and external operations drain. Empty task roots retire directly;
+only unsettled owners enter the admitted intrusive cleanup list.
+The scheduler requests cleanup outside its mutex and continues running
 other tasks while an owning executor performs physical cleanup. Group finish
-retires root/promoted resources and waits their physical settlement before final
-worker shutdown. Cancellation/deadline errors do not waive that cleanup wait.
+retires remaining group-owned resources and waits their physical settlement
+before final worker shutdown. Explicitly returned request owners and borrowed
+caller resources survive group finish. Request resource closure follows linked
+groups' physical fences; it does not replace execution-control cancellation.
+Cancellation/deadline errors do not waive cleanup waits. Independent reference
+per-job ownership and request-parent integration are still pending.
 
 The maintained18-case gate checks complete ancestry/depth, alias promotion,
 foreign family/group refusal, logical admission before factories, invisible

@@ -51,7 +51,7 @@ TaskBody nativeTask(TaskGroup &group,NativeContext context){
 }
 TaskBody nativeFactory(TaskGroup &group,Value,Value,const void *context){return nativeTask(group,*static_cast<const NativeContext*>(context));}
 TaskBody nativeScopedTask(TaskGroup &group,NativeContext context){
-  auto parent=group.resourceAuthority();std::vector<TaskGroup::Scope> scopes;
+  auto parent=context.mode==2?context.authority:group.resourceAuthority();std::vector<TaskGroup::Scope> scopes;
   for(size_t i=0;i<(context.mode==3?256:1);++i)scopes.push_back(group.openScope(2));
   auto authority=group.resourceAuthority();require(authority.depth()==scopes.size(),"scheduler and logical resource depths differ");
   auto resource=make(context.physical,authority,context.key,context.budgets,context.destroyed,context.executor,context.cleanup);
@@ -176,7 +176,7 @@ int main(){try{
  run("native promotion reaches root and group finish owns final retirement",[]{
   RequestScope request(1000000,5000);ResourceDomain physical(1);ResourceRegion unused;auto key=type();std::array budgets{ResourceByteBudget(4)};auto destroyed=std::make_shared<std::atomic<int>>(0);auto executor=std::make_shared<ResourceExecutor>();auto output=std::make_shared<std::optional<ExternalResource>>();auto after=std::make_shared<std::atomic<bool>>(false);
   NativeContext context{request.bindResources(physical).access(),unused.authority(),key,budgets,destroyed,executor,output,2,{},after};
-  TaskGroup group(4);group.enableResourceRegions();auto ticket=group.spawnWithContext(nativeScopedFactory,&context);require(group.join(ticket).scalar==42,"promoting task failed");
+  TaskGroup group(4);group.enableResourceRegions();context.authority=group.resourceAuthority();auto ticket=group.spawnWithContext(nativeScopedFactory,&context);require(group.join(ticket).scalar==42,"promoting task failed");
   require(after->load()&&output->value().isOpen()&&*destroyed==0,"child scope closed promoted resource");group.finish();executor->finish();
   require(!output->value().isOpen()&&*destroyed==1&&physical.used()==0&&budgets[0].used()==0,"group completion left root resource open");
  });

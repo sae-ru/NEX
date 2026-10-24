@@ -71,6 +71,12 @@ struct TaskGroup::Impl {
     ValueFence &operator=(const ValueFence&)=delete;
   };
   struct RetiredValue {Value value;RetirementLink link;};
+  struct JobResources {
+    std::optional<ResourceRegion> region;
+    std::optional<ResourceRegionRetirement> retirement;
+    size_t previous=none,next=none;
+    bool queued=false,started=false,requested=false,inFlight=false;
+  };
   struct Job {
     TaskBody::Handle body;Value result,pending;TaskGroup *group=nullptr;std::weak_ptr<Data> capability;SourceLocation location;TaskEvent event;
     RetiredValue retiredResult,retiredPending,retiredEvent;
@@ -83,6 +89,7 @@ struct TaskGroup::Impl {
     size_t scope=none,memberScope=none;
     std::vector<size_t> ownedScopes;
     std::vector<External> external;size_t externalPending=0;
+    std::unique_ptr<JobResources> resources;
     bool running=false,queued=false,again=false,done=false,observed=false,finishing=false,cleanupDone=false;
 #ifdef NEX_TASK_PROFILE_ENABLED
     TaskProfileTask profileTask;TaskProfileSchedulerTotals profileTotals;
@@ -113,11 +120,12 @@ struct TaskGroup::Impl {
     size_t valueRetirementsPending=0;
     std::vector<size_t> members,pipes,children;
     std::exception_ptr failure,externalFatal;std::weak_ptr<Data> capability;
-    std::unique_ptr<ResourceRegion> resources;
+    std::optional<ResourceRegion> resources;
     std::optional<ResourceRegionRetirement> resourceRetirement;
     bool resourceRetirementStarted=false,resourceRetirementRequested=false,resourceRetirementInFlight=false;
   };
   std::unique_ptr<ResourceRegion> resourceRoot;
+  size_t resourceJobHead=none,resourceJobTail=none;
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
   std::shared_ptr<TaskAccess::Control> control;
@@ -484,6 +492,22 @@ struct TaskGroup::Impl {
   }
   void closeRegion(size_t index){queueCompletion(index,true);completeQueued();}
   void tryComplete(size_t index){queueCompletion(index,false);completeQueued();}
+  ResourceRegion &resourceContext(Job &job){
+    if(job.scope!=job.memberScope)return *regions[job.scope]->resources;
+    return *job.resources->region;
+  }
+  void queueJobResources(size_t index)noexcept{
+    auto &entry=*jobs[index]->resources;if(entry.queued)return;
+    entry.previous=resourceJobTail;entry.next=none;entry.queued=true;
+    if(resourceJobTail==none)resourceJobHead=index;else jobs[resourceJobTail]->resources->next=index;
+    resourceJobTail=index;
+  }
+  void unlinkJobResources(size_t index)noexcept{
+    auto &entry=*jobs[index]->resources;if(!entry.queued)return;
+    if(entry.previous==none)resourceJobHead=entry.next;else jobs[entry.previous]->resources->next=entry.next;
+    if(entry.next==none)resourceJobTail=entry.previous;else jobs[entry.next]->resources->previous=entry.previous;
+    entry.previous=entry.next=none;entry.queued=false;
+  }
   void closeRegionStep(size_t index){
     auto &scope=*regions[index];if(scope.closed||!scope.closing||scope.pending||scope.nested||scope.externalPending)return;
     if(scope.resources){
@@ -516,9 +540,19 @@ struct TaskGroup::Impl {
     // Extract one cleanup request under the scheduler lock, perform every
     // possible foreign destructor outside it, then publish only a settled fence.
     for(;;){
-      size_t index=none;std::optional<ResourceRegionRetirement> retirement;
+      size_t index=none;bool task=false;std::optional<ResourceRegionRetirement> retirement;
       {std::lock_guard lock(mutex);if(!resourceRoot)return;
-        for(size_t i=0;i<regions.size();++i){auto &scope=*regions[i];
+        // Only tasks with unsettled owners enter this intrusive list. Empty
+        // task roots complete immediately; never scan all65536 admitted jobs.
+        for(size_t i=resourceJobHead;i!=none;){auto &entry=*jobs[i]->resources;auto next=entry.next;
+          if(!entry.inFlight){
+            if(entry.retirement->ready())tryComplete(i);
+            else if(!entry.requested){index=i;task=true;entry.inFlight=true;
+              retirement.emplace(std::move(*entry.retirement));entry.retirement.reset();break;}
+          }
+          i=next;
+        }
+        if(index==none)for(size_t i=0;i<regions.size();++i){auto &scope=*regions[i];
           if(!scope.resourceRetirementStarted||scope.closed||scope.resourceRetirementInFlight)continue;
           if(scope.resourceRetirement->ready()){closeRegion(i);continue;}
           if(!scope.resourceRetirementRequested){index=i;scope.resourceRetirementInFlight=true;
@@ -527,8 +561,11 @@ struct TaskGroup::Impl {
       }
       if(index==none)return;
       retirement->requestClose();
-      {std::lock_guard lock(mutex);auto &scope=*regions[index];scope.resourceRetirement.emplace(std::move(*retirement));
-        scope.resourceRetirementInFlight=false;scope.resourceRetirementRequested=true;closeRegion(index);changed.notify_all();}
+      {std::lock_guard lock(mutex);
+        if(task){auto &entry=*jobs[index]->resources;entry.retirement.emplace(std::move(*retirement));entry.inFlight=false;entry.requested=true;tryComplete(index);}
+        else{auto &scope=*regions[index];scope.resourceRetirement.emplace(std::move(*retirement));
+          scope.resourceRetirementInFlight=false;scope.resourceRetirementRequested=true;closeRegion(index);}
+        changed.notify_all();}
     }
   }
   void tryCompleteStep(size_t index){
@@ -538,6 +575,11 @@ struct TaskGroup::Impl {
     for(const auto &entry:job.external)if(!entry.consumed)return;
     for(auto scope:job.ownedScopes)if(!regions[scope]->closed)return;
     if(job.failure){retireResult(index);if(job.valueRetirementQueued)return;}
+    if(job.resources){auto &entry=*job.resources;
+      if(!entry.started){entry.retirement.emplace(entry.region->beginClose());entry.started=true;}
+      if(entry.inFlight||!entry.retirement->ready()){queueJobResources(index);changed.notify_all();return;}
+      unlinkJobResources(index);
+    }
     job.finishing=false;job.done=true;++completed;
 #ifdef NEX_TASK_DEBUG_ENABLED
     taskDebugKernelState(job.debugTask,TaskDebugState::Terminal);
@@ -820,8 +862,10 @@ TaskGroup::Scope TaskGroup::currentScopeOrEmpty()const{
   return Scope(impl,impl->jobs[activeTaskIndex]->scope);
 }
 TaskGroup::Scope TaskGroup::currentScope()const{auto scope=currentScopeOrEmpty();if(scope.empty())throw Trap("E_TASK_SCOPE","no current logical task scope",0);return scope;}
-void TaskGroup::enableResourceRegions(){
-  impl->require(true);auto resources=std::make_unique<ResourceRegion>(ResourceRegionFamily::Native);
+void TaskGroup::enableResourceRegions(ResourceRegionAuthority requestParent){
+  impl->require(true);ResourceRegionLimits limits;limits.tasks=impl->ready.size();
+  auto resources=requestParent?std::make_unique<ResourceRegion>(ResourceRegion::inRequest(ResourceRegionFamily::Native,requestParent,limits)):
+    std::make_unique<ResourceRegion>(ResourceRegionFamily::Native,limits);
   std::lock_guard lock(impl->mutex);
   if(impl->resourceRoot||!impl->jobs.empty()||impl->sealed||impl->finished)throw Trap("E_TASK_SCOPE","resource regions must be enabled once before spawning tasks",0);
   impl->resourceRoot=std::move(resources);
@@ -831,8 +875,7 @@ ResourceRegionAuthority TaskGroup::resourceAuthority()const{
     impl->require();std::lock_guard lock(impl->mutex);
     if(!impl->resourceRoot||impl->finished)throw Trap("E_TASK_SCOPE","logical resource authority is unavailable",0);
     if(activeTaskState==impl.get()&&activeTaskIndex<impl->jobs.size()){
-      auto scope=impl->jobs[activeTaskIndex]->scope;
-      if(scope!=none){impl->scopeAccess(scope);return impl->regions[scope]->resources->authority();}
+      auto &job=*impl->jobs[activeTaskIndex];impl->scopeAccess(job.scope);return impl->resourceContext(job).authority();
     }
     return impl->resourceRoot->authority();
   });
@@ -851,11 +894,10 @@ TaskGroup::Scope TaskGroup::openScope(size_t workers){
     auto &job=*impl->jobs[activeTaskIndex];scope->parent=job.scope;scope->owner=activeTaskIndex;scope->limit=workers;
     if(job.scope!=none){impl->scopeAccess(job.scope);scope->depth=impl->regions[job.scope]->depth+1;}
     if(scope->depth>256)throw Trap("E_LIMIT","logical task scope depth exceeds256",0);
-    if(impl->resourceRoot)scope->resources=std::make_unique<ResourceRegion>(job.scope==none?
-      impl->resourceRoot->child():impl->regions[job.scope]->resources->child());
     // Reserve every growing adjacency list before publishing any new identity.
     if(job.ownedScopes.size()==job.ownedScopes.capacity())job.ownedScopes.reserve(std::max(size_t(1),job.ownedScopes.size()*2));
     if(job.scope!=none){auto &children=impl->regions[job.scope]->children;if(children.size()==children.capacity())children.reserve(std::max(size_t(1),children.size()*2));}
+    if(impl->resourceRoot)scope->resources.emplace(impl->resourceContext(job).child());
     scope->active=1;size_t index=impl->regions.size();job.ownedScopes.push_back(index);impl->regions.push_back(std::move(scope));
     if(job.scope!=none){auto &parent=*impl->regions[job.scope];++parent.nested;parent.children.push_back(index);}job.scope=index;return Scope(impl,index);
   });
@@ -877,11 +919,15 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
   return hostOperation({},[&]{
     impl->require();if(bool(factory)==bool(contextFactory))throw Trap("E_TASK_SCOPE","task factory is missing or ambiguous",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);
     auto job=std::make_unique<Impl::Job>();job->group=this;job->cancellation=std::make_shared<task_detail::Cancellation>();
-    if(activeTaskState==impl.get()){
-      std::lock_guard lock(impl->mutex);job->cancellation->parent=impl->jobs[activeTaskIndex]->cancellation;
-      job->cancellation->depth=job->cancellation->parent->depth+1;
-      if(job->cancellation->depth>256)throw Trap("E_LIMIT","task nesting exceeds256",0);
+    bool resourcesEnabled;
+    {std::lock_guard lock(impl->mutex);resourcesEnabled=bool(impl->resourceRoot);
+      if(activeTaskState==impl.get()){
+        job->cancellation->parent=impl->jobs[activeTaskIndex]->cancellation;
+        job->cancellation->depth=job->cancellation->parent->depth+1;
+        if(job->cancellation->depth>256)throw Trap("E_LIMIT","task nesting exceeds256",0);
+      }
     }
+    if(resourcesEnabled)job->resources=std::make_unique<Impl::JobResources>();
     auto body=contextFactory?contextFactory(*this,std::move(input),std::move(captures),context):factory(*this,std::move(input),std::move(captures));if(!body.handle)throw Trap("E_TASK_SCOPE","task factory returned no coroutine",0);
     job->body=std::exchange(body.handle,{});
     size_t index;
@@ -890,6 +936,10 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
       if(impl->finished||(impl->sealed&&activeTaskState!=impl.get()))throw Trap("E_TASK_SCOPE","task group is sealed",0);
       if(impl->jobs.size()>=impl->ready.size())throw Trap("E_LIMIT","task group slot limit exceeded",0);
       impl->scopeAccess(scope);job->scope=job->memberScope=scope;
+      // Reserve adjacency before allocating a logical task node. Its optional
+      // holder was allocated before the factory, outside the kernel mutex.
+      if(scope!=none){auto &members=impl->regions[scope]->members;if(members.size()==members.capacity())members.reserve(std::max(size_t(1),members.size()*2));}
+      if(job->resources)job->resources->region.emplace((scope==none?*impl->resourceRoot:*impl->regions[scope]->resources).taskChild());
       index=impl->jobs.size();if(scope!=none){impl->regions[scope]->members.push_back(index);++impl->regions[scope]->pending;}
       impl->jobs.push_back(std::move(job));
       bool metadata=false;
