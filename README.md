@@ -1,3 +1,13 @@
+# Development0.124: resource debugger arguments and current example pins
+
+DAP launch uses its args array exactly once; raw LLDB CLI receives one run-args
+command. Both ordinary and project debug commands follow the same rule. A real
+resource debugger gate checks quoted operator paths, archived source, alias IDs,
+pure watch refusal, stale references and graceful cleanup. Source language stays
+021, with no canonical or graph migration change from0.123. Current proof/task
+and type-patch snapshots are regenerated while retaining reviewed clauses,
+checks, outputs and budgets. Full matching delivery acceptance remains required.
+
 # Development0.123 / language0.21: opaque source resources
 
 The current candidate enables server resource declarations, genuine typed extern

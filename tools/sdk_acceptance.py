@@ -619,6 +619,10 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,124,0) and report.get('evidence',{}).get('live_debugger'):
+        debug=report.get('evidence',{}).get('source_resources',{}).get('resource_debug',{})
+        require(all(debug.get(key) is True for key in ('ok','actual_resource_DAP','native_CLI_arguments_delivered_once','source_deleted_archived_debug','opaque_resource_aliases','resource_watch_authority_refused','stale_references_refused','destruction_before_unload','graceful_adapter_shutdown')),
+                'SDK acceptance lacks actual resource CLI/DAP arguments, archived values, safe watches and graceful cleanup')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,123,0):
         resources=report.get('evidence',{}).get('source_resources',{})
         require(all(resources.get(key) is True for key in ('ok','descriptor','genuine020','history_preserved','native_reference','actual_C11_CPP20','checked_cleanup')) and
@@ -4581,7 +4585,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
     def source_resources():
         from sdk_source_resources import check_installed_source_resources
         report['evidence']['source_resources']=check_installed_source_resources(
-            cli,run,lambda:report['commands'][-1],root,resources,report['doctor']['native_compiler'])
+            cli,run,lambda:report['commands'][-1],root,resources,report['doctor']['native_compiler'],compiler=compiler,live=args.live)
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),

@@ -5,6 +5,7 @@ from pathlib import Path
 import platform
 import re
 import sqlite3
+import sys
 from sdk_task_file_migration import _require,_sha,_state,_retained,_write
 
 SQL_PINS={
@@ -16,7 +17,7 @@ SQL_PINS={
 }
 TOKENS=re.compile(r'//[^\n]*|"(?:\\.|[^"\\])*"|[A-Za-z_][A-Za-z0-9_]*')
 
-def check_installed_source_resources(cli,run,last_command,root,resources,driver):
+def check_installed_source_resources(cli,run,last_command,root,resources,driver,*,compiler=None,live=False):
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
  feature=cli('describe','--field','source_resources')['value']
  pack=json.loads((resources/'llm/language-pack.json').read_text())
@@ -38,8 +39,8 @@ server fn main()->unit!{ffi,io}{BODY}
   pins={name:_sha(json.dumps(value,sort_keys=True,separators=(',',':')).encode()) for name,value in signatures.items()}
   (project/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n')
   bundle=project/'bundle';bundle.mkdir();module=bundle/'module.so'
-  compiler=Path(driver) if kind=='CPP20' else Path(driver).with_name('clang')
-  run([compiler,'-x','c++' if kind=='CPP20' else 'c','-std=c++20' if kind=='CPP20' else '-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(resources/'runtime'),'-I'+str(project),'-DNEX_RESOURCE_MARKER='+json.dumps(str(marker)),resources/'examples/source-resource-producer.c','-o',module],cwd=project)
+  producer_compiler=Path(driver) if kind=='CPP20' else Path(driver).with_name('clang')
+  run([producer_compiler,'-x','c++' if kind=='CPP20' else 'c','-std=c++20' if kind=='CPP20' else '-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(resources/'runtime'),'-I'+str(project),'-DNEX_RESOURCE_MARKER='+json.dumps(str(marker)),resources/'examples/source-resource-producer.c','-o',module],cwd=project)
   (bundle/'NOTICE').write_text('NEX installed source resource conformance producer\n')
   host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
   manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so','files':[{'path':name,'sha256':_sha((bundle/name).read_bytes())} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
@@ -89,5 +90,12 @@ server fn main()->unit!{ffi,io}{BODY}
   cli('migrate','--revision','HEAD',cwd=project)
   _require(_state(database)==after and (project/'nex.json').read_bytes()==original_manifest,'idempotent migration or physical manifest changed')
   evidence['migration'][name]={'original_revisions':3,'all16_tables_schema_rows_ids_preserved':True,'origin_verified':True,'reviewed_repair':name=='builtin-conflicts'}
+ if live:
+  _require(compiler is not None,'resource debugger gate requires its installed compiler')
+  directory=root/'source-resource-debugger'
+  run([sys.executable,resources/'tools/resource_debug_acceptance.py',compiler,resources,'--require-live','--output',directory],cwd=root,timeout=300)
+  debug=json.loads((directory/'report.json').read_text())
+  _require(all(debug.get(key) is True for key in ('ok','actual_resource_DAP','native_CLI_arguments_delivered_once','source_deleted_archived_debug','opaque_resource_aliases','resource_watch_authority_refused','stale_references_refused','destruction_before_unload','graceful_adapter_shutdown')),'installed resource debugger did not complete its actual lifecycle')
+  evidence['resource_debug']={key:debug[key] for key in ('ok','actual_resource_DAP','native_CLI_arguments_delivered_once','source_deleted_archived_debug','opaque_resource_aliases','resource_watch_authority_refused','stale_references_refused','destruction_before_unload','graceful_adapter_shutdown')}
  evidence.update(ok=True,genuine020=True,original_revisions_preserved=15,history_preserved=True,native_reference=True,actual_C11_CPP20=True,checked_cleanup=True,primary_project_boundary_explicit=True)
  return evidence

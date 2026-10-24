@@ -1,6 +1,6 @@
 # Opaque source resources in language0.21
 
-The0.123 development compiler adds opaque server resource declarations. Query
+The0.124 development compiler adds opaque server resource declarations. Query
 `nex describe --field source_resources --json` on the actual compiler. Full
 delivery/platform acceptance is separate; the approved primary0.81 installation
 remains a distinct language0.16 checkpoint.
@@ -71,7 +71,10 @@ Complete candidate checking precedes saving, and physical files change only on
 explicit export. Analysis/1/2/3 and LSP expose kind resource and exact name tokens,
 including `server resource resource;`. Watch input reconstruction rejects resource
 authority with E_DEBUG_UNAVAILABLE; diagnostic identities grant no access.
-Actual resource LLDB/DAP display and archived-context acceptance remain separate.
+The matching native LLDB/DAP gate checks opaque alias IDs, archived source,
+ordinary pure watches, resource watch refusal, stale references and cleanup.
+DAP runtime arguments use launch.args; raw LLDB CLI installs its own run-args
+command once. Optimized/core resource contexts and device profiling remain separate.
 
 ## Explicit0.20 to0.21 migration
 

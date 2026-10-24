@@ -1,5 +1,5 @@
 {
-  "expected_revision": "4cedc1a9b59aa906e2d3698116776c22d39794168f9084aa40e035ef57b26058",
+  "expected_revision": "33e63fceaa2dcf63b767029a4598570a01d3e4d92dcb2e28def6e054fa536c50",
   "replacements": [
     {
       "name": "type_patch::model::Parcel",

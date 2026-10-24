@@ -1,3 +1,8 @@
+For native debug launch metadata, pass launch.args once. initCommands only load
+the checked formatter/context; do not add target.run-args to a DAP launch. The
+CLI manages raw LLDB arguments separately. Resource previews expose opaque IDs;
+resource watch proxy authority remains unavailable.
+
 For opaque resources query source_resources on the actual compiler. Language021
 supports `[pub] server resource Name<T...>;`, genuine granted typed extern results,
 server/ffi resource_close(value)->bool and resource_is_open(value)->bool. Resources

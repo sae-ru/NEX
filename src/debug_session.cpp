@@ -38,6 +38,24 @@ void validateNativeDebugArguments(const std::vector<std::string> &arguments){
     bytes+=argument.size();
   }
 }
+std::vector<std::string> nativeLLDBCommands(const llvm::json::Value &session){
+  auto object=session.getAsObject();auto launch=object?object->getObject("launch"):nullptr;
+  auto initialized=launch?launch->getArray("initCommands"):nullptr;
+  if(!initialized)throw Error("E_DEBUG","native debugger session requires launch initialization commands");
+  std::vector<std::string> commands,arguments;
+  for(const auto &value:*initialized){auto text=value.getAsString();if(!text)throw Error("E_DEBUG","debugger initialization command must be text");commands.push_back(text->str());}
+  if(auto values=launch->get("args")){
+    auto array=values->getAsArray();if(!array)throw Error("E_DEBUG","debugger launch args must be an array");
+    for(const auto &value:*array){auto text=value.getAsString();if(!text)throw Error("E_DEBUG","debugger launch argument must be text");arguments.push_back(text->str());}
+  }
+  validateNativeDebugArguments(arguments);
+  if(!arguments.empty()){
+    std::string command="settings set -- target.run-args";
+    for(const auto &argument:arguments)command+=" "+json(argument,false);
+    commands.push_back(std::move(command));
+  }
+  return commands;
+}
 std::string nativeDebugBuildDirectory(const std::string &directory){
 #ifdef __APPLE__
   auto original=fs::weakly_canonical(directory);
@@ -109,11 +127,6 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
   llvm::json::Array commands{
     "command script import "+json((folder/"debugger/lldb_nex.py").string(),false),
     "nex-load-debug "+json(manifest.string(),false)+" --compiler "+json(compiler,false)};
-  if(!arguments.empty()){
-    std::string command="settings set -- target.run-args";
-    for(const auto &argument:arguments)command+=" "+json(argument,false);
-    commands.push_back(std::move(command));
-  }
   auto backend=std::getenv("NEX_LLDB_DAP");std::string dap=backend?backend:"lldb-dap";
   auto found=llvm::sys::findProgramByName(dap);bool available=bool(found);if(found)dap=*found;
 #ifdef __APPLE__

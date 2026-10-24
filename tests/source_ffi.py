@@ -342,10 +342,11 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
             self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
             session=self.cli('debug','--kind','nex-dap','--foreign',self.host,timeout=120)
             symbol=self.cli('context','--symbol','echo')['native_symbol']
-            commands=session['launch']['initCommands']+['settings set target.disable-aslr false','breakpoint set -n '+symbol,'run','nex-eval x','continue']
-            arguments=[shutil.which('lldb'),'--batch',session['launch']['program']]
-            for command in commands:arguments+=['-o',command]
-            result=subprocess.run(arguments,capture_output=True,text=True,timeout=60,env={**os.environ,**self.env})
+            self.assertEqual(session['launch']['args'],['--nex-foreign',str(self.host)])
+            self.assertFalse(any('target.run-args' in command for command in session['launch']['initCommands']))
+            result=self.cli('debug','--foreign',self.host,'--','--no-lldbinit','--batch',
+                '-o','settings set target.disable-aslr false','-o','breakpoint set -n '+symbol,
+                '-o','run','-o','nex-eval x','-o','continue',machine=False,env=self.env,timeout=60)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             self.assertNotIn('unknown or ambiguous option',result.stdout+result.stderr)
             values=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]

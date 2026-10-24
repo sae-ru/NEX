@@ -2,6 +2,9 @@
 #include "nex/backend.h"
 namespace nex {
 void validateNativeDebugArguments(const std::vector<std::string> &arguments);
+// DAP consumes launch.args itself. A raw LLDB CLI instead needs one explicit
+// run-args command after the common formatter/source initialization commands.
+std::vector<std::string> nativeLLDBCommands(const llvm::json::Value &session);
 std::string nativeDebugBuildDirectory(const std::string &directory);
 llvm::json::Value nativeDebugSession(const Program &program,const BuildResult &built,
   const std::string &directory,const std::string &compiler,const std::string &adapter,

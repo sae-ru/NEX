@@ -1,3 +1,9 @@
+Toolchain0.124 keeps DAP runtime arguments solely in launch.args. Common
+initCommands load the formatter and checked source context. The raw LLDB CLI
+adds one settings command itself; clients must not duplicate DAP args through
+target.run-args. This fixes foreign catalogue and other native runtime flags,
+including quoted/Unicode paths, without changing source language021.
+
 # Native debugging — NEX language 0.20
 
 Current source language is0.20. Logical task debugging has a separate narrow

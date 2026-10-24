@@ -1690,8 +1690,15 @@
     "guide": "docs/source-resources.md",
     "acceptance_pending": [
       "matching full compiler regression",
-      "installed SDK and supported native platforms",
-      "actual resource LLDB/DAP display"
-    ]
+      "installed SDK and supported native platforms"
+    ],
+    "debugger": {
+      "LLDB_opaque_alias_view": true,
+      "DAP_opaque_alias_view": true,
+      "archived_source": true,
+      "ordinary_pure_watches": true,
+      "resource_watch_proxy_authority": false,
+      "runtime_arguments": "DAP launch.args; raw LLDB CLI run-args exactly once"
+    }
   }
 }

@@ -833,7 +833,7 @@ int run(const Options &o) {
     auto session=nativeDebugSession(p,result,root.string(),o.compiler,kind,foreignArguments);
     if(o.has("--json")||kind!="lldb"){print(std::move(session));return 0;}
     std::vector<std::string> args={"lldb",result.executable};
-    for(const auto &command:*session.getAsObject()->getObject("launch")->getArray("initCommands")){args.push_back("-o");args.push_back(command.getAsString()->str());}
+    for(const auto &command:nativeLLDBCommands(session)){args.push_back("-o");args.push_back(command);}
     args.insert(args.end(),o.extra.begin(),o.extra.end());return execute(args);
   }
   auto output=o.get("--output");if(!output.empty()){copyFile(result.executable,output,true);if(!buildOptions.libraryEntry)fs::permissions(output,fs::perms::owner_exec|fs::perms::group_exec|fs::perms::others_exec,fs::perm_options::add);}

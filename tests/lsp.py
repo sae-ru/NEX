@@ -727,7 +727,7 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertEqual(report['messages_sent'],29);self.assertEqual(report['stderr'],'')
+        self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertTrue(report['resource_checks']);self.assertEqual(report['messages_sent'],35);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

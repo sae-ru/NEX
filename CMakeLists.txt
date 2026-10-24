@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.123.0 LANGUAGES C CXX)
+project(NEX VERSION 0.124.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -94,6 +94,9 @@ set_tests_properties(source_external_resources PROPERTIES TIMEOUT 600)
 add_test(NAME resource_language_migration COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
 set_tests_properties(resource_language_migration PROPERTIES TIMEOUT 600)
+add_test(NAME source_resource_debugger COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resource_debug.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(source_resource_debugger PROPERTIES TIMEOUT 300)
 add_test(NAME task_typescript_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript.py $<TARGET_FILE:nex_task_typescript_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
 set_tests_properties(task_typescript_steps PROPERTIES TIMEOUT 600)
 add_test(NAME task_native_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_native.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_task_native_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
@@ -137,6 +140,7 @@ install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_source_resources.py DESTINATION share/nex/tools)
+install(FILES tests/source_resource_debug.py DESTINATION share/nex/tools RENAME resource_debug_acceptance.py)
 file(GLOB NEX_RESOURCE_MIGRATION_FIXTURES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.json"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.sql")
