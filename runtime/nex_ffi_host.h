@@ -10,6 +10,7 @@ public:
   struct Layout;
   explicit ForeignSignature(const std::string &json);
   const std::string &canonical()const;
+  bool hasResources()const;
 private:
   std::shared_ptr<const Layout> layout;
   friend class foreign_detail::TypedContext;

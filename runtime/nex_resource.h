@@ -160,6 +160,16 @@ public:
   ResourceAccess()=default;
   const void *scopeKey()const noexcept{return own.get();}
   void check()const{auto retained=bindings;auto locks=resource_detail::lock(retained);resource_detail::check(retained);}
+  // Join retained authorities without creating a temporary lexical revoker.
+  // scopeKey remains the left creation-domain key; it is not a joined cache key.
+  ResourceAccess combine(const ResourceAccess &other)const{
+    auto retained=bindings;retained.insert(retained.end(),other.bindings.begin(),other.bindings.end());
+    std::sort(retained.begin(),retained.end(),[](const auto &a,const auto &b){return std::less<>{}(a.get(),b.get());});
+    retained.erase(std::unique(retained.begin(),retained.end()),retained.end());
+    if(retained.size()>8)throw DataError("E_RESOURCE_LIMIT","joined resource access exceeds eight domains");
+    auto locks=resource_detail::lock(retained);resource_detail::check(bindings);resource_detail::check(other.bindings);
+    return ResourceAccess(std::move(retained),own);
+  }
   template<class T,class Factory> ResourceOwner<T> make(Factory &&factory) const {
     static_assert(std::is_nothrow_destructible_v<T>);
     auto retained=bindings;

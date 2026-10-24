@@ -151,6 +151,13 @@ come after `NEX_FFI_V1_TRANSPORT_SIZE`. New clients must negotiate their require
 table size; separately compiled old C producers keep using their original
 prefix. Type queries/constructors on an untyped call return `NEX_FFI_TYPE`.
 
+Private host development appends a second suffix for genuine owned external
+resources. It uses `NEX_FFI_V1_TYPED_SIZE` for the preceding table and
+`NEX_FFI_V1_RESOURCE_SIZE` for the resource suffix. Result-reachable type tokens,
+actual module code pins, origin-checked call-local borrows and explicit operator
+value quotas are described in [the resource contract](external-resources-design.md).
+This adds no source resource declaration, source task/FFI bridge or device handle.
+
 `argument_type` and `result_type` return call-local `nex_ffi_type` tokens.
 `type_child`/`type_child_count` inspect list/result element types or ordered
 record/enum payload fields; records use variant zero, enums use their ordinal.

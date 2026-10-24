@@ -12,7 +12,7 @@ add_executable(external_values "${NEX_SOURCE}/tests/external_resource_values.cpp
   "${NEX_SOURCE}/tests/external_resource_old_forward.c"
   "${NEX_RUNTIME}/nex_external_resource.cpp" "${NEX_RUNTIME}/runtime.cpp"
   "${NEX_RUNTIME}/nex_files.cpp" "${NEX_RUNTIME}/nex_task_external.cpp"
-  "${NEX_RUNTIME}/nex_json.cpp" "${NEX_RUNTIME}/nex_ffi.cpp" "${NEX_RUNTIME}/nex_ffi_types.cpp")
+  "${NEX_RUNTIME}/nex_json.cpp" "${NEX_RUNTIME}/nex_ffi.cpp" "${NEX_RUNTIME}/nex_ffi_types.cpp" "${NEX_RUNTIME}/nex_ffi_resources.cpp")
 target_include_directories(external_values PRIVATE "${NEX_RUNTIME}")
 set_source_files_properties("${NEX_SOURCE}/tests/external_resource_old_forward.c"
   PROPERTIES INCLUDE_DIRECTORIES "${NEX_SOURCE}/tests/fixtures/ffi-0.37")
@@ -32,8 +32,8 @@ target_link_libraries(legacy_file_values PRIVATE Threads::Threads)
 add_test(NAME existing_file_values COMMAND legacy_file_values)
 set_tests_properties(existing_file_values PROPERTIES TIMEOUT 60)
 
-add_executable(legacy_ffi "${NEX_SOURCE}/tests/ffi_runtime.cpp" "${NEX_SOURCE}/tests/ffi_producer.c"
-  "${NEX_RUNTIME}/nex_ffi.cpp" "${NEX_RUNTIME}/nex_ffi_types.cpp" "${NEX_RUNTIME}/nex_files.cpp" "${NEX_RUNTIME}/nex_json.cpp")
+add_executable(legacy_ffi "${NEX_RUNTIME}/nex_external_resource.cpp" "${NEX_SOURCE}/tests/ffi_runtime.cpp" "${NEX_SOURCE}/tests/ffi_producer.c"
+  "${NEX_RUNTIME}/nex_ffi.cpp" "${NEX_RUNTIME}/nex_ffi_types.cpp" "${NEX_RUNTIME}/nex_ffi_resources.cpp" "${NEX_RUNTIME}/nex_files.cpp" "${NEX_RUNTIME}/nex_json.cpp")
 set_source_files_properties("${NEX_SOURCE}/tests/ffi_producer.c"
   PROPERTIES INCLUDE_DIRECTORIES "${NEX_SOURCE}/tests/fixtures/ffi-0.37")
 target_include_directories(legacy_ffi PRIVATE "${NEX_RUNTIME}")

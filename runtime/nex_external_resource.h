@@ -67,6 +67,8 @@ class ExternalResource {
   ExternalResource(ResourceOwner<external_detail::State>,std::shared_ptr<const external_detail::ClassState>,uint64_t);
   static ExternalResource makeErased(const ResourceDomain&,const ExternalResourceClass&,
       std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
+  static ExternalResource makeInAccessErased(ResourceAccess,const ExternalResourceClass&,
+      std::span<const ResourceByteBudget>,uint64_t,std::function<ExternalResourceObject(const ResourcePermit&)>);
 public:
   ExternalResource()=default;
   uint64_t identity()const noexcept{return owner.identity();}
@@ -84,6 +86,19 @@ public:
     if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
     auto snapshot=key.key;
     return makeErased(domain,snapshot,budgets,bytes,
+      [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
+        std::unique_ptr<T> object=create(permit);
+        return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);
+      });
+  }
+  // Host-only prepared authority. The C table never accepts an access object.
+  template<class T,class Factory> static ExternalResource makeInAccess(ResourceAccess access,
+      const ExternalResourceType<T> &key,std::span<const ResourceByteBudget> budgets,uint64_t bytes,
+      std::shared_ptr<void> codePin,Factory factory){
+    static_assert(std::is_nothrow_destructible_v<T>);
+    if(!codePin)throw DataError("E_RESOURCE_MODULE","external resource requires an explicit code owner");
+    auto snapshot=key.key;
+    return makeInAccessErased(std::move(access),snapshot,budgets,bytes,
       [pin=std::move(codePin),create=std::move(factory)](const ResourcePermit &permit)mutable{
         std::unique_ptr<T> object=create(permit);
         return ExternalResourceObject(object.release(),[](void *p)noexcept{delete static_cast<T*>(p);},pin);

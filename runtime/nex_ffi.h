@@ -16,7 +16,7 @@ enum {
   NEX_FFI_OK=0, NEX_FFI_ARGUMENT=1, NEX_FFI_SCOPE=2, NEX_FFI_THREAD=3,
   NEX_FFI_REF=4, NEX_FFI_TYPE=5, NEX_FFI_BOUNDS=6, NEX_FFI_UTF8=7,
   NEX_FFI_RANGE=8, NEX_FFI_LIMIT=9, NEX_FFI_HOST_TRAP=10,
-  NEX_FFI_INTERNAL=11, NEX_FFI_REENTRANT=12
+  NEX_FFI_INTERNAL=11, NEX_FFI_REENTRANT=12, NEX_FFI_RESOURCE_CLOSED=13
 };
 enum {
   NEX_FFI_I64=1, NEX_FFI_F64=2, NEX_FFI_BOOL=3, NEX_FFI_STRING=4,
@@ -25,6 +25,11 @@ enum {
   NEX_FFI_UNIT=13, NEX_FFI_RESULT=14, NEX_FFI_EXTERNAL_RESOURCE=15
 };
 
+struct nex_ffi_api_v1;
+/* Writing a nonnull native object transfers it to the host, including on error.
+   The factory polls cooperatively; destroy must not throw or retain C tokens. */
+typedef nex_ffi_status (*nex_ffi_resource_factory_v1)(const struct nex_ffi_api_v1*,nex_ffi_call,void*,void**);
+typedef void (*nex_ffi_resource_destroy_v1)(void*);
 typedef struct nex_ffi_api_v1 {
   uint32_t abi_version;
   uint32_t struct_size;
@@ -60,8 +65,16 @@ typedef struct nex_ffi_api_v1 {
   nex_ffi_status (*make_nominal)(nex_ffi_call,nex_ffi_type,uint64_t,const nex_ffi_ref*,uint64_t,nex_ffi_ref*);
   nex_ffi_status (*signature_size)(nex_ffi_call,uint64_t*);
   nex_ffi_status (*copy_signature)(nex_ffi_call,uint64_t,uint8_t*,uint64_t,uint64_t*);
+  /* Host-authorized opaque resources. A borrow lasts only for this call/thread. */
+  nex_ffi_status (*resource_create)(nex_ffi_call,nex_ffi_type,uint64_t,nex_ffi_resource_factory_v1,nex_ffi_resource_destroy_v1,void*,nex_ffi_ref*);
+  nex_ffi_status (*resource_borrow)(nex_ffi_call,nex_ffi_ref,nex_ffi_type,void**);
+  nex_ffi_status (*resource_close)(nex_ffi_call,nex_ffi_ref,uint32_t*);
+  nex_ffi_status (*resource_is_open)(nex_ffi_call,nex_ffi_ref,uint32_t*);
+  nex_ffi_status (*resource_identity)(nex_ffi_call,nex_ffi_ref,uint64_t*);
 } nex_ffi_api_v1;
 #define NEX_FFI_V1_TRANSPORT_SIZE ((uint32_t)offsetof(nex_ffi_api_v1,argument_type))
+#define NEX_FFI_V1_TYPED_SIZE ((uint32_t)offsetof(nex_ffi_api_v1,resource_create))
+#define NEX_FFI_V1_RESOURCE_SIZE ((uint32_t)sizeof(nex_ffi_api_v1))
 
 /* Require this major ABI and a table prefix at least minimum_size bytes long. */
 const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi_version,uint32_t minimum_size);

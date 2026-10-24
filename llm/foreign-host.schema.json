@@ -8,6 +8,8 @@
   "properties": {
     "schema": {"const": "nex.foreign-host/1"},
     "module_limit": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "resource_limit": {"type": "integer", "minimum": 1, "maximum": 4096, "default": 64},
+    "resource_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824, "default": 67108864, "description": "Declared external capacity, retained until physical destruction; not total process or device RAM."},
     "libraries": {"type": "object", "maxProperties": 128,
       "propertyNames": {"pattern": "^[A-Za-z_][A-Za-z_0-9]{0,127}(?![\\s\\S])"},
       "additionalProperties": {"type": "object", "additionalProperties": false,

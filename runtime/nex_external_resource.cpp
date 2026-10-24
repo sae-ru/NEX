@@ -70,6 +70,12 @@ const std::string &ExternalResource::typeName()const noexcept{static const std::
 const std::string &ExternalResource::typeHash()const noexcept{static const std::string empty;return type?type->hash:empty;}
 ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const ExternalResourceClass &key,
     std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory){
+  auto access=domain.access();
+  if(auto bind=resource_detail::requestBinder)if(auto *request=bind(domain))access=request->access();
+  return makeInAccessErased(std::move(access),key,budgets,bytes,std::move(factory));
+}
+ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,const ExternalResourceClass &key,
+    std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory){
   if(budgets.empty()||budgets.size()>8)throw DataError("E_RESOURCE_BYTES","external resource needs1..8 capacity budgets");
   auto type=key.state;
   if(!type)throw DataError("E_RESOURCE_TYPE","external class is unavailable");
@@ -77,8 +83,6 @@ ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const
   for(const auto &budget:budgets){if(!budget.state)throw DataError("E_RESOURCE_BYTES","external capacity budget is unavailable");states.push_back(budget.state);}
   std::sort(states.begin(),states.end(),[](const auto &a,const auto &b){return std::less<>{}(a.get(),b.get());});
   states.erase(std::unique(states.begin(),states.end()),states.end());
-  auto access=domain.access();
-  if(auto bind=resource_detail::requestBinder)if(auto *request=bind(domain))access=request->access();
   auto resource=access.make<external_detail::State>([&](const ResourcePermit &permit){
     auto charge=std::make_shared<external_detail::Charge>(states,bytes);charge->reserve();permit.check();
     auto object=factory(permit);

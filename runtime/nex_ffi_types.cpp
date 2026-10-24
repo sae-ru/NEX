@@ -29,14 +29,15 @@ std::string name(const J &value,bool identifier=false){
 }
 struct Field {std::string name;size_t type;};
 struct Variant {std::string name;std::vector<Field> fields;};
-struct Shape {uint32_t kind=0;std::string name;size_t item=0;std::vector<Field> fields;std::vector<Variant> variants;};
-const std::map<std::string,uint32_t> kinds={{"i64",NEX_FFI_I64},{"f64",NEX_FFI_F64},{"bool",NEX_FFI_BOOL},{"str",NEX_FFI_STRING},{"bytes",NEX_FFI_BYTES},{"list",NEX_FFI_LIST},{"record",NEX_FFI_RECORD},{"enum",NEX_FFI_ENUM},{"result",NEX_FFI_RESULT},{"function",NEX_FFI_FUNCTION},{"file",NEX_FFI_FILE},{"unit",NEX_FFI_UNIT}};
+struct Shape {uint32_t kind=0;std::string name,identity;size_t item=0;std::vector<Field> fields;std::vector<Variant> variants;};
+const std::map<std::string,uint32_t> kinds={{"i64",NEX_FFI_I64},{"f64",NEX_FFI_F64},{"bool",NEX_FFI_BOOL},{"str",NEX_FFI_STRING},{"bytes",NEX_FFI_BYTES},{"list",NEX_FFI_LIST},{"record",NEX_FFI_RECORD},{"enum",NEX_FFI_ENUM},{"result",NEX_FFI_RESULT},{"function",NEX_FFI_FUNCTION},{"file",NEX_FFI_FILE},{"unit",NEX_FFI_UNIT},{"resource",NEX_FFI_EXTERNAL_RESOURCE}};
 }
 struct ForeignSignature::Layout {
   std::string description,canonical;
   std::vector<Shape> types;
   std::vector<size_t> parameters;
   size_t result=0;
+  std::set<size_t> resultReachable;
 };
 ForeignSignature::ForeignSignature(const std::string &text){
   try{
@@ -60,6 +61,11 @@ ForeignSignature::ForeignSignature(const std::string &text){
         keys(item,{"kind","name","variants"});type.name=name(item.at("name"));identity="nominal:"+type.name;auto &cases=item.at("variants");
         if(!cases.is_array()||cases.empty()||cases.size()>4096)schemaError("invalid foreign enum cases");std::set<std::string> names;
         for(const auto &variant:cases){keys(variant,{"name","fields"});auto key=name(variant.at("name"),true);if(!names.insert(key).second)schemaError("duplicate foreign enum case");type.variants.push_back({std::move(key),members(variant.at("fields"))});}
+      }else if(kind=="resource"){
+        keys(item,{"kind","name","identity"});type.name=name(item.at("name"));type.identity=name(item.at("identity"));
+        // Reuse the exact host registration metadata validator. Registration
+        // identity itself is assigned by the loaded image, never by this text.
+        ExternalResourceClass checked(type.name,type.identity);identity="nominal:"+type.name;
       }else if(kind=="function"){keys(item,{"kind","name"});type.name=name(item.at("name"));identity+=':'+type.name;}
       else keys(item,{"kind"});
       if(!unique.insert(identity).second)schemaError("duplicate foreign type identity");out->types.push_back(std::move(type));
@@ -71,12 +77,15 @@ ForeignSignature::ForeignSignature(const std::string &text){
     std::set<size_t> visited;std::vector<size_t> pending=out->parameters;pending.push_back(out->result);
     while(!pending.empty()){auto i=pending.back();pending.pop_back();if(!visited.insert(i).second)continue;const auto &t=out->types[i];if(t.kind==NEX_FFI_LIST||t.kind==NEX_FFI_RESULT)pending.push_back(t.item);for(const auto &f:t.fields)pending.push_back(f.type);for(const auto &v:t.variants)for(const auto &f:v.fields)pending.push_back(f.type);}
     if(visited.size()!=out->types.size())schemaError("foreign signature contains unreachable types");
+    pending={out->result};
+    while(!pending.empty()){auto i=pending.back();pending.pop_back();if(!out->resultReachable.insert(i).second)continue;const auto &t=out->types[i];if(t.kind==NEX_FFI_LIST||t.kind==NEX_FFI_RESULT)pending.push_back(t.item);for(const auto &f:t.fields)pending.push_back(f.type);for(const auto &v:t.variants)for(const auto &f:v.fields)pending.push_back(f.type);}
     for(size_t i=0;i<out->types.size();++i){std::set<size_t> chain;auto at=i;while(out->types[at].kind==NEX_FFI_LIST||out->types[at].kind==NEX_FFI_RESULT){if(!chain.insert(at).second)schemaError("recursive foreign containers need a nominal type");at=out->types[at].item;}}
     out->description=doc.dump();out->canonical=nlohmann::json(doc).dump();layout=std::move(out);
   }catch(const DataError &e){if(e.code=="E_FFI_SIGNATURE")throw;schemaError(e.what());}
   catch(const J::exception &){schemaError("invalid foreign signature JSON");}
 }
 const std::string &ForeignSignature::canonical()const{if(!layout)schemaError("foreign signature has no layout");return layout->canonical;}
+bool ForeignSignature::hasResources()const{return layout&&std::any_of(layout->types.begin(),layout->types.end(),[](const auto &t){return t.kind==NEX_FFI_EXTERNAL_RESOURCE;});}
 namespace foreign_detail {
 struct TypedContext::Impl {
   std::shared_ptr<const ForeignSignature::Layout> layout;
@@ -104,6 +113,11 @@ struct TypedContext::Impl {
       if(t.kind==NEX_FFI_STRING){if(d.kind!=Data::String)valueError("foreign result requires str");}
       else if(t.kind==NEX_FFI_BYTES){if(d.kind!=Data::Bytes)valueError("foreign result requires bytes");(void)byteBuffer(value.object);}
       else if(t.kind==NEX_FFI_FILE){if(d.kind!=Data::File||static_cast<const FileData&>(d).diagnosticIdentity||!static_cast<const FileData&>(d).resource.identity())valueError("foreign result requires a genuine file owner");}
+      else if(t.kind==NEX_FFI_EXTERNAL_RESOURCE){
+        if(d.kind!=Data::External)valueError("foreign result requires an external owner");
+        const auto &r=externalResource(value.object);
+        if(!r.identity()||r.typeName()!=t.name||r.typeHash()!=t.identity)valueError("foreign external resource identity differs");
+      }
       else if(t.kind==NEX_FFI_FUNCTION){
         if(d.kind!=Data::Closure)valueError("foreign result requires a function value");
         if(arguments){auto [i,added]=context.functions.emplace(&d,type);if(!added&&i->second!=type)valueError("one callable has conflicting input types");}
@@ -125,6 +139,9 @@ struct TypedContext::Impl {
 };
 TypedContext::TypedContext(const ForeignSignature &signature):impl(std::make_unique<Impl>(signature)){}
 TypedContext::~TypedContext()=default;
+std::pair<std::string,std::string> TypedContext::resource(size_t type)const{const auto &t=impl->shape(type);if(t.kind!=NEX_FFI_EXTERNAL_RESOURCE)valueError("foreign type is not an external resource");return {t.name,t.identity};}
+bool TypedContext::resourceConstructible(size_t type)const{return impl->shape(type).kind==NEX_FFI_EXTERNAL_RESOURCE&&impl->layout->resultReachable.contains(type);}
+bool TypedContext::resourceDeclared(const std::string &name,const std::string &identity)const{return std::any_of(impl->layout->types.begin(),impl->layout->types.end(),[&](const auto &t){return t.kind==NEX_FFI_EXTERNAL_RESOURCE&&t.name==name&&t.identity==identity;});}
 void TypedContext::arguments(std::span<const Value> values,const std::function<void()> &poll){
   if(values.size()!=impl->layout->parameters.size())valueError("foreign argument count differs");
   impl->functions.clear();impl->bound=false;Impl::Validation validation{*impl,poll,true};for(size_t i=0;i<values.size();++i)validation.check(values[i],impl->layout->parameters[i]);impl->bound=true;

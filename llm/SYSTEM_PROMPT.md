@@ -1,3 +1,9 @@
+Private host external-resource C/loader support does not enable source resource
+declarations or task/FFI operations. Check `foreign_boundary.owned_external_host`
+and its `source_support` flag. Do not invent source resource types/constructors,
+retain C call/type/value tokens, or infer GPU/NPU resource execution from this
+host foundation. Follow docs/external-resources-design.md for the actual boundary.
+
 When `model.source_support` is advertised, query `nex describe --field model --json`
 and read `nex guide --kind model --json`. Use `std/model.nex` validated immutable
 named tensors, complete artifact/port/precision bindings and explicit placement.

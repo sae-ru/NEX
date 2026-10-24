@@ -19,5 +19,8 @@ public:
   uint64_t nominalBytes(size_t type,uint64_t variant) const;
   Value nominal(size_t type,uint64_t variant,std::span<const Value> fields,const std::function<void()> &poll);
   const std::string &description() const;
+  std::pair<std::string,std::string> resource(size_t type)const;
+  bool resourceConstructible(size_t type)const;
+  bool resourceDeclared(const std::string &name,const std::string &identity)const;
 };
 }

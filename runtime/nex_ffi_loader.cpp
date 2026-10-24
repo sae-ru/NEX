@@ -1,5 +1,6 @@
 #include "nex_ffi_loader.h"
 #include "nex_ffi_module.h"
+#include "nex_ffi_resources.h"
 #include "nex_json.h"
 #include "third_party/json.hpp"
 #include <openssl/evp.h>
@@ -95,6 +96,7 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
 }
 struct Image {
   fs::path directory;void *handle=nullptr;
+  std::shared_ptr<foreign_detail::ResourceRegistry> resourceTypes=std::make_shared<foreign_detail::ResourceRegistry>();
   std::map<std::string,nex_ffi_export_v1> exports;
   ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
     for(fs::recursive_directory_iterator it(directory,e),end;!e&&it!=end;it.increment(e))if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
@@ -192,23 +194,27 @@ ForeignBundleSnapshot inspectForeignBundle(const ForeignLibraryGrant &grant,size
   for(const auto &name:grant.exports)if(!result.exports.contains(name))fail("E_FFI_SIGNATURE","granted export is absent from pinned bundle");
   result.files.emplace("manifest.json",result.manifest);pollNow(poll);return result;
 }
-struct ForeignFunction::Impl {ResourceOwner<Module> owner;ForeignSignature signature;nex_ffi_callback_v1 callback;void *user;};
+struct ForeignFunction::Impl {ResourceOwner<Module> owner;ForeignSignature signature;nex_ffi_callback_v1 callback;void *user;std::shared_ptr<ResourceDomain> values;ResourceByteBudget bytes;std::shared_ptr<Manifest> manifest;};
 struct ForeignLibraries::Impl {
-  const std::map<std::string,ForeignLibraryGrant> grants;const size_t limit;ResourceDomain resources;std::mutex mutex;
+  const std::map<std::string,ForeignLibraryGrant> grants;const size_t limit,valueLimit;ResourceDomain resources;std::shared_ptr<ResourceDomain> values;ResourceByteBudget bytes;std::mutex mutex;
   std::map<std::string,std::shared_ptr<Manifest>> manifests;
   std::map<std::pair<const void*,std::string>,std::shared_ptr<AuthSlot>> slots;
-  Impl(std::map<std::string,ForeignLibraryGrant> grants,size_t limit):grants(std::move(grants)),limit(limit),resources(limit){}
+  Impl(std::map<std::string,ForeignLibraryGrant> grants,size_t limit,size_t valueLimit,uint64_t bytes):grants(std::move(grants)),limit(limit),valueLimit(valueLimit),resources(limit),values(std::make_shared<ResourceDomain>(valueLimit)),bytes(bytes){}
 };
-ForeignLibraries::ForeignLibraries(std::map<std::string,ForeignLibraryGrant> grants,size_t limit){
+ForeignLibraries::ForeignLibraries(std::map<std::string,ForeignLibraryGrant> grants,size_t limit,size_t valueLimit,uint64_t bytes){
   if(grants.size()>128)fail("E_FFI_LIMIT","host library catalogue exceeds 128 grants");
   for(const auto &[name,grant]:grants){if(!identifier(name)||grant.directory.empty()||grant.directory.find('\0')!=std::string::npos||!hash(grant.manifestSha256)||grant.exports.empty()||grant.exports.size()>1024)fail("E_FFI_GRANT","invalid host library grant");for(const auto &name:grant.exports)if(!identifier(name))fail("E_FFI_GRANT","invalid host export grant");}
-  impl=std::make_shared<Impl>(std::move(grants),limit);
+  if(!valueLimit||valueLimit>4096||!bytes||bytes>uint64_t(1024)*1024*1024)fail("E_FFI_LIMIT","invalid foreign resource capacity limits");
+  impl=std::make_shared<Impl>(std::move(grants),limit,valueLimit,bytes);
 }
 ForeignLibraries::~ForeignLibraries(){revoke();}
-void ForeignLibraries::revoke()noexcept{auto retained=impl;if(retained)retained->resources.revoke();}
+void ForeignLibraries::revoke()noexcept{auto retained=impl;if(retained){retained->values->revoke();retained->resources.revoke();}}
 std::vector<std::string> ForeignLibraries::grantedDirectories()const{auto retained=impl;std::vector<std::string> result;for(const auto &[name,grant]:retained->grants){(void)name;result.push_back(grant.directory);}return result;}
 std::map<std::string,ForeignLibraryGrant> ForeignLibraries::operatorGrants()const{return impl->grants;}
 size_t ForeignLibraries::moduleLimit()const noexcept{return impl->limit;}
+size_t ForeignLibraries::resourceLimit()const noexcept{return impl->valueLimit;}
+uint64_t ForeignLibraries::resourceBytesLimit()const noexcept{return impl->bytes.limit();}
+uint64_t ForeignLibraries::resourceBytesUsed()const noexcept{return impl->bytes.used();}
 ForeignFunction ForeignLibraries::bind(const std::string &library,const std::string &name,const ForeignSignature &signature,const std::string &expectedManifestSha256,Poll poll)const{
   auto retained=impl;auto libraryName=library,exportName=name,expectedPin=expectedManifestSha256;auto contract=signature;
   const auto &grant=retained->grants;auto it=grant.find(libraryName);
@@ -225,12 +231,23 @@ ForeignFunction ForeignLibraries::bind(const std::string &library,const std::str
       if(!candidate->loading&&(expired||(candidate->owner.identity()&&!candidate->owner.isOpen()))){retired.push_back(std::move(candidate));pos=retained->slots.erase(pos);}else ++pos;}
     auto &item=retained->slots[{access.scopeKey(),libraryName}];if(!item)item=std::make_shared<AuthSlot>(access);slot=item;}
   retired.clear();auto owner=authorize(slot,*manifest,checked);auto lease=owner.acquire();const auto &item=lease.value().image->exports.at(exportName);checked();
-  return ForeignFunction(std::make_shared<ForeignFunction::Impl>(ForeignFunction::Impl{owner,std::move(contract),item.callback,item.user}));
+  return ForeignFunction(std::make_shared<ForeignFunction::Impl>(ForeignFunction::Impl{owner,std::move(contract),item.callback,item.user,retained->values,retained->bytes,manifest}));
 }
 bool ForeignFunction::isOpen()const noexcept{auto retained=impl;return retained&&retained->owner.isOpen();}
 Value ForeignFunction::invoke(std::span<const Value> arguments,Poll poll,ForeignCallLimits limits)const{
+  return invokeWithResourceScope(arguments,{},std::move(poll),limits);
+}
+Value ForeignFunction::invokeWithResourceScope(std::span<const Value> arguments,ResourceAccess scope,Poll poll,ForeignCallLimits limits)const{
   auto retained=impl;if(!retained)fail("E_RESOURCE_CLOSED","foreign function is unavailable");auto lease=retained->owner.acquire();
   auto checked=[lease,poll=std::move(poll)]{lease.check();pollNow(poll);lease.check();};
-  return invokeForeignTyped(retained->callback,arguments,retained->signature,retained->user,std::move(checked),limits);
+  if(!retained->signature.hasResources())return invokeForeignTyped(retained->callback,arguments,retained->signature,retained->user,std::move(checked),limits);
+  auto *domain=retained->values.get();if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
+  auto access=domain->access();if(scope.scopeKey())access=access.combine(scope);
+  auto image=lease.value().image;auto manifest=retained->manifest;
+  auto pin=std::make_shared<ResourceLease<Module>>(lease);
+  auto resources=std::make_shared<foreign_detail::ResourceContext>(image->resourceTypes,access,retained->bytes,pin,
+      [image,manifest](const void *address){return ownedAddress(address,*image,*manifest);});
+  auto valuePoll=[checked=std::move(checked),access]{access.check();checked();access.check();};
+  return foreign_detail::invokeForeignTypedResources(retained->callback,arguments,retained->signature,retained->user,std::move(valuePoll),limits,std::move(resources));
 }
 }

@@ -1,3 +1,19 @@
+# Private136: typed external-resource C and loader integration
+
+This cohort adds an append-only C resource suffix, result-reachable constructors,
+actual pinned module callback/borrow ownership, physical capacity retention and
+lexical/request revocation. Its normal seven-group private host/compatibility gate
+passed, including21 new C boundary cases and the preceding21 owned-value cases.
+Sanitizer, compiler/runtime integration and platform gates for this exact cohort
+remain pending. Source resource declarations, task/FFI tickets and actual owned
+GPU/NPU resources are still unavailable. Read
+[the exact contract](docs/external-resources-design.md).
+
+The preserved134/0.122 compiler separately passed fresh full154, installedSDK33
+(595 commands/280 resources), and18 actual Chromium/Firefox/WebKit task cases.
+That accepted local SDK has its own exact compiler SHA and does not validate new
+private136 code. Primary0.81 and original graph history remain unchanged.
+
 # Private135: owned external value foundation
 
 A separate host prototype now adds typed external resource owners, physical byte
@@ -5,7 +21,7 @@ budgets, managed values and C opaque forwarding. Public source resource types,
 typed construction, device executors and task/ffi integration remain pending.
 Read [the implementation contract and required integration](docs/external-resources-design.md).
 This changes no source language or migration and does not enable owned handles
-in std/model. The frozen134 candidate and its running full154/SDK33 gates remain
+in std/model. The frozen134 candidate and its historical full154/SDK33 gates remain
 separate and unchanged. The private host foundation passed21 cases, existing
 file/C compatibility and3 suites each under ASAN/UBSAN and TSAN. Normal evidence
 is composite3 after correcting a missing request scope in the new task test;

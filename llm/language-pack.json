@@ -254,7 +254,10 @@
     "provider_task_debug_frame_schema": "llm/provider-task-debug-frame.schema.json",
     "provider_task_debug_expression_schema": "llm/provider-task-debug-expression.schema.json",
     "compute": "docs/compute.md",
-    "model": "docs/models.md"
+    "model": "docs/models.md",
+    "external_resource_design": "docs/external-resources-design.md",
+    "external_resource_host_header": "runtime/nex_external_resource.h",
+    "external_resource_C_host_header": "runtime/nex_ffi_resources.h"
   },
   "document_access": "nex guide --kind compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1651,5 +1654,14 @@
       "other model formats and dynamic/scalar shapes",
       "owned model/device resources and persistent/async worker lifetime"
     ]
+  },
+  "private_owned_external_host": {
+    "source_support": false,
+    "C_resource_construction": true,
+    "actual_module_pin": true,
+    "result_reachable_construction_only": true,
+    "source_task_bridge": false,
+    "actual_GPU_NPU_resources": false,
+    "guide": "docs/external-resources-design.md"
   }
 }
