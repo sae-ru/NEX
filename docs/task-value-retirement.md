@@ -22,6 +22,15 @@ roots and actual buffer storage, then records completion under the lock. Cleanup
 may reenter runtime queries and may enqueue further cleanup. A job with pending
 retirement cannot resume or publish completion. A logical scope stages member
 results and buffers once and publishes closure only after its own batches settle.
+API guards tag only roots retired by their own mutation. Their stack-owned
+fences and intrusive per-fence links allocate no heap storage. A guard processes
+only those roots and waits for any of its batches taken by another worker; the
+fence remains alive until actual destruction and quota release complete. It
+never drains unrelated global cleanup on a still-running source stack. A
+suspending call transfers its queued links to an admitted Job-owned fence before
+unlocking; it releases the source worker and cannot resume or publish completion
+until that fence settles. General worker cleanup runs between source turns.
+
 Unrelated ready work remains schedulable; an ordinary synchronous destructor can
 occupy its worker, while thread-affine/device destruction still needs the owning
 resource executor and actual physical fence.
@@ -34,11 +43,11 @@ are not revoked by dropping a scope's own references. Resource-region revocation
 and physical settlement remain separate and continue to apply to genuine host
 resources; a discarded wrapper is not proof of a device fence.
 
-The maintained thirteen-case probe uses actual managed allocations whose real
+The maintained fifteen-case probe uses actual managed allocations whose real
 destructors reenter scheduler queries. It checks cancellation and channel close,
 cancelled delivered events, scoped and failed results, retained passive aliases,
 buffer destruction/capacity ordering, nested reentrant cancellation, multiple
-workers,256 nested scopes, root-buffer shutdown and joinable root-result lifetime. These objects
+workers, API guard isolation, stolen completion fences,256 nested scopes, root-buffer shutdown and joinable root-result lifetime. These objects
 contain no external/file/task authority and do not bypass source snapshot guards.
 The installed SDK compiles and runs the same probe from installed runtime sources.
 

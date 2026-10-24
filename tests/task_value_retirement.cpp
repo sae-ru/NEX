@@ -9,7 +9,8 @@
 using namespace nexrt;
 using namespace std::chrono_literals;
 namespace {
-void require(bool value,const char *message){if(!value)throw std::runtime_error(message);}
+void require(bool value,const char *message){if(!value){std::cerr<<"retirement check: "<<message<<"\n";throw std::runtime_error(message);}}
+thread_local bool helperAwaitSuspend=false,insideCloseApi=false;
 template<class F>void rejected(const char *code,F action){
   try{action();}catch(const Trap &e){require(e.code==code,"unexpected task retirement error");return;}
   throw std::runtime_error(std::string("missing ")+code);
@@ -26,6 +27,7 @@ struct State {
   TaskGroup::Ticket other;
   std::atomic<int> destroyed{0},queried{0};
   std::atomic<bool> afterScope{false},quotaHeld{false},nestedCancelled{false};
+  std::atomic<bool> foreignHelperCleanup{false},finalizerInCloseApi{false};
   std::shared_ptr<Gate> gate;
   std::function<void()> hook;
   int mode=0;
@@ -37,6 +39,8 @@ struct AuditedData final:Data {
   std::shared_ptr<State> state;
   explicit AuditedData(std::shared_ptr<State> state):Data(Data::Record),state(std::move(state)){values.emplace_back(int64_t(42));}
   ~AuditedData(){
+    state->finalizerInCloseApi=insideCloseApi;
+    if(helperAwaitSuspend){state->foreignHelperCleanup=true;if(state->gate)state->gate->open();}
     if(state->gate)state->gate->enter();
     if(state->query){(void)state->group->externalStats();++state->queried;}
     if(state->hook)state->hook();
@@ -131,6 +135,49 @@ TaskBody rootBuffer(TaskGroup &group,std::shared_ptr<State> state){
   (void)co_await group.send(state->channel,audited(state));co_return Value(int64_t(42));
 }
 TaskBody rootBufferFactory(TaskGroup &group,Value,Value,const void *p){return rootBuffer(group,*static_cast<const std::shared_ptr<State>*>(p));}
+struct Pair {
+  std::shared_ptr<State> first=std::make_shared<State>(),second=std::make_shared<State>();
+  std::atomic<bool> helperStarted{false},helperEntered{false},helperReturned{false},closeReturned{false};
+};
+template<class F>bool eventually(F predicate){
+  auto until=std::chrono::steady_clock::now()+5s;
+  while(!predicate()){if(std::chrono::steady_clock::now()>=until)return false;std::this_thread::sleep_for(1ms);}return true;
+}
+struct MarkedYield {
+  TaskGroup::Awaiter inner;Pair *pair;
+  bool await_ready()const noexcept{return false;}
+  bool await_suspend(TaskBody::Handle handle){
+    struct Reset {bool previous=helperAwaitSuspend;~Reset(){helperAwaitSuspend=previous;}}reset;
+    helperAwaitSuspend=true;pair->helperEntered=true;return inner.await_suspend(handle);
+  }
+  TaskEvent await_resume(){return inner.await_resume();}
+};
+TaskBody twoBuffers(TaskGroup &group,std::shared_ptr<Pair> pair){
+  while(!pair->helperStarted.load())co_await group.yield();
+  auto scope=group.openScope(1);auto first=group.channel(1),second=group.channel(1);
+  (void)co_await group.send(first,audited(pair->first));(void)co_await group.send(second,audited(pair->second));
+  co_await group.leaveScope(scope);co_return Value(int64_t(42));
+}
+TaskBody twoBufferFactory(TaskGroup &group,Value,Value,const void *p){return twoBuffers(group,*static_cast<const std::shared_ptr<Pair>*>(p));}
+TaskBody isolatedHelper(TaskGroup &group,std::shared_ptr<Pair> pair){
+  pair->helperStarted=true;
+  require(eventually([&]{return pair->first->gate->reached();}),"foreign cleanup owner did not enter its first finalizer");
+  co_await MarkedYield{group.yield(),pair.get()};pair->helperReturned=true;pair->second->gate->open();co_return Value(int64_t(2));
+}
+TaskBody isolatedHelperFactory(TaskGroup &group,Value,Value,const void *p){return isolatedHelper(group,*static_cast<const std::shared_ptr<Pair>*>(p));}
+TaskBody closePair(TaskGroup &group,std::shared_ptr<Pair> pair){
+  auto scope=group.openScope(1);auto channel=group.channel(0);pair->first->channel=pair->second->channel=channel;
+  auto first=group.spawnWithContext(sendFactory,&pair->first),second=group.spawnWithContext(sendFactory,&pair->second);
+  co_await group.yield();
+  insideCloseApi=true;group.close(channel);insideCloseApi=false;pair->closeReturned=true;
+  require(!(co_await group.await(first)).value.scalar&&!(co_await group.await(second)).value.scalar,"closed pair send succeeded");
+  co_await group.leaveScope(scope);co_return Value(int64_t(42));
+}
+TaskBody closePairFactory(TaskGroup &group,Value,Value,const void *p){return closePair(group,*static_cast<const std::shared_ptr<Pair>*>(p));}
+std::shared_ptr<Pair> pairFor(TaskGroup &group){
+  auto pair=std::make_shared<Pair>();pair->first->group=pair->second->group=&group;
+  pair->first->gate=std::make_shared<Gate>();pair->second->gate=std::make_shared<Gate>();return pair;
+}
 std::shared_ptr<State> stateFor(TaskGroup &group){auto state=std::make_shared<State>();state->group=&group;return state;}
 void success(TaskGroup &group,TaskGroup::ContextFactory factory,const std::shared_ptr<State> &state){
   auto ticket=group.spawnWithContext(factory,&state);require(group.join(ticket).scalar==42,"retirement changed task result");group.finish();
@@ -164,6 +211,33 @@ int main(int argc,char **argv){try{
  run("deep_scope_retirement",[]{
    RequestScope request(10000000,5000);TaskGroup group(1);group.enableResourceRegions();auto state=stateFor(group);success(group,deepFactory,state);
    require(state->destroyed==1&&state->queried==1,"256 nested scopes did not retire their owned result");
+ });
+ run("api_guard_ignores_foreign_cleanup",[]{
+   RequestScope request(10000000,5000);TaskGroup group(2);auto pair=pairFor(group);std::atomic<bool> observed=false;
+   std::jthread monitor([&]{
+     observed=eventually([&]{return pair->helperEntered.load();});pair->first->gate->open();
+     if(!observed)pair->second->gate->open();
+   });
+   auto owner=group.spawnWithContext(twoBufferFactory,&pair),helper=group.spawnWithContext(isolatedHelperFactory,&pair);
+   require(group.join(owner).scalar==42&&group.join(helper).scalar==2,"isolated API helper changed result");monitor.join();group.finish();
+   require(observed&&pair->helperReturned&&!pair->second->foreignHelperCleanup,"helper source API stole an unrelated finalizer");
+   require(pair->first->destroyed==1&&pair->second->destroyed==1,"foreign finalizer isolation lost cleanup");
+ });
+ run("api_guard_waits_stolen_completion",[]{
+   RequestScope request(10000000,5000);TaskGroup group(2);auto pair=pairFor(group);std::atomic<bool> observed=false,premature=false;
+   std::jthread monitor([&]{
+     observed=eventually([&]{return pair->first->gate->reached()&&pair->second->gate->reached();});
+     if(observed){
+       bool firstOwn=pair->first->finalizerInCloseApi.load(),secondOwn=pair->second->finalizerInCloseApi.load();
+       observed=firstOwn!=secondOwn;
+       auto own=firstOwn?pair->first:pair->second,stolen=firstOwn?pair->second:pair->first;
+       own->gate->open();observed=observed.load()&&eventually([&]{return own->destroyed.load()==1;});
+       std::this_thread::sleep_for(25ms);premature=pair->closeReturned.load()||stolen->destroyed.load()!=0;
+     }
+     pair->first->gate->open();pair->second->gate->open();
+   });
+   auto owner=group.spawnWithContext(closePairFactory,&pair);require(group.join(owner).scalar==42,"stolen completion changed owner result");
+   monitor.join();group.finish();require(observed&&!premature&&pair->closeReturned,"API returned before its stolen finalizer physically settled");
  });
  run("root_buffer_shutdown",[]{
    RequestScope request(1000000,5000);TaskGroup group(1);auto state=stateFor(group);state->channel=group.channel(1);

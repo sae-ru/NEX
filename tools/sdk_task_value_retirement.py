@@ -14,11 +14,12 @@ def check_installed_task_value_retirement(run,root,resources,driver):
     if platform.system()=='Linux':args.append('-ldl')
     run(args,cwd=out,timeout=300);output=run([binary],cwd=out,timeout=90)
     cases=[line for line in output.splitlines() if line.startswith('PASS ')]
-    _require(len(cases)==len(set(cases))==13 and output.rstrip().endswith('TASK VALUE RETIREMENT CASES 13'),
+    _require(len(cases)==len(set(cases))==15 and output.rstrip().endswith('TASK VALUE RETIREMENT CASES 15'),
              'installed task value retirement cases did not complete')
-    return {'ok':True,'cases':13,'destructors_outside_scheduler_mutex':True,
+    return {'ok':True,'cases':15,'destructors_outside_scheduler_mutex':True,
             'cancelled_event_cleanup':True,'task_scope_publication_fence':True,
             'buffer_storage_quota_fence':True,'nested_reentrant_cleanup':True,
-            'root_results_remain_joinable':True,'iterative_256_scope_retirement':True,'source_resource_transport':False,
+            'root_results_remain_joinable':True,'iterative_256_scope_retirement':True,
+            'api_cleanup_isolation':True,'stolen_completion_fence':True,'source_resource_transport':False,
             'probe_sha256':_sha(binary.read_bytes()),
             'installed_sources':{str(p.relative_to(resources)):_sha(p.read_bytes()) for p in sources}}

@@ -83,14 +83,14 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
         fields=('ok','destructors_outside_scheduler_mutex','cancelled_event_cleanup','task_scope_publication_fence',
-                'buffer_storage_quota_fence','nested_reentrant_cleanup','root_results_remain_joinable','iterative_256_scope_retirement')
-        current['evidence']={'source_resources':{'task_value_retirement':{**{name:True for name in fields},'cases':13}}}
+                'buffer_storage_quota_fence','nested_reentrant_cleanup','root_results_remain_joinable','iterative_256_scope_retirement','api_cleanup_isolation','stolen_completion_fence')
+        current['evidence']={'source_resources':{'task_value_retirement':{**{name:True for name in fields},'cases':15}}}
         for name in fields:
             for value in (False,None,'true'):
                 damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_value_retirement'][name]=value
                 with self.subTest(name=name,value=value),self.assertRaisesRegex(RuntimeError,'task value retirement'):
                     acceptance.validate_completed_report(damaged)
-        for count in (0,12,14,True,'13'):
+        for count in (0,14,16,True,'15'):
             damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['task_value_retirement']['cases']=count
             with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'task value retirement'):
                 acceptance.validate_completed_report(damaged)

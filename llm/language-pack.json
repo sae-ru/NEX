@@ -1782,6 +1782,8 @@
     "retained_roots_per_job": 3,
     "source_task_FFI_bridge": false,
     "actual_GPU_NPU_resources": false,
-    "scope_closure": "deduplicated preallocated completion queue;256 nested scopes without recursive native closure"
+    "scope_closure": "deduplicated preallocated completion queue;256 nested scopes without recursive native closure",
+    "api_cleanup": "API guards retire only their own tagged roots; stack-owned fences survive batches taken by other workers",
+    "suspending_api_cleanup": "Suspending calls transfer their tagged roots to a Job-owned fence before unlock; source workers remain available"
   }
 }
