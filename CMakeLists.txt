@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.126.0 LANGUAGES C CXX)
+project(NEX VERSION 0.127.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -113,6 +113,11 @@ target_compile_options(nex_resource_regions_probe PRIVATE -Wall -Wextra -Wpedant
 target_link_libraries(nex_resource_regions_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 add_test(NAME logical_resource_regions COMMAND nex_resource_regions_probe)
 set_tests_properties(logical_resource_regions PROPERTIES TIMEOUT 90)
+add_executable(nex_reference_resource_regions_probe tests/resource_regions_reference.cpp)
+target_link_libraries(nex_reference_resource_regions_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_reference_resource_regions_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME reference_resource_regions COMMAND nex_reference_resource_regions_probe)
+set_tests_properties(reference_resource_regions PROPERTIES TIMEOUT 90)
 
 add_test(NAME task_typescript_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript.py $<TARGET_FILE:nex_task_typescript_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
 set_tests_properties(task_typescript_steps PROPERTIES TIMEOUT 600)

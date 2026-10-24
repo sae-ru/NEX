@@ -253,6 +253,8 @@ struct Reference {
     std::vector<size_t> members,children,pipes;
     std::shared_ptr<Error> failure;
     std::weak_ptr<RD> capability;
+    std::unique_ptr<nexrt::ResourceRegion> resources;
+    std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
   };
   struct Pipe {
     size_t scope,capacity;
@@ -279,6 +281,7 @@ struct Reference {
   Span rootSpan;
   TaskReferenceObserver observer;
   TaskReferenceExternalHost *externalHost;
+  std::unique_ptr<nexrt::ResourceRegion> resourceRoot;
   std::unique_ptr<TaskReferenceExternalMailbox> external;
 #ifndef _WIN32
   nexrt::FileReadGrant fileGrant;
@@ -305,6 +308,29 @@ struct Reference {
     (void)grant;
 #endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
+    if(host&&host->resourceRegions)resourceRoot=std::make_unique<nexrt::ResourceRegion>(nexrt::ResourceRegionFamily::Reference);
+  }
+  // Also cover unexpected observer/host failures. Physical operations stop
+  // retaining frames/leases before root revocation waits for finalizers.
+  ~Reference(){
+    if(resourceRoot){
+      if(external)external->drain();
+      jobs.clear();pipes.clear();retireRootResources();
+    }
+  }
+  nexrt::ResourceRegionAuthority resourceAuthority(size_t scope)const{
+    if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource regions are not enabled");
+    return scope==none?resourceRoot->authority():regions.at(scope).resources->authority();
+  }
+  bool resourceRetirementsPending()const{
+    return std::any_of(regions.begin(),regions.end(),[](const Region &r){
+      return r.resourceRetirement&&!r.resourceRetirement->ready();
+    });
+  }
+  void retireRootResources()noexcept{
+    if(!resourceRoot)return;
+    auto retirement=resourceRoot->beginClose();retirement.requestClose();
+    while(!retirement.ready())std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   void checkControl(Span span={}){
     if(controlFailure)throw *controlFailure;
@@ -447,6 +473,14 @@ struct Reference {
       for(size_t s=regions.size();s-->0;){auto &r=regions[s];if(!r.closing||r.closed||r.external)continue;
         if(std::any_of(r.members.begin(),r.members.end(),[&](size_t i){return jobs[i]->state!=Done;})||
            std::any_of(r.children.begin(),r.children.end(),[&](size_t i){return !regions[i].closed;}))continue;
+        if(r.resources){
+          if(!r.resourceRetirement){
+            r.resourceRetirement.emplace(r.resources->beginClose());
+            // The serial AST coordinator holds no scheduler/mailbox lock.
+            r.resourceRetirement->requestClose();
+          }
+          if(!r.resourceRetirement->ready())continue;
+        }
         for(auto i:r.members){auto &j=*jobs[i];
           if(fatal(j.failure)||(!r.abort&&!j.observed&&!j.cancelled))prefer(r.failure,j.failure);
           j.observed=true;j.result={};j.capability.reset();
@@ -489,7 +523,10 @@ struct Reference {
     size_t outer=j.stack.back().depth+r.callDepth,pending=0;
     for(const auto &a:j.stack)pending+=a.machine->pendingActions();
     if(outer>=256||pending>=262144)throw Error("E_LIMIT","reference callback frame/action limit exceeded",r.span);
-    size_t s=regions.size();Region region;region.owner=i;region.parent=parent;region.depth=depth;regions.push_back(std::move(region));
+    size_t s=regions.size();Region region;region.owner=i;region.parent=parent;region.depth=depth;
+    if(resourceRoot)region.resources=std::make_unique<nexrt::ResourceRegion>(
+      parent==none?resourceRoot->child():regions[parent].resources->child());
+    regions.push_back(std::move(region));
     if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
     a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll);
@@ -534,7 +571,8 @@ struct Reference {
     if(r.operation=="task_yield"){
       if(externalHost){
         std::optional<TaskReferenceExternalRequest> request;
-        try{request=externalHost->prepare(i,r.span);}
+        try{request=resourceRoot?externalHost->prepareInRegion(i,r.span,resourceAuthority(j.current)):
+              externalHost->prepare(i,r.span);}
         catch(const Error &){throw;}
         catch(const nexrt::DataError &){throw;}
         catch(const std::bad_alloc &){throw Error("E_MEMORY","reference external host preparation allocation failed",r.span);}
@@ -690,7 +728,10 @@ struct Reference {
         // The synthetic bridge has only a unit response. Real filesystem
         // values require a separately reviewed, lease-checked source adapter.
         if(!raw.bytes.empty())throw Error("E_TASK_VALUE","reference yield completion requires an empty unit payload",span);
-        try{externalHost->admit(i,raw);}
+        try{
+          if(resourceRoot)externalHost->admitInRegion(i,raw,resourceAuthority(job.current));
+          else externalHost->admit(i,raw);
+        }
         catch(const Error &){throw;}
         catch(const nexrt::DataError &){throw;}
         catch(const std::bad_alloc &){throw Error("E_MEMORY","reference external host admission allocation failed",span);}
@@ -723,8 +764,12 @@ struct Reference {
     for(auto &region:regions)if(!region.closed){region.closing=true;region.abort=true;}
     for(;;){
       collectExternal(true);settle();
-      if(!external||!external->stats().pending)break;
-      external->wait();
+      if(jobs[0]->state==Done)break;
+      if(external&&external->stats().pending){
+        if(resourceRoot)external->waitForControl(std::chrono::milliseconds(1));
+        else external->wait();
+      }else if(resourceRetirementsPending())std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      else throw Error("E_TASK_STATE","reference control cleanup cannot make progress");
     }
     if(jobs[0]->state!=Done)throw Error("E_TASK_STATE","reference control cleanup did not drain all scopes");
     prefer(jobs[0]->failure,controlFailure);jobs[0]->result={};
@@ -773,13 +818,17 @@ struct Reference {
       if(!ran&&!settle()){
         try{checkControl();}catch(const Error &){finishControl();break;}
         if(external&&external->stats().pending){
-          if(supportsTaskFileReads(program))external->waitForControl(std::chrono::milliseconds(10));
+          if(resourceRoot||supportsTaskFileReads(program))external->waitForControl(std::chrono::milliseconds(10));
           else external->wait();
           continue;
+        }
+        if(resourceRetirementsPending()){
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));continue;
         }
         throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
       }
     }
+    retireRootResources();
     try{checkControl();}catch(const Error &){finishControl();}
     if(jobs[0]->failure){auto error=*jobs[0]->failure;error.output=output;throw error;}
     TaskReferenceResult result;result.value=jobs[0]->result;result.output=output;result.steps=used;

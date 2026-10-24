@@ -1,6 +1,7 @@
 #pragma once
 #include "nex/language.h"
 #include "nex_task_external.h"
+#include "nex_resource_region.h"
 #include <chrono>
 #include <optional>
 #include <stop_token>
@@ -51,15 +52,24 @@ struct TaskReferenceExternalRequest {
 struct TaskReferenceExternalHost {
   std::stop_token cancellation;
   nexrt::TaskExternalLimits limits;
+  // Private trusted-host opt-in, captured before evaluation begins. This
+  // creates Reference-family regions; it permits no source Value transport.
+  bool resourceRegions=false;
   virtual ~TaskReferenceExternalHost()=default;
   // Invoked only by the source coordinator for a checked task_yield. Returning
   // nullopt keeps ordinary yield semantics. A returned operation can retain
   // explicit host leases and owned raw data only, never Values or task caps.
   virtual std::optional<TaskReferenceExternalRequest> prepare(size_t owner,Span)=0;
+  // Coordinator-only counterpart when resourceRegions is enabled. The host
+  // must capture physical access explicitly and must not discover worker TLS.
+  virtual std::optional<TaskReferenceExternalRequest> prepareInRegion(size_t owner,Span span,
+      const nexrt::ResourceRegionAuthority &){return prepare(owner,span);}
   // Coordinator-only unit admission, after physical retirement. This private
   // hook may validate host leases; the source response is always unit. There
   // is deliberately no public filesystem/source-IO bridge in this interface.
   virtual void admit(size_t,const nexrt::TaskExternalResult &){}
+  virtual void admitInRegion(size_t owner,const nexrt::TaskExternalResult &result,
+      const nexrt::ResourceRegionAuthority &){admit(owner,result);}
   // Private lifecycle observation after logical close, outside mailbox locks.
   // Coordinator-only and non-reentrant; it promises no source authority API.
   virtual void scopeRetired(size_t)noexcept{}

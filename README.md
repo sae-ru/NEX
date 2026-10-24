@@ -1,3 +1,14 @@
+# Development0.127: independent reference resource regions
+
+The serial AST scheduler now has an explicit trusted-host resource-region opt-in.
+Its separate Reference-family authority follows actual scopes, checks promotion,
+and waits for physical cleanup on ordinary completion, cancellation, timeout and
+exceptional unwinding. Other ready AST jobs continue while an executor finalizer
+is pending. Query `resource_regions`; read [the host contract](docs/resource-regions.md).
+Source task input/result/channel/capture transport and the FFI/device bridge remain
+pending. Language0.21 and the approved primary0.81 are unchanged. Matching current
+full regression, installed SDK and platform delivery are still required.
+
 # Development0.126: private native logical resource regions
 
 The trusted native TaskGroup adapter can enable explicit logical resource regions.
@@ -6,7 +17,7 @@ explicit ancestor promotion. Scope exit parks until its complete physical cleanu
 fence; destructors run outside scheduler locks and on a supplied executor when
 required. Root group retirement owns the remaining promoted resources.
 Query `resource_regions`; read [the exact host scope](docs/resource-regions.md).
-Source task/FFI/value transport, independent reference scheduling, request-parent
+Source task/FFI/value transport and request-parent
 transfer and actual devices remain pending. Language0.21 and primary081 stay intact.
 
 # Development0.125: executor-owned external cleanup

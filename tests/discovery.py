@@ -99,7 +99,7 @@ class Discovery(harness.ToolchainCase):
         self.assertEqual(full['resource_regions'], pack['resource_regions'])
         self.assertTrue(full['resource_regions']['native_scheduler'])
         self.assertFalse(full['resource_regions']['source_support'])
-        self.assertFalse(full['resource_regions']['reference_scheduler'])
+        self.assertTrue(full['resource_regions']['reference_scheduler'])
         self.assertEqual(full['resource_regions']['maximum']['scope_depth'], 256)
         self.assertEqual(full['resource_executor'], pack['resource_executor'])
         self.assertFalse(full['resource_executor']['source_support'])

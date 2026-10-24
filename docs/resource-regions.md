@@ -1,11 +1,12 @@
-# Private native logical resource regions
+# Private logical resource regions
 
 Toolchain0.126 connects trusted host resource regions to the native TaskGroup
 scheduler. Query `nex describe --field resource_regions --json`. This changes no
 source syntax, language0.21 identity, canonical format or migration. Source task
 input/result/channel/capture transport still rejects external resource authority.
-The independent AST reference scheduler and source task/FFI completion adapter
-remain pending; no actual GPU/NPU resource is exposed by this host layer.
+Toolchain0.127 also connects the independent AST reference scheduler. The source
+task/FFI completion adapter remains pending; no actual GPU/NPU resource is exposed
+by this host layer.
 
 Logical ancestry and physical authority are separate. A region graph has up to
 1025 nodes including its root,256 nested scopes and4096 retained owner slots.
@@ -65,13 +66,41 @@ retirement and256 actual native nested scopes are separate executable cases.
 Existing executor, owned values, files and old C-prefix gates run alongside it.
 The installed SDK compiles and runs the same18 cases from installed sources.
 
+The independent serial AST coordinator has its own scopes, jobs and FIFO queues;
+it does not dispatch native TaskGroup, TaskIR or compiled frames. A trusted host
+sets `TaskReferenceExternalHost::resourceRegions` before evaluation begins.
+The coordinator passes the current genuine Reference-family authority to
+`prepareInRegion` and, after physical operation retirement, `admitInRegion`.
+Their default implementations preserve the existing unit-only host hooks.
+The opt-in is captured once; changing the host flag during execution grants no
+new authority. Hosts without it allocate no resource graph. These callbacks are
+coordinator-only, non-reentrant trusted APIs; no authority reaches a source Value,
+raw mailbox result or IO-worker ticket.
+
+Each AST `with_tasks` owns a child logical region. Scope completion and its
+`scopeRetired` notification wait for the whole physical resource fence, including
+executor finalizers. Other ready AST jobs continue while that cleanup is pending.
+Idle waiting polls resource fences at bounded intervals and still observes root
+control. Cancellation and deadlines cancel source work but keep waiting for IO
+operations and resource destruction. Root and promoted owners are retired before
+evaluation returns; unexpected observer/host unwinding also drains operations,
+releases retained frames and waits for root cleanup. Request-parent transfer is
+still pending. A host must settle its retained physical borrows independently;
+waiting for `scopeRetired` before releasing such a borrow would create a cycle.
+
+The separate `reference_resource_regions` gate exercises actual checked AST
+programs, ancestry and sibling refusal,64 resumptions, explicit promotion,
+independent source-job progress during executor cleanup, cancellation, timeout,
+preparation/observer failures and combined IO/resource cleanup. Ordinary reference
+task, mailbox and source-value rejection gates remain required.
+
 ```sh
 cmake -S experiments/resource-regions -B build-resource-regions
 cmake --build build-resource-regions -j 4
 ctest --test-dir build-resource-regions --output-on-failure
 ```
 
-Before public source enablement, complete reference scheduling, transport and
+Before public source enablement, complete transport and
 cleanup of resource-bearing Values on every scheduler path, checked transfer to
 the request parent, captured FFI grants and typed physical completion admission.
 Keep the current source snapshot guards: dropping those guards would permit

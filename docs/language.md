@@ -1,3 +1,5 @@
+Toolchain0.127 adds private independent AST reference resource-region scheduling and physical cleanup fences. Source task/FFI transport stays unavailable; language0.21, canonical identities and migration remain unchanged. See resource-regions.md.
+
 Toolchain0.126 adds private host logical resource regions in native TaskGroup; source task/FFI transport and reference integration remain unavailable. Language0.21/canonical identities/migration stay unchanged. See resource-regions.md.
 
 Toolchain0.125 adds a private trusted host cleanup executor, without changing source syntax, canonical identity, language0.21 or migration. Source task/FFI/device bridges remain unavailable; see resource-executor.md.

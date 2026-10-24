@@ -1734,12 +1734,12 @@
     ]
   },
   "resource_regions": {
-    "status": "private_trusted_host_native_scheduler",
+    "status": "private_trusted_host_native_and_reference_schedulers",
     "source_support": false,
     "source_task_bridge": false,
     "frame_value_transport": false,
     "native_scheduler": true,
-    "reference_scheduler": false,
+    "reference_scheduler": true,
     "actual_GPU_NPU_resources": false,
     "stable_host_abi": false,
     "guide": "docs/resource-regions.md",
@@ -1758,11 +1758,13 @@
       "physical_joined_domains": 8
     },
     "pending": [
-      "independent reference scheduler integration",
       "source value input/result/channel/capture and cleanup transport",
       "source task/FFI completion adapter and explicit language migration",
       "request-parent transfer across whole task-group boundaries",
       "actual device bindings and matching compiler/SDK/platform delivery"
-    ]
+    ],
+    "reference_enable": "TaskReferenceExternalHost::resourceRegions before evaluation",
+    "reference_current_authority": "coordinator-only prepareInRegion/admitInRegion hooks",
+    "reference_cleanup": "scope publication after physical settlement; root and exceptional unwind drain physical operations and resources"
   }
 }
