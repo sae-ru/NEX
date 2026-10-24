@@ -1,3 +1,6 @@
+(* Private150 acquires logical resource authority only for actual resource-bearing
+   task graphs/FFI signatures; pure snapshots remain independent of revocation.
+   No syntax, public021 identity or public022 migration changes. *)
 (* Toolchain0.128 native Value retirement adds no syntax, canonical identity or language0.21 migration change. Source task resource transport stays rejected. *)
 (* Toolchain0.127 private reference resource regions add no source syntax, canonical or language0.21 migration change. Source authority transport stays rejected. *)
 (* Toolchain0.126 private native resource regions add no source syntax, language0.21 migration or canonical change; source task-resource transport remains rejected. *)

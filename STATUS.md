@@ -3199,3 +3199,16 @@ AST/IR sanitizer checks passed. Public task syntax/execution stays disabled;
 TypeScript scheduling, region typing,019 migration, asynchronous IO/debug/profile
 and delivery remain pending. Primary081 and graph history are preserved.
 
+# Private150: on-demand logical resource authority (validation pending)
+
+Independent AST snapshots now acquire actor/receiver resource authority only
+after complete graph validation finds genuine external owners. Task/FFI in both
+native and AST adapters captures logical ownership synchronously only for an
+actual resource-bearing signature. Pure completion/channel values remain
+independent of logical resource revocation; physical grants, cancellation,
+late owned admission and ended-owner rejection remain required. Three new
+explicit022 AST regressions complement the unchanged legacy request test;
+FFI context probes cover skipped data-only acquisition and mandatory owned
+acquisition. Public021, public022 migration and installed/platform/device
+acceptance are unchanged. Matching full build/regression/sanitizers are pending.
+

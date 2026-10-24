@@ -1,3 +1,9 @@
+Private task_foreign_prototype.resource_authority_on_demand means only actual
+resource-bearing snapshots/FFI signatures acquire logical owner authority.
+Pure values remain independent of that resource revocation; execution cancellation
+and physical FFI/request/module grants still apply. Ended owners remain rejected.
+This does not enable public022 migration or installed/device support.
+
 Private task_foreign_prototype.private_cross_task_resource_transport additionally
 describes explicit022 resource captures/results/futures/channels and closures.
 Complete graph validation precedes atomic genuine-owner ancestor transfer; original

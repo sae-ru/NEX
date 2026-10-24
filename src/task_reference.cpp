@@ -400,7 +400,7 @@ struct Reference {
     if(auto cached=weak.lock())return RV(std::move(cached));
     auto result=TaskReferenceAccess::create(kind,identity,scope,i);weak=result.object;return result;
   }
-  void snapshot(const RV &root,size_t target,size_t current,nexrt::ResourceRegionAuthority actor={},nexrt::ResourceRegionAuthority receiver={},bool transfer=true){
+  void snapshot(const RV &root,size_t target,size_t current,const Job *actorJob=nullptr,bool receiverIsJobRoot=false,bool transfer=true){
     std::vector<RV> work{root};std::unordered_set<const RD*> seen;size_t members=1;
     std::vector<nexrt::ExternalResource> owners;std::unordered_set<uint64_t> ownerIds;
     while(!work.empty()){
@@ -430,8 +430,11 @@ struct Reference {
     }
     if(!owners.empty()){
       if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource transfer requires enabled ownership regions");
-      if(!actor)actor=resourceRoot->authority();
-      if(!receiver)receiver=target==none?resourceRoot->authority():regions.at(target).resources->authority();
+      // Logical resource revocation is independent of pure task execution.
+      // Resolve authority only after the complete graph requires owner transfer.
+      auto actor=actorJob?resourceAuthority(*actorJob):resourceRoot->authority();
+      auto receiver=receiverIsJobRoot?actorJob->resources->authority():
+          target==none?resourceRoot->authority():regions.at(target).resources->authority();
       nexrt::ExternalResource::transferRegions(owners,actor,receiver,transfer);
     }
   }
@@ -565,7 +568,7 @@ struct Reference {
     if(resourceRoot)region.resources=std::make_unique<nexrt::ResourceRegion>(resourceContext(j).child());
     regions.push_back(std::move(region));
     if(parent!=none)regions[parent].children.push_back(s);j.owned.push_back(s);
-    snapshot(r.arguments.at(1),s,parent,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},resourceRoot?regions[s].resources->authority():nexrt::ResourceRegionAuthority{});
+    snapshot(r.arguments.at(1),s,parent,&j);
     j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
     a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll);
@@ -573,7 +576,7 @@ struct Reference {
   }
   void spawn(size_t i,const TaskTransition &r){
     auto &parent=*jobs[i];auto s=capability(r.arguments.at(0),RD::TaskScope,parent.current);
-    auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current,resourceRoot?resourceAuthority(parent):nexrt::ResourceRegionAuthority{});
+    auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current,&parent);
     if(jobs.size()>=maximumTasks||parent.depth>=256)throw Error("E_LIMIT","reference task slot/nesting limit exceeded",r.span);
     auto job=std::make_unique<Job>();job->member=job->current=s;job->parent=i;job->depth=parent.depth+1;
     Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<TaskAstMachine>(program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll);job->stack.push_back(std::move(a));
@@ -587,7 +590,7 @@ struct Reference {
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
     if(supportsTaskForeignCalls(program)&&!taskBuiltins().contains(r.operation)&&!taskFileReadOperation(r.operation)&&program.function(r.operation).foreign){
-      auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);},resourceAuthority(j),foreignCleanup);
+      auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);},{},foreignCleanup,[&]{return resourceAuthority(j);});
       if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,
           externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
       auto ticket=external->submit(i,prepared.operation(),nexrt::PreparedTaskForeignCall::reservation);
@@ -660,7 +663,7 @@ struct Reference {
     auto p=capability(r.arguments.at(0),RD::Channel,j.current);auto &pipe=pipes[p];
     if(r.operation=="task_close"){auto closed=closePipe(p);answer(i,RV(closed,true));return;}
     if(r.operation=="task_send"){
-      auto item=r.arguments.at(1);snapshot(item,pipe.scope,j.current,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},{},!pipe.closed);
+      auto item=r.arguments.at(1);snapshot(item,pipe.scope,j.current,&j,false,!pipe.closed);
       if(pipe.closed){answer(i,RV(0,true));return;}
       auto receiver=first(pipe.receivers,Receive,p);
       if(receiver!=none){answer(receiver,nexrt::success(std::move(item)));answer(i,RV(1,true));return;}
@@ -696,8 +699,7 @@ struct Reference {
       checkControl(operationSpan);
       if(r.kind==TaskTransition::Done){
         auto target=a.region==none?j.member:a.parent;
-        auto destination=(resourceRoot&&a.region!=none&&target==j.member)?j.resources->authority():nexrt::ResourceRegionAuthority{};
-        snapshot(r.value,target,j.current,resourceRoot?resourceAuthority(j):nexrt::ResourceRegionAuthority{},destination);
+        snapshot(r.value,target,j.current,&j,a.region!=none&&target==j.member);
         if(a.region==none){beginFinish(i,{},std::move(r.value));return;}
         auto s=a.region;auto &region=regions[s];bool failed=r.value.tag==RV::Object&&r.value.object&&r.value.object->kind==RD::Failure;
         if(!failed&&cycle(i,s,true))throw Error("E_TASK_CYCLE","cyclic reference scope drain");

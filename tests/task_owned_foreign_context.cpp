@@ -28,8 +28,9 @@ int main(int argc,char **argv)try{
   {
     auto libraries=loadForeignLibraries(argv[1]);RequestScope request;ForeignScope scope(libraries);auto captured=captureForeignScope();
     auto cleanup=std::make_shared<ResourceExecutor>();ResourceRegion root;auto ownerRegion=root.child();auto sibling=root.child();auto region=ownerRegion.authority();
-    PreparedTaskForeignCall factory(captured,create,std::vector<Value>{Value(42)},{},region,cleanup);
-    auto raw=run(factory);if(!raw.bytes.empty())throw DataError("E_TEST","owned wakeup carried a payload");++checks;
+    size_t acquired=0;
+    PreparedTaskForeignCall factory(captured,create,std::vector<Value>{Value(42)},{},{},cleanup,[&]{++acquired;return ownerRegion.authority();});
+    auto raw=run(factory);if(!raw.bytes.empty()||acquired!=1)throw DataError("E_TEST","owned wakeup carried a payload or authority was not captured once");++checks;
     Value owner;
     std::exception_ptr failure;
     std::thread worker([&]{try{RequestScope differentResumeRequest;owner=factory.admit(std::move(raw));}catch(...){failure=std::current_exception();}});
@@ -79,6 +80,9 @@ int main(int argc,char **argv)try{
     PreparedTaskForeignCall late(captured,create,std::vector<Value>{Value(42)},{},region.authority(),cleanup);auto raw=run(late);
     auto retirement=region.beginClose();retirement.requestClose();
     expect("E_RESOURCE_SCOPE",[&]{(void)late.admit(std::move(raw));});++checks;
+    size_t acquired=0;
+    expect("E_RESOURCE_SCOPE",[&]{PreparedTaskForeignCall denied(captured,create,std::vector<Value>{Value(42)},{},{},cleanup,[&]{++acquired;return region.authority();});});
+    if(acquired!=1)throw DataError("E_TEST","owned request skipped logical authority acquisition");++checks;
   }
   {
     auto libraries=loadForeignLibraries(argv[1]);ForeignScope scope(libraries);auto captured=captureForeignScope();

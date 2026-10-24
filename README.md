@@ -1,3 +1,14 @@
+# Private150: acquire logical resource authority on demand
+
+The independent AST scheduler validates a complete task value graph before
+acquiring logical authority, and only resource-bearing graphs request it. Pure
+results and channel payloads therefore remain independent of logical resource
+revocation. Native/AST task FFI likewise acquires its current owner synchronously
+only for an actual resource signature; no task/frame callback is retained on IO.
+Resource-bearing calls and transfers still reject ended owners. Public021,
+public022 migration and installed SDK/platform/device delivery remain separate.
+Matching full regression and sanitizer acceptance are required for this draft.
+
 # Private149: source resource transfers
 
 The explicit022 C++ API now transfers genuine resources in callback captures,

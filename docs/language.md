@@ -1,3 +1,10 @@
+Private150 resolves logical resource authority only for actual resource-bearing
+task snapshots or FFI signatures. Pure snapshots do not consult that authority;
+physical FFI/request grants and ordinary execution cancellation still apply.
+The owner provider runs synchronously once during owned-call preparation and
+is never retained by an IO operation. Ended owners remain rejected. No syntax,
+public021 identity or migration changes; read task-foreign-prototype.md.
+
 Private149 explicit022 C++ APIs add genuine resource capture/result/future/channel
 and closure transfer with atomic ancestor ownership and original physical grants.
 Files, unstructured parallel_map and browser/wire authority remain rejected;

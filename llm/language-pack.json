@@ -1812,6 +1812,7 @@
     "generic_completion_contains_owners": false,
     "private_cross_task_resource_transport": true,
     "atomic_owner_transfer": true,
+    "resource_authority_on_demand": true,
     "maximum_task_snapshot_owners": 4096,
     "maximum_ffi_snapshot_owners": 64
   }

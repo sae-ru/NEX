@@ -33,6 +33,12 @@ int main(int argc,char **argv)try{
       worker.join();if(failure)std::rethrow_exception(failure);captured.check();++checks;
     };
     work();work();
+    {
+      ResourceRegion unrelated;unrelated.close();size_t acquired=0;
+      PreparedTaskForeignCall pure(captured,binding,std::vector<Value>{Value(41)},{},{},{},[&]{++acquired;return unrelated.authority();});
+      auto raw=pure.operation()->run(TaskExternalControl{});
+      if(pure.admit(std::move(raw)).scalar!=42||acquired!=0)throw DataError("E_TEST","copied-data call acquired unrelated logical authority");++checks;
+    }
     PreparedTaskForeignCall late(captured,binding,std::vector<Value>{Value(41)});
     ready=late.operation()->run(TaskExternalControl{});
     scope.reset();

@@ -129,8 +129,8 @@ def main():
    if args.context_probe:
     binding=directory/'binding.json';write(binding,{'schema':'nex.foreign-binding/1','library':'calls','export':'add','manifest_sha256':pin,'signature':signatures['add']})
     result=run(dialect+'-captured-context',[Path(args.context_probe).resolve(),host,binding])
-    assert result.stdout=='CAPTURED SOURCE FFI CONTEXT 8 CASES PASSED\n'
-    report['checks'].append(dialect+'_captured_context_8_cross_thread_revocation_cases')
+    assert result.stdout=='CAPTURED SOURCE FFI CONTEXT 9 CASES PASSED\n'
+    report['checks'].append(dialect+'_captured_context_9_cross_thread_revocation_cases')
    # Module grants consume module capacity, even for two aliases of one image.
    # No external object is created, so an object limit of one cannot deny these
    # two granted data calls. The same image must obey module_limit separately.

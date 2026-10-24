@@ -83,6 +83,15 @@ An already longer-lived ancestor owner remains borrowed. Otherwise the genuine
 owner moves to the admitted ancestor destination, preserving every alias and
 physical identity. Siblings, foreign requests and ended owners cannot be revived.
 
+Private150 defers acquiring logical actor/receiver authority until the complete
+graph has been checked and actually contains external owners. Pure scalar,
+aggregate, future and channel values do not consult unrelated resource grants.
+Task/FFI preparation also resolves the current logical owner only when the exact
+checked signature has resources. Its provider runs synchronously once and is not
+stored in the operation or moved to an IO worker. This does not renew physical
+FFI/module/request grants, permit an ended resource, or bypass late admission
+checks. Logical resource revocation alone must not become execution cancellation.
+
 Spawn captures and future results use their admitted scope; an inner scope result
 uses its actual enclosing scope or the current task root when returning to its
 member scope. The latter must not accidentally target the enclosing member's

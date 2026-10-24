@@ -61,12 +61,16 @@ class PreparedTaskForeignCall {
 public:
   PreparedTaskForeignCall(const CapturedForeignScope &scope,const std::string &binding,
       std::span<const Value> arguments,const std::function<void()> &poll={},
-      ResourceRegionAuthority region={},std::shared_ptr<ResourceExecutor> cleanup={}){
+      ResourceRegionAuthority region={},std::shared_ptr<ResourceExecutor> cleanup={},
+      const std::function<ResourceRegionAuthority()> &acquireRegion={}){
     std::vector<Value> retained(arguments.begin(),arguments.end());
     // Reject unsupported types and hidden values before loading native code.
     auto signature=scope.signature(binding);const bool owned=signature.hasResources();
     std::shared_ptr<void> transport;
     if(owned){
+      // Copied-data signatures must not acquire unrelated logical ownership.
+      // Resolve synchronously once, never retain a task/frame callback on IO.
+      if(acquireRegion)region=acquireRegion();
       if(!region||!cleanup)throw DataError("E_RESOURCE_SCOPE","task resource calls require explicit owner and cleanup executor");
       region.check();transport=scope.reserveTransport();
     }

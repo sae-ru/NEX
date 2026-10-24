@@ -147,6 +147,30 @@ int main(){try{
   auto result=evaluate(source("fn main()->i64 !{task}{return 42;}"),host,[&](size_t,const TaskTransition &t){if(t.kind==TaskTransition::Done){request.close();closed=true;}});
   require(result.value.scalar==42&&closed&&host.taskRetirements==1,"logical request closure substituted execution cancellation");host.empty();
  });
+ run("private022 pure root completion does not acquire revoked resource authority",[]{
+  Host host;ResourceRegion request(ResourceRegionFamily::Request);host.resourceRequestParent=request.authority();bool closed=false;
+  auto p=parseVersioned("module private_request;fn main()->i64 !{task}{return 42;}","private_request.nex",SourceLanguage::TaskForeign022);check(p);
+  auto result=evaluate(p,host,[&](size_t,const TaskTransition &t){if(t.kind==TaskTransition::Done){request.close();closed=true;}});
+  require(result.value.scalar==42&&closed&&host.taskRetirements==1,"private022 scalar result depended on resource authority");host.empty();
+ });
+ run("private022 pure aggregate future and scope results survive resource revocation",[]{
+  Host host;ResourceRegion request(ResourceRegionFamily::Request);host.resourceRequestParent=request.authority();bool closed=false;
+  auto p=parseVersioned(R"(module private_request;struct Packet{value:i64;}
+   fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->Packet !{task}{
+    let child:task<Packet>=task_spawn(scope,fn()->Packet !{task}{return Packet(42);});return task_wait(child);}).value;})",
+   "private_request.nex",SourceLanguage::TaskForeign022);check(p);
+  auto result=evaluate(p,host,[&](size_t owner,const TaskTransition &t){if(owner==1&&t.kind==TaskTransition::Done){request.close();closed=true;}});
+  require(result.value.scalar==42&&closed&&host.taskRetirements==2,"pure future or scope result renewed resource authority");host.empty();
+ });
+ run("private022 pure channel admission survives resource revocation",[]{
+  Host host;ResourceRegion request(ResourceRegionFamily::Request);host.resourceRequestParent=request.authority();bool closed=false;
+  auto p=parseVersioned(R"(module private_request;
+   fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
+    let pipe:channel<i64>=channel_new<i64>(scope,1);task_send(pipe,42);return unwrap(task_recv(pipe));});})",
+   "private_request.nex",SourceLanguage::TaskForeign022);check(p);
+  auto result=evaluate(p,host,[&](size_t,const TaskTransition &t){if(t.operation=="task_send"){request.close();closed=true;}});
+  require(result.value.scalar==42&&closed&&host.taskRetirements==1,"pure channel admission acquired resource authority");host.empty();
+ });
  run("individual cancellation drains a task owner while another AST job progresses",[]{
   Host host;host.executor=std::make_shared<ResourceExecutor>();auto gate=std::make_shared<Gate>();bool progressed=false,retired=false;
   host.action=[&](size_t owner,const auto &authority)->std::optional<TaskReferenceExternalRequest>{if(owner==1&&host.aliases.empty())host.aliases.push_back(host.make(authority,gate));return {};};
