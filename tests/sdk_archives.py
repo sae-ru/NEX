@@ -93,6 +93,7 @@ class DistributionWorkflow(unittest.TestCase):
         current['evidence']['source_resources']['task_foreign_migration']={
             name:{'original_revisions':3,**{field:True for field in migration_fields}}
             for name in ('resources','nominal','callable','imports','tasks')}
+        current['evidence']['model_contract']={'preparer_source_checked':True,'preparer_source_language':'0.22'}
         # The new source gate passes; older physical task/request requirements
         # remain mandatory and are checked next, rather than bypassed.
         with self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
@@ -135,6 +136,26 @@ class DistributionWorkflow(unittest.TestCase):
         damaged=copy.deepcopy(current);damaged['doctor']['version']='0.129.0'
         with self.assertRaisesRegex(RuntimeError,'version identities differ'):
             acceptance.validate_completed_report(damaged)
+
+    def test_current_SDK_requires_actual_provider_source_check_beyond_help(self):
+        current=self.report();current.update(version='0.130.0',language='0.22',doctor={'version':'0.130.0'})
+        producer_fields=('native_reference','destruction_before_unload','checked_exit70_cleanup','source_task_FFI',
+                         'scope_channel_result_transfer','physical_quota_settled','source_deleted_task_replay')
+        migration_fields=('origin_verified','all16_tables_schema_rows_ids_preserved','native_reference','actual_retained_tests')
+        current['evidence']={'source_resources':{'ok':True,
+            'producers':[{'language':language,**{field:True for field in producer_fields}} for language in ('C11','CPP20')],
+            'task_foreign_migration':{name:{'original_revisions':3,**{field:True for field in migration_fields}}
+                                     for name in ('resources','nominal','callable','imports','tasks')}}}
+        for evidence in [{},{'preparer_installed':True},{'preparer_source_checked':False,'preparer_source_language':'0.22'},
+                         {'preparer_source_checked':'true','preparer_source_language':'0.22'},
+                         {'preparer_source_checked':1,'preparer_source_language':'0.22'},
+                         {'preparer_source_checked':True,'preparer_source_language':'0.21'}]:
+            current['evidence']['model_contract']=evidence
+            with self.subTest(evidence=evidence),self.assertRaisesRegex(RuntimeError,'model provider source preparation'):
+                acceptance.validate_completed_report(current)
+        current['evidence']['model_contract']={'preparer_source_checked':True,'preparer_source_language':'0.22'}
+        with self.assertRaisesRegex(RuntimeError,'task/request resource ownership'):
+            acceptance.validate_completed_report(current)
 
     def test_task_request_resources_require_installed_physical_completion_evidence(self):
         current=self.report();current['doctor']={'version':'0.129.0'}

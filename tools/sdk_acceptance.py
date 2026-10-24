@@ -642,6 +642,9 @@ def validate_completed_report(report):
                     ('origin_verified','all16_tables_schema_rows_ids_preserved','native_reference','actual_retained_tests'))
                     for row in migrations.values()),
                 'SDK acceptance lacks installed genuine021 public task/FFI migration evidence')
+        model=report.get('evidence',{}).get('model_contract',{})
+        require(model.get('preparer_source_checked') is True and model.get('preparer_source_language')==report.get('language'),
+                'SDK acceptance lacks current model provider source preparation evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,129,0):
         ownership=report.get('evidence',{}).get('source_resources',{}).get('request_resources',{})
         require(ownership.get('primitive_cases')==17 and ownership.get('native_cases')==13 and
@@ -1077,6 +1080,17 @@ test fn examples() -> unit {
         for name in ('prepare.py','common.h','model-module.cpp','model-worker.cpp','model-broker.inc','main.nex.in'):
             require((preparer.parent/name).is_file(),'model provider preparation input is missing: '+name)
         require('ONNX' in run([sys.executable,preparer,'--help']), 'installed model preparer help differs')
+        source_check=json.loads(run([sys.executable,preparer,'--sdk',sdk,'--check-sdk'],timeout=120))
+        require(source_check.get('schema')=='nex.provider-sdk-check/1' and
+                source_check.get('ok') is True and source_check.get('source_checked') is True and
+                source_check.get('source_language')==report['doctor']['language'] and
+                source_check.get('compiler_sha256')==report['compiler_sha256'] and
+                source_check.get('hardware_executed') is False and source_check.get('native_worker_built') is False and
+                source_check.get('temporary_project_removed') is True and
+                set(source_check.get('signature_sha256',{}))=={'model_run'} and
+                source_check.get('source_sha256')==hashlib.sha256(source_check.get('probe_source','').encode()).hexdigest() and
+                source_check.get('library_sha256')=={name:hashlib.sha256((resources/'lib'/name).read_bytes()).hexdigest() for name in ('model.nex','compute.nex')},
+                'installed model preparer did not check its actual current source template and signature')
         directory=root/'model-contract';directory.mkdir()
         shutil.copy2(resources/'examples/models/main.nex',directory/'main.nex')
         (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
@@ -1111,6 +1125,7 @@ test fn examples() -> unit {
         report['evidence']['model_contract']={'descriptor':True,'native_reference':True,
             'typescript_reference':True,'source_deleted_replay':True,'standalone':True,
             'managed_memory_balanced':True,'preparer_installed':True,'physical_standard_sources_absent_for_replay':True,
+            'preparer_source_checked':True,'preparer_source_language':source_check['source_language'],'preparer_source_check':source_check,
             'library_sha256':hashlib.sha256((resources/'lib/model.nex').read_bytes()).hexdigest(),
             'revision':built['revision'],'native_model_inference_proved':False}
 

@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
 """Prepare a new pinned ONNX model provider; never initialize its runtime/device."""
-import argparse,base64,hashlib,json,math,os,platform,shutil,struct,subprocess
+import argparse,base64,hashlib,importlib.util,json,math,os,platform,shutil,struct,subprocess
 from pathlib import Path
+
+_helper=Path(__file__).resolve().parents[2]/'tools/provider_sdk.py'
+_spec=importlib.util.spec_from_file_location('model_provider_sdk',_helper)
+provider_sdk=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(provider_sdk)
+
+def check_source_sdk(sdk):
+ origin=Path(__file__).resolve().parent
+ definition='m::Model("sdk-check","'+'0'*64+'",m::Precision::Vendor(),[m::Port("X",m::DType::U8(),[1])],[m::Port("Y",m::DType::U8(),[1])])'
+ source=(origin/'main.nex.in').read_text().replace('@PIN@','0'*64).replace('@MODEL@',definition).replace('@DEVICES@','[cpu()]').replace('@PROVENANCE@',json.dumps('source SDK check; no native device execution')).replace('@EXAMPLE@','server fn main()->unit!{io}{print(encode_json(definition()));}\n')
+ return provider_sdk.check_sdk(sdk,source,{name:origin.parents[1]/'lib'/name for name in ('model.nex','compute.nex')},['model_run'],'model')
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def identifier(value,n):return isinstance(value,str) and 0<len(value)<=n and '\0' not in value
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--sdk',type=Path,required=True);p.add_argument('--model',type=Path,required=True);p.add_argument('--spec',type=Path,required=True);p.add_argument('--ort-library',type=Path,required=True);p.add_argument('--include',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--enable-zhouyi',action='store_true');p.add_argument('--operator-path',type=Path);p.add_argument('--precision',choices=['match-cpu','vendor']);p.add_argument('--example',type=Path);p.add_argument('--expect-npu-unsupported',action='store_true',help='negative acceptance expectation only; does not change provider placement or fallback policy');p.add_argument('--cxx',default='g++');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--sdk',type=Path,required=True);p.add_argument('--check-sdk',action='store_true',help='check actual source template/signatures without native runtime, device or output project');p.add_argument('--model',type=Path);p.add_argument('--spec',type=Path);p.add_argument('--ort-library',type=Path);p.add_argument('--include',type=Path);p.add_argument('--output',type=Path);p.add_argument('--enable-zhouyi',action='store_true');p.add_argument('--operator-path',type=Path);p.add_argument('--precision',choices=['match-cpu','vendor']);p.add_argument('--example',type=Path);p.add_argument('--expect-npu-unsupported',action='store_true',help='negative acceptance expectation only; does not change provider placement or fallback policy');p.add_argument('--cxx',default='g++');a=p.parse_args()
+ if a.check_sdk:
+  if any(value is not None for value in [a.model,a.spec,a.ort_library,a.include,a.output,a.operator_path,a.precision,a.example]) or a.enable_zhouyi or a.expect_npu_unsupported:p.error('--check-sdk cannot be combined with native model inputs')
+  print(json.dumps(check_source_sdk(a.sdk)));return
+ if any(getattr(a,name) is None for name in ('model','spec','ort_library','include','output')):p.error('native preparation requires --model, --spec, --ort-library, --include and --output')
  if platform.system()!='Linux' or platform.machine() not in ['aarch64','arm64']:p.error('current native provider requires Linux ARM64; other hosts remain pending')
  if a.expect_npu_unsupported and (not a.enable_zhouyi or not a.example):p.error('negative NPU example requires --enable-zhouyi and --example')
  if a.enable_zhouyi and not a.operator_path:p.error('Zhouyi binding needs an explicit installed operator directory')
@@ -36,8 +50,7 @@ def main():
  def command(args):
   q=subprocess.run(list(map(str,args)),cwd=root,env=env,capture_output=True,text=True,timeout=300);index=len(commands);(root/('prepare-'+str(index)+'.stdout')).write_text(q.stdout);(root/('prepare-'+str(index)+'.stderr')).write_text(q.stderr);commands.append({'command':list(map(str,args)),'exit_code':q.returncode});assert q.returncode==0,(q.stdout[-3000:],q.stderr[-3000:]);return q.stdout
  def cli(*args):return json.loads(command([compiler,*args,'--json']))
- descriptor=cli('describe');assert descriptor['version'] in ('0.20','0.21') and descriptor['foreign_boundary']['source_support']
- if 'model' in descriptor:assert descriptor['model']['source_support'] and descriptor['model']['import']=='std/model.nex' and descriptor['model']['contract_version']==1
+ descriptor=cli('describe');provider_sdk.source_language(descriptor,'model')
  (root/'stdlib').mkdir();shutil.copy2(origin.parents[1]/'lib/model.nex',root/'stdlib/model.nex');shutil.copy2(origin.parents[1]/'lib/compute.nex',root/'stdlib/compute.nex');(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':descriptor['version'],'entry':'main.nex','libraries':{'std':'./stdlib'}},indent=2)+'\n')
  for name in ['common.h','model-worker.cpp','model-module.cpp','model-broker.inc']:shutil.copy2(origin/name,root/name)
  configuration={**spec,'runtime':str(library),'runtime_sha256_at_preparation':sha(library),'zhouyi':a.enable_zhouyi,'operator_path':operator}

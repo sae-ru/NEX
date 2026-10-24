@@ -1,17 +1,36 @@
 #!/usr/bin/env python3
 """Prepare pinned Linux ARM64 accelerator projects without executing devices."""
-import argparse,hashlib,json,os,platform,shutil,subprocess
+import argparse,hashlib,importlib.util,json,os,platform,shutil,subprocess
 from pathlib import Path
+
+_helper=Path(__file__).resolve().parents[2]/'tools/provider_sdk.py'
+_spec=importlib.util.spec_from_file_location('accelerator_provider_sdk',_helper)
+provider_sdk=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(provider_sdk)
+
+def check_source_sdk(sdk,backend,api):
+ origin=Path(__file__).resolve().parent
+ source=(origin/('compute-gpu-main.nex.in' if api=='compute' else backend+'-main.nex.in')).read_text()
+ if backend=='npu':source=source.replace('@API@',(origin/'npu-api.nex.in').read_text())
+ source=source.replace('@PIN@','0'*64).replace('@GPU_DEVICE@','c::Device(c::Kind::GPU(),"pending","OpenCL","3","source check only",[])')
+ libraries={'compute.nex':origin.parents[1]/'lib/compute.nex'} if api=='compute' else {}
+ symbol='gpu_raw' if api=='compute' else 'gpu_compute' if backend=='gpu' else 'npu_matmul_bytes'
+ return provider_sdk.check_sdk(sdk,source,libraries,[symbol],'compute' if api=='compute' else None)
 
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--sdk',required=True,type=Path);p.add_argument('--backend',required=True,choices=['gpu','npu'])
- p.add_argument('--output',required=True,type=Path);p.add_argument('--cxx',default='g++')
+ p.add_argument('--check-sdk',action='store_true',help='check actual source template/signatures without native driver, device or output project')
+ p.add_argument('--output',type=Path);p.add_argument('--cxx',default='g++')
  p.add_argument('--api',choices=['raw','compute'],default='raw')
  p.add_argument('--opencl-library',type=Path,help='operator-selected installed OpenCL loader; embedded in pinned worker')
  p.add_argument('--opencl-include',type=Path);p.add_argument('--vendor-include',type=Path);p.add_argument('--vendor-license',type=Path)
  a=p.parse_args()
+ if a.check_sdk:
+  if a.output or a.opencl_library or a.opencl_include or a.vendor_include or a.vendor_license:p.error('--check-sdk cannot be combined with native accelerator inputs')
+  if a.backend!='gpu' and a.api=='compute':p.error('--api compute currently requires --backend gpu')
+  print(json.dumps(check_source_sdk(a.sdk,a.backend,a.api)));return
+ if a.output is None:p.error('native preparation requires --output')
  if platform.system()!='Linux' or platform.machine() not in ('aarch64','arm64'):p.error('requires Linux ARM64')
  if a.backend=='npu' and (not a.vendor_include or not a.vendor_license):p.error('NPU requires operator-provided RKNN SDK headers and license')
  if a.backend!='gpu' and (a.api=='compute' or a.opencl_library):p.error('--api compute and --opencl-library currently require --backend gpu')
@@ -27,7 +46,7 @@ def main():
   return r.stdout
  def cli(*args):return json.loads(run([compiler,*args,'--json']))
  descriptor=cli('describe')
- if descriptor['version'] not in ('0.20','0.21') or not descriptor['foreign_boundary']['source_support']:raise RuntimeError('requires language0.20 with source FFI')
+ provider_sdk.source_language(descriptor,'compute' if a.api=='compute' else None)
  backend=a.backend;symbol='gpu_compute' if backend=='gpu' else 'npu_matmul_bytes';library='rk_'+backend
  template=(origin/('compute-gpu-main.nex.in' if a.api=='compute' else backend+'-main.nex.in')).read_text()
  if backend=='npu':template=template.replace('@API@',(origin/'npu-api.nex.in').read_text())

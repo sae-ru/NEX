@@ -61,6 +61,21 @@ does not prove physical execution.
 
 ## Prepare an external ONNX provider
 
+Check the actual source template and foreign signature against your installed
+compiler before supplying a native runtime or model:
+
+```sh
+python3 /path/to/sdk/share/nex/tools/models/prepare.py --sdk /path/to/sdk --check-sdk
+```
+
+This mode checks the compiler's source-FFI capabilities, parses/checks the real
+provider template with vendored model/compute libraries, and queries its actual
+foreign signature in a temporary project. It works on any SDK host and does not
+build a native worker, load an inference runtime or execute a device. The result
+reports the checked language, compiler/library/source hashes and signature hash.
+Normal preparation still targets Linux ARM64. The template checker also prevents
+an old fixed list of language versions from rejecting a compatible newer SDK.
+
 The installed `tools/models/prepare.py` generates a pinned project/catalogue
 from a separate self-contained model, its SHA256/port spec and an installed ONNX
 Runtime C API20. Current native preparation targets Linux ARM64. The operator

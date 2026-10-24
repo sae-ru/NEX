@@ -219,7 +219,7 @@ install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION s
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/server_workload.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)
@@ -437,6 +437,9 @@ add_test(NAME resource_debug COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_debug.py $<TARGET_FILE:nex>)
 add_test(NAME sdk_archives COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_archives.py)
+add_test(NAME provider_preparation_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/provider_preparation.py $<TARGET_FILE:nex>)
+set_tests_properties(provider_preparation_source PROPERTIES TIMEOUT 180)
 add_test(NAME packaging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/packaging.py $<TARGET_FILE:nex>)
 add_test(NAME foreign_packaging COMMAND ${Python3_EXECUTABLE}
