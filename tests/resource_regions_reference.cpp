@@ -135,5 +135,26 @@ int main(){try{
      caller.close();host.empty();require(*host.destroyed==1,"caller resource cleanup failed");
    }
  });
+ run("ready physical fences remain progress until job and scope publication",[]{
+   const std::array<Program,3> programs{source(once),source(scoped),source(R"(
+    fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{
+     let child:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});
+     return task_wait(child);});})")};
+   for(const auto &program:programs)for(size_t iteration=0;iteration<128;++iteration){
+     Host host;host.executor=std::make_shared<ResourceExecutor>();
+     host.action=[&](size_t,const auto &authority)->std::optional<TaskReferenceExternalRequest>{host.aliases.push_back(host.make(authority));return {};};
+     require(evaluate(program,host).value.scalar==42,"ready physical fence became a false deadlock");
+     require(*host.destroyed==1&&*host.pins==1&&host.executor->stats().resources==0,"completion preceded physical owner/pin cleanup");host.empty();
+   }
+ });
+ run("published resource retirements do not hide a real channel deadlock",[]{
+   Host host;host.executor=std::make_shared<ResourceExecutor>();
+   host.action=[&](size_t,const auto &authority)->std::optional<TaskReferenceExternalRequest>{host.aliases.push_back(host.make(authority));return {};};
+   auto program=source(R"(fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{
+    let completed:i64=with_tasks(1,fn(inner:task_scope)->i64 !{task}{task_yield();return 42;});
+    let empty:channel<i64>=channel_new<i64>(s,0);return unwrap(task_recv(empty));});})");
+   sourceRejected("E_TASK_DEADLOCK",[&]{evaluate(program,host);});
+   require(*host.destroyed==1&&*host.pins==1,"closed scope retirement was not physically settled");host.empty();
+ });
  std::cout<<"independent reference resource region cases="<<cases<<"\n";return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<"\n";return 1;}}

@@ -1,3 +1,11 @@
+# Development0.132.1: reference retirement progress
+
+A ready physical fence remains pending scheduler progress until the coordinator
+publishes the corresponding task/scope completion. This prevents a finalizer
+racing the idle checks from producing a false deadlock. Closed scopes and Done
+jobs remain excluded, so completed resources cannot hide actual channel deadlocks.
+Matching regression, sanitizer and SDK delivery are required separately.
+
 # Development0.132: owned device library and pinned worker executables
 
 `std/device.nex` exposes checked server task/ffi Session/Buffer/Tensor operations

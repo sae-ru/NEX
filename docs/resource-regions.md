@@ -1,3 +1,9 @@
+Toolchain0.132.1 reference completion invariant: a retirement remains possible
+scheduler progress until its task is Done or its scope is closed, even when
+the physical fence became ready since the last settle pass. A second readiness
+query must not turn a finalizer completion into E_TASK_DEADLOCK/E_TASK_STATE.
+Already published retirements do not hide genuine channel deadlocks.
+
 # Logical resource regions and dependent FFI resources
 
 Toolchain0.131 development C table appends `resource_create_with_parents` after the old

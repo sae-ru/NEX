@@ -1,3 +1,12 @@
+# Development0.132.1: reference fence publication race
+
+A sanitizer run of frozen132 found a false E_TASK_DEADLOCK after valid source
+output while finalization raced the independent AST idle checks. A controlled
+physical handoff reproduces the old failure; the fix keeps an unconsumed ready
+fence as possible progress until task/scope publication. Four controlled cases,
+384 async stress iterations and genuine channel-deadlock rejection pass in
+preflight. Matching frozen full regression, sanitizers, GPU and SDK are required.
+
 # Development0.132 device candidate
 
 The ordinary owned-device library and experimental persistent OpenCL worker

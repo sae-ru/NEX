@@ -1,3 +1,7 @@
+Toolchain0.132.1 fixes reference retirement publication without changing syntax,
+canonical identities or the language022 contract: physical fence readiness must
+remain scheduler progress until task/scope completion is published.
+
 Toolchain0.132 adds ordinary `std/device.nex` source contracts without syntax,
 canonical identity or language-version changes. Session/Buffer remain server
 resources; task/ffi operations retain physical dependencies and completion rules.

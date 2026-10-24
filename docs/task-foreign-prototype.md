@@ -1,3 +1,9 @@
+Toolchain0.132.1 preserves physical-completion progress through the independent
+AST idle/control cleanup boundary: fence readiness is not publication. Pending
+retirements are consumed by the coordinator before task/scope completion, and
+terminal retirements cannot mask an unrelated stalled channel. No source syntax,
+foreign signature, ownership or versioned-history rules change.
+
 # Task/FFI and owned values in language0.22
 
 The development compiler enables this contract through ordinary CLI source.

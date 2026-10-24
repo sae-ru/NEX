@@ -1,3 +1,12 @@
+# Current development0.132.1: reference physical completion handoff
+
+- [x] Reproduce false reference deadlock at a controlled physical finalizer handoff.
+- [x] Keep unconsumed retirements as progress until coordinator publication; exclude terminal jobs/scopes.
+- [x] Check root/scope/future/cancel handoffs,384 async stress cases and real channel deadlock.
+- [ ] Complete matching frozen regression, ASAN/UBSAN/TSAN, actual GPU and installed SDK.
+
+All owned GPU/NPU, runtime/platform/Studio and original full requirements remain.
+
 # Current development0.132: owned devices
 
 - [x] Add ordinary checked Session/Buffer/Tensor library and persistent pinned OpenCL worker.

@@ -14,6 +14,9 @@
 #include <unordered_set>
 
 namespace nex {
+#ifdef NEX_REFERENCE_RETIREMENT_TEST_HOOK
+void referenceRetirementBeforeIdleCheck();
+#endif
 using RV=nexrt::Value;
 using RD=nexrt::Data;
 struct TaskReferenceExternalMailbox::Impl {
@@ -340,9 +343,12 @@ struct Reference {
   }
   bool resourceRetirementsPending()const{
     return std::any_of(jobs.begin(),jobs.end(),[](const auto &job){
-      return job->resourceRetirement&&!job->resourceRetirement->ready();
+      // A fence can become ready after settle() checked it. Until the serial
+      // coordinator publishes Done it still represents possible progress;
+      // querying ready() again here could mistake that race for a deadlock.
+      return job->state!=Done&&job->resourceRetirement.has_value();
     })||std::any_of(regions.begin(),regions.end(),[](const Region &r){
-      return r.resourceRetirement&&!r.resourceRetirement->ready();
+      return !r.closed&&r.resourceRetirement.has_value();
     });
   }
   void retireRootResources()noexcept{
@@ -828,6 +834,9 @@ struct Reference {
     for(;;){
       collectExternal(true);settle();
       if(jobs[0]->state==Done)break;
+#ifdef NEX_REFERENCE_RETIREMENT_TEST_HOOK
+      referenceRetirementBeforeIdleCheck();
+#endif
       if(external&&external->stats().pending){
         if(resourceRoot)external->waitForControl(std::chrono::milliseconds(1));
         else external->wait();
@@ -883,6 +892,9 @@ struct Reference {
         turn(i);ran=true;break;
       }
       if(!ran&&!settle()){
+#ifdef NEX_REFERENCE_RETIREMENT_TEST_HOOK
+        referenceRetirementBeforeIdleCheck();
+#endif
         try{checkControl();}catch(const Error &){finishControl();break;}
         if(external&&external->stats().pending){
           if(resourceRoot||supportsTaskFileReads(program))external->waitForControl(std::chrono::milliseconds(10));
