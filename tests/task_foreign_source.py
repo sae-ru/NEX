@@ -130,6 +130,19 @@ def main():
     result=run(dialect+'-captured-context',[Path(args.context_probe).resolve(),host,binding])
     assert result.stdout=='CAPTURED SOURCE FFI CONTEXT 8 CASES PASSED\n'
     report['checks'].append(dialect+'_captured_context_8_cross_thread_revocation_cases')
+   # Module grants consume module capacity, even for two aliases of one image.
+   # No external object is created, so an object limit of one cannot deny these
+   # two granted data calls. The same image must obey module_limit separately.
+   quota_body='server extern fn other_add(value:i64)->i64 !{ffi}=foreign("other","add","'+pin+'");server fn main()->unit !{task,ffi,io}{assert(add(40)+other_add(0)==42);print(42);}'
+   quota_path=bundle(dialect+'-separate-module-quota',quota_body,pin)
+   quota_host=directory/'separate-quotas-host.json';quota_config=json.loads(host.read_text());quota_config.update(module_limit=2,resource_limit=1);quota_config['libraries']['other']={**quota_config['libraries']['calls'],'exports':['add']};write(quota_host,quota_config)
+   reference=json.loads(run(dialect+'-separate-quotas-reference',command('reference',quota_path,quota_host)).stdout);assert reference['output']=='42\n'
+   built=json.loads(run(dialect+'-separate-quotas-build',command('native',quota_path,directory/'native')).stdout)
+   assert run(dialect+'-separate-quotas-native',[built['executable'],'--nex-foreign',quota_host]).stdout=='42\n'
+   quota_config['module_limit']=1;denied_host=directory/'one-module-host.json';write(denied_host,quota_config)
+   error=json.loads(run(dialect+'-module-limit-reference-rejected',command('reference',quota_path,denied_host),1).stdout);assert error['code']=='E_RESOURCE_LIMIT'
+   error=run(dialect+'-module-limit-native-rejected',[built['executable'],'--nex-foreign',denied_host],70);assert 'E_RESOURCE_LIMIT' in error.stderr
+   report['checks'].append(dialect+'_module_and_external_value_quotas_separate')
    for name,body in CASES.items():
     path=bundle(dialect+'-'+name,body,pin)
     reference=json.loads(run(dialect+'-'+name+'-reference',command('reference',path,host)).stdout)

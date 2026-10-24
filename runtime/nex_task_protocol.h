@@ -11,4 +11,7 @@ inline constexpr int64_t taskCodeABI=INT64_C(0x4e45585400000003);
 inline constexpr int64_t taskCodeDeclaredTask=1,taskCodeServer=2,taskCodeDeclaredFs=4,
   taskCodeFileRead=8,taskCodeImageFileRead=16,taskCodeDeclaredFfi=32,
   taskCodeForeign=64,taskCodeImageForeign=128,taskCodeRequirementsMask=255;
+// Published ABI3 provider/capture records retain their task/fs-only prefix.
+// Private standalone source FFI requirements do not widen that image contract.
+inline constexpr int64_t taskProviderRequirementsMask=31;
 }

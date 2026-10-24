@@ -41,7 +41,7 @@ void taskLinkage(const JSON &value,const std::string &component){
     digest(row,"contract");
   }
   for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");
-    if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskCodeRequirementsMask))fail("invalid captured task export");
+    if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskProviderRequirementsMask))fail("invalid captured task export");
     digest(row,"contract");digest(row,"signature");text(row,"accessor");
   }
   if(profiled){auto profile=o.getObject("profiling");auto sites=profile?profile->getArray("sites"):nullptr;

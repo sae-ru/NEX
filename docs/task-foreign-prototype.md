@@ -70,3 +70,16 @@ The context probe checks worker request turnover and late lexical/request/module
 revocation. `tests/task_foreign_origins.py` checks the authentic retained origins.
 Sanitizer, full regression, owned-resource transport, public migration and SDK/
 platform evidence retain their separate required gates.
+
+Module authorizations use their own captured module domain and module_limit.
+The separate resource_limit applies to external value objects. A data-only call
+does not consume an external object slot; aliases of one image still consume
+separate logical module authorization slots. Both domains retain the original
+lexical/request revocation and physical lease behavior. The actual C11/C++20
+native/AST tests grant two library names with resource_limit1/module_limit2,
+and separately verify rejection under module_limit1.
+
+Private standalone Foreign request flags do not extend ABI3 provider/capture
+records. Those records retain their task/fs-only31 mask and reject private
+flags33/65/129/97/225. Exporting an ffi-effect task provider is explicitly
+unsupported; source FFI authorization is not a binary-provider grant.

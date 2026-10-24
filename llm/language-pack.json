@@ -1805,6 +1805,7 @@
     "copied_typed_data": true,
     "external_resource_transport": false,
     "public022_migration_complete": false,
-    "installed_SDK_accepted": false
+    "installed_SDK_accepted": false,
+    "module_value_quotas_separate": true
   }
 }

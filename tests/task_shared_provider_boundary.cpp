@@ -27,7 +27,7 @@ int main(){std::filesystem::path directory;try{
  bad([](auto &v){v["owner_image"]="app";});bad([](auto &v){v["code_only"]=false;});bad([](auto &v){v["image"]=llvm::json::Object{};});
  bad([](auto &v){v["definition_owners"]=llvm::json::Object{};});bad([&](auto &v){(*v.getObject("definition_owners"))[name]="other";});
  bad([](auto &v){(*v.getObject("component_file_reads"))["leaf"]=1;});bad([](auto &v){(*v.getObject("component_file_reads"))["leaf"]=true;});
- bad([&](auto &v){(*v.getObject("exports")->getObject(name))["requirements"]=33;});
+ for(int64_t flags:{33,65,129,97,225})bad([&](auto &v){(*v.getObject("exports")->getObject(name))["requirements"]=flags;});
  auto mixed=stage;mixed.artifact=NativeTaskArtifactKind::SharedImage;mixed.ownerImage="leaf";mixed.image=NativeTaskImageIdentity{std::string(64,'b'),std::string(64,'c'),std::string(64,'d'),std::string(32,'e'),std::string(64,'f'),std::string(64,'0')};
  mixed.definitions.insert("mid::read");mixed.definitionOwners["mid::read"]="mid";mixed.componentFileReads["mid"]=true;mixed.taskFileReads=true;
  auto other=stage.exports.at(name);other.accessor=nativeSymbol("mid::read")+"__task_code_address";other.requirements=31;mixed.exports["mid::read"]=other;

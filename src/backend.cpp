@@ -1186,6 +1186,7 @@ NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &n
     throw Error("E_TASK_PROVIDER","static task exports require an explicit public concrete task function without captures",f.span);
   if(unsupportedStaticTaskValue(p,f.result)||std::any_of(f.params.begin(),f.params.end(),[&](const auto &v){return unsupportedStaticTaskValue(p,v.type);}))
     throw Error("E_TASK_PROVIDER","static task export values cannot contain File, task/scope/channel authority or callable types",f.span);
+  if(f.effects.contains("ffi"))throw Error("E_TASK_PROVIDER","task provider FFI authorization and suspension contracts remain unsupported",f.span);
   validateNativeTaskFunction(p,f);
   llvm::json::Array parameters,kinds,effects;
   for(const auto &v:f.params){parameters.push_back(typeName(v.type));kinds.push_back(v.type==Type::Unit?4:v.type.heap()?3:scalarTag(v.type));}
@@ -1346,7 +1347,7 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
   for(const auto &[name,entry]:*exports){const auto *f=entry.getAsObject();if(!f||f->size()!=4||!result.definitions.contains(name.str()))invalid();
     auto contract=f->getString("contract"),signature=f->getString("signature"),accessor=f->getString("accessor");auto requirements=f->getInteger("requirements");
     const bool componentReads=shared?result.componentFileReads.at(result.definitionOwners.at(name.str())):result.taskFileReads;
-    if(!contract||!digestText(*contract)||!signature||!digestText(*signature)||!accessor||*accessor!=nativeSymbol(name.str())+"__task_code_address"||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskCodeRequirementsMask)||
+    if(!contract||!digestText(*contract)||!signature||!digestText(*signature)||!accessor||*accessor!=nativeSymbol(name.str())+"__task_code_address"||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskProviderRequirementsMask)||
        bool(*requirements&nexrt::taskCodeImageFileRead)!=componentReads||
        ((*requirements&nexrt::taskCodeFileRead)&&((*requirements&7)!=7||(result.language!="0.20"&&result.language!="0.21")))||
        ((*requirements&nexrt::taskCodeDeclaredFs)&&((*requirements&7)!=7||!(*requirements&nexrt::taskCodeFileRead)||(result.language!="0.20"&&result.language!="0.21"))))invalid();

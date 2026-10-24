@@ -57,10 +57,11 @@ std::shared_ptr<Binding> binding(const std::string &text){
 struct State {
   std::atomic<bool> active{true};const std::thread::id thread=std::this_thread::get_id();
   const std::shared_ptr<ForeignLibraries> libraries;const ForeignScopeLimits limits;
+  ResourceDomain modules;
   ResourceDomain resources;
   std::mutex metadataMutex;
   uint64_t metadata=0;std::map<std::string,std::shared_ptr<Binding>> bindings;
-  State(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits):libraries(std::move(libraries)),limits(limits),resources(this->libraries->resourceLimit()){}
+  State(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits):libraries(std::move(libraries)),limits(limits),modules(this->libraries->moduleLimit()),resources(this->libraries->resourceLimit()){}
   void check()const{if(!active.load())invalid("E_FFI_SCOPE","foreign scope has ended");if(thread!=std::this_thread::get_id())invalid("E_FFI_THREAD","foreign context belongs to another thread");}
 };
 thread_local std::vector<std::weak_ptr<State>> contexts;
@@ -121,7 +122,7 @@ ForeignScope::ForeignScope(std::shared_ptr<ForeignLibraries> libraries,ForeignSc
   if(contexts.size()>=64)invalid("E_FFI_LIMIT","foreign scope nesting exceeds 64");
   auto state=std::make_shared<State>(std::move(libraries),limits);auto value=std::make_unique<Impl>();value->state=state;contexts.push_back(state);impl=std::move(value);
 }
-ForeignScope::~ForeignScope(){if(impl){impl->state->active=false;impl->state->resources.revoke();}}
+ForeignScope::~ForeignScope(){if(impl){impl->state->active=false;impl->state->resources.revoke();impl->state->modules.revoke();}}
 struct CapturedForeignScope::Impl {
   std::shared_ptr<State> state;
   ResourceAccess access;
@@ -130,7 +131,7 @@ CapturedForeignScope::CapturedForeignScope(std::shared_ptr<const Impl> value):im
 CapturedForeignScope captureForeignScope(bool unavailableDeferred){
   std::shared_ptr<State> state;
   try{state=current();}catch(const DataError &error){if(unavailableDeferred&&error.code=="E_FFI_GRANT")return {};throw;}
-  auto *domain=&state->resources;
+  auto *domain=&state->modules;
   if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
   return CapturedForeignScope(std::make_shared<CapturedForeignScope::Impl>(CapturedForeignScope::Impl{state,domain->access()}));
 }
@@ -158,6 +159,6 @@ Value invokeScopedForeign(const std::string &description,std::span<const Value> 
   return function.invokeWithResourceScope(retained,state->resources.access(),checked,state->limits.call);
 }
 void resetForeignScopes()noexcept{
-  while(!contexts.empty()){auto state=contexts.back().lock();contexts.pop_back();if(state){state->active=false;state->resources.revoke();state->libraries->revoke();}}
+  while(!contexts.empty()){auto state=contexts.back().lock();contexts.pop_back();if(state){state->active=false;state->resources.revoke();state->modules.revoke();state->libraries->revoke();}}
 }
 }

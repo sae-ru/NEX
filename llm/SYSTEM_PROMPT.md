@@ -1,3 +1,5 @@
+Private task_foreign_prototype.module_value_quotas_separate reports distinct module and external-object capacity. Module authorizations do not consume external object slots. Public task/ffi source remains disabled; use actual capabilities.
+
 Query task_foreign_prototype for the private022 experiment. Public source_support/public_enabled remain false: current CLI language021 still rejects task/ffi callbacks. Do not generate these private programs for ordinary users. Genuine021 fixtures precede the experiment; public022 history migration, owned external-resource transport and matching installed delivery remain pending. Read docs/task-foreign-prototype.md.
 
 Query task_value_retirement for native scheduler cleanup. Its source_resource_transport/source_task_FFI_bridge remain false. Cleanup outside locks and physical scope fences do not grant source authority or permit an FFI/task adapter. Read docs/task-value-retirement.md.
