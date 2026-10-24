@@ -78,6 +78,25 @@ class DistributionWorkflow(unittest.TestCase):
                 'phases': [{'name': name, 'status': 'passed'} for name in acceptance.ACCEPTANCE_PHASES],
                 'commands': [{'status': 'passed', 'exit_code': 0}, {'status': 'passed', 'exit_code': 70}]}
 
+    def test_current_resource_region_delivery_requires_physical_scope_evidence(self):
+        current=self.report();current['doctor']={'version':'0.126.0'}
+        with self.assertRaisesRegex(RuntimeError,'logical resource region'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','native_scope_ownership','scope_exit_waits_physical_cleanup','only_source_worker_remains_available',
+                'native_256_scope_depth','ancestor_promotion','root_group_retirement','prepared_access_survives_64_resumes','unpublished_factory_fence')
+        current['evidence']={'source_resources':{'resource_regions':{**{name:True for name in fields},'cases':18}}}
+        for name in fields:
+            for value in (False,None,'true'):
+                damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_regions'][name]=value
+                with self.subTest(name=name,value=value),self.assertRaisesRegex(RuntimeError,'logical resource region'):
+                    acceptance.validate_completed_report(damaged)
+        for count in (0,17,19,True,'18'):
+            damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_regions']['cases']=count
+            with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'logical resource region'):
+                acceptance.validate_completed_report(damaged)
+        with self.assertRaisesRegex(RuntimeError,'physical resource executor'):
+            acceptance.validate_completed_report(current)
+
     def test_current_executor_delivery_cannot_be_omitted_from_a_green_report(self):
         current=self.report();current['doctor']={'version':'0.125.0'}
         with self.assertRaisesRegex(RuntimeError,'physical resource executor'):

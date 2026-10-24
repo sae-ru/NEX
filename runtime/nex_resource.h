@@ -1,6 +1,7 @@
 #pragma once
 #include "nex_error.h"
 #include "nex_resource_executor.h"
+#include "nex_resource_region.h"
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -14,8 +15,22 @@
 
 namespace nexrt {
 namespace resource_detail {
+struct SettlementGuard {
+  ResourceSettlement fence;
+  explicit SettlementGuard(ResourceSettlement fence):fence(std::move(fence)){
+    if(!this->fence.state)throw DataError("E_RESOURCE_SCOPE","physical settlement fence is unavailable");
+    auto &s=*this->fence.state;std::lock_guard lock(s.mutex);
+    if(s.ready||s.guards==std::numeric_limits<size_t>::max())throw DataError("E_RESOURCE_SCOPE","physical settlement fence cannot be reused");
+    ++s.guards;
+  }
+  SettlementGuard(SettlementGuard &&other)noexcept:fence(std::move(other.fence)){}
+  SettlementGuard(const SettlementGuard&)=delete;
+  ~SettlementGuard(){if(fence.state){auto &s=*fence.state;std::lock_guard lock(s.mutex);if(!--s.guards)s.ready=true;}}
+};
 struct ControlBase {
   std::shared_ptr<std::atomic<bool>> closed=std::make_shared<std::atomic<bool>>(false);
+  const ResourceSettlement settlement;
+  explicit ControlBase(ResourceSettlement settlement):settlement(std::move(settlement)){}
   virtual bool close() noexcept = 0;
   virtual ~ControlBase() = default;
 };
@@ -50,11 +65,14 @@ struct Ticket {
   ~Ticket(){if(reserved)for(const auto &state:bindings)state->used.fetch_sub(1);}
 };
 template<class T> struct Payload {
+  // Last member destruction is reverse declaration order: the fence becomes
+  // ready only after the payload and the final physical quota ticket are gone.
+  SettlementGuard retirement;
   // Destroy the external object before returning its physical quota slot.
   std::shared_ptr<Ticket> ticket;
   std::unique_ptr<T> value;
-  Payload(std::shared_ptr<Ticket> ticket,std::unique_ptr<T> value)
-      :ticket(std::move(ticket)),value(std::move(value)){}
+  Payload(SettlementGuard retirement,std::shared_ptr<Ticket> ticket,std::unique_ptr<T> value)
+      :retirement(std::move(retirement)),ticket(std::move(ticket)),value(std::move(value)){}
 };
 template<class T> struct Control final:ControlBase {
   const uint64_t identity;
@@ -62,7 +80,7 @@ template<class T> struct Control final:ControlBase {
   std::mutex mutex;
   std::shared_ptr<Payload<T>> payload;
   Control(uint64_t identity,Bindings bindings,std::shared_ptr<Payload<T>> payload)
-      :identity(identity),bindings(std::move(bindings)),payload(std::move(payload)){}
+      :ControlBase(payload->retirement.fence),identity(identity),bindings(std::move(bindings)),payload(std::move(payload)){}
   bool close() noexcept override {
     std::shared_ptr<Payload<T>> released;
     {
@@ -132,6 +150,7 @@ template<class T> class ResourceOwner {
 public:
   ResourceOwner()=default;
   uint64_t identity() const noexcept {return control?control->identity:0;}
+  ResourceRevocation revocation()const{return ResourceRevocation(control,control?control->settlement:ResourceSettlement{});}
   bool isOpen() const noexcept {
     auto retained=control;if(!retained||retained->closed->load())return false;
     for(const auto &state:retained->bindings)if(!state->active.load())return false;
@@ -171,8 +190,10 @@ public:
     auto locks=resource_detail::lock(retained);resource_detail::check(bindings);resource_detail::check(other.bindings);
     return ResourceAccess(std::move(retained),own);
   }
-  template<class T,class Factory> ResourceOwner<T> make(Factory &&factory) const {
+  template<class T,class Factory> ResourceOwner<T> make(Factory &&factory,ResourceSettlement settlement={}) const {
     static_assert(std::is_nothrow_destructible_v<T>);
+    if(!settlement.state)settlement=ResourceSettlement::pending();
+    resource_detail::SettlementGuard retirement(settlement);
     auto retained=bindings;
     auto create=std::forward<Factory>(factory);
     auto ticket=std::make_shared<resource_detail::Ticket>(retained);
@@ -186,7 +207,7 @@ public:
     auto identity=resource_detail::nextIdentity();
     auto value=create(ResourcePermit(retained));
     if(!value)throw DataError("E_RESOURCE_CLOSED","resource factory returned no value");
-    auto payload=std::make_shared<resource_detail::Payload<T>>(std::move(ticket),std::move(value));
+    auto payload=std::make_shared<resource_detail::Payload<T>>(std::move(retirement),std::move(ticket),std::move(value));
     auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));
     {
       auto locks=resource_detail::lock(retained);resource_detail::check(retained);
@@ -201,12 +222,15 @@ public:
     return ResourceOwner<T>(std::move(control));
   }
   template<class T,class Factory> ResourceOwner<T> makeOnExecutor(
-      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory)const{
+      const std::shared_ptr<ResourceExecutor> &executor,Factory &&factory,ResourceSettlement settlement={})const{
     static_assert(std::is_nothrow_destructible_v<T>);
     if(!executor)throw DataError("E_RESOURCE_EXECUTOR","resource executor is unavailable");
+    if(!settlement.state)settlement=ResourceSettlement::pending();
+    resource_detail::SettlementGuard retirement(settlement);
     auto retained=bindings;
     auto ticket=std::make_shared<resource_detail::Ticket>(retained);
     auto cleanup=std::make_shared<ResourceCleanupTicket>(executor->reserveCleanup());
+    cleanup->retainUntilSettled(std::make_shared<resource_detail::SettlementGuard>(settlement));
     {
       auto locks=resource_detail::lock(retained);resource_detail::check(retained);
       for(const auto &state:retained)
@@ -225,7 +249,7 @@ public:
       // Unpublished factory objects also die on this executor if allocation or
       // publication fails. The deleter moves the complete physical ticket,
       // including object quota, to its reserved cleanup slot.
-      payload=std::shared_ptr<Payload>(new Payload(ticket,std::move(value)),
+      payload=std::shared_ptr<Payload>(new Payload(std::move(retirement),ticket,std::move(value)),
         [cleanup](Payload *p)noexcept{cleanup->retire(p,[](void *raw)noexcept{delete static_cast<Payload*>(raw);});});
     });
     auto control=std::make_shared<resource_detail::Control<T>>(identity,retained,std::move(payload));

@@ -106,6 +106,11 @@ public:
   Scope openScope(size_t workers);
   Scope currentScope()const;
   Scope currentScopeOrEmpty()const;
+  // Private trusted host adapter. Existing source Values still cannot transport
+  // external authority. Enable before spawning; each logical scope then owns a
+  // separate region and waits its physical retirement before scope publication.
+  void enableResourceRegions();
+  ResourceRegionAuthority resourceAuthority()const;
   Awaiter leaveScope(const Scope &,bool cancelChildren=false);
   bool scopeContains(const Scope &ancestor,const Scope &descendant)const;
   void requireScope(const Scope &)const;

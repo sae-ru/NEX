@@ -619,6 +619,12 @@ def validate_completed_report(report):
     require(bool(commands) and all(command.get('status') == 'passed' for command in commands),
             'SDK acceptance contains an incomplete or failed command')
     version = report.get('doctor', {}).get('version', '0.0.0').split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,126,0):
+        regions=report.get('evidence',{}).get('source_resources',{}).get('resource_regions',{})
+        require(regions.get('cases')==18 and all(regions.get(key) is True for key in
+                ('ok','native_scope_ownership','scope_exit_waits_physical_cleanup','only_source_worker_remains_available',
+                 'native_256_scope_depth','ancestor_promotion','root_group_retirement','prepared_access_survives_64_resumes','unpublished_factory_fence')),
+                'SDK acceptance lacks installed logical resource region lifetime evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,125,0):
         executor=report.get('evidence',{}).get('source_resources',{}).get('resource_executor',{})
         require(executor.get('cases')==21 and all(executor.get(key) is True for key in
@@ -3293,7 +3299,7 @@ int main() {
         executable = directory / 'host'
         run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', c, '-o', obj])
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), host, obj,
-             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_executor.cpp',
+             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp', '-o', executable])
         c.unlink(); host.unlink(); obj.unlink()
         original = environment['NEX_RESOURCE_DIR']
@@ -3307,7 +3313,7 @@ int main() {
             'sources_deleted': True, 'standalone': str(executable),
             'runtime_inputs': {name: hashlib.sha256((runtime / name).read_bytes()).hexdigest()
                 for name in ('nex_ffi.h', 'nex_ffi_host.h', 'nex_ffi.cpp', 'nex_ffi_types.h',
-                             'nex_ffi_types.cpp', 'nex_ffi_resources.h', 'nex_ffi_resources.cpp', 'nex_external_resource.h', 'nex_resource_executor.h', 'nex_external_resource.cpp', 'nex_resource_executor.cpp', 'nex_resource.h', 'nex_files.cpp', 'nex_json.cpp')}}
+                             'nex_ffi_types.cpp', 'nex_ffi_resources.h', 'nex_ffi_resources.cpp', 'nex_external_resource.h', 'nex_resource_executor.h', 'nex_resource_region.h', 'nex_external_resource.cpp', 'nex_resource_region.cpp', 'nex_resource_executor.cpp', 'nex_resource.h', 'nex_files.cpp', 'nex_json.cpp')}}
         typed = directory / 'typed'
         typed.mkdir()
         for name in ('main.nex', 'producer.c', 'host.cpp'):
@@ -3327,7 +3333,7 @@ int main() {
         typed_host = typed / 'host'
         run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', typed / 'producer.c', '-o', typed_obj])
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), typed / 'host.cpp', typed_obj,
-             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_executor.cpp',
+             runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp', '-o', typed_host])
         for name in ('main.nex', 'producer.c', 'host.cpp', 'producer.o'):
             (typed / name).unlink()
@@ -3368,7 +3374,7 @@ int main() {
         module_host = loaded / 'host'
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime),
              '-I' + report['doctor']['native_openssl_include'], loaded / 'module_host.cpp',
-             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_executor.cpp',
+             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
              *standalone_crypto_link(report['doctor']), '-o', module_host])
         for name in ('producer.c', 'module.c', 'module_host.cpp', 'NOTICE'):
@@ -3400,7 +3406,7 @@ int main() {
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime),
              '-I' + report['doctor']['native_openssl_include'], scoped_source,
              runtime / 'runtime.cpp', runtime / 'foreign_runtime.cpp', runtime / 'nex_foreign.cpp',
-             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_executor.cpp',
+             runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
              runtime / 'nex_files.cpp', runtime / 'nex_json.cpp',
              *standalone_crypto_link(report['doctor']), '-o', scoped_host])
         scoped_source.unlink()

@@ -8,7 +8,7 @@ set(NEX_RUNTIME "${NEX_SOURCE}/runtime")
 add_library(executor_fixture MODULE "${NEX_SOURCE}/tests/resource_executor_module.cpp")
 target_include_directories(executor_fixture PRIVATE "${NEX_RUNTIME}")
 add_executable(resource_executor "${NEX_SOURCE}/tests/resource_executor.cpp"
-  "${NEX_RUNTIME}/nex_resource_executor.cpp" "${NEX_RUNTIME}/nex_external_resource.cpp")
+  "${NEX_RUNTIME}/nex_resource_executor.cpp" "${NEX_RUNTIME}/nex_external_resource.cpp" "${NEX_RUNTIME}/nex_resource_region.cpp")
 target_include_directories(resource_executor PRIVATE "${NEX_RUNTIME}")
 target_compile_options(resource_executor PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(resource_executor PRIVATE Threads::Threads ${CMAKE_DL_LIBS})

@@ -1,3 +1,10 @@
+# Current141: logical resources in the private native scheduler
+
+- [x] Separate logical ancestry from bounded physical grants; retain256 native scope depth.
+- [x] Track complete physical cleanup fences, including invisible failed publication; integrate private native scope/root retirement and explicit promotion.
+- [ ] Complete exact compiler/installed SDK/platform delivery for this stage.
+- [ ] Connect the independent reference scheduler, source value cleanup/transport, request-parent transfer and trusted FFI completion; preserve all original device/platform/quality requirements.
+
 # Current140: physical resource executor integration
 
 - [x] Implement a bounded owning-thread host executor, pre-reserved cleanup and complete physical owner retirement.

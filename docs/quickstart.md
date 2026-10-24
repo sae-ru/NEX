@@ -12,13 +12,15 @@ NEX — Neural Execution Language, «язык нейронного исполн�
 исходники `.nex` сами или вместе с LLM; компилятор проверяет их и собирает
 приложение. Готовой программе для работы не нужна LLM.
 
-Основа установки ниже — проверенный development-снимок **toolchain0.118.0 /
-язык0.20 (125b)**. Его установленный SDK прошёл30 фаз/557 команд;
-[точная область проверки](evidence/toolchain-0.118.0-task-provider-profiling.json)
+Основа установки ниже — проверенный development-снимок **toolchain0.124.0 /
+язык0.21 (139)**. Его полный прогон159 групп, установленный SDK34 фазы/631 команда
+и18 случаев в трёх браузерах проверены;
+[точная область проверки](evidence/toolchain-0.124.0-source-resources.json)
 содержит ограничения и сохранённые отказы предыдущих прогонов.
 Снимок закреплён полным commit SHA в резервной ветке GitHub; это не Release
-и не готовый универсальный установщик. Кандидат0.119 и его SDK31 проверяются
-отдельно. Здесь не предполагаются команды `brew install nex`/`npm install nex`.
+и не готовый универсальный установщик. Более новые private host-этапы ресурсов
+имеют отдельную приёмку и не включают source task/FFI transport автоматически.
+Здесь не предполагаются команды `brew install nex`/`npm install nex`.
 Возможности установленной версии показывает `nex describe --json`.
 
 Порядок: [установить](#1-установить-nex) → [создать проект](#2-создать-и-запустить-проект)
@@ -54,10 +56,10 @@ nex describe --json
 ```sh
 git clone https://github.com/sae-ru/NEX.git nex-toolchain
 cd nex-toolchain
-git checkout --detach 6a2a9f14453578cf5c6833c3e06caacaadc081ff
+git checkout --detach 857ab3e99dc5f9c4f9e4e0c52ab8806fdb6052ca
 ```
 
-Это проверенный development-снимок0.118.0/125b, а не обещание, что `main` или случайная резервная
+Это проверенный development-снимок0.124.0/139, а не обещание, что `main` или случайная резервная
 ветка содержат ту же версию. Для другого снимка сохраняйте его полный commit
 SHA и читайте его README/STATUS. Команды работы с приложением ниже не требуют
 изменять репозиторий компилятора.
@@ -99,9 +101,9 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DNEX_Z3_EXECUTABLE="$NEX_Z3_PREFIX/bin/z3" \
   -DCMAKE_PREFIX_PATH="$(brew --prefix sqlite)"
 cmake --build build -j 4
-cmake --install build --prefix "$HOME/opt/nex-sdk-0.118.0"
+cmake --install build --prefix "$HOME/opt/nex-sdk-0.124.0"
 
-export NEX_SDK="$HOME/opt/nex-sdk-0.118.0"
+export NEX_SDK="$HOME/opt/nex-sdk-0.124.0"
 export PATH="$NEX_SDK/bin:$PATH"
 nex doctor
 ```
@@ -193,7 +195,7 @@ nex build --profile release -o out/my-app --json
 точка входа и локальные корни библиотек. Для первого проекта достаточно:
 
 ```json
-{"schema":"nex.project/1","language":"0.20","entry":"src/main.nex"}
+{"schema":"nex.project/1","language":"0.21","entry":"src/main.nex"}
 ```
 
 `nex init` пока не создаёт Git-репозиторий, `.gitignore`, AGENTS.md или UI.

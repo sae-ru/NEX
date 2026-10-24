@@ -37,6 +37,7 @@ struct Work {
   std::unique_ptr<ResourceExecutionOperation> operation;
   std::shared_ptr<Completion> completion;
   uint64_t bytes=0;
+  std::shared_ptr<void> retirementHold;
 };
 struct State {
   const ResourceExecutorLimits limits;
@@ -48,7 +49,7 @@ struct State {
   std::thread::id thread;
   Work *head=nullptr,*tail=nullptr;
   bool accepting=true,started=false,stopped=false;
-  size_t liveResources=0,liveOperations=0,queued=0,running=0;
+  size_t liveResources=0,liveOperations=0,queued=0,running=0,settlementsPending=0;
   uint64_t reservedBytes=0;
   explicit State(ResourceExecutorLimits limits):limits(limits),cleanups(limits.resources),operations(limits.operations){}
   ~State(){
@@ -65,10 +66,18 @@ struct State {
   }
   void close()noexcept{{std::lock_guard lock(mutex);accepting=false;}changed.notify_all();}
   void release(size_t index)noexcept{
+    std::shared_ptr<void> released;
     {std::lock_guard lock(mutex);auto &work=cleanups[index];
       if(work.phase!=Work::Reserved)std::terminate();
-      work.phase=Work::Free;--liveResources;
-    }changed.notify_all();
+      released=std::move(work.retirementHold);work.phase=Work::Free;--liveResources;if(released)++settlementsPending;
+    }
+    if(released){released.reset();std::lock_guard lock(mutex);--settlementsPending;}
+    changed.notify_all();
+  }
+  void retain(size_t index,std::shared_ptr<void> hold){
+    std::lock_guard lock(mutex);auto &work=cleanups[index];
+    if(work.phase!=Work::Reserved||work.retirementHold||!hold)throw DataError("E_RESOURCE_EXECUTOR","cleanup settlement marker is unavailable or already attached");
+    work.retirementHold=std::move(hold);
   }
   void retire(size_t index,void *payload,void(*destroy)(void*)noexcept)noexcept{
     {std::lock_guard lock(mutex);auto &work=cleanups[index];
@@ -80,15 +89,20 @@ struct State {
     {std::lock_guard lock(mutex);thread=std::this_thread::get_id();started=true;}changed.notify_all();
     for(;;){
       Work *work=nullptr;
-      {std::unique_lock lock(mutex);changed.wait(lock,[&]{return head||(!accepting&&!liveResources&&!liveOperations);});
+      {std::unique_lock lock(mutex);changed.wait(lock,[&]{return head||(!accepting&&!liveResources&&!liveOperations&&!settlementsPending);});
         if(!head){stopped=true;lock.unlock();changed.notify_all();return;}
         work=head;head=head->next;if(!head)tail=nullptr;
         work->phase=Work::Running;--queued;++running;
       }
       if(work->destroy){
         work->destroy(work->payload);
+        std::shared_ptr<void> released;
         {std::lock_guard lock(mutex);work->payload=nullptr;work->destroy=nullptr;
-          work->phase=Work::Free;--running;--liveResources;}
+          released=std::move(work->retirementHold);work->phase=Work::Free;--liveResources;}
+        // A physical resource fence includes the executor's reserved slot, not
+        // only the payload destructor. Re-entrant marker release is outside locks.
+        released.reset();
+        {std::lock_guard lock(mutex);--running;}
       }else{
         auto completion=work->completion;
         std::exception_ptr failure;
@@ -130,6 +144,10 @@ ResourceCleanupTicket &ResourceCleanupTicket::operator=(ResourceCleanupTicket &&
   if(this!=&other){if(state)state->release(slot);state=std::move(other.state);slot=other.slot;}return *this;
 }
 ResourceCleanupTicket::~ResourceCleanupTicket(){if(state)state->release(slot);}
+void ResourceCleanupTicket::retainUntilSettled(std::shared_ptr<void> hold){
+  if(!state)throw DataError("E_RESOURCE_EXECUTOR","cleanup reservation is unavailable");
+  state->retain(slot,std::move(hold));
+}
 void ResourceCleanupTicket::retire(void *payload,void(*destroy)(void*)noexcept)noexcept{
   auto retained=std::move(state);if(!retained)std::terminate();retained->retire(slot,payload,destroy);
 }
@@ -178,7 +196,7 @@ bool ResourceExecutor::onThread()const noexcept{return state->thread==std::this_
 void ResourceExecutor::close()noexcept{if(state)state->close();}
 void ResourceExecutor::drain(){
   if(onThread())throw DataError("E_RESOURCE_EXECUTOR","cannot drain the owning resource executor");
-  std::unique_lock lock(state->mutex);state->changed.wait(lock,[&]{return !state->queued&&!state->running;});
+  std::unique_lock lock(state->mutex);state->changed.wait(lock,[&]{return !state->queued&&!state->running&&!state->settlementsPending;});
 }
 void ResourceExecutor::finish(){
   if(onThread())throw DataError("E_RESOURCE_EXECUTOR","cannot finish the owning resource executor");

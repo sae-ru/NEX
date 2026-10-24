@@ -12,7 +12,7 @@ include(probes.cmake)
 get_filename_component(NEX_SOURCE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 set(NEX_RUNTIME "${NEX_SOURCE}/runtime")
 set(FFI_COMMON "${NEX_RUNTIME}/nex_ffi.cpp" "${NEX_RUNTIME}/nex_ffi_types.cpp"
-  "${NEX_RUNTIME}/nex_ffi_resources.cpp" "${NEX_RUNTIME}/nex_external_resource.cpp" "${NEX_RUNTIME}/nex_resource_executor.cpp"
+  "${NEX_RUNTIME}/nex_ffi_resources.cpp" "${NEX_RUNTIME}/nex_external_resource.cpp" "${NEX_RUNTIME}/nex_resource_region.cpp" "${NEX_RUNTIME}/nex_resource_executor.cpp"
   "${NEX_RUNTIME}/nex_files.cpp" "${NEX_RUNTIME}/nex_json.cpp")
 add_executable(existing_typed_ffi "${NEX_SOURCE}/tests/ffi_typed.cpp" "${NEX_SOURCE}/examples/ffi/producer.c" ${FFI_COMMON})
 target_include_directories(existing_typed_ffi PRIVATE "${NEX_RUNTIME}")

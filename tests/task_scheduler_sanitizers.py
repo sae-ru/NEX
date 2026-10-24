@@ -58,7 +58,7 @@ def main():
         run('compile',[compiler,'-std=c++20','-O1','-g','-fno-omit-frame-pointer','-pthread',
             '-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_PROFILE_ENABLED',
             '-I',source/'runtime',source/'tests/task_scheduler.cpp',source/'runtime/runtime.cpp',
-            source/'runtime/nex_files.cpp',source/'runtime/nex_task_external.cpp','-fsanitize='+args.sanitizer,'-o',binary],300)
+            source/'runtime/nex_files.cpp',source/'runtime/nex_task_external.cpp',source/'runtime/nex_resource_region.cpp','-fsanitize='+args.sanitizer,'-o',binary],300)
         report['binary_sha256']=hashlib.sha256(binary.read_bytes()).hexdigest()
         report['observations']=[]
         for index in range(args.repeats):

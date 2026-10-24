@@ -1,3 +1,14 @@
+# Development0.126: private native logical resource regions
+
+The trusted native TaskGroup adapter can enable explicit logical resource regions.
+It preserves256 scope depth with bounded physical joins, checked ancestry and
+explicit ancestor promotion. Scope exit parks until its complete physical cleanup
+fence; destructors run outside scheduler locks and on a supplied executor when
+required. Root group retirement owns the remaining promoted resources.
+Query `resource_regions`; read [the exact host scope](docs/resource-regions.md).
+Source task/FFI/value transport, independent reference scheduling, request-parent
+transfer and actual devices remain pending. Language0.21 and primary081 stay intact.
+
 # Development0.125: executor-owned external cleanup
 
 The private trusted host executor constructs and destroys selected external

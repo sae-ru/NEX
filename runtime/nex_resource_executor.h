@@ -48,6 +48,9 @@ public:
   ResourceCleanupTicket(const ResourceCleanupTicket&)=delete;
   ResourceCleanupTicket &operator=(const ResourceCleanupTicket&)=delete;
   ~ResourceCleanupTicket();
+  // A host-allocated settlement marker is released after this slot is returned,
+  // outside executor locks. It must not retain a provider-owned control block.
+  void retainUntilSettled(std::shared_ptr<void>);
   // Consumes a pre-reserved slot. No allocation or admission is needed at the
   // last release, including after the executor stops accepting new operations.
   void retire(void*,void(*destroy)(void*)noexcept)noexcept;

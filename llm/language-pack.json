@@ -259,7 +259,8 @@
     "external_resource_host_header": "runtime/nex_external_resource.h",
     "external_resource_C_host_header": "runtime/nex_ffi_resources.h",
     "source_resources": "docs/source-resources.md",
-    "resource_executor": "docs/resource-executor.md"
+    "resource_executor": "docs/resource-executor.md",
+    "resource_regions": "docs/resource-regions.md"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1730,6 +1731,38 @@
       "actual model/device session and buffer bindings",
       "vendor-specific fences and failure settlement",
       "matching full compiler, installed SDK and platform delivery"
+    ]
+  },
+  "resource_regions": {
+    "status": "private_trusted_host_native_scheduler",
+    "source_support": false,
+    "source_task_bridge": false,
+    "frame_value_transport": false,
+    "native_scheduler": true,
+    "reference_scheduler": false,
+    "actual_GPU_NPU_resources": false,
+    "stable_host_abi": false,
+    "guide": "docs/resource-regions.md",
+    "header": "runtime/nex_resource_region.h",
+    "native_group_enable": "TaskGroup::enableResourceRegions before spawning",
+    "native_current_authority": "TaskGroup::resourceAuthority",
+    "physical_access": "explicit coordinator-captured grant/request; no per-resume TLS lookup",
+    "ancestry": "same graph/family; owner or descendant borrowers; siblings and foreign groups rejected",
+    "promotion": "explicit trusted ancestor transfer before region closure; aliases retain physical identity",
+    "close": "logical revocation under scheduler lock; destructor request outside locks; scope publication after complete physical fence",
+    "root_retirement": "group finish closes promoted/root resources and waits physical settlement",
+    "maximum": {
+      "scope_nodes_including_root": 1025,
+      "scope_depth": 256,
+      "owners": 4096,
+      "physical_joined_domains": 8
+    },
+    "pending": [
+      "independent reference scheduler integration",
+      "source value input/result/channel/capture and cleanup transport",
+      "source task/FFI completion adapter and explicit language migration",
+      "request-parent transfer across whole task-group boundaries",
+      "actual device bindings and matching compiler/SDK/platform delivery"
     ]
   }
 }

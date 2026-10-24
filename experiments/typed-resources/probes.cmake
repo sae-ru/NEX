@@ -11,7 +11,7 @@ endforeach()
 target_compile_definitions(typed_resource_module_b PRIVATE DIFFERENT_IMAGE=1)
 add_executable(typed_resource_ffi "${TYPED_NEX_SOURCE}/tests/typed_resource_ffi.cpp"
   "${TYPED_NEX_RUNTIME}/nex_ffi.cpp" "${TYPED_NEX_RUNTIME}/nex_ffi_types.cpp"
-  "${TYPED_NEX_RUNTIME}/nex_ffi_resources.cpp" "${TYPED_NEX_RUNTIME}/nex_external_resource.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_executor.cpp"
+  "${TYPED_NEX_RUNTIME}/nex_ffi_resources.cpp" "${TYPED_NEX_RUNTIME}/nex_external_resource.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_region.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_executor.cpp"
   "${TYPED_NEX_RUNTIME}/nex_ffi_loader.cpp" "${TYPED_NEX_RUNTIME}/nex_foreign.cpp"
   "${TYPED_NEX_RUNTIME}/nex_files.cpp" "${TYPED_NEX_RUNTIME}/nex_json.cpp" "${TYPED_NEX_RUNTIME}/runtime.cpp")
 target_include_directories(typed_resource_ffi PRIVATE "${TYPED_NEX_RUNTIME}")
@@ -27,7 +27,7 @@ if(NOT TARGET external_values)
   add_library(external_fixture MODULE "${TYPED_NEX_SOURCE}/tests/external_resource_module.c")
   add_executable(external_values "${TYPED_NEX_SOURCE}/tests/external_resource_values.cpp"
     "${TYPED_NEX_SOURCE}/tests/external_resource_old_forward.c"
-    "${TYPED_NEX_RUNTIME}/nex_external_resource.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_executor.cpp" "${TYPED_NEX_RUNTIME}/runtime.cpp"
+    "${TYPED_NEX_RUNTIME}/nex_external_resource.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_region.cpp" "${TYPED_NEX_RUNTIME}/nex_resource_executor.cpp" "${TYPED_NEX_RUNTIME}/runtime.cpp"
     "${TYPED_NEX_RUNTIME}/nex_files.cpp" "${TYPED_NEX_RUNTIME}/nex_task_external.cpp"
     "${TYPED_NEX_RUNTIME}/nex_json.cpp" "${TYPED_NEX_RUNTIME}/nex_ffi.cpp"
     "${TYPED_NEX_RUNTIME}/nex_ffi_types.cpp" "${TYPED_NEX_RUNTIME}/nex_ffi_resources.cpp")

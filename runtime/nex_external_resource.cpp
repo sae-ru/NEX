@@ -36,7 +36,10 @@ struct State {
 struct BorrowState {
   ResourceLease<State> lease;
   const std::shared_ptr<const ClassState> type;
-  BorrowState(ResourceLease<State> lease,std::shared_ptr<const ClassState> type):lease(std::move(lease)),type(std::move(type)){}
+  const ResourceRegionOwner region;
+  const ResourceRegionAuthority access;
+  BorrowState(ResourceLease<State> lease,std::shared_ptr<const ClassState> type,ResourceRegionOwner region={},ResourceRegionAuthority access={})
+    :lease(std::move(lease)),type(std::move(type)),region(std::move(region)),access(std::move(access)){}
 };
 }
 ResourceByteBudget::ResourceByteBudget(uint64_t maximum){
@@ -64,7 +67,7 @@ ExternalResourceObject::ExternalResourceObject(ExternalResourceObject &&other)no
 ExternalResourceObject::~ExternalResourceObject(){if(pointer)destroy(pointer);}
 ExternalResource::ExternalResource(ResourceOwner<external_detail::State> owner,std::shared_ptr<const external_detail::ClassState> type,uint64_t capacity)
     :owner(std::move(owner)),type(std::move(type)),capacity(capacity){}
-bool ExternalResource::isOpen()const noexcept{return owner.isOpen();}
+bool ExternalResource::isOpen()const noexcept{return owner.isOpen()&&(!region||region.active());}
 bool ExternalResource::close()const noexcept{return owner.close();}
 const std::string &ExternalResource::typeName()const noexcept{static const std::string empty;return type?type->name:empty;}
 const std::string &ExternalResource::typeHash()const noexcept{static const std::string empty;return type?type->hash:empty;}
@@ -76,7 +79,7 @@ ExternalResource ExternalResource::makeErased(const ResourceDomain &domain,const
 }
 ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,const ExternalResourceClass &key,
     std::span<const ResourceByteBudget> budgets,uint64_t bytes,std::function<ExternalResourceObject(const ResourcePermit&)> factory,
-    std::shared_ptr<ResourceExecutor> executor){
+    std::shared_ptr<ResourceExecutor> executor,ResourceSettlement settlement){
   if(budgets.empty()||budgets.size()>8)throw DataError("E_RESOURCE_BYTES","external resource needs1..8 capacity budgets");
   auto type=key.state;
   if(!type)throw DataError("E_RESOURCE_TYPE","external class is unavailable");
@@ -90,17 +93,25 @@ ExternalResource ExternalResource::makeInAccessErased(ResourceAccess access,cons
     if(!object.pointer)throw DataError("E_RESOURCE_CLOSED","external resource factory returned no object");
     return std::make_unique<external_detail::State>(std::move(charge),std::move(object));
   };
-  auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create):access.make<external_detail::State>(create);
+  auto resource=executor?access.makeOnExecutor<external_detail::State>(executor,create,settlement):access.make<external_detail::State>(create,settlement);
   return ExternalResource(std::move(resource),std::move(type),bytes);
 }
 ExternalResourceBorrow::ExternalResourceBorrow(std::shared_ptr<external_detail::BorrowState> impl):impl(std::move(impl)){}
 ExternalResourceBorrow ExternalResource::borrowErased(const ExternalResourceClass &expected)const{
+  if(region)throw DataError("E_RESOURCE_SCOPE","scoped external resource requires explicit logical authority");
   auto lease=owner.acquire();lease.check();
   if(!type||type!=expected.state)throw DataError("E_RESOURCE_TYPE","external class registration differs");
   return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type));
 }
+ExternalResourceBorrow ExternalResource::borrowInRegionErased(const ResourceRegionAuthority &access,const ExternalResourceClass &expected)const{
+  if(!region)throw DataError("E_RESOURCE_SCOPE","external resource has no matching logical owner");
+  region.check(access);auto lease=owner.acquire();lease.check();
+  if(!type||type!=expected.state)throw DataError("E_RESOURCE_TYPE","external class registration differs");
+  return ExternalResourceBorrow(std::make_shared<external_detail::BorrowState>(std::move(lease),type,region,access));
+}
 void ExternalResourceBorrow::check()const{
   if(!impl)throw DataError("E_RESOURCE_CLOSED","external borrow has ended");
+  if(impl->region)impl->region.check(impl->access);
   impl->lease.check();
 }
 void *ExternalResourceBorrow::data(const ExternalResourceClass &expected)const{
