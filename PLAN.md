@@ -1,3 +1,9 @@
+# Current private135 resource integration
+
+- [x] Verify the host owned-value/byte-budget/module lifetime foundation and existing file/C compatibility under sanitizers.
+- [ ] Connect opaque source declarations, graph identities, typed FFI construction and genuine020 migration.
+- [ ] Implement device executor cleanup/fences and task/ffi completion ownership, then verify actual devices and complete delivery gates.
+
 # Current0.122 model SDK integration
 
 - [x] Install `std/model.nex` and provider preparation with matching describe/guide/prompt.

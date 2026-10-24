@@ -367,6 +367,7 @@ struct Reference {
       if(!seen.insert(v.object.get()).second)continue;
       if(seen.size()>262144||v.object->values.size()>262144-members)throw Error("E_LIMIT","reference snapshot graph exceeds262144 members");
       auto kind=v.object->kind;
+      if(kind==RD::External)throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
       if(kind==RD::File)throw Error("E_TASK_VALUE","reference task cannot transport file authority");
       if(kind==RD::TaskScope||kind==RD::Task||kind==RD::Channel){
         capability(v,kind,current);

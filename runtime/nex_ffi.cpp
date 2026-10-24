@@ -35,6 +35,7 @@ uint32_t kind(const Value &v){
   case Data::Enum:return NEX_FFI_ENUM;case Data::Success:return NEX_FFI_SUCCESS;
   case Data::Failure:return NEX_FFI_FAILURE;case Data::Closure:return NEX_FFI_FUNCTION;
   case Data::File:return NEX_FFI_FILE;
+  case Data::External:return NEX_FFI_EXTERNAL_RESOURCE;
   case Data::TaskScope:case Data::Task:case Data::Channel:fail(NEX_FFI_TYPE);
   }
   fail(NEX_FFI_TYPE);

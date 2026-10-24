@@ -42,6 +42,7 @@ void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::S
     if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","task snapshot exceeds its object limit");
     if(seen.size()%64==0)pollHostOperation(0);
     auto kind=next.object->kind;
+    if(kind==Data::External)throw DataError("E_TASK_VALUE","task snapshot cannot contain external resource authority");
     if(kind==Data::File)throw DataError("E_TASK_VALUE","task snapshot cannot contain file authority");
     if(kind==Data::TaskScope||kind==Data::Task||kind==Data::Channel){
       const auto &cap=taskData(next,kind);group.requireScope(cap.scope);

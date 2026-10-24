@@ -1,3 +1,18 @@
+# Private135: owned external value foundation
+
+A separate host prototype now adds typed external resource owners, physical byte
+budgets, managed values and C opaque forwarding. Public source resource types,
+typed construction, device executors and task/ffi integration remain pending.
+Read [the implementation contract and required integration](docs/external-resources-design.md).
+This changes no source language or migration and does not enable owned handles
+in std/model. The frozen134 candidate and its running full154/SDK33 gates remain
+separate and unchanged. The private host foundation passed21 cases, existing
+file/C compatibility and3 suites each under ASAN/UBSAN and TSAN. Normal evidence
+is composite3 after correcting a missing request scope in the new task test;
+the original failure remains retained. See [scope](docs/evidence/owned-external-host-foundation.json).
+The reference guard has syntax validation; public source behavior and matching
+compiler/platform delivery still require their own implementation and gates.
+
 # Development0.122: installed named model contract
 
 This candidate integrates `std/model.nex`, exact discovery/guide/prompt metadata,

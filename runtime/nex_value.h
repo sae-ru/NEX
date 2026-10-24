@@ -12,6 +12,7 @@
 #include "nex_float.h"
 #include "nex_bytes.h"
 #include "nex_file_resource.h"
+#include "nex_external_resource.h"
 
 namespace nexrt {
 struct Data;
@@ -32,7 +33,7 @@ struct Value {
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
-  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel } kind;
+  enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel, External } kind;
   enum class TaskOwnerFamily { None, Native, Reference };
 private:
   const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
@@ -46,17 +47,18 @@ public:
 private:
   friend struct ByteData;
   friend struct FileData;
+  friend struct ExternalData;
   friend struct TaskData;
   friend struct ReferenceTaskData;
   Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),taskFamily(family){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
-    if(other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
+    if(other.kind==External||other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
   }
 public:
   TaskOwnerFamily taskOwnerFamily()const{return taskFamily;}
   explicit Data(Kind kind):Data(kind,sizeof(Data)){
-    if(kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel)throw DataError("E_RUNTIME","value requires an owned payload");
+    if(kind==External||kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel)throw DataError("E_RUNTIME","value requires an owned payload");
   }
   Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
   Data &operator=(const Data&)=delete;
@@ -101,6 +103,19 @@ inline std::shared_ptr<Data> diagnosticFile(uint64_t identity){
 inline uint64_t fileIdentity(const std::shared_ptr<Data> &data){
   if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
   const auto &value=static_cast<const FileData&>(*data);return value.diagnosticIdentity?value.diagnosticIdentity:value.resource.identity();
+}
+struct ExternalData final:Data {
+private:
+  friend std::shared_ptr<Data> externalValue(ExternalResource);
+  explicit ExternalData(ExternalResource value):Data(External,sizeof(ExternalData)),resource(std::move(value)){}
+public:
+  const ExternalResource resource;
+  ~ExternalData()=default;
+};
+std::shared_ptr<Data> externalValue(ExternalResource resource);
+inline const ExternalResource &externalResource(const std::shared_ptr<Data> &value){
+  if(!value||value->kind!=Data::External)throw DataError("E_RUNTIME","expected an external resource value");
+  return static_cast<const ExternalData&>(*value).resource;
 }
 inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=true) {
   std::vector<size_t> offsets;
@@ -207,6 +222,8 @@ inline bool equal(const Value &a,const Value &b) {
   if(a.tag!=Value::Object)return a.scalar==b.scalar;
   if(a.object==b.object)return true;
   const auto &x=*a.object,&y=*b.object;
+  if(x.kind==Data::External||y.kind==Data::External)
+    return x.kind==y.kind&&externalResource(a.object).identity()==externalResource(b.object).identity();
   if(x.kind==Data::File||y.kind==Data::File)
     return x.kind==y.kind&&fileIdentity(a.object)==fileIdentity(b.object);
   if(x.kind==Data::Bytes||y.kind==Data::Bytes)
@@ -227,6 +244,7 @@ inline std::string representation(const Value &v) {
   if(v.tag==Value::Boolean)return v.scalar?"true":"false";
   const auto &d=*v.object;
   if(d.kind==Data::Closure)return quoted("<function>");
+  if(d.kind==Data::External)return quoted("<resource>");
   if(d.kind==Data::File)return quoted("<file>");
   if(d.kind==Data::TaskScope)return quoted("<task_scope>");
   if(d.kind==Data::Task)return quoted("<task>");
@@ -240,5 +258,5 @@ inline std::string representation(const Value &v) {
   for(size_t i=0;i<d.values.size();++i){if(i)text+=",";if(d.kind==Data::Record)text+=quoted(d.names[i])+":";text+=representation(d.values[i]);}
   return text+(d.kind==Data::List?"]":"}");
 }
-inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:v.tag==Value::Object&&v.object->kind==Data::Closure?"<function>":v.tag==Value::Object&&v.object->kind==Data::File?"<file>":representation(v);}
+inline std::string printable(const Value &v){return v.tag==Value::Object&&v.object->kind==Data::External?"<resource>":v.tag==Value::Object&&v.object->kind==Data::String?v.object->text:v.tag==Value::Object&&v.object->kind==Data::Closure?"<function>":v.tag==Value::Object&&v.object->kind==Data::File?"<file>":representation(v);}
 }
