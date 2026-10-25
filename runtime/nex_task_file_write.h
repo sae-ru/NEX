@@ -4,8 +4,8 @@
 
 #ifndef _WIN32
 namespace nexrt {
-// Private trusted-host bridge. Source task writes remain unsupported until the
-// frontend, independent interpreter, native continuations and migration agree.
+// Captured host bridge used by public023 whole-file task writes. Source
+// version/backend admission and authority remain explicit separate contracts.
 class PreparedTaskFileWrite {
   struct Payload {
     const size_t length;

@@ -183,6 +183,31 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk1332_requires_actual_installed_stream_host_execution(self):
+        contract=acceptance._stream_host_contract();CASES,HEADERS,SOURCES=contract.CASES,contract.HEADERS,contract.SOURCES
+        current=self.report();current.update(version='0.133.2',language='0.23',doctor={'version':'0.133.2'})
+        current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_023]
+        with self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants','physical_quota_retention',
+                'single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots','large_file_streaming','protocol_rejections')
+        pins={'tools/task_file_stream_host_acceptance.cpp',*('runtime/'+n for n in (*HEADERS,*SOURCES))}
+        host={'schema':'nex.installed-task-stream-host/1',**{k:True for k in fields},'source_support':False,'cases':27,
+              'case_names':list(CASES),'probe_sha256':'a'*64,'installed_sources':{n:'b'*64 for n in pins}}
+        current['evidence']={'structured_task_file_writes':{'private_stream_host':host}}
+        with self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+            acceptance.validate_completed_report(current)
+        for field in fields:
+            for value in (None,False,1,'true'):
+                bad=copy.deepcopy(current);bad['evidence']['structured_task_file_writes']['private_stream_host'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+                    acceptance.validate_completed_report(bad)
+        for field,value in [('cases',True),('cases',26),('source_support',True),('source_support',None),('case_names',list(CASES)[:-1]),
+                            ('case_names',[CASES[0]]*27),('probe_sha256','bad'),('installed_sources',{})]:
+            bad=copy.deepcopy(current);bad['evidence']['structured_task_file_writes']['private_stream_host'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+                acceptance.validate_completed_report(bad)
+
     def test_sdk1331_requires_extended_genuine_history_before_other_acceptance(self):
         current=self.report();current.update(version='0.133.1',language='0.23',doctor={'version':'0.133.1'},compiler_sha256='a'*64)
         current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_023]

@@ -172,6 +172,17 @@ struct FileReadGrant::State {
     :files(std::move(files)),resources(std::move(resources)){}
   explicit State(std::string error):error(std::move(error)){}
 };
+struct FileOpenLease::State {
+  std::shared_ptr<TextFiles::Impl> files;
+  ResourceAccess resources;
+  const size_t length;
+  const std::unique_ptr<char[]> relative;
+  const FileMode mode;
+  State(std::shared_ptr<TextFiles::Impl> files,ResourceAccess resources,const std::string &path,FileMode mode)
+    :files(std::move(files)),resources(std::move(resources)),length(path.size()),relative(std::make_unique<char[]>(length)),mode(mode){
+    std::copy(path.begin(),path.end(),relative.get());
+  }
+};
 void FileReadGrant::check()const {
   auto retained=state;
   if(!retained||!retained->files)
@@ -189,6 +200,28 @@ void FileWriteGrant::check()const {
 }
 FileWriteLease FileWriteGrant::lease(const std::string &relative)const {
   check();return FileWriteLease(physical.lease(relative));
+}
+FileOpenLease FileReadGrant::openRead(const std::string &relative)const {
+  check();(void)components(relative);
+  return FileOpenLease(std::make_shared<FileOpenLease::State>(state->files,state->resources,relative,FileMode::Read));
+}
+FileOpenLease FileWriteGrant::openWrite(const std::string &relative,FileMode mode)const {
+  check();
+  if(mode!=FileMode::WriteTruncate&&mode!=FileMode::Append)throw DataError("VALIDATION","write open requires truncate or append mode");
+  (void)components(relative);
+  return FileOpenLease(std::make_shared<FileOpenLease::State>(physical.state->files,physical.state->resources,relative,mode));
+}
+void FileOpenLease::check()const {
+  if(!state||!state->files)throw DataError("CAPABILITY","file open capability is not configured");
+  state->resources.check();
+  if(state->mode!=FileMode::Read&&!state->files->writable)throw DataError("CAPABILITY","file capability does not permit writes");
+}
+size_t FileOpenLease::retainedPathBytes()const noexcept{return state?state->length:0;}
+FileResource FileOpenLease::open(const TextFiles::Poll &poll)const {
+  check();auto retained=state;
+  auto checkpoint=[retained,poll]{retained->resources.check();if(poll)poll();retained->resources.check();};
+  auto result=TextFiles(retained->files).openInAccess(retained->resources,std::string(retained->relative.get(),retained->length),retained->mode,checkpoint);
+  check();return result;
 }
 template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
   if(!writable)throw DataError("CAPABILITY","file capability does not permit writes");
@@ -270,30 +303,39 @@ auto streamCall(const Lease &lease,const TextFiles::Poll &poll,Operation operati
   }
 }
 }
-ByteBuffer FileResource::read(int64_t maximum,const Poll &poll) const {
-  auto lease=owner.acquire();auto callback=poll;
-  if(lease.value().mode!=FileMode::Read)throw DataError("CAPABILITY","file handle does not permit reads");
+FileStreamLease FileResource::lease()const{return FileStreamLease(owner.acquire(),owner.identity());}
+void FileStreamLease::checkRead(int64_t maximum)const {
+  if(physical.value().mode!=FileMode::Read)throw DataError("CAPABILITY","file handle does not permit reads");
   if(maximum<0)throw DataError("E_RANGE","read size must be nonnegative");
   if(uint64_t(maximum)>TextFiles::byteLimit)throw DataError("LIMIT","read size exceeds byte limit");
-  std::vector<uint8_t> content(static_cast<size_t>(maximum));
-  auto count=streamCall(lease,callback,[&](const auto &state){return ::read(state.descriptor.get(),content.data(),content.size());});
-  content.resize(size_t(count));return ByteBuffer::owned(std::move(content));
 }
-int64_t FileResource::write(const ByteBuffer &bytes,const Poll &poll) const {
-  auto lease=owner.acquire();auto content=bytes;auto callback=poll;
-  if(lease.value().mode==FileMode::Read)throw DataError("CAPABILITY","file handle does not permit writes");
-  if(uint64_t(content.length())>TextFiles::byteLimit)throw DataError("LIMIT","write size exceeds byte limit");
-  auto view=content.view();
-  return streamCall(lease,callback,[&](const auto &state){return ::write(state.descriptor.get(),view.data(),view.size());});
+void FileStreamLease::checkWrite(size_t bytes)const {
+  if(physical.value().mode==FileMode::Read)throw DataError("CAPABILITY","file handle does not permit writes");
+  if(bytes>TextFiles::byteLimit)throw DataError("LIMIT","write size exceeds byte limit");
 }
-int64_t FileResource::seek(int64_t offset,const Poll &poll) const {
-  auto lease=owner.acquire();auto callback=poll;
+void FileStreamLease::checkSeek(int64_t offset)const {
+  physical.check();
   if(offset<0 || uint64_t(offset)>uint64_t(std::numeric_limits<off_t>::max()))
     throw DataError("E_RANGE","file offset is outside supported range");
+}
+std::vector<uint8_t> FileStreamLease::read(int64_t maximum,const Poll &poll)const {
+  auto lease=physical;auto callback=poll;checkRead(maximum);
+  std::vector<uint8_t> content(static_cast<size_t>(maximum));
+  auto count=streamCall(lease,callback,[&](const auto &state){return ::read(state.descriptor.get(),content.data(),content.size());});
+  content.resize(size_t(count));return content;
+}
+int64_t FileStreamLease::write(std::span<const uint8_t> content,const Poll &poll)const {
+  auto lease=physical;auto callback=poll;
+  checkWrite(content.size());
+  return streamCall(lease,callback,[&](const auto &state){return ::write(state.descriptor.get(),content.data(),content.size());});
+}
+int64_t FileStreamLease::seek(int64_t offset,const Poll &poll)const {
+  auto lease=physical;auto callback=poll;
+  checkSeek(offset);
   return streamCall(lease,callback,[&](const auto &state){return ::lseek(state.descriptor.get(),off_t(offset),SEEK_SET);});
 }
-int64_t FileResource::size(const Poll &poll) const {
-  auto lease=owner.acquire();auto callback=poll;
+int64_t FileStreamLease::size(const Poll &poll)const {
+  auto lease=physical;auto callback=poll;
   return streamCall(lease,callback,[](const auto &state)->int64_t{
     struct stat info{};if(::fstat(state.descriptor.get(),&info))return -1;
     if(info.st_size<0 || uint64_t(info.st_size)>uint64_t(std::numeric_limits<int64_t>::max()))
@@ -301,19 +343,29 @@ int64_t FileResource::size(const Poll &poll) const {
     return int64_t(info.st_size);
   });
 }
-void FileResource::flush(const Poll &poll) const {
-  auto lease=owner.acquire();auto callback=poll;
+void FileStreamLease::flush(const Poll &poll)const {
+  auto lease=physical;auto callback=poll;
   if(lease.value().mode==FileMode::Read)throw DataError("CAPABILITY","file handle does not permit writes");
   streamCall(lease,callback,[](const auto &state){return ::fsync(state.descriptor.get());});
 }
+ByteBuffer FileResource::read(int64_t maximum,const Poll &poll)const {return ByteBuffer::owned(lease().read(maximum,poll));}
+int64_t FileResource::write(const ByteBuffer &bytes,const Poll &poll)const {
+  auto content=bytes;return lease().write(content.view(),poll);
+}
+int64_t FileResource::seek(int64_t offset,const Poll &poll)const{return lease().seek(offset,poll);}
+int64_t FileResource::size(const Poll &poll)const{return lease().size(poll);}
+void FileResource::flush(const Poll &poll)const{lease().flush(poll);}
 ResourceDomain TextFiles::resourceScope(size_t limit) const {return impl->resources.child(limit);}
 FileResource TextFiles::open(const std::string &relative,FileMode mode,const Poll &poll) const {
   auto retained=impl;
   return openIn(retained->resources,relative,mode,poll);
 }
 FileResource TextFiles::openIn(const ResourceDomain &scope,const std::string &relative,FileMode mode,const Poll &poll) const {
+  if(!scope.descendsFrom(impl->resources))throw DataError("CAPABILITY","file resource scope belongs to another capability");
+  return openInAccess(scope.access(),relative,mode,poll);
+}
+FileResource TextFiles::openInAccess(const ResourceAccess &scope,const std::string &relative,FileMode mode,const Poll &poll)const {
   auto retained=impl;auto path=relative;auto callback=poll;
-  if(!scope.descendsFrom(retained->resources))throw DataError("CAPABILITY","file resource scope belongs to another capability");
   if(mode!=FileMode::Read&&mode!=FileMode::WriteTruncate&&mode!=FileMode::Append)
     throw DataError("VALIDATION","invalid file mode");
   if(mode!=FileMode::Read&&!retained->writable)throw DataError("CAPABILITY","file capability does not permit writes");

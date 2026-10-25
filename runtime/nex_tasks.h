@@ -11,9 +11,9 @@
 #include <optional>
 #include <utility>
 
-// Compiler-private development substrate, enabled only by NEX_ASYNC_TASKS.
-// Used by the private compiled source bridge. Public task source support and
-// asynchronous I/O remain pending.
+// Compiler/runtime substrate enabled by NEX_ASYNC_TASKS. Source/backend and
+// trusted host-adapter capabilities are discovered separately; this definition
+// grants no resource authority or unimplemented source operation.
 namespace nexrt {
 namespace task_detail {
 struct Cancellation {

@@ -9,6 +9,7 @@ class FileReadLease;
 class FileReadGrant;
 class FileWriteLease;
 class FileWriteGrant;
+class FileOpenLease;
 // Host-owned capability. No descriptor or mutable resource becomes a NEX value.
 class TextFiles {
   struct Impl;
@@ -18,9 +19,11 @@ class TextFiles {
   friend class FileReadGrant;
   friend FileReadLease captureFileReadLease(const std::string &,bool);
   friend FileReadGrant captureFileReadGrant(bool);
+  friend class FileOpenLease;
   explicit TextFiles(std::shared_ptr<Impl> impl):impl(std::move(impl)){}
   std::unique_ptr<TextFiles> retain() const;
   FileReadLease readLeaseIn(const ResourceAccess &,const std::string &) const;
+  FileResource openInAccess(const ResourceAccess &,const std::string &,FileMode,const std::function<void()> &)const;
 public:
   static constexpr size_t byteLimit = 1024 * 1024;
   static constexpr size_t textLimit = byteLimit;
@@ -71,6 +74,7 @@ public:
   FileReadGrant()=default;
   void check()const;
   FileReadLease lease(const std::string &relative)const;
+  FileOpenLease openRead(const std::string &relative)const;
 };
 FileReadGrant captureFileReadGrant(bool environmentAllowed=true);
 // A write grant preserves the same root/request revocation lineage as reads.
@@ -95,8 +99,23 @@ public:
   FileWriteGrant()=default;
   void check()const;
   FileWriteLease lease(const std::string &relative)const;
+  FileOpenLease openWrite(const std::string &relative,FileMode mode=FileMode::WriteTruncate)const;
 };
 FileWriteGrant captureFileWriteGrant(bool environmentAllowed=true);
+// No file is opened while preparing this exact owned path. The captured
+// root/request authority is checked on the IO worker and again at admission.
+class FileOpenLease {
+  struct State;
+  std::shared_ptr<const State> state;
+  friend class FileReadGrant;
+  friend class FileWriteGrant;
+  explicit FileOpenLease(std::shared_ptr<const State> state):state(std::move(state)){}
+public:
+  FileOpenLease()=default;
+  void check()const;
+  size_t retainedPathBytes()const noexcept;
+  FileResource open(const TextFiles::Poll &poll={})const;
+};
 #endif
 // An explicit host scope overrides the process environment. Native HTTP calls
 // do not inherit an environment capability unless the trusted host grants one.

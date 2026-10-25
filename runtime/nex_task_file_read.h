@@ -7,8 +7,8 @@ namespace nexrt {
 inline bool ordinaryTaskFileReadError(const std::string &code){
   return code=="CAPABILITY"||code=="NOT_FOUND"||code=="PERMISSION"||code=="VALIDATION"||code=="LIMIT"||code=="E_FILE"||code=="E_UTF8";
 }
-// Experimental trusted-host adapter. It does not enable a source operation or
-// supply a grant: capture must run on the explicitly authorized coordinator.
+// Captured host adapter used by the checked source read bridges. It supplies
+// no grant: capture must run on the explicitly authorized coordinator.
 class PreparedTaskFileRead {
   FileReadLease lease;
   bool text;

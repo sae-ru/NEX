@@ -127,6 +127,11 @@ SDKs. Changing nex.json alone is not migration. Materialization/export is a
 separate step. Old captured runs/debug frames require matching compiler/resources
 or a newly reviewed capture after migration; never relabel them.
 
+Use `nex snapshot --directory NEW_SNAPSHOT` for complete stored graph history
+and `nex recover SNAPSHOT --directory NEW_PROJECT` for recovery with local IDs.
+Inspect history and use `--revision HEAD` when recovered physical source is absent.
+Snapshots do not include external assets, credentials or matching SDK binaries.
+
 Static component linkage does not imply a fully static executable. Shared
 libraries, foreign bundles and packages require exact contracts, image/source
 identities, dependencies and notices. Operator catalogues supply current trust.

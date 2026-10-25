@@ -615,6 +615,14 @@ def standalone_crypto_link(doctor):
     return flags
 
 
+def _stream_host_contract():
+    # Validators may be loaded by absolute path from another SDK's controller.
+    # Resolve this SDK's self-contained contract instead of ambient sys.path.
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('nex_sdk_stream_host_contract',Path(__file__).with_name('sdk_task_streams.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+
 def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -631,6 +639,22 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,2):
+        contract=_stream_host_contract();CASES,HEADERS,SOURCES=contract.CASES,contract.HEADERS,contract.SOURCES
+        writes=report.get('evidence',{}).get('structured_task_file_writes',{})
+        host=writes.get('private_stream_host',{}) if isinstance(writes,dict) else {}
+        pins=host.get('installed_sources',{}) if isinstance(host,dict) else {}
+        names=host.get('case_names',[]) if isinstance(host,dict) else []
+        required={'tools/task_file_stream_host_acceptance.cpp',*('runtime/'+n for n in (*HEADERS,*SOURCES))}
+        require(isinstance(host,dict) and host.get('schema')=='nex.installed-task-stream-host/1' and
+                all(host.get(key) is True for key in ('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants',
+                    'physical_quota_retention','single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots',
+                    'large_file_streaming','protocol_rejections')) and host.get('source_support') is False and
+                type(host.get('cases')) is int and host['cases']==27 and isinstance(names,list) and len(names)==27 and
+                all(isinstance(n,str) for n in names) and set(names)==set(CASES) and
+                isinstance(host.get('probe_sha256'),str) and re.fullmatch('[0-9a-f]{64}',host['probe_sha256']) and
+                isinstance(pins,dict) and set(pins)==required and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in pins.values()),
+                'SDK acceptance lacks actual installed private stream host evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,1):
         writes=report.get('evidence',{}).get('structured_task_file_writes',{})
         history=writes.get('extended_histories',{}) if isinstance(writes,dict) else {}
@@ -1906,6 +1930,13 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         require(history.get('ok') is True and history.get('compiler_sha256')==report['compiler_sha256'],
                 'installed extended history workflow differs from actual compiler')
         proof['extended_histories']=history
+        from sdk_task_streams import check_installed_task_streams
+        feature=cli('describe','--field','task_file_streams_host')['value']
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(feature==pack['task_file_streams_host'] and feature['source_support'] is False and
+                feature['typed_one_shot_open'] is True and feature['worker_ambient_authority'] is False,
+                'installed private stream descriptor differs')
+        proof['private_stream_host']=check_installed_task_streams(run,root,resources,report['doctor']['native_compiler'])
 
     def structured_task_file_reads():
         from sdk_task_file_migration import check_installed_task_migration
