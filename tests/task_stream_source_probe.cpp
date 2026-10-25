@@ -1,5 +1,6 @@
 #include "nex/backend.h"
 #include "nex/task_frontend.h"
+#include "nex/task_native.h"
 #include "nex/task_reference.h"
 #include "nex/web.h"
 #include "nex_files.h"
@@ -33,6 +34,8 @@ int main(int argc,char **argv){try{
   }else if(mode=="build"){
     nex::BuildOptions options;options.profile=argc>5?argv[5]:"debug";options.taskLimits.workers=1;options.taskLimits.steps=16000000;options.taskLimits.timeoutMs=30000;
     auto result=nex::build(p,argv[3],options);output["executable"]=result.executable;output["mlir"]=result.mlir;output["llvm"]=result.llvm;
+  }else if(mode=="emit"){
+    output["mlir"]=nex::emitTaskNativeStep(p,argc>5?argv[5]:"main").mlir;
   }else if(mode=="typescript"){
     auto emitted=nex::emitTypeScript(p,{{"main","main"}});output["typescript"]=emitted.source;
   }else if(mode!="check")throw nex::Error("E_OPTION","unsupported write probe mode");

@@ -46,7 +46,7 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
       throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
 #endif
     }
-    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign)));
+    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream)));
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;

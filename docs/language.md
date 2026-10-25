@@ -1,3 +1,17 @@
+# Development0.133.4: precise private024 task file requirements
+
+ABI5 image read/write flags and standalone build metadata now classify checked
+reachable task instructions consistently. Read/open-read and write/open-write/
+append/flush have separate flags; seek/size/close/is_open retain the existing
+opened owner without requesting another root read/write grant. All stream
+operations set the stream image flag and enable the owning task IO machinery.
+Unreachable helpers cannot add grants. Declared effects and image metadata do
+not grant OS authority or upgrade a read-only file. Public023/default, retained
+ABI3/4 descriptors and their build metadata, grammar and history stay unchanged.
+Public024, physical-close offload, provider/capture/package/debug/profile and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, accelerator, UI/mobile, Studio and converter requirements remain open.
+
 # Private024 source stream integration (development0.133.3)
 
 Explicit C++ source APIs may select TaskStreams024. Ordinary CLI/default projects

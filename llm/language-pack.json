@@ -2152,6 +2152,36 @@
       "ABI5 provider/capture/package/debug/profile contracts",
       "matching full regression, fresh sanitizers, installed SDK and platform acceptance",
       "streaming network/DB and task HTTP handlers"
-    ]
+    ],
+    "image_requirements": {
+      "scope": "reachable checked native task instructions",
+      "read_operations": [
+        "file_read_text",
+        "file_read_bytes",
+        "file_open_read",
+        "file_read"
+      ],
+      "write_operations": [
+        "file_write_text",
+        "file_write_bytes",
+        "file_open_write",
+        "file_open_append",
+        "file_write",
+        "file_flush"
+      ],
+      "owner_operations": [
+        "file_seek",
+        "file_size",
+        "file_close",
+        "file_is_open"
+      ],
+      "stream_image_flag_for_all_stream_operations": true,
+      "standalone_metadata": [
+        "task_file_reads",
+        "task_file_writes",
+        "task_file_streams"
+      ],
+      "declarations_grant_OS_authority": false
+    }
   }
 }
