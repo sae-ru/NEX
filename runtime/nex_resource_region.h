@@ -9,6 +9,7 @@
 namespace nexrt {
 template<class> class ResourceOwner;
 class ExternalResource;
+class TextFiles;
 class ResourceAccess;
 namespace resource_detail {
 struct ControlBase;struct SettlementGuard;
@@ -20,6 +21,8 @@ class ResourceSettlement {
   std::shared_ptr<resource_detail::SettlementState> state;
   friend class ResourceAccess;
   friend class ExternalResource;
+  friend class TextFiles;
+class TextFiles;
   friend struct resource_detail::SettlementGuard;
   static ResourceSettlement pending(){ResourceSettlement result;result.state=std::make_shared<resource_detail::SettlementState>();return result;}
 public:
@@ -50,6 +53,8 @@ class ResourceRegionOwner {
   std::shared_ptr<resource_region_detail::Owner> owner;
   friend class ResourceRegionAuthority;
   friend class ExternalResource;
+  friend class TextFiles;
+class TextFiles;
   explicit ResourceRegionOwner(std::shared_ptr<resource_region_detail::Owner>);
   void attach(ResourceSettlement)const;
   void publish(ResourceRevocation)const;

@@ -125,7 +125,7 @@ struct TaskGroup::Impl {
     bool resourceRetirementStarted=false,resourceRetirementRequested=false,resourceRetirementInFlight=false;
   };
   std::unique_ptr<ResourceRegion> resourceRoot;
-  bool sourceResourceValues=false;
+  bool sourceResourceValues=false,sourceFileValues=false;
   size_t resourceJobHead=none,resourceJobTail=none;
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
@@ -739,10 +739,10 @@ struct TaskGroup::Impl {
 #endif
     require();
     ValueFlush flush{this};
-    std::vector<ExternalResource> transfer;
+    TaskResourceSnapshot transfer;
     if(kind==Awaiter::Send){Scope targetScope;TaskGroup *group;bool resourceValues;
       {std::lock_guard lock(mutex);if(target>=pipes.size()||index>=jobs.size())throw Trap("E_TASK_SCOPE","invalid channel/task",0);group=jobs[index]->group;resourceValues=sourceResourceValues;if(pipes[target]->scope!=none)targetScope=Scope(group->impl,pipes[target]->scope);}
-      if(resourceValues){transfer=collectTaskSnapshot(*group,value,targetScope);group->transferSourceResources(transfer,targetScope,false,false);}
+      if(resourceValues){transfer=collectTaskSnapshot(*group,value,targetScope);group->transferSourceResources(transfer.external,targetScope,false,false,transfer.files);}
       else taskValue(*group,value,targetScope);
     }
     std::lock_guard lock(mutex);
@@ -774,7 +774,7 @@ struct TaskGroup::Impl {
     auto &pipe=*pipes[target];scopeAccess(pipe.scope);
     if(kind==Awaiter::Send){
       if(pipe.closed)return false;
-      if(!transfer.empty())ExternalResource::transferRegions(transfer,resourceContext(job).authority(),pipe.scope==none?resourceRoot->authority():regions[pipe.scope]->resources->authority());
+      if(!transfer.empty())ExternalResource::transferRegions(transfer.external,resourceContext(job).authority(),pipe.scope==none?resourceRoot->authority():regions[pipe.scope]->resources->authority(),true,transfer.files);
       if(pipe.receiveHead!=none){size_t receiver=pipe.receiveHead;setEvent(receiver,{true,std::move(value)});wake(receiver);job.event.present=true;return false;}
       if(pipe.count<pipe.buffer.size()){pipe.push(std::move(value));job.event.present=true;return false;}
       job.pending=std::move(value);link(index,Send,target);return parkValues(index,flush);
@@ -869,13 +869,14 @@ TaskGroup::Scope TaskGroup::currentScopeOrEmpty()const{
   return Scope(impl,impl->jobs[activeTaskIndex]->scope);
 }
 TaskGroup::Scope TaskGroup::currentScope()const{auto scope=currentScopeOrEmpty();if(scope.empty())throw Trap("E_TASK_SCOPE","no current logical task scope",0);return scope;}
-void TaskGroup::enableResourceRegions(ResourceRegionAuthority requestParent,bool sourceValues){
+void TaskGroup::enableResourceRegions(ResourceRegionAuthority requestParent,bool sourceValues,bool sourceFiles){
+  if(sourceFiles&&!sourceValues)throw DataError("E_TASK_STATE","file snapshots require source resource ownership");
   impl->require(true);ResourceRegionLimits limits;limits.tasks=impl->ready.size();
   auto resources=requestParent?std::make_unique<ResourceRegion>(ResourceRegion::inRequest(ResourceRegionFamily::Native,requestParent,limits)):
     std::make_unique<ResourceRegion>(ResourceRegionFamily::Native,limits);
   std::lock_guard lock(impl->mutex);
   if(impl->resourceRoot||!impl->jobs.empty()||impl->sealed||impl->finished)throw Trap("E_TASK_SCOPE","resource regions must be enabled once before spawning tasks",0);
-  impl->resourceRoot=std::move(resources);impl->sourceResourceValues=sourceValues;
+  impl->resourceRoot=std::move(resources);impl->sourceResourceValues=sourceValues;impl->sourceFileValues=sourceFiles;
 }
 ResourceRegionAuthority TaskGroup::resourceAuthority()const{
   return hostOperation({},[&]{
@@ -888,8 +889,9 @@ ResourceRegionAuthority TaskGroup::resourceAuthority()const{
   });
 }
 
-void TaskGroup::transferSourceResources(std::span<const ExternalResource> values,const Scope &target,bool scopeReturn,bool commit)const{
-  if(values.empty())return;
+bool TaskGroup::allowsSourceFiles()const{std::lock_guard lock(impl->mutex);return impl->sourceFileValues;}
+void TaskGroup::transferSourceResources(std::span<const ExternalResource> values,const Scope &target,bool scopeReturn,bool commit,std::span<const FileResource> files)const{
+  if(values.empty()&&files.empty())return;
   impl->require();const auto destination=target.empty()?none:scopeIndex(target);
   ResourceRegionAuthority actor,receiver;
   {
@@ -903,7 +905,7 @@ void TaskGroup::transferSourceResources(std::span<const ExternalResource> values
     }else actor=impl->resourceRoot->authority();
     if(!receiver)receiver=destination==none?impl->resourceRoot->authority():impl->regions[destination]->resources->authority();
   }
-  ExternalResource::transferRegions(values,actor,receiver,commit);
+  ExternalResource::transferRegions(values,actor,receiver,commit,files);
 }
 void TaskGroup::requireScope(const Scope &scope)const{impl->require();auto index=scopeIndex(scope);std::lock_guard lock(impl->mutex);impl->scopeAccess(index);}
 bool TaskGroup::scopeContains(const Scope &ancestor,const Scope &descendant)const{

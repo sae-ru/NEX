@@ -30,9 +30,9 @@ struct TaskValueAccess {
 Value taskScopeValue(TaskGroup &group,const TaskGroup::Scope &scope){return TaskValueAccess::scope(group,scope);}
 Value taskTicketValue(TaskGroup &group,const TaskGroup::Ticket &ticket,int64_t kind){return TaskValueAccess::ticket(group,ticket,kind);}
 Value taskChannelValue(TaskGroup &group,const TaskGroup::Channel &channel,int64_t kind){return TaskValueAccess::channel(group,channel,kind);}
-std::vector<ExternalResource> collectTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target){
+TaskResourceSnapshot collectTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target){
   std::vector<Value> pending{value};std::unordered_set<const Data*> seen;size_t members=1;
-  std::vector<ExternalResource> resources;std::unordered_set<uint64_t> resourceIds;
+  TaskResourceSnapshot resources;std::unordered_set<uint64_t> resourceIds;
   while(!pending.empty()){
     auto next=std::move(pending.back());pending.pop_back();
     if(next.tag==Value::Floating){(void)next.floating();continue;}
@@ -45,11 +45,18 @@ std::vector<ExternalResource> collectTaskSnapshot(TaskGroup &group,const Value &
     auto kind=next.object->kind;
     if(kind==Data::External){const auto &owner=externalResource(next.object);
       if(resourceIds.insert(owner.identity()).second){
-        if(resources.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","task snapshot exceeds4096 distinct resource owners");
-        resources.push_back(owner);
+        if(resources.external.size()+resources.files.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","task snapshot exceeds4096 distinct resource owners");
+        resources.external.push_back(owner);
       }
     }
-    if(kind==Data::File)throw DataError("E_TASK_VALUE","task snapshot cannot contain file authority");
+    if(kind==Data::File){
+      if(!group.allowsSourceFiles())throw DataError("E_TASK_VALUE","task snapshot cannot contain file authority");
+      const auto &file=fileResource(next.object);
+      if(resourceIds.insert(file.identity()).second){
+        if(resources.external.size()+resources.files.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","task snapshot exceeds4096 distinct resource owners");
+        resources.files.push_back(file);
+      }
+    }
     if(kind==Data::TaskScope||kind==Data::Task||kind==Data::Channel){
       const auto &cap=taskData(next,kind);group.requireScope(cap.scope);
       if(target.empty()||!group.scopeContains(cap.scope,target))throw DataError("E_TASK_SCOPE","task capability escapes its logical owner scope");
@@ -60,5 +67,5 @@ std::vector<ExternalResource> collectTaskSnapshot(TaskGroup &group,const Value &
   return resources;
 }
 void validateTaskSnapshot(TaskGroup &group,const Value &value,const TaskGroup::Scope &target,bool scopeReturn){
-  auto resources=collectTaskSnapshot(group,value,target);group.transferSourceResources(resources,target,scopeReturn);
+  auto resources=collectTaskSnapshot(group,value,target);group.transferSourceResources(resources.external,target,scopeReturn,true,resources.files);
 }

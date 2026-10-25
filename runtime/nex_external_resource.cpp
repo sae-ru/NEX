@@ -1,4 +1,5 @@
 #include "nex_external_resource.h"
+#include "nex_file_resource.h"
 #include "nex_value.h"
 #include <unordered_set>
 
@@ -106,8 +107,8 @@ void ExternalResource::checkRegion(const ResourceRegionAuthority &actor)const{
 void ExternalResource::promoteRegion(const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target)const{
   region.checkPromotion(actor,target);transferRegions(std::span<const ExternalResource>(this,1),actor,target);
 }
-void ExternalResource::transferRegions(std::span<const ExternalResource> values,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit){
-  if(values.size()>4096)throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer batch exceeds4096 owners");
+void ExternalResource::transferRegions(std::span<const ExternalResource> values,const ResourceRegionAuthority &actor,const ResourceRegionAuthority &target,bool commit,std::span<const FileResource> files){
+  if(values.size()>4096||files.size()>4096-values.size())throw DataError("E_RESOURCE_REGION_LIMIT","resource transfer batch exceeds4096 owners");
   std::vector<ResourceRegionOwner> owners;owners.reserve(values.size());
   std::unordered_set<uint64_t> unique;
   auto append=[&](uint64_t identity,const ResourceRegionOwner &owner){
@@ -123,6 +124,7 @@ void ExternalResource::transferRegions(std::span<const ExternalResource> values,
       for(const auto &entry:value.dependencies->entries)append(entry.identity,entry.region);
     }
   }
+  for(const auto &file:files){file.checkRegion(actor);append(file.identity(),file.region);}
   ResourceRegionOwner::transfer(owners,actor,target,commit);
 }
 const std::string &ExternalResource::typeName()const noexcept{static const std::string empty;return type?type->name:empty;}

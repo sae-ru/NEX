@@ -35,8 +35,8 @@ struct Analysis {
   V unknown(const Type &type){
     auto value=std::make_shared<Value>();
     value->opaque=containsAuthority(type)||type.kind==Type::Function||containsParameter(type);
-    value->file=supportsTaskForeignCalls(p)?containsFile(p,type):containsNonTaskResource(p,type);
-    value->resource=supportsTaskForeignCalls(p)&&containsExternalResource(p,type);
+    value->file=!supportsTaskFileStreams(p)&&(supportsTaskForeignCalls(p)?containsFile(p,type):containsNonTaskResource(p,type));
+    value->resource=(supportsTaskForeignCalls(p)&&containsExternalResource(p,type))||(supportsTaskFileStreams(p)&&containsFile(p,type));
     return value;
   }
   bool containsAuthority(const Type &type)const{

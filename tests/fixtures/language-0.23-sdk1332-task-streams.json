@@ -1,0 +1,39 @@
+{
+  "schema": "nex.genuine023-stream-migration-fixture/1",
+  "producer_toolchain": "0.133.2",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "29ff22fd9d6b20eaea5b57d7f951d865c3619391da98b26e6f140f6db00f68ed",
+  "SQL_sha256": "863b6f1eb98c1192a398edac12c13357316bcd3334c8e4f1bd1d5f31593aae2a",
+  "revisions": [
+    "07d62dab4f00fb77ac3ae9f8fde6b64dade4a91fe2328179b746a9c527914688",
+    "ffcb45bd454ae10de29bc312d037eb21ff56bcd4494c50e964e7cace8fa14ef3",
+    "44f29ed9d510f6585385a9a23e81102ff30ab72e6b4d719a9e7725b6bbe25fb4"
+  ],
+  "head": "44f29ed9d510f6585385a9a23e81102ff30ab72e6b4d719a9e7725b6bbe25fb4",
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 0,
+    "graph_edges": 3,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 1,
+    "nodes": 3,
+    "operation_functions": 3,
+    "operation_ids": 20,
+    "operation_versions": 26,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "source": "module stream_migration;server fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return 42;}\n",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex"
+  },
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false
+}

@@ -1,3 +1,17 @@
+# Private024 source stream integration (development0.133.3)
+
+Explicit C++ source APIs may select TaskStreams024. Ordinary CLI/default projects
+remain language023; changing nex.json does not enable024. The existing stream
+syntax suspends inside server task/fs functions. Files created by such opens
+have real logical owners, physical request/root grants and retirement fences.
+Native ABI5 appends stream requests and requires explicit stream bits. Retained
+ABI3/4 masks and public023 stream rejection are unchanged. File-bearing source
+captures/results/futures/channels/closures use atomic mixed external/file owner
+transfer; no file authority crosses browser/wire/FFI/unstructured parallel paths.
+Source/physical conformance, explicit transactional migration, public publication,
+provider/capture/package/debug/profile contracts and current SDK/platform delivery
+remain pending. This is implemented private code, not a completed language release.
+
 # Current language0.23
 
 Language023 retains the existing grammar and adds checked whole-file text/byte

@@ -19,5 +19,5 @@ Value taskScopeValue(TaskGroup &,const TaskGroup::Scope &);
 Value taskTicketValue(TaskGroup &,const TaskGroup::Ticket &,int64_t resultKind);
 Value taskChannelValue(TaskGroup &,const TaskGroup::Channel &,int64_t payloadKind);
 void validateTaskSnapshot(TaskGroup &,const Value &,const TaskGroup::Scope &target,bool scopeReturn=false);
-std::vector<ExternalResource> collectTaskSnapshot(TaskGroup &,const Value &,const TaskGroup::Scope &target);
+TaskResourceSnapshot collectTaskSnapshot(TaskGroup &,const Value &,const TaskGroup::Scope &target);
 }

@@ -78,23 +78,23 @@ class PreparedTaskFileStream {
     }
   };
 public:
-  static PreparedTaskFileStream read(const FileResource &file,int64_t maximum){
-    auto lease=file.lease();lease.checkRead(maximum);
+  static PreparedTaskFileStream read(const FileResource &file,int64_t maximum,const ResourceRegionAuthority &actor={}){
+    auto lease=file.leaseInRegion(actor);lease.checkRead(maximum);
     return PreparedTaskFileStream(std::make_shared<State>(std::move(lease),Action::Read,maximum,nullptr,size_t(maximum),size_t(maximum)));
   }
-  static PreparedTaskFileStream write(const FileResource &file,std::span<const uint8_t> input){
-    auto lease=file.lease();lease.checkWrite(input.size());auto payload=std::make_shared<const Payload>(input);
+  static PreparedTaskFileStream write(const FileResource &file,std::span<const uint8_t> input,const ResourceRegionAuthority &actor={}){
+    auto lease=file.leaseInRegion(actor);lease.checkWrite(input.size());auto payload=std::make_shared<const Payload>(input);
     return PreparedTaskFileStream(std::make_shared<State>(std::move(lease),Action::Write,0,std::move(payload),input.size()+8,8));
   }
-  static PreparedTaskFileStream seek(const FileResource &file,int64_t offset){
-    auto lease=file.lease();lease.checkSeek(offset);
+  static PreparedTaskFileStream seek(const FileResource &file,int64_t offset,const ResourceRegionAuthority &actor={}){
+    auto lease=file.leaseInRegion(actor);lease.checkSeek(offset);
     return PreparedTaskFileStream(std::make_shared<State>(std::move(lease),Action::Seek,offset,nullptr,8,8));
   }
-  static PreparedTaskFileStream size(const FileResource &file){
-    return PreparedTaskFileStream(std::make_shared<State>(file.lease(),Action::Size,0,nullptr,8,8));
+  static PreparedTaskFileStream size(const FileResource &file,const ResourceRegionAuthority &actor={}){
+    return PreparedTaskFileStream(std::make_shared<State>(file.leaseInRegion(actor),Action::Size,0,nullptr,8,8));
   }
-  static PreparedTaskFileStream flush(const FileResource &file){
-    auto lease=file.lease();lease.checkWrite(0);
+  static PreparedTaskFileStream flush(const FileResource &file,const ResourceRegionAuthority &actor={}){
+    auto lease=file.leaseInRegion(actor);lease.checkWrite(0);
     return PreparedTaskFileStream(std::make_shared<State>(std::move(lease),Action::Flush,0,nullptr,0,0));
   }
   size_t reservation()const noexcept{return state?state->reservation:0;}
@@ -121,10 +121,12 @@ public:
            (retained->action==Action::Seek&&count!=retained->argument))throw DataError("E_TASK_VALUE","file stream scalar violates its request");
         value=success(Value(count));
       }
-      retained->lease.check();if(callback)callback();return value;
+      retained->lease.check();if(callback)callback();retained->lease.check();return value;
     }catch(const DataError &error){
       if(error.code!="E_RESOURCE_CLOSED")throw;
-      if(callback)callback();return failure(error.code,error.what());
+      if(callback)callback();
+      try{retained->lease.check();}catch(const DataError &revoked){if(revoked.code!="E_RESOURCE_CLOSED")throw;}
+      return failure(error.code,error.what());
     }
   }
 };
@@ -134,10 +136,11 @@ public:
 class PreparedTaskFileOpen {
   struct State {
     FileOpenLease lease;
+    ResourceRegionAuthority region;
     std::mutex mutex;
     std::optional<FileResource> file;
     bool started=false,completed=false,admitted=false,discarded=false;
-    explicit State(FileOpenLease lease):lease(std::move(lease)){}
+    explicit State(FileOpenLease lease,ResourceRegionAuthority region):lease(std::move(lease)),region(std::move(region)){}
   };
   std::shared_ptr<State> state;
   class Operation final:public TaskExternalOperation {
@@ -151,7 +154,7 @@ class PreparedTaskFileOpen {
       }
       control.checkpoint();TaskExternalResult raw;std::optional<FileResource> file;
       auto poll=[&]{control.checkpoint();state->lease.check();};
-      try{state->lease.check();file=state->lease.open(poll);poll();}
+      try{state->lease.check();file=state->lease.openInRegion(state->region,poll);poll();}
       catch(const DataError &error){
         if(!task_file_stream_detail::ordinary(error.code))throw;
         raw.errorCode=error.code;raw.errorMessage=error.what();file.reset();
@@ -164,7 +167,7 @@ class PreparedTaskFileOpen {
     }
   };
 public:
-  explicit PreparedTaskFileOpen(FileOpenLease lease){lease.check();state=std::make_shared<State>(std::move(lease));}
+  explicit PreparedTaskFileOpen(FileOpenLease lease,ResourceRegionAuthority region={}){lease.check();if(region)region.check();state=std::make_shared<State>(std::move(lease),std::move(region));}
   PreparedTaskFileOpen(const PreparedTaskFileOpen&)=delete;
   PreparedTaskFileOpen &operator=(const PreparedTaskFileOpen&)=delete;
   PreparedTaskFileOpen(PreparedTaskFileOpen&&)=default;
@@ -190,10 +193,10 @@ public:
     }
     if(!raw.bytes.empty()||raw.errorCode.empty()!=bool(file)||(!raw.errorCode.empty()&&!task_file_stream_detail::ordinary(raw.errorCode)))
       throw DataError("E_TASK_VALUE","file open wakeup differs from its typed outcome");
-    if(callback)callback();retained->lease.check();
+    if(callback)callback();retained->lease.check();if(retained->region)retained->region.check();
     if(!raw.errorCode.empty())throw DataError(raw.errorCode,raw.errorMessage);
     if(!file->isOpen())throw DataError("E_RESOURCE_SCOPE","newly opened file has been revoked");
-    if(callback)callback();retained->lease.check();return std::move(*file);
+    if(callback)callback();retained->lease.check();if(retained->region)retained->region.check();return std::move(*file);
   }
 };
 }

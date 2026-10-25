@@ -1,3 +1,6 @@
+(* Private024 uses this same syntax for source file stream suspension and
+   owned file task transport; public023/default and retained parsing stay intact.
+   Explicit migration/publication and complete delivery remain pending. *)
 (* Public language0.23 keeps this grammar and enables whole-file write
    suspension in server task/fs functions. Retained022 parsing is unchanged;
    explicit migration and versioned ABI4 providers/plans are required. *)

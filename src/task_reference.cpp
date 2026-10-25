@@ -4,6 +4,7 @@
 #include "nex_task_reference_value.h"
 #include "nex_task_file_read.h"
 #include "nex_task_file_write.h"
+#include "nex_task_file_source.h"
 #include "nex_task_foreign.h"
 #include "nex_host.h"
 #include <algorithm>
@@ -253,6 +254,7 @@ struct Reference {
 #ifndef _WIN32
     std::unique_ptr<nexrt::PreparedTaskFileRead> fileRead;
     std::unique_ptr<nexrt::PreparedTaskFileWrite> fileWrite;
+    std::unique_ptr<nexrt::PreparedSourceTaskFile> fileStream;
 #endif
   };
   struct Region {
@@ -413,7 +415,7 @@ struct Reference {
   }
   void snapshot(const RV &root,size_t target,size_t current,const Job *actorJob=nullptr,bool receiverIsJobRoot=false,bool transfer=true){
     std::vector<RV> work{root};std::unordered_set<const RD*> seen;size_t members=1;
-    std::vector<nexrt::ExternalResource> owners;std::unordered_set<uint64_t> ownerIds;
+    std::vector<nexrt::ExternalResource> owners;std::vector<nexrt::FileResource> files;std::unordered_set<uint64_t> ownerIds;
     while(!work.empty()){
       auto v=std::move(work.back());work.pop_back();charge(1);
       if(v.tag==RV::Integer)continue;
@@ -427,11 +429,18 @@ struct Reference {
         if(!supportsTaskForeignCalls(program))throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
         const auto &owner=nexrt::externalResource(v.object);
         if(ownerIds.insert(owner.identity()).second){
-          if(owners.size()==4096)throw Error("E_RESOURCE_REGION_LIMIT","reference snapshot exceeds4096 distinct resource owners");
+          if(owners.size()+files.size()==4096)throw Error("E_RESOURCE_REGION_LIMIT","reference snapshot exceeds4096 distinct resource owners");
           owners.push_back(owner);
         }
       }
-      if(kind==RD::File)throw Error("E_TASK_VALUE","reference task cannot transport file authority");
+      if(kind==RD::File){
+        if(!supportsTaskFileStreams(program))throw Error("E_TASK_VALUE","reference task cannot transport file authority");
+        const auto &file=nexrt::fileResource(v.object);
+        if(ownerIds.insert(file.identity()).second){
+          if(owners.size()+files.size()==4096)throw Error("E_RESOURCE_REGION_LIMIT","reference snapshot exceeds4096 distinct resource owners");
+          files.push_back(file);
+        }
+      }
       if(kind==RD::TaskScope||kind==RD::Task||kind==RD::Channel){
         capability(v,kind,current);
         auto scope=TaskReferenceAccess::scope(TaskReferenceAccess::get(v,kind,identity));
@@ -439,14 +448,14 @@ struct Reference {
       }
       members+=v.object->values.size();work.insert(work.end(),v.object->values.begin(),v.object->values.end());
     }
-    if(!owners.empty()){
+    if(!owners.empty()||!files.empty()){
       if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource transfer requires enabled ownership regions");
       // Logical resource revocation is independent of pure task execution.
       // Resolve authority only after the complete graph requires owner transfer.
       auto actor=actorJob?resourceAuthority(*actorJob):resourceRoot->authority();
       auto receiver=receiverIsJobRoot?actorJob->resources->authority():
           target==none?resourceRoot->authority():regions.at(target).resources->authority();
-      nexrt::ExternalResource::transferRegions(owners,actor,receiver,transfer);
+      nexrt::ExternalResource::transferRegions(owners,actor,receiver,transfer,files);
     }
   }
   void enqueue(size_t i){auto &j=*jobs[i];if(j.state==Ready&&!j.queued){ready.push_back(i);j.queued=true;}}
@@ -597,6 +606,7 @@ struct Reference {
   bool sourceHostRequest(const std::string &operation)const{
     if(supportsTaskFileReads(program)&&taskFileReadOperation(operation))return true;
     if(supportsTaskFileWrites(program)&&taskFileWriteOperation(operation))return true;
+    if(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(operation))return true;
     return supportsTaskForeignCalls(program)&&!operation.empty()&&!taskBuiltins().contains(operation)&&!taskFileBuiltin(operation)&&program.function(operation).foreign.has_value();
   }
   void dispatch(size_t i){
@@ -609,6 +619,25 @@ struct Reference {
       j.foreignCall=std::move(prepared);j.external=ticket;j.externalScope=j.current;
       if(j.externalScope!=none)++regions.at(j.externalScope).external;
       return;
+    }
+    if(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(r.operation)){
+#ifdef _WIN32
+      throw Error("E_TASK_TARGET","source file streams require macOS or Linux",r.span);
+#else
+      try{
+        auto prepared=std::make_unique<nexrt::PreparedSourceTaskFile>(r.operation,r.arguments,fileGrant,writeGrant,resourceAuthority(j));
+        checkControl(r.span);
+        if(!prepared->external()){auto value=prepared->admit({},[&]{checkControl(r.span);});answer(i,std::move(value));return;}
+        if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
+        auto ticket=external->submit(i,prepared->operation(),prepared->reservation());
+        j.fileStream=std::move(prepared);j.external=ticket;j.externalScope=j.current;
+        if(j.externalScope!=none)++regions.at(j.externalScope).external;
+        j.state=External;return;
+      }catch(const nexrt::DataError &error){
+        if(!nexrt::task_file_stream_detail::ordinary(error.code))throw Error(error.code,error.what(),r.span);
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+      }
+#endif
     }
     if(taskFileWriteOperation(r.operation)){
       if(!supportsTaskFileWrites(program))throw Error("E_TASK_UNIMPLEMENTED","source task file writes require language023",r.span);
@@ -780,13 +809,14 @@ struct Reference {
       if(ticket->owner>=jobs.size()||!jobs[ticket->owner]->external||*jobs[ticket->owner]->external!=*ticket)
         throw Error("E_TASK_STATE","reference external completion has no matching source owner");
       auto i=ticket->owner;auto &job=*jobs[i];auto span=job.request.span;
-      const bool fileCompletion=taskFileReadOperation(job.request.operation)||taskFileWriteOperation(job.request.operation);
+      const bool fileCompletion=taskFileReadOperation(job.request.operation)||taskFileWriteOperation(job.request.operation)||(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(job.request.operation));
       auto raw=external->take(*ticket);job.external.reset();
       auto foreignPrepared=std::move(job.foreignCall);job.foreignCall.reset();
       const bool sourceHostCompletion=fileCompletion||foreignPrepared.has_value();
 #ifndef _WIN32
       auto prepared=std::move(job.fileRead);
       auto preparedWrite=std::move(job.fileWrite);
+      auto preparedStream=std::move(job.fileStream);
 #endif
       if(job.externalScope!=none){
         auto &scope=regions.at(job.externalScope);
@@ -810,6 +840,11 @@ struct Reference {
           checkControl(span);answer(i,std::move(value));continue;
         }
 #ifndef _WIN32
+        if(preparedStream){
+          if(physicalFailure)throw *physicalFailure;
+          auto value=preparedStream->admit(std::move(raw),[&]{checkControl(span);});
+          checkControl(span);answer(i,std::move(value));continue;
+        }
         if(preparedWrite){
           if(physicalFailure)throw *physicalFailure;
           auto value=preparedWrite->admit(std::move(raw));checkControl(span);
@@ -902,7 +937,7 @@ struct Reference {
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){
-          if(!reads||!(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text))))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
+          if(!reads||!(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text))||(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(e->text))))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
 #ifdef _WIN32
           throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",e->span);
 #endif

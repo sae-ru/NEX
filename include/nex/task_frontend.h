@@ -13,6 +13,8 @@ bool isPublicTaskLanguage(const Program &program);
 bool supportsTaskFileReads(const Program &program);
 // Explicit private023 integration; public022 and historical execution stay intact.
 bool supportsTaskFileWrites(const Program &program);
+// Explicit private024 source integration; ordinary CLI stays023.
+bool supportsTaskFileStreams(const Program &program);
 bool taskFileWriteOperation(const std::string &operation);
 // Private022 source prototype; current public language021 remains unchanged.
 bool supportsTaskForeignCalls(const Program &program);

@@ -16,7 +16,7 @@ inline constexpr const char *languageVersion = "0.23";
 inline constexpr const char *taskCandidateLanguageVersion = "0.23";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023 };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024 };
 inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TaskWrites023;
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };

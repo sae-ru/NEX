@@ -59,7 +59,7 @@ public:
   Value result;
   int64_t expectedResult=-1,returnDestination=-1;
   size_t depth=1;
-  int64_t requirements=0;
+  int64_t requirements=0,abi=0;
   std::shared_ptr<const TaskFrameHostContext> host;
   std::unique_ptr<NativeTaskFrame> pendingCall;
   std::optional<NativeTaskRequest> pendingRequest;

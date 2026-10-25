@@ -74,6 +74,7 @@ struct TaskAstMachine::Impl {
       return actual==nexrt::Data::Success&&kind(*type.element,value.object->values[0]);
     case Type::Function:return actual==nexrt::Data::Closure;
     case Type::Bytes:return actual==nexrt::Data::Bytes;
+    case Type::File:return actual==nexrt::Data::File;
     case Type::TaskScope:return actual==nexrt::Data::TaskScope;
     case Type::Task:return actual==nexrt::Data::Task;
     case Type::Channel:return actual==nexrt::Data::Channel;
@@ -92,7 +93,7 @@ struct TaskAstMachine::Impl {
     const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
     for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
-    auto unsupported=[&](const Type &type){return supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type);};
+    auto unsupported=[&](const Type &type){return !supportsTaskFileStreams(program)&&(supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type));};
     if(function.foreign||unsupported(Type::function({},function.result))||
        std::any_of(function.params.begin(),function.params.end(),[&](const auto &p){return unsupported(p.type);})||
        std::any_of(function.captures.begin(),function.captures.end(),[&](const auto &p){return unsupported(p.type);}))
@@ -196,7 +197,7 @@ struct TaskAstMachine::Impl {
               throw Error("E_FUNCTION","AST callable target differs from its checked signature",e->span);
             push(target,args,&closure);break;
           }
-          const bool read=e->kind==Expr::Call&&(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text)));
+          const bool read=e->kind==Expr::Call&&(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text))||(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(e->text)));
           if(read&&(!supportsTaskFileReads(program)||frame.function->realm!="server"||
              !frame.function->effects.contains("task")||!frame.function->effects.contains("fs")))
             throw Error("E_TASK_UNIMPLEMENTED","AST file reads require a language020 server task/fs function",e->span);

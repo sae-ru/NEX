@@ -1,6 +1,7 @@
 #include "nex_task_frame.h"
 #include "nex_task_file_read.h"
 #include "nex_task_file_write.h"
+#include "nex_task_file_source.h"
 #ifdef NEX_FOREIGN_ENABLED
 #include "nex_task_foreign.h"
 #endif
@@ -33,7 +34,7 @@ const TaskCodeDescriptor &checkedCode(const void *pointer){
   if(!validTaskCodeRequirements(d.abi,d.requirements)||!d.step||d.slotCount<0||d.slotCount>65536||d.parameterCount<0||d.parameterCount>d.slotCount||d.captureCount<0||d.captureCount>d.slotCount||d.resultKind<0||d.resultKind>4||(!d.kinds&&d.slotCount)||(!d.parameters&&d.parameterCount)||(!d.captures&&d.captureCount))throw DataError("E_TASK_STATE","invalid compiled task code descriptor");
   if((d.requirements&taskCodeDeclaredFs)&&!(d.requirements&taskCodeDeclaredTask))
     throw DataError("E_TASK_STATE","a synchronous filesystem definition cannot be a task continuation");
-  if((d.requirements&(taskCodeFileRead|taskCodeFileWrite))&&
+  if((d.requirements&(taskCodeFileRead|taskCodeFileWrite|taskCodeFileStream))&&
       (d.requirements&(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))!=(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))
       throw DataError("E_TASK_STATE",(d.requirements&taskCodeFileWrite)?"compiled file write descriptor requires an actual server task/fs declaration":"compiled file read descriptor requires an actual server task/fs declaration");
   if((d.requirements&taskCodeForeign)&&
@@ -50,7 +51,7 @@ struct CallDepth {
 };
 }
 NativeTaskFrame::NativeTaskFrame(const TaskCodeDescriptor &input,const std::vector<Value> &args,const Value &environment,std::shared_ptr<const TaskFrameHostContext> context):step(nullptr),host(std::move(context)){
-  const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;requirements=d.requirements;
+  const auto &d=checkedCode(&input);step=d.step;expectedResult=d.resultKind;requirements=d.requirements;abi=d.abi;
 #ifdef NEX_TASK_DEBUG_ENABLED
   debugCode=taskDebugCodeIndex(&d);
   if(taskDebugEnabled()&&debugCode==noTaskDebugIndex)throw DataError("E_TASK_STATE","task debugger descriptor is not registered for this image");
@@ -197,6 +198,33 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
         }catch(...){group.failHostOperation(std::current_exception());throw;}
         break;
       }
+      case TaskRequestKind::FileOpenRead:case TaskRequestKind::FileOpenWrite:case TaskRequestKind::FileOpenAppend:
+      case TaskRequestKind::FileRead:case TaskRequestKind::FileWrite:case TaskRequestKind::FileSeek:
+      case TaskRequestKind::FileSize:case TaskRequestKind::FileFlush:case TaskRequestKind::FileClose:case TaskRequestKind::FileIsOpen:{
+        try{
+#ifdef _WIN32
+        checked([&]{throw DataError("E_TASK_TARGET","task file streams require macOS or Linux");});
+#else
+        std::optional<PreparedSourceTaskFile> prepared;
+        checked([&]{
+          if(!current.host||current.abi!=taskCodeStreamABI||!(current.requirements&taskCodeFileStream))throw DataError("E_TASK_STATE","file stream has no checked source descriptor/host");
+          static const char *names[]={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};
+          auto name=names[int64_t(request.operation)-int64_t(TaskRequestKind::FileOpenRead)];
+          try{prepared.emplace(name,request.arguments,current.host->fileReads,current.host->fileWrites,group.resourceAuthority());}
+          catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;result=failure(error.code,error.what());}
+        });
+        if(prepared){
+          if(prepared->external()){
+            auto ticket=checked([&]{return group.submitExternal(prepared->operation(),prepared->reservation());});
+            auto raw=co_await group.awaitExternal(ticket).at(request.location);
+            result=checked([&]{return prepared->admit(std::move(raw),[&]{pollHostOperation(request.location);});});
+          }else result=checked([&]{return prepared->admit({},[&]{pollHostOperation(request.location);});});
+        }
+        checked([&]{pollHostOperation(request.location);});
+#endif
+        }catch(...){group.failHostOperation(std::current_exception());throw;}
+        break;
+      }
       case TaskRequestKind::FileWriteText:case TaskRequestKind::FileWriteBytes:{
         try{
 #ifdef _WIN32
@@ -318,10 +346,10 @@ void nex_task_closure_bind_at(nexrt::Handle *closure,void *code,const nexrt::Nat
 void nex_task_frame_pause_at(void *p,int64_t operation,nexrt::Handle *args,int64_t destination,int64_t kind,int64_t line,const nexrt::NativeSite *site){
   nexrt::hostOperation({line,site},[&]{
     auto &current=frame(p);
-    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::FileWriteBytes)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
+    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::FileIsOpen)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
     if(!args)throw nexrt::DataError("E_TASK_STATE","missing compiled request arguments");
     auto values=nexrt::readHandle(args);if(values.tag!=nexrt::Value::Object||!values.object||values.object->kind!=nexrt::Data::List)throw nexrt::DataError("E_TASK_STATE","compiled request arguments are not a list");
-    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0,1,1,0,2,2};
+    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0,1,1,0,2,2,1,1,1,2,2,2,1,1,1,1};
     if(operation==int64_t(nexrt::TaskRequestKind::Foreign)){
       if(!(current.requirements&nexrt::taskCodeForeign)||values.object->values.empty()||values.object->values.size()>4097||
           (kind==4?destination!=-1:destination<0||current.kinds[destination]!=kind))
@@ -339,6 +367,11 @@ void nex_task_frame_pause_at(void *p,int64_t operation,nexrt::Handle *args,int64
       const auto &path=values.object->values[0],&content=values.object->values[1];
       if(path.tag!=nexrt::Value::Object||!path.object||path.object->kind!=nexrt::Data::String||content.tag!=nexrt::Value::Object||!content.object||content.object->kind!=(operation==int64_t(nexrt::TaskRequestKind::FileWriteText)?nexrt::Data::String:nexrt::Data::Bytes))
         throw nexrt::DataError("E_TASK_STATE","compiled file write arguments have invalid concrete types");
+    }
+    if(operation>=int64_t(nexrt::TaskRequestKind::FileOpenRead)){
+      const bool boolean=operation==int64_t(nexrt::TaskRequestKind::FileClose)||operation==int64_t(nexrt::TaskRequestKind::FileIsOpen);
+      if(current.abi!=nexrt::taskCodeStreamABI||!(current.requirements&nexrt::taskCodeFileStream)||kind!=(boolean?1:3)||destination<0||current.kinds[destination]!=kind)
+        throw nexrt::DataError("E_TASK_STATE","file stream requires an ABI5 server task/fs descriptor and typed result slot");
     }
     current.pendingRequest=nexrt::NativeTaskRequest{nexrt::TaskRequestKind(operation),values.object->values,destination,kind,{line,site}};
   });

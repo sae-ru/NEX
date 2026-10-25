@@ -44,6 +44,7 @@ struct TaskBody {
   ~TaskBody(){if(handle)handle.destroy();}
 };
 struct TaskEvent {bool present=false;Value value;};
+struct TaskResourceSnapshot {std::vector<ExternalResource> external;std::vector<FileResource> files;bool empty()const noexcept{return external.empty()&&files.empty();}};
 class TaskGroup {
   friend struct TaskValueAccess;
   struct Impl;std::shared_ptr<Impl> impl;
@@ -112,11 +113,12 @@ public:
   // owns a separate region and waits physical retirement before publication.
   // An optional genuine request parent permits caller borrowing and reviewed
   // explicit return promotion without collapsing scheduler identities.
-  void enableResourceRegions(ResourceRegionAuthority requestParent={},bool sourceValues=false);
+  void enableResourceRegions(ResourceRegionAuthority requestParent={},bool sourceValues=false,bool sourceFiles=false);
+  bool allowsSourceFiles()const;
   ResourceRegionAuthority resourceAuthority()const;
   // Source adapter only, outside scheduler locks. A scope-return to the current
   // job's member scope targets that job root, rather than its enclosing scope.
-  void transferSourceResources(std::span<const ExternalResource>,const Scope &,bool scopeReturn=false,bool commit=true)const;
+  void transferSourceResources(std::span<const ExternalResource>,const Scope &,bool scopeReturn=false,bool commit=true,std::span<const FileResource> files={})const;
   Awaiter leaveScope(const Scope &,bool cancelChildren=false);
   bool scopeContains(const Scope &ancestor,const Scope &descendant)const;
   void requireScope(const Scope &)const;

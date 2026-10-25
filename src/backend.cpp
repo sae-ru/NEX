@@ -84,7 +84,7 @@ void validateNativeTaskFunction(const Program &p,const Function &function){
   if(supportsTaskFileReads(p)){checkType(function.result);for(const auto &parameter:function.params)checkType(parameter.type);for(const auto &capture:function.captures)checkType(capture.type);}
   std::function<void(E)> expression=[&](E value){if(!value)return;
     const bool fileOperation=taskFileReadOperation(value->text)||value->text=="file_write_text"||value->text=="file_write_bytes"||streamFileBuiltins().contains(value->text);
-    if(value->kind==Expr::Call&&fileOperation&&!(reads&&(taskFileReadOperation(value->text)||(supportsTaskFileWrites(p)&&taskFileWriteOperation(value->text)))))throw Error("E_TASK_UNIMPLEMENTED",supportsTaskFileWrites(p)?"task filesystem support is limited to checked server task/fs whole-file operations for the selected language":"task filesystem support is limited to server task/fs file_read_text and file_read_bytes",value->span);
+    if(value->kind==Expr::Call&&fileOperation&&!(reads&&(taskFileReadOperation(value->text)||(supportsTaskFileWrites(p)&&taskFileWriteOperation(value->text))||(supportsTaskFileStreams(p)&&streamFileBuiltins().contains(value->text)))))throw Error("E_TASK_UNIMPLEMENTED",supportsTaskFileWrites(p)?"task filesystem support is limited to checked server task/fs whole-file operations for the selected language":"task filesystem support is limited to server task/fs file_read_text and file_read_bytes",value->span);
     for(auto argument:value->args)expression(argument);
   };
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
@@ -764,7 +764,7 @@ class Emitter {
           {"task_yield",nexrt::TaskRequestKind::Yield},{"with_tasks",nexrt::TaskRequestKind::WithTasks},{"task_spawn",nexrt::TaskRequestKind::Spawn},{"task_wait",nexrt::TaskRequestKind::Wait},
           {"channel_new",nexrt::TaskRequestKind::ChannelNew},{"task_send",nexrt::TaskRequestKind::Send},{"task_recv",nexrt::TaskRequestKind::Receive},{"task_close",nexrt::TaskRequestKind::Close},{"task_cancel",nexrt::TaskRequestKind::Cancel},{"current_task_scope",nexrt::TaskRequestKind::CurrentScope},
           {"file_read_text",nexrt::TaskRequestKind::FileReadText},{"file_read_bytes",nexrt::TaskRequestKind::FileReadBytes},
-          {"file_write_text",nexrt::TaskRequestKind::FileWriteText},{"file_write_bytes",nexrt::TaskRequestKind::FileWriteBytes}};
+          {"file_write_text",nexrt::TaskRequestKind::FileWriteText},{"file_write_bytes",nexrt::TaskRequestKind::FileWriteBytes},{"file_open_read",nexrt::TaskRequestKind::FileOpenRead},{"file_open_write",nexrt::TaskRequestKind::FileOpenWrite},{"file_open_append",nexrt::TaskRequestKind::FileOpenAppend},{"file_read",nexrt::TaskRequestKind::FileRead},{"file_write",nexrt::TaskRequestKind::FileWrite},{"file_seek",nexrt::TaskRequestKind::FileSeek},{"file_size",nexrt::TaskRequestKind::FileSize},{"file_flush",nexrt::TaskRequestKind::FileFlush},{"file_close",nexrt::TaskRequestKind::FileClose},{"file_is_open",nexrt::TaskRequestKind::FileIsOpen}};
         auto arguments=call("nex_list_new",{},Type::list(Type::I64),op.span);
         if(op.foreign){
           const auto &target=p.function(op.operation);
@@ -871,6 +871,7 @@ public:
       }}
       const bool imageFileReads=taskImageFileReads||std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileReadOperation(op.operation);});});
       const bool imageFileWrites=taskImageFileWrites||std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileWriteOperation(op.operation);});});
+      const bool imageStreams=supportsTaskFileStreams(p)&&std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&streamFileBuiltins().contains(op.operation);});});
       const bool imageForeign=std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&op.foreign;});});
       for(const auto &ir:*tasks){
         std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
@@ -886,8 +887,10 @@ public:
         if(source.effects.contains("ffi"))requirements|=nexrt::taskCodeDeclaredFfi;
         if(supportsTaskForeignCalls(p)&&source.realm=="server"&&source.effects.contains("task")&&source.effects.contains("ffi"))requirements|=nexrt::taskCodeForeign;
         if(imageForeign)requirements|=nexrt::taskCodeImageForeign;
+        if(supportsTaskFileStreams(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileStream;
+        if(imageStreams){requirements|=nexrt::taskCodeImageFileStream|nexrt::taskCodeImageFileRead|nexrt::taskCodeImageFileWrite;}
         taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures),profiling?taskProfileSites.at(ir.name):""},
-          {supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
+          {supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
       }
       if(taskDebug){taskDebugMetadata(*tasks);if(!debugRegistryAccessor.empty()){
         auto registry=metadataArray("nex_task_debug_registry_data_","!llvm.struct<(i64, !llvm.ptr, i64, !llvm.ptr)>",{{int64_t(1),taskDebugTable,int64_t(tasks->size()),rawGlobal(debugComponent)}});
@@ -1160,7 +1163,7 @@ TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool app
     validateNativeTaskFunction(p,f);
     if(f.foreign)continue;
     auto body=lowerTaskFunction(p,f,true,taskDebug);
-    for(const auto &slot:body.slots)if(supportsTaskForeignCalls(p)?containsFile(p,slot.type):containsNonTaskResource(p,slot.type))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
+    for(const auto &slot:body.slots)if(!supportsTaskFileStreams(p)&&(supportsTaskForeignCalls(p)?containsFile(p,slot.type):containsNonTaskResource(p,slot.type)))throw Error("E_TASK_UNIMPLEMENTED","compiled task step has no file authority bridge",slot.span);
     if(f.effects.contains("task"))pure.erase(name);
     tasks.push_back(std::move(body));
   }
@@ -1193,6 +1196,7 @@ bool nativeTaskFileWrites(const Program &p,const std::set<std::string> &selected
 }
 NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &name,const std::string &contract){
   const auto &f=p.function(name);
+  if(supportsTaskFileStreams(p))throw Error("E_TASK_PROVIDER","private024 stream provider contracts are not published",f.span);
   if(!isPublicTaskLanguage(p)||!f.exported||f.closure||!f.captures.empty()||!f.effects.contains("task")||!f.typeParameters.empty()||
      std::any_of(f.typeArguments.begin(),f.typeArguments.end(),containsParameter)||!digestText(contract))
     throw Error("E_TASK_PROVIDER","static task exports require an explicit public concrete task function without captures",f.span);
@@ -1703,7 +1707,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   bool foreign=resourceOperations;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
   const bool taskFileReads=tasks&&files;
   const bool taskFileWrites=tasks&&nativeTaskFileWrites(p,names);
-  const auto taskExecutionABI=supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
+  const auto taskExecutionABI=supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
@@ -1718,19 +1722,19 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp","nex_files.cpp"});
-    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h","nex_task_file_write.h"});
+    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h","nex_task_file_write.h","nex_task_file_stream.h","nex_task_file_source.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
     if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
-  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
+  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
   if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"});}
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;
   for(const auto &file:components)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));for(const auto &file:headers)runtimeFiles[file]=readFile(resourceFile("runtime/"+file));
-  const std::vector<std::string> taskCohortFiles={"nex_resource.h","nex_resource_region.h","nex_resource_region.cpp","nex_external_resource.h","nex_external_resource.cpp","nex_resource_executor.h","nex_resource_executor.cpp","nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_task_file_write.h","nex_parallel.h","nex_parallel_value.h"};
+  const std::vector<std::string> taskCohortFiles={"nex_resource.h","nex_resource_region.h","nex_resource_region.cpp","nex_external_resource.h","nex_external_resource.cpp","nex_resource_executor.h","nex_resource_executor.cpp","nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_external.cpp","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_frame.cpp","nex_task_application.h","nex_task_application.cpp","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_files.cpp","nex_task_file_read.h","nex_task_file_write.h","nex_task_file_stream.h","nex_task_file_source.h","nex_parallel.h","nex_parallel_value.h"};
   if(taskProviders&&profiling){for(const auto &file:{"nex_task_profile.h","nex_task_profile.cpp","nex_task_profile_site.h"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));if(std::find(components.begin(),components.end(),"nex_task_profile.cpp")==components.end())components.push_back("nex_task_profile.cpp");}
   if(taskProviders&&options.taskDebug)for(const auto &file:{"nex_task_debug.h","nex_task_debug_site.h","nex_task_debug.cpp"})runtimeFiles[file]=readFile(resourceFile("runtime/"+std::string(file)));
   if(taskProviders)for(const auto &file:taskCohortFiles)if(!runtimeFiles.contains(file))runtimeFiles[file]=readFile(resourceFile("runtime/"+file));

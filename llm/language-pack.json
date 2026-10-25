@@ -2109,5 +2109,49 @@
       "source/debug/profile/provider/SDK/platform acceptance",
       "streaming network/DB and HTTP handlers"
     ]
+  },
+  "task_file_streams_prototype": {
+    "status": "private024_source_file_streams",
+    "language": "0.24",
+    "public_language": "0.23",
+    "public_enabled": false,
+    "source_support": false,
+    "private_source_support": true,
+    "execution_ABI": 5,
+    "retained_execution_ABIs": [
+      3,
+      4
+    ],
+    "retained_provider_masks": [
+      31,
+      799
+    ],
+    "guide": "docs/task-file-stream-host.md",
+    "operations": [
+      "file_open_read",
+      "file_open_write",
+      "file_open_append",
+      "file_read",
+      "file_write",
+      "file_seek",
+      "file_size",
+      "file_flush",
+      "file_close",
+      "file_is_open"
+    ],
+    "explicit_physical_grants": true,
+    "logical_file_owners": true,
+    "atomic_mixed_resource_transfer": true,
+    "source_values_on_IO_workers": false,
+    "native_source_lowering": true,
+    "independent_AST_source_lowering": true,
+    "public_history_migration_complete": false,
+    "pending": [
+      "explicit retained023 transactional history migration and public publication",
+      "source conformance and rejection acceptance",
+      "ABI5 provider/capture/package/debug/profile contracts",
+      "matching full regression, fresh sanitizers, installed SDK and platform acceptance",
+      "streaming network/DB and task HTTP handlers"
+    ]
   }
 }
