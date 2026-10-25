@@ -2226,7 +2226,7 @@ fn main()->unit!{io,task}{
         identity = cli('describe','--kind','index')
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(feature == pack['task_providers'] and feature['public_enabled'] and feature['static_linkage'] and
-                feature['source_required'] and feature['execution_task_abi']==4 and
+                feature['source_required'] and feature['execution_task_abi']==5 and
                 feature['descriptor_bytes']==88 and not feature['dynamic_linkage'] and
                 not feature['profiling'] and not feature['logical_debugging'],
                 'installed static task provider capability differs')
@@ -2252,7 +2252,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_rea
         plan = cli('project','--kind','plan','--component','app',cwd=directory)
         require(not plan['external_tools_invoked'] and not (directory/'.nex').exists(),
                 'static task provider plan invoked tools or opened state')
-        require(all(item['task_linkage']['execution_abi']==4 for item in plan['components']),
+        require(all(item['task_linkage']['execution_abi']==5 for item in plan['components']),
                 'static task source ownership plan is absent')
         require(cli('eval',cwd=directory)['stdout']=='42\n','independent task provider source observation differs')
         built = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
@@ -2455,7 +2455,7 @@ server fn main()->unit!{task,fs,io}{
         identity=cli('describe','--kind','index')
         pack=json.loads((resources/'llm/language-pack.json').read_text())
         require(feature==pack['task_shared_providers'] and feature['public_enabled'] and
-                feature['source_required'] and feature['execution_task_abi']==4 and feature['descriptor_bytes']==88 and
+                feature['source_required'] and feature['execution_task_abi']==5 and feature['descriptor_bytes']==88 and
                 feature['completion_schema']=='nex.native-completion/5' and not feature['runtime_load_unload'] and
                 not feature['profiling'] and not feature['logical_debugging'],
                 'installed shared task provider descriptor differs')
@@ -2894,7 +2894,7 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         require(feature==pack['task_provider_profiling'] and feature['public_enabled'] is True and
                 feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/9' and
                 feature['registry_abi']==1 and feature['registry_bytes']==32 and
-                feature['execution_task_abi']==4 and not feature['runtime_load_unload'] and not feature['tracy'],
+                feature['execution_task_abi']==5 and not feature['runtime_load_unload'] and not feature['tracy'],
                 'installed task provider profiling descriptor differs')
         directory=root/'task-provider-profile';directory.mkdir()
         for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
