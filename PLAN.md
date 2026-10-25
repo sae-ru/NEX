@@ -1,3 +1,20 @@
+# Development0.133.1: compact current language contract
+
+The model-independent coding prompt now describes current0.23 rules without
+accumulated milestone instructions; detailed indexed guides remain on demand.
+Six genuine SDK1326/022 histories (18 revisions) are maintained conformance
+fixtures. Source tests exercise actual write DAP resumes and complete profiles;
+the installed SDK gate additionally requires the18 archived migrations. The
+9,215-byte prompt replaces87,830 bytes; this measures document bytes, not total
+LLM token cost or coding quality.
+Whole-file write discovery agrees across task/runtime sections and the language
+pack. Standalone Python/Node editor acceptance discovers the actual compiler
+language instead of creating hardcoded022 projects. Source language, grammar,
+canonical identities and explicit migration rules are unchanged. Matching full
+regression, installed SDK and platform acceptance remain required. Primary081
+and its history remain separate. All original runtime/NPU/UI/mobile/Studio/
+converter/quality requirements remain open.
+
 # Development0.133.0 / language0.23
 
 Ordinary CLI projects now support checked whole-file writes inside server task/fs

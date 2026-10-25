@@ -12,12 +12,16 @@ import threading
 
 def accept(compiler, output):
     output.mkdir()
+    descriptor = subprocess.run([str(compiler),'describe','--json'],cwd=output,
+        capture_output=True,text=True,timeout=30,check=True)
+    language = json.loads(descriptor.stdout)['version']
+    assert isinstance(language,str) and language
     project = output / 'project with spaces 🧠'
     project.mkdir()
     source = project / 'main.nex'
     original = 'module editor_sdk;\nfn twice(n:i64)->i64{return n*2;}\nfn main()->i64{return twice(21);}\n'
     source.write_text(original, encoding='utf-8')
-    (project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':source.name}))
+    (project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':source.name}))
     report = {'schema':'nex.lsp-acceptance/1','ok':False,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
               'messages_sent':0,'checks':[],'source_and_graph_unchanged':False}
     process = subprocess.Popen([str(compiler),'lsp'],cwd=project,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)

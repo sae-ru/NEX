@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.133.0 LANGUAGES C CXX)
+project(NEX VERSION 0.133.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -709,6 +709,20 @@ add_test(NAME public_task_write_delivery COMMAND ${Python3_EXECUTABLE} ${CMAKE_C
 set_tests_properties(public_task_write_delivery PROPERTIES TIMEOUT 2400)
 install(FILES tests/task_write_delivery.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.22-sdk131-task-writes.json tests/fixtures/language-0.22-sdk131-task-writes.sql DESTINATION share/nex/examples/task-write-migration)
+add_test(NAME public_task_write_histories COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_histories.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(public_task_write_histories PROPERTIES TIMEOUT 2400)
+add_test(NAME public_task_write_observability COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_observability.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(public_task_write_observability PROPERTIES TIMEOUT 1200)
+install(FILES tests/task_write_histories.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.22-sdk1326-README.md DESTINATION share/nex/examples/task-write-history RENAME README.md)
+install(FILES
+  tests/fixtures/language-0.22-sdk1326-resources.json tests/fixtures/language-0.22-sdk1326-resources.sql
+  tests/fixtures/language-0.22-sdk1326-nominal.json tests/fixtures/language-0.22-sdk1326-nominal.sql
+  tests/fixtures/language-0.22-sdk1326-callable.json tests/fixtures/language-0.22-sdk1326-callable.sql
+  tests/fixtures/language-0.22-sdk1326-imports.json tests/fixtures/language-0.22-sdk1326-imports.sql
+  tests/fixtures/language-0.22-sdk1326-tasks.json tests/fixtures/language-0.22-sdk1326-tasks.sql
+  tests/fixtures/language-0.22-sdk1326-model-compute-device-imports.json tests/fixtures/language-0.22-sdk1326-model-compute-device-imports.sql.xz.b85
+  DESTINATION share/nex/examples/task-write-history)
 target_link_libraries(nex_task_write_source_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
 add_executable(nex_task_write_migration_probe tests/task_write_migration_probe.cpp src/project.cpp src/graph_store.cpp src/operation_store.cpp src/change_store.cpp)
 target_link_libraries(nex_task_write_migration_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)

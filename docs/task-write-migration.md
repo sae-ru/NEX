@@ -52,3 +52,10 @@ fresh sanitizers, installed SDK035 and current platform acceptance remain requir
 import/model histories and combined debug/profile/provider workflows remain
 separate coverage requirements. No full-language or full-project completion
 follows from this migration stage.
+
+Toolchain0.133.1 maintains six additional genuine SDK1326/022 histories and
+18 original revisions covering resource declarations, nominal/generic types,
+callables, imports, tasks and std model/compute/device imports with CPU work.
+The public CLI checks all16 tables/schema/IDs, old observations and retained
+web tests, HEAD refusal and idempotence. These history cases do not execute
+opaque factories or GPU/NPU hardware. Full/platform acceptance remains separate.

@@ -183,6 +183,41 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk1331_requires_extended_genuine_history_before_other_acceptance(self):
+        current=self.report();current.update(version='0.133.1',language='0.23',doctor={'version':'0.133.1'},compiler_sha256='a'*64)
+        current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_023]
+        with self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+            acceptance.validate_completed_report(current)
+        for value in (None,False,[],"bad"):
+            damaged=copy.deepcopy(current);damaged['evidence']={'structured_task_file_writes':value}
+            with self.subTest(parent=value),self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+                acceptance.validate_completed_report(damaged)
+        fields=('ok','all16_tables_schema_rows_ids_preserved','native_reference','retained_web_tests')
+        migration_fields=('all16_tables_schema_rows_ids_preserved','native_reference','retained_web_tests',
+                          'implicit_HEAD_upgrade_rejected','physical_manifest_unchanged','idempotent')
+        origin_sdk='a75421b899a7e47d617a8ef6257123f75db4ee4f9869fe2aa11c3be6b87bb1a8'
+        history={'schema':'nex.public-task-write-histories/1','compiler_sha256':'a'*64,'language':'0.23','origin_SDK_sha256':origin_sdk,
+            **{field:True for field in fields},'genuine022_histories':6,'genuine022_revisions':18,
+            'origins':[{'name':name,'revisions':3,'sql_sha256':'b'*64,'origin_SDK_sha256':origin_sdk} for name in ('resources','nominal','callable','imports','tasks','model-compute-device-imports')],
+            'migrations':[{'origin_revision':format(i,'064x'),'revision':format(i+18,'064x'),**{field:True for field in migration_fields}} for i in range(18)]}
+        current['evidence']={'structured_task_file_writes':{'extended_histories':history}}
+        with self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+            acceptance.validate_completed_report(current)
+        for field in fields:
+            for value in (None,False,1,'true'):
+                damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes']['extended_histories'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+                    acceptance.validate_completed_report(damaged)
+        for field,value in [('genuine022_revisions',True),('genuine022_revisions',17),('genuine022_histories',5),('compiler_sha256','c'*64),
+                            ('language','0.22'),('origins',history['origins'][:5]),('migrations',history['migrations'][:17])]:
+            damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes']['extended_histories'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+                acceptance.validate_completed_report(damaged)
+        for field in migration_fields:
+            damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes']['extended_histories']['migrations'][0][field]=False
+            with self.subTest(migration_field=field),self.assertRaisesRegex(RuntimeError,'extended genuine022 history'):
+                acceptance.validate_completed_report(damaged)
+
     def test_sdk133_requires_actual_public_write_delivery_and_genuine022_history(self):
         current=self.report();current.update(version='0.133.0',language='0.23',doctor={'version':'0.133.0'},compiler_sha256='a'*64)
         current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_023]

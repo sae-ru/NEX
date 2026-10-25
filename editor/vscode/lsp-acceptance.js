@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const {execFileSync} = require('node:child_process');
 const {pathToFileURL, fileURLToPath} = require('node:url');
 const {LanguageClient} = require('./lsp-client');
 
@@ -24,10 +25,15 @@ const locationIdentity = value => ({...value, uri:fileIdentity(value.uri)});
 async function accept(compiler, output) {
   fs.mkdirSync(output);
   const project = fs.realpathSync(output);
+  const language = JSON.parse(execFileSync(compiler, ['describe', '--json'], {
+    cwd: project, encoding: 'utf8', timeout: 30000, maxBuffer: 4 * 1024 * 1024,
+  })).version;
+  assert.equal(typeof language, 'string');
+  assert.ok(language.length);
   const source = path.join(project, 'main with spaces.nex'), model = path.join(project, 'model 🧠.nex');
   const main = 'module editor_client;\nimport "./model 🧠.nex" as m;\nfn main()->i64{return m::answer(21);}\n';
   const library = 'module model;\npub fn answer(n:i64)->i64{return n*2;}\n';
-  fs.writeFileSync(path.join(project, 'nex.json'), JSON.stringify({schema:'nex.project/1',language:'0.22',entry:path.basename(source)}));
+  fs.writeFileSync(path.join(project, 'nex.json'), JSON.stringify({schema:'nex.project/1',language,entry:path.basename(source)}));
   fs.writeFileSync(source, main); fs.writeFileSync(model, library);
   const sourceURI = pathToFileURL(source).href, modelURI = pathToFileURL(model).href;
   const notifications = [], waiting = new Set();

@@ -1,7 +1,7 @@
 # Owned device resources
 
 Development toolchain0.132 adds `import "std/device.nex" as device;` as an
-ordinary language0.22 library. Query `nex describe --field device --json`.
+ordinary library, available in the current language0.23. Query `nex describe --field device --json`.
 No syntax, canonical identity, retained-history or migration rule changes.
 Matching regression, installed SDK and actual platform acceptance have separate
 receipts. The OpenCL adapter is experimental and selected explicitly.

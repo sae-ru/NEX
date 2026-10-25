@@ -1,5 +1,6 @@
-Language022 adds source task/ffi and genuine external-resource transfer to the
-structured scheduler; read task-foreign-prototype.md. This is distinct from the
+Current language023 retains source task/ffi and genuine external-resource transfer to the
+structured scheduler and adds whole-file task writes; read task-foreign-prototype.md
+and task-file-writes-prototype.md. This is distinct from the
 acceptance-task JSON format below. Acceptance contracts and proof snapshots must
 be regenerated for the current semantic revision while retaining reviewed
 requirements, clauses and budgets. Source/SDK/platform receipts remain separate.
@@ -32,7 +33,8 @@ or ancestor project. Invalid preflight creates no published output run.
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is0.19; this is a development-tool protocol.
+LLM vendor. Discover the actual source language with `nex describe --json`; this JSON format
+is a development-tool protocol, independent of that language version.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 

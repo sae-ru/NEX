@@ -36,7 +36,7 @@
       "installed_sdk",
       "platform_editor_debug_profile_validation",
       "integration of parallel_map/source tasks with the separate typed browser-worker adapter",
-      "task IO beyond whole-file reads and task host adapters",
+      "task IO beyond whole-file reads/writes and task host adapters",
       "other_cpu_targets",
       "gpu",
       "npu"
@@ -475,6 +475,14 @@
       "metadata": "examples/traits/legacy-0.15.json",
       "database_sql": "examples/traits/legacy-0.15.sql",
       "purpose": "Genuine historical input for explicit migration; do not use as a current source project or relabel its version."
+    },
+    "language_022_sdk1326": {
+      "language": "0.22",
+      "producer_sdk": "0.132.6",
+      "guide": "examples/task-write-history/README.md",
+      "histories": 6,
+      "revisions": 18,
+      "purpose": "Genuine022 all16-table fixtures for explicit023 migration, with old native/reference/web observations. The model SQL is bounded XZ/base85 text; do not relabel old rows."
     }
   },
   "native_debug_pages": {
@@ -862,7 +870,7 @@
       "full_current_regression",
       "installed_sdk",
       "platform_editor_validation",
-      "task IO beyond whole-file reads and task host adapters"
+      "task IO beyond whole-file reads/writes and task host adapters"
     ],
     "structured_tasks": true,
     "compute_effects": "empty or exactly task",
@@ -899,7 +907,7 @@
     "task_input_output": "owned immutable Value snapshots; scoped task authority checked by owner ancestry; no raw Handle across suspension",
     "pending": [
       "complete static region/lifetime inference",
-      "asynchronous writes/streams/db/network",
+      "streams/db/network",
       "non-native task debugging/profiling",
       "runtime provider load/unload",
       "full current installed SDK and platform delivery",
@@ -933,6 +941,8 @@
         "current_task_scope",
         "file_read_text",
         "file_read_bytes",
+        "file_write_text",
+        "file_write_bytes",
         "checked direct extern call"
       ],
       "root_task_depth": 1,
@@ -948,7 +958,7 @@
       "transport": "TaskTransition",
       "scheduler_integrated": true,
       "public_build_enabled": false,
-      "host_effects": "pure/io atoms, server task/fs reads and task/ffi typed calls; db and file authority transport rejected",
+      "host_effects": "pure/io atoms, server task/fs reads/writes and task/ffi typed calls; db and file authority transport rejected",
       "maximum_pending_actions": 262144
     },
     "private_ast_scheduler": {
@@ -967,7 +977,7 @@
       "maximum_channel_slots": 65536,
       "maximum_pending_actions_per_task": 262144,
       "public_build_enabled": true,
-      "host_effects": "pure/io atoms, server task/fs reads and task/ffi typed calls; db and file authority transport rejected",
+      "host_effects": "pure/io atoms, server task/fs reads/writes and task/ffi typed calls; db and file authority transport rejected",
       "stalled_channels": "E_TASK_DEADLOCK",
       "root_task_depth": 1
     },
@@ -991,7 +1001,7 @@
       "scope_graph_validation": true,
       "event_loop": "MessageChannel turns; statement/loop compiler checkpoints",
       "result_propagation": "current generated source function boundary",
-      "source_map": "nex.typescript-map/1 for public019/020; nex.private-typescript-task-map/1 for private018",
+      "source_map": "nex.typescript-map/1 for public019..023; nex.private-typescript-task-map/1 for private018",
       "public_build_enabled": true,
       "nex_ui_adapter_tasks": false,
       "host_effects": "shared/client pure and io atoms; server/file/foreign rejected",
@@ -1139,7 +1149,7 @@
       "retained_path_storage": "exact owned bytes up to4096"
     },
     "pending": [
-      "asynchronous writes and streams",
+      "streaming file IO",
       "source db/network task lowering",
       "browser filesystem and task network/UI/worker adapters",
       "combined task debug/profile, Tracy and binary-provider ABI",
@@ -1148,7 +1158,9 @@
     "public_source_guide": "docs/task-file-reads.md",
     "public_source_subset": [
       "file_read_text",
-      "file_read_bytes"
+      "file_read_bytes",
+      "file_write_text",
+      "file_write_bytes"
     ]
   },
   "task_file_reads": {

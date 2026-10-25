@@ -1,9 +1,10 @@
 # Whole-file reads inside tasks — language 0.20
 
-The separate [private asynchronous write bridge](task-file-writes-host.md)
-provides trusted-host IO preparation in0.132.4. It does not enable source task
-writes in language0.22; those remain rejected pending the complete source and
-history-preserving migration integration.
+Current language0.23 also supports [whole-file task writes](task-file-writes-prototype.md)
+with explicit write grants. The retained0.20 introduction below describes the
+read bridge; it does not override current023 task/ffi and write capabilities.
+Query the actual compiler before using the matching SDK. Full release/platform
+acceptance remains separate from source support.
 
 The development toolchain0.110 connects `file_read_text` and `file_read_bytes`
 to structured task suspension in standalone native macOS/Linux applications,
@@ -45,7 +46,8 @@ can run concurrently. Native continuations use their joined executor.
 ## Use and authority
 
 Install the matching SDK using [the quickstart](quickstart.md). Save the example
-as `main.nex` in a separate project declaring language0.20. For a CLI run, choose
+as `main.nex` in a separate project declaring the actual compiler language (0.23
+in this candidate). For a CLI run, choose
 an absolute directory explicitly:
 
 ```sh
@@ -85,17 +87,17 @@ Each file is limited to1MiB, including growth during the read.
 ## Effects, calls and errors
 
 Scope/spawn callbacks may be pure or task-only in an available realm. Language
-0.20 additionally accepts exactly server `!{task,fs}` callbacks when their
-caller also declares both effects. `io`, `db` and `ffi` callbacks remain
-unsupported. Callable effect/realm equality stays exact, including parameters,
+0.20 introduced server `!{task,fs}` callbacks. Current023 also supports checked
+server task/ffi callbacks with optional fs and complete caller effects; query
+`structured_tasks_runtime.callback_effects`. DB callbacks remain unsupported. Callable effect/realm equality stays exact, including parameters,
 captures, generic instantiations and returned functions.
 
 A task function cannot call an fs-only helper directly or indirectly: the
 checker reports `E_EFFECT`. Review the helper and explicitly declare `task,fs`
 if its operations belong to this supported subset. No wrapper, function-value
 assignment or migration silently changes a synchronous target into a
-continuation. Unsupported write/stream/db/ffi task execution is rejected before
-execution; an unused server function does not enter browser output.
+continuation. Streams and DB task execution remain rejected before execution; source task
+writes and FFI use their separate checked adapters; an unused server function does not enter browser output.
 
 Inputs evaluate left to right, once. Short-circuiting remains lazy. Text
 admission checks strict UTF-8 and preserves NUL/BOM; byte reads preserve all

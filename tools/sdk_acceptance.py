@@ -631,6 +631,27 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,1):
+        writes=report.get('evidence',{}).get('structured_task_file_writes',{})
+        history=writes.get('extended_histories',{}) if isinstance(writes,dict) else {}
+        names={'resources','nominal','callable','imports','tasks','model-compute-device-imports'}
+        require(isinstance(history,dict) and history.get('schema')=='nex.public-task-write-histories/1' and
+                history.get('compiler_sha256')==report.get('compiler_sha256') and history.get('language')==report.get('language')=='0.23' and
+                history.get('origin_SDK_sha256')=='a75421b899a7e47d617a8ef6257123f75db4ee4f9869fe2aa11c3be6b87bb1a8' and
+                all(history.get(key) is True for key in ('ok','all16_tables_schema_rows_ids_preserved','native_reference','retained_web_tests')) and
+                type(history.get('genuine022_histories')) is int and history['genuine022_histories']==6 and
+                type(history.get('genuine022_revisions')) is int and history['genuine022_revisions']==18 and
+                isinstance(history.get('origins'),list) and len(history['origins'])==6 and
+                {row.get('name') for row in history['origins'] if isinstance(row,dict)}==names and
+                all(isinstance(row,dict) and row.get('origin_SDK_sha256')==history['origin_SDK_sha256'] and type(row.get('revisions')) is int and row['revisions']==3 and
+                    isinstance(row.get('sql_sha256'),str) and re.fullmatch('[0-9a-f]{64}',row['sql_sha256']) for row in history['origins']) and
+                isinstance(history.get('migrations'),list) and len(history['migrations'])==18 and
+                all(isinstance(row,dict) and all(row.get(key) is True for key in ('all16_tables_schema_rows_ids_preserved',
+                    'native_reference','retained_web_tests','implicit_HEAD_upgrade_rejected','physical_manifest_unchanged','idempotent')) and
+                    all(isinstance(row.get(key),str) and re.fullmatch('[0-9a-f]{64}',row[key]) for key in ('origin_revision','revision')) and
+                    row['origin_revision']!=row['revision'] for row in history['migrations']) and
+                len({row['origin_revision'] for row in history['migrations']})==18 and len({row['revision'] for row in history['migrations']})==18,
+                'SDK acceptance lacks extended genuine022 history evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,0):
         writes=report.get('evidence',{}).get('structured_task_file_writes',{})
         require(isinstance(writes,dict) and writes.get('schema')=='nex.public-task-write-delivery/1' and
@@ -1879,6 +1900,12 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         require(proof.get('ok') is True and proof.get('compiler_sha256')==report['compiler_sha256'],
                 'installed public file-write workflow differs from actual compiler')
         report['evidence']['structured_task_file_writes']=proof
+        history_destination=root/'public-task-write-histories'
+        run([sys.executable,'-B',resources/'tests/task_write_histories.py','--compiler',compiler,'--resources',resources,'--output',history_destination],timeout=2400)
+        history=json.loads((history_destination/'report.json').read_text())
+        require(history.get('ok') is True and history.get('compiler_sha256')==report['compiler_sha256'],
+                'installed extended history workflow differs from actual compiler')
+        proof['extended_histories']=history
 
     def structured_task_file_reads():
         from sdk_task_file_migration import check_installed_task_migration
