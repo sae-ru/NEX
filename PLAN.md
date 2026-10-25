@@ -1,3 +1,13 @@
+# Development0.134.1: public024 provider profile capture
+
+Acceptance-task profiling includes the checked ABI5 component source union
+(linkage9), alongside strict retained linkage3/6. Private startup-linked lifetime
+drivers now require the current ABI5 descriptors; physical completion, cancellation,
+profile/debug catalog ownership and single-runtime checks remain unchanged.
+No source semantics, grammar, provider ABI, grants or historical records change.
+Matching regression, sanitizers, installed SDK and platform delivery remain pending;
+all original language/server/accelerator/UI/mobile/Studio/converter goals remain open.
+
 # Development0.134.0: public source language0.24 candidate
 
 Ordinary source/project commands select TaskStreams024. Checked server task/fs

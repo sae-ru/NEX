@@ -1,3 +1,10 @@
+# Development0.134.1: acceptance-task source union
+
+The profile check in `nex task` includes checked component sources for current
+ABI5 linkage9 as well as retained linkage3/6. Capture, native attribution, package
+provenance and replay retain their exact source/catalog/image checks. Completion
+receipts remain completion6; these schema numbers are independent of provider9.
+
 # Current source language0.24 (development0.134.0)
 
 Ordinary source/project commands select024. Server task/fs whole-file and opened

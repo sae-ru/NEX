@@ -423,6 +423,15 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.assertEqual(saved['build_key'],captured['app']['build_key'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
         self.assertIn('nex.project-task-linkage/9',json.dumps(source_capture))
+        profiled_components=[]
+        for component in source_capture['expectations']['measured']:
+            linkage=component.get('task_linkage')
+            if not linkage:
+                continue
+            self.assertEqual(linkage['schema'],'nex.project-task-linkage/9')
+            self.assertEqual(linkage['execution_abi'],5)
+            profiled_components.append(component['name'])
+        self.assertTrue({'leaf','mid','app'}<=set(profiled_components))
         spec=importlib.util.spec_from_file_location('profile_completion_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in check['components']:

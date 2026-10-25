@@ -191,13 +191,20 @@ def main():
    report['checks'].append(dialect+'_client_reachability_excludes_foreign_bindings')
   for name,body in (
       ('caller_authorization','server fn main()->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{});}'),
-      ('synchronous_helper','server fn helper()->i64 !{ffi}{return add(41);}server fn main()->unit !{task,ffi}{let value:i64=helper();}'),
-      ('file_callback','server fn helper(owner:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:file=owner;});}fn main()->unit{}'),
-      ('phantom_file_callback','struct Box<T>{id:i64;}server fn helper(owner:Box<file>)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{assert(owner.id==42);});}fn main()->unit{}')):
+      ('synchronous_helper','server fn helper()->i64 !{ffi}{return add(41);}server fn main()->unit !{task,ffi}{let value:i64=helper();}')):
    path=bundle(name,body)
    error=json.loads(run(name+'-rejected',command('check',path),1).stdout)
    assert error['code'] in ('E_EFFECT','E_TASK_TYPE'),error
    report['checks'].append(name+'_checked_before_execution')
+  for name,body in (
+      ('file_callback','server fn helper(owner:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:file=owner;});}fn main()->unit{}'),
+      ('phantom_file_callback','struct Box<T>{id:i64;}server fn helper(owner:Box<file>)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{assert(owner.id==42);});}fn main()->unit{}')):
+   path=bundle(name,body)
+   checked=json.loads(run(name+'-public024-accepted',command('check',path)).stdout)
+   assert checked['ok'] and checked['language']=='0.24',checked
+   error=json.loads(run(name+'-retained023-rejected',command('check',path,language='0.23'),1).stdout)
+   assert error['code']=='E_TASK_TYPE',error
+   report['checks'].append(name+'_public024_accepted_retained023_rejected')
   path=bundle('file_factory','server extern fn create()->file !{ffi}=foreign("calls","create","'+PIN+'");server fn main()->unit !{task,ffi}{let owner:file=create();}')
   for action in ('check','reference','native'):
    error=json.loads(run('file_factory-'+action+'-rejected',command(action,path),1).stdout)

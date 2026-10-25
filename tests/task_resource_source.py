@@ -230,7 +230,12 @@ def main():
    'file_future_result':'server fn bad(r:file)->unit !{task}{with_tasks(1,server fn(s:task_scope)->file !{task}{return r;});}',
    'file_channel':'server fn main()->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let ch:channel<file>=channel_new<file>(s,1);});}',
   }.items():
-   error=json.loads(run(name+'-rejected',command('check',bundle(name,body)),1).stdout);assert error['code']=='E_TASK_TYPE',error;report['checks'].append(name+'_still_rejected_before_execution')
+   path=bundle(name,body)
+   checked=json.loads(run(name+'-public024-accepted',command('check',path)).stdout)
+   assert checked['ok'] and checked['language']=='0.24',checked
+   error=json.loads(run(name+'-retained023-rejected',command('check',path,language='0.23'),1).stdout)
+   assert error['code']=='E_TASK_TYPE',error
+   report['checks'].append(name+'_public024_accepted_retained023_rejected')
   for name,body in {
    '021-resource-capture':'server fn bad(r:Session)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{let held:Session=r;});}',
    '021-resource-result':'server fn bad(r:Session)->unit !{task}{with_tasks(1,server fn(s:task_scope)->Session !{task}{return r;});}',
