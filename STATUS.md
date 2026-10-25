@@ -1,3 +1,19 @@
+# Development0.133.6: private024 source control conformance
+
+Twelve actual compiled-NEX/independent-AST pairs pass across six native images:
+real TaskGroup/stop-token cancellation at file boundaries, real request timeout,
+coordinator grant revocation, multi-module calls, checked overflow/assertion,
+source task_cancel with an opened file and function-local ? errors with70 scopes.
+The trusted native host requires zero IO credits and cleanup reservations and
+restored managed-value counts; reference caller-region settlement must be ready
+before return. Detached native runs preserve the exact written prefix. This
+checks source boundaries, not cancellation during an arbitrarily blocked syscall.
+Compiler/runtime/spec/grammar/pack source bytes match173; this adds conformance
+and staging/observation helpers, with a toolchain identity update. Public023 and
+retained ABI3/4/history are unchanged. Public024, additional in-flight/mixed
+cases, ABI5 provider/capture/package/debug/profile, current SDK/platform and all
+original language/server/accelerator/UI/Studio/converter/measurement work remain.
+
 # Development0.133.5: owning cleanup for private024 source files
 
 Every private024 source open reserves an owning executor cleanup slot before
