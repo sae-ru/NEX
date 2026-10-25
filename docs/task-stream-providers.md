@@ -43,3 +43,7 @@ capture/replay/package, actual debugger/profile readers, public024 migration,
 installed SDK or all platforms. Further in-flight IO cancellation/mixed FFI-file
 source tests and genuine023 histories remain; the complete original project
 requirements are preserved.
+
+Mixed File/external-resource source conformance is described in
+[task-stream-mixed.md](task-stream-mixed.md). These source transfers do not
+add external resources or C FFI exports to fixed binary-provider signatures.

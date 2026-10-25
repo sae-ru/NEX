@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.133.7 LANGUAGES C CXX)
+project(NEX VERSION 0.133.8 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -88,6 +88,8 @@ target_compile_options(nex_task_typescript_emit_probe PRIVATE -Wall -Wextra -Wpe
 add_executable(nex_source_resource_probe tests/source_resource_probe.cpp src/typescript.cpp)
 target_link_libraries(nex_source_resource_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
 target_compile_options(nex_source_resource_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_file_stream_mixed COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_mixed.py $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(task_file_stream_mixed PROPERTIES TIMEOUT 1800)
 add_test(NAME source_external_resources COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resources.py $<TARGET_FILE:nex_source_resource_probe>
   ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --nex $<TARGET_FILE:nex>)

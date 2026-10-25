@@ -1,3 +1,17 @@
+# Development0.133.8: private024 mixed file/resource conformance
+
+Actual NEX programs retain a genuine File and a genuine C11/C++20 opaque
+resource in the same immutable graph. Twenty-four native/independent-AST pairs
+exercise captures, futures, sibling channels, returned closures, nested aliases,
+scoped cleanup/quota reuse, function-local errors, readonly grants, checked
+abort and source task_cancel. Nine invalid FFI/wire entry checks retain the
+existing rejection; public023 and client-only pruning stay unchanged. This adds
+conformance, not C FFI File transport, arbitrary in-flight syscall cancellation,
+public024 publication or platform acceptance. Read docs/task-stream-mixed.md.
+Compiler/runtime/spec/grammar/language-pack semantics match175; the toolchain
+identity and test registry change. Matching full/SAN/SDK acceptance keeps its
+separate evidence and all original project requirements remain open.
+
 # Development0.133.7: private024 native source file providers
 
 Private024 source providers have explicit ABI5 records8/9/10 and root stage3.
