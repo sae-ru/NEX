@@ -11,9 +11,13 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &,const TaskExecutionLim
 // its budget/cancellation and the borrowed Request handle. This creates no new
 // RequestScope or ambient file/foreign grants. Completion joins all admitted work
 // before publishing an owned Response handle in the caller's request.
-// Public compiler HTTP/task integration and async network/DB remain pending.
+// The native HTTP adapter uses the configured entry below. Async network/DB
+// and task HTTP provider-image/debug/profile integration remain pending.
 Handle *executeTaskHttpRequest(const TaskCodeDescriptor &,Handle *request,
     std::shared_ptr<const TaskFrameHostContext> host={},unsigned workers=2);
+// Compiler HTTP adapter: explicitly captures operator-configured file/foreign
+// grants in the existing request; the lower-level API above captures none.
+Handle *executeConfiguredTaskHttpRequest(const TaskCodeDescriptor &,Handle *request,unsigned workers);
 }
 extern "C" {
 int64_t nex_task_application_execute(const nexrt::TaskCodeDescriptor *);

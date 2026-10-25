@@ -320,3 +320,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Private149 explicit022 API adds resource capture/result/future/channel and
    closure transfer without syntax changes. Atomic genuine-owner ancestry rules
    apply; file/wire/browser authority and public022 migration remain separate. *)
+(* Toolchain0.134.4 connects existing language0.24 task/server/fs constructs
+   to native HTTP dispatch. No source syntax, canonical identity or migration
+   is added. Task network/DB and HTTP task provider/debug/profile remain pending. *)

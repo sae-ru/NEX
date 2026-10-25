@@ -1,5 +1,39 @@
 # NEX native server and runtime capabilities
 
+Toolchain0.134.4 adds native language0.24 task HTTP handlers in debug/release.
+For example, a `server fn handle(Request)->Response !{task,fs}` can schedule
+structured CPU work and use whole-file/owned stream operations. The generated
+server bridge calls the checked task descriptor rather than a synchronous
+function or a standalone process entry. Requests keep the original HTTP
+principal, step budget, deadline and disconnect/shutdown cancellation. Their
+joined task executor drains admitted work and retires owned resources before
+the ordinary HTTP response validation/transaction boundary.
+
+Compile-time `--task-steps`, `--task-timeout-ms` and `--task-workers` embed
+immutable ceilings. Launch-time `--nex-task-steps`, `--nex-task-timeout-ms` and
+`--nex-task-workers` may only lower them; malformed, duplicate, unknown or
+excessive values fail before startup. Existing HTTP `--budget` and
+`--timeout-ms` are capped by those effective task limits. HTTP `--workers`
+still sizes the request thread pool, separately from each joined task executor.
+Ambient `NEX_TASK_*` variables do not select these limits.
+
+Filesystem effects confer no root or write authority: the operator configures
+`NEX_FILES_ROOT` and, for writes, `NEX_FILES_WRITE=1`. Capture occurs inside the
+original request and retains its revocation/cleanup lineage. Missing/read-only
+grants fail on attempted IO, not merely because an unused branch declares fs.
+File effects cannot acquire socket/database authority. The existing HTTP
+transport and SQLite transaction wrapper remain blocking; async network/DB,
+streaming network responses, task-provider image linking into servers, task
+HTTP profiling and logical task debugging remain pending. Profile/task-debug
+builds fail explicitly rather than emitting an unverified server path. Retained
+pre0.24 task HTTP builds remain rejected and require explicit migration.
+
+The `task_http_server` integration test runs actual HTTP requests in both
+profiles, including source-absent execution, two authenticated users, Unicode
+and NUL bodies, concurrent requests, task file/stream IO, grant denial and path
+containment, traps, budgets, deadlines and disconnect cleanup. Matching full
+regression, installed SDK and platform delivery are separate acceptance gates.
+
 Source language 0.4 adds recoverable results, typed JSON, environment access and a SQLite capability. Since toolchain 0.5.0, a checked handler can compile to a native HTTP/HTTPS server. Toolchain 0.6.0 connects browser applications through explicit request commands. The server uses cpp-httplib 0.61.0, OpenSSL 3 and SQLite; the executable does not need NEX, LLVM, a model or Node to run. Those native runtime libraries must be present on its host. See `STATUS.md` for the exact verified environment and tests.
 
 ## Build and launch

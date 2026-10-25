@@ -122,7 +122,14 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(http['caller_request_required'])
         self.assertTrue(http['inherits_step_budget_deadline_cancellation'])
         self.assertTrue(http['joined_completion'])
-        for key in ('public_source_target', 'implicit_file_or_foreign_grants', 'async_network', 'async_database'):
+        self.assertTrue(http['public_source_target'])
+        server = full['structured_tasks_runtime']['http_server']
+        self.assertTrue(server['public_enabled'])
+        self.assertEqual(server['minimum_language'], '0.24')
+        self.assertEqual(server['profiles'], ['debug', 'release'])
+        for key in ('async_network', 'async_database', 'task_provider_images', 'task_profiling', 'logical_task_debugging'):
+            self.assertFalse(server[key])
+        for key in ('implicit_file_or_foreign_grants', 'async_network', 'async_database'):
             self.assertFalse(http[key])
         self.assertEqual(full['task_profile_collector'], pack['task_profile_collector'])
         self.assertTrue(full['task_profile_collector']['source_support'])

@@ -11,6 +11,41 @@ TaskBody applicationTask(TaskGroup &group,Value,Value closure,const void *contex
   auto host=*static_cast<const std::shared_ptr<const TaskFrameHostContext>*>(context);
   return executeTaskFrame(group,NativeTaskFrame(code,{},closure,std::move(host)));
 }
+struct ConfiguredTaskHost {
+#ifndef _WIN32
+  std::unique_ptr<FileScope> files;
+#endif
+  std::shared_ptr<TaskFrameHostContext> context;
+};
+ConfiguredTaskHost configuredTaskHost(const TaskCodeDescriptor &code){
+  ConfiguredTaskHost result;
+  auto context=std::make_shared<TaskFrameHostContext>();
+#ifndef _WIN32
+
+  if(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite)){
+    if(!inFileScope())result.files=std::make_unique<FileScope>(true);
+    if(code.requirements&taskCodeImageFileRead)context->fileReads=captureFileReadGrant(true);
+    if(code.requirements&taskCodeImageFileWrite)context->fileWrites=captureFileWriteGrant(true);
+  }
+#endif
+  if(code.requirements&taskCodeImageForeign){
+#ifdef NEX_FOREIGN_ENABLED
+    context->foreign=captureForeignScope(true);
+    context->foreignCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{4096,64,8*1048576});
+#else
+    throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
+#endif
+  }
+#ifndef _WIN32
+  if(code.requirements&taskCodeImageFileStream){
+#ifdef NEX_FOREIGN_ENABLED
+    context->fileCleanup=context->foreignCleanup;
+#endif
+    if(!context->fileCleanup)context->fileCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{64,64,8*1048576});
+  }
+#endif
+  result.context=std::move(context);return result;
+}
 struct HttpTaskInvocation {
   const TaskCodeDescriptor &code;
   std::shared_ptr<const TaskFrameHostContext> host;
@@ -61,6 +96,11 @@ Handle *executeTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,
     return result;
   });
 }
+Handle *executeConfiguredTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,unsigned workers){
+  if(!inRequestScope())throw DataError("E_TASK_SCOPE","HTTP task requires its caller's active request scope");
+  auto configured=configuredTaskHost(code);
+  return executeTaskHttpRequest(code,request,configured.context,workers);
+}
 int64_t executeTaskApplication(const TaskCodeDescriptor &code,SourceLocation location){
   return executeTaskApplication(code,TaskExecutionLimits{},location);
 }
@@ -78,31 +118,7 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     taskProfileEffectiveLimits(limits);
 #endif
     RequestScope request(limits.steps,limits.timeoutMs);
-    auto context=std::make_shared<TaskFrameHostContext>();
-#ifndef _WIN32
-    std::unique_ptr<FileScope> files;
-    if(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite)){
-      if(!inFileScope())files=std::make_unique<FileScope>(true);
-      if(code.requirements&taskCodeImageFileRead)context->fileReads=captureFileReadGrant(true);
-      if(code.requirements&taskCodeImageFileWrite)context->fileWrites=captureFileWriteGrant(true);
-    }
-#endif
-    if(code.requirements&taskCodeImageForeign){
-#ifdef NEX_FOREIGN_ENABLED
-      context->foreign=captureForeignScope(true);
-      context->foreignCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{4096,64,8*1048576});
-#else
-      throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
-#endif
-    }
-#ifndef _WIN32
-    if(code.requirements&taskCodeImageFileStream){
-#ifdef NEX_FOREIGN_ENABLED
-      context->fileCleanup=context->foreignCleanup;
-#endif
-      if(!context->fileCleanup)context->fileCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{64,64,8*1048576});
-    }
-#endif
+    auto configured=configuredTaskHost(code);auto context=configured.context;
     TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream)));
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
     auto environment=std::make_shared<Data>(Data::Closure);

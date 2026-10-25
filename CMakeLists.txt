@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.134.3 LANGUAGES C CXX)
+project(NEX VERSION 0.134.4 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -403,6 +403,9 @@ set_tests_properties(task_http_request_host PROPERTIES TIMEOUT 120)
 add_test(NAME task_http_request_compiled COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_http_compiled.py $<TARGET_FILE:nex>)
 set_tests_properties(task_http_request_compiled PROPERTIES TIMEOUT 300)
+add_test(NAME task_http_server COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_http_server.py $<TARGET_FILE:nex>)
+set_tests_properties(task_http_server PROPERTIES TIMEOUT 600)
 add_executable(nex_task_limits_runtime_probe tests/task_limits_runtime.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp)
 target_include_directories(nex_task_limits_runtime_probe PRIVATE runtime)
 target_compile_definitions(nex_task_limits_runtime_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)

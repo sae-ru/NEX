@@ -1,4 +1,19 @@
-# Experimental HTTP request host boundary (toolchain0.134.3)
+# Native HTTP request task adapter (toolchain0.134.4)
+
+Language0.24 debug/release `build --target server` now emits checked task
+handler descriptors and a dedicated HTTP bridge. It uses
+`executeConfiguredTaskHttpRequest` to capture operator-configured grants inside
+the original request and invokes the lower-level joined host boundary below.
+There is no nested RequestScope or reset of request control. Server launch
+arguments may only lower the compiler's task ceilings; the existing HTTP budget
+and timeout are capped accordingly. See [the server contract](server.md).
+Actual `task_http_server` requests cover CPU tasks, whole-file/owned stream IO,
+trap/budget/deadline/disconnect cleanup, authenticated identity and source-absent
+execution. The socket/SQLite adapters are still blocking. Async network/DB,
+HTTP task-provider images and task HTTP profile/debug remain pending. The
+older prototype-only description below records the0.134.3 boundary.
+
+# Experimental HTTP request host boundary (toolchain0.134.3, historical)
 
 The trusted C++ runtime exposes `executeTaskHttpRequest` in
 `runtime/nex_task_application.h`. It accepts a checked ABI5 server/task

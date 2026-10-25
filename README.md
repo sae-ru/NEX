@@ -1,3 +1,12 @@
+Development188 / toolchain0.134.4 / language0.24: public native task HTTP
+handlers now use a dedicated descriptor bridge in debug/release, inheriting
+request control and operator file grants. Actual HTTP preflight passed132
+checks across two profiles, including source-absent execution and disconnect
+cleanup. Full build and11 focused CTest groups passed. Async network/DB, HTTP task providers/profile/debug, matching full/
+SAN/SDK/platform acceptance and the complete original objective remain open.
+The approved primary081/016 is not replaced. Older entries below retain their
+historical scopes. See docs/server.md and structured_tasks_runtime.http_server.
+
 # Development0.134.2: current source task discovery and example project
 
 Current type-patch, scalar verification and acceptance-task examples have024

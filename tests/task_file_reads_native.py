@@ -114,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
         boundary.write_text('module boundary;' + body)
         assert cli(root, configured, 'check', boundary, success=False)['code'] == 'E_EFFECT'
     boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{return len(unwrap(file_read_text("text")));}')
-    for options, code in [(['--library'], 'E_TASK_PROVIDER'), (['--target', 'server', '--entry', 'main'], 'E_TASK_TARGET')]:
+    for options, code in [(['--library'], 'E_TASK_PROVIDER'), (['--target', 'server', '--entry', 'main'], 'E_HTTP_SIGNATURE')]:
         assert cli(root, configured, 'build', boundary, *options, success=False)['code'] == code
     profiled = cli(root, configured, 'build', boundary, '--profile', 'profile')
     raw_path = root/'file-read-profile.json'

@@ -112,9 +112,13 @@ request and grants. Source is required for checking even when calls consume
 archives/images. Do not add provider FFI exports, callable/grant transport or
 arbitrary unloading. Task streams support open/read/write/append/seek/size/flush/close with physical
 settlement; read task-file-streams for shared cursor ordering and limits. Task
-network/DB and public task HTTP handlers remain pending. A separate trusted C++
-HTTP request host prototype preserves its existing caller's budget, deadline
-and cancellation; it does not enable source HTTP/task builds or network IO.
+network/DB remain pending. Native language0.24 HTTP handlers may declare task
+and fs under debug/release `build --target server`. Their joined executor shares
+the original HTTP request budget/deadline/cancellation and explicitly captures
+operator-configured file/foreign grants; it creates no new request budget.
+`--nex-task-*` launch arguments may only lower compiled ceilings. HTTP socket
+transport is still blocking; task provider-image HTTP linking, task HTTP
+profiling/debugging and async network/DB remain pending.
 
 Use checked std compute/model/device contracts and actual provider capabilities.
 The experimental owned OpenCL adapter executes bounded U8 Add/Affine; it is not

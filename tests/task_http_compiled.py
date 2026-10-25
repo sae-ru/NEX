@@ -12,7 +12,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex compiled HTTP 🧠 ');roo
 compiler=args.compiler.resolve();source=Path(__file__).resolve().parent;start=time.monotonic()
 report={'schema':'nex.task-http-compiled-host/1','ok':False,'state':'starting','commands':[],
  'compiler':str(compiler),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'public_HTTP_task_target':False,'async_network_or_DB_claimed':False,'full_objective_complete':False}
+ 'public_HTTP_task_target':True,'async_network_or_DB_claimed':False,'full_objective_complete':False}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def run(name,argv,cwd=None,env=None,expected=0,timeout=600):
@@ -49,8 +49,8 @@ try:
    'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'handler':'static'}}}})
  reference=cli('reference','eval',project/'handler/main.nex','--entry','hosted_http::reference',cwd=project)
  expected='alice:A🌍\0β:42';assert reference['value']==expected,reference
- rejected=cli('public-target-rejected','build',project/'handler/main.nex','--entry','hosted_http::handle','--target','server',cwd=project,expected=1)
- assert rejected['code']=='E_TASK_TARGET',rejected
+ rejected=cli('public-profile-rejected','build',project/'handler/main.nex','--entry','hosted_http::handle','--target','server','--profile','profile',cwd=project,expected=1)
+ assert rejected['code']=='E_OPTION',rejected
  built=cli('build','project','--kind','build','--component','app',cwd=project)
  artifacts={row['component']:row for row in built['artifacts']};assert set(artifacts)=={'handler','app'}
  app=artifacts['app'];metadata=json.loads(Path(app['metadata']).read_text());folder=Path(app['artifact']).parent
@@ -72,7 +72,7 @@ try:
  assert result['ok'] and result['compiled_NEX'] and result['concurrent_requests']==8 and result['parent_control_preserved']
  assert bytes.fromhex(result['body_hex']).decode()==reference['value']
  report.update(ok=True,state='passed',compiled_native_reference_agreement=True,source_absent_execution=True,
-  concurrent_requests=8,parent_budget_deadline_cancellation_preserved=True,public_target_rejected=True,
+  concurrent_requests=8,parent_budget_deadline_cancellation_preserved=True,public_profile_rejected=True,
   owned_request_values_retired=True,host_checks=result['checks'])
 except BaseException as error:report.update(state='failed',error=repr(error),traceback=traceback.format_exc());raise
 finally:save()

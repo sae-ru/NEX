@@ -1187,3 +1187,17 @@ and execution cancellation remain independent checks. Read the
 [complete contract](task-foreign-prototype.md) and use explicit history-preserving
 `nex migrate` for older graphs. Broader IO, device ownership and matching current
 SDK/platform delivery remain pending.
+# Native HTTP task adapter (toolchain0.134.4)
+
+Language0.24 native debug/release server builds accept the existing checked
+`server fn handle(std::http::Request)->std::http::Response` signature with
+task and supported fs effects. This is an execution adapter, without new
+syntax, canonical identity or language migration. The existing HTTP request
+owns the shared budget, deadline, cancellation, authenticated identity and
+resource cleanup; its joined executor cannot mint another request budget.
+Operator-configured file grants remain explicit. Socket transport and SQLite
+are still blocking; async task network/DB, task HTTP provider images and
+task HTTP profiling/debugging remain pending. Read server.md for limits and
+scope. Retained older task-language server targets remain unsupported until
+explicit history-preserving migration to0.24.
+

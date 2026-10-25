@@ -1065,11 +1065,11 @@
     "standalone_group_timeout_ms": 5000,
     "runtime_inclusion": "reachable task effect",
     "http_request_host_prototype": {
-      "status": "experimental_trusted_CXX_runtime",
+      "status": "trusted_CXX_runtime_with_public_native_HTTP_adapter",
       "entry_point": "executeTaskHttpRequest",
       "header": "runtime/nex_task_application.h",
       "execution_task_abi": 5,
-      "public_source_target": false,
+      "public_source_target": true,
       "caller_request_required": true,
       "inherits_step_budget_deadline_cancellation": true,
       "owned_request_snapshot": true,
@@ -1079,7 +1079,32 @@
       "async_network": false,
       "async_database": false,
       "synthetic_probe": "task_http_request_host",
-      "compiled_NEX_probe": "task_http_request_compiled"
+      "compiled_NEX_probe": "task_http_request_compiled",
+      "public_server_probe": "task_http_server",
+      "configured_entry_point": "executeConfiguredTaskHttpRequest"
+    },
+    "http_server": {
+      "public_enabled": true,
+      "minimum_language": "0.24",
+      "target": "server",
+      "profiles": [
+        "debug",
+        "release"
+      ],
+      "platforms": [
+        "macOS",
+        "Linux"
+      ],
+      "request_control": "one inherited parent budget/deadline/cancellation; joined completion",
+      "compiled_limits": "immutable ceilings; --nex-task-* may only lower; HTTP --budget/--timeout-ms are capped",
+      "filesystem": "operator-configured grants captured in the existing request; whole-file and owned streams",
+      "async_network": false,
+      "async_database": false,
+      "task_provider_images": false,
+      "task_profiling": false,
+      "logical_task_debugging": false,
+      "probe": "task_http_server",
+      "installed_SDK_accepted": false
     }
   },
   "task_execution_limits": {
@@ -1362,7 +1387,7 @@
       "supported native platform acceptance",
       "native helper logical-stack merge",
       "target name before first activation",
-      "HTTP task handlers",
+      "HTTP task handler debugging",
       "browser/TypeScript/reference and other platforms",
       "combined task debug/profile"
     ],
@@ -1990,7 +2015,7 @@
     "physical_drain": true,
     "pending": [
       "matching full regression, installed SDK and platform acceptance",
-      "streams, networking, DB and task HTTP handlers"
+      "async networking/DB and task HTTP provider/debug/profile delivery"
     ]
   },
   "task_file_writes_prototype": {
@@ -2025,7 +2050,7 @@
     "pending": [
       "matching genuine022 public migration and retained capture/replay/package acceptance",
       "matching CLI/editor/debug/profile/SDK/platform delivery",
-      "streams, networking, DB and task HTTP handlers"
+      "async networking/DB and task HTTP provider/debug/profile delivery"
     ],
     "private_history_migration_verified": true,
     "migration_guide": "docs/task-write-migration.md",
@@ -2079,7 +2104,7 @@
     "pending": [
       "matching genuine022 public migration and retained capture/replay/package acceptance",
       "matching CLI/editor/debug/profile/SDK/platform delivery",
-      "streams, networking, DB and task HTTP handlers"
+      "async networking/DB and task HTTP provider/debug/profile delivery"
     ],
     "private_history_migration_verified": true,
     "migration_guide": "docs/task-write-migration.md",
@@ -2141,7 +2166,7 @@
     "retained_history_changed": false,
     "pending": [
       "matching current installed SDK and native platform acceptance",
-      "streaming network/DB and HTTP handlers"
+      "streaming network/DB and task HTTP provider/debug/profile delivery"
     ]
   },
   "task_file_streams_prototype": {
@@ -2182,7 +2207,7 @@
     "public_history_migration_complete": true,
     "pending": [
       "matching full regression, fresh sanitizers, installed SDK and platform acceptance",
-      "streaming network/DB and task HTTP handlers"
+      "streaming network/DB and task HTTP provider/debug/profile delivery"
     ],
     "image_requirements": {
       "scope": "reachable checked native task instructions and retained file values",
@@ -2335,7 +2360,7 @@
     "public_history_migration_complete": true,
     "pending": [
       "matching full regression, fresh sanitizers, installed SDK and platform acceptance",
-      "streaming network/DB and task HTTP handlers"
+      "streaming network/DB and task HTTP provider/debug/profile delivery"
     ],
     "image_requirements": {
       "scope": "reachable checked native task instructions and retained file values",

@@ -54,5 +54,5 @@ int main(){try{
  }));
  for(auto &future:concurrent)future.get();clean();
  std::cout<<"{\"ok\":true,\"checks\":"<<checks.load()<<",\"body_hex\":\""<<hex(observed)
-  <<"\",\"concurrent_requests\":8,\"parent_control_preserved\":true,\"compiled_NEX\":true,\"public_HTTP_task_target\":false}\n";
+  <<"\",\"concurrent_requests\":8,\"parent_control_preserved\":true,\"compiled_NEX\":true,\"public_HTTP_task_target\":true}\n";
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

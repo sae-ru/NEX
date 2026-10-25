@@ -52,5 +52,5 @@ int main(){try{
  std::vector<std::future<void>> concurrent;
  for(unsigned i=0;i<8;++i)concurrent.push_back(std::async(std::launch::async,[&,i]{RequestScope scope;auto user="user"+std::to_string(i);auto input=request("/ok",user);auto result=executeTaskHttpRequest(code,input,{},1);require(readHandle(result).object->values[1].object->text==user+":"+std::string("A🌍\0β",8),"concurrent request identity crossed");nex_release(result);nex_release(input);}));
  for(auto &future:concurrent)future.get();clean();
- std::cout<<"{\"ok\":true,\"checks\":"<<checks.load()<<",\"concurrent_requests\":8,\"parent_control_preserved\":true,\"public_HTTP_task_target\":false,\"compiled_NEX_claimed\":false}\n";
+ std::cout<<"{\"ok\":true,\"checks\":"<<checks.load()<<",\"concurrent_requests\":8,\"parent_control_preserved\":true,\"public_HTTP_task_target\":true,\"compiled_NEX_claimed\":false}\n";
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}
