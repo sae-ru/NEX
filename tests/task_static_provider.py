@@ -76,7 +76,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         (self.root/'mid/value.nex').write_text(MID)
         self.file.write_text(APP)
         (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':'0.23', 'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':'0.24', 'entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1', 'default_configuration':'debug',
             'configurations':{mode:{'profile':mode, 'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -146,11 +146,11 @@ class StaticTaskProviders(harness.ToolchainCase):
     def provider(self, artifact, component):
         folder = Path(artifact['artifact']).parent
         value = json.loads((folder/'task-provider.json').read_text())
-        self.assertEqual(value['schema'],'nex.native-task-provider/5')
+        self.assertEqual(value['schema'],'nex.native-task-provider/8')
         self.assertEqual(value['mode'],'static')
-        self.assertEqual(value['descriptor_abi'],0x4e45585400000004)
+        self.assertEqual(value['descriptor_abi'],0x4e45585400000005)
         self.assertEqual((value['descriptor_size'],value['abi_offset']),(88,40))
-        self.assertEqual(value['language'],'0.23')
+        self.assertEqual(value['language'],'0.24')
         self.assertEqual(value['component'],component)
         self.assertTrue(value['code_only'])
         self.assertRegex(value['cohort'],r'^[0-9a-f]{64}$')
@@ -169,8 +169,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertFalse((self.root/'.nex').exists())
         for row in plan['components']:
             linkage = row['task_linkage']
-            self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/2')
-            self.assertEqual(linkage['execution_abi'],4)
+            self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/3')
+            self.assertEqual(linkage['execution_abi'],5)
             self.assertEqual(linkage['component'],row['name'])
             self.assertTrue(all(entry['function'].startswith('provider_'+row['name']+'::') for entry in linkage['definitions']))
         reference = self.cli('eval')
@@ -219,8 +219,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertEqual(actual,pack['task_providers'])
         self.assertTrue(actual['public_enabled'])
         self.assertTrue(actual['static_linkage'])
-        self.assertEqual(actual['language'],'0.23')
-        self.assertEqual((actual['execution_task_abi'],actual['descriptor_bytes'],actual['abi_offset']),(4,88,40))
+        self.assertEqual(actual['language'],'0.24')
+        self.assertEqual((actual['execution_task_abi'],actual['descriptor_bytes'],actual['abi_offset']),(5,88,40))
         self.assertTrue(actual['source_required'])
         for key in ('dynamic_linkage','profiling','logical_debugging','http_task_handlers','foreign','binary_only',
                     'unload','authority_transport','callable_transport','imported_function_values'):
@@ -396,7 +396,7 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
     def test_invalid_authority_and_callable_exports_reject_before_tools(self):
         baseline = copy.deepcopy(self.description)
         cases = [
-            ('file','pub server fn answer(value:file)->i64!{task}{return 1;}', 'file'),
+            ('opaque','pub server resource Handle;pub server fn answer(value:Handle)->i64!{task}{return 1;}', 'Handle'),
             ('task','pub fn answer(value:task<i64>)->i64!{task}{return 1;}', 'task<i64>'),
             ('scope','pub fn answer(value:task_scope)->i64!{task}{return 1;}', 'task_scope'),
             ('channel','pub fn answer(value:channel<i64>)->i64!{task}{return 1;}', 'channel<i64>'),
@@ -436,7 +436,7 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
         shared=self.project('plan')
         self.assertFalse(shared['external_tools_invoked'])
         components={row['name']:row['task_linkage'] for row in shared['components']}
-        self.assertEqual(components['app']['schema'],'nex.project-task-linkage/5')
+        self.assertEqual(components['app']['schema'],'nex.project-task-linkage/8')
         self.assertEqual(components['app']['mode'],'shared-fixed')
         closure=components['app']['load_closure']
         self.assertEqual(closure['root'],'app')
@@ -451,14 +451,14 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
             profile_plan=self.project('plan',configuration='profile')
             self.assertFalse(profile_plan['external_tools_invoked'])
             for row in profile_plan['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/6')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/9')
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
         else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
         if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
             planned=self.project('plan','app','debug','--task-debug')
             for row in planned['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/7')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/10')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.assertFalse((self.root/'.nex').exists())

@@ -1,6 +1,6 @@
 # Versions, compatibility and explicit migration
 
-Development toolchain0.123.0 uses source language0.21, graph schema 4 and the canonical
+Development toolchain0.134.0 uses source language0.24, graph schema 4 and the canonical
 formats recorded in docs/language.md. Discover `project_features` and retrieve this guide with
 `nex guide --kind compatibility --json`. The language pack indexes
 `llm/project.schema.json` for authoring current project manifests.
@@ -10,7 +10,7 @@ formats recorded in docs/language.md. Discover `project_features` and retrieve t
 ```json
 {
   "schema": "nex.project/1",
-  "language": "0.20",
+  "language": "0.24",
   "entry": "main.nex",
   "libraries": { "numbers": "./vendor/numbers" }
 }
@@ -80,7 +80,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current0.21. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Explicit declared version; current0.24. Old archived source requires matching SDK or explicit recheck/migration. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |

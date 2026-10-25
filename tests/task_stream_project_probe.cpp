@@ -10,6 +10,11 @@ int main(int argc,char **argv){try{
  auto parsed=llvm::json::parse(readFile(argv[1]));if(!parsed||!parsed->getAsObject())throw Error("E_OPTION","invalid project probe request");
  auto &o=*parsed->getAsObject();auto text=[&](const char *key,const std::string &fallback=""){return o.getString(key).value_or(fallback).str();};
  auto sourceLanguage=o.getBoolean("public_api").value_or(false)?currentSourceLanguage:SourceLanguage::TaskStreams024;
+ if(auto retained=o.getString("source_language")){
+  if(*retained=="0.23")sourceLanguage=SourceLanguage::TaskWrites023;
+  else if(*retained=="0.24")sourceLanguage=SourceLanguage::TaskStreams024;
+  else throw Error("E_LANGUAGE_VERSION","project probe accepts explicit retained023 or024");
+ }
  const auto action=text("action","plan"),root=text("root"),manifest=text("manifest",(std::filesystem::path(root)/"nex.build.json").string());
  llvm::json::Value output=nullptr;
  if(action=="capture"){

@@ -12,7 +12,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex stream histories ');root=
 fixtures=Path(__file__).resolve().parent/'fixtures';started=time.monotonic()
 report={'schema':'nex.private024-expanded-stream-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'source_probe_sha256':hashlib.sha256(source_probe.read_bytes()).hexdigest(),
- 'public_language':'0.23','private_language':'0.24','public024_published':False,'full_objective_complete':False}
+ 'public_language':'0.24','private_language':'0.24','public024_published':False,'full_objective_complete':False}
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,d):p.write_text(json.dumps(d,indent=2,ensure_ascii=False)+'\n')
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
@@ -56,7 +56,7 @@ try:
    label=name+'-'+str(i);project=restore(label,meta,sql);before=state(project)
    physical={n:(project/n).read_bytes() for n in [*meta['revisions'][-1]['physical_files'],'nex.json',*(['nex.lock.json'] if meta['lock'] else [])]}
    value=invoke(label+'-migrate',project,meta,row,{'execute':True});after=state(project);preserved(before,after)
-   assert value['origin_verified'] and value['origin_revision']==row['revision'] and value['origin_language']=='0.23' and value['language']=='0.24' and value['public_default']=='0.23'
+   assert value['origin_verified'] and value['origin_revision']==row['revision'] and value['origin_language']=='0.23' and value['language']=='0.24' and value['public_default']=='0.24'
    assert value['target_value']==row['expected_value'] and value['target_stdout']==''
    if row['old_error']:assert value['old_error']==row['old_error']
    else:assert value['old_value']==row['old_value'] and value['old_stdout']==''
@@ -92,7 +92,7 @@ try:
    assert client.stdout==str(row['expected_value'])+'\n' and client.stderr==''
    report['cases'].append({'name':label,'origin_revision':row['revision'],'revision':value['revision'],'expected_value':row['expected_value'],'old_error':row['old_error'],
     'all16_tables_schema_rows_ids_preserved':True,'physical_sources_manifest_lock_preserved':True,'old_revision_rechecked':True,'installed_old_sdk_rechecked':bool(a.retained_sdk),
-    'native_reference':True,'pure_client_TypeScript':True,'source_absent_native':True,'idempotent':True,'public_HEAD_guard':True,
+    'native_reference':True,'pure_client_TypeScript':True,'source_absent_native':True,'idempotent':True,'physical_manifest_guard':True,
     'executable':str(binary),'executable_sha256':sha(binary),'fixture_sha256':sha(stem),'SQL_sha256':meta['SQL_sha256']});save()
   for suffix,extra,code in [('disguise',{'declared_language':'0.24'},'E_REVISION'),('stale',{'expected_revision':'0'*64},'E_CONFLICT'),('implicit',{'unversioned_synchronize':True},'E_LANGUAGE_VERSION')]:
    label=name+'-'+suffix;project=restore(label,meta,sql);before=state(project);result=invoke(label,project,meta,meta['revisions'][-1],extra,1)

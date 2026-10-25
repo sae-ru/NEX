@@ -47,8 +47,8 @@ class Tasks(harness.ToolchainCase):
 
     def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
         ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
-        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'ancestor.nex'}));self.cli('check',outer)
-        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}))
+        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'ancestor.nex'}));self.cli('check',outer)
+        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
         self.root=child;self.file=child/'main.nex';task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
         run=self.task('run','--directory',ancestor/'captures/run');receipt=Path(run['output'])

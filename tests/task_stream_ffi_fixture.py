@@ -71,11 +71,14 @@ def build_provider(repo, directory, dialect, source, signatures, run, label,
     code = directory / ('module.c' if dialect == 'C11' else 'module.cpp')
     code.write_text(source)
     image = directory / 'module.so'
-    selected = (os.environ.get('NEX_MIXED_C_COMPILER' if dialect == 'C11' else 'NEX_MIXED_CXX_COMPILER')
+    generic_compiler = os.environ.get('NEX_MIXED_COMPILER')
+    selected = generic_compiler or (os.environ.get('NEX_MIXED_C_COMPILER' if dialect == 'C11' else 'NEX_MIXED_CXX_COMPILER')
                 if instrumented else None) or shutil.which('clang' if dialect == 'C11' else 'clang++')
     assert selected, 'C producer compiler unavailable'
     argv = [selected, '-std=' + ('c11' if dialect == 'C11' else 'c++20'), '-shared', '-fPIC',
             '-g0', '-pthread', '-I' + str(Path(repo) / 'runtime'), '-I' + str(directory)]
+    if generic_compiler:
+        argv += ['-x', 'c' if dialect == 'C11' else 'c++']
     if sys.platform == 'darwin':
         # Current dyld requires LC_UUID. The linker derives it from content;
         # a fixed install name and no debug paths permit exact rebuild checks.

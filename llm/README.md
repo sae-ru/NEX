@@ -3,7 +3,7 @@
 NEX uses one versioned specification, grammar and compiler interface for Codex,
 Hermes and other LLMs. Start with [BOOTSTRAP.md](BOOTSTRAP.md), then use the
 compact [coding contract](SYSTEM_PROMPT.md). Detailed guides are retrieved for
-the feature being changed. Current development language is0.23; installed
+the feature being changed. Current development language is0.24; installed
 compiler capabilities and matching acceptance evidence govern actual support.
 
 ## First use
@@ -28,10 +28,10 @@ prove that a test suite completely captures the user's intent.
 
 ## Current boundaries
 
-Language0.23 enables checked server task/fs whole-file writes, including separate
-ABI4 static/shared task providers. Source task/ffi resource transport, physical
+Language0.24 enables checked server task/fs whole-file and stream IO, including
+ABI5 static/fixed-shared task providers and genuine File owner transport. Source task/ffi resource transport, physical
 grants, owner transfer and cleanup retain their checked rules. General exceptions,
-stream/network/DB tasks, owned NPU/models, native UI/mobile completion and broader
+network/DB tasks, owned NPU/models, native UI/mobile completion and broader
 platform delivery remain pending. Query each relevant descriptor and guide.
 
 Source enablement, full compiler tests, installed SDK acceptance and actual

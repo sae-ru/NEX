@@ -11,7 +11,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex stream migration ');root=
 fixtures=Path(__file__).parent/'fixtures';base='language-0.23-sdk1332-task-streams';meta=json.loads((fixtures/(base+'.json')).read_text());sql=(fixtures/(base+'.sql')).read_text()
 assert hashlib.sha256(sql.encode()).hexdigest()==meta['SQL_sha256'] and meta['all_revisions_produced_by_actual023_SDK'] and not meta['retagged_history']
 report={'schema':'nex.private024-stream-migration/1','ok':False,'state':'starting','checks':[],'commands':[],
- 'genuine023_revisions':3,'public_language':'0.23','target_language':'0.24','probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'full_objective_complete':False};start=time.monotonic()
+ 'genuine023_revisions':3,'public_language':'0.24','target_language':'0.24','probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'full_objective_complete':False};start=time.monotonic()
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def state(project):
  database=(project/'.nex/graph.db').resolve()
@@ -35,7 +35,7 @@ def invoke(name,project,extra=None,expected=0):
 try:
  project=restore('positive');before=state(project);manifest=(project/'nex.json').read_bytes();source=(project/'main.nex').read_bytes()
  value=invoke('positive',project,{'execute':True});after=state(project)
- assert value['origin_verified'] is True and value['origin_language']=='0.23' and value['language']=='0.24' and value['public_default']=='0.23'
+ assert value['origin_verified'] is True and value['origin_language']=='0.23' and value['language']=='0.24' and value['public_default']=='0.24'
  assert value['old_error']=='E_TASK_UNIMPLEMENTED' and value['target_value']==42 and value['target_stdout']==''
  assert len(before['tables'])==len(after['tables'])==16 and before['schema']==after['schema']
  for table,rows in before['tables'].items():
@@ -48,12 +48,12 @@ try:
  (root/'positive-native.stdout').write_text(r.stdout);(root/'positive-native.stderr').write_text(r.stderr);assert r.returncode==42 and not r.stdout and not r.stderr
  report['checks'].append({'name':'positive','executable':str(binary),'executable_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'all16_tables_schema_rows_ids_preserved':True})
  invoke('idempotent',project,{'expected_revision':value['revision']});assert state(project)==after;report['checks'].append({'name':'idempotent'})
- # Ordinary source synchronization still cannot replace a future-language HEAD.
+ # Ordinary source synchronization still refuses an unmaterialized old physical manifest.
  cli_env={**os.environ};cli_env.pop('NEX_RESOURCE_DIR',None)
  ordinary=subprocess.run([str(compiler),'check','--json'],cwd=project,env=cli_env,text=True,capture_output=True,timeout=120)
  (root/'ordinary-CLI.stdout').write_text(ordinary.stdout);(root/'ordinary-CLI.stderr').write_text(ordinary.stderr)
  assert ordinary.returncode==1 and json.loads(ordinary.stdout)['code']=='E_LANGUAGE_VERSION' and state(project)==after
- report['checks'].append({'name':'actual-public-CLI-head-language-guard'})
+ report['checks'].append({'name':'actual-public-CLI-physical-manifest-guard'})
  for name,extra,code in [
   ('implicit-sync',{'unversioned_synchronize':True},'E_LANGUAGE_VERSION'),
   ('future-disguise',{'declared_language':'0.24'},'E_REVISION'),

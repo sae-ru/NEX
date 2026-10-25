@@ -10,7 +10,7 @@ class Projects(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
         for name in ['core','app','bridge','browser']:(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x*3+7;}pub server fn secret()->str{return "NEX_SERVER_ONLY_POISON";}')
         (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}test fn check_value()->unit{assert(m::calculate(5)==22);}')
         (self.root/'bridge/main.nex').write_text('module bridge;import "../core/value.nex" as m;pub fn answer()->i64{return m::calculate(5);}')

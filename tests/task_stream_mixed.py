@@ -9,7 +9,7 @@ if args.output:root=args.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex mixed file resource ');root=Path(temporary.name).resolve()
 probe=args.probe.resolve();started=time.monotonic()
 report={'schema':'nex.private024-mixed-file-resource/1','ok':False,'state':'starting','cases':[],'commands':[],
- 'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.23','private_language':'0.24',
+ 'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.24','private_language':'0.24',
  'public024_published':False,'C_FFI_file_transport':False,'rejected_programs':[],'full_objective_complete':False}
 DECLARATIONS={'create':('value:i64','Session',1),'read':('owner:Session','i64',2),'forward':('owner:Session','Session',3),'status':('owner:Session','i64',5)}
 BASE='''module mixed;server resource Session;

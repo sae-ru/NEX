@@ -67,7 +67,7 @@ def check_installed_task_migration(cli, root, resources):
     out = root/'language-migration019-020'
     out.mkdir(exist_ok=False)
     fixtures = resources/'examples/task-migration'
-    current_language=cli('describe')['version'];_require(current_language=='0.23', 'migration gate requires the matching language023 SDK')
+    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24'), 'migration gate requires a matching language023/024 SDK')
     evidence = {'language':current_language, 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
 
     def restore(name, label=None):
@@ -157,7 +157,7 @@ def check_installed_task_migration(cli, root, resources):
             'implicit_HEAD_language_change_rejected':True,
             'native_task_archive':name == 'tasks'}
 
-    for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', '0.23', 'unknown'):
+    for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', '0.23', '0.24', 'unknown'):
         project, database, metadata, _, _, _ = restore('history', 'corrupt-language-' + language)
         with closing(sqlite3.connect(database)) as db:
             db.execute('UPDATE revisions SET language=? WHERE hash=?', (language, metadata['head'])); db.commit()

@@ -27,7 +27,7 @@ def main():
         if run.returncode:raise RuntimeError('command failed: '+str(argv)+'\n'+run.stderr+'\n'+run.stdout)
         return run.stdout
     try:
-        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23'})+'\n')
+        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24'})+'\n')
         for name in ('leaf','mid','app'):(root/name).mkdir()
         (root/'leaf/value.nex').write_text('module shared_leaf;pub fn work()->i64!{task}{let held:list<str>=["owned🧠"];task_yield();return 40+len(held);}\n')
         (root/'mid/value.nex').write_text('module shared_middle;import "../leaf/value.nex" as leaf;pub fn work()->i64!{task}{task_yield();return with_tasks(1,fn(scope:task_scope)->i64!{task}{let child:task<i64>=task_spawn(scope,fn()->i64!{task}{return leaf::work()+1;});return task_wait(child);});}\n')

@@ -69,8 +69,8 @@ class Discovery(harness.ToolchainCase):
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
             (self.root / 'nex.json').write_text(text)
-            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.23')
-            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.23')
+            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.24')
+            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.24')
             self.assertFalse((self.root / '.nex').exists())
 
     def test_existing_graph_rows_ids_and_readonly_inputs_stay_unchanged(self):
@@ -123,8 +123,8 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(full['task_profile_collector']['public_profile_enabled'])
         self.assertEqual(full['task_profiling'], pack['task_profiling'])
         self.assertTrue(full['task_profiling']['source_support'])
-        self.assertEqual(full['task_profiling']['cli_language'], '0.23')
-        self.assertEqual(full['task_profiling']['execution_task_abi'], 4)
+        self.assertEqual(full['task_profiling']['cli_language'], '0.24')
+        self.assertEqual(full['task_profiling']['execution_task_abi'], 5)
         self.assertEqual(full['task_profiling']['report_schema'], 'nex.profile/2')
         self.assertFalse(full['task_profiling']['tracy'])
         self.assertFalse(full['task_profiling']['async_debugger'])

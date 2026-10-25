@@ -3,7 +3,7 @@
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The current development language is0.23; discover the actual SDK before choosing
+The current development language is0.24; discover the actual SDK before choosing
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
 ## Discover only the context needed
@@ -70,7 +70,7 @@ must declare every required effect.
 | Graph and recovery | graph_features, scoped_discovery, patch_features, history_features, snapshot_features | graph, history, snapshot |
 | Components and targets | project_build, native_target_policy, application_package_platforms, sdk_bundle_platforms | project, build |
 | Web/API/server | browser_workers, api_features, wasm_features | web, api, server, wasm, browser-worker |
-| CPU tasks and IO | source_concurrency, structured_tasks_runtime, task_file_reads, task_file_writes | concurrency, task-lifetime, task-limits, task-file-reads, task-file-writes |
+| CPU tasks and IO | source_concurrency, structured_tasks_runtime, task_file_reads, task_file_writes, task_file_streams | concurrency, task-lifetime, task-limits, task-file-reads, task-file-writes, task-file-streams |
 | Resources and FFI | source_resources, foreign_boundary, resource_regions, task_foreign_prototype | source-resources, ffi, resource-regions, task-foreign-source |
 | Compute/models/devices | compute, model, device | compute, model, device |
 | Debug/profile | debug_features, task_debugging, task_provider_debugging, task_profiling, task_provider_profiling | debug, expression, task-debug, task-provider-debug, profile, task-provider-profile |
@@ -87,7 +87,7 @@ TypeScript schedulers have their own execution guarantees; native threading
 does not imply threads in a browser or reference execution. Use the separate
 checked browser Worker boundary only as advertised.
 
-Language0.23 server functions declaring task and fs support bounded whole-file
+Language0.24 server functions declaring task and fs support bounded whole-file
 reads and writes. Write calls are `file_write_text(str,str)->result<bool>` and
 `file_write_bytes(str,bytes)->result<bool>`. Resumable helpers must declare task;
 an fs-only helper cannot silently become asynchronous. Supply an explicit
@@ -104,12 +104,15 @@ retain borrowed source frames or C call/type/value tokens on IO workers.
 No opaque authority crosses wire/browser/file/unstructured-parallel boundaries.
 
 Source task/ffi resource transport differs from binary task-provider exports.
-Current0.23 static/fixed-shared images use ABI4 records5/6/7 and explicit
-component/image/root write requirements. Retained ABI3/mask31 records keep their
-meaning. Binary exports remain resource-free; one application owns the executor,
+Current0.24 static/fixed-shared images use ABI5 records8/9/10 and explicit
+component/image/root read/write/stream requirements. Retained ABI3/4 masks31/799
+keep their meaning. Checked File values retain genuine owners and original grants;
+C FFI/wire/browser exports cannot transport File authority; one application owns the executor,
 request and grants. Source is required for checking even when calls consume
 archives/images. Do not add provider FFI exports, callable/grant transport or
-arbitrary unloading. Streams, task network/DB and task HTTP handlers are pending.
+arbitrary unloading. Task streams support open/read/write/append/seek/size/flush/close with physical
+settlement; read task-file-streams for shared cursor ordering and limits. Task
+network/DB and task HTTP handlers remain pending.
 
 Use checked std compute/model/device contracts and actual provider capabilities.
 The experimental owned OpenCL adapter executes bounded U8 Add/Affine; it is not

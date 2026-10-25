@@ -1,3 +1,4 @@
+(* Public language0.24 retains this syntax; server task/fs streams and genuine File task ownership use explicit history-preserving migration. Retained023 parsing stays unchanged. *)
 (* Toolchain0.133.12 private alias-close/mixed-history conformance adds no source syntax, public023 or identity change. *)
 (* Toolchain0.133.11 private physical IO/diagnostic completion and verified marker reading add no source syntax, public023 or identity changes. *)
 (* Toolchain0.133.10 corrects private024 pure-helper requirements; syntax, public023 and retained identities are unchanged. *)

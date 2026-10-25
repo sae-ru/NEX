@@ -62,7 +62,7 @@ try:
   finally:manifest.write_bytes(raw_manifest)
   request={'project':str(project),'origin_revision':row['revision'],'expected_revision':metadata['head'],'execute':True}
   result=invoke(name,request,env=env)
-  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']=='0.23'
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']=='0.24'
   assert result['revision']!=row['revision'] and result['previous_revision']==metadata['head']
   after=state(database);retained(before,after);assert after['tables']['head']==[(1,result['revision'])]
   assert len(after['tables']['revisions'])==4
@@ -84,10 +84,10 @@ try:
    'native_reference':True,'executable':str(executable),'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),'physical_sources_unchanged':True,'idempotent_target':True,'implicit_cross_version_HEAD_rejected':True});save()
  # Ordinary CLI publishes exactly the same checked023 target as the shared preflight.
  for index,row in enumerate(metadata['revisions']):
-  name='public023-'+str(index);project,database,before,physical=restore(name)
+  name='public024-'+str(index);project,database,before,physical=restore(name)
   result=json.loads(run(name,[compiler,'migrate','--revision',row['revision'],'--expected-revision',metadata['head'],'--json'],os.environ,project).stdout)
-  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['revision']!=row['revision']
-  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'explicit_public023':True});save()
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.24' and result['revision']!=row['revision']
+  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'explicit_public024':True});save()
  # Negative target preflight must not create even an empty destination Store.
  origin,_,_,_=restore('read-only-origin');origin_revision=metadata['head']
  invalid=candidate('invalid-target','module wrong;fn main()->i64{return "wrong type";}')

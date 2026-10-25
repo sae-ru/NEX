@@ -81,7 +81,7 @@ class FrontendIO(unittest.TestCase):
         raw+=b'test fn edge()->unit{assert(len(text())==1);assert(len(utf8_bytes(text()))==4);}\n'
         self.assertEqual(raw.index(emoji),65534)
         source=self.root/'boundary.nex';source.write_bytes(raw)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'boundary.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'boundary.nex'}))
         for args in [('check',),('eval',),('run','--profile','release'),('test',),('test','--target','web')]:
             with self.subTest(command=args):
                 p=subprocess.run([COMPILER,*args,'--json'],cwd=self.root,capture_output=True,text=True,timeout=60)

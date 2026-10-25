@@ -38,7 +38,7 @@
       "$ref": "#/$defs/hash"
     },
     "language": {
-      "const": "0.23"
+      "const": "0.24"
     },
     "configuration": {
       "type": "string",

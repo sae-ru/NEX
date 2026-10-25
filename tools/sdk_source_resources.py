@@ -21,7 +21,7 @@ def check_installed_source_resources(cli,run,last_command,root,resources,driver,
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
  feature=cli('describe','--field','source_resources')['value']
  pack=json.loads((resources/'llm/language-pack.json').read_text())
- _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']=='0.23','resource descriptor/pack differ')
+ _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']=='0.24','resource descriptor/pack differ')
  _require(cli('guide','--kind','source-resources')['text']==(resources/'docs/source-resources.md').read_text(),'resource guide differs')
  base='''module sdk_resource;
 server resource Session;

@@ -1,0 +1,13 @@
+module stream_example;
+server fn main()->unit !{task,fs,io}{
+  let stream:file=unwrap(file_open_read("input"));
+  let prefix:bytes=with_tasks(1,server fn(s:task_scope)->bytes !{task,fs}{
+    let child:task<bytes>=task_spawn(s,server fn()->bytes !{task,fs}{
+      return unwrap(file_read(stream,3));
+    });
+    return task_wait(child);
+  });
+  assert(prefix==utf8_bytes("abc"));
+  assert(file_close(stream));
+  print(42);
+}

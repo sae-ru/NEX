@@ -133,7 +133,7 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
     project = root / 'source-project'
     (project / 'core').mkdir(parents=True)
     (project / 'app').mkdir()
-    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language='0.23', entry='app/main.nex')))
+    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language='0.24', entry='app/main.nex')))
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},

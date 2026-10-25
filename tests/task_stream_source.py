@@ -7,7 +7,7 @@ probe=a.probe.resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex source streams ');root=Path(temporary.name)
 start=time.monotonic();report={'schema':'nex.private024-task-streams/1','ok':False,'state':'starting','cases':[],'commands':[],
- 'source_language':'0.24','public_language':'0.23','public_source_streams':False,'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'full_objective_complete':False}
+ 'source_language':'0.24','public_language':'0.24','public_source_streams':True,'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def run(name,args,env,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=root,env=env,text=True,capture_output=True,timeout=240)

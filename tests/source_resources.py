@@ -8,7 +8,7 @@ if cli.output:OUT.mkdir()
 if cli.legacy_fixtures is None and os.environ.get('NEX_TEST_RESOURCE020_FIXTURES'):cli.legacy_fixtures=Path(os.environ['NEX_TEST_RESOURCE020_FIXTURES'])
 
 ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};ENV.pop('NEX_RESOURCE_DIR',None)
-report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.23','source_language':'0.23','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
+report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.24','source_language':'0.24','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def save():report.update(seconds=round(time.monotonic()-started,3),updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
@@ -21,7 +21,7 @@ def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
  return result
 def bundle(name,files):
  root=OUT/name;root.mkdir();doc={'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':files} if isinstance(files,str) else files};path=root/'sources.json';path.write_text(json.dumps(doc,ensure_ascii=False,indent=2)+'\n');return root,path
-def check(name,text,error=None,language='0.23'):
+def check(name,text,error=None,language='0.24'):
  root,path=bundle(name,text);r=command(name,[PROBE,'check',path,root,'-',language],expected=1 if error else 0,code=error);report['cases'].append({'name':name,'expected_error':error,'revision':r.get('revision')});save();return r,root,path
 try:
  assert PROBE.is_file();report['probe_sha256']=sha(PROBE)
@@ -117,7 +117,7 @@ try:
   if cli.nex:
    sources=json.loads(compiled_bundle.read_text())
    for name,text in sources['files'].items():(root/name).write_text(text)
-   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':sources['entry']})+'\n')
+   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':sources['entry']})+'\n')
    compiler=cli.nex.resolve()
    checked=command('public-check-'+kind,[compiler,'check','main.nex','--json'],cwd=root)
    exported=command('public-ffi-'+kind,[compiler,'ffi','main.nex','--symbol','fixture::create','--json'],cwd=root)

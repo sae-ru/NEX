@@ -1,3 +1,20 @@
+# Current source language0.24 (development0.134.0)
+
+Ordinary source/project commands select024. Server task/fs whole-file and opened
+File operations are enabled; genuine File owners can cross checked structured
+task and source-provider boundaries while retaining their original grants.
+Static/fixed-shared providers use ABI5 records8/9/10, static plan3 and shared/
+profile/debug plans8/9/10. Completion envelope schemas retain their existing
+independent numbering. C FFI/wire/browser and unstructured parallel boundaries
+cannot transport File authority. A diagnostic identity is never an IO grant.
+
+Read [the current source-stream contract](task-file-streams.md) and query actual
+compiler descriptors for exact formats. Retained023 parser rules and ABI3/4
+records/masks31/799 remain explicit historical contracts. Migrate an archived
+project and export separately; changing its manifest alone is insufficient.
+Full/SAN/installed SDK/platform delivery have separate acceptance evidence.
+Versioned notes below preserve their earlier scopes rather than the new default.
+
 # Fixed shared native task providers
 
 Working124 / toolchain0.117 / language0.20 enables candidate concrete task calls

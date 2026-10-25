@@ -25,7 +25,7 @@ started = time.monotonic()
 report = {'schema': 'nex.private024-stream-requirements/1', 'ok': False,
           'commands': [], 'operation_cases': [], 'application_cases': [],
           'probe_sha256': hashlib.sha256(probe.read_bytes()).hexdigest(),
-          'public_language': '0.23', 'private_language': '0.24',
+          'public_language': '0.24', 'private_language': '0.24',
           'public024_published': False, 'full_objective_complete': False}
 
 

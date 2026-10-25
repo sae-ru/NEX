@@ -80,7 +80,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         for name,text in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(text)
         self.file=self.root/'app/main.nex';self.file.write_text(APP)
         (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(1));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         self.description={'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -321,7 +321,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertIs(command['output_limit'],False)
         captured=self.artifacts(command['response'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/7',json.dumps(source_capture))
+        self.assertIn('nex.project-task-linkage/10',json.dumps(source_capture))
         spec=importlib.util.spec_from_file_location('debug_completion_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in check['components']:
@@ -346,7 +346,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
                 key=copied.relative_to(receipt.parent/'artifacts/prepare-provider').as_posix()
                 self.assertEqual(check['artifacts'][key],{'hash':row['hash'],'bytes':row['bytes']})
             own=json.loads((receipt.parent/files['task-provider.json']['retained']).read_text())
-            self.assertEqual(own['schema'],'nex.native-task-provider/7')
+            self.assertEqual(own['schema'],'nex.native-task-provider/10')
             self.assertEqual(metadata['task_provider_hash'],files['task-provider.json']['hash'])
         app=next(c for c in check['components'] if c['component']=='app')
         retained_session=json.loads((receipt.parent/app['debug_session']).read_text())
@@ -414,7 +414,7 @@ fn main()->unit!{task,io}{print(child(41));}
 ''')
         self.description['components']={'app':{'kind':'executable','root':'app','entry':'app/main.nex'}};self.save()
         planned=self.cli('project','--kind','plan','--component','app','--task-debug')
-        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/7')
+        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/10')
         self.assertFalse((self.root/'.nex/build').exists())
         built=self.cli('project','--kind','build','--component','app','--task-debug')
         explicit=built['debug_sessions']['app'];manifest=json.loads(Path(explicit['manifest']).read_text())

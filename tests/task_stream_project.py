@@ -9,8 +9,8 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex stream project ');root=Pa
 probe=a.probe.resolve();compiler=a.compiler.resolve();reference=a.reference.resolve();start=time.monotonic()
 report={'schema':'nex.private024-stream-project/1','ok':False,'state':'starting','commands':[],'cases':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.23','private_language':'0.24',
- 'public024_published':False,'full_objective_complete':False}
+ 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.24','private_language':'0.24',
+ 'public024_enabled':True,'full_objective_complete':False}
 LEAF='''module leaf;
 pub struct Box<T>{value:T;}
 pub server fn opened()->Box<file> !{task,fs}{return Box(unwrap(file_open_read("input")));}
@@ -73,12 +73,12 @@ try:
     'configurations':{profile:{'profile':profile,'target':'native','task_limits':{'steps':1000000,'timeout_ms':60000,'workers':1}}},'default_configuration':profile}
    write(project/'nex.build.json',architecture);base={'root':str(project),'configuration':profile,'task_debug':debug}
    files=case/'files';files.mkdir();(files/'input').write_bytes(b'abcdef');env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
-   refused=invoke(name+'-public-refusal',{'action':'plan','public_api':True,**base},1);assert refused['code']=='E_LANGUAGE_VERSION'
+   public=invoke(name+'-public-plan',{'action':'plan','public_api':True,**base});check_plan(public,mode,profile,debug)
    plan=invoke(name+'-plan',{'action':'plan',**base});rows=check_plan(plan,mode,profile,debug)
    assert not (project/'.nex').exists()
    capture=invoke(name+'-capture',{'action':'capture',**base});capture_file=case/'capture.json';write(capture_file,capture)
    assert capture['language']=='0.24'
-   refused=invoke(name+'-public-capture-refusal',{'action':'validate','capture':str(capture_file),'public_api':True},1);assert refused['code']=='E_PROJECT_CAPTURE'
+   accepted=invoke(name+'-public-capture',{'action':'validate','capture':str(capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.24'
    built=invoke(name+'-build',{'action':'build','directory':str(case/'native'),**base},env=env);binary=executable(built)
    metadata=json.loads((binary.parent/'build.json').read_text());assert metadata['task_provider']['language']=='0.24' and metadata['task_execution_abi']==0x4e45585400000005
    assert metadata['task_file_streams'] is True and metadata['task_file_writes'] is False

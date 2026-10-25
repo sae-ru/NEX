@@ -10,7 +10,7 @@
       "const": "nex.project/1"
     },
     "language": {
-      "const": "0.23"
+      "const": "0.24"
     },
     "entry": {
       "type": "string",

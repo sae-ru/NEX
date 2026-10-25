@@ -14,7 +14,7 @@ def cli(*args,cwd=None,expected_success=True,timeout=180):
  assert (r.returncode==0) is expected_success,(name,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return json.loads(r.stdout)
 try:
  report['evidence']=module.check_installed_task_migration(cli,root,resources)
- assert report['evidence']['language']=='0.23' and set(report['evidence']['stores'])=={'history','tasks'}
+ assert report['evidence']['language']=='0.24' and set(report['evidence']['stores'])=={'history','tasks'}
  assert hashlib.sha256(compiler.read_bytes()).hexdigest()==report['compiler_sha256']
  report.update(ok=True,state='passed')
 except BaseException as e:report.update(state='failed',error=repr(e));raise

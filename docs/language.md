@@ -1,3 +1,20 @@
+# Development0.134.0: public source language0.24 candidate
+
+Ordinary source/project commands select TaskStreams024. Checked server task/fs
+functions support opened File IO and genuine File owner captures/results across
+structured tasks. Static/fixed-shared source providers use ABI5 records8/9/10;
+read/write/stream requirements never grant OS authority. The same source semantics
+are executed by native continuations and the independent AST interpreter.
+
+Explicit migration verifies retained018..023 origin identity before checking024
+and before opening a writable Store. Original rows/schema/IDs and physical files
+remain; export creates a separate current-language project. Merely editing a
+manifest does not migrate a graph. Retained023 parsing and ABI3/4 stay intact.
+See [source file streams](task-file-streams.md). Current compiler, full/SAN,
+installed SDK and platform acceptance remain independent pending gates. The
+accepted SDK0.133.5 and primary081 have not been replaced. All original broader
+language/server/accelerator/UI/mobile/Studio/converter requirements remain open.
+
 # Development0.133.12: source alias-close and genuine mixed histories
 
 The private024 physical IO suite covers source alias-close during read, write,

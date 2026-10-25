@@ -249,7 +249,7 @@
           "const": "nex.frontend-diagnostic/1"
         },
         "language": {
-          "const": "0.23"
+          "const": "0.24"
         },
         "phase": {
           "enum": [

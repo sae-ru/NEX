@@ -150,7 +150,7 @@ def main():
  if destination:out=Path(destination).resolve();out.mkdir(parents=True)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex source task resources ');out=Path(temporary.name)
  probe=args.probe.resolve();env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic()
- report={'ok':False,'private_language':'0.23','public_language':'0.23','public_enabled':True,'commands':[],'checks':[],'probe_sha256':sha(probe)}
+ report={'ok':False,'private_language':'0.24','public_language':'0.24','public_enabled':True,'commands':[],'checks':[],'probe_sha256':sha(probe)}
  report['public_cli_execution']=bool(args.compiler)
  if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,marker=None):
@@ -164,11 +164,11 @@ def main():
   return '\n'.join(lines)+'\n'+body+'\n'
  def bundle(label,body,pin='0'*64):
   path=out/(label+'.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source(pin,body)}});return path
- def command(action,path,value='-',language='0.23'):
-  if args.compiler and language=='0.23':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,value,language]
+ def command(action,path,value='-',language='0.24'):
+  if args.compiler and language=='0.24':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,value,language]
   return [probe,action,path,out,value,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
   template=bundle('signature-template',CASES['aliases_and_closed_owner']);api=json.loads(run('signatures',command('check',template)).stdout)
   signatures=api['signatures'];assert set(signatures)==set(DECLARATIONS)
   module=(REPO/'tests/typed_resource_module.c').read_text().replace('#include <stdint.h>','#include <stdint.h>\n#include <time.h>')

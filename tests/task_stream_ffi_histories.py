@@ -35,7 +35,7 @@ started = time.monotonic()
 report = {'schema': 'nex.private024-mixed-stream-histories/1', 'ok': False, 'state': 'starting',
           'commands': [], 'cases': [], 'rejections': [], 'providers': {},
           'probe_sha256': sha(probe), 'compiler_sha256': sha(compiler), 'source_probe_sha256': sha(source_probe),
-          'public_language': '0.23', 'private_language': '0.24',
+          'public_language': '0.24', 'private_language': '0.24',
           'public024_published': False, 'full_objective_complete': False}
 
 
@@ -171,7 +171,7 @@ try:
             preserved(before, after)
             assert value['origin_verified'] and value['old_identity_rechecked']
             assert value['origin_revision'] == row['revision'] and value['origin_language'] == '0.23'
-            assert value['language'] == '0.24' and value['public_default'] == '0.23'
+            assert value['language'] == '0.24' and value['public_default'] == '0.24'
             assert value['target_value'] == row['expected_value'] and value['target_stdout'] == ''
             assert value['target_external_capacity_after_scope'] == 0
             if original_available:
@@ -234,7 +234,7 @@ try:
                 'expected_value': row['expected_value'], 'old_error': row['old_error'], 'old_runtime_executed': original_available,
                 'installed_old_SDK_rechecked': installed_old_rechecked, 'native_reference': True, 'pure_client_TypeScript': True,
                 'all16_tables_schema_rows_ids_preserved': True, 'physical_sources_manifest_preserved': True,
-                'source_absent_native': True, 'idempotent': True, 'public_HEAD_guard': True,
+                'source_absent_native': True, 'idempotent': True, 'physical_manifest_guard': True,
                 'reviewed_foreign_pin_projection': projected, 'original_pin': provider['manifest_sha256'],
                 'target_pin': target['manifest_sha256'], 'candidate_sha256': sha(candidate_path),
                 'fixture_sha256': sha(fixture), 'SQL_sha256': meta['SQL_sha256'],

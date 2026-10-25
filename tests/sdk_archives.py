@@ -183,6 +183,40 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk134_requires_public_streams_and_every_genuine_history(self):
+        self.assertEqual(len(acceptance.acceptance_phases('0.134.0')),36)
+        self.assertEqual(len(acceptance.acceptance_phases('0.133.5')),35)
+        current=self.report();current.update(version='0.134.0',language='0.24',doctor={'version':'0.134.0'},compiler_sha256='a'*64)
+        current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_024]
+        with self.assertRaisesRegex(RuntimeError,'public024 CLI stream execution'):
+            acceptance.validate_completed_report(current)
+        names=['aliases','write_append','future_owner','scoped_cleanup','source_cancel']
+        delivery={'ok':True,'language':'0.24','compiler_sha256':'a'*64,'native_reference_pairs':5,'rejected_programs':3,
+                  'old_metadata_rejected_before_store':True,'cases':[{'name':name,'native_reference':True,'source_absent_native':True} for name in names]}
+        evidence={'delivery':delivery,'original_SDK_execution_claimed':False,
+                  'delivery_report_sha256':'b'*64,'history_report_sha256':'c'*64}
+        current['evidence']={'structured_task_file_streams':evidence}
+        with self.assertRaisesRegex(RuntimeError,'all genuine023 public024 migrations'):
+            acceptance.validate_completed_report(current)
+        fields=('all16_tables_schema_rows_ids_preserved','physical_sources_manifest_lock_preserved',
+                'idempotent','materialized_current_project_checked','source_absent_native','native_reference')
+        history={'ok':True,'language':'0.24','compiler_sha256':'a'*64,'genuine023_histories':9,'genuine023_revisions':27,
+                 'native_reference_pairs':27,'rejected_migrations':9,
+                 'cases':[{'origin_revision':format(i,'064x'),'revision':format(i+100,'064x'),**{field:True for field in fields}} for i in range(27)]}
+        evidence['histories']=history
+        # Passing this structural gate must still reach the separate real host,
+        # write-history and other workflow gates, not declare an SDK accepted.
+        with self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+            acceptance.validate_completed_report(current)
+        for field in fields:
+            bad=copy.deepcopy(current);bad['evidence']['structured_task_file_streams']['histories']['cases'][0][field]=False
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'all genuine023 public024 migrations'):
+                acceptance.validate_completed_report(bad)
+        for field,value in [('native_reference_pairs',True),('cases',history['cases'][:-1]),('compiler_sha256','d'*64)]:
+            bad=copy.deepcopy(current);bad['evidence']['structured_task_file_streams']['histories'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'all genuine023 public024 migrations'):
+                acceptance.validate_completed_report(bad)
+
     def test_sdk1332_requires_actual_installed_stream_host_execution(self):
         contract=acceptance._stream_host_contract();CASES,HEADERS,SOURCES=contract.CASES,contract.HEADERS,contract.SOURCES
         current=self.report();current.update(version='0.133.2',language='0.23',doctor={'version':'0.133.2'})

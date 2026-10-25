@@ -188,7 +188,7 @@ client test fn browser_test()->unit{let file:fn(i64)->i64=fn(n:i64)->i64{return 
         self.cli('test','--target','web')
 
     def test_descriptor_and_language_pack(self):
-        value=self.cli('describe');self.assertEqual(value['version'],'0.23');self.assertIn('file',value['types'])
+        value=self.cli('describe');self.assertEqual(value['version'],'0.24');self.assertIn('file',value['types'])
         self.assertTrue(value['host_resource_runtime']['source_support'])
         self.assertIn('identity_aliases',value['resource_features'])
         self.assertIn('file_open_read',self.cli('guide','--kind','resources')['text'])
@@ -199,12 +199,12 @@ client test fn browser_test()->unit{let file:fn(i64)->i64=fn(n:i64)->i64{return 
             old_source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate')
-        self.assertEqual(current['language'],'0.23');self.assertNotEqual(current['revision'],old)
+        self.assertEqual(current['language'],'0.24');self.assertNotEqual(current['revision'],old)
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],old_source)
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids)
-        self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.13','0.23'})
+        self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.13','0.24'})
 
     def repair_fixture(self,suffix):
         fixture=json.loads((harness.REPO/('tests/fixtures/language-'+suffix+'.json')).read_text());self.source(fixture['source']);old=self.historical_store(suffix)['revision'];self.file.unlink()
@@ -219,7 +219,7 @@ client test fn browser_test()->unit{let file:fn(i64)->i64=fn(n:i64)->i64{return 
             for name in names:source=re.sub(r'\b'+name+r'\b','LegacyFile' if name=='file' else 'legacy_'+name,source)
             bundle['files'][key]=source
         candidate=self.root/'repair.json';candidate.write_text(json.dumps({'schema':'nex.graph/2','language':'0.13','revision':old,'bundle':bundle}))
-        current=self.cli('migrate',candidate);self.assertEqual(current['language'],'0.23')
+        current=self.cli('migrate',candidate);self.assertEqual(current['language'],'0.24')
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],original)

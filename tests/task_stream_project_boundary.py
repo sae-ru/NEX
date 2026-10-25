@@ -50,15 +50,15 @@ try:
   architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
    'leaf':{'kind':'shared_library' if mode=='shared' else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'read'},
    'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'leaf':'dynamic' if mode=='shared' else 'static'}}}}
-  write(project/'nex.build.json',architecture);base={'root':str(project),'configuration':'debug','public_api':True}
+  write(project/'nex.build.json',architecture);base={'root':str(project),'configuration':'debug','source_language':'0.23'}
   plan=invoke(mode+'-legacy-plan',{'action':'plan',**base});assert plan['language']=='0.23'
   for row in plan['components']:
    record=row['task_linkage'];assert record['schema']==('nex.project-task-linkage/5' if mode=='shared' else 'nex.project-static-task-linkage/2')
    assert record['execution_abi']==4 and 'task_file_streams' not in record and 'task_file_reads' not in record
   capture=invoke(mode+'-legacy-capture',{'action':'capture',**base});assert capture['language']=='0.23';file=root/(mode+'-legacy.json');write(file,capture)
-  assert invoke(mode+'-legacy-validate',{'action':'validate','capture':str(file),'public_api':True})['ok']
+  assert invoke(mode+'-legacy-validate',{'action':'validate','capture':str(file),'source_language':'0.23'})['ok']
   rejected=invoke(mode+'-legacy-cannot-relabel',{'action':'validate','capture':str(file)},1);assert rejected['code']=='E_PROJECT_CAPTURE'
-  restored=invoke(mode+'-legacy-restore',{'action':'restore','capture':str(file),'directory':str(root/(mode+'-legacy-container')),'public_api':True});assert restored['language']=='0.23'
+  restored=invoke(mode+'-legacy-restore',{'action':'restore','capture':str(file),'directory':str(root/(mode+'-legacy-container')),'source_language':'0.23'});assert restored['language']=='0.23'
   report['legacy'].append({'mode':mode,'language':'0.23','execution_abi':4,'exact_shape_preserved':True});save()
  report.update(ok=True,state='passed',rejected_captures=len(report['rejections']),retained_public_ABI4_modes=2)
 except BaseException as error:report.update(state='failed',error=repr(error));raise

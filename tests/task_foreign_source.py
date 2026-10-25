@@ -95,7 +95,7 @@ def main():
  if args.output:out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-task-foreign-');out=Path(temporary.name)
  probe=Path(args.probe).resolve();env={**os.environ,'NEX_RESOURCE_DIR':str(REPO),'PYTHONDONTWRITEBYTECODE':'1'}
- report={'schema':'nex.private-source-task-foreign-tests/1','ok':False,'private_language':'0.23','public_language':'0.23',
+ report={'schema':'nex.private-source-task-foreign-tests/1','ok':False,'private_language':'0.24','public_language':'0.24',
          'probe_sha256':sha(probe),'source_resource_transport':False,'commands':[],'checks':[]}
  started=time.monotonic()
  report['public_cli_execution']=bool(args.compiler)
@@ -108,11 +108,11 @@ def main():
   return result
  def bundle(label,body,pin=PIN):
   path=out/(label+'.bundle.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':DECLARATIONS.replace('@PIN@',pin)+body+'\n'}});return path
- def command(action,path,output='-',language='0.23'):
-  if args.compiler and language=='0.23':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,output,language]
+ def command(action,path,output='-',language='0.24'):
+  if args.compiler and language=='0.24':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,output,language]
   return [probe,action,path,out,output,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
   template=bundle('template',CASES['direct'])
   checked=json.loads(run('signatures',command('check',template)).stdout)
   signatures=checked['signatures'];assert set(signatures)=={'add','barrier','echo','unit','bad','callable','blocking','started'}
@@ -151,7 +151,7 @@ def main():
    for name,body in CASES.items():
     path=bundle(dialect+'-'+name,body,pin)
     reference=json.loads(run(dialect+'-'+name+'-reference',command('reference',path,host)).stdout)
-    assert reference['output']=='42\n' and reference['language']=='0.23',reference
+    assert reference['output']=='42\n' and reference['language']=='0.24',reference
     built=json.loads(run(dialect+'-'+name+'-build',command('native',path,directory/'native')).stdout)
     if not args.compiler:assert built['foreign_calls'] is True
     native=run(dialect+'-'+name+'-native',[built['executable'],'--nex-foreign',host])
