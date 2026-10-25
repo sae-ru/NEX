@@ -14,6 +14,16 @@ inline bool ordinary(const std::string &code){
     code=="LIMIT"||code=="E_RANGE"||code=="E_FILE"||code=="E_UTF8"||
     code=="E_RESOURCE_CLOSED"||code=="E_RESOURCE_LIMIT";
 }
+inline bool transportFailure(const std::string &code){
+  return code=="E_CANCELLED"||code=="E_RESOURCE_SCOPE"||code=="E_TASK_HOST";
+}
+// The independent mailbox carries thrown host failures as bounded raw
+// diagnostics. Record every physical run exit, including unwinding, before
+// the transport may publish it. This does not permit repeated admission.
+template<class State>struct PhysicalCompletion {
+  State &state;
+  ~PhysicalCompletion(){std::lock_guard lock(state.mutex);state.completed=true;}
+};
 inline std::vector<uint8_t> scalar(int64_t value){
   if(value<0)throw DataError("E_TASK_VALUE","file stream returned a negative scalar");
   std::vector<uint8_t> bytes(8);
@@ -58,6 +68,7 @@ class PreparedTaskFileStream {
     explicit Operation(std::shared_ptr<State> state):state(std::move(state)){}
     TaskExternalResult run(const TaskExternalControl &control)override{
       {std::lock_guard lock(state->mutex);if(std::exchange(state->started,true))throw DataError("E_TASK_STATE","file stream operation already started");}
+      task_file_stream_detail::PhysicalCompletion completion{*state};
       control.checkpoint();TaskExternalResult raw;
       auto poll=[&]{control.checkpoint();state->lease.check();};
       try{
@@ -74,7 +85,7 @@ class PreparedTaskFileStream {
         if(!task_file_stream_detail::ordinary(error.code))throw;
         raw.bytes={};raw.errorCode=error.code;raw.errorMessage=error.what();
       }
-      control.checkpoint();{std::lock_guard lock(state->mutex);state->completed=true;}return raw;
+      control.checkpoint();return raw;
     }
   };
 public:
@@ -105,8 +116,11 @@ public:
     auto retained=state;if(!retained)throw DataError("E_TASK_STATE","file stream request was moved");
     validateTaskExternalResult(raw,retained->reservation,retained->maximumReply);auto callback=poll;
     {std::lock_guard lock(retained->mutex);if(!retained->completed||std::exchange(retained->admitted,true))throw DataError("E_TASK_STATE","file stream result is absent or already admitted");}
-    if(!raw.errorCode.empty()&&(!raw.bytes.empty()||!task_file_stream_detail::ordinary(raw.errorCode)))
-      throw DataError("E_TASK_VALUE","unexpected file stream diagnostic");
+    if(!raw.errorCode.empty()){
+      if(!raw.bytes.empty())throw DataError("E_TASK_VALUE","unexpected file stream diagnostic");
+      if(task_file_stream_detail::transportFailure(raw.errorCode))throw DataError(raw.errorCode,raw.errorMessage);
+      if(!task_file_stream_detail::ordinary(raw.errorCode))throw DataError("E_TASK_VALUE","unexpected file stream diagnostic");
+    }
     if(callback)callback();
     try{
       retained->lease.check();Value value;
@@ -154,6 +168,7 @@ class PreparedTaskFileOpen {
         if(std::exchange(state->started,true))throw DataError("E_TASK_STATE","file open operation already started");
         if(state->discarded)throw DataError("E_CANCELLED","file open result was discarded");
       }
+      task_file_stream_detail::PhysicalCompletion completion{*state};
       control.checkpoint();TaskExternalResult raw;std::optional<FileResource> file;
       auto poll=[&]{control.checkpoint();state->lease.check();};
       try{state->lease.check();file=state->lease.openInRegion(state->region,poll,state->cleanup);poll();}
@@ -162,7 +177,7 @@ class PreparedTaskFileOpen {
         raw.errorCode=error.code;raw.errorMessage=error.what();file.reset();
       }
       control.checkpoint();
-      {std::lock_guard lock(state->mutex);state->completed=true;
+      {std::lock_guard lock(state->mutex);
         if(!state->discarded){state->file=std::move(file);file.reset();}
       }
       return raw;
@@ -193,8 +208,10 @@ public:
       if(!retained->completed||retained->discarded||std::exchange(retained->admitted,true))throw DataError("E_TASK_STATE","file open result is absent or already admitted");
       file=std::move(retained->file);retained->file.reset();
     }
-    if(!raw.bytes.empty()||raw.errorCode.empty()!=bool(file)||(!raw.errorCode.empty()&&!task_file_stream_detail::ordinary(raw.errorCode)))
+    if(!raw.bytes.empty()||raw.errorCode.empty()!=bool(file))
       throw DataError("E_TASK_VALUE","file open wakeup differs from its typed outcome");
+    if(task_file_stream_detail::transportFailure(raw.errorCode))throw DataError(raw.errorCode,raw.errorMessage);
+    if(!raw.errorCode.empty()&&!task_file_stream_detail::ordinary(raw.errorCode))throw DataError("E_TASK_VALUE","file open wakeup differs from its typed outcome");
     if(callback)callback();retained->lease.check();if(retained->region)retained->region.check();
     if(!raw.errorCode.empty())throw DataError(raw.errorCode,raw.errorMessage);
     if(!file->isOpen())throw DataError("E_RESOURCE_SCOPE","newly opened file has been revoked");

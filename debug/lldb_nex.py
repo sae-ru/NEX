@@ -1912,21 +1912,44 @@ def _install_task_marker(debugger, context):
     context['_task_marker'] = breakpoint.GetID()
 
 
+def _task_stop_record(view, frame):
+    # Sanitizer prologues can stop before DWARF's pointer parameter location
+    # becomes valid. Prefer that parameter, then read the actual local record
+    # in the direct, verified runtime publisher. Never infer a register/stack
+    # offset or substitute a record from another source function/image.
+    argument = frame.FindVariable('stop', lldb.eDynamicDontRunTarget)
+    if argument.IsValid():
+        try:
+            stop = view.words(_integer(argument), 8)
+            if stop[0] == view.address:
+                return stop
+        except ValueError:
+            pass
+    caller = frame.GetThread().GetFrameAtIndex(frame.GetFrameID() + 1)
+    if not caller.IsValid() or not (caller.GetFunctionName() or '').startswith('nexrt::taskDebugPublish('):
+        raise ValueError('task marker has no verified direct publisher')
+    view.image_address(caller.GetPC(), 1, view.runtime_image)
+    value = caller.FindVariable('stop', lldb.eDynamicDontRunTarget)
+    if (not value.IsValid() or value.GetType().GetCanonicalType().GetName() != 'nexrt::TaskDebugStop'
+            or value.GetType().GetByteSize() != 64):
+        raise ValueError('task publisher stop record unavailable')
+    stop = view.words(value.GetLoadAddress(), 8)
+    if stop[0] != view.address:
+        raise ValueError('foreign task marker catalog')
+    return stop
+
+
 def _task_marker(frame, bp_loc, internal_dict):
     try:
         debugger = frame.GetThread().GetProcess().GetTarget().GetDebugger()
         view = _TaskCatalog(debugger)
         if view.provider:
             view.image_address(frame.GetPC(), 1, view.runtime_image)
-        argument = frame.FindVariable('stop', lldb.eDynamicDontRunTarget)
-        if not argument.IsValid():
-            raise ValueError('task stop marker argument unavailable')
-        stop = view.words(_integer(argument), 8)
-        if stop[0] != view.address:
-            raise ValueError('foreign task marker catalog')
+        stop = _task_stop_record(view, frame)
         task = view.task(stop[1]); stack = view.stack(stop[1], task)
         if not stack or (task[2], stack[0][0], stack[0][1][1], stack[0][1][7], task[12], task[0]) != stop[2:]:
             raise ValueError('stale task marker publication')
+        view.context.pop('_task_error', None)
         _, activation, function = stack[0]
         point = function['task_debug']['points'][activation[7]]
         plan = view.context.get('_task_plan')
@@ -2129,9 +2152,12 @@ def _task_request(debugger, request):
     if command == 'tasks':
         rows = [_task_summary(view, slot, view.task(slot)) for slot in range(view.header[12])]
         view.fresh()
-        return {'schema': 'nex.task-debug-tasks/1', 'tasks': rows, 'stop_id': str(view.stop_id),
+        response = {'schema': 'nex.task-debug-tasks/1', 'tasks': rows, 'stop_id': str(view.stop_id),
                 'selected': context.get('_task_selected'), 'dropped_tasks': view.header[16],
                 'dropped_frames': view.header[17], 'invalid_transitions': view.header[18]}
+        if context.get('_task_error'):
+            response['marker_error'] = context['_task_error']
+        return response
     identity = args.get('task_id', context.get('_task_selected'))
     if type(identity) is not int or identity < 1:
         raise ValueError('select a current logical task ID')

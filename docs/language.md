@@ -1,3 +1,14 @@
+# Development0.133.11: private physical IO completion
+
+A trusted POSIX host can observe actual file calls without receiving source
+values or descriptors, and bind a lexical FileScope to its exact revocable
+resource subdomain. Exceptional physical exits retain one-shot completion and
+original cancellation/revocation/host diagnostics before Value admission.
+A debugger can read the actual verified publisher-local checkpoint record when
+an instrumented prologue hides its pointer parameter; all catalog/publication
+checks remain. No grammar, effects, grants, canonical identities, public023 or
+historical source interpretation changes. See task-stream-inflight.md.
+
 # Development0.133.10: private024 pure-helper conformance
 
 The native task file requirement classifier accepts concrete reachable pure

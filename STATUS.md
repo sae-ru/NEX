@@ -1,3 +1,14 @@
+# Development0.133.11: private physical IO and marker conformance
+
+Private024 actual syscall gates exercise held leases/quota, host cancellation,
+deadline, domain revocation, trusted host failure and source task_cancel across
+native continuations and independent AST execution. Exceptional completion keeps
+strict one-shot admission and preserves E_RESOURCE_SCOPE/E_TASK_HOST diagnostics.
+An exact publisher-local fallback addresses instrumented marker prologues without
+inferior execution, disabled sanitizers or relaxed formatter/image/publication
+checks. Normal and sanitized delivery must be verified for this exact source.
+Public023/default and the complete original project scope remain unchanged.
+
 # Development0.133.10: private024 pure-helper requirements fix
 
 The native file requirement classifier lifts reachable pure helpers before

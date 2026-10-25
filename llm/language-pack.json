@@ -2236,6 +2236,34 @@
       "file_watch_reconstructs_IO_authority": false,
       "effectful_watch": false,
       "ordinary_project_CLI_024_build": false
+    },
+    "physical_IO_observation": {
+      "private_host_only": true,
+      "public_enabled": false,
+      "stable_host_ABI": false,
+      "guide": "docs/task-stream-inflight.md",
+      "POSIX_streams": true,
+      "native_source": true,
+      "independent_AST_source": true,
+      "before_and_after_actual_calls": true,
+      "callbacks_outside_cursor_mutex": true,
+      "event_fields": [
+        "operation",
+        "phase",
+        "argument",
+        "result",
+        "error"
+      ],
+      "source_values_or_descriptors_in_events": false,
+      "observer_grants_authority": false,
+      "explicit_revocable_host_domain": true,
+      "physical_quota_until_retirement": true,
+      "exceptional_exit_completion": true,
+      "strict_one_shot_admission": true,
+      "source_task_cancel_inflight": true,
+      "arbitrary_syscall_interruption": false,
+      "post_IO_rollback": false,
+      "matching_platform_acceptance": false
     }
   }
 }

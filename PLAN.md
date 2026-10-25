@@ -1,3 +1,12 @@
+# Development0.133.11: private in-flight IO and verified marker records
+
+The maintained physical IO suite has56 native/AST pairs on6 compiled images,
+11 host observation/one-shot tests and10 marker-provenance boundaries. It checks
+actual source task_cancel while IO is held, not only host-request cancellation.
+Actual TSAN/DAP, full regression, SDK and platform acceptance remain separate
+until their receipts pass. Genuine mixed023 File/FFI histories, explicit public024
+migration/CLI, async network/DB and every other original requirement remain open.
+
 # Development0.133.10: genuine023 histories and pure helpers
 
 The private024 history suite covers five actual SDK1335 archives and all15

@@ -1,3 +1,21 @@
+# Development0.133.11: physical file IO and checked debug markers
+
+An opt-in POSIX trusted host observer sees actual stream/open IO before or after
+its physical call, outside cursor/resource locks. Explicit host-owned file
+subdomains retain quotas and revocation through native and independent AST
+source execution. The maintained suite has56 physical IO control pairs on6
+compiled NEX images, including source task_cancel, plus11 host checks. Matching
+full/SAN/SDK/platform acceptance is separate and remains pending.
+
+Exceptional stream/open exits now complete their one-shot physical state;
+reference admission preserves cancellation/revocation/host failures instead of
+reporting E_TASK_STATE. A logical debugger marker can read a verified direct
+publisher local when an instrumented prologue has no valid DWARF parameter.
+The exact captured formatter and complete publication checks remain mandatory.
+Public023, grammar, canonical identities and retained history stay unchanged.
+Read [physical IO contracts](docs/task-stream-inflight.md). All original project
+requirements remain in scope; this is not public024 or SDK acceptance.
+
 # Development0.133.10: pure helpers and genuine023 histories
 
 Private024 native task file requirements now analyze reachable pure helpers
