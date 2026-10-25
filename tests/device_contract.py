@@ -33,6 +33,9 @@ class DeviceContract(unittest.TestCase):
  def test_descriptor_guide_and_pinned_preparer_use_actual_sdk(self):
   self.assertEqual(self.descriptor['device'],json.loads((ROOT/'llm/language-pack.json').read_text())['device'])
   self.assertEqual(self.cli('guide','--kind','device')['text'],(ROOT/'docs/device.md').read_text())
+  help_result=subprocess.run([sys.executable,'-B',str(ROOT/'experiments/owned-opencl/faults.py'),'--help'],capture_output=True,text=True,timeout=30)
+  self.assertEqual(help_result.returncode,0,help_result.stderr)
+  self.assertIn('upload_reused_id',help_result.stdout);self.assertIn('execute_fallback_never_masks_protocol',help_result.stdout)
   sdk=self.root/'SDK';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir()
   (sdk/'bin/nex').symlink_to(COMPILER);(sdk/'share/nex').symlink_to(ROOT)
   output=self.root/'prepared'

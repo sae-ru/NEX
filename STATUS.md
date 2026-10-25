@@ -1,3 +1,11 @@
+# Development0.132.2: validate complete device acknowledgements
+
+Successful worker replies are checked under the Session command lock before
+committing unique buffer IDs. Malformed replies drain actual storage before
+failed construction returns capacity; later operations report E_DEVICE_LOST.
+The original source/runtime/platform/NPU/Studio scope remains open. Matching
+frozen regression, sanitizers and SDK delivery have separate gates.
+
 # Development0.132.1: reference fence publication race
 
 A sanitizer run of frozen132 found a false E_TASK_DEADLOCK after valid source

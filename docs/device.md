@@ -74,6 +74,22 @@ Session accounting declares the fixed262144-byte device scratch plus host owner;
 buffers declare data bytes plus their owner. This is not total driver/process/VM
 memory accounting or a claim of GPU speedup.
 
+## Successful replies and session failure
+
+Toolchain0.132.2 validates every successful reply while holding the Session
+command lock. Buffer IDs must be the next unique allocation in the pinned
+worker protocol. Size, trailing/truncated data, kernel event and profiling
+checks complete before buffer metadata is committed or a later command enters.
+A malformed reply drains the worker and its actual buffers before a failed
+factory returns physical capacity. Later operations report E_DEVICE_LOST;
+existing source aliases retain their owners until ordinary cleanup. Known
+recoverable compute overflow preserves its existing checked semantics.
+
+`tools/owned-opencl/faults.py` exercises actual GPU upload/dispatch/download and
+cleanup with controlled malformed replies, repeated IDs and strict object quotas.
+The test-only fault environment variable is not an application/provider API.
+Unknown vendor completion still retains resources as described below.
+
 ## Cancellation, failure and limits
 
 Before admission, host cancellation can reject a call. After admission, the

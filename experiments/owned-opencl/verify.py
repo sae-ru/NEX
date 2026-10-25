@@ -41,6 +41,7 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',required=True,type=Path);parser.add_argument('--project',required=True,type=Path);parser.add_argument('--output',required=True,type=Path);parser.add_argument('--only',choices=[*CASES,*ERROR_CASES],action='append');args=parser.parse_args()
  sdk=args.sdk.resolve(strict=True);compiler=sdk/'bin/nex';project=args.project.resolve(strict=True);out=args.output.absolute();out.mkdir(parents=True)
  env={**os.environ,'NEX_RESOURCE_DIR':str(sdk/'share/nex'),'PYTHONDONTWRITEBYTECODE':'1','NEX_OWNED_OPENCL_TEST_NOISE':'1'}
+ env.pop('NEX_OWNED_OPENCL_TEST_BAD_REPLY',None);env.pop('NEX_OWNED_OPENCL_TEST_GATE_MS',None)
  template=(project/'main.nex').read_text();prefix=template[:template.index('server fn main()->unit')]+HELPERS
  report={'schema':'nex.owned-opencl-hardware/1','ok':False,'commands':[],'cases':[],'compiler_sha256':sha(compiler),
   'module_sha256':sha(project/'bundle/module.so'),'worker_sha256':sha(project/'bundle/worker'),

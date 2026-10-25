@@ -35,7 +35,7 @@ class GPU {
  struct Buffer {cl_mem memory;uint32_t dtype;uint64_t bytes;};
  cl_context context=nullptr;cl_command_queue queue=nullptr;cl_program program=nullptr;cl_kernel kernel=nullptr;
  cl_mem flags=nullptr;cl_event event=nullptr;std::map<uint64_t,Buffer> buffers;uint64_t next=1;
- std::string name;cl_device_type type=0;bool uncertain=false;
+ std::string name;cl_device_type type=0;bool uncertain=false,closed=false;
  void check(cl_int status,const char *where){if(status!=CL_SUCCESS)throw Error("E_OPENCL",std::string(where)+": "+std::to_string(status));}
  Buffer &buffer(uint64_t id){auto it=buffers.find(id);if(it==buffers.end())throw Error("E_DEVICE_BUFFER","unknown or already closed worker buffer");return it->second;}
  uint64_t publish(cl_mem memory,uint32_t dtype,uint64_t bytes){
@@ -47,7 +47,9 @@ public:
  bool settled()const noexcept{return !uncertain;}
  ~GPU(){closeNoThrow();}
  void closeNoThrow()noexcept{
+  if(closed)return;
   if(!drain())return;
+  auto released=buffers.size();
   auto release=[&](cl_int code){if(code!=CL_SUCCESS)uncertain=true;};
   if(event){release(clReleaseEvent(event));event=nullptr;}
   for(auto [id,b]:buffers)release(clReleaseMemObject(b.memory));buffers.clear();
@@ -56,6 +58,7 @@ public:
   if(program){release(clReleaseProgram(program));program=nullptr;}
   if(queue){release(clReleaseCommandQueue(queue));queue=nullptr;}
   if(context){release(clReleaseContext(context));context=nullptr;}
+  if(!uncertain){closed=true;std::fprintf(stderr,"NEXGPU_DRAIN %llu 1\n",static_cast<unsigned long long>(released));}
  }
  void open(uint32_t selected){
   cl_uint count=0;check(clGetPlatformIDs(0,nullptr,&count),"platform count");if(!count||count>16)throw Error("E_COMPUTE_UNAVAILABLE","no bounded OpenCL platform list");
@@ -69,6 +72,7 @@ public:
   program=clCreateProgramWithSource(context,1,&source,nullptr,&status);check(status,"program");auto built=clBuildProgram(program,1,&device,"",nullptr,nullptr);
   if(built!=CL_SUCCESS){char log[2048]={};clGetProgramBuildInfo(program,device,CL_PROGRAM_BUILD_LOG,sizeof(log)-1,log,nullptr);throw Error("E_OPENCL_BUILD",log);}
   kernel=clCreateKernel(program,"affine",&status);check(status,"kernel");flags=clCreateBuffer(context,CL_MEM_READ_WRITE,maximumElements,nullptr,&status);check(status,"bounded session scratch");
+  std::fprintf(stderr,"NEXGPU_OPEN %u %llu\n",selected,static_cast<unsigned long long>(type));
  }
  Data info()const{Data d;d.text(name);d.u64(type);d.u32(maximumElements);return d;}
  uint64_t upload(uint32_t dtype,Bytes &bytes){
@@ -106,8 +110,11 @@ public:
 int main(){
  if(std::getenv("NEX_OWNED_OPENCL_TEST_NOISE"))std::fputs("controlled worker stdout diagnostic\n",stdout);
  std::signal(SIGPIPE,SIG_IGN);rlimit noCore{0,0};setrlimit(RLIMIT_CORE,&noCore);rlimit logLimit{8388608,8388608};setrlimit(RLIMIT_FSIZE,&logLimit);
- std::unique_ptr<GPU> gpu;uint64_t expected=1;Frame request{};
+ std::unique_ptr<GPU> gpu;uint64_t expected=1;Frame request{};bool faulted=false;
  try{
+  const char *fault=std::getenv("NEX_OWNED_OPENCL_TEST_BAD_REPLY");
+  if(fault&&std::strcmp(fault,"upload_truncated")&&std::strcmp(fault,"upload_wrong_size")&&std::strcmp(fault,"upload_reused_id")&&std::strcmp(fault,"affine_reused_id")&&std::strcmp(fault,"affine_truncated")&&std::strcmp(fault,"affine_trailing")&&std::strcmp(fault,"download_truncated")&&std::strcmp(fault,"download_wrong_size")&&std::strcmp(fault,"free_trailing")&&std::strcmp(fault,"close_truncated")&&std::strcmp(fault,"open_trailing"))throw Error("E_DEVICE_PROTOCOL","unknown controlled reply fault");
+  auto wants=[&](const char *name){return !faulted&&fault&&std::strcmp(fault,name)==0;};
   while(receive(3,request)){
    if(request.sequence!=expected++||request.status!=0)throw Error("E_DEVICE_PROTOCOL","worker sequence or request status differs");
    try{
@@ -121,6 +128,14 @@ int main(){
      case Close:{input.done();if(gpu&&gpu->live())throw Error("E_DEVICE_PROTOCOL","session closed before its actual buffers");if(gpu){gpu->closeNoThrow();if(!gpu->settled())throw Error("E_DEVICE_UNSETTLED","session release is not confirmed");gpu.reset();}output.u32(0);closing=true;break;}
      default:throw Error("E_DEVICE_PROTOCOL","unknown worker operation");
     }
+    bool corrupt=false;
+    if((request.operation==Upload&&wants("upload_truncated"))||(request.operation==Affine&&wants("affine_truncated"))){output.bytes.resize(7);corrupt=true;}
+    if(request.operation==Upload&&wants("upload_wrong_size")){output.bytes.at(8)^=1;corrupt=true;}
+    if((request.operation==Upload&&wants("upload_reused_id")&&gpu->live()>1)||(request.operation==Affine&&wants("affine_reused_id"))){for(size_t i=0;i<8;++i)output.bytes.at(i)=i==0?1:0;corrupt=true;}
+    if((request.operation==Affine&&wants("affine_trailing"))||(request.operation==Free&&wants("free_trailing"))||(request.operation==Open&&wants("open_trailing"))){output.bytes.push_back(0);corrupt=true;}
+    if((request.operation==Download&&wants("download_truncated"))||(request.operation==Close&&wants("close_truncated"))){output.bytes.resize(3);corrupt=true;}
+    if(request.operation==Download&&wants("download_wrong_size")){Data original(std::move(output.bytes));auto bytes=original.getBlob();original.done();if(!bytes.empty())bytes.pop_back();Data wrong;wrong.blob(bytes);output=std::move(wrong);corrupt=true;}
+    if(corrupt){faulted=true;std::fprintf(stderr,"NEXGPU_FAULT %s %u\n",fault,request.operation);}
     send(3,Frame{request.sequence,request.operation,Success,std::move(output.bytes)});if(closing)return 0;
    }catch(const Error &e){auto status=e.code=="E_DEVICE_UNSETTLED"||(gpu&&!gpu->drain())?Unsettled:Failure;send(3,Frame{request.sequence,request.operation,uint32_t(status),failure(e)});if(status==Unsettled)return 3;}
   }

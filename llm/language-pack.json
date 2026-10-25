@@ -1888,6 +1888,9 @@
       "device-loss recovery/reset",
       "float tensors, additional operations and general kernels",
       "concurrent queues and explicit fence values"
-    ]
+    ],
+    "opencl_success_reply_validation": "serialized_decode_and_physical_drain_on_fault",
+    "opencl_unique_allocation_ids": true,
+    "fault_verification": "tools/owned-opencl/faults.py"
   }
 }

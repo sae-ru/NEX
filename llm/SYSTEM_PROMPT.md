@@ -1,3 +1,7 @@
+Owned OpenCL protocol faults invalidate the Session and wait confirmed worker
+cleanup. Handle E_DEVICE_PROTOCOL/E_DEVICE_LOST as errors; CPU fallback must not
+hide them. Existing source resource close/ownership rules still apply.
+
 For owned accelerator code query `device` and read `nex guide --kind device`.
 Use ordinary std/device.nex server task/ffi wrappers and explicitly pinned
 provider factories; never treat tensor metadata as native authority. Buffer

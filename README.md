@@ -1,3 +1,11 @@
+# Development0.132.2: validate complete device acknowledgements
+
+Successful worker replies are checked under the Session command lock before
+committing unique buffer IDs. Malformed replies drain actual storage before
+failed construction returns capacity; later operations report E_DEVICE_LOST.
+The original source/runtime/platform/NPU/Studio scope remains open. Matching
+frozen regression, sanitizers and SDK delivery have separate gates.
+
 # Development0.132.1: reference retirement progress
 
 A ready physical fence remains pending scheduler progress until the coordinator

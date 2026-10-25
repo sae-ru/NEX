@@ -622,6 +622,9 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,2):
+        require(report.get('evidence',{}).get('owned_device_contract',{}).get('fault_harness_installed') is True,
+                'SDK acceptance lacks installed owned device fault harness')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,0):
         device=report.get('evidence',{}).get('owned_device_contract',{})
         require(isinstance(device,dict) and all(device.get(key) is True for key in
@@ -1111,8 +1114,11 @@ test fn examples() -> unit {
         preparation=json.loads((prepared/'preparation/report.json').read_text())
         require(preparation['compiler_sha256']==report['compiler_sha256'] and preparation['source_checked'] is True,
                 'owned device preparer did not check the installed compiler')
+        fault_help=run([sys.executable,'-B',resources/'tools/owned-opencl/faults.py','--help'],cwd=root,timeout=60)
+        require('upload_reused_id' in fault_help and 'execute_fallback_never_masks_protocol' in fault_help,
+                'installed owned device fault harness is not callable')
         report['evidence']['owned_device_contract']={'descriptor':True,'native_reference':True,'typescript_reference':True,
-            'installed_provider_source_checked':True,'preparation':preparation,
+            'installed_provider_source_checked':True,'preparation':preparation,'fault_harness_installed':True,
             'library_sha256':hashlib.sha256((resources/'lib/device.nex').read_bytes()).hexdigest(),
             'hardware_execution_proved':False}
 
