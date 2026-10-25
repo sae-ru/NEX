@@ -140,7 +140,9 @@ class PreparedTaskFileOpen {
     std::mutex mutex;
     std::optional<FileResource> file;
     bool started=false,completed=false,admitted=false,discarded=false;
-    explicit State(FileOpenLease lease,ResourceRegionAuthority region):lease(std::move(lease)),region(std::move(region)){}
+    std::shared_ptr<ResourceExecutor> cleanup;
+    explicit State(FileOpenLease lease,ResourceRegionAuthority region,std::shared_ptr<ResourceExecutor> cleanup)
+      :lease(std::move(lease)),region(std::move(region)),cleanup(std::move(cleanup)){}
   };
   std::shared_ptr<State> state;
   class Operation final:public TaskExternalOperation {
@@ -154,7 +156,7 @@ class PreparedTaskFileOpen {
       }
       control.checkpoint();TaskExternalResult raw;std::optional<FileResource> file;
       auto poll=[&]{control.checkpoint();state->lease.check();};
-      try{state->lease.check();file=state->lease.openInRegion(state->region,poll);poll();}
+      try{state->lease.check();file=state->lease.openInRegion(state->region,poll,state->cleanup);poll();}
       catch(const DataError &error){
         if(!task_file_stream_detail::ordinary(error.code))throw;
         raw.errorCode=error.code;raw.errorMessage=error.what();file.reset();
@@ -167,7 +169,7 @@ class PreparedTaskFileOpen {
     }
   };
 public:
-  explicit PreparedTaskFileOpen(FileOpenLease lease,ResourceRegionAuthority region={}){lease.check();if(region)region.check();state=std::make_shared<State>(std::move(lease),std::move(region));}
+  explicit PreparedTaskFileOpen(FileOpenLease lease,ResourceRegionAuthority region={},std::shared_ptr<ResourceExecutor> cleanup={}){lease.check();if(region)region.check();state=std::make_shared<State>(std::move(lease),std::move(region),std::move(cleanup));}
   PreparedTaskFileOpen(const PreparedTaskFileOpen&)=delete;
   PreparedTaskFileOpen &operator=(const PreparedTaskFileOpen&)=delete;
   PreparedTaskFileOpen(PreparedTaskFileOpen&&)=default;

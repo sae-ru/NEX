@@ -46,6 +46,14 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
       throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
 #endif
     }
+#ifndef _WIN32
+    if(code.requirements&taskCodeImageFileStream){
+#ifdef NEX_FOREIGN_ENABLED
+      context->fileCleanup=context->foreignCleanup;
+#endif
+      if(!context->fileCleanup)context->fileCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{64,64,8*1048576});
+    }
+#endif
     TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream)));
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
     auto environment=std::make_shared<Data>(Data::Closure);

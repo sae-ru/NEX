@@ -219,10 +219,10 @@ void FileOpenLease::check()const {
 }
 size_t FileOpenLease::retainedPathBytes()const noexcept{return state?state->length:0;}
 FileResource FileOpenLease::open(const TextFiles::Poll &poll)const {return openInRegion({},poll);}
-FileResource FileOpenLease::openInRegion(const ResourceRegionAuthority &region,const TextFiles::Poll &poll)const {
-  check();auto retained=state;
+FileResource FileOpenLease::openInRegion(const ResourceRegionAuthority &region,const TextFiles::Poll &poll,const std::shared_ptr<ResourceExecutor> &cleanup)const {
+  check();auto retained=state;auto executor=cleanup;
   auto checkpoint=[retained,poll]{retained->resources.check();if(poll)poll();retained->resources.check();};
-  auto result=TextFiles(retained->files).openInAccess(retained->resources,std::string(retained->relative.get(),retained->length),retained->mode,checkpoint,region);
+  auto result=TextFiles(retained->files).openInAccess(retained->resources,std::string(retained->relative.get(),retained->length),retained->mode,checkpoint,region,executor);
   retained->resources.check();return result;
 }
 template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
@@ -373,15 +373,15 @@ FileResource TextFiles::openIn(const ResourceDomain &scope,const std::string &re
   if(!scope.descendsFrom(impl->resources))throw DataError("CAPABILITY","file resource scope belongs to another capability");
   return openInAccess(scope.access(),relative,mode,poll);
 }
-FileResource TextFiles::openInAccess(const ResourceAccess &scope,const std::string &relative,FileMode mode,const Poll &poll,ResourceRegionAuthority region)const {
-  auto retained=impl;auto path=relative;auto callback=poll;
+FileResource TextFiles::openInAccess(const ResourceAccess &scope,const std::string &relative,FileMode mode,const Poll &poll,ResourceRegionAuthority region,const std::shared_ptr<ResourceExecutor> &cleanup)const {
+  auto retained=impl;auto path=relative;auto callback=poll;auto executor=cleanup;
   if(mode!=FileMode::Read&&mode!=FileMode::WriteTruncate&&mode!=FileMode::Append)
     throw DataError("VALIDATION","invalid file mode");
   if(mode!=FileMode::Read&&!retained->writable)throw DataError("CAPABILITY","file capability does not permit writes");
   ResourceRegionOwner logical;ResourceSettlement settlement;
   std::optional<resource_detail::SettlementGuard> creation;
   if(region){logical=region.reserve();settlement=ResourceSettlement::pending();creation.emplace(settlement);logical.attach(settlement);}
-  auto physical=scope.make<FileResource::State>([retained,path=std::move(path),callback=std::move(callback),mode,logical](const ResourcePermit &permit){
+  auto create=[retained,path=std::move(path),callback=std::move(callback),mode,logical](const ResourcePermit &permit){
     auto poll=[&]{if(logical)logical.checkCreation();permit.check();check(callback);permit.check();if(logical)logical.checkCreation();};
     poll();auto parts=components(path);auto directory=parent(retained->root.get(),parts,poll);poll();
     struct stat existing{};
@@ -400,7 +400,12 @@ FileResource TextFiles::openInAccess(const ResourceAccess &scope,const std::stri
       while(::ftruncate(file.get(),0)){if(errno!=EINTR)ioError(errno);poll();}
     }
     return std::make_unique<FileResource::State>(std::move(file),mode);
-  },settlement);
+  };
+  // Source stream opens already run on an admitted IO worker. Reserve their
+  // finalizer before construction, and retire the full payload/quota/fence on
+  // the owning executor even when the final alias is released by a coordinator.
+  auto physical=executor?scope.makeOnExecutor<FileResource::State>(executor,std::move(create),settlement,true):
+    scope.make<FileResource::State>(std::move(create),settlement);
   if(logical)logical.publish(physical.revocation());
   return FileResource(std::move(physical),std::move(logical));
 }

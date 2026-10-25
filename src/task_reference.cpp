@@ -625,7 +625,7 @@ struct Reference {
       throw Error("E_TASK_TARGET","source file streams require macOS or Linux",r.span);
 #else
       try{
-        auto prepared=std::make_unique<nexrt::PreparedSourceTaskFile>(r.operation,r.arguments,fileGrant,writeGrant,resourceAuthority(j));
+        auto prepared=std::make_unique<nexrt::PreparedSourceTaskFile>(r.operation,r.arguments,fileGrant,writeGrant,resourceAuthority(j),foreignCleanup);
         checkControl(r.span);
         if(!prepared->external()){auto value=prepared->admit({},[&]{checkControl(r.span);});answer(i,std::move(value));return;}
         if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});

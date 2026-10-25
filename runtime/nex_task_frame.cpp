@@ -210,7 +210,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           if(!current.host||current.abi!=taskCodeStreamABI||!(current.requirements&taskCodeFileStream))throw DataError("E_TASK_STATE","file stream has no checked source descriptor/host");
           static const char *names[]={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};
           auto name=names[int64_t(request.operation)-int64_t(TaskRequestKind::FileOpenRead)];
-          try{prepared.emplace(name,request.arguments,current.host->fileReads,current.host->fileWrites,group.resourceAuthority());}
+          try{prepared.emplace(name,request.arguments,current.host->fileReads,current.host->fileWrites,group.resourceAuthority(),current.host->fileCleanup);}
           catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;result=failure(error.code,error.what());}
         });
         if(prepared){

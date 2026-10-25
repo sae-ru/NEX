@@ -2182,6 +2182,15 @@
         "task_file_streams"
       ],
       "declarations_grant_OS_authority": false
+    },
+    "file_cleanup": {
+      "owning_executor": true,
+      "reserved_before_open": true,
+      "logical_close": "immediate shared revocation",
+      "physical_release": "queued after final admitted lease",
+      "quota_and_region_fence_until_settled": true,
+      "source_open_requires_executor": true,
+      "legacy_host_default_inline_unchanged": true
     }
   }
 }

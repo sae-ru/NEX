@@ -40,6 +40,7 @@ struct TaskFrameHostContext {
 #ifndef _WIN32
   FileReadGrant fileReads;
   FileWriteGrant fileWrites;
+  std::shared_ptr<ResourceExecutor> fileCleanup;
   explicit TaskFrameHostContext(FileReadGrant grant):fileReads(std::move(grant)){}
 #endif
 };

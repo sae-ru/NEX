@@ -13,7 +13,7 @@ class PreparedSourceTaskFile {
 public:
   PreparedSourceTaskFile(const std::string &operation,std::span<const Value> args,
       const FileReadGrant &reads,const FileWriteGrant &writes,
-      const ResourceRegionAuthority &actor):region(actor){
+      const ResourceRegionAuthority &actor,const std::shared_ptr<ResourceExecutor> &cleanup):region(actor){
     actor.check();
     auto arity=[&](size_t count){if(args.size()!=count)throw DataError("E_TASK_STATE","source file argument count differs");};
     auto integer=[&](size_t at){if(args[at].tag!=Value::Integer)throw DataError("E_TASK_STATE","source file argument is not i64");return args[at].scalar;};
@@ -23,7 +23,8 @@ public:
         throw DataError("E_TASK_STATE","source file path is not str");
       auto lease=operation=="file_open_read"?reads.openRead(args[0].object->text):
           writes.openWrite(args[0].object->text,operation=="file_open_append"?FileMode::Append:FileMode::WriteTruncate);
-      opened=std::make_shared<PreparedTaskFileOpen>(std::move(lease),actor);return;
+      if(!cleanup)throw DataError("E_RESOURCE_EXECUTOR","source file open has no owning cleanup executor");
+      opened=std::make_shared<PreparedTaskFileOpen>(std::move(lease),actor,cleanup);return;
     }
     const bool two=operation=="file_read"||operation=="file_write"||operation=="file_seek";
     arity(two?2:1);

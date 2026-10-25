@@ -1,3 +1,20 @@
+# Development0.133.5: owning cleanup for private024 source files
+
+Every private024 source open reserves an owning executor cleanup slot before
+physical file construction. Native host contexts and the independent AST
+scheduler provide this executor explicitly. Logical close revokes all aliases
+immediately; the last physical lease queues the complete payload/destructor,
+file quota and settlement fence on that executor. No cleanup admission or
+allocation is needed at final release, including after the executor closes.
+Cancellation, discarded opens, factory failure and resource-region retirement
+retain physical settlement. A missing source cleanup executor is rejected;
+legacy host opens without an executor preserve their existing inline contract.
+This does not promise bounded OS close latency, rollback or directory durability.
+Public023/default, retained ABI3/4 and syntax/history remain unchanged. Controlled
+source cancellation, ABI5 provider/capture/package/debug/profile, public024 and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, GPU/NPU, UI/mobile, Studio, converter and measurement work remains open.
+
 # Development0.133.4: precise private024 task file requirements
 
 ABI5 image read/write flags and standalone build metadata now classify checked

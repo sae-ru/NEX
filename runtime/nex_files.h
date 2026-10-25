@@ -23,7 +23,7 @@ class TextFiles {
   explicit TextFiles(std::shared_ptr<Impl> impl):impl(std::move(impl)){}
   std::unique_ptr<TextFiles> retain() const;
   FileReadLease readLeaseIn(const ResourceAccess &,const std::string &) const;
-  FileResource openInAccess(const ResourceAccess &,const std::string &,FileMode,const std::function<void()> &,ResourceRegionAuthority region={})const;
+  FileResource openInAccess(const ResourceAccess &,const std::string &,FileMode,const std::function<void()> &,ResourceRegionAuthority region={},const std::shared_ptr<ResourceExecutor> &cleanup={})const;
 public:
   static constexpr size_t byteLimit = 1024 * 1024;
   static constexpr size_t textLimit = byteLimit;
@@ -115,7 +115,7 @@ public:
   void check()const;
   size_t retainedPathBytes()const noexcept;
   FileResource open(const TextFiles::Poll &poll={})const;
-  FileResource openInRegion(const ResourceRegionAuthority &,const TextFiles::Poll &poll={})const;
+  FileResource openInRegion(const ResourceRegionAuthority &,const TextFiles::Poll &poll={},const std::shared_ptr<ResourceExecutor> &cleanup={})const;
 };
 #endif
 // An explicit host scope overrides the process environment. Native HTTP calls
