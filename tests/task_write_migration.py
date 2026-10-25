@@ -1,5 +1,5 @@
 """Real SDK131022 history exercises the shared migration preflight and Store."""
-import argparse,copy,hashlib,json,os,sqlite3,subprocess,tempfile,time
+import argparse,copy,hashlib,json,os,shutil,sqlite3,subprocess,tempfile,time
 from pathlib import Path
 parser=argparse.ArgumentParser();parser.add_argument('probe');parser.add_argument('nex');parser.add_argument('--output',type=Path);args=parser.parse_args()
 probe=Path(args.probe).resolve();compiler=Path(args.nex).resolve();repo=Path(__file__).resolve().parents[1]
@@ -119,7 +119,7 @@ try:
  assert error['code']=='E_LANGUAGE_VERSION';snapshot=root/'raced-synchronize-evidence/race-before-planned-save.db';assert state(database)==state(snapshot)
  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':'raced-synchronize','atomic_cross_version_guard':True,'competing_write_preserved':True});save()
  # A future023 archive cannot evade hash verification by claiming old legacy17.
- future=root/'positive-0';database=future/'.nex/graph.db'
+ future=root/'future-legacy-disguise';shutil.copytree(root/'positive-0',future);database=future/'.nex/graph.db'
  with sqlite3.connect(database) as db:
   selected=db.execute('SELECT revision FROM head WHERE id=1').fetchone()[0];db.execute("UPDATE revisions SET language='0.17' WHERE hash=?",(selected,))
  before=state(database);error=invoke('future-legacy-disguise',{'project':str(future),'expected_revision':selected},1)

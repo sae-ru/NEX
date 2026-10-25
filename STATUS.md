@@ -1,3 +1,13 @@
+# Development0.132.7: explicit private023 write-provider contracts
+
+Separate static/shared task images use ABI4 provider records5/6/7, precise
+write-image requirements and one root grant/runtime. Legacy ABI3/mask31 and
+public022 remain unchanged. Private native/reference static/shared debug,
+release/profile and logical-debug metadata paths are checked independently;
+public023 migration, capture/replay/package, matching full/SAN/SDK/platform
+acceptance and the entire original project scope remain open.
+Read docs/task-write-providers.md.
+
 # Development0.132.6: shared explicit migration and HEAD-language integrity
 
 Genuine022 histories are rechecked through the same read-only origin/target

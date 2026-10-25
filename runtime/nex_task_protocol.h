@@ -21,4 +21,6 @@ inline bool validTaskCodeRequirements(int64_t abi,int64_t requirements)noexcept{
 // Published ABI3 provider/capture records retain their task/fs-only prefix.
 // Private standalone source FFI requirements do not widen that image contract.
 inline constexpr int64_t taskProviderRequirementsMask=31;
+// Explicit023 provider records exclude standalone source FFI requirements.
+inline constexpr int64_t taskWriteProviderRequirementsMask=taskProviderRequirementsMask|taskCodeFileWrite|taskCodeImageFileWrite;
 }

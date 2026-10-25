@@ -824,6 +824,11 @@ Toolchain 0.15 derives typed parameter/block/statement/expression nodes from the
 
 ## Private source task write candidate (0.23)
 
+Private023 static/shared continuations use separately versioned ABI4 provider
+records and explicit image write requirements; retained ABI3 records are never
+widened. See [the private provider contract](task-write-providers.md). Public023
+selection, captured delivery and matching SDK/platform gates remain separate.
+
 The shared migration preflight now verifies genuine022 history for an explicit
 private023 target. Ordinary live synchronization cannot change graph HEAD
 language implicitly, including when racing an explicit migration; it rejects

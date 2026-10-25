@@ -266,7 +266,9 @@
     "device": "docs/device.md",
     "task_file_writes_prototype": "docs/task-file-writes-prototype.md",
     "task_file_writes_host": "docs/task-file-writes-host.md",
-    "task_write_migration": "docs/task-write-migration.md"
+    "task_write_migration": "docs/task-write-migration.md",
+    "task_write_providers": "docs/task-write-providers.md",
+    "native_write_task_provider_schema": "llm/native-write-task-provider.schema.json"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1933,7 +1935,7 @@
     ]
   },
   "task_file_writes_prototype": {
-    "status": "private_explicit023_source_integration",
+    "status": "private_explicit023_source_and_provider_integration",
     "guide": "docs/task-file-writes-prototype.md",
     "language": "0.23",
     "public_language": "0.22",
@@ -1963,11 +1965,21 @@
     "public_migration_complete": false,
     "pending": [
       "explicit genuine022 history-preserving public023 migration",
-      "new static/shared provider contract and replay/package",
+      "public provider capture/replay/package and source-deleted delivery",
       "matching CLI/editor/debug/profile/SDK/platform delivery",
       "streams, networking, DB and task HTTP handlers"
     ],
     "private_history_migration_verified": true,
-    "migration_guide": "docs/task-write-migration.md"
+    "migration_guide": "docs/task-write-migration.md",
+    "private_static_shared_providers": true,
+    "private_provider_mask": 799,
+    "private_provider_schemas": [
+      "nex.native-task-provider/5",
+      "nex.native-task-provider/6",
+      "nex.native-task-provider/7"
+    ],
+    "provider_guide": "docs/task-write-providers.md",
+    "provider_schema_file": "llm/native-write-task-provider.schema.json",
+    "write_requirement_metadata": true
   }
 }

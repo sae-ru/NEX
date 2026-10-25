@@ -86,7 +86,7 @@ llvm::json::Object nativeTaskDebugInfoJSON(const NativeTaskDebugInfo &);
 NativeTaskDebugInfo nativeTaskDebugInfo(const NativeTaskDebugCatalog &,const NativeTaskDebugSourceUnion &,
   const std::string &catalogFile="task-debug-catalog.json",const std::string &sourceUnionFile="task-debug-sources.json");
 struct NativeTaskProviderInfo {
-  bool enabled=false, codeOnly=false, taskFileReads=false;
+  bool enabled=false, codeOnly=false, taskFileReads=false, taskFileWrites=false;
   std::string component, cohort, language;
   std::set<std::string> definitions;
   std::map<std::string,NativeTaskExport> exports;
@@ -95,7 +95,7 @@ struct NativeTaskProviderInfo {
   // PIC stages have no final image owner. Final records bind one actual image.
   std::string ownerImage{};
   std::map<std::string,std::string> definitionOwners{};
-  std::map<std::string,bool> componentFileReads{};
+  std::map<std::string,bool> componentFileReads{},componentFileWrites{};
   std::optional<NativeTaskImageIdentity> image{};
   std::optional<NativeTaskProfileInfo> profiling{};
   std::optional<NativeTaskDebugInfo> debugging{};
@@ -104,7 +104,8 @@ struct NativeTaskApplicationStage {
   bool enabled=false;
   std::string entry{},descriptorAccessor{};
   nexrt::TaskExecutionLimits configured;
-  bool fileReads=false;
+  bool fileReads=false,fileWrites=false;
+  int64_t executionABI=INT64_C(0x4e45585400000003);
 };
 llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStage &);
 NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Value &);

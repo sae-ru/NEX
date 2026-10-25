@@ -1,3 +1,8 @@
+Private023 write providers use separately versioned ABI4 records5/6/7 and mask799.
+Query task_file_writes_prototype.private_static_shared_providers and read its
+provider guide. Public_enabled:false still forbids inventing ordinary023 CLI
+projects. Retained ABI3 records, source effect checks and root grants stay intact.
+
 For existing graphs, preserve HEAD language and use explicit nex migrate.
 Normal check/load synchronization does not authorize changing a stored language.
 Private023 history verification does not enable public023 or write providers.

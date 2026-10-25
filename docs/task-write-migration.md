@@ -46,7 +46,8 @@ does not trigger a physical schema upgrade; it is not a genuine old-language
 semantic fixture. Prior-compiler implicit HEAD switching has a retained red
 reproduction outside the project source.
 
-The next public step still requires new static/shared write-provider contracts,
+The next public step still requires public wiring and delivery of the new
+private static/shared write-provider contracts,
 explicit write requirements in build/runtime/dependency records, public version
 selection/CLI tooling and full SDK/platform acceptance. Wider resource/callable/
 import/model histories and combined debug/profile/provider workflows remain

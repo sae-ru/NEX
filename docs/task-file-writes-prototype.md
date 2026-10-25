@@ -18,8 +18,9 @@ write to a typed suspension after evaluating both arguments once left to right.
 Native continuations use request ordinals13/14 following retained Foreign12.
 Their88-byte descriptor uses explicit execution ABI4 and write/code-image bits;
 ABI3 cannot acquire write bits. Legacy provider records remain ABI3/mask31 and
-cannot be relabelled as write providers. Private023 provider output currently
-fails explicitly until its new contract is complete.
+cannot be relabelled as write providers. Private023 static/shared output now uses separate ABI4 records5/6/7 and
+explicit write-image metadata. Read task-write-providers.md; public CLI selection,
+capture/replay/package and matching SDK/platform delivery remain separate.
 
 The root native coordinator captures a revocable write grant only when its image
 contains a write request, before child task resumes. Frames/helpers/closures
