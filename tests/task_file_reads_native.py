@@ -1,4 +1,4 @@
-"""Public020 compiled whole-file reads agree with the independent AST scheduler."""
+"""Current compiled whole-file reads agree with the independent AST scheduler."""
 import argparse
 import json
 import os
@@ -95,9 +95,18 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
             finally:
                 source.with_suffix('.hidden').rename(source)
     boundary = root / 'unsupported.nex'
-    boundary.write_text('module boundary;server fn main()->unit !{task,fs}{file_write_text("created", "forbidden");}')
-    rejected = cli(root, configured, 'build', boundary, success=False)
-    assert rejected['code'] == 'E_TASK_UNIMPLEMENTED' and not (files / 'created').exists(), rejected
+    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(error_code(file_write_text("created","forbidden"))=="CAPABILITY");return 42;}')
+    readonly = {**configured, 'NEX_FILES_WRITE':'0'}
+    built = cli(root, readonly, 'build', boundary)
+    assert cli(root, readonly, 'eval', boundary)['value'] == 42
+    run(root, [built['executable']], readonly, 42)
+    assert not (files / 'created').exists()
+    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(unwrap(file_write_text("created","complete")));assert(unwrap(file_read_text("created"))=="complete");return 42;}')
+    writable = {**configured, 'NEX_FILES_WRITE':'1'}
+    built = cli(root, writable, 'build', boundary)
+    assert cli(root, writable, 'eval', boundary)['value'] == 42
+    run(root, [built['executable']], writable, 42)
+    assert (files / 'created').read_text() == 'complete'
     for body in [
         'server fn read()->result<str> !{fs}{return file_read_text("text");}server fn main()->i64 !{task,fs}{return len(unwrap(read()));}',
         'server fn main()->i64 !{task,fs}{let f:server fn()->result<str> !{fs}=server fn()->result<str> !{fs}{return file_read_text("text");};return len(unwrap(f()));}',
