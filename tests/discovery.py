@@ -125,6 +125,8 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(full['task_profiling']['source_support'])
         self.assertEqual(full['task_profiling']['cli_language'], '0.24')
         self.assertEqual(full['task_profiling']['execution_task_abi'], 5)
+        self.assertEqual(full['task_debugging']['execution_task_abi'], 5)
+        self.assertEqual(full['task_debugging'], pack['task_debugging'])
         self.assertEqual(full['task_profiling']['report_schema'], 'nex.profile/2')
         self.assertFalse(full['task_profiling']['tracy'])
         self.assertFalse(full['task_profiling']['async_debugger'])

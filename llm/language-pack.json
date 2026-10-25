@@ -1238,7 +1238,7 @@
     "runtime_integration": true,
     "public_profile_enabled": true,
     "execution_task_abi_changed": true,
-    "measurement_scope": "native compiled source tasks; public CLI language020; see task_profiling scope"
+    "measurement_scope": "native compiled source tasks; public CLI language024; see task_profiling scope"
   },
   "task_profiling": {
     "status": "development_native_source_tasks",
@@ -1249,7 +1249,7 @@
       "macOS 64-bit",
       "Linux 64-bit"
     ],
-    "execution_task_abi": 4,
+    "execution_task_abi": 5,
     "runtime_schema": "nex.profile-runtime/2",
     "report_schema": "nex.profile/2",
     "session_schema": "nex.profile-session/2",
@@ -1313,7 +1313,7 @@
       "macOS 64-bit",
       "Linux 64-bit"
     ],
-    "execution_task_abi": 4,
+    "execution_task_abi": 5,
     "catalog_abi": 1,
     "manifest_schema": "nex.debug/2",
     "view_schema": "nex.task-debug-view/1",

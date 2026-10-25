@@ -1,3 +1,16 @@
+# Development0.134.2: current source task discovery and example project
+
+Current type-patch, scalar verification and acceptance-task examples have024
+snapshot/content/intent pins issued by the actual compiler. Replacement bodies,
+pre/postconditions, loop annotations, task requirements and budgets are preserved.
+Historical SDK fixtures are unchanged; metadata refresh is verified in isolated copies.
+
+Current task profile/debug discovery advertises execution ABI5, matching emitted
+TaskStreams024 code. The checkout example project declares024; original historical
+fixtures and the primary081 project remain unchanged. Runtime ABI, source semantics,
+grammar and stored identities are unchanged. Matching full/SAN/SDK/platform delivery
+and all original broader requirements remain pending.
+
 # Development0.134.1: public024 provider profile capture
 
 Acceptance-task profiling includes the checked ABI5 component source union
