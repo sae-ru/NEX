@@ -1,3 +1,13 @@
+# Development0.133.10: private024 pure-helper requirements fix
+
+The native file requirement classifier lifts reachable pure helpers before
+inspection, consistently with actual continuation emission. Pure generic
+callables and File identity helpers remain valid checked source; no new effect,
+grant, syntax, public024 switch or historical revision reinterpretation is added.
+Five real SDK1335 histories/15 revisions extend migration conformance. Current
+full/SAN/SDK/platform acceptance is separate and is not inferred from focused
+tests; all original project requirements remain open.
+
 # Development0.133.9: explicit private024 project delivery
 
 Compiler-owned source selection now rechecks024 physical projects and their

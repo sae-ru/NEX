@@ -90,7 +90,7 @@ TaskFileRequirements nativeTaskFiles(const Program &p,const std::set<std::string
   TaskFileRequirements result;
   for(const auto &name:selected){
     const auto &f=p.function(name);if(f.foreign||(!f.effects.contains("task")&&!supportsTaskFileStreams(p)))continue;
-    result.include(p,lowerTaskFunction(p,f));
+    result.include(p,lowerTaskFunction(p,f,true));
   }
   return result;
 }

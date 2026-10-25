@@ -41,6 +41,19 @@ and all-stop LLDB/DAP sessions check File identity watches, IO rejection and
 source projection after source projects are hidden. Temporary test output roots
 are canonicalized; the product symlink refusal remains enforced.
 
+Instrumented developer builds can supply an explicit external-runtime notice
+manifest to the private test driver. The maintained suite then checks that
+packaging without notices is rejected, that the actual runtime and complete
+license enter the package, and that the package executes from the captured
+sources with a minimal environment. This uses the existing PackageOptions
+notice path; neither compiler/runtime semantics nor the product provenance
+guard is changed. Sanitizer evidence must identify its exact runtime, license
+and instrumented binaries and remains distinct from ordinary SDK acceptance.
+
+The separate expanded history suite is described in
+[task-stream-histories.md](task-stream-histories.md). It uses five real023
+SDK histories and all15 archived revisions, rather than relabelled metadata.
+
 These are private integration contracts, not public024, a new installed SDK or
 cross-platform acceptance. Further controlled in-flight IO, genuine023 histories,
 explicit public migration and full/SAN/SDK/platform delivery are required. All

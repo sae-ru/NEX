@@ -1,0 +1,109 @@
+{
+  "schema": "nex.genuine023-expanded-stream-fixture/1",
+  "producer_toolchain": "0.133.5",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "65e45e386272025627da730c1bb49c3c05a80345a0b9aa19c50b790087808b21",
+  "SQL_sha256": "01e3c0230f30e9465d09afe27dd70a094ef8e175c9b5a6b05a8500680844ecca",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex",
+    "libraries": {
+      "numbers": "vendor/numbers"
+    }
+  },
+  "lock": {
+    "dependencies": {
+      "@pkg/numbers/model.nex": {
+        "module": "histories::numbers",
+        "source_hash": "0e83d067c605011a31feb761331ec107fddd2855d02c31f09b75a65adcb08989"
+      },
+      "@std/text.nex": {
+        "module": "std::text",
+        "source_hash": "21f031d547005836f70fddfeb45e6aa4942fba84d98c72a390e4cf81ccfb057e"
+      }
+    },
+    "language": "0.23",
+    "schema": "nex.lock/1"
+  },
+  "head": "c2cf0f0306cc24ab954333a2a2926fd18d92d4871bf6712eb91c8348ca0c1600",
+  "revisions": [
+    {
+      "revision": "dd09108518c1923392a6db324410b9c3c28f1515d69aeb6d21d826a3a7f0c440",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "@pkg/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 42;}\n",
+          "@std/text.nex": "module std::text;\n\npub fn starts_with(value: str, prefix: str) -> bool {\n  if len(prefix) > len(value) { return false; }\n  return slice(value, 0, len(prefix)) == prefix;\n}\n\npub fn ends_with(value: str, suffix: str) -> bool {\n  if len(suffix) > len(value) { return false; }\n  return slice(value, len(value) - len(suffix), len(suffix)) == suffix;\n}\n\npub fn join(values: list<str>, separator: str) -> str {\n  var result: str = \"\";\n  var i: i64 = 0;\n  while i < len(values) {\n    if i > 0 { result = result + separator; }\n    result = result + values[i];\n    i = i + 1;\n  }\n  return result;\n}\n\ntest fn text_test() -> unit {\n  assert(starts_with(\"Привет 🦊\", \"При\"));\n  assert(ends_with(\"Привет 🦊\", \"🦊\"));\n  assert(join([\"a\", \"b\"], \",\") == \"a,b\");\n}\n",
+          "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==42);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==42);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n",
+        "vendor/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 42;}\n"
+      },
+      "expected_value": 42,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "1ce9eb3dd81ab625daab799bdcb9f051eb64ef142c11655f813f183bf717339b",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "@pkg/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 43;}\n",
+          "@std/text.nex": "module std::text;\n\npub fn starts_with(value: str, prefix: str) -> bool {\n  if len(prefix) > len(value) { return false; }\n  return slice(value, 0, len(prefix)) == prefix;\n}\n\npub fn ends_with(value: str, suffix: str) -> bool {\n  if len(suffix) > len(value) { return false; }\n  return slice(value, len(value) - len(suffix), len(suffix)) == suffix;\n}\n\npub fn join(values: list<str>, separator: str) -> str {\n  var result: str = \"\";\n  var i: i64 = 0;\n  while i < len(values) {\n    if i > 0 { result = result + separator; }\n    result = result + values[i];\n    i = i + 1;\n  }\n  return result;\n}\n\ntest fn text_test() -> unit {\n  assert(starts_with(\"Привет 🦊\", \"При\"));\n  assert(ends_with(\"Привет 🦊\", \"🦊\"));\n  assert(join([\"a\", \"b\"], \",\") == \"a,b\");\n}\n",
+          "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==43);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==43);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n",
+        "vendor/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 43;}\n"
+      },
+      "expected_value": 43,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "c2cf0f0306cc24ab954333a2a2926fd18d92d4871bf6712eb91c8348ca0c1600",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "@pkg/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 44;}\n",
+          "@std/text.nex": "module std::text;\n\npub fn starts_with(value: str, prefix: str) -> bool {\n  if len(prefix) > len(value) { return false; }\n  return slice(value, 0, len(prefix)) == prefix;\n}\n\npub fn ends_with(value: str, suffix: str) -> bool {\n  if len(suffix) > len(value) { return false; }\n  return slice(value, len(value) - len(suffix), len(suffix)) == suffix;\n}\n\npub fn join(values: list<str>, separator: str) -> str {\n  var result: str = \"\";\n  var i: i64 = 0;\n  while i < len(values) {\n    if i > 0 { result = result + separator; }\n    result = result + values[i];\n    i = i + 1;\n  }\n  return result;\n}\n\ntest fn text_test() -> unit {\n  assert(starts_with(\"Привет 🦊\", \"При\"));\n  assert(ends_with(\"Привет 🦊\", \"🦊\"));\n  assert(join([\"a\", \"b\"], \",\") == \"a,b\");\n}\n",
+          "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==44);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::library_app;import \"numbers/model.nex\" as numbers;import \"std/text.nex\" as text;\nserver fn main()->i64 !{task,fs}{assert(numbers::answer()==44);assert(text::join([\"NEX\",\"🧠\"],\" \")==\"NEX 🧠\");let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_read(f,6))==utf8_bytes(\"abcdef\"));assert(file_close(f));return numbers::answer();}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n",
+        "vendor/numbers/model.nex": "module histories::numbers;pub fn answer()->i64{return 44;}\n"
+      },
+      "expected_value": 44,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 3,
+    "declaration_versions": 9,
+    "edges": 15,
+    "graph_edges": 45,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 8,
+    "nodes": 24,
+    "operation_functions": 24,
+    "operation_ids": 147,
+    "operation_versions": 441,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false
+}

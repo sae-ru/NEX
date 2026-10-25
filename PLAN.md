@@ -1,3 +1,11 @@
+# Development0.133.10: genuine023 histories and pure helpers
+
+The private024 history suite covers five actual SDK1335 archives and all15
+revisions, including pure generic callables and File identity helpers. A native
+requirement-classification bug exposed by this suite is fixed. This does not
+complete controlled in-flight IO, mixed FFI histories, public024 migration/CLI,
+matching full/SAN/SDK/platform acceptance or the remaining full project plan.
+
 # Development0.133.9: explicit private024 project delivery
 
 Compiler-owned source selection now rechecks024 physical projects and their

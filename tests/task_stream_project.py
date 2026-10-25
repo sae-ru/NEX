@@ -2,7 +2,7 @@
 import argparse,hashlib,json,os,subprocess,sys,tempfile,time
 from pathlib import Path
 
-parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('compiler',type=Path);parser.add_argument('reference',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--complete-tooling',action='store_true');a=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('compiler',type=Path);parser.add_argument('reference',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--complete-tooling',action='store_true');parser.add_argument('--notices',type=Path);a=parser.parse_args()
 temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex stream project ');root=Path(temporary.name).resolve()
@@ -25,6 +25,19 @@ server fn main()->unit !{task,fs,io}{
 '''
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v):Path(p).write_text(json.dumps(v,indent=2)+'\n')
+notices=a.notices.resolve(strict=True) if a.notices else None
+if notices:
+ declared=json.loads(notices.read_text());assert declared['schema']=='nex.sdk-notices/1'
+ # This opt-in test mode describes actual instrumentation dependencies; no
+ # product notice guard or package dependency classification is overridden.
+ assert len(declared['components'])==1
+ notice_component=declared['components'][0]
+ assert len(notice_component['roots'])==len(notice_component['license_files'])==1
+ runtime=(notices.parent/notice_component['roots'][0]).resolve(strict=True)
+ license_file=(notices.parent/notice_component['license_files'][0]).resolve(strict=True)
+ assert runtime.is_file() and license_file.is_file()
+ report['external_runtime']={'notices':str(notices),'notices_sha256':sha(notices),'path':str(runtime),'sha256':sha(runtime),
+  'license':str(license_file),'license_sha256':sha(license_file),'component':notice_component['name']}
 def save():report['seconds']=round(time.monotonic()-start,3);write(root/'report.json',report)
 def run(name,argv,env=None,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,argv)),cwd=root,env=env or os.environ,capture_output=True,text=True,timeout=600)
@@ -79,10 +92,24 @@ try:
     replay_base={**base,'root':restored['root']}
     replay=invoke(name+'-replay-build',{'action':'build','directory':str(case/'replay-native'),**replay_base},env=env);replay_binary=executable(replay)
     observed=run(name+'-replay-native',[replay_binary],env);assert observed.stdout=='42\n' and observed.stderr==''
-    package=invoke(name+'-package',{'action':'package','directory':str(case/'replay-native'),'package_directory':str(case/'package'),**replay_base},env=env)
+    package_request={'action':'package','directory':str(case/'replay-native'),'package_directory':str(case/'package'),**replay_base}
+    if notices:
+     refused=invoke(name+'-package-no-notices',package_request,1,env=env)
+     assert refused['code']=='E_PROJECT_PACKAGE' and 'no component/license provenance' in refused['message']
+     package_request['notices']=str(notices)
+    package=invoke(name+'-package',package_request,env=env)
     assert package['language']=='0.24' and not package['graph_store_opened']
     app_package=next(row for row in package['components'] if row['component']=='app')
     manifest=json.loads((case/'package'/app_package['manifest']).read_text());assert manifest['language']=='0.24'
+    if notices:
+     packaged_component=next(c for c in manifest['components'] if c['name']==notice_component['name'])
+     assert packaged_component['version']==notice_component['version'] and packaged_component['url']==notice_component['url']
+     app_root=(case/'package'/app_package['manifest']).parent
+     copied=[(n,r) for n,r in manifest['files'].items() if r.get('component')==notice_component['name']]
+     libraries=[(n,r) for n,r in copied if r.get('source_sha256')==sha(runtime)]
+     assert len(libraries)==1,(name,copied)
+     assert sha(app_root/libraries[0][0])==libraries[0][1]['sha256']
+     assert any(sha(app_root/n)==sha(license_file) for n,r in manifest['files'].items() if n.startswith('licenses/'))
     container=case/'capture-root';hidden_container=case/'capture-root.hidden';container.rename(hidden_container)
     try:
      packaged=run(name+'-packaged-native',[case/'package'/app_package['entry']],{'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(files)})
@@ -96,6 +123,7 @@ try:
     'capture':str(capture_file),'capture_sha256':sha(capture_file),'package':package});save()
  report.update(ok=True,state='passed',native_reference_pairs=len(report['cases']),source_absent_replay=True,public023_refuses_private024=True,
   graph_store_never_opened=True,ABI3_ABI4_acceptance_separate=True)
+ if notices:report.update(missing_notice_rejections=len(report['cases']),packaged_runtime_and_license_checks=len(report['cases']))
  save()
  if a.complete_tooling:
   scripts=Path(__file__).resolve().parent

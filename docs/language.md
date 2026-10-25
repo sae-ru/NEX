@@ -1,3 +1,11 @@
+# Development0.133.10: private024 pure-helper conformance
+
+The native task file requirement classifier accepts concrete reachable pure
+helpers, consistently with actual continuation lowering. This corrects native
+builds of already checked pure generic callables and File identity helpers.
+No syntax, effects, grants, canonical identities or public023 rules change.
+See task-stream-histories.md for genuine023 history conformance and its scope.
+
 # Development0.133.9: explicit private024 project delivery
 
 Compiler-owned source selection now rechecks024 physical projects and their

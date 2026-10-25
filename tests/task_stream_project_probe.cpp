@@ -30,6 +30,7 @@ int main(int argc,char **argv){try{
   options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;options.sourceLanguage=sourceLanguage;
   options.directory=text("directory");options.compiler=text("compiler");options.adapter=text("adapter","nex-dap");
   options.taskDebug=o.getBoolean("task_debug").value_or(false);options.package.directory=text("package_directory");options.package.compiler=options.compiler;
+  options.package.notices=text("notices");
   options.profiling.output=text("profile_output");options.profiling.directory=root;
   if(auto env=o.getObject("environment"))for(const auto &[key,value]:*env){auto item=value.getAsString();if(!item)throw Error("E_OPTION","invalid profile environment");options.profiling.environment[key.str()]=item->str();}
   output=buildProject(root,manifest,readFile(manifest),options);

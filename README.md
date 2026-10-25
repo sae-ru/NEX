@@ -1,3 +1,15 @@
+# Development0.133.10: pure helpers and genuine023 histories
+
+Private024 native task file requirements now analyze reachable pure helpers
+with the same concrete-function lowering used for emitted continuations.
+Previously a valid pure/generic callable dependency could fail native building
+with E_TASK_STATE although the checker and reference interpreter accepted it.
+Five genuine SDK1335 histories exercise all15 archived revisions, retained023
+behavior, unchanged16-table history, native/reference and pure client output.
+Public023/default, grammar and semantic revision identities remain unchanged.
+Matching full/SAN/SDK/platform acceptance and the full project scope remain open.
+See [history conformance](docs/task-stream-histories.md).
+
 # Development0.133.9: explicit private024 project delivery
 
 Compiler-owned source selection now rechecks024 physical projects and their
