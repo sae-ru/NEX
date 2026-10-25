@@ -7,7 +7,8 @@ Gate *activeGate=nullptr;
 void observe(const NativeTaskFrame &frame,int64_t transition){
   if(transition!=3||!frame.pendingRequest)return;
   if(frame.pendingRequest->operation==TaskRequestKind::Cancel)activeGate->beforeSourceCancel();
-  else if(frame.pendingRequest->operation==TaskRequestKind::Wait)activeGate->afterSourceCancel();
+  else if(frame.pendingRequest->operation==TaskRequestKind::FileClose)activeGate->beforeSourceClose();
+  else if(frame.pendingRequest->operation==TaskRequestKind::Wait)activeGate->afterSourceControl();
 }
 struct Context {std::shared_ptr<TaskFrameHostContext> host;};
 TaskBody factory(TaskGroup &group,Value,Value,const void *raw){auto context=*static_cast<const Context*>(raw);return executeTaskFrame(group,NativeTaskFrame(*NEX_TEST_DESCRIPTOR(),{}, {},context.host),observe);}

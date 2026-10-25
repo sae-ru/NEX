@@ -2,6 +2,7 @@
 #include "nex/project.h"
 #include "nex/backend.h"
 #include "nex/task_frontend.h"
+#include "nex_foreign.h"
 #include <sqlite3.h>
 #include <iostream>
 #include <memory>
@@ -50,17 +51,33 @@ int main(int argc,char **argv){try{
   llvm::json::Object result{{"schema","nex.private-stream-migration/1"},{"ok",true},{"origin_verified",verified},
     {"origin_revision",original},{"origin_language",language},{"previous_revision",previous},{"revision",revision},
     {"language",nex::programLanguage(program)},{"public_default",nex::languageVersion},{"source_hash",nex::hash(nex::json(bundle,false))}};
+  auto evaluate=[&](const nex::Program &checked,const char *hostKey,const char *capacityKey){
+    std::shared_ptr<nexrt::ForeignLibraries> libraries;
+    std::unique_ptr<nexrt::ForeignScope> scope;
+    if(auto host=o->getString(hostKey)){libraries=nexrt::loadForeignLibraries(host->str());scope=std::make_unique<nexrt::ForeignScope>(libraries);}
+    auto value=nex::evaluate(checked);scope.reset();
+    if(libraries){
+      if(libraries->resourceBytesUsed()!=0)throw nex::Error("E_RESOURCE_BYTES","migration reference retained external capacity");
+      result[capacityKey]=int64_t(libraries->resourceBytesUsed());
+    }
+    return value;
+  };
   // A real retained archive must continue to parse/execute under its own rules.
   {nex::Store retained(root/".nex",nex::StoreOpenMode::ReadOnly);
     if(origin==root&&retained.containsRevision(original)){
       auto old=nex::loadVersionedBundle(retained.bundle(original),root.string(),language);
       if(nex::revision(old)!=original)throw nex::Error("E_REVISION","old revision identity changed after migration");
-      try{auto value=nex::evaluate(old);result["old_value"]=std::move(value.value);result["old_stdout"]=value.output;}
+      result["old_identity_rechecked"]=true;
+      if(!o->getBoolean("evaluate_retained").value_or(true)){
+        const auto reason=field(*o,"retained_evaluation_unavailable_reason");
+        if(reason.empty())throw nex::Error("E_OPTION","retained execution skip requires an explicit reason");
+        result["old_evaluation_skipped"]=reason;
+      }else try{auto value=evaluate(old,"origin_foreign_host","old_external_capacity_after_scope");result["old_value"]=std::move(value.value);result["old_stdout"]=value.output;}
       catch(const nex::Error &error){result["old_error"]=error.code;}
     }
   }
   if(o->getBoolean("execute").value_or(false)){
-    auto evaluated=nex::evaluate(program);result["target_value"]=std::move(evaluated.value);result["target_stdout"]=evaluated.output;
+    auto evaluated=evaluate(program,"target_foreign_host","target_external_capacity_after_scope");result["target_value"]=std::move(evaluated.value);result["target_stdout"]=evaluated.output;
     fs::create_directories(output);
     nex::BuildOptions options;options.profile="debug";if(nex::usesTaskEffects(program,"main"))options.taskLimits.workers=1;
     auto built=nex::build(program,(output/"native").string(),options);result["executable"]=built.executable;

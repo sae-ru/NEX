@@ -78,6 +78,14 @@ return with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let ready:channel<bo
 let child:task<unit>=task_spawn(s,server fn()->unit !{task,fs}{let f:file=unwrap(file_open_write("output"));
 assert(task_send(ready,true));assert(unwrap(file_write(f,utf8_bytes("first")))==5);file_write(f,utf8_bytes("must-not-write"));file_close(f);});
 assert(unwrap(task_recv(ready)));task_yield();assert(task_cancel(child));task_wait(child);return 42;});}''',
+    'source_close': '''module inflight_source_close;
+struct Packet{files:list<file>;stream:result<file>;}
+server fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read("input"));let packet:Packet=Packet([f,f],ok(f));
+return with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let ready:channel<bool>=channel_new<bool>(s,0);
+let child:task<result<bytes>>=task_spawn(s,server fn()->result<bytes> !{task,fs}{assert(task_send(ready,true));return file_read(unwrap(packet.stream),3);});
+assert(unwrap(task_recv(ready)));task_yield();assert(file_close(packet.files[1]));assert(!file_is_open(f));
+assert(error_code(file_open_read("input"))=="E_RESOURCE_LIMIT");let outcome:result<bytes>=task_wait(child);
+assert(error_code(outcome)=="E_RESOURCE_CLOSED");return 42;});}''',
 }
 selections = [
     ('open_read','read','open_read',1,b'original',0,0),
@@ -98,6 +106,24 @@ for label,program,operation,occurrence,partial,argument,result in selections:
     for mode,error in [('none',''),('cancel','E_CANCELLED'),('deadline','E_TIMEOUT'),('revoke','E_RESOURCE_SCOPE'),('host_error','E_TASK_HOST')]:
         cases.append((label+'-'+mode,program,mode,operation,occurrence,error,success if mode=='none' else partial,argument,result))
 cases.append(('source_task_cancel_inflight','source_cancel','source_cancel','write',1,'E_CANCELLED',b'first',5,5))
+cases.append(('source_alias_close_inflight','source_close','source_close','read',1,'',b'original',3,3))
+for label,opened,setup,kind,expression,operation,partial,argument,result in [
+    ('write','file_open_write("output")','','i64','file_write(unwrap(packet.stream),utf8_bytes("prefix"))','write',b'prefix',6,6),
+    ('append','file_open_append("output")','','i64','file_write(unwrap(packet.stream),utf8_bytes("!"))','write',b'original!',1,1),
+    ('flush','file_open_write("output")','assert(unwrap(file_write(f,utf8_bytes("first")))==5);','bool','file_flush(unwrap(packet.stream))','flush',b'first',0,0),
+    ('seek','file_open_read("input")','','i64','file_seek(unwrap(packet.stream),2)','seek',b'original',2,2),
+    ('size','file_open_read("input")','','i64','file_size(unwrap(packet.stream))','size',b'original',0,6),
+]:
+    key='source_close_'+label
+    programs[key]='''module inflight_source_close_@NAME@;
+struct Packet{files:list<file>;stream:result<file>;}
+server fn main()->i64 !{task,fs}{let f:file=unwrap(@OPEN@);@SETUP@let packet:Packet=Packet([f,f],ok(f));
+return with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let ready:channel<bool>=channel_new<bool>(s,0);
+let child:task<result<@TYPE@>>=task_spawn(s,server fn()->result<@TYPE@> !{task,fs}{assert(task_send(ready,true));return @EXPRESSION@;});
+assert(unwrap(task_recv(ready)));task_yield();assert(file_close(packet.files[1]));assert(!file_is_open(f));
+assert(error_code(file_open_read("input"))=="E_RESOURCE_LIMIT");let outcome:result<@TYPE@>=task_wait(child);
+assert(error_code(outcome)=="E_RESOURCE_CLOSED");return 42;});}'''.replace('@NAME@',label).replace('@OPEN@',opened).replace('@SETUP@',setup).replace('@TYPE@',kind).replace('@EXPRESSION@',expression)
+    cases.append(('source_alias_close_'+label+'_inflight',key,'source_close',operation,1,'',partial,argument,result))
 if args.selected:
     requested=set(args.selected);assert requested<=set(c[0] for c in cases);cases=[c for c in cases if c[0] in requested]
 programs={name:source for name,source in programs.items() if name in {c[1] for c in cases}}
@@ -152,13 +178,14 @@ try:
             assert observed['quota_during_gate']==1 and observed['quota_after']==0 and observed['physical_file_settlement'] and observed['live_objects_restored']
             assert observed['quota_reuse_error']==('E_RESOURCE_SCOPE' if mode=='revoke' else 'E_RESOURCE_LIMIT')
             assert observed['source_cancel_issued']==(mode=='source_cancel')
+            assert observed['source_close_issued']==(mode=='source_close')
             if backend=='native':assert observed['external_running_during_gate']>0 and observed['external_tickets_during_gate']>0
             assert (files/'input').read_bytes()==b'abcdef' and (files/'output').read_bytes()==expected_bytes,(name,backend,(files/'output').read_bytes())
             outcomes[backend]=observed
         report['cases'].append({'name':name,'program':program,'mode':mode,'operation':operation,'occurrence':occurrence,'native_reference':True,
                                 'expected_error':expected_error,'expected_output_hex':expected_bytes.hex(),'actual_argument':argument,'actual_result':completed,'outcomes':outcomes});save()
     report.update(ok=True,state='passed',native_reference_pairs=len(report['cases']),compiled_images=len(report['images']),
-                  actual_IO_held_before_admission=True,physical_quota_retained_until_release=True,source_task_cancel_inflight=any(c['mode']=='source_cancel' for c in report['cases']))
+                  actual_IO_held_before_admission=True,physical_quota_retained_until_release=True,source_task_cancel_inflight=any(c['mode']=='source_cancel' for c in report['cases']),source_alias_close_inflight=any(c['mode']=='source_close' for c in report['cases']))
 except BaseException as error:
     report.update(ok=False,state='failed',error=repr(error));raise
 finally:

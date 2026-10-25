@@ -20,7 +20,7 @@ int main(int argc,char **argv){try{
   gate.setup(request.deadline(),[&]{request.cancel();stop.request_stop();});TaskExecutionLimits limits;limits.workers=1;limits.steps=16000000;limits.timeoutMs=30000;
   auto observer=[&](size_t,const nex::TaskTransition &transition){
    if(transition.kind!=nex::TaskTransition::Waiting)return;
-   if(transition.operation=="task_cancel")gate.beforeSourceCancel();else if(transition.operation=="task_wait")gate.afterSourceCancel();
+   if(transition.operation=="task_cancel")gate.beforeSourceCancel();else if(transition.operation=="file_close")gate.beforeSourceClose();else if(transition.operation=="task_wait")gate.afterSourceControl();
   };
   try{auto evaluated=nex::evaluateTaskReference(program,"main",{},limits.steps,observer,&limits,&host,&reads,&writes);result.value=evaluated.value.scalar;require(evaluated.external.pending==0&&evaluated.external.reservedBytes==0,"reference inflight retained IO credits");}
   catch(const nex::Error &e){result.error=e.code;}

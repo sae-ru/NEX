@@ -1,3 +1,23 @@
+# Development0.133.12: source alias-close and genuine mixed histories
+
+The private024 physical IO suite covers source alias-close during read, write,
+append, flush, seek and size, in addition to existing host/source controls:
+62 native/independent-AST pairs on12 compiled NEX images. A closed alias loses
+logical access while physical leases and quotas remain until IO retirement.
+Visible completed writes are retained; cancellation/close promises no rollback.
+
+Four real installed SDK1335 histories add12 original023 revisions combining
+File/whole-file IO with C11/C++20 opaque resources and task captures. Explicit
+migration retains all16 tables and original identities, rechecks external
+signatures and ownership, and records any new-platform binary-pin projection
+only in the new024 candidate. Original pinned runtime execution is reported
+only when actually available. See docs/task-stream-ffi-histories.md.
+
+This adds conformance and test-host integration, with no compiler/runtime source
+semantics, syntax, canonical identities, public023 or historical rule changes.
+Matching full/SAN/SDK/platform acceptance and public024 delivery remain open,
+as do all original language/server/accelerator/UI/mobile/Studio requirements.
+
 # Development0.133.11: private physical IO and marker conformance
 
 Private024 actual syscall gates exercise held leases/quota, host cancellation,

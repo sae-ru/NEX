@@ -1,0 +1,169 @@
+{
+  "schema": "nex.genuine023-mixed-stream-fixture/1",
+  "producer_toolchain": "0.133.5",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "65e45e386272025627da730c1bb49c3c05a80345a0b9aa19c50b790087808b21",
+  "SQL_sha256": "c637b64af22d169ada46a11437a42560cc7909cac5cf90300305b3c0f6b850e4",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex"
+  },
+  "head": "ac2c930d79c59b177a0f1a227c4bdbd646a8210d207d081a64e50f13ae22c316",
+  "revisions": [
+    {
+      "revision": "5378823c81a159b1f22621a5fbc5f425fdf7fb6d74c1717765eb8afaaa4ca1ea",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(42);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 42;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(42);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 42;}\n"
+      },
+      "expected_value": 42,
+      "old_error": null,
+      "old_value": 42,
+      "old_events": "IFXD"
+    },
+    {
+      "revision": "775a08afe99dfe9de853457685acbb53445e8b0858f4ca4af16ffa867ce40dcb",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(43);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 43;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(43);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 43;}\n"
+      },
+      "expected_value": 43,
+      "old_error": null,
+      "old_value": 43,
+      "old_events": "IFXD"
+    },
+    {
+      "revision": "ac2c930d79c59b177a0f1a227c4bdbd646a8210d207d081a64e50f13ae22c316",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(44);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 44;}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::mixed_ffi;\nserver resource Session;\nserver extern fn create(value:i64)->Session !{ffi}=foreign(\"test\",\"create\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn read(owner:Session)->i64 !{ffi}=foreign(\"test\",\"read\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver extern fn forward(owner:Session)->Session !{ffi}=foreign(\"test\",\"forward\",\"defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d\");\nserver fn main()->i64 !{task,fs,ffi}{\nlet input:bytes=unwrap(file_read_bytes(\"input\"));let owner:Session=create(44);\nlet answer:i64=with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{\nlet job:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return read(forward(owner));});\nreturn task_wait(job);});\nassert(input==utf8_bytes(\"abcdef\"));assert(resource_close(owner));return answer;}\nclient fn client_value()->i64{return 44;}\n"
+      },
+      "expected_value": 44,
+      "old_error": null,
+      "old_value": 44,
+      "old_events": "IFXD"
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 2,
+    "declaration_versions": 6,
+    "edges": 15,
+    "graph_edges": 51,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 7,
+    "nodes": 21,
+    "operation_functions": 21,
+    "operation_ids": 53,
+    "operation_versions": 159,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "kind": "whole-file",
+  "dialect": "C11",
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false,
+  "provider": {
+    "manifest": {
+      "schema": "nex.foreign-bundle/1",
+      "platform": "macos-arm64",
+      "entry": "module.so",
+      "files": [
+        {
+          "path": "module.so",
+          "sha256": "39af7956b8db5a4594ffcac386ab28af8b81154777b5794ca592087b6d679490"
+        },
+        {
+          "path": "NOTICE",
+          "sha256": "781a86e1b3454298a8634ac648f37d32e84f1152cef3438eb3423b80976bc8ca"
+        }
+      ],
+      "exports": {
+        "create": "6400c7aa4758cf87d4308b3c90ddcdb2285c8a746508fa16412b2670e9b51f31",
+        "read": "d80aa4ab5b29e746fb01bac1a18b5c6b1b4b730692d34829231df669bc49761f",
+        "forward": "5a85f634e33830047a5724d0a97cfadb992a9c3b4d6fb97b38a010d94d7677e9"
+      },
+      "notices": [
+        "NOTICE"
+      ]
+    },
+    "manifest_sha256": "defe443bb06f86e18241d5d10776669c0626f892bc9479cf89af2c04d0b6af1d",
+    "image_sha256": "39af7956b8db5a4594ffcac386ab28af8b81154777b5794ca592087b6d679490",
+    "signature_header": "#define PIN_CREATE \"6400c7aa4758cf87d4308b3c90ddcdb2285c8a746508fa16412b2670e9b51f31\"\n#define PIN_READ \"d80aa4ab5b29e746fb01bac1a18b5c6b1b4b730692d34829231df669bc49761f\"\n#define PIN_FORWARD \"5a85f634e33830047a5724d0a97cfadb992a9c3b4d6fb97b38a010d94d7677e9\"\n",
+    "instrumented": false,
+    "source": "#include \"nex_ffi_module.h\"\n#include \"typed-resource-signatures.h\"\n#include <stdint.h>\n#include <stdlib.h>\n#include <stdio.h>\n#include <pthread.h>\n#include <fcntl.h>\n#include <unistd.h>\n\ntypedef struct {int64_t value;} Object;\nstatic void event(char value){const char *p=getenv(\"NEX_TYPED_RESOURCE_MARKER\");if(p){int fd=open(p,O_WRONLY|O_APPEND|O_CREAT,0600);if(fd>=0){(void)write(fd,&value,1);close(fd);}}}\n__attribute__((constructor)) static void loaded(void){\n#ifdef DIFFERENT_IMAGE\n  event('J');\n#else\n  event('I');\n#endif\n}\n__attribute__((destructor)) static void unloaded(void){event('D');}\nstatic void destroy(void *pointer){event('X');free(pointer);}\nstatic nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *user,void **out){\n  int64_t value=*(int64_t*)user;Object *object=(Object*)malloc(sizeof(*object));if(!object)return NEX_FFI_LIMIT;\n  object->value=value;*out=object;event('F');\n#ifdef __cplusplus\n  if(value==-4)throw 42;\n#endif\n  if(value==-1)return NEX_FFI_LIMIT;\n  if(value==-3)(void)api->poll(call);\n  return NEX_FFI_OK;\n}\nstatic nex_ffi_status null_factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *user,void **out){(void)api;(void)call;(void)user;(void)out;event('N');return NEX_FFI_OK;}\n#define TRY(expr) do{nex_ffi_status code=(expr);if(code!=NEX_FFI_OK)return code;}while(0)\ntypedef struct {const nex_ffi_api_v1 *api;nex_ffi_call call;nex_ffi_ref ref;nex_ffi_type type;nex_ffi_status status;} WrongThread;\nstatic void *wrong_thread(void *argument){WrongThread *w=(WrongThread*)argument;void *untouched=(void*)(uintptr_t)123;w->status=w->api->resource_borrow(w->call,w->ref,w->type,&untouched);if(untouched!=(void*)(uintptr_t)123)w->status=NEX_FFI_INTERNAL;return NULL;}\nstatic nex_ffi_call old_call;\nstatic nex_ffi_ref old_ref;\nstatic nex_ffi_type old_type;\nstatic nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user){\n  unsigned op=(unsigned)(uintptr_t)user;nex_ffi_type type=0;\n  if(api->struct_size<NEX_FFI_V1_RESOURCE_SIZE||count!=1)return NEX_FFI_ARGUMENT;\n  if(op==1||op==7||op==9){\n    int64_t value=0;TRY(api->get_i64(call,args[0],&value));TRY(api->result_type(call,&type));\n    if(op==9)TRY(api->type_child(call,type,0,0,&type));\n    nex_ffi_ref resource=0;\n    nex_ffi_resource_destroy_v1 deleter=op==7?free:destroy;\n    TRY(api->resource_create(call,type,sizeof(Object),value==-2?null_factory:factory,deleter,&value,&resource));\n    if(op==9)return api->make_success(call,resource,out);\n    *out=resource;return NEX_FFI_OK;\n  }\n  TRY(api->argument_type(call,0,&type));\n  if(op==3){*out=args[0];return NEX_FFI_OK;}\n  if(op==6){nex_ffi_ref untouched=123;int64_t value=7;nex_ffi_status s=api->resource_create(call,type,sizeof(Object),factory,destroy,&value,&untouched);if(untouched!=123)return NEX_FFI_INTERNAL;return api->make_i64(call,s,out);}\n  if(op==10){\n    if(old_call){void *untouched=(void*)(uintptr_t)123;\n      if(api->resource_borrow(old_call,old_ref,old_type,&untouched)!=NEX_FFI_SCOPE||untouched!=(void*)(uintptr_t)123)return NEX_FFI_INTERNAL;\n      if(api->resource_borrow(call,args[0],old_type,&untouched)!=NEX_FFI_REF)return NEX_FFI_INTERNAL;\n    }\n    old_call=call;old_ref=args[0];old_type=type;return api->make_i64(call,42,out);\n  }\n  if(op==11){WrongThread w={api,call,args[0],type,0};pthread_t thread;if(pthread_create(&thread,NULL,wrong_thread,&w))return NEX_FFI_INTERNAL;if(pthread_join(thread,NULL))return NEX_FFI_INTERNAL;return api->make_i64(call,w.status,out);}\n  void *pointer=NULL;nex_ffi_status borrowed=api->resource_borrow(call,args[0],type,&pointer);\n  if(op==5)return api->make_i64(call,borrowed,out);\n  if(borrowed!=NEX_FFI_OK)return borrowed;\n  uint32_t kind=0;uint64_t unused=0;TRY(api->kind(call,args[0],&kind));\n  if(kind!=NEX_FFI_EXTERNAL_RESOURCE||api->child_count(call,args[0],&unused)!=NEX_FFI_TYPE||api->file_identity(call,args[0],&unused)!=NEX_FFI_TYPE)return NEX_FFI_INTERNAL;\n  TRY(api->resource_identity(call,args[0],&unused));if(!unused)return NEX_FFI_INTERNAL;\n  if(op==4){uint32_t closed=0,opened=1;TRY(api->resource_close(call,args[0],&closed));TRY(api->resource_is_open(call,args[0],&opened));if(!closed||opened)return NEX_FFI_INTERNAL;\n    void *untouched=(void*)(uintptr_t)123;if(api->resource_borrow(call,args[0],type,&untouched)!=NEX_FFI_RESOURCE_CLOSED||untouched!=(void*)(uintptr_t)123)return NEX_FFI_INTERNAL;\n    TRY(api->release(call,args[0]));\n  }\n  if(op==8){event('B');(void)api->poll(call);}\n  int64_t value=((Object*)pointer)->value;\n  if(op==8)event('P');\n  return api->make_i64(call,value,out);\n}\n#define EXPORT(name,op) {sizeof(nex_ffi_export_v1),0,#name,PIN_##name,callback,(void*)(uintptr_t)op}\nstatic const nex_ffi_export_v1 exports[]={\n{sizeof(nex_ffi_export_v1),0,\"create\",PIN_CREATE,callback,(void*)(uintptr_t)1},\n{sizeof(nex_ffi_export_v1),0,\"read\",PIN_READ,callback,(void*)(uintptr_t)2},\n{sizeof(nex_ffi_export_v1),0,\"forward\",PIN_FORWARD,callback,(void*)(uintptr_t)3}\n};\nstatic const nex_ffi_module_v1 module={NEX_FFI_MODULE_ABI_V1,sizeof(nex_ffi_module_v1),sizeof(exports)/sizeof(exports[0]),sizeof(nex_ffi_export_v1),exports};\nconst nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi,uint32_t bytes){return abi==NEX_FFI_ABI_V1&&bytes>=NEX_FFI_V1_RESOURCE_SIZE?&module:NULL;}\n",
+    "signatures": {
+      "create": {
+        "parameters": [
+          0
+        ],
+        "result": 1,
+        "schema": "nex.foreign-signature/1",
+        "types": [
+          {
+            "kind": "i64"
+          },
+          {
+            "identity": "dfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6",
+            "kind": "resource",
+            "name": "nex_resource::rdfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6"
+          }
+        ]
+      },
+      "read": {
+        "parameters": [
+          0
+        ],
+        "result": 1,
+        "schema": "nex.foreign-signature/1",
+        "types": [
+          {
+            "identity": "dfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6",
+            "kind": "resource",
+            "name": "nex_resource::rdfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6"
+          },
+          {
+            "kind": "i64"
+          }
+        ]
+      },
+      "forward": {
+        "parameters": [
+          0
+        ],
+        "result": 0,
+        "schema": "nex.foreign-signature/1",
+        "types": [
+          {
+            "identity": "dfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6",
+            "kind": "resource",
+            "name": "nex_resource::rdfdaefb7a65ea0f46256be7e0f209499f88715c90113a7e64ad8b96f00cee7a6"
+          }
+        ]
+      }
+    },
+    "reproducible_two_directories": true
+  }
+}

@@ -25,10 +25,11 @@ struct Gate {
   const FileIOOperation selected;
   const size_t occurrence;
   const bool sourceCancel;
+  const bool sourceClose;
   const bool hostFailure;
   std::mutex mutex;
   std::condition_variable changed;
-  bool reached=false,released=false,issued=false,cancelSeen=false,distinctThread=false;
+  bool reached=false,released=false,issued=false,cancelSeen=false,closeSeen=false,distinctThread=false;
   size_t matches=0;
   FileIOEvent selectedEvent{FileIOOperation::Read,FileIOPhase::Before};
   std::vector<FileIOEvent> trace;
@@ -36,7 +37,7 @@ struct Gate {
   std::thread::id coordinator;
   std::function<void()> cancel;
   std::function<std::pair<size_t,size_t>()> sample;
-  Gate(FileIOOperation selected,size_t occurrence,bool sourceCancel,bool hostFailure):selected(selected),occurrence(occurrence),sourceCancel(sourceCancel),hostFailure(hostFailure){}
+  Gate(FileIOOperation selected,size_t occurrence,bool sourceCancel,bool sourceClose,bool hostFailure):selected(selected),occurrence(occurrence),sourceCancel(sourceCancel),sourceClose(sourceClose),hostFailure(hostFailure){}
   void setup(Clock::time_point until,std::function<void()> stop,std::function<std::pair<size_t,size_t>()> statistics={}){
     std::lock_guard lock(mutex);deadline=until;coordinator=std::this_thread::get_id();cancel=std::move(stop);sample=std::move(statistics);
   }
@@ -49,8 +50,9 @@ struct Gate {
   }
   void waitReached(){std::unique_lock lock(mutex);require(changed.wait_for(lock,std::chrono::seconds(10),[&]{return reached;}),"actual file IO did not reach its gate");}
   void beforeSourceCancel(){if(!sourceCancel)return;waitReached();std::lock_guard lock(mutex);cancelSeen=true;}
-  void afterSourceCancel(){if(!sourceCancel)return;std::lock_guard lock(mutex);if(cancelSeen){issued=true;changed.notify_all();}}
-  void waitIssued(){std::unique_lock lock(mutex);require(changed.wait_for(lock,std::chrono::seconds(10),[&]{return issued;}),"source task_cancel did not complete");}
+  void beforeSourceClose(){if(!sourceClose)return;waitReached();std::lock_guard lock(mutex);closeSeen=true;}
+  void afterSourceControl(){std::lock_guard lock(mutex);if((sourceCancel&&cancelSeen)||(sourceClose&&closeSeen)){issued=true;changed.notify_all();}}
+  void waitIssued(){std::unique_lock lock(mutex);require(changed.wait_for(lock,std::chrono::seconds(10),[&]{return issued;}),"source control did not complete");}
   void stop(){std::function<void()> callback;{std::lock_guard lock(mutex);callback=cancel;}require(bool(callback),"host cancellation unavailable");callback();}
   std::pair<size_t,size_t> stats(){std::function<std::pair<size_t,size_t>()> callback;{std::lock_guard lock(mutex);callback=sample;}return callback?callback():std::pair<size_t,size_t>{0,0};}
   void release()noexcept{{std::lock_guard lock(mutex);released=true;}changed.notify_all();}
@@ -60,15 +62,15 @@ struct Outcome {
   Execution execution;
   FileIOEvent actual{FileIOOperation::Read,FileIOPhase::Before};
   std::vector<FileIOEvent> trace;
-  bool sourceCancel=false,distinctIOThread=false,pendingBeforeControl=false,pendingAfterControl=false;
+  bool sourceCancel=false,sourceClose=false,distinctIOThread=false,pendingBeforeControl=false,pendingAfterControl=false;
   size_t quotaDuring=0,quotaAfter=0,externalTickets=0,externalRunning=0;
   std::string quotaError;
 };
 template<class Runner>
 Outcome exercise(const std::string &root,const std::string &mode,FileIOOperation selected,size_t occurrence,Runner runner){
-  require(mode=="none"||mode=="cancel"||mode=="deadline"||mode=="revoke"||mode=="source_cancel"||mode=="host_error","invalid inflight mode");
+  require(mode=="none"||mode=="cancel"||mode=="deadline"||mode=="revoke"||mode=="source_cancel"||mode=="source_close"||mode=="host_error","invalid inflight mode");
   require(occurrence>0,"invalid inflight occurrence");const auto baseline=liveObjects.load();Outcome result;
-  auto gate=std::make_shared<Gate>(selected,occurrence,mode=="source_cancel",mode=="host_error");
+  auto gate=std::make_shared<Gate>(selected,occurrence,mode=="source_cancel",mode=="source_close",mode=="host_error");
   TextFiles files(root,true,[gate](const FileIOEvent &event){gate->observe(event);});auto domain=files.resourceScope(1);
   auto execution=std::async(std::launch::async,[&]{
     RequestScope request(maximumTaskExecutionSteps,mode=="deadline"?1000:30000);FileScope scope(files,domain);
@@ -82,7 +84,7 @@ Outcome exercise(const std::string &root,const std::string &mode,FileIOOperation
   if(mode=="cancel")gate->stop();
   else if(mode=="deadline")std::this_thread::sleep_until(gate->deadline+std::chrono::milliseconds(1));
   else if(mode=="revoke")domain.revoke();
-  else if(mode=="source_cancel")gate->waitIssued();
+  else if(mode=="source_cancel"||mode=="source_close")gate->waitIssued();
   result.quotaDuring=domain.used();require(result.quotaDuring==1,"control prematurely released the physical file quota");
   try{auto extra=domain.make<int>([](const ResourcePermit &){return std::make_unique<int>(1);});}
   catch(const DataError &error){result.quotaError=error.code;}
@@ -92,13 +94,13 @@ Outcome exercise(const std::string &root,const std::string &mode,FileIOOperation
   auto stats=gate->stats();result.externalTickets=stats.first;result.externalRunning=stats.second;
   gate->release();require(execution.wait_for(std::chrono::seconds(10))==std::future_status::ready,"source execution did not drain after physical release");
   result.execution=execution.get();result.quotaAfter=domain.used();require(result.quotaAfter==0&&result.execution.physicalSettlement,"file quota/finalizers outlived source completion");
-  {std::lock_guard lock(gate->mutex);result.actual=gate->selectedEvent;result.trace=gate->trace;result.sourceCancel=gate->issued;result.distinctIOThread=gate->distinctThread;}
+  {std::lock_guard lock(gate->mutex);result.actual=gate->selectedEvent;result.trace=gate->trace;result.sourceCancel=gate->issued&&gate->sourceCancel;result.sourceClose=gate->issued&&gate->sourceClose;result.distinctIOThread=gate->distinctThread;}
   require(result.distinctIOThread,"file syscall ran on the source coordinator");require(liveObjects.load()==baseline,"source execution retained owned values");return result;
 }
 inline void print(const Outcome &result){
   std::cout<<"{\"ok\":true,\"control_error\":\""<<result.execution.error<<"\",\"value\":"<<result.execution.value
     <<",\"actual_operation\":"<<int(result.actual.operation)<<",\"actual_argument\":"<<result.actual.argument<<",\"actual_result\":"<<result.actual.result
-    <<",\"source_cancel_issued\":"<<(result.sourceCancel?"true":"false")<<",\"IO_thread_distinct\":"<<(result.distinctIOThread?"true":"false")
+    <<",\"source_cancel_issued\":"<<(result.sourceCancel?"true":"false")<<",\"source_close_issued\":"<<(result.sourceClose?"true":"false")<<",\"IO_thread_distinct\":"<<(result.distinctIOThread?"true":"false")
     <<",\"pending_before_control\":"<<(result.pendingBeforeControl?"true":"false")<<",\"pending_after_control\":"<<(result.pendingAfterControl?"true":"false")
     <<",\"quota_during_gate\":"<<result.quotaDuring<<",\"quota_after\":"<<result.quotaAfter<<",\"quota_reuse_error\":\""<<result.quotaError
     <<"\",\"external_tickets_during_gate\":"<<result.externalTickets<<",\"external_running_during_gate\":"<<result.externalRunning

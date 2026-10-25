@@ -35,5 +35,6 @@ producer binary, after migration, without changing any graph rows.
 
 This expands source-history conformance; it does not publish024, prove arbitrary
 in-flight syscall cancellation or replace matching full/SAN/SDK/platform
-acceptance. Genuine mixed FFI/resource histories and the other planned language,
+acceptance. Four additional genuine mixed File/FFI histories are described in
+[their contract](task-stream-ffi-histories.md). The other planned language,
 server, accelerator, UI/platform and measurement work remain open.

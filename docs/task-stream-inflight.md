@@ -18,15 +18,19 @@ before installing lexical state. Captured grants preserve the original quota,
 request ancestry and revocation. A read-only scope remains read-only.
 
 The source suite runs actual compiled NEX continuations and an independent AST
-scheduler. Six native images cover read/seek/size, truncate/write/flush, append,
+scheduler. Twelve native images cover read/seek/size, truncate/write/flush, append,
 module/generic File aliases, scope/future owner promotion and source task_cancel.
+Six source alias-close cases hold read/write/append/flush/seek/size after real IO.
+Another source task closes an alias in an immutable list/result graph; pending
+results become E_RESOURCE_CLOSED and a new open still gets E_RESOURCE_LIMIT
+until physical drainage. Completed write/append bytes remain observable.
 At11 selected syscall completions, the host holds the IO worker before admission
 and applies success, request cancellation, deadline, domain revocation or host
 failure. A separate source task_cancel case cancels a child only after its real
 write has reached the physical gate. While held, execution cannot complete,
 quota stays1 and cannot be reused. After release, all IO credits, owning cleanup,
 physical quota and managed values must settle. Visible file contents distinguish
-actual writes/truncation from skipped source continuation. These56 pairs do not
+actual writes/truncation from skipped source continuation. These62 pairs do not
 claim interruption of an arbitrarily blocked OS syscall, rollback after IO or
 directory crash durability. The observed gate is after the real call and before
 its result is admitted, not inside an uninterruptible kernel operation.
@@ -50,6 +54,5 @@ requires a newly captured matching debug session.
 
 These are private host/source contracts. The ordinary CLI and LLM contract
 remain public023; this adds no source syntax or implicit migration. Full/SAN,
-installed SDK and platform receipts are separate. Mixed genuine023 File/FFI
-histories, public024 delivery, async network/DB/task HTTP, accelerators and all
+installed SDK and platform receipts are separate. Additional mixed failure conformance, public024 delivery, async network/DB/task HTTP, accelerators and all
 other original project requirements remain open.
