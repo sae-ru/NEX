@@ -1,3 +1,10 @@
+# Development0.132.4: private asynchronous whole-file write foundation
+
+Trusted hosts now prepare bounded writes with explicit revocable grants and
+atomic replacement. Public source task writes remain unsupported in language022;
+their complete integration/migration and matching delivery are still open.
+Read [the write bridge contract](docs/task-file-writes-host.md).
+
 # Development0.132.3: bound diagnostic capture without limiting driver caches
 
 A private drained pipe captures at most64KiB of first/last worker diagnostics.

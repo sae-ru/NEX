@@ -1899,5 +1899,34 @@
       "maximum_saved_bytes": 65536,
       "process_file_size_limit": false
     }
+  },
+  "task_file_writes_host": {
+    "status": "private_trusted_host_whole_file_writes",
+    "guide": "docs/task-file-writes-host.md",
+    "header": "runtime/nex_task_file_write.h",
+    "source_support": false,
+    "reference_source_support": false,
+    "language": "0.22",
+    "stable_host_abi": false,
+    "native_platforms": [
+      "macOS 64-bit",
+      "Linux 64-bit"
+    ],
+    "authority": "explicit coordinator-captured revocable FileWriteGrant; read-only capability cannot be upgraded",
+    "input_snapshot": "exact visible bytes; no source Values or mutable backing storage on worker",
+    "maximum_file_bytes": 1048576,
+    "maximum_path_bytes": 4096,
+    "reservation": "owned input bytes plus retained path bytes",
+    "atomic_replacement": true,
+    "commit": "temporary write, fsync, final control/authority check, rename",
+    "crash_durable_directory": false,
+    "postcommit_cancellation": "result may be suppressed after complete publication; no rollback",
+    "physical_drain": true,
+    "pending": [
+      "source frontend/reference/native/provider integration",
+      "explicit history-preserving source migration",
+      "matching full regression, installed SDK and platform acceptance",
+      "streams, networking, DB and task HTTP handlers"
+    ]
   }
 }

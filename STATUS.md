@@ -1,3 +1,14 @@
+# Development0.132.4: private asynchronous whole-file write foundation
+
+Trusted hosts capture an explicit revocable write grant and snapshot bounded
+input bytes before submitting IO. The worker reuses checked temporary+fsync+
+rename replacement; physical retirement precedes completion/credit return.
+Late cancellation can suppress admission after commit without claiming rollback.
+Source language0.22 still rejects task writes; source/reference/native/provider
+integration and an explicit compatible migration remain pending. Normal host,
+sanitizer, full regression and SDK/platform receipts have separate scopes.
+All existing NPU/runtime/UI/platform/Studio requirements remain open.
+
 # Development0.132.3: bound diagnostic capture without limiting driver caches
 
 A private drained pipe captures at most64KiB of first/last worker diagnostics.

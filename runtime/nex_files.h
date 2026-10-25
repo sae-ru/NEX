@@ -7,6 +7,8 @@
 namespace nexrt {
 class FileReadLease;
 class FileReadGrant;
+class FileWriteLease;
+class FileWriteGrant;
 // Host-owned capability. No descriptor or mutable resource becomes a NEX value.
 class TextFiles {
   struct Impl;
@@ -44,6 +46,7 @@ class FileReadLease {
   struct State;
   std::shared_ptr<State> state;
   friend class TextFiles;
+  friend class FileWriteLease;
   explicit FileReadLease(std::shared_ptr<State> state):state(std::move(state)){}
 public:
   FileReadLease()=default;
@@ -62,6 +65,7 @@ class FileReadGrant {
   struct State;
   std::shared_ptr<const State> state;
   friend FileReadGrant captureFileReadGrant(bool);
+  friend class FileWriteGrant;
   explicit FileReadGrant(std::shared_ptr<const State> state):state(std::move(state)){}
 public:
   FileReadGrant()=default;
@@ -69,6 +73,30 @@ public:
   FileReadLease lease(const std::string &relative)const;
 };
 FileReadGrant captureFileReadGrant(bool environmentAllowed=true);
+// A write grant preserves the same root/request revocation lineage as reads.
+// A read grant alone never exposes a write operation. Neither grant is a source
+// value or authority inferred from an IO worker's environment/TLS.
+class FileWriteLease {
+  FileReadLease physical;
+  friend class FileWriteGrant;
+  explicit FileWriteLease(FileReadLease physical):physical(std::move(physical)){}
+public:
+  FileWriteLease()=default;
+  uint64_t identity()const noexcept{return physical.identity();}
+  size_t retainedPathBytes()const noexcept{return physical.retainedPathBytes();}
+  void check()const{physical.check();}
+  void write(std::span<const uint8_t>,const TextFiles::Poll &poll={})const;
+};
+class FileWriteGrant {
+  FileReadGrant physical;
+  friend FileWriteGrant captureFileWriteGrant(bool);
+  explicit FileWriteGrant(FileReadGrant physical):physical(std::move(physical)){}
+public:
+  FileWriteGrant()=default;
+  void check()const;
+  FileWriteLease lease(const std::string &relative)const;
+};
+FileWriteGrant captureFileWriteGrant(bool environmentAllowed=true);
 #endif
 // An explicit host scope overrides the process environment. Native HTTP calls
 // do not inherit an environment capability unless the trusted host grants one.

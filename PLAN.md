@@ -1,3 +1,11 @@
+# Development0.132.4: private asynchronous whole-file write foundation
+
+The native host IO bridge now supports revocable, snapshotted, atomic whole-file
+writes. Public source task writes, independent-reference/native adapters,
+provider integration, migration, streams/network/DB and matching SDK/platform
+delivery remain pending. This precursor does not replace any original language,
+compute/NPU/UI/mobile/Studio or quality requirement.
+
 # Development0.132.3: bound diagnostic capture without limiting driver caches
 
 A private drained pipe captures at most64KiB of first/last worker diagnostics.

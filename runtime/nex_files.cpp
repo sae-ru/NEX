@@ -182,6 +182,14 @@ FileReadLease FileReadGrant::lease(const std::string &relative)const {
   check();
   return TextFiles(state->files).readLeaseIn(state->resources,relative);
 }
+void FileWriteGrant::check()const {
+  physical.check();
+  if(!physical.state->files->writable)
+    throw DataError("CAPABILITY","file capability does not permit writes");
+}
+FileWriteLease FileWriteGrant::lease(const std::string &relative)const {
+  check();return FileWriteLease(physical.lease(relative));
+}
 template<class Validate> void TextFiles::Impl::write(const std::string &relative,std::span<const uint8_t> content,const Poll &poll,Validate validate) const {
   if(!writable)throw DataError("CAPABILITY","file capability does not permit writes");
   check(poll);auto parts=components(relative);
@@ -204,6 +212,16 @@ template<class Validate> void TextFiles::Impl::write(const std::string &relative
   check(poll);
   if(::renameat(directory.get(),temporary.name.c_str(),directory.get(),parts.back().c_str()))ioError(errno);
   temporary.published=true;
+}
+void FileWriteLease::write(std::span<const uint8_t> content,const TextFiles::Poll &poll)const {
+  auto retained=physical.state;
+  if(!retained)throw DataError("E_RESOURCE_CLOSED","file write lease is unavailable");
+  auto lease=retained->physical;
+  const auto &pin=lease.value();auto callback=poll;
+  auto checkpoint=[lease,callback](){lease.check();if(callback)callback();lease.check();};
+  // The existing fsync+rename implementation is the commit boundary. There is
+  // deliberately no post-commit poll promising rollback after publication.
+  pin.files->write(std::string(pin.relative.get(),pin.length),content,checkpoint,[]{});
 }
 Value TextFiles::read(const std::string &relative,const Poll &poll) const {
   auto retained=impl;auto path=relative;auto callback=poll;
@@ -396,6 +414,10 @@ FileReadGrant captureFileReadGrant(bool environmentAllowed){
     if(error.code!="CAPABILITY")throw;
     return FileReadGrant(std::make_shared<FileReadGrant::State>(error.what()));
   }
+}
+FileWriteGrant captureFileWriteGrant(bool environmentAllowed){
+  // Capture may be unused; absent/read-only authority fails on attempted use.
+  return FileWriteGrant(captureFileReadGrant(environmentAllowed));
 }
 Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().read(relative,poll);}

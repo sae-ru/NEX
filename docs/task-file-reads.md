@@ -1,5 +1,10 @@
 # Whole-file reads inside tasks — language 0.20
 
+The separate [private asynchronous write bridge](task-file-writes-host.md)
+provides trusted-host IO preparation in0.132.4. It does not enable source task
+writes in language0.22; those remain rejected pending the complete source and
+history-preserving migration integration.
+
 The development toolchain0.110 connects `file_read_text` and `file_read_bytes`
 to structured task suspension in standalone native macOS/Linux applications,
 source-only native projects and the independent reference scheduler. This
