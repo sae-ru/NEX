@@ -1,3 +1,11 @@
+# Development0.133.3: SDK migration acceptance correction
+
+The SDK019-history gate now keeps current language separate from each migrated
+revision hash. Language/revision/namespace/16-table assertions remain strict.
+This is a Python acceptance correction; compiler/runtime/TypeScript/grammar and
+language-pack bytes match frozen169. Public023 and private024 scopes are unchanged.
+Actual CLI gate and complete installed SDK acceptance are separate requirements.
+
 # Installed SDK acceptance and handoff
 
 The current0.122 candidate workflow has33 phases, adding `model-contract` after
