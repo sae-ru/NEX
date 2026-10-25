@@ -265,7 +265,8 @@
     "task_foreign_source": "docs/task-foreign-prototype.md",
     "device": "docs/device.md",
     "task_file_writes_prototype": "docs/task-file-writes-prototype.md",
-    "task_file_writes_host": "docs/task-file-writes-host.md"
+    "task_file_writes_host": "docs/task-file-writes-host.md",
+    "task_write_migration": "docs/task-write-migration.md"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1965,6 +1966,8 @@
       "new static/shared provider contract and replay/package",
       "matching CLI/editor/debug/profile/SDK/platform delivery",
       "streams, networking, DB and task HTTP handlers"
-    ]
+    ],
+    "private_history_migration_verified": true,
+    "migration_guide": "docs/task-write-migration.md"
   }
 }

@@ -1,3 +1,7 @@
+For existing graphs, preserve HEAD language and use explicit nex migrate.
+Normal check/load synchronization does not authorize changing a stored language.
+Private023 history verification does not enable public023 or write providers.
+
 Private023 source task writes are not ordinary CLI language022 support. Query
 `task_file_writes_prototype.public_enabled`; when false, keep source projects on
 the actual public version and do not invent migration or write-provider support.

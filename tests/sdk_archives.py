@@ -183,6 +183,37 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk1326_requires_actual_retained_HEAD_language_guard(self):
+        current=self.report();current.update(version='0.132.6',language='0.22',doctor={'version':'0.132.6'})
+        with self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+            acceptance.validate_completed_report(current)
+        guard={'schema':'nex.head-language-guard/1','actual_cli':True,'compiler_language':'0.22',
+            'origin_language':'0.19','fixtures':['history','tasks'],'command':'check','code':'E_LANGUAGE_VERSION',
+            'all16_tables_schema_rows_ids_preserved':True,'physical_projection_restored':True}
+        current['evidence']={'task_file_migration':{'head_language_guard':guard,
+            'stores':{name:{'implicit_HEAD_language_change_rejected':True} for name in ('history','tasks')}}}
+        for field in ('actual_cli','all16_tables_schema_rows_ids_preserved','physical_projection_restored'):
+            for value in (None,False,1,'true'):
+                damaged=copy.deepcopy(current);damaged['evidence']['task_file_migration']['head_language_guard'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+                    acceptance.validate_completed_report(damaged)
+        for field,value in [('schema','other'),('compiler_language','0.19'),('origin_language','0.22'),
+                            ('fixtures',['history']),('command','describe'),('code','E_OPTION')]:
+            damaged=copy.deepcopy(current);damaged['evidence']['task_file_migration']['head_language_guard'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+                acceptance.validate_completed_report(damaged)
+        for name in ('history','tasks'):
+            damaged=copy.deepcopy(current);damaged['evidence']['task_file_migration']['stores'][name]['implicit_HEAD_language_change_rejected']=False
+            with self.subTest(fixture=name),self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+                acceptance.validate_completed_report(damaged)
+        for field in ('head_language_guard','stores'):
+            damaged=copy.deepcopy(current);damaged['evidence']['task_file_migration'][field]=None
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+                acceptance.validate_completed_report(damaged)
+        # New evidence does not waive any existing delivery requirements.
+        with self.assertRaisesRegex(RuntimeError,'installed owned device log harness'):
+            acceptance.validate_completed_report(current)
+
     def test_sdk1323_requires_the_installed_owned_log_harness(self):
         current=self.report();current.update(version='0.132.3',language='0.22',doctor={'version':'0.132.3'})
         for value in [None,False,1,'true']:

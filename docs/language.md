@@ -824,6 +824,12 @@ Toolchain 0.15 derives typed parameter/block/statement/expression nodes from the
 
 ## Private source task write candidate (0.23)
 
+The shared migration preflight now verifies genuine022 history for an explicit
+private023 target. Ordinary live synchronization cannot change graph HEAD
+language implicitly, including when racing an explicit migration; it rejects
+the mismatch before a writable Store initializes an old schema. This does not
+publish023. Read [the history contract](task-write-migration.md).
+
 The ordinary project/CLI language remains0.22. An explicit internal0.23
 parse/bundle prototype suspends server task/fs `file_write_text` and
 `file_write_bytes` with their existing `result<bool>` types. It preserves strict

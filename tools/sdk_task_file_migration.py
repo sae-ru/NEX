@@ -105,6 +105,21 @@ def check_installed_task_migration(cli, root, resources):
         project, database, metadata, selected, before, physical = restore(name)
         rejected = cli('check', cwd=project, expected_success=False)
         _require(rejected['code'] == 'E_LANGUAGE_VERSION' and _state(database) == before, 'physical019 version guard mutated store')
+        # A current physical manifest must not make ordinary source checking
+        # migrate an older graph HEAD. Exercise the actual CLI, then restore
+        # the exact physical bytes before the explicit migration below.
+        manifest = project/'nex.json'
+        original_manifest = manifest.read_bytes()
+        current_manifest = json.loads(original_manifest)
+        current_manifest['language'] = evidence['language']
+        try:
+            _write(manifest, current_manifest)
+            rejected = cli('check', cwd=project, expected_success=False)
+            _require(rejected['code'] == 'E_LANGUAGE_VERSION' and _state(database) == before,
+                     'current physical language silently changed retained HEAD or graph rows')
+        finally:
+            manifest.write_bytes(original_manifest)
+        physical_unchanged(project, physical)
         migrated = cli('migrate', '--expected-revision', metadata['head'], cwd=project)
         current = migrated['revision']
         _require(migrated['language'] == '0.22' and migrated['origin_language'] == '0.19' and
@@ -139,6 +154,7 @@ def check_installed_task_migration(cli, root, resources):
         evidence['stores'][name] = {'old_head':metadata['head'], 'revision':current, 'namespace':namespace,
             'tables':16, 'old_rows_ids_ddl_retained':True, 'physical_projection_unchanged':True,
             'canonical_origin_verified':True, 'idempotent':True, 'conflict_rollback':True,
+            'implicit_HEAD_language_change_rejected':True,
             'native_task_archive':name == 'tasks'}
 
     for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', 'unknown'):
@@ -176,5 +192,9 @@ def check_installed_task_migration(cli, root, resources):
                     corrupt_stored_languages_rejected=5, fresh_preflight_failures_without_store=3,
                     reviewed_helper_effect_repair=True, reserved_name_repair=False,
                     historical_source_language_relabelled=False)
+    evidence['head_language_guard'] = {'schema':'nex.head-language-guard/1',
+        'actual_cli':True, 'compiler_language':evidence['language'], 'origin_language':'0.19',
+        'fixtures':['history','tasks'], 'command':'check', 'code':'E_LANGUAGE_VERSION',
+        'all16_tables_schema_rows_ids_preserved':True, 'physical_projection_restored':True}
     _write(out/'migration-evidence.json', evidence)
     return evidence

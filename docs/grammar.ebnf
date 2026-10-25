@@ -1,3 +1,5 @@
+(* Toolchain0.132.6 shares explicit migration preflight and guards live graph
+   HEAD language. No new grammar/public022 enablement; private023 remains separate. *)
 (* Private023 keeps this syntax and adds checked whole-file write suspension
    in server task/fs functions, with ABI4 requests and explicit write grants.
    Public022/default/history interpretation remains unchanged. Publication

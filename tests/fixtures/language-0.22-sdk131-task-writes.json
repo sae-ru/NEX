@@ -1,0 +1,75 @@
+{
+  "schema": "nex.language-022-write-migration-fixture/1",
+  "language": "0.22",
+  "head": "7fca0901c4621eadfdc20f3107b849ad68fc17c6bac00ae9b64b2c1a07b418fe",
+  "revisions": [
+    {
+      "revision": "71279398ccd13e74c1c16913b0c26c86cb81a98b5cde67c7769b3f17e3742b40",
+      "language": "0.22",
+      "bundle": {
+        "entry": "src/main.nex",
+        "files": {
+          "src/main.nex": "module write_origin; server fn save()->result<bool> !{fs}{return file_write_text(\"synchronous.txt\",\"old synchronous write\\n\");} server fn main()->i64 !{fs,io}{assert(unwrap(save()));print(42);return 0;}\n"
+        },
+        "schema": "nex.sources/1"
+      }
+    },
+    {
+      "revision": "7f9416a39b936f351bc67ec0cdd4f688164707775bdfe3c272736c412e6432ed",
+      "language": "0.22",
+      "bundle": {
+        "entry": "src/main.nex",
+        "files": {
+          "src/main.nex": "module write_origin; server fn main()->i64 !{io}{print(42);return 0;}\n"
+        },
+        "schema": "nex.sources/1"
+      }
+    },
+    {
+      "revision": "7fca0901c4621eadfdc20f3107b849ad68fc17c6bac00ae9b64b2c1a07b418fe",
+      "language": "0.22",
+      "bundle": {
+        "entry": "src/main.nex",
+        "files": {
+          "src/main.nex": "module write_origin;\n\nserver fn save()->result<bool> !{task,fs}{\n  return file_write_text(\"output.txt\",\"NEX asynchronous write\\n\");\n}\n\nserver fn main()->i64 !{task,fs}{\n  let accepted:bool=unwrap(save());\n  if accepted{return 42;}\n  return 0;\n}\n"
+        },
+        "schema": "nex.sources/1"
+      }
+    }
+  ],
+  "sdk": {
+    "toolchain": "0.131.0",
+    "language": "0.22",
+    "binary_sha256": "5f23165c9e1be54fbe504adc244ea65e5b6a66721a579db4a8d364f63e4a897f",
+    "acceptance_ok": true,
+    "acceptance_sha256": "358fa161e1ca15e5df033cf68f48d65975088d8d21244a3f2906e596dd1da46b"
+  },
+  "capture_report_sha256": "1764f817f7891c761195079f7eedc85aa6f8948c9801cd5f4181a6355863b8dc",
+  "sql_sha256": "f9f11160f3b16a7fcb949598a0c804e2230180a26a034e3e9dfe9545e0b8056e",
+  "tables": {
+    "change_journal": 4,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 2,
+    "graph_edges": 7,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 2,
+    "nodes": 5,
+    "operation_functions": 5,
+    "operation_ids": 24,
+    "operation_versions": 38,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "metadata": {
+    "schema": "4",
+    "change_base_revision": "",
+    "identity_schema": "1",
+    "identity_namespace": "265a282f20d6357b1e5b0a5f603133dc"
+  },
+  "pure_sync_native_reference": true,
+  "task_write_native_reference_rejected": "E_TASK_UNIMPLEMENTED"
+}

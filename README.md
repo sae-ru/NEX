@@ -1,3 +1,15 @@
+# Development0.132.6: shared explicit migration and HEAD-language integrity
+
+Genuine022 histories are rechecked through the same read-only origin/target
+preflight as the CLI before private023 Store transactions. Automatic live sync
+cannot switch HEAD language, including a race with an explicit migration;
+readonly preflight prevents old-schema initialization on this refusal. Public022
+stays unchanged. Installed SDK acceptance requires actual retained019 HEAD guard
+checks as well as the existing explicit migration and history checks.
+Private023 publication, write-provider contracts, matching full
+regression/SAN/SDK/platform delivery and all original requirements remain open.
+Read docs/task-write-migration.md.
+
 # Development0.132.5: explicit private023 source writes
 
 TaskIR/native continuations and the independent AST scheduler suspend checked

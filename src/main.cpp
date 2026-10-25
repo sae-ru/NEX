@@ -1,3 +1,4 @@
+#include "nex/migration.h"
 #include "nex/backend.h"
 #include "nex/task_frontend.h"
 #include "nex/task_limits.h"
@@ -111,6 +112,9 @@ ChangeInfo changeInfo(const Options &o,const std::string &action,const std::stri
 Program load(const Options &o,const fs::path &root,Store &store,bool saved=false) {
   auto rev=o.get("--revision",saved?"HEAD":"");
   if(rev.empty()){
+    const auto previous=store.headRevision();
+    if(!previous.empty()&&store.revisionLanguage(previous)!=languageVersion)
+      throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
     auto path=fs::absolute(o.positional.empty()?defaultSource(root):o.positional[0]).string();
     auto p=loadProgram(path,root.string(),o.command!="lock");store.save(p,"",true,changeInfo(o,"synchronize"));return p;
   }
@@ -118,37 +122,6 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
   auto p=loadBundle(store.bundle(selected),root.string());
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
-}
-bool versionedMigrationLanguage(const std::string &language){return language=="0.18"||language=="0.19"||language=="0.20"||language=="0.21"||language=="0.22";}
-void validateMigrationLanguage(const std::string &language){
-  if(versionedMigrationLanguage(language))return;
-  // These historical canonical serializers are not retained. Their existing
-  // explicit recheck path is supported without claiming old-hash verification.
-  for(unsigned i=1;i<=17;++i)if(language=="0."+std::to_string(i))return;
-  throw Error("E_LANGUAGE_VERSION","unsupported migration origin language");
-}
-bool verifyMigrationOrigin(const llvm::json::Value &bundle,const fs::path &root,const std::string &language,const std::string &original){
-  validateMigrationLanguage(language);
-  if(original.size()!=64||!std::all_of(original.begin(),original.end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))
-    throw Error("E_REVISION","migration origin requires a canonical revision hash");
-  if(!versionedMigrationLanguage(language)){
-    // A corrupted modern row must not evade verification by claiming a legacy
-    // version whose serializer is unavailable. Recognize exact modern hashes;
-    // genuine historical hashes remain explicitly unverified.
-    for(const auto *modern:{"0.18","0.19","0.20","0.21","0.22"}){
-      bool matches=false;
-      try{matches=revision(loadVersionedBundle(bundle,root.string(),modern))==original;}catch(const Error &){}
-      if(matches)throw Error("E_REVISION","migration origin language contradicts its modern semantic revision");
-    }
-    return false;
-  }
-  try{
-    auto old=loadVersionedBundle(bundle,root.string(),language);
-    if(revision(old)!=original)throw Error("E_REVISION","origin source does not match its retained semantic revision");
-  }catch(const Error &error){
-    throw Error("E_REVISION",std::string("invalid archived migration origin: ")+error.what(),error.span);
-  }
-  return true;
 }
 void migrate(const Options &o,const fs::path &root){
   std::unique_ptr<Store> archive;
@@ -175,7 +148,7 @@ void migrate(const Options &o,const fs::path &root){
   }
   // No writable Store, schema upgrade or destination creation before both the
   // origin integrity check and complete current-language target preflight.
-  auto program=loadBundle(bundle,root.string());auto sourceHash=hash(json(bundle,false));
+  auto program=preflightMigrationTarget(bundle,root);auto sourceHash=hash(json(bundle,false));
   archive.reset();
   Store store(root/".nex");auto selected=store.save(program,expected,true,changeInfo(o,"migrate",sourceHash));
   print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},
@@ -444,9 +417,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"task-file-writes","docs/task-file-writes-prototype.md"},{"task-file-write-host","docs/task-file-writes-host.md"},{"device","docs/device.md"},{"task-foreign-source","docs/task-foreign-prototype.md"},{"task-value-retirement","docs/task-value-retirement.md"},{"resource-regions","docs/resource-regions.md"},{"resource-executor","docs/resource-executor.md"},{"source-resources","docs/source-resources.md"},{"model","docs/models.md"},{"compute","docs/compute.md"},{"task-provider-debug","docs/task-provider-debugging.md"},{"task-provider-profile","docs/task-provider-profiling.md"},{"task-shared-providers","docs/task-shared-providers.md"},{"task-providers","docs/task-providers.md"},{"task-debug","docs/task-debugging.md"},{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const std::map<std::string,std::string> files={{"task-write-migration","docs/task-write-migration.md"},{"task-file-writes","docs/task-file-writes-prototype.md"},{"task-file-write-host","docs/task-file-writes-host.md"},{"device","docs/device.md"},{"task-foreign-source","docs/task-foreign-prototype.md"},{"task-value-retirement","docs/task-value-retirement.md"},{"resource-regions","docs/resource-regions.md"},{"resource-executor","docs/resource-executor.md"},{"source-resources","docs/source-resources.md"},{"model","docs/models.md"},{"compute","docs/compute.md"},{"task-provider-debug","docs/task-provider-debugging.md"},{"task-provider-profile","docs/task-provider-profiling.md"},{"task-shared-providers","docs/task-shared-providers.md"},{"task-providers","docs/task-providers.md"},{"task-debug","docs/task-debugging.md"},{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-file-writes, task-file-write-host, task-foreign-source, task-value-retirement, resource-regions, resource-executor, task-provider-debug, task-provider-profile, task-shared-providers, task-providers, task-debug, task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be task-write-migration, task-file-writes, task-file-write-host, task-foreign-source, task-value-retirement, resource-regions, resource-executor, task-provider-debug, task-provider-profile, task-shared-providers, task-providers, task-debug, task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
     auto text=readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -477,6 +450,11 @@ int run(const Options &o) {
     ((o.command!="declarations"&&o.command!="identities")||!o.positional.empty());
   if(physical)validateProjectMetadata(root.string());
   if(o.command=="migrate"){migrate(o,root);return 0;}
+  if(physical&&fs::is_regular_file(root/".nex/graph.db")){
+    Store retained(root/".nex",StoreOpenMode::ReadOnly);const auto previous=retained.headRevision();
+    if(!previous.empty()&&retained.revisionLanguage(previous)!=languageVersion)
+      throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
+  }
   Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="changes"){

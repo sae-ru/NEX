@@ -622,6 +622,18 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,6):
+        migration=report.get('evidence',{}).get('task_file_migration',{})
+        guard=migration.get('head_language_guard',{}) if isinstance(migration,dict) else {}
+        stores=migration.get('stores',{}) if isinstance(migration,dict) else {}
+        require(isinstance(guard,dict) and guard.get('schema')=='nex.head-language-guard/1' and
+                guard.get('compiler_language')==report.get('language') and guard.get('origin_language')=='0.19' and
+                guard.get('fixtures')==['history','tasks'] and guard.get('command')=='check' and
+                guard.get('code')=='E_LANGUAGE_VERSION' and all(guard.get(key) is True for key in
+                    ('actual_cli','all16_tables_schema_rows_ids_preserved','physical_projection_restored')) and
+                isinstance(stores,dict) and all(isinstance(stores.get(name),dict) and
+                    stores[name].get('implicit_HEAD_language_change_rejected') is True for name in ('history','tasks')),
+                'SDK acceptance lacks actual retained HEAD language guard evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,3):
         require(report.get('evidence',{}).get('owned_device_contract',{}).get('log_harness_installed') is True,
                 'SDK acceptance lacks installed owned device log harness')

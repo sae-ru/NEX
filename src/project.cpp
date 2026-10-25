@@ -79,6 +79,14 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
   try{
     auto previous=head(db);
     if(!expected.empty()&&previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+    // Live synchronization is not a language migration. Repeat this check
+    // inside the write transaction: an explicit migration can race parsing or
+    // the coordinator's earlier readonly HEAD check.
+    if(makeHead&&change.action=="synchronize"&&!previous.empty()){
+      Statement current(db,"SELECT language FROM revisions WHERE hash=?");current.bind(1,previous);
+      if(!current.row()||current.text(0)!=programLanguage(p))
+        throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
+    }
     {Statement existing(db,"SELECT language FROM revisions WHERE hash=?");existing.bind(1,rev);
       if(existing.row()&&existing.text(0)!=programLanguage(p))throw Error("E_REVISION","stored revision language differs from its checked semantic identity");}
     {Statement q(db,"INSERT OR IGNORE INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?)");q.bind(1,rev);q.bind(2,p.module);q.bind(3,json(sourceBundle(p),false));q.bind(4,p.path);q.bind(5,programLanguage(p));q.row();}
