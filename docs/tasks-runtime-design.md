@@ -1,3 +1,27 @@
+# Experimental HTTP request host boundary (toolchain0.134.3)
+
+The trusted C++ runtime exposes `executeTaskHttpRequest` in
+`runtime/nex_task_application.h`. It accepts a checked ABI5 server/task
+Request-to-Response descriptor inside an existing caller-owned RequestScope.
+The borrowed Request is copied into an owned immutable task snapshot. The
+joined executor shares the parent's step budget, deadline and cancellation;
+it drains admitted work before publishing an owned Response in that parent.
+It creates neither a fresh request budget nor ambient file/foreign authority.
+IO images require an explicit captured TaskFrameHostContext. The host remains
+responsible for HTTP status/header/body limits and network transport.
+
+`structured_tasks_runtime.http_request_host_prototype` advertises this
+experimental boundary separately. `task_http_request_host` checks synthetic
+frame validation and control; `task_http_request_compiled` checks an actual
+NEX static provider against independent AST evaluation, real child tasks,
+Unicode/NUL payloads, trap/limit/cancellation/deadline cleanup and concurrent
+request isolation. It executes the linked host while original sources are
+absent. These are runtime integration tests, not network or SDK acceptance.
+
+Public `build --target server` with task handlers still rejects E_TASK_TARGET.
+Compiler server dispatch, async network/DB and streaming/backpressure remain
+pending. No syntax, canonical identity or language-version change is made.
+
 # Current020 file-read extension
 
 Working117/toolchain0.110 adds exactly file_read_text/file_read_bytes suspension

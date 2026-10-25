@@ -7,6 +7,13 @@ namespace nexrt {
 // retained values are destroyed. No compiler, AST or TaskIR participates here.
 int64_t executeTaskApplication(const TaskCodeDescriptor &,SourceLocation);
 int64_t executeTaskApplication(const TaskCodeDescriptor &,const TaskExecutionLimits &,SourceLocation);
+// Trusted experimental HTTP host boundary. The caller owns the active request,
+// its budget/cancellation and the borrowed Request handle. This creates no new
+// RequestScope or ambient file/foreign grants. Completion joins all admitted work
+// before publishing an owned Response handle in the caller's request.
+// Public compiler HTTP/task integration and async network/DB remain pending.
+Handle *executeTaskHttpRequest(const TaskCodeDescriptor &,Handle *request,
+    std::shared_ptr<const TaskFrameHostContext> host={},unsigned workers=2);
 }
 extern "C" {
 int64_t nex_task_application_execute(const nexrt::TaskCodeDescriptor *);

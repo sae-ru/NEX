@@ -117,6 +117,13 @@ class Discovery(harness.ToolchainCase):
         self.assertFalse(full['model']['builtin_cpu_inference'])
         self.assertFalse(full['model']['source_task_bridge'])
         self.assertEqual(full['structured_tasks_runtime'], pack['structured_tasks_runtime'])
+        http = full['structured_tasks_runtime']['http_request_host_prototype']
+        self.assertEqual(http['execution_task_abi'], 5)
+        self.assertTrue(http['caller_request_required'])
+        self.assertTrue(http['inherits_step_budget_deadline_cancellation'])
+        self.assertTrue(http['joined_completion'])
+        for key in ('public_source_target', 'implicit_file_or_foreign_grants', 'async_network', 'async_database'):
+            self.assertFalse(http[key])
         self.assertEqual(full['task_profile_collector'], pack['task_profile_collector'])
         self.assertTrue(full['task_profile_collector']['source_support'])
         self.assertTrue(full['task_profile_collector']['runtime_integration'])

@@ -11,6 +11,55 @@ TaskBody applicationTask(TaskGroup &group,Value,Value closure,const void *contex
   auto host=*static_cast<const std::shared_ptr<const TaskFrameHostContext>*>(context);
   return executeTaskFrame(group,NativeTaskFrame(code,{},closure,std::move(host)));
 }
+struct HttpTaskInvocation {
+  const TaskCodeDescriptor &code;
+  std::shared_ptr<const TaskFrameHostContext> host;
+};
+TaskBody httpRequestTask(TaskGroup &group,Value request,Value,const void *context){
+  if(!context)throw DataError("E_TASK_STATE","HTTP task invocation is absent");
+  const auto &invocation=*static_cast<const HttpTaskInvocation*>(context);
+  return executeTaskFrame(group,NativeTaskFrame(invocation.code,{std::move(request)},Value{},invocation.host));
+}
+bool httpString(const Value &value){return value.tag==Value::Object&&value.object&&value.object->kind==Data::String;}
+void httpRequestValue(const Value &value){
+  static const std::vector<std::string> names={"method","path","query","body","user","request_id"};
+  if(value.tag!=Value::Object||!value.object||value.object->kind!=Data::Record||value.object->text!="std::http::Request"||value.object->names!=names||value.object->values.size()!=names.size())
+    throw DataError("E_TASK_HTTP_REQUEST","HTTP task requires the exact checked Request layout");
+  for(const auto &field:value.object->values)if(!httpString(field))
+    throw DataError("E_TASK_HTTP_REQUEST","HTTP task Request fields must be strings");
+}
+void httpResponseValue(const Value &value){
+  static const std::vector<std::string> names={"status","body","content_type"};
+  if(value.tag!=Value::Object||!value.object||value.object->kind!=Data::Record||value.object->text!="std::http::Response"||value.object->names!=names||value.object->values.size()!=names.size()||
+     value.object->values[0].tag!=Value::Integer||!httpString(value.object->values[1])||!httpString(value.object->values[2]))
+    throw DataError("E_TASK_HTTP_RESPONSE","HTTP task must return the exact checked Response layout");
+}
+}
+Handle *executeTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,
+    std::shared_ptr<const TaskFrameHostContext> host,unsigned workers){
+  if(!inRequestScope())throw DataError("E_TASK_SCOPE","HTTP task requires its caller's active request scope");
+  return hostValue({},[&]{
+    if(workers<1||workers>maximumTaskExecutionWorkers)throw DataError("E_OPTION","HTTP task requires1..16 workers");
+    if(code.abi!=taskCodeStreamABI||!validTaskCodeRequirements(code.abi,code.requirements)||
+       (code.requirements&(taskCodeDeclaredTask|taskCodeServer))!=(taskCodeDeclaredTask|taskCodeServer)||
+       code.parameterCount!=1||code.captureCount||code.resultKind!=3)
+      throw DataError("E_TASK_HTTP_ABI","HTTP task requires a server/task ABI5 Request-to-Response descriptor");
+    if(!request)throw DataError("E_TASK_HTTP_REQUEST","HTTP task Request handle is absent");
+    auto input=readHandle(request);httpRequestValue(input);
+    const auto operations=code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream);
+    if(operations&&!host)throw DataError("E_TASK_HOST","HTTP task IO requires an explicit captured host context");
+#ifndef NEX_FOREIGN_ENABLED
+    if(code.requirements&taskCodeImageForeign)throw DataError("E_TASK_HOST","HTTP task image has no linked foreign adapter");
+#endif
+    if(!host)host=std::make_shared<TaskFrameHostContext>();
+    HttpTaskInvocation invocation{code,std::move(host)};
+    TaskGroup group(workers,4096,{},bool(operations));
+    if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))
+      group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
+    auto root=group.spawnWithContext(httpRequestTask,&invocation,std::move(input),{});
+    auto result=group.join(root);group.finish();httpResponseValue(result);
+    return result;
+  });
 }
 int64_t executeTaskApplication(const TaskCodeDescriptor &code,SourceLocation location){
   return executeTaskApplication(code,TaskExecutionLimits{},location);

@@ -1063,7 +1063,24 @@
     "migration_guide": "docs/task-migration.md",
     "standalone_group_steps": 1000000,
     "standalone_group_timeout_ms": 5000,
-    "runtime_inclusion": "reachable task effect"
+    "runtime_inclusion": "reachable task effect",
+    "http_request_host_prototype": {
+      "status": "experimental_trusted_CXX_runtime",
+      "entry_point": "executeTaskHttpRequest",
+      "header": "runtime/nex_task_application.h",
+      "execution_task_abi": 5,
+      "public_source_target": false,
+      "caller_request_required": true,
+      "inherits_step_budget_deadline_cancellation": true,
+      "owned_request_snapshot": true,
+      "joined_completion": true,
+      "implicit_file_or_foreign_grants": false,
+      "explicit_IO_host_context": true,
+      "async_network": false,
+      "async_database": false,
+      "synthetic_probe": "task_http_request_host",
+      "compiled_NEX_probe": "task_http_request_compiled"
+    }
   },
   "task_execution_limits": {
     "status": "development_explicit_task_limits",
