@@ -139,7 +139,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(text(*top,"schema","",true)!="nex.project-build/1")fail("expected nex.project-build/1");
   auto root=fs::canonical(directory);
   if(!fs::is_regular_file(root/"nex.json"))fail("project builds require nex.json beside the build description");
-  validateProjectMetadata(root.string());
+  validateProjectMetadata(root.string(),options.sourceLanguage);
   auto sourceManifest=readFile((root/"nex.json").string());
   auto sourceLock=fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt;
   const auto &definitions=object(*top,"components"),&settings=object(*top,"configurations");
@@ -264,7 +264,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   for(const auto &name:selected)for(const auto &[dep,link]:components.at(name).dependencies)if(link=="static"||link=="dynamic")binaryProviders.insert(dep);
   for(const auto &name:order) {
     if(!selected.contains(name))continue;const auto &c=components.at(name);
-    auto program=loadProgram((root/c.entry).string(),root.string(),!options.archivedSources,options.sourceOverlays);llvm::json::Array sources;
+    auto program=loadVersionedProgram((root/c.entry).string(),root.string(),options.sourceLanguage,!options.archivedSources,options.sourceOverlays);llvm::json::Array sources;
     for(const auto &[key,unit]:program.units) {
       sourceBytes+=unit.source.size();if(sourceBytes>64*1048576)fail("selected component source closures exceed64MiB","E_PROJECT_LIMIT");
       auto [captured,inserted]=capturedSources.emplace(unit.path,unit.source);
@@ -485,7 +485,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         const auto &function=item.program.function(name);
         if(item.options.taskImportedFunctions.contains(name)){
           auto provider=supplied.find(name);if(provider==supplied.end())fail("task import has no actual provider definition: "+name,"E_TASK_PROVIDER");
-          imports.push_back(Object{{"function",name},{"provider",provider->second.first},{"contract",contract},{"calling_mode",function.effects.contains("task")?(supportsTaskFileWrites(item.program)?"task-code/4":"task-code/3"):"sync/1"}});
+          imports.push_back(Object{{"function",name},{"provider",provider->second.first},{"contract",contract},{"calling_mode",function.effects.contains("task")?(supportsTaskFileStreams(item.program)?"task-code/5":supportsTaskFileWrites(item.program)?"task-code/4":"task-code/3"):"sync/1"}});
         }else{definitions.push_back(Object{{"function",name},{"contract",contract}});taskDefinitions[item.name][name]=contract;}
       }
       if(c.kind=="static_library"||c.kind=="shared_library"){
@@ -496,15 +496,20 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         }
       }
       auto &description=*item.description.getAsObject();description["code_only_library"]=item.options.codeOnlyLibrary;
-      description["task_linkage"]=Object{{"schema",supportsTaskFileWrites(item.program)?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1"},{"component",item.name},{"execution_abi",supportsTaskFileWrites(item.program)?4:3},
+      description["task_linkage"]=Object{{"schema",supportsTaskFileStreams(item.program)?"nex.project-static-task-linkage/3":supportsTaskFileWrites(item.program)?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1"},{"component",item.name},{"execution_abi",supportsTaskFileStreams(item.program)?5:supportsTaskFileWrites(item.program)?4:3},
         {"definitions",std::move(definitions)},{"imports",std::move(imports)},{"exports",std::move(exports)}};
-      if(supportsTaskFileWrites(item.program)){std::set<std::string> selected;for(const auto &[name,contract]:contracts.at(item.name)){(void)contract;selected.insert(name);}(*description.getObject("task_linkage"))["task_file_writes"]=nativeTaskFileWrites(item.program,selected);}
+      if(supportsTaskFileWrites(item.program)&&!supportsTaskFileStreams(item.program)){std::set<std::string> selected;for(const auto &[name,contract]:contracts.at(item.name)){(void)contract;selected.insert(name);}(*description.getObject("task_linkage"))["task_file_writes"]=nativeTaskFileWrites(item.program,selected);}
+      if(supportsTaskFileStreams(item.program)){
+        std::set<std::string> selected;for(const auto &[name,contract]:contracts.at(item.name)){(void)contract;selected.insert(name);}
+        auto requirements=nativeTaskFileRequirements(item.program,selected);auto &linkage=*description.getObject("task_linkage");
+        linkage["task_file_reads"]=requirements.reads;linkage["task_file_writes"]=requirements.writes;linkage["task_file_streams"]=requirements.streams;
+      }
     }
   }
   for(auto &item:prepared)if(effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed||(effectiveNativeTaskLinkage(item.options)!=NativeTaskLinkageMode::None&&(configuration.profile=="profile"||item.options.taskDebug))){
     const bool shared=effectiveNativeTaskLinkage(item.options)==NativeTaskLinkageMode::SharedFixed;
     auto &linkage=*item.description.getAsObject()->getObject("task_linkage");
-    linkage["schema"]=supportsTaskFileWrites(item.program)?(item.options.taskDebug?"nex.project-task-linkage/7":configuration.profile=="profile"?"nex.project-task-linkage/6":"nex.project-task-linkage/5"):(item.options.taskDebug?"nex.project-task-linkage/4":configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2");linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
+    linkage["schema"]=supportsTaskFileStreams(item.program)?(item.options.taskDebug?"nex.project-task-linkage/10":configuration.profile=="profile"?"nex.project-task-linkage/9":"nex.project-task-linkage/8"):supportsTaskFileWrites(item.program)?(item.options.taskDebug?"nex.project-task-linkage/7":configuration.profile=="profile"?"nex.project-task-linkage/6":"nex.project-task-linkage/5"):(item.options.taskDebug?"nex.project-task-linkage/4":configuration.profile=="profile"?"nex.project-task-linkage/3":"nex.project-task-linkage/2");linkage["mode"]=shared?"shared-fixed":"static";linkage["load_closure"]=nullptr;
     if(item.options.taskDebug){llvm::json::Array sites;bool retained=usesTaskEffects(item.program,item.options.entry);for(const auto &entry:item.options.libraryExports)retained|=usesTaskEffects(item.program,entry);
       for(const auto &[name,contract]:taskDefinitions.at(item.name)){const auto &function=item.program.function(name);auto unit=item.program.units.find(function.unit);auto source=unit==item.program.units.end()?item.program.source:unit->second.source;
         sites.push_back(Object{{"name",name},{"function_hash",hash(json(canonical(function),false))},{"function_source_hash",hash(item.program.definition(function))},{"source_unit_hash",hash(source)},{"contract",contract},{"line",int64_t(function.span.line)},{"retained",retained},{"task_debug",retained?llvm::json::Value(taskDebugFunctionMetadata(item.program,function,function.unit)):llvm::json::Value(nullptr)}});
@@ -576,7 +581,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
      (fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt)!=sourceLock)
     fail("project metadata or dependency lock changed while planning","E_PROJECT_INPUT_CHANGED");
   for(const auto &[file,text]:capturedSources)if(options.sourceOverlays.contains(file)?options.sourceOverlays.at(file)!=text:readFile(file)!=text)fail("captured source changed while planning: "+file,"E_PROJECT_INPUT_CHANGED");
-  Object plan{{"schema","nex.project-plan/1"},{"ok",true},{"language",languageVersion},{"compiler",Object{{"version",options.compilerVersion},{"build",options.compilerBuild}}},
+  Object plan{{"schema","nex.project-plan/1"},{"ok",true},{"language",programLanguage(options.sourceLanguage)},{"compiler",Object{{"version",options.compilerVersion},{"build",options.compilerBuild}}},
     {"root",root.string()},{"manifest",manifest},{"manifest_hash",hash(source)},{"architecture_hash",hash(json(*parsed,false))},{"source_project_manifest_hash",hash(sourceManifest)},
     {"configuration",Object{{"name",configuration.name},{"profile",configuration.profile},{"target",configuration.target},{"toolchain",configuration.toolchain.empty()?llvm::json::Value(nullptr):llvm::json::Value(configuration.toolchain)}}},
     {"selected_component",selectedComponent.empty()?llvm::json::Value(nullptr):llvm::json::Value(selectedComponent)},{"components",std::move(descriptions)},
@@ -899,7 +904,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
         auto sha=llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(bytes)),true);
         inventory[relative]=Object{{"bytes",int64_t(bytes.size())},{"sha256",sha},{"executable",(entry.status().permissions()&fs::perms::owner_exec)!=fs::perms::none}};
       }
-      auto result=Object{{"schema","nex.project-package/1"},{"ok",true},{"plan_hash",planHash},{"compiler_version",options.compilerVersion},{"compiler_build",options.compilerBuild},{"language",languageVersion},
+      auto result=Object{{"schema","nex.project-package/1"},{"ok",true},{"plan_hash",planHash},{"compiler_version",options.compilerVersion},{"compiler_build",options.compilerBuild},{"language",programLanguage(options.sourceLanguage)},
         {"configuration",configuration.name},{"profile",configuration.profile},{"components",std::move(packaged)},{"files",std::move(inventory)},{"graph_store_opened",false},{"application_execution",false},{"target_execution_verified",false},{"native_dependencies_inspected",nativeInspected}};
       if(options.packageProjection)result["foreign_projection"]=options.packageProjection->report;
       writeFile((stage/"project.json").string(),json(llvm::json::Value(Object(result)))+"\n");

@@ -1215,6 +1215,9 @@ std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimize
   return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);
 }
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,const std::string &triple,const std::string &layout){return lower(source,path,triple,layout);}
+NativeTaskFileRequirements nativeTaskFileRequirements(const Program &p,const std::set<std::string> &selected){
+  const auto result=nativeTaskFiles(p,selected);return {result.reads,result.writes,result.streams};
+}
 bool nativeTaskFileWrites(const Program &p,const std::set<std::string> &selected){
   if(!supportsTaskFileWrites(p))return false;
   return nativeTaskFiles(p,selected).writes;

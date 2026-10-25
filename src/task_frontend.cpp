@@ -2,8 +2,8 @@
 #include <functional>
 
 namespace nex {
-const char *programLanguage(const Program &program){
-  switch(program.sourceLanguage){
+const char *programLanguage(SourceLanguage language){
+  switch(language){
   case SourceLanguage::Language018:return "0.18";
   case SourceLanguage::Tasks019:return "0.19";
   case SourceLanguage::TaskFiles020:return "0.20";
@@ -14,6 +14,7 @@ const char *programLanguage(const Program &program){
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
+const char *programLanguage(const Program &program){return programLanguage(program.sourceLanguage);}
 bool isPublicTaskLanguage(const Program &program){
   return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024;
 }

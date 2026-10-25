@@ -7,9 +7,10 @@ namespace nex {
 llvm::json::Value captureProject(const std::string &root,const std::string &manifest,
   const std::string &source,const std::string &component,const std::set<std::string> &configurations,
   const std::map<std::string,std::string> &overlays = {},
-  const std::set<std::string> &debugConfigurations = {});
-std::string materializeProjectCapture(const llvm::json::Value &capture,const std::string &container);
-void verifyProjectCapture(const llvm::json::Value &capture,const std::string &container);
-void validateProjectCaptureData(const llvm::json::Value &capture);
-void validateProjectCapturePlans(const llvm::json::Value &capture,const std::string &container);
+  const std::set<std::string> &debugConfigurations = {},SourceLanguage language=currentSourceLanguage);
+// Explicit compiler-owned selection, never inferred from untrusted capture JSON.
+std::string materializeProjectCapture(const llvm::json::Value &capture,const std::string &container,SourceLanguage language=currentSourceLanguage);
+void verifyProjectCapture(const llvm::json::Value &capture,const std::string &container,SourceLanguage language=currentSourceLanguage);
+void validateProjectCaptureData(const llvm::json::Value &capture,SourceLanguage language=currentSourceLanguage);
+void validateProjectCapturePlans(const llvm::json::Value &capture,const std::string &container,SourceLanguage language=currentSourceLanguage);
 }

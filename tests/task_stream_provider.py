@@ -4,7 +4,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('probe',type=Path);p.add_argument('--output',type=Path);a=p.parse_args()
 probe=a.probe.resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
-else:temporary=tempfile.TemporaryDirectory(prefix='nex stream providers ');root=Path(temporary.name)
+else:temporary=tempfile.TemporaryDirectory(prefix='nex stream providers ');root=Path(temporary.name).resolve()
 started=time.monotonic();report={'schema':'nex.private024-stream-providers/1','ok':False,'state':'starting','commands':[],'cases':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.23','private_language':'0.24','public024_published':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')

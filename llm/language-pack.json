@@ -2212,6 +2212,30 @@
       "wire_file_transport": false,
       "CLI_plan_capture_package_debug_profile_delivery": false,
       "guide": "docs/task-stream-providers.md"
+    },
+    "project_integration": {
+      "status": "private024_explicit_source_project_integration",
+      "guide": "docs/task-stream-project.md",
+      "public_enabled": false,
+      "source_selection": "explicit compiler-owned SourceLanguage; never inferred from nex.json or capture JSON",
+      "project_plan": true,
+      "plan_schemas": [
+        "nex.project-static-task-linkage/3",
+        "nex.project-task-linkage/8",
+        "nex.project-task-linkage/9",
+        "nex.project-task-linkage/10"
+      ],
+      "plan_schema_file": "llm/project-stream-task-linkage.schema.json",
+      "separate_read_write_stream_requirements": true,
+      "capture_rechecks_checked_source": true,
+      "source_deleted_replay": true,
+      "native_packages": true,
+      "native_task_profiles": true,
+      "native_provider_logical_debugger": true,
+      "file_identity_watch": true,
+      "file_watch_reconstructs_IO_authority": false,
+      "effectful_watch": false,
+      "ordinary_project_CLI_024_build": false
     }
   }
 }

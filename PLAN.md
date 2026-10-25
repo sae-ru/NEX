@@ -1,3 +1,18 @@
+# Development0.133.9: explicit private024 project delivery
+
+Compiler-owned source selection now rechecks024 physical projects and their
+matching locks without deriving the parser from untrusted metadata or opening
+a graph Store. Ordinary CLI/default projects retain023. ABI5 project linkage
+records distinguish read/write/stream requirements, task-code/5 imports and
+strict retained ABI3/4. Captures recheck the selected language, source ownership
+and exact plan before replay; native packages record the checked program language.
+Native profile readers and source-backed LLDB/DAP accept ABI5. Private024 File
+bindings expose only diagnostic identities in pure watches; filesystem/effectful
+operations remain rejected. No File IO authority is reconstructed by a watch.
+Read docs/task-stream-project.md. Public024 publication, explicit migration,
+remaining in-flight source IO/history cases and matching full/SAN/SDK/platform
+acceptance remain pending. The entire original project scope remains open.
+
 # Development0.133.8: private024 mixed file/resource conformance
 
 Actual NEX programs retain a genuine File and a genuine C11/C++20 opaque

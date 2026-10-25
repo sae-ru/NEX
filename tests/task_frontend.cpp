@@ -118,6 +118,9 @@ server fn main(s:task_scope,f:file)->unit !{task}{
   require(builtinNames(false).count("task_wait")==0&&builtinNames(true).count("task_wait")==1,"legacy and task builtin sets are not distinct");++cases;
   auto directory=std::filesystem::path(createTemporaryDirectory("nex-task-frontend"));
   try{
+    // The retained private prototype parser has always accepted current physical
+    // project metadata; explicit versioned project loads are a separate API.
+    writeFile((directory/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry","main.nex"}})+"\n");
     writeFile((directory/"worker.nex").string(),"module worker; pub fn compute()->i64 !{task}{task_yield();return 42;}");
     writeFile((directory/"main.nex").string(),"module app; import \"./worker.nex\" as w; fn main()->i64 !{task}{return with_tasks(2,fn(s:task_scope)->i64 !{task}{let p:task<i64>=task_spawn(s,w::compute);return task_wait(p);});}");
     auto loaded=loadTaskPrototype((directory/"main.nex").string(),directory.string());

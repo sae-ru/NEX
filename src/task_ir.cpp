@@ -17,7 +17,9 @@ class Lowering {
   uint32_t nextDebugScope=0;
   size_t debugVisibleCount=0;
   bool opaqueType(const Type &type,bool unknownFunctions,std::set<std::string> &seen)const{
-    if(type==Type::File||type.kind==Type::Task||type.kind==Type::TaskScope||type.kind==Type::Channel)return true;
+    // Private024 File watches expose only a diagnostic identity, never an IO
+    // lease. Retained task languages keep their historical opaque metadata.
+    if((type==Type::File&&!supportsTaskFileStreams(program))||type.kind==Type::Task||type.kind==Type::TaskScope||type.kind==Type::Channel)return true;
     if(type.kind==Type::Function&&(!type.effects.empty()||unknownFunctions))return true;
     if(type.element&&opaqueType(*type.element,unknownFunctions,seen))return true;
     for(const auto &argument:type.arguments)if(opaqueType(argument,unknownFunctions,seen))return true;

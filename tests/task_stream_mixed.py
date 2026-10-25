@@ -6,7 +6,7 @@ REPO=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('--output',type=Path);args=parser.parse_args()
 temporary=None
 if args.output:root=args.output.resolve();root.mkdir()
-else:temporary=tempfile.TemporaryDirectory(prefix='nex mixed file resource ');root=Path(temporary.name)
+else:temporary=tempfile.TemporaryDirectory(prefix='nex mixed file resource ');root=Path(temporary.name).resolve()
 probe=args.probe.resolve();started=time.monotonic()
 report={'schema':'nex.private024-mixed-file-resource/1','ok':False,'state':'starting','cases':[],'commands':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.23','private_language':'0.24',

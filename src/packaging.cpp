@@ -137,7 +137,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
   llvm::json::Object packageRequest{{"schema",debug?"nex.application-request/4":profiled?"nex.application-request/3":sharedTasks?"nex.application-request/2":"nex.application-request/1"},
     {"binary",built.executable},{"binary_sha256",sha256(bytes)},{"owned_images",std::move(owned)},
     {"runtime_notices",built.notices},{"runtime_notices_sha256",sha256(readFile(built.notices))},{"sdk_root",fs::path(options.compiler).parent_path().parent_path().string()},
-    {"toolchain",NEX_VERSION},{"language",languageVersion},{"revision",revision(candidate)},
+    {"toolchain",NEX_VERSION},{"language",programLanguage(candidate)},{"revision",revision(candidate)},
     {"foreign_directory",foreignDirectory},
     {"foreign_files",std::move(foreignFiles)},{"foreign_projection",std::move(projection)},
     {"build_key",built.key},{"target",built.target},{"compiler_target",built.compilerTarget},
@@ -251,7 +251,7 @@ ForeignProgramProjection projectForeignProgram(const Program &program,
       auto source=program.units.at(unit).source;size_t previous=source.size();
       for(const auto &edit:values){if(edit.end>previous)throw Error("E_PACKAGE","overlapping external pin projection");source.replace(edit.begin,edit.end-edit.begin,edit.replacement);previous=edit.begin;}(*files)[unit]=source;
     }
-    auto derived=loadBundle(bundle,root);check(derived);
+    auto derived=loadVersionedBundle(bundle,root,programLanguage(program));check(derived);
     if(revision(derived)!=revision(candidate))throw Error("E_PACKAGE","packaged projection changed semantics outside reachable manifest pins");
     for(const auto *function:bindings){
       try{checkForeignBinding(prepared.snapshot,derived,derived.function(function->name));}

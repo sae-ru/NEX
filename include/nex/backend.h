@@ -112,6 +112,9 @@ llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStag
 NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Value &);
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &);
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &);
+struct NativeTaskFileRequirements {bool reads=false,writes=false,streams=false;};
+// Checked reachable instructions/retained values; these flags grant no authority.
+NativeTaskFileRequirements nativeTaskFileRequirements(const Program &,const std::set<std::string> &selected);
 bool nativeTaskFileWrites(const Program &,const std::set<std::string> &selected);
 NativeTaskExport nativeTaskExportInterface(const Program &,const std::string &function,
                                          const std::string &contract);

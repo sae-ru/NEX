@@ -182,6 +182,7 @@ struct Program {
 };
 // The checked program's semantic version, separate from the installed public
 // compiler default. Historical programs retain their explicit identity.
+const char *programLanguage(SourceLanguage language);
 const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
 // Select syntax and semantic identity before checking, never by retagging a
@@ -197,9 +198,13 @@ Type parseType(std::string source);
 void bindExpression(const Program &program,const std::string &function,E expression);
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
 // Check explicit physical-project version/format without opening its graph store.
-void validateProjectMetadata(const std::string &root);
+void validateProjectMetadata(const std::string &root,SourceLanguage language=currentSourceLanguage);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
     const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);
+// Explicit compiler-owned source selection; never inferred from nex.json.
+// Rechecks physical sources and matching locks without opening a graph Store.
+Program loadVersionedProgram(const std::string &entry,const std::string &root,SourceLanguage language,
+    bool enforceLock=true,const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);
 // Same lexer as the parser, for checked editor projections; no source identities.
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);

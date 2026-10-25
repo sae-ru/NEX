@@ -25,6 +25,9 @@ struct ProjectBuildOptions {
   // Compiler-owned prepare-only task build-check selection; never inferred
   // merely from a configuration whose optimization profile is debug.
   bool taskDebug=false;
+  // Compiler-owned explicit source selection, not a manifest/CLI option.
+  // Ordinary callers retain the current public language and reject private024.
+  SourceLanguage sourceLanguage=currentSourceLanguage;
 };
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.

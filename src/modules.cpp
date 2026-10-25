@@ -18,7 +18,7 @@ bool identifier(const std::string &s){
   if(s.empty()||!(std::isalpha(static_cast<unsigned char>(s[0]))||s[0]=='_'))return false;
   return std::all_of(s.begin(),s.end(),[](unsigned char c){return std::isalnum(c)||c=='_';});
 }
-void projectVersion(const llvm::json::Object &object,const std::string &file){
+void projectVersion(const llvm::json::Object &object,const std::string &file,SourceLanguage version=currentSourceLanguage){
   Span span{1,1,0,0,file};
   if(auto value=object.get("schema");value&&value->getAsString()!="nex.project/1")
     throw Error("E_MANIFEST","unsupported project schema; expected nex.project/1",span);
@@ -31,7 +31,7 @@ void projectVersion(const llvm::json::Object &object,const std::string &file){
     auto language=value->getAsString();
     if(!language||language->empty()||language->size()>32||language->find('\0')!=llvm::StringRef::npos)
       throw Error("E_MANIFEST","project language must be a nonempty version of at most 32 UTF-8 bytes without NUL",span);
-    if(*language!=languageVersion)
+    if(*language!=programLanguage(version))
       throw Error("E_LANGUAGE_VERSION","project declares language "+language->str()+"; use its matching SDK to archive source, then nex migrate and export a current-language project",span);
   }
   if(auto value=object.get("libraries")){
@@ -234,11 +234,11 @@ class Loader {
     }
   }
 public:
-  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018)
+  Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018,SourceLanguage metadataLanguage=currentSourceLanguage)
       :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks,(version==SourceLanguage::OwnedResources021||version==SourceLanguage::TaskForeign022||version==SourceLanguage::TaskWrites023||version==SourceLanguage::TaskStreams024))){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
-      projectVersion(*obj,"nex.json");
+      projectVersion(*obj,"nex.json",metadataLanguage);
       if(auto item=obj->get("libraries")){
         for(const auto &[name,path]:*item->getAsObject())packages[name.str()]=fs::weakly_canonical(this->root/path.getAsString()->str());
       }
@@ -267,19 +267,23 @@ std::string materialized(const std::string &key,const std::string &prefix){
   return key;
 }
 }
-void validateProjectMetadata(const std::string &root){
+void validateProjectMetadata(const std::string &root,SourceLanguage language){
   auto path=fs::path(root)/"nex.json";if(!fs::is_regular_file(path))return;
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
-  if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json");
+  if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json",language);
 }
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
+  return loadVersionedProgram(entry,root,currentSourceLanguage,enforceLock,overlays,editorNames,editorDetails);
+}
+Program loadVersionedProgram(const std::string &entry,const std::string &root,SourceLanguage language,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
+  (void)programLanguage(language);
   auto base=std::filesystem::weakly_canonical(root);auto path=std::filesystem::weakly_canonical(entry);
   if(!inside(path,base))throw Error("E_IMPORT_PATH","entry is outside the project root");
-  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,true,currentSourceLanguage).run();
+  auto p=Loader(base,path.lexically_relative(base).generic_string(),false,{},overlays,editorNames,editorDetails,language!=SourceLanguage::Language018,language,language).run();
   auto lock=base/"nex.lock.json";
   if(enforceLock&&std::filesystem::is_regular_file(lock)){
     auto locked=decoded(readFile(lock.string()));auto object=locked.getAsObject();
-    if(!object||object->getString("schema")!="nex.lock/1"||object->getString("language")!=languageVersion||!object->getObject("dependencies"))throw Error("E_LOCK","dependency lock format/version differs; review dependencies and run nex lock");
+    if(!object||object->getString("schema")!="nex.lock/1"||object->getString("language")!=programLanguage(language)||!object->getObject("dependencies"))throw Error("E_LOCK","dependency lock format/version differs; review dependencies and run nex lock");
     auto current=dependencyLock(p);auto expected=object->getObject("dependencies");
     for(const auto &[key,value]:*current.getAsObject()->getObject("dependencies"))if(!expected->get(key)||*expected->get(key)!=value)throw Error("E_LOCK","loaded package sources differ from nex.lock.json; review dependencies and run nex lock");
   }
