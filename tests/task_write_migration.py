@@ -14,7 +14,7 @@ if args.output:root=args.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex genuine022 write migration 🧠 ');root=Path(temporary.name)
 started=time.monotonic();report={'schema':'nex.private023-write-migration-verification/1','ok':False,'state':'starting','commands':[],'checks':[],
  'fixture_sql_sha256':metadata['sql_sha256'],'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'genuine022_revisions':3,'genuine_schema_tables':16,'public023_enabled':False,'full_objective_complete':False}
+ 'genuine022_revisions':3,'genuine_schema_tables':16,'public023_enabled':True,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def state(database):
  with sqlite3.connect(database) as db:
@@ -54,9 +54,15 @@ def candidate(name,source):
 try:
  for index,row in enumerate(metadata['revisions']):
   name='positive-'+str(index);project,database,before,physical=restore(name);files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
+  manifest=project/'nex.json';raw_manifest=manifest.read_bytes()
+  try:
+   current=json.loads(raw_manifest);current['language']='0.23';manifest.write_text(json.dumps(current))
+   rejected=json.loads(run(name+'-no-implicit-upgrade',[compiler,'check','--json'],env,project,1).stdout)
+   assert rejected['code']=='E_LANGUAGE_VERSION' and state(database)==before
+  finally:manifest.write_bytes(raw_manifest)
   request={'project':str(project),'origin_revision':row['revision'],'expected_revision':metadata['head'],'execute':True}
   result=invoke(name,request,env=env)
-  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']=='0.22'
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']=='0.23'
   assert result['revision']!=row['revision'] and result['previous_revision']==metadata['head']
   after=state(database);retained(before,after);assert after['tables']['head']==[(1,result['revision'])]
   assert len(after['tables']['revisions'])==4
@@ -70,18 +76,18 @@ try:
   assert native.stdout==stdout and not native.stderr
   if task:assert (files/'output.txt').read_text()=='NEX asynchronous write\n'
   untouched(project,physical)
-  rejected=json.loads(run(name+'-no-implicit-public-downgrade',[compiler,'check','--json'],env,project,1).stdout)
+  rejected=json.loads(run(name+'-unmaterialized-manifest',[compiler,'check','--json'],env,project,1).stdout)
   assert rejected['code']=='E_LANGUAGE_VERSION' and state(database)==after;untouched(project,physical)
   repeated=invoke(name+'-repeat',{**request,'execute':False,'expected_revision':result['revision']},env=env)
   assert repeated['revision']==result['revision'];again=state(database);retained(after,again);assert len(again['tables']['revisions'])==4
   report['checks'].append({'name':name,'all16_tables_schema_rows_ids_preserved':True,'original_revision':row['revision'],'revision':result['revision'],
    'native_reference':True,'executable':str(executable),'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),'physical_sources_unchanged':True,'idempotent_target':True,'implicit_cross_version_HEAD_rejected':True});save()
- # Ordinary CLI uses precisely the same shared preflight with its public022 target.
+ # Ordinary CLI publishes exactly the same checked023 target as the shared preflight.
  for index,row in enumerate(metadata['revisions']):
-  name='public022-'+str(index);project,database,before,physical=restore(name)
+  name='public023-'+str(index);project,database,before,physical=restore(name)
   result=json.loads(run(name,[compiler,'migrate','--revision',row['revision'],'--expected-revision',metadata['head'],'--json'],os.environ,project).stdout)
-  assert result['origin_verified'] and result['origin_language']==result['language']=='0.22' and result['revision']==row['revision']
-  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'no_implicit023':True});save()
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['revision']!=row['revision']
+  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'explicit_public023':True});save()
  # Negative target preflight must not create even an empty destination Store.
  origin,_,_,_=restore('read-only-origin');origin_revision=metadata['head']
  invalid=candidate('invalid-target','module wrong;fn main()->i64{return "wrong type";}')
@@ -131,7 +137,7 @@ try:
  # language switch before its writable Store can upgrade old physical schemas.
  # This is separate from the three genuine022 semantic-history fixtures.
  project=root/'schema1-readonly-control';database=project/'.nex/graph.db';database.parent.mkdir(parents=True)
- (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'main.nex'}));(project/'main.nex').write_text('module modern;fn main()->i64{return 0;}')
+ (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}));(project/'main.nex').write_text('module modern;fn main()->i64{return 0;}')
  with sqlite3.connect(database) as db:
   db.executescript("CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT);INSERT INTO metadata VALUES('schema','1');CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT,source TEXT,path TEXT);CREATE TABLE head(id INTEGER PRIMARY KEY,revision TEXT);")
   db.execute('INSERT INTO revisions VALUES(?,?,?,?)',('0'*64,'legacy','module legacy;fn main()->i64{return 0;}','main.nex'));db.execute('INSERT INTO head VALUES(1,?)',('0'*64,))

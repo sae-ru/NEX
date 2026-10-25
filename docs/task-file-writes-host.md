@@ -1,13 +1,14 @@
-# Private asynchronous whole-file write bridge
+# Asynchronous whole-file write host bridge
 
 Toolchain0.132.4 adds `FileWriteGrant`, `FileWriteLease` and
 `PreparedTaskFileWrite` for trusted native C++ hosts on macOS/Linux. These are
-the physical IO foundation for future source task writes. Language0.22 still
-rejects whole-file writes inside tasks; neither its grammar nor its historical
-semantics changes. The frontend, independent interpreter, native continuation
-adapter, task providers, diagnostics and explicit migration must agree before
-source support is enabled. Streams, networking, DB and task HTTP handlers remain
-separate unfinished work.
+the physical IO foundation used by language0.23 source task writes. The frontend,
+independent interpreter, native continuation adapter and checked static/shared
+providers use explicit write requirements and operator grants. Retained
+language0.22 still rejects whole-file writes inside tasks; its historical
+semantics does not change. Source enablement is separate from complete compiler,
+installed SDK and platform acceptance. Streams, networking, DB and task HTTP
+handlers remain unfinished work.
 
 The coordinator captures `captureFileWriteGrant` while its authorized
 `FileScope` and root `RequestScope` are active. The grant shares the root and

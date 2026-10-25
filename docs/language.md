@@ -1,3 +1,32 @@
+# Current language0.23
+
+Language023 retains the existing grammar and adds checked whole-file text/byte
+write suspension in server functions declaring task and fs. Ordinary CLI source,
+independent reference execution, native builds and checked static/shared images
+use this rule. Runtime authority remains an explicit revocable operator grant;
+read-only grants cannot be upgraded. Strict UTF-8, exact immutable snapshots,
+left-to-right evaluation, lazy branches, local result propagation and physical
+drain before completion remain mandatory. A cancellation after a complete rename
+can suppress delivery without rolling the file back.
+
+The program language participates in semantic revision identity. Explicit
+migration verifies original022 source with its retained parser and appends a
+separately checked023 revision. Original history, all16 tables/schema and IDs
+remain. Ordinary live synchronization refuses a HEAD language mismatch before
+opening a writable Store and checks again in the transaction. Old022 task writes
+retain their E_TASK_UNIMPLEMENTED interpretation under explicit retained APIs.
+
+Native execution uses ABI4; source FFI remains distinct from resource-free
+binary provider exports. Provider records5/6/7 and versioned ABI4 plan/capture
+metadata explicitly record image/component/root write requirements. Old ABI3
+records and masks are not widened. Browser/Wasm source cannot acquire filesystem
+authority, and emitted clients contain only reachable client/shared code.
+
+Source implementation is enabled in this candidate; complete compiler/SDK/
+platform acceptance is a separate unfinished delivery gate. The current023
+rules above extend the retained022 core below; older development notes preserve
+their original scopes. Read task-file-writes-prototype.md and task-write-providers.md.
+
 Toolchain0.132.1 fixes reference retirement publication without changing syntax,
 canonical identities or the language022 contract: physical fence readiness must
 remain scheduler progress until task/scope completion is published.
@@ -7,7 +36,7 @@ canonical identity or language-version changes. Session/Buffer remain server
 resources; task/ffi operations retain physical dependencies and completion rules.
 The experimental OpenCL provider and delivery limits are described in device.md.
 
-# Current language0.22
+# Retained language0.22 core
 
 The development host C API can construct dependent opaque resources through a
 pinned server/ffi extern. Existing task transfers promote their hidden parent
@@ -822,7 +851,7 @@ Toolchain 0.12 links external `nex.task/1` acceptance criteria to source candida
 
 Toolchain 0.15 derives typed parameter/block/statement/expression nodes from the checked program without changing source syntax, language 0.5 or semantic revision identity. Their local persistent IDs, content hashes and deterministic source sites are separate. See [operations.md](operations.md) for matching, lexical references, paged context, diagnostics, source hashes and migration.
 
-## Private source task write candidate (0.23)
+## Whole-file task writes (0.23)
 
 Private023 static/shared continuations use separately versioned ABI4 provider
 records and explicit image write requirements; retained ABI3 records are never

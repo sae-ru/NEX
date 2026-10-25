@@ -111,6 +111,7 @@ llvm::json::Value nativeTaskApplicationStageJSON(const NativeTaskApplicationStag
 NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Value &);
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &);
 NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &);
+bool nativeTaskFileWrites(const Program &,const std::set<std::string> &selected);
 NativeTaskExport nativeTaskExportInterface(const Program &,const std::string &function,
                                          const std::string &contract);
 // Compiler-private NEX ABI inputs, produced by a checked project build. Source

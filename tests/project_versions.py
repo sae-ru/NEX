@@ -10,7 +10,7 @@ SOURCE='module project_versions;fn value()->i64{return 42;}fn main()->unit!{io}{
 
 class ProjectVersions(harness.ToolchainCase):
     def manifest(self,**fields):
-        value={'schema':'nex.project/1','language':'0.22','entry':'main.nex',**fields}
+        value={'schema':'nex.project/1','language':'0.23','entry':'main.nex',**fields}
         (self.root/'nex.json').write_text(json.dumps(value))
         return value
 
@@ -29,7 +29,7 @@ class ProjectVersions(harness.ToolchainCase):
             ('api',),('lock',),('profile','--scenario','blocked','--timeout','1'),
             ('ffi','--symbol','main'),('diagnose','--manifest',self.root/'debug.json','--log',self.root/'stderr.log'),('declarations',self.file),('identities',self.file),
             ('task',self.file,'--kind','init')]
-        for version in ['0.21','0.20','0.19','0.14','0.10','0.99','unknown']:
+        for version in ['0.22','0.21','0.20','0.19','0.14','0.10','0.99','unknown']:
             self.manifest(language=version)
             for command in commands:
                 with self.subTest(version=version,command=command[0]):
@@ -43,10 +43,10 @@ class ProjectVersions(harness.ToolchainCase):
 
     def test_omitted_legacy_metadata_and_extra_editor_metadata_remain_supported(self):
         self.source(SOURCE)
-        for extra in [{},{'schema':'nex.project/1'},{'language':'0.22'},
-                      {'schema':'nex.project/1','language':'0.22','editor':{'layout':'custom'}}]:
+        for extra in [{},{'schema':'nex.project/1'},{'language':'0.23'},
+                      {'schema':'nex.project/1','language':'0.23','editor':{'layout':'custom'}}]:
             (self.root/'nex.json').write_text(json.dumps({'entry':'main.nex',**extra}))
-            self.cli('check');self.assertEqual(self.cli('graph')['language'],'0.22')
+            self.cli('check');self.assertEqual(self.cli('graph')['language'],'0.23')
         self.assertEqual(self.cli('eval')['stdout'],'42\n')
 
     def test_old_physical_project_is_rejected_before_a_graph_store_is_created(self):
@@ -75,7 +75,7 @@ class ProjectVersions(harness.ToolchainCase):
         self.assertFalse(self.cli('restore','--revision',revision,'--expected-revision',revision)['changed'])
         self.assertEqual(self.rows(),before)
         exported=self.root/'exported-current';self.cli('export','--revision',revision,'--directory',exported)
-        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.22')
+        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.23')
         self.assertEqual(self.cli('run',cwd=exported)['stdout'],'42\n')
         self.assertEqual(self.cli('run',ok=False)['code'],'E_LANGUAGE_VERSION')
 
@@ -86,16 +86,16 @@ class ProjectVersions(harness.ToolchainCase):
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(self.rows(),before)
         self.assertEqual(dict(before['metadata'])['schema'],'3')
-        migrated=self.cli('migrate');self.assertEqual(migrated['language'],'0.22')
+        migrated=self.cli('migrate');self.assertEqual(migrated['language'],'0.23')
         self.assertFalse(migrated['materialized'])
-        self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.14','0.22'})
+        self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.14','0.23'})
         change,=self.cli('changes')['changes']
         self.assertEqual((change['action'],change['previous_revision']),('migrate',old))
         self.assertEqual(json.loads((self.root/'nex.json').read_text())['language'],'0.14')
         self.assertEqual(self.file.read_text(),metadata['source'])
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         exported=self.root/'migrated-source';self.cli('export','--directory',exported)
-        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.22')
+        self.assertEqual(json.loads((exported/'nex.json').read_text())['language'],'0.23')
         self.assertEqual(self.cli('check',cwd=exported)['revision'],migrated['revision'])
 
     def library(self):
@@ -108,7 +108,7 @@ class ProjectVersions(harness.ToolchainCase):
     def test_reachable_library_declared_versions_are_checked_without_loading_unused_libraries(self):
         library=self.library();unused=self.root/'unused';unused.mkdir()
         (unused/'nex.json').write_text(json.dumps({'language':'0.14'}))
-        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22'}))
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23'}))
         revision=self.cli('check')['revision'];before=self.rows()
         (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.14'}))
         error=self.cli('check',ok=False);self.assertEqual(error['code'],'E_LANGUAGE_VERSION')
@@ -142,7 +142,7 @@ class ProjectVersions(harness.ToolchainCase):
         self.ready();self.manifest(language='0.14');before=self.rows()
         snapshot=self.root/'saved';self.cli('snapshot','--directory',snapshot)
         recovered=self.root/'recovered';self.cli('recover',snapshot,'--directory',recovered)
-        self.assertEqual(json.loads((recovered/'nex.json').read_text())['language'],'0.22')
+        self.assertEqual(json.loads((recovered/'nex.json').read_text())['language'],'0.23')
         self.assertEqual(self.cli('run','--revision','HEAD',cwd=recovered)['stdout'],'42\n')
         self.assertEqual(self.rows(),before)
 

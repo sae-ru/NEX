@@ -33,7 +33,7 @@ def main():
         output.mkdir(parents=True, exist_ok=False)
     work = output / "work"
     work.mkdir()
-    (work / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.22", "entry": "calls.nex"}))
+    (work / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.23", "entry": "calls.nex"}))
     grant = work / "grant"
     grant.mkdir()
     (grant / "text").write_bytes("A🧠\0B".encode())
@@ -64,7 +64,7 @@ def main():
     def inspect(built, expected_names):
         manifest = json.loads(Path(built["debug_manifest"]).read_text())
         metadata = json.loads(Path(built["metadata"]).read_text())
-        assert manifest["schema"] == "nex.debug/2" and manifest["language"] == "0.22", manifest
+        assert manifest["schema"] == "nex.debug/2" and manifest["language"] == "0.23", manifest
         assert manifest["revision"] == built["revision"] and manifest["build_key"] == built["build_key"], manifest
         assert manifest["runtime_view"] == "nex.runtime-view/3", manifest
         assert manifest["expression_protocol"] == "nex.task-debug-expression/1", manifest
@@ -122,7 +122,7 @@ def main():
 
     try:
         descriptor = cli("describe")
-        assert descriptor["version"] == "0.22", descriptor
+        assert descriptor["version"] == "0.23", descriptor
         for name, body, expected, stdout in SCENARIOS:
             source = work / (name + ".nex")
             source.write_text("module task_native_debug;\n" + body)

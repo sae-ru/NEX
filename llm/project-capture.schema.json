@@ -9,7 +9,7 @@
       "const": "nex.project-capture/1"
     },
     "language": {
-      "const": "0.22"
+      "const": "0.23"
     },
     "project_root": {
       "$ref": "#/$defs/path"
@@ -111,6 +111,9 @@
                 },
                 {
                   "$ref": "project-profiled-task-linkage.schema.json"
+                },
+                {
+                  "$ref": "project-write-task-linkage.schema.json"
                 }
               ]
             }

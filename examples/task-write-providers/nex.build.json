@@ -1,0 +1,25 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "release",
+  "configurations": {
+    "release": {
+      "profile": "release"
+    }
+  },
+  "components": {
+    "leaf": {
+      "kind": "static_library",
+      "root": "leaf",
+      "entry": "leaf/value.nex",
+      "entry_function": "save"
+    },
+    "app": {
+      "kind": "executable",
+      "root": "app",
+      "entry": "app/main.nex",
+      "dependencies": {
+        "leaf": "static"
+      }
+    }
+  }
+}

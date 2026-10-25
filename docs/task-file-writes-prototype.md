@@ -1,13 +1,12 @@
-# Private language0.23 source write integration
+# Whole-file task writes in language0.23
 
-The ordinary compiler/project default remains language0.22. Its stored histories,
-parsers, task/provider ABI3 and mask31 retain their existing meaning. Language023
-is an explicit internal parse/bundle/test entry point; there is no public023
-project selection or implicit migration. Public publication requires the genuine
-022 history-preserving migration, provider contracts and complete installed
-SDK/platform/tool acceptance below. Query `task_file_writes_prototype`.
+Ordinary projects use language023 in this development candidate. Retained022
+source, parsers and execution behavior remain available for explicit origin
+verification; old task writes still reject execution. Explicit migration appends
+a distinct023 semantic revision while preserving old history. Public source
+implementation is separate from complete release/SDK/platform acceptance.
 
-The prototype supports existing server `file_write_text(str,str)` and
+Language023 supports existing server `file_write_text(str,str)` and
 `file_write_bytes(str,bytes)` calls in functions declaring both task and fs.
 Their result remains `result<bool>`. An fs-only function remains synchronous
 outside tasks. A task call cannot silently turn an fs-only helper into a
@@ -18,9 +17,9 @@ write to a typed suspension after evaluating both arguments once left to right.
 Native continuations use request ordinals13/14 following retained Foreign12.
 Their88-byte descriptor uses explicit execution ABI4 and write/code-image bits;
 ABI3 cannot acquire write bits. Legacy provider records remain ABI3/mask31 and
-cannot be relabelled as write providers. Private023 static/shared output now uses separate ABI4 records5/6/7 and
-explicit write-image metadata. Read task-write-providers.md; public CLI selection,
-capture/replay/package and matching SDK/platform delivery remain separate.
+cannot be relabelled as write providers. Static/shared output uses ABI4 records5/6/7 and explicit write-image metadata.
+Public plan/capture/replay/package paths select their versioned ABI4 records;
+matching SDK/platform delivery remains a separate acceptance gate.
 
 The root native coordinator captures a revocable write grant only when its image
 contains a write request, before child task resumes. Frames/helpers/closures
@@ -52,10 +51,13 @@ TypeScript rejects reachable server code and omits unreachable server write
 functions. Wasm gains no filesystem access. These source tests do not replace
 the physical pre/post-commit cancel/revoke/drain host scenarios.
 
-Before public023: complete explicit022 migration using real retained SDK
-histories/all16 tables/schema/IDs, new static/shared provider contract and
-capture/replay/package, public CLI/context/editor/debug/profile/spec/prompt/pack,
-full regression, fresh relevant sanitizers, source-absent SDK/quickstart and
-current native platform checks. Preserve old022 interpretation and reject
-corrupt origins/targets/conflicts before partial history writes.
+The public CLI delivery test exercises explicit022 migration from three genuine
+SDK131 revisions with all16 tables/schema/IDs preserved, static/shared/mixed
+providers, denied write grants and source-deleted package/capture replay. The
+ordinary CLI and versioned contracts are enabled; this focused evidence does
+not complete acceptance. Matching full regression, fresh relevant sanitizers,
+source-absent SDK/quickstart and current platform checks remain required.
+Broader genuine resource/callable/import/model history coverage also remains.
+Preserve old022 interpretation and reject corrupt origins/targets/conflicts
+before partial history writes.
 All original NPU/UI/mobile/Studio/converter/quality requirements remain open.

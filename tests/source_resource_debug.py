@@ -8,7 +8,7 @@ def main():
  OUT=Path(explicit).resolve() if explicit else Path(tempfile.mkdtemp(prefix='nex-resource-debug-'))
  if explicit:OUT.mkdir(parents=True,exist_ok=False)
  require_live=args.require_live or os.environ.get('NEX_REQUIRE_RESOURCE_DAP')=='1'
- PROJECT=OUT/'project';PROJECT.mkdir();(PROJECT/'nex.json').write_text('{"schema":"nex.project/1","language":"0.22","entry":"main.nex"}\n')
+ PROJECT=OUT/'project';PROJECT.mkdir();(PROJECT/'nex.json').write_text('{"schema":"nex.project/1","language":"0.23","entry":"main.nex"}\n')
  ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_RESOURCE_DIR':str(RESOURCE)}
  report={'schema':'nex.resource-debug-tests/1','ok':False,'commands':[]};started=time.monotonic()
  def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -21,7 +21,7 @@ def main():
   return json.loads(p.stdout) if parse else p.stdout
  def cli(label,*args):return run(label,[COMPILER,*args,'--json'],True)
  try:
-  doctor=cli('doctor','doctor');assert doctor['language']=='0.22'
+  doctor=cli('doctor','doctor');assert doctor['language']=='0.23'
   text='''module resource_debug;
  server resource Session;
  server extern fn create(x:i64)->Session!{ffi}=foreign("owned","create","PIN");

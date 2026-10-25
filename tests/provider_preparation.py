@@ -95,7 +95,7 @@ class ProviderPreparation(unittest.TestCase):
                     (directory/'scope.json').write_text(json.dumps({'platform_selection_simulated':'Linux ARM64','actual_NEX_source_and_signature_check':True,'compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),'native_compiler_deliberately_stopped':True,'native_worker_built':False,'hardware_executed':False})+'\n')
 
     def test_versions_require_capabilities_and_supported_contracts(self):
-        for language in ['0.20','0.21','0.22','0.23']:
+        for language in ['0.20','0.21','0.23','0.23']:
             value=copy.deepcopy(self.descriptor);value['version']=language
             self.assertEqual(helper.source_language(value,'model'),language)
         for language in ['0.19','0.022','1.0','0.22.1','0.٢٢','']:

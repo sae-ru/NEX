@@ -1,13 +1,13 @@
-# Private023 static/shared whole-file write providers
+# Language023 static/shared whole-file write providers
 
-Public/default language022 and its retained parsers, execution ABI3 and provider
-mask31 are unchanged. Explicit internal023 programs can build separate native
-task writers through static archives or fixed startup-linked shared images.
-This does not publish ordinary023 CLI projects or complete captured delivery.
+Ordinary023 CLI projects build separate task writers through static archives or
+fixed startup-linked shared images. Retained022 source and ABI3/mask31 records
+keep their old meaning. Use explicit migration for old graph HEADs. Complete
+compiler/SDK/platform acceptance remains distinct from enabled implementation.
 
 ## Versioned code and image requirements
 
-Private023 descriptors use execution ABI4 with the same88-byte layout and
+Language023 descriptors use execution ABI4 with the same88-byte layout and
 40-byte ABI offset. Plain, profiled and logical-debug provider records use
 `nex.native-task-provider/5`, `/6` and `/7`. Their strict parser and
 `llm/native-write-task-provider.schema.json` preserve the old1/2/3/4 contracts.
@@ -54,8 +54,11 @@ foreign bits, malformed flags and mismatched component/root requirements.
 Logical-debug metadata construction/execution is separate from an actual DAP
 session; profile output is separate from a complete CLI profiler workflow.
 
-Public023 selection, broader genuine migration histories, project plan/capture/
-replay/package schemas, source-deleted retained delivery, matching full tests,
-fresh relevant sanitizers, installed SDK and current Linux/stand acceptance
-remain required. This private provider step does not finish streams/network/DB,
+`public_task_write_delivery` additionally checks ordinary023 CLI selection,
+versioned project plans and three static/shared/mixed projects, including
+source-deleted packages and reviewed capture replay. Three genuine022 SDK131
+revisions migrate without losing original rows/schema/IDs. Broader genuine
+migration histories, matching full tests, fresh relevant sanitizers, installed
+SDK and current Linux/stand acceptance remain required. This provider step does
+not finish streams/network/DB,
 owned NPU/models, native UI/mobile/platform delivery, Studio or quality measures.

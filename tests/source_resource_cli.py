@@ -15,15 +15,15 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__)
  parser.add_argument('--compiler',required=True,type=Path)
  parser.add_argument('action',choices=['check','reference','reference-timeout','native','web'])
- parser.add_argument('bundle',type=Path);parser.add_argument('root',type=Path);parser.add_argument('output');parser.add_argument('language',nargs='?',default='0.22')
- args=parser.parse_args();assert args.language=='0.22'
+ parser.add_argument('bundle',type=Path);parser.add_argument('root',type=Path);parser.add_argument('output');parser.add_argument('language',nargs='?',default='0.23')
+ args=parser.parse_args();assert args.language=='0.23'
  compiler=args.compiler.resolve();bundle=args.bundle.resolve()
  source=json.loads(bundle.read_text());assert source['schema']=='nex.sources/1'
  project=args.root.resolve()/'public-cli-projects'/bundle.stem;project.mkdir(parents=True,exist_ok=True)
  for name,text in source['files'].items():
   relative=Path(name);assert not relative.is_absolute() and '..' not in relative.parts
   path=project/relative;path.parent.mkdir(parents=True,exist_ok=True);assert not path.is_symlink();path.write_text(text)
- (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':source['entry']}))
+ (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':source['entry']}))
  logs=project/'cli-evidence';logs.mkdir(exist_ok=True);compiler_sha=hashlib.sha256(compiler.read_bytes()).hexdigest()
  def run(command):
   stem=logs/('%03d'%(1+len(list(logs.glob('*.command.json')))))
@@ -42,7 +42,7 @@ def main():
   if checked.returncode:return finish(checked)
   checked_value=json.loads(checked.stdout);graph_result=run([compiler,'graph','--json'])
   if graph_result.returncode:return finish(graph_result)
-  graph=json.loads(graph_result.stdout);assert graph['revision']==checked_value['revision'] and graph['language']=='0.22'
+  graph=json.loads(graph_result.stdout);assert graph['revision']==checked_value['revision'] and graph['language']=='0.23'
   signatures={};resources={}
   for node in graph['nodes']:
    foreign=node['definition'].get('foreign')
@@ -54,7 +54,7 @@ def main():
    signatures[export]=signature
    for item in signature['types']:
     if item['kind']=='resource':resources[item['name']]={'name':item['name'],'identity':item['identity']}
-  value={'ok':True,'language':'0.22','revision':graph['revision'],'resources':resources,'signatures':signatures,'public_cli_checked':True,'compiler_sha256':compiler_sha}
+  value={'ok':True,'language':'0.23','revision':graph['revision'],'resources':resources,'signatures':signatures,'public_cli_checked':True,'compiler_sha256':compiler_sha}
   if args.output!='-':Path(args.output).write_text(json.dumps(value)+'\n')
   return finish(checked,value)
  if args.action in ('reference','reference-timeout'):
@@ -63,7 +63,7 @@ def main():
   if args.action=='reference-timeout':command+=['--task-timeout-ms','1000','--task-workers','1']
   result=run(command)
   if result.returncode:return finish(result)
-  value=json.loads(result.stdout);value['output']=value['stdout'];value['language']='0.22';value['compiler_sha256']=compiler_sha
+  value=json.loads(result.stdout);value['output']=value['stdout'];value['language']='0.23';value['compiler_sha256']=compiler_sha
   if args.output!='-':value['external_capacity_after_scope']=value['foreign_resource_bytes_after_scope']
   return finish(result,value)
  if args.action=='native':

@@ -31,7 +31,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         (self.root/'mid/value.nex').write_text(fixture.MID)
         self.file.write_text(fixture.APP)
         (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -89,13 +89,14 @@ class SharedTaskProviders(harness.ToolchainCase):
         folder=Path(artifact['artifact']).parent
         value=json.loads((folder/'task-provider.json').read_text())
         self.assertEqual(set(value),{'schema','mode','descriptor_abi','descriptor_size','abi_offset','compiler_build',
-            'language','component','cohort','code_only','task_file_reads','definitions','exports','artifact_kind',
-            'owner_image','definition_owners','component_file_reads','image'})
-        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/2','shared-fixed'))
-        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000003,88,40))
-        self.assertEqual((value['language'],value['component']),('0.22',component))
+            'language','component','cohort','code_only','task_file_reads','task_file_writes','definitions','exports','artifact_kind',
+            'owner_image','definition_owners','component_file_reads','component_file_writes','image'})
+        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/5','shared-fixed'))
+        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000004,88,40))
+        self.assertEqual((value['language'],value['component']),('0.23',component))
         self.assertEqual(set(value['definitions']),set(value['definition_owners']))
         self.assertEqual(value['task_file_reads'],any(value['component_file_reads'].values()))
+        self.assertEqual(value['task_file_writes'],any(value['component_file_writes'].values()))
         if kind is None:kind='application' if component in ('app','other') else 'shared-image'
         self.assertEqual(value['artifact_kind'],kind)
         self.assertEqual(value['code_only'],kind!='application')
@@ -139,7 +140,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         by_name={row['name']:row['task_linkage'] for row in plan['components']}
         self.assertEqual([row['component'] for row in by_name['app']['load_closure']['images']],['leaf','mid','app'])
         for name,linkage in by_name.items():
-            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/2','shared-fixed',3))
+            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/5','shared-fixed',4))
             self.assertTrue(all(row['function'].startswith('provider_'+name+'::') for row in linkage['definitions']))
         self.assertEqual(self.cli('eval')['stdout'],fixture.OUTPUT)
         for mode in ('debug','release'):
@@ -208,7 +209,7 @@ class SharedTaskProviders(harness.ToolchainCase):
                 self.assertTrue(all(final['definition_owners'][name]==static for name in stage['definitions']))
                 if static=='leaf':
                     self.assertEqual(final['component_file_reads'],{'leaf':True,'mid':False})
-                    self.assertEqual(final['exports']['provider_leaf::read']['requirements'],31)
+                    self.assertEqual(final['exports']['provider_leaf::read']['requirements'],287)
                     self.assertEqual(final['exports']['provider_mid::answer']['requirements'],1)
                     root=json.loads(Path(artifacts['app']['metadata']).read_text())
                     self.assertFalse(root['task_application']['task_file_reads'])
@@ -364,7 +365,7 @@ server fn main()->unit!{task,fs,io}{
             profile_plan=self.project('plan',configuration='profile')
             self.assertFalse(profile_plan['external_tools_invoked'])
             for row in profile_plan['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/3')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/6')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
@@ -372,7 +373,7 @@ server fn main()->unit!{task,fs,io}{
         if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
             planned=self.project('plan','app','debug','--task-debug')
             for row in planned['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/4')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/7')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
@@ -406,7 +407,7 @@ server fn main()->unit!{task,fs,io}{
         self.assertTrue(accepted['ok']);receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
         native=next(row for row in saved['checks'] if row['id']=='build-native')
         captured=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/2',json.dumps(captured))
+        self.assertIn('nex.project-task-linkage/5',json.dumps(captured))
         spec=importlib.util.spec_from_file_location('shared_core_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in native['components']:

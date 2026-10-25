@@ -29,7 +29,7 @@ class Numbers(harness.ToolchainCase):
         self.source((harness.REPO/'examples/numbers.nex').read_text())
         output=self.backends();self.assertIn('2.5e0\n',output)
         self.assertIn('"E_RANGE"',output)
-        descriptor=self.cli('describe');self.assertEqual(descriptor['version'],'0.22')
+        descriptor=self.cli('describe');self.assertEqual(descriptor['version'],'0.23')
         self.assertIn('f64',descriptor['types'])
         self.assertEqual(descriptor['generic_constraints']['number'],['i64','f64'])
         self.assertEqual(set(descriptor['generic_constraints']['implications']['integer']),{'number','add','ordered','wire'})
@@ -108,8 +108,8 @@ class Numbers(harness.ToolchainCase):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.10.json').read_text())
         self.source(fixture['source']);self.historical_store('0.10');self.file.unlink()
         self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        migrated=self.cli('migrate');self.assertEqual(migrated['language'],'0.22')
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.10','0.22'})
+        migrated=self.cli('migrate');self.assertEqual(migrated['language'],'0.23')
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.10','0.23'})
         graph=self.cli('graph');self.assertEqual(graph['bundle'],fixture['graph']['bundle'])
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in fixture['graph']['nodes']})
         self.assertEqual({n['path']:n['id'] for n in self.cli('operations','--symbol','choose')['nodes']},
@@ -194,7 +194,7 @@ class NumericFrames(harness.ToolchainCase):
     def setUp(self):
         super().setUp();self.source(DEBUG_SOURCE);self.session=self.cli('debug')
         self.manifest=Path(self.session['manifest']);self.identity=json.loads(self.manifest.read_text())
-        self.frame={'schema':'nex.debug-frame/1','language':'0.22','revision':self.identity['revision'],
+        self.frame={'schema':'nex.debug-frame/1','language':'0.23','revision':self.identity['revision'],
             'build_key':self.identity['build_key'],'function':'numeric_debug::observe',
             'stop':{'process_id':'100','thread_id':'101','frame_id':0,'stop_id':'1'},
             'bindings':[{'name':'number','type':'f64','value':1.25},

@@ -9,7 +9,7 @@ compiler=a.compiler.resolve(strict=True);env={**os.environ,'NEX_RESOURCE_DIR':st
 report={'schema':'nex.model-contract/1','ok':False,'hardware_executed':False,'commands':[],'cases':[],'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'library_sha256':hashlib.sha256((a.resources/'lib/model.nex').read_bytes()).hexdigest()};start=time.monotonic()
 def save():report['seconds']=round(time.monotonic()-start,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def project(name,body):
- root=out/name;root.mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'main.nex'})+'\n');(root/'main.nex').write_text('module model_contract;import "std/model.nex" as m;import "std/compute.nex" as c;\n'+body);return root
+ root=out/name;root.mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'})+'\n');(root/'main.nex').write_text('module model_contract;import "std/model.nex" as m;import "std/compute.nex" as c;\n'+body);return root
 def cli(root,name,args,code=None):
  command=[str(compiler),*map(str,args),'--json'];r=subprocess.run(command,cwd=root,env=env,capture_output=True,text=True,timeout=300);(root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr);report['commands'].append({'case':root.name,'name':name,'command':command,'exit_code':r.returncode});save();d=json.loads(r.stdout)
  if code:assert r.returncode!=0 and d.get('code')==code,(name,d)

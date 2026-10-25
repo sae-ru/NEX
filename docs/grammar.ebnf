@@ -1,3 +1,6 @@
+(* Public language0.23 keeps this grammar and enables whole-file write
+   suspension in server task/fs functions. Retained022 parsing is unchanged;
+   explicit migration and versioned ABI4 providers/plans are required. *)
 (* Toolchain0.132.7 private023 provider/build write metadata adds no syntax;
    public022 and retained ABI3/mask31 remain unchanged. *)
 (* Toolchain0.132.6 shares explicit migration preflight and guards live graph

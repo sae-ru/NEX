@@ -1,3 +1,12 @@
+# Language023 task-provider builds
+
+Current task images use execution ABI4, provider records5/6/7 and explicit write
+requirements. Static plans use `nex.project-static-task-linkage/2`; fixed shared,
+profiled and logical-debug plans use `nex.project-task-linkage/5`, `/6` and `/7`.
+Their schemas are in `llm/project-write-task-linkage.schema.json`. Retained ABI3
+plans remain strict; no old tag acquires writes. Runtime authority is supplied
+by the operator, never by a manifest flag. See task-write-providers.md.
+
 # Checked project architecture and builds
 
 Checked native task projects support concrete [static archives](task-providers.md)

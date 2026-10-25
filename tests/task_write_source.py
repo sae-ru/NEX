@@ -8,7 +8,7 @@ if args.output:
 else:
     temporary=tempfile.TemporaryDirectory(prefix='nex task writes 🧠 ');root=Path(temporary.name)
 started=time.monotonic();report={'schema':'nex.private023-task-writes/1','ok':False,'state':'starting','cases':[],'commands':[],
-    'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.22','source_language':'0.23','public_source_writes':False,'full_objective_complete':False}
+    'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.23','source_language':'0.23','public_source_writes':True,'full_objective_complete':False}
 def save():
     report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def run(name,argv,env,expected=0):

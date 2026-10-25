@@ -21,7 +21,7 @@ def check_installed_source_resources(cli,run,last_command,root,resources,driver,
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
  feature=cli('describe','--field','source_resources')['value']
  pack=json.loads((resources/'llm/language-pack.json').read_text())
- _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']=='0.22','resource descriptor/pack differ')
+ _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']=='0.23','resource descriptor/pack differ')
  _require(cli('guide','--kind','source-resources')['text']==(resources/'docs/source-resources.md').read_text(),'resource guide differs')
  base='''module sdk_resource;
 server resource Session;
@@ -45,7 +45,7 @@ server fn main()->unit!{ffi,io}{BODY}
    evidence['request_resources']=check_installed_request_resources(run,root,resources,driver)
  for kind in ('C11','CPP20'):
   project=out/kind;project.mkdir();marker=project/'events'
-  _write(project/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
+  _write(project/'nex.json',{'schema':'nex.project/1','language':feature['language'],'entry':'main.nex'})
   source=project/'main.nex';source.write_text(base.replace('PIN','0'*64).replace('BODY',body))
   signatures={name:cli('ffi','main.nex','--symbol',name,cwd=project) for name in ('create','read')}
   pins={name:_sha(json.dumps(value,sort_keys=True,separators=(',',':')).encode()) for name,value in signatures.items()}
@@ -113,7 +113,7 @@ server fn main()->unit!{ffi,io}{BODY}
    candidate['files']={file:TOKENS.sub(repair,text) for file,text in candidate['files'].items()}
    path=project/'reviewed.graph.json';_write(path,{'schema':'nex.graph/2','language':'0.20','revision':data['head'],'source':candidate['files'][candidate['entry']],'bundle':candidate});args=[path]
   changed=cli('migrate',*args,'--expected-revision',data['head'],cwd=project)
-  _require(changed['origin_verified'] and changed['origin_language']=='0.20' and changed['language']=='0.22','origin or migration target differs')
+  _require(changed['origin_verified'] and changed['origin_language']=='0.20' and changed['language']==feature['language'],'origin or migration target differs')
   after=_state(database);_retained(before,after,changed['revision'])
   cli('migrate','--revision','HEAD',cwd=project)
   _require(_state(database)==after and (project/'nex.json').read_bytes()==original_manifest,'idempotent migration or physical manifest changed')
@@ -137,7 +137,7 @@ server fn main()->unit!{ffi,io}{BODY}
   _require(len(initial['tables'])==16 and len(initial['tables']['revisions'])==3,'genuine021 installed history incomplete')
   for row in data['revisions']:
    before=_state(database);changed=cli('migrate','--revision',row['revision'],'--expected-revision',head,cwd=project)
-   _require(changed['origin_verified'] and changed['origin_language']=='0.21' and changed['language']=='0.22','installed021 migration did not verify its retained origin')
+   _require(changed['origin_verified'] and changed['origin_language']=='0.21' and changed['language']==feature['language'],'installed021 migration did not verify its retained origin')
    head=changed['revision'];_retained(before,_state(database),head)
    reference=cli('eval','--revision',head,cwd=project);native=cli('run','--revision',head,'--profile','release',cwd=project)
    _require(native['exit_code']==0 and native['stdout']==reference['stdout'],'installed migrated native/reference differ')

@@ -267,10 +267,24 @@ def task_package_inputs(request, binary, owned_inputs):
                 identity = provider_identities[image]
             else:
                 shared = provider.get('mode') == 'shared-fixed'
+                write_provider = provider.get('schema') in ('nex.native-task-provider/5', 'nex.native-task-provider/6')
                 expected = provider_fields if shared else provider_fields - {'artifact_kind', 'owner_image', 'definition_owners', 'component_file_reads', 'image'}
                 if profile:
                     expected = expected | {'profiling'}
-                if (set(provider) != expected or provider.get('schema') != ('nex.native-task-provider/3' if profile else 'nex.native-task-provider/2') or
+                if write_provider:
+                    expected = expected | {'task_file_writes'} | ({'component_file_writes'} if shared else set())
+                    if (provider.get('descriptor_abi') != 0x4e45585400000004 or provider.get('language') != '0.23' or
+                            type(provider.get('task_file_writes')) is not bool):
+                        raise ValueError('invalid raw ABI4 task write contract')
+                    if shared:
+                        flags = provider.get('component_file_writes')
+                        reads = provider.get('component_file_reads')
+                        if (not isinstance(flags, dict) or not isinstance(reads, dict) or flags.keys() != reads.keys() or
+                                any(type(value) is not bool for value in flags.values()) or
+                                any(flags.values()) != provider['task_file_writes']):
+                            raise ValueError('invalid raw ABI4 component write requirements')
+                expected_schema = ('nex.native-task-provider/6' if profile else 'nex.native-task-provider/5') if write_provider else ('nex.native-task-provider/3' if profile else 'nex.native-task-provider/2')
+                if (set(provider) != expected or provider.get('schema') != expected_schema or
                         (not shared and (not profile or provider.get('mode') != 'static' or not application)) or provider.get('component') != row['component'] or
                         (shared and (provider.get('owner_image') != row['component'] or provider.get('artifact_kind') != ('application' if application else 'shared-image')))):
                     raise ValueError('invalid raw task provider fields/mode')

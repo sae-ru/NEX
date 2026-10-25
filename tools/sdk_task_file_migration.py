@@ -67,8 +67,8 @@ def check_installed_task_migration(cli, root, resources):
     out = root/'language-migration019-020'
     out.mkdir(exist_ok=False)
     fixtures = resources/'examples/task-migration'
-    _require(cli('describe')['version'] == '0.22', 'migration gate requires language020 SDK')
-    evidence = {'language':'0.22', 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
+    current=cli('describe')['version'];_require(current=='0.23', 'migration gate requires the matching language023 SDK')
+    evidence = {'language':current, 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
 
     def restore(name, label=None):
         metadata_path = fixtures/('language-0.19-sdk115-' + name + '.json')
@@ -122,14 +122,14 @@ def check_installed_task_migration(cli, root, resources):
         physical_unchanged(project, physical)
         migrated = cli('migrate', '--expected-revision', metadata['head'], cwd=project)
         current = migrated['revision']
-        _require(migrated['language'] == '0.22' and migrated['origin_language'] == '0.19' and
+        _require(migrated['language'] == current and migrated['origin_language'] == '0.19' and
                  migrated['origin_verified'] and not migrated['materialized'] and current != metadata['head'], 'migration did not verify genuine019 identity')
         after = _state(database); _retained(before, after, current)
         namespace = dict(before['tables']['metadata'])['identity_namespace']
         _require(dict(after['tables']['metadata'])['identity_namespace'] == namespace, 'migration changed namespace')
         graph = cli('graph', '--revision', current, cwd=project)
         for envelope in (graph, graph['operation_graph'], graph['declaration_graph']):
-            _require(envelope['language'] == '0.22' and envelope['revision'] == current, 'new graph envelope language/revision differs')
+            _require(envelope['language'] == current and envelope['revision'] == current, 'new graph envelope language/revision differs')
         _require(graph['bundle'] == selected['bundle'], '019-to020 migration changed source without review')
         _require(cli('eval', '--revision', current, cwd=project)['stdout'] == '42\n', 'migrated selected source changed observation')
         if name == 'tasks':
@@ -144,11 +144,11 @@ def check_installed_task_migration(cli, root, resources):
         cli('export', '--revision', metadata['head'], '--directory', old_export, cwd=project)
         cli('export', '--revision', current, '--directory', new_export, cwd=project)
         _require(json.loads((old_export/'nex.json').read_text())['language'] == '0.19', 'old source export was retagged')
-        _require(json.loads((new_export/'nex.json').read_text())['language'] == '0.22' and
-                 json.loads((new_export/'nex.lock.json').read_text())['language'] == '0.22', 'new export/lock language differs')
+        _require(json.loads((new_export/'nex.json').read_text())['language'] == current and
+                 json.loads((new_export/'nex.lock.json').read_text())['language'] == current, 'new export/lock language differs')
         _require(cli('check', cwd=new_export)['revision'] == current, 'new exported source lost revision')
         changes = cli('changes', cwd=project)
-        _require(changes['changes'][0]['language'] == '0.22' and changes['changes'][0]['previous_revision'] == metadata['head'], 'migration journal language/origin differs')
+        _require(changes['changes'][0]['language'] == current and changes['changes'][0]['previous_revision'] == metadata['head'], 'migration journal language/origin differs')
         _require(_state(database) == after, 'selected archive reads changed history')
         physical_unchanged(project, physical)
         evidence['stores'][name] = {'old_head':metadata['head'], 'revision':current, 'namespace':namespace,
@@ -157,7 +157,7 @@ def check_installed_task_migration(cli, root, resources):
             'implicit_HEAD_language_change_rejected':True,
             'native_task_archive':name == 'tasks'}
 
-    for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', 'unknown'):
+    for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', '0.23', 'unknown'):
         project, database, metadata, _, _, _ = restore('history', 'corrupt-language-' + language)
         with closing(sqlite3.connect(database)) as db:
             db.execute('UPDATE revisions SET language=? WHERE hash=?', (language, metadata['head'])); db.commit()
@@ -176,7 +176,7 @@ def check_installed_task_migration(cli, root, resources):
         ('corrupt', {**graph, 'revision':'0'*64}, 'E_REVISION'),
         ('target', graph, 'E_EFFECT')):
         destination = out/('fresh-' + name); destination.mkdir()
-        _write(destination/'nex.json', {'schema':'nex.project/1','language':'0.22','entry':'missing.nex'})
+        _write(destination/'nex.json', {'schema':'nex.project/1','language':current,'entry':'missing.nex'})
         path = out/(name+'.graph.json'); _write(path, candidate)
         rejected = cli('migrate', path, cwd=destination, expected_success=False)
         _require(rejected['code'] == code and not (destination/'.nex').exists(), 'failed migration created a graph destination')
@@ -186,10 +186,10 @@ def check_installed_task_migration(cli, root, resources):
     repaired['source'] = text; repaired['bundle']['files']['main.nex'] = text
     path = out/'reviewed-helper.graph.json'; _write(path, repaired)
     migrated = cli('migrate', path, cwd=project)
-    _require(migrated['origin_verified'] and migrated['origin_language'] == '0.19' and migrated['language'] == '0.22', 'reviewed repair lost verified retained origin')
+    _require(migrated['origin_verified'] and migrated['origin_language'] == '0.19' and migrated['language'] == current, 'reviewed repair lost verified retained origin')
     _retained(before, _state(database), migrated['revision']); physical_unchanged(project, physical)
     evidence.update(ok=True, genuine019=True, history_preserved=True,
-                    corrupt_stored_languages_rejected=5, fresh_preflight_failures_without_store=3,
+                    corrupt_stored_languages_rejected=8, fresh_preflight_failures_without_store=3,
                     reviewed_helper_effect_repair=True, reserved_name_repair=False,
                     historical_source_language_relabelled=False)
     evidence['head_language_guard'] = {'schema':'nex.head-language-guard/1',

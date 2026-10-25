@@ -34,6 +34,15 @@ ACCEPTANCE_PHASES = (
     'authenticated-storage', 'browser', 'project-build')
 
 
+ACCEPTANCE_PHASES_023 = ACCEPTANCE_PHASES[:ACCEPTANCE_PHASES.index('structured-task-file-reads')+1] + ('structured-task-file-writes',) + ACCEPTANCE_PHASES[ACCEPTANCE_PHASES.index('structured-task-file-reads')+1:]
+
+
+def acceptance_phases(version):
+    parts=version.split('.')
+    current=len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,133,0)
+    return ACCEPTANCE_PHASES_023 if current else ACCEPTANCE_PHASES
+
+
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
@@ -96,7 +105,7 @@ def task_debug_namespace(directory, completion_inputs, compiler_build, build_key
             inputs[-len(tail):]==tail and len(inputs)==len(set(inputs)),
             'provider debug completion7 order differs')
     provider=json.loads(task_sdk_regular(directory,'task-provider.json').read_text())
-    require(provider.get('schema')=='nex.native-task-provider/4' and metadata.get('task_provider')==provider and
+    require(provider.get('schema')==('nex.native-task-provider/7' if provider.get('language')=='0.23' else 'nex.native-task-provider/4') and metadata.get('task_provider')==provider and
             provider.get('debugging',{}).get('schema')=='nex.native-task-debug/1',
             'provider debug completed record differs')
     catalog=json.loads(task_sdk_regular(directory,'task-debug-catalog.json').read_text())
@@ -298,7 +307,7 @@ def retained_task_profile_build(receipt_root, check, artifact, component, compil
         independent.append({'path':row['retained'],'sha256':hashlib.sha256(copied).hexdigest(),'bytes':len(copied)})
     require(re.fullmatch(b'[0-9a-f]{64}\n',mapped['complete'][1]),'profile completion digest is malformed')
     provider=json.loads(mapped['task-provider.json'][1]);catalog=json.loads(mapped['task-profile-catalog.json'][1])
-    require(provider.get('schema')=='nex.native-task-provider/3' and provider.get('component')==name and
+    require(provider.get('schema')==('nex.native-task-provider/6' if provider.get('language')=='0.23' else 'nex.native-task-provider/3') and provider.get('component')==name and
             provider==metadata.get('task_provider') and metadata.get('task_provider_hash')==mapped['task-provider.json'][0]['hash'] and
             catalog.get('schema')=='nex.task-profile-catalog/1' and catalog.get('registry_abi')==1 and
             catalog.get('mode')==provider.get('mode') and
@@ -398,7 +407,7 @@ def package_task_profile_provenance(package_root, package_meta, project_root):
             owner=metadata['task_provider'] if application else None
             if kind.endswith('provider'):
                 owner=json.loads(raw)
-                require(owner.get('schema')=='nex.native-task-provider/3' and owner.get('component')==row['component'] and
+                require(owner.get('schema')==('nex.native-task-provider/6' if owner.get('language')=='0.23' else 'nex.native-task-provider/3') and owner.get('component')==row['component'] and
                         owner.get('profiling',{}).get('schema')=='nex.native-task-profile/1',
                         'packaged profile provider extension differs')
                 if application:
@@ -492,7 +501,7 @@ def package_task_provenance(package_root,package_meta,project_root):
                 'packaged raw provenance differs from package inventory')
         if kind in ('application_provider','owned_provider'):
             provider=json.loads(raw);image=provider.get('image',{})
-            require(provider.get('schema')=='nex.native-task-provider/2' and provider.get('mode')=='shared-fixed' and
+            require(provider.get('schema')==('nex.native-task-provider/5' if provider.get('language')=='0.23' else 'nex.native-task-provider/2') and provider.get('mode')=='shared-fixed' and
                     provider.get('component')==row['component'] and provider.get('owner_image')==row['component'] and
                     image.get('key')==row['input_image_key'] and image.get('sha256')==row['input_image_sha256'] and
                     image.get('uuid')==row['input_uuid'] and isinstance(row['output_image'],str),
@@ -610,7 +619,7 @@ def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
     phases = report.get('phases', [])
-    require(tuple(phase.get('name') for phase in phases) == ACCEPTANCE_PHASES and
+    require(tuple(phase.get('name') for phase in phases) == acceptance_phases(report.get('doctor',{}).get('version') or report.get('version','0.0.0')) and
             all(phase.get('status') == 'passed' for phase in phases),
             'SDK acceptance differs from the complete workflow phase contract')
     commands = report.get('commands', [])
@@ -622,6 +631,24 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,0):
+        writes=report.get('evidence',{}).get('structured_task_file_writes',{})
+        require(isinstance(writes,dict) and writes.get('schema')=='nex.public-task-write-delivery/1' and
+                writes.get('language')==report.get('language')=='0.23' and writes.get('compiler_sha256')==report.get('compiler_sha256') and
+                all(writes.get(key) is True for key in ('ok','all16_tables_schema_rows_ids_preserved','native_reference',
+                    'static_shared_binary_edges','mixed_static_shared','explicit_write_grant_denied','source_deleted_package','source_deleted_replay','browser_exclusion')) and
+                type(writes.get('genuine022_migrations')) is int and writes['genuine022_migrations']==3 and
+                isinstance(writes.get('migrations'),list) and len(writes['migrations'])==3 and
+                isinstance(writes.get('projects'),list) and len(writes['projects'])==3 and
+                {row.get('mode') for row in writes['projects'] if isinstance(row,dict)}=={'static','shared','mixed'} and
+                all(isinstance(row,dict) and all(row.get(key) is True for key in
+                    ('actual_binary_edges','native_reference','write_grant_denied','source_deleted_package','source_deleted_replay')) for row in writes['projects']) and
+                all(isinstance(row,dict) and all(row.get(key) is True for key in
+                    ('origin_verified','all16_tables_schema_rows_ids_preserved','physical_projection_unchanged','implicit_upgrade_rejected','native_reference')) and
+                    all(isinstance(row.get(key),str) and re.fullmatch('[0-9a-f]{64}',row[key]) for key in ('origin_revision','revision')) and
+                    row['origin_revision']!=row['revision'] for row in writes['migrations']) and
+                len({row['origin_revision'] for row in writes['migrations']})==3,
+                'SDK acceptance lacks actual public023 task file-write delivery evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,132,6):
         migration=report.get('evidence',{}).get('task_file_migration',{})
         guard=migration.get('head_language_guard',{}) if isinstance(migration,dict) else {}
@@ -668,7 +695,7 @@ def validate_completed_report(report):
                 proof.get('actual_producers')==['C11','CPP20'] and proof.get('actual_GPU_NPU_resources') is False,
                 'SDK acceptance lacks actual dependent resource source report')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,130,0):
-        require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')=='0.22',
+        require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')==('0.23' if tuple(map(int,version))>=(0,133,0) else '0.22'),
                 'SDK acceptance source task/FFI version identities differ')
         resources=report.get('evidence',{}).get('source_resources',{})
         require(isinstance(resources,dict),'SDK acceptance lacks installed public source task/FFI resource transport evidence')
@@ -950,13 +977,13 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     # Source commands without a deeper manifest must remain inside this owned
     # evidence project, even when --output is below another NEX workspace.
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'acceptance-scope.nex'})+'\n')
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
     logs = root / 'logs'
     logs.mkdir()
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
     report = {'schema': 'nex.sdk-acceptance/1', 'ok': False, 'sdk': str(sdk),
-              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES),
+              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES_023),
               'phases': [], 'commands': [], 'evidence': {}}
     started = time.monotonic()
 
@@ -1845,12 +1872,20 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
             'launcher_lowered_limits':True,'launcher_raise_rejected':True,'lowered_budget_enforced':True,
             'identical_step_thresholds':False}
 
+    def structured_task_file_writes():
+        destination=root/'public-task-write-delivery'
+        run([sys.executable,'-B',resources/'tests/task_write_delivery.py','--compiler',compiler,'--resources',resources,'--output',destination],timeout=2400)
+        proof=json.loads((destination/'report.json').read_text())
+        require(proof.get('ok') is True and proof.get('compiler_sha256')==report['compiler_sha256'],
+                'installed public file-write workflow differs from actual compiler')
+        report['evidence']['structured_task_file_writes']=proof
+
     def structured_task_file_reads():
         from sdk_task_file_migration import check_installed_task_migration
         descriptor = state['descriptor']['task_file_reads']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_file_reads'] and descriptor['source_support'] and
-                descriptor['language'] == report['language'] == '0.22' and not descriptor['typescript'],
+                descriptor['language'] == report['language'] == '0.23' and not descriptor['typescript'],
                 'installed task file-read descriptor/pack differs')
         report['evidence']['task_file_migration'] = check_installed_task_migration(cli, root, resources)
         directory = root/'structured-task-file-project'
@@ -1947,7 +1982,7 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
         descriptor = state['descriptor']['task_profiling']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_profiling'] and descriptor['source_support'] and
-                descriptor['cli_language'] == report['language'] == '0.22',
+                descriptor['cli_language'] == report['language'] == '0.23',
                 'installed task profiler descriptor/pack differs')
         limits = {'steps':2000000,'timeout_ms':10000,'workers':2}
         controls = ['--task-steps','2000000','--task-timeout-ms','10000','--task-workers','2']
@@ -1972,7 +2007,7 @@ fn main()->unit!{io,task}{
 
         def measured(profile, effective=limits):
             require(profile['schema']=='nex.profile/2' and profile['stdout']=='42\n' and
-                    profile['language']=='0.22' and profile['build']['language']=='0.22' and
+                    profile['language']=='0.23' and profile['build']['language']=='0.23' and
                     not profile['tracy'], 'installed task profile identity/output differs')
             require(all(profile['completeness'][key] for key in ('aggregates','memory','cpu','elapsed','lifetime')),
                     'installed task profile lost required measurements')
@@ -2061,7 +2096,7 @@ fn main()->unit!{io,task}{
         report['evidence']['structured_task_profile'] = {'native_reference':True,
             'exact_source_calls':True,'managed_cleanup':True,'event_only_truncation':True,
             'archived_source_deleted':True,'standalone_without_resources':True,
-            'source_only_project':True,'source_deleted_replay':True,'cli_language':'0.22',
+            'source_only_project':True,'source_deleted_replay':True,'cli_language':'0.23',
             'revision':revision,'profile':str(public_profile),'raw_profile':str(raw_path),
             'receipt':str(receipt),'replay':replay['output'],'configured_task_limits':limits,
             'lowered_workers':1,'memory_scope':'managed shallow handles/objects; not total heap/RAM'}
@@ -2072,13 +2107,13 @@ fn main()->unit!{io,task}{
         identity = cli('describe','--kind','index')
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(feature == pack['task_providers'] and feature['public_enabled'] and feature['static_linkage'] and
-                feature['source_required'] and feature['execution_task_abi']==3 and
+                feature['source_required'] and feature['execution_task_abi']==4 and
                 feature['descriptor_bytes']==88 and not feature['dynamic_linkage'] and
                 not feature['profiling'] and not feature['logical_debugging'],
                 'installed static task provider capability differs')
         directory = root/'static-task-providers';directory.mkdir()
         for name in ('leaf','mid','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         limits = {'steps':1000000,'timeout_ms':10000,'workers':2}
         description = {'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{mode:{'profile':mode,'task_limits':limits} for mode in ('debug','release','profile')},
@@ -2098,7 +2133,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_rea
         plan = cli('project','--kind','plan','--component','app',cwd=directory)
         require(not plan['external_tools_invoked'] and not (directory/'.nex').exists(),
                 'static task provider plan invoked tools or opened state')
-        require(all(item['task_linkage']['execution_abi']==3 for item in plan['components']),
+        require(all(item['task_linkage']['execution_abi']==4 for item in plan['components']),
                 'static task source ownership plan is absent')
         require(cli('eval',cwd=directory)['stdout']=='42\n','independent task provider source observation differs')
         built = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
@@ -2109,8 +2144,8 @@ pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_rea
             archive = Path(artifacts[name]['artifact'])
             require(archive.read_bytes().startswith(b'!<arch>\n'),'provider is not an actual static archive')
             record = json.loads((archive.parent/'task-provider.json').read_text());records[name]=record
-            require(record['schema']=='nex.native-task-provider/1' and record['code_only'] and
-                    record['descriptor_abi']==0x4e45585400000003 and record['descriptor_size']==88 and
+            require(record['schema']=='nex.native-task-provider/5' and record['code_only'] and
+                    record['descriptor_abi']==0x4e45585400000004 and record['descriptor_size']==88 and
                     record['abi_offset']==40 and record['component']==name,
                     'provider sidecar identity/layout differs')
             archive_hashes[name]=hashlib.sha256(archive.read_bytes()).hexdigest()
@@ -2248,7 +2283,7 @@ server fn main()->unit!{task,fs,io}{
                 compiled = json.loads(mapped['compilation.json'][1])
                 require(own==metadata['task_provider'] and own['component']==component['component'] and
                         own['compiler_build']==identity['compiler_build'] and own['cohort']==abi['abi'] and
-                        own['cohort']==records['leaf']['cohort'] and own['language']=='0.22' and
+                        own['cohort']==records['leaf']['cohort'] and own['language']=='0.23' and
                         own['code_only']==(executable_name=='libnex.a') and
                         metadata['task_provider_hash']==mapped['task-provider.json'][0]['hash'] and
                         compiled['static_libraries']==abi['static_libraries'] and
@@ -2290,7 +2325,7 @@ server fn main()->unit!{task,fs,io}{
             'descriptor','actual_static_archives','descriptor_accessors','consumer_ownership','native_reference',
             'unused_read_excluded','root_file_grant','root_limits','warm_cache','retained_completion',
             'source_deleted_replay','standalone_without_resources','source_deleted_package')}
-        report['evidence']['static_task_providers'].update(execution_task_abi=3,descriptor_bytes=88,
+        report['evidence']['static_task_providers'].update(execution_task_abi=4,descriptor_bytes=88,
             original_archives_sha256=archive_hashes,records=records,receipt=str(receipt),replay=replay['output'],retained=retained,
             retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
             retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation')
@@ -2301,13 +2336,13 @@ server fn main()->unit!{task,fs,io}{
         identity=cli('describe','--kind','index')
         pack=json.loads((resources/'llm/language-pack.json').read_text())
         require(feature==pack['task_shared_providers'] and feature['public_enabled'] and
-                feature['source_required'] and feature['execution_task_abi']==3 and feature['descriptor_bytes']==88 and
+                feature['source_required'] and feature['execution_task_abi']==4 and feature['descriptor_bytes']==88 and
                 feature['completion_schema']=='nex.native-completion/5' and not feature['runtime_load_unload'] and
                 not feature['profiling'] and not feature['logical_debugging'],
                 'installed shared task provider descriptor differs')
         directory=root/'shared-task-providers';directory.mkdir()
         for name in ('leaf','mid','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         description={'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{'release':{'profile':'release','task_limits':{'steps':1000000,'timeout_ms':10000,'workers':2}}},
             'components':{
@@ -2327,7 +2362,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);
         require(not plan['external_tools_invoked'] and not (directory/'.nex').exists(),
                 'shared task provider planning invoked tools/state')
         source_plan={row['name']:row['task_linkage'] for row in plan['components']}
-        require(all(row['schema']=='nex.project-task-linkage/2' and row['mode']=='shared-fixed' for row in source_plan.values()) and
+        require(all(row['schema']=='nex.project-task-linkage/5' and row['mode']=='shared-fixed' for row in source_plan.values()) and
                 [image['component'] for image in source_plan['app']['load_closure']['images']]==['leaf','mid','app'],
                 'shared task source/final ownership plan differs')
         require(cli('eval',cwd=directory)['stdout']=='42\n','shared provider independent source result differs')
@@ -2337,8 +2372,8 @@ pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);
         for name in ('leaf','mid','app'):
             artifact=Path(artifacts[name]['artifact']);record=json.loads((artifact.parent/'task-provider.json').read_text())
             records[name]=record;image_sha256[name]=hashlib.sha256(artifact.read_bytes()).hexdigest()
-            require(record['schema']=='nex.native-task-provider/2' and record['mode']=='shared-fixed' and
-                    record['descriptor_abi']==0x4e45585400000003 and record['descriptor_size']==88 and
+            require(record['schema']=='nex.native-task-provider/5' and record['mode']=='shared-fixed' and
+                    record['descriptor_abi']==0x4e45585400000004 and record['descriptor_size']==88 and
                     record['abi_offset']==40 and record['component']==record['owner_image']==name and
                     record['artifact_kind']==('application' if name=='app' else 'shared-image') and
                     record['image']['sha256']==image_sha256[name] and record['image']['key']==artifacts[name]['build_key'],
@@ -2498,7 +2533,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
                 abi=json.loads(mapped['library-abi.json'][1]);links=json.loads(mapped['image-inputs.json'][1])
                 require(own==metadata['task_provider'] and own['component']==component['component'] and
                         own['compiler_build']==identity['compiler_build'] and own['cohort']==abi['abi'] and
-                        own['schema']=='nex.native-task-provider/2' and own['mode']=='shared-fixed' and
+                        own['schema']=='nex.native-task-provider/5' and own['mode']=='shared-fixed' and
                         metadata['task_provider_hash']==mapped['task-provider.json'][0]['hash'] and
                         own['image']['sha256']==hashlib.sha256(mapped[executable][1]).hexdigest() and
                         links['schema']=='nex.native-image-inputs/2','retained shared sidecar/image pins differ')
@@ -2550,7 +2585,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             'one_runtime','native_reference','unused_read_excluded','root_file_grant','root_limits','warm_cache',
             'retained_completion5','raw_package_provenance','source_deleted_replay',
             'copied_closure_without_resources','source_deleted_package')}
-        report['evidence']['shared_task_providers'].update(execution_task_abi=3,descriptor_bytes=88,records=records,
+        report['evidence']['shared_task_providers'].update(execution_task_abi=4,descriptor_bytes=88,records=records,
             original_images_sha256=image_sha256,loader_logs=loader_logs,receipt=str(receipt),replay=replay['output'],
             captured_artifacts=captured_artifacts,package_provenance=package_provenance,
             retained=retained,retained_file_sha256=retained_sha256,retained_bytes=total_bytes,
@@ -2562,14 +2597,14 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
         feature=cli('describe')['task_provider_debugging'];identity=cli('describe','--kind','index')
         pack=json.loads((resources/'llm/language-pack.json').read_text())
         require(feature==pack['task_provider_debugging'] and feature['public_enabled'] is True and
-                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/4' and
+                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/7' and
                 feature['catalog_schema']=='nex.task-debug-catalog/1' and feature['catalog_abi']==2 and
                 feature['registry_abi']==1 and feature['maximum_total_registries_including_root']==128 and
                 not feature['combined_debug_profile'] and not feature['runtime_load_unload'],
                 'installed task provider debugger descriptor differs')
         directory=root/'task-provider-debug';directory.mkdir()
         for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         (directory/'leaf/value.nex').write_text('''module installed_debug_leaf;
 pub fn work(input:i64)->i64!{task}{
  let value:i64=input;
@@ -2639,7 +2674,7 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         command_path=task_sdk_regular(receipt.parent,check['receipt'],4*1024*1024)
         command=json.loads(command_path.read_text())
         linkages={item['name']:item['task_linkage'] for item in command['response']['plan']['components']}
-        require(all(row['schema']=='nex.project-task-linkage/4' for row in linkages.values()),
+        require(all(row['schema']=='nex.project-task-linkage/7' for row in linkages.values()),
                 'captured provider debug source plan lacks instrumentation linkage')
         artifacts=captured_task_build_artifacts(command,linkages)
         retention=[retained_task_debug_build(receipt.parent,check,artifacts[item['component']],item,
@@ -2729,7 +2764,7 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         evidence.update({name:bool(args.live) for name in ('provider_locals','component_pure_watch','next_in_out','stale_references',
             'retained_live_debug','package_live_debug','replay_live_debug')})
         evidence.update(receipt=str(receipt),replay=str(replay_path),retained=retention,package=package_proof,live=live,
-            execution_task_abi=3,catalog_abi=2,source_language='0.22',inferior_function_calls=False)
+            execution_task_abi=4,catalog_abi=2,source_language='0.23',inferior_function_calls=False)
         report['evidence']['task_provider_debugging']=evidence
 
     def task_provider_profiles():
@@ -2738,13 +2773,13 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         feature=cli('describe')['task_provider_profiling'];identity=cli('describe','--kind','index')
         pack=json.loads((resources/'llm/language-pack.json').read_text())
         require(feature==pack['task_provider_profiling'] and feature['public_enabled'] is True and
-                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/3' and
+                feature['source_support'] is True and feature['record_schema']=='nex.native-task-provider/6' and
                 feature['registry_abi']==1 and feature['registry_bytes']==32 and
-                feature['execution_task_abi']==3 and not feature['runtime_load_unload'] and not feature['tracy'],
+                feature['execution_task_abi']==4 and not feature['runtime_load_unload'] and not feature['tracy'],
                 'installed task provider profiling descriptor differs')
         directory=root/'task-provider-profile';directory.mkdir()
         for name in ('leaf','mid','unused','app'):(directory/name).mkdir()
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         limits={'steps':1000000,'timeout_ms':10000,'workers':2}
         description={'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile','task_limits':limits}},'components':{
@@ -2769,7 +2804,7 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
         require(plan['external_tools_invoked'] is False and not (directory/'.nex').exists(),
                 'profiled provider readonly planning invoked tools/state')
         source_plan={row['name']:row['task_linkage'] for row in plan['components']}
-        require(set(source_plan)=={'leaf','mid','unused','app'} and all(value['schema']=='nex.project-task-linkage/3' and
+        require(set(source_plan)=={'leaf','mid','unused','app'} and all(value['schema']=='nex.project-task-linkage/6' and
                 value['profiling']['schema']=='nex.project-task-profile/1' and value['profiling']['registry_abi']==1
                 for value in source_plan.values()),'profiled source ownership plan differs')
         require(cli('eval',cwd=directory)['stdout']==output,'profile provider independent source oracle differs')
@@ -4743,6 +4778,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('binary-values', binary_values), ('compute-contract', compute_contract), ('model-contract', model_contract), ('native-indexed-pages', native_pages), ('core-reports', core_reports), ('wasm-compute', wasm_compute),
                 ('foreign-boundary', foreign_boundary), ('source-resources', source_resources), ('text-files', text_files), ('profile', measured),
                 ('structured-task-file-reads', structured_task_file_reads),
+                ('structured-task-file-writes', structured_task_file_writes),
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),
                 ('static-task-providers', static_task_providers),
@@ -4751,7 +4787,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
-        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES,
+        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES_023,
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:
             phase(name, action)

@@ -661,7 +661,7 @@ struct Runner {
         TaskProfileSourceUnion profileSources;
         for(const auto &value:*object(p.projects.at(program)).getObject("expectations")->getArray(text(c,"configuration"))){
           const auto &component=object(value);auto linkage=component.getObject("task_linkage");
-          if(!linkage||linkage->getString("schema")!="nex.project-task-linkage/3")continue;
+          if(!linkage||(linkage->getString("schema")!="nex.project-task-linkage/3"&&linkage->getString("schema")!="nex.project-task-linkage/6"))continue;
           TaskProfileComponentSource checked;checked.program=loadProgram((workspace(program)/text(component,"entry")).string(),workspace(program).string());
           for(const auto &definition:*linkage->getArray("definitions")){const auto &row=object(definition);checked.definitions.emplace(text(row,"function"),text(row,"contract"));}
           profileSources.emplace(text(component,"name"),std::move(checked));

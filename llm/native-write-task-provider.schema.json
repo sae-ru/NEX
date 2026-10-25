@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.local/schemas/native-write-task-provider-1.json",
-  "title": "Private023 ABI4 native task providers; legacy ABI3 schemas remain unchanged",
+  "title": "Language023 ABI4 native task providers; legacy ABI3 schemas remain unchanged",
   "oneOf": [
     {
       "type": "object",

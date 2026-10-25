@@ -1,15 +1,27 @@
-Private023 write providers use separately versioned ABI4 records5/6/7 and mask799.
-Query task_file_writes_prototype.private_static_shared_providers and read its
-provider guide. Public_enabled:false still forbids inventing ordinary023 CLI
-projects. Retained ABI3 records, source effect checks and root grants stay intact.
+Query `nex describe --json` before coding. Current development language023
+supports whole-file writes in server task/fs functions when task_file_writes
+reports source_support/public_enabled true. Read its guide. Use the actual
+compiler version, check every patch and compare observable native/reference
+behavior. Matching SDK/platform acceptance is separate from enabled source.
 
-For existing graphs, preserve HEAD language and use explicit nex migrate.
-Normal check/load synchronization does not authorize changing a stored language.
-Private023 history verification does not enable public023 or write providers.
+Use file_write_text(str,str)->result<bool> or file_write_bytes(str,bytes)->result<bool>.
+bytes(list<i64>) itself returns result<bytes>; propagate or unwrap it explicitly.
+Declare task and fs in every resumable helper/caller. Effects never grant an OS
+root: runtime configuration must supply an explicit writable capability.
+Captures retain exact immutable bytes and original grants. Cancellation can
+suppress a result after a complete rename; no rollback is promised.
 
-Private023 source task writes are not ordinary CLI language022 support. Query
-`task_file_writes_prototype.public_enabled`; when false, keep source projects on
-the actual public version and do not invent migration or write-provider support.
+For static/shared task libraries use ABI4 records5/6/7 and the checked project
+planner with explicit write requirements. Keep signatures resource-free and one
+root runtime/grant. Retained ABI3 records/mask31 and old022 source interpretation
+remain strict. Public023 does not enable provider FFI exports, authority/callable
+transport, streams, network/DB tasks or task HTTP handlers.
+
+Preserve graph HEAD language. Use explicit nex migrate for older sources;
+ordinary check/load cannot change a stored language. Keep original revisions,
+rows/schema/IDs and old SDKs. Export/materialize the reviewed current revision
+explicitly; changing nex.json alone is insufficient. Old-language captured
+runs require the matching SDK or a new reviewed capture after migration.
 
 Owned OpenCL protocol faults invalidate the Session and wait confirmed worker
 cleanup. Handle E_DEVICE_PROTOCOL/E_DEVICE_LOST as errors; CPU fallback must not
@@ -30,7 +42,7 @@ change snapshot permissions or launch an unpinned substitute. Child protocol,
 physical device fences, cancellation and original resource grants still apply.
 
 Query the actual compiler with nex describe --json before writing code. Current
-language022 enables ordinary CLI task/ffi when task_foreign_prototype reports
+language023 enables ordinary CLI task/ffi when task_foreign_prototype reports
 source_support/public_enabled true. The descriptor key retains its historical
 name. Server task/ffi callbacks may also declare fs when their caller has every
 effect. Ordinary resumable helpers declare task and ffi; extern leaves keep their
@@ -45,8 +57,8 @@ separate genuine owner table, never fabricated indices, source frames, borrowed
 payloads or C tokens in the generic byte completion. Cleanup and active C calls
 must physically settle before publication. Read docs/task-foreign-prototype.md.
 
-Fixed static/shared task providers keep separate resource-free signatures and
-ABI3 mask31. Source support does not enable FFI provider exports, wire/browser/
+Current static/shared task providers keep resource-free signatures with ABI4
+mask799; retained ABI3 providers keep mask31. Source support does not enable FFI provider exports, wire/browser/
 file authority, unstructured parallel resources, callbacks from C into NEX,
 device executors or arbitrary runtime unload. General GPU/NPU ownership and
 matching current SDK/platform acceptance remain separate. Use explicit nex migrate
@@ -66,8 +78,9 @@ share close/identity; pure server forwarding grants no authority. Use
 `context --entity type --symbol NAME` and type patches; editor kind is resource.
 Follow docs/source-resources.md for explicit history-preserving migration and
 reviewed token repairs of old resource_close/resource_is_open declarations.
-Keep old SDKs/artifacts. Source task completion, owned GPU/NPU handles and generic
-T:resource bounds remain pending. Never retain C call/type/value tokens.
+Keep old SDKs/artifacts. Query source_task_bridge and device for current source
+task completion and experimental owned GPU support. General NPU/model ownership
+and generic T:resource bounds remain pending. Never retain C call/type/value tokens.
 
 When `model.source_support` is advertised, query `nex describe --field model --json`
 and read `nex guide --kind model --json`. Use `std/model.nex` validated immutable

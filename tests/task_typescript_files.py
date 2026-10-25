@@ -38,12 +38,12 @@ try:
     secret='server fn server_file_read()->result<str> !{task,fs}{return file_read_text("SERVER_PRIVATE_PATH/UNREACHABLE_ASYNC_FILE_SECRET");}\n'
     path=out/'task.nex';path.write_text('module ts_file_boundary;fn main()->i64 !{task}{task_yield();return 42;}\n'+secret)
     current,_=emit(path,'current020');old,_=emit(path,'retained019','retained019')
-    assert current['language']=='0.22' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
+    assert current['language']=='0.23' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
     assert current['revision']!=old['revision'] and current['source_hash']==old['source_hash']
     emit(path,'server020',entry='server_file_read',error='E_REALM')
     emit(path,'server019','retained019',entry='server_file_read',error='E_REALM')
     path=out/'pure.nex';path.write_text('module ts_file_boundary;fn main()->i64{return 42;}\n'+secret)
-    pure,_=emit(path,'pure020');assert not pure['asynchronous'] and pure['language']=='0.22'
+    pure,_=emit(path,'pure020');assert not pure['asynchronous'] and pure['language']=='0.23'
     for realm in ['shared','client']:
         path=out/(realm+'.nex');path.write_text('module bad_file_realm;'+realm+' fn main()->result<str> !{task,fs}{return file_read_text("bad");}\n')
         emit(path,realm+'-fs',error='E_REALM')

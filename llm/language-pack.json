@@ -1,10 +1,10 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.22",
+  "language_version": "0.23",
   "source_concurrency": {
     "status": "development_ordered_cpu_mapping",
     "guide": "docs/concurrency-design.md",
-    "language": "0.22",
+    "language": "0.23",
     "operation": "parallel_map",
     "source_operations": true,
     "internal_runtime_prototype": true,
@@ -268,7 +268,8 @@
     "task_file_writes_host": "docs/task-file-writes-host.md",
     "task_write_migration": "docs/task-write-migration.md",
     "task_write_providers": "docs/task-write-providers.md",
-    "native_write_task_provider_schema": "llm/native-write-task-provider.schema.json"
+    "native_write_task_provider_schema": "llm/native-write-task-provider.schema.json",
+    "project_write_task_linkage_schema": "llm/project-write-task-linkage.schema.json"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -358,7 +359,8 @@
     "browser_task_workers": "examples/task-workers/main.nex",
     "compute": "examples/compute/main.nex",
     "source_resources": "examples/source-resources.nex",
-    "device_contract": "examples/device/main.nex"
+    "device_contract": "examples/device/main.nex",
+    "task_write_providers": "examples/task-write-providers/nex.build.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -597,7 +599,7 @@
   ],
   "editor_source_reference_contract": {
     "format": "nex.analysis/2",
-    "source_language": "0.22",
+    "source_language": "0.23",
     "default_format": "nex.analysis/1",
     "definition_identity": "captured_file_and_exact_declaration_interval",
     "coverage": [
@@ -626,7 +628,7 @@
     "format": "nex.analysis/3",
     "default_format": "nex.analysis/1",
     "reference_format": "nex.analysis/2",
-    "source_language": "0.22",
+    "source_language": "0.23",
     "name_ranges": "actual_lexer_word_tokens",
     "descriptions": "bound_source_declarations_and_checked_value_types",
     "null_detail": "syntax without a semantic hover description",
@@ -1016,7 +1018,7 @@
       "ordinary_check_invokes_pass": true,
       "public_source_tasks": true
     },
-    "language": "0.22",
+    "language": "0.23",
     "types": [
       "task_scope",
       "task<T>",
@@ -1152,7 +1154,7 @@
   "task_file_reads": {
     "status": "development_public_whole_file_reads",
     "guide": "docs/task-file-reads.md",
-    "language": "0.22",
+    "language": "0.23",
     "source_support": true,
     "operations": [
       "file_read_text(str) -> result<str>",
@@ -1173,7 +1175,7 @@
     "wasm": false,
     "http_task_handlers": false,
     "binary_providers": true,
-    "writes": false,
+    "writes": true,
     "streams": false,
     "task_debug_profile": false,
     "authority": "root coordinator captures explicit revocable FileReadGrant; task/fs does not choose an OS root",
@@ -1217,12 +1219,12 @@
     "status": "development_native_source_tasks",
     "source_support": true,
     "guide": "docs/profiling.md",
-    "cli_language": "0.22",
+    "cli_language": "0.23",
     "native_platforms": [
       "macOS 64-bit",
       "Linux 64-bit"
     ],
-    "execution_task_abi": 3,
+    "execution_task_abi": 4,
     "runtime_schema": "nex.profile-runtime/2",
     "report_schema": "nex.profile/2",
     "session_schema": "nex.profile-session/2",
@@ -1281,12 +1283,12 @@
     "status": "development_native_source_tasks",
     "source_support": true,
     "guide": "docs/task-debugging.md",
-    "language": "0.22",
+    "language": "0.23",
     "native_platforms": [
       "macOS 64-bit",
       "Linux 64-bit"
     ],
-    "execution_task_abi": 3,
+    "execution_task_abi": 4,
     "catalog_abi": 1,
     "manifest_schema": "nex.debug/2",
     "view_schema": "nex.task-debug-view/1",
@@ -1358,13 +1360,13 @@
   "task_providers": {
     "status": "development_static_native_tasks",
     "public_enabled": true,
-    "language": "0.22",
+    "language": "0.23",
     "guide": "docs/task-providers.md",
-    "record_schema": "nex.native-task-provider/1",
-    "record_schema_file": "llm/native-task-provider.schema.json",
-    "plan_schema": "nex.project-static-task-linkage/1",
-    "plan_schema_file": "llm/project-static-task-linkage.schema.json",
-    "execution_task_abi": 3,
+    "record_schema": "nex.native-task-provider/5",
+    "record_schema_file": "llm/native-write-task-provider.schema.json",
+    "plan_schema": "nex.project-static-task-linkage/2",
+    "plan_schema_file": "llm/project-write-task-linkage.schema.json",
+    "execution_task_abi": 4,
     "descriptor_bytes": 88,
     "abi_offset": 40,
     "source_required": true,
@@ -1397,20 +1399,21 @@
     "acceptance_pending": [
       "matching delivery regression and installed SDK acceptance",
       "supported native platform acceptance"
-    ]
+    ],
+    "provider_file_writes": true
   },
   "task_shared_providers": {
     "status": "development_checked_fixed_native_task_images",
     "public_enabled": true,
-    "language": "0.22",
+    "language": "0.23",
     "guide": "docs/task-shared-providers.md",
-    "record_schema": "nex.native-task-provider/2",
-    "record_schema_file": "llm/native-shared-task-provider.schema.json",
-    "plan_schema": "nex.project-task-linkage/2",
-    "plan_schema_file": "llm/project-task-linkage.schema.json",
+    "record_schema": "nex.native-task-provider/5",
+    "record_schema_file": "llm/native-write-task-provider.schema.json",
+    "plan_schema": "nex.project-task-linkage/5",
+    "plan_schema_file": "llm/project-write-task-linkage.schema.json",
     "completion_schema": "nex.native-completion/5",
     "retained_build_schema": "nex.retained-native-task-build/2",
-    "execution_task_abi": 3,
+    "execution_task_abi": 4,
     "descriptor_bytes": 88,
     "abi_offset": 40,
     "source_required": true,
@@ -1445,13 +1448,14 @@
     "acceptance_pending": [
       "matching delivery regression and installed SDK acceptance",
       "supported native platform acceptance"
-    ]
+    ],
+    "provider_file_writes": true
   },
   "task_provider_profiling": {
     "status": "development_checked_native_task_provider_profiles",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.22",
+    "language": "0.23",
     "guide": "docs/task-provider-profiling.md",
     "configuration": "profile",
     "source_required": true,
@@ -1461,14 +1465,14 @@
     ],
     "static_linkage": true,
     "fixed_shared_linkage": true,
-    "execution_task_abi": 3,
+    "execution_task_abi": 4,
     "descriptor_bytes": 88,
     "registry_abi": 1,
     "registry_bytes": 32,
-    "record_schema": "nex.native-task-provider/3",
+    "record_schema": "nex.native-task-provider/6",
     "catalog_schema": "nex.task-profile-catalog/1",
     "completion_schema": "nex.native-completion/6",
-    "plan_schema": "nex.project-task-linkage/3",
+    "plan_schema": "nex.project-task-linkage/6",
     "retained_build_schema": "nex.retained-native-task-build/3",
     "runtime_schema": "nex.profile-runtime/3",
     "report_schema": "nex.profile/3",
@@ -1503,24 +1507,27 @@
       "supported native platform acceptance"
     ],
     "profile_configuration_test_builds": true,
-    "measured_test_sessions": false
+    "measured_test_sessions": false,
+    "record_schema_file": "llm/native-write-task-provider.schema.json",
+    "plan_schema_file": "llm/project-write-task-linkage.schema.json",
+    "provider_file_writes": true
   },
   "task_provider_debugging": {
     "status": "development_checked_native_task_provider_debugging",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.22",
+    "language": "0.23",
     "guide": "docs/task-provider-debugging.md",
     "source_required": true,
     "configuration": "debug",
-    "execution_task_abi": 3,
+    "execution_task_abi": 4,
     "descriptor_bytes": 88,
     "registry_abi": 1,
     "registry_bytes": 32,
     "catalog_abi": 2,
     "catalog_bytes": 200,
     "maximum_total_registries_including_root": 128,
-    "record_schema": "nex.native-task-provider/4",
+    "record_schema": "nex.native-task-provider/7",
     "catalog_schema": "nex.task-debug-catalog/1",
     "source_union_schema": "nex.task-debug-source-union/1",
     "completion_schema": "nex.native-completion/7",
@@ -1557,7 +1564,11 @@
     "linkage_modes": [
       "static",
       "shared-fixed"
-    ]
+    ],
+    "record_schema_file": "llm/native-write-task-provider.schema.json",
+    "plan_schema": "nex.project-task-linkage/7",
+    "plan_schema_file": "llm/project-write-task-linkage.schema.json",
+    "provider_file_writes": true
   },
   "compute": {
     "status": "development_checked_library_contract",
@@ -1565,7 +1576,7 @@
     "import": "std/compute.nex",
     "contract_version": 1,
     "source_support": true,
-    "language": "0.22",
+    "language": "0.23",
     "language_migration_required": false,
     "tensor_dtypes": [
       "u8",
@@ -1609,7 +1620,7 @@
     "status": "development_checked_model_library",
     "source_support": true,
     "contract_version": 1,
-    "language": "0.22",
+    "language": "0.23",
     "language_migration_required": false,
     "guide": "docs/models.md",
     "import": "std/model.nex",
@@ -1683,7 +1694,7 @@
   "source_resources": {
     "source_support": true,
     "public_enabled": true,
-    "language": "0.22",
+    "language": "0.23",
     "syntax": "[pub] server resource Name<T...>;",
     "operations": [
       "resource_close(Resource) -> bool",
@@ -1782,7 +1793,7 @@
     "native_request_parent": true,
     "reference_task_regions": true,
     "reference_request_parent": true,
-    "source_language": "0.22",
+    "source_language": "0.23",
     "dependency_graph": {
       "status": "development_typed_C_and_Cpp_host_API",
       "source_parent_creation": false,
@@ -1822,8 +1833,8 @@
     "status": "public022_source_ffi_owned_transfers",
     "source_support": true,
     "public_enabled": true,
-    "private_source_language": "0.22",
-    "public_source_language": "0.22",
+    "private_source_language": "0.23",
+    "public_source_language": "0.23",
     "guide": "docs/task-foreign-prototype.md",
     "native": true,
     "independent_reference": true,
@@ -1860,7 +1871,7 @@
     "import": "std/device.nex",
     "contract_version": 1,
     "source_support": true,
-    "language": "0.22",
+    "language": "0.23",
     "language_migration_required": false,
     "provider_realm": "server",
     "provider_effects": [
@@ -1909,9 +1920,9 @@
     "status": "private_trusted_host_whole_file_writes",
     "guide": "docs/task-file-writes-host.md",
     "header": "runtime/nex_task_file_write.h",
-    "source_support": false,
-    "reference_source_support": false,
-    "language": "0.22",
+    "source_support": true,
+    "reference_source_support": true,
+    "language": "0.23",
     "stable_host_abi": false,
     "native_platforms": [
       "macOS 64-bit",
@@ -1928,20 +1939,18 @@
     "postcommit_cancellation": "result may be suppressed after complete publication; no rollback",
     "physical_drain": true,
     "pending": [
-      "source frontend/reference/native/provider integration",
-      "explicit history-preserving source migration",
       "matching full regression, installed SDK and platform acceptance",
       "streams, networking, DB and task HTTP handlers"
     ]
   },
   "task_file_writes_prototype": {
-    "status": "private_explicit023_source_and_provider_integration",
+    "status": "development_public_whole_file_writes",
     "guide": "docs/task-file-writes-prototype.md",
     "language": "0.23",
-    "public_language": "0.22",
-    "source_support": false,
+    "public_language": "0.23",
+    "source_support": true,
     "private_source_support": true,
-    "public_enabled": false,
+    "public_enabled": true,
     "native": true,
     "reference": true,
     "typescript_server_files": false,
@@ -1964,8 +1973,7 @@
     "postcommit_rollback": false,
     "public_migration_complete": false,
     "pending": [
-      "explicit genuine022 history-preserving public023 migration",
-      "public provider capture/replay/package and source-deleted delivery",
+      "matching genuine022 public migration and retained capture/replay/package acceptance",
       "matching CLI/editor/debug/profile/SDK/platform delivery",
       "streams, networking, DB and task HTTP handlers"
     ],
@@ -1980,6 +1988,67 @@
     ],
     "provider_guide": "docs/task-write-providers.md",
     "provider_schema_file": "llm/native-write-task-provider.schema.json",
-    "write_requirement_metadata": true
+    "write_requirement_metadata": true,
+    "static_shared_providers": true,
+    "provider_mask": 799,
+    "provider_schemas": [
+      "nex.native-task-provider/5",
+      "nex.native-task-provider/6",
+      "nex.native-task-provider/7"
+    ]
+  },
+  "task_file_writes": {
+    "status": "development_public_whole_file_writes",
+    "guide": "docs/task-file-writes-prototype.md",
+    "language": "0.23",
+    "public_language": "0.23",
+    "source_support": true,
+    "private_source_support": true,
+    "public_enabled": true,
+    "native": true,
+    "reference": true,
+    "typescript_server_files": false,
+    "execution_ABI": 4,
+    "retained_provider_ABI": 3,
+    "retained_provider_mask": 31,
+    "descriptor_bytes": 88,
+    "operations": [
+      "file_write_text(str,str) -> result<bool>",
+      "file_write_bytes(str,bytes) -> result<bool>"
+    ],
+    "function_effects": [
+      "task",
+      "fs"
+    ],
+    "realm": "server",
+    "explicit_write_grant": true,
+    "snapshot_inputs": true,
+    "physical_drain": true,
+    "postcommit_rollback": false,
+    "public_migration_complete": false,
+    "pending": [
+      "matching genuine022 public migration and retained capture/replay/package acceptance",
+      "matching CLI/editor/debug/profile/SDK/platform delivery",
+      "streams, networking, DB and task HTTP handlers"
+    ],
+    "private_history_migration_verified": true,
+    "migration_guide": "docs/task-write-migration.md",
+    "private_static_shared_providers": true,
+    "private_provider_mask": 799,
+    "private_provider_schemas": [
+      "nex.native-task-provider/5",
+      "nex.native-task-provider/6",
+      "nex.native-task-provider/7"
+    ],
+    "provider_guide": "docs/task-write-providers.md",
+    "provider_schema_file": "llm/native-write-task-provider.schema.json",
+    "write_requirement_metadata": true,
+    "static_shared_providers": true,
+    "provider_mask": 799,
+    "provider_schemas": [
+      "nex.native-task-provider/5",
+      "nex.native-task-provider/6",
+      "nex.native-task-provider/7"
+    ]
   }
 }

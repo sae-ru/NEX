@@ -1184,6 +1184,13 @@ std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimize
   return Emitter(p,optimized,false,nullptr,true).run(entry,false,true);
 }
 std::string lowerMLIRToLLVM(const std::string &source,const std::string &path,const std::string &triple,const std::string &layout){return lower(source,path,triple,layout);}
+bool nativeTaskFileWrites(const Program &p,const std::set<std::string> &selected){
+  if(!supportsTaskFileWrites(p))return false;
+  for(const auto &name:selected){const auto &f=p.function(name);if(!f.effects.contains("task")||f.foreign)continue;
+    auto ir=lowerTaskFunction(p,f);for(const auto &op:ir.code)if(op.kind==TaskInstruction::Pause&&taskFileWriteOperation(op.operation))return true;
+  }
+  return false;
+}
 NativeTaskExport nativeTaskExportInterface(const Program &p,const std::string &name,const std::string &contract){
   const auto &f=p.function(name);
   if(!isPublicTaskLanguage(p)||!f.exported||f.closure||!f.captures.empty()||!f.effects.contains("task")||!f.typeParameters.empty()||
@@ -1695,8 +1702,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }}
   bool foreign=resourceOperations;for(const auto &name:names)foreign|=p.function(name).foreign.has_value();if(foreign){wire=true;files=true;}
   const bool taskFileReads=tasks&&files;
-  bool taskFileWrites=false;
-  if(tasks&&supportsTaskFileWrites(p))for(const auto &name:names){const auto &f=p.function(name);if(!f.effects.contains("task")||f.foreign)continue;auto ir=lowerTaskFunction(p,f);for(const auto &op:ir.code)if(op.kind==TaskInstruction::Pause&&taskFileWriteOperation(op.operation))taskFileWrites=true;}
+  const bool taskFileWrites=tasks&&nativeTaskFileWrites(p,names);
   const auto taskExecutionABI=supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)

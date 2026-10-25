@@ -4,8 +4,8 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--output',type=Path);a=p.parse_args()
 probe=Path(a.probe).resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
-else:temporary=tempfile.TemporaryDirectory(prefix='nex write providers 🧠 ');root=Path(temporary.name)
-started=time.monotonic();report={'schema':'nex.private-write-provider-execution/1','ok':False,'state':'starting','commands':[],'cases':[],'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public023_enabled':False,'full_objective_complete':False}
+else:temporary=tempfile.TemporaryDirectory(prefix='nex write providers 🧠 ');root=Path(temporary.name).resolve()
+started=time.monotonic();report={'schema':'nex.private-write-provider-execution/1','ok':False,'state':'starting','commands':[],'cases':[],'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public023_enabled':True,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def run(name,args,cwd,env,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=cwd,env=env,capture_output=True,text=True,timeout=300)
@@ -58,4 +58,4 @@ try:
  report.update(ok=True,state='passed',native_reference_pairs=len(cases),static_shared_providers=True,retained_ABI3_mask31=True)
 except BaseException as error:report.update(state='failed',error=repr(error));raise
 finally:save()
-print(json.dumps({'ok':True,'native_reference_pairs':len(cases),'public023_enabled':False}))
+print(json.dumps({'ok':True,'native_reference_pairs':len(cases),'public023_enabled':True}))

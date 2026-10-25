@@ -1,3 +1,18 @@
+# Development0.133.0 / language0.23
+
+Ordinary CLI projects now support checked whole-file writes inside server task/fs
+functions, including separately compiled static/shared providers. ABI4 uses
+explicit record/plan/root write requirements; retained022 parsing and ABI3
+records remain strict. Use explicit `nex migrate` for old graph HEADs; changing
+nex.json alone is never a migration. Captured old-language tasks require their
+matching retained SDK or a newly reviewed capture after source migration.
+
+This is a development candidate. Matching complete regression, fresh relevant
+sanitizers, installed SDK035 and current platform/stand acceptance remain open.
+The approved primary081 checkout and its history are separate and preserved.
+Read docs/task-file-writes-prototype.md and docs/task-write-providers.md.
+Earlier notes below retain their historical scopes and do not override023.
+
 # Development0.132.7: explicit private023 write-provider contracts
 
 Separate static/shared task images use ABI4 provider records5/6/7, precise

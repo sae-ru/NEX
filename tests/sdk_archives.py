@@ -183,6 +183,40 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk133_requires_actual_public_write_delivery_and_genuine022_history(self):
+        current=self.report();current.update(version='0.133.0',language='0.23',doctor={'version':'0.133.0'},compiler_sha256='a'*64)
+        current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_023]
+        with self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+            acceptance.validate_completed_report(current)
+        fields=('ok','all16_tables_schema_rows_ids_preserved','native_reference','static_shared_binary_edges','mixed_static_shared',
+                'explicit_write_grant_denied','source_deleted_package','source_deleted_replay','browser_exclusion')
+        migration_fields=('origin_verified','all16_tables_schema_rows_ids_preserved','physical_projection_unchanged','implicit_upgrade_rejected','native_reference')
+        project_fields=('actual_binary_edges','native_reference','write_grant_denied','source_deleted_package','source_deleted_replay')
+        writes={'schema':'nex.public-task-write-delivery/1','language':'0.23','compiler_sha256':'a'*64,**{key:True for key in fields},
+                'genuine022_migrations':3,'migrations':[{'origin_revision':format(i,'064x'),'revision':format(i+3,'064x'),**{key:True for key in migration_fields}} for i in range(3)],
+                'projects':[{'mode':mode,**{key:True for key in project_fields}} for mode in ('static','shared','mixed')]}
+        current['evidence']={'structured_task_file_writes':writes}
+        for field in fields:
+            for value in [None,False,1,'true']:
+                damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+                    acceptance.validate_completed_report(damaged)
+        for field,value in [('genuine022_migrations',True),('genuine022_migrations',2),('compiler_sha256','b'*64),('language','0.22'),('projects',writes['projects'][:2]),('migrations',writes['migrations'][:2])]:
+            damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes'][field]=value
+            with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+                acceptance.validate_completed_report(damaged)
+        for group,fields in [('migrations',migration_fields),('projects',project_fields)]:
+            for field in fields:
+                damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes'][group][0][field]=False
+                with self.subTest(group=group,field=field),self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+                    acceptance.validate_completed_report(damaged)
+        damaged=copy.deepcopy(current);damaged['evidence']['structured_task_file_writes']['migrations'][0]['revision']='bad'
+        with self.assertRaisesRegex(RuntimeError,'public023 task file-write delivery'):
+            acceptance.validate_completed_report(damaged)
+        # Public writers do not waive the existing HEAD integrity gate.
+        with self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):
+            acceptance.validate_completed_report(current)
+
     def test_sdk1326_requires_actual_retained_HEAD_language_guard(self):
         current=self.report();current.update(version='0.132.6',language='0.22',doctor={'version':'0.132.6'})
         with self.assertRaisesRegex(RuntimeError,'retained HEAD language guard'):

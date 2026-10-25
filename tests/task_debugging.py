@@ -50,7 +50,7 @@ class TaskDebugging(harness.ToolchainCase):
             self.root=Path(retained).resolve()/self._testMethodName
             self.root.mkdir(parents=True,exist_ok=False)
             self.file=self.root/'main.nex'
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}))
 
     def test_reader_rejects_invalid_visibility_and_authority_metadata(self):
         reader = reader_module()
@@ -108,7 +108,7 @@ class TaskDebugging(harness.ToolchainCase):
 
     def private(self, text):
         self.source(text)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}))
         result = subprocess.run([BUILD_PROBE, str(self.file), str(self.root/'artifact')],
                                 capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -295,7 +295,7 @@ fn main()->unit !{task,io}{print(child(41));}
         self.assertFalse(self.file.exists());self.assertFalse((self.root/'.nex/graph.db').exists())
         project=self.root/'project';(project/'app').mkdir(parents=True)
         (project/'app/main.nex').write_text(source)
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':'app/main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'}))
         limits={'steps':1000000,'timeout_ms':60000,'workers':2}
         (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debugged',
             'configurations':{'debugged':{'profile':'debug','task_limits':limits}},

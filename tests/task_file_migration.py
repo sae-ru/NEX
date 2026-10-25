@@ -17,7 +17,7 @@ SQL_PINS = {
     'tasks': '135e47e4f6de69a9e0035d071a740d58e11d88ae361144e399f04cf334724a98',
     'fs-helper': '4ec772a7c2dbc47496c9ee5b8d2e85bbbd9d6106cef622d92e752def387b7640',
 }
-TARGET = '0.22'
+TARGET = '0.23'
 
 
 class FileMigrationChecks(MigrationChecks):

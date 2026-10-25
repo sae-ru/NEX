@@ -24,12 +24,14 @@ std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
 void taskLinkage(const JSON &value,const std::string &component){
   const auto &o=object(value);
-  const bool debug=o.getString("schema")=="nex.project-task-linkage/4";
-  const bool profiled=o.getString("schema")=="nex.project-task-linkage/3";
-  const bool shared=debug||profiled||o.getString("schema")=="nex.project-task-linkage/2";
-  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!debug||key!="debugging")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
+  const auto schema=o.getString("schema");
+  const bool writes=schema=="nex.project-static-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/7";
+  const bool debug=schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7";
+  const bool profiled=schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6";
+  const bool shared=debug||profiled||schema=="nex.project-task-linkage/2"||schema=="nex.project-task-linkage/5";
+  for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&(!writes||key!="task_file_writes")&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!debug||key!="debugging")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
   auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
-  if((shared?(o.size()!=((profiled||debug)?9:8)||(o.getString("mode")!="shared-fixed"&&(!(profiled||debug)||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6||o.getString("schema")!="nex.project-static-task-linkage/1"))||o.getString("component")!=component||o.getInteger("execution_abi")!=3||
+  if((shared?(o.size()!=((profiled||debug)?9:8)+(writes?1:0)||(o.getString("mode")!="shared-fixed"&&(!(profiled||debug)||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=(writes?7:6)||schema!=(writes?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1")))||o.getString("component")!=component||o.getInteger("execution_abi")!=(writes?4:3)||(writes&&!o.getBoolean("task_file_writes"))||
      !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
   auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
   std::set<std::string> defined,imported;
@@ -37,11 +39,11 @@ void taskLinkage(const JSON &value,const std::string &component){
   for(const auto &value:*imports){const auto &row=object(value);auto function=text(row,"function"),provider=text(row,"provider");
     auto mode=row.getString("calling_mode");
     if(row.size()!=4||!imported.insert(function).second||defined.contains(function)||provider==component||
-       (mode!="task-code/3"&&mode!="sync/1"))fail("invalid captured task import");
+       (mode!=(writes?"task-code/4":"task-code/3")&&mode!="sync/1"))fail("invalid captured task import");
     digest(row,"contract");
   }
   for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");
-    if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~nexrt::taskProviderRequirementsMask))fail("invalid captured task export");
+    if(!defined.contains(name.str())||row.size()!=4||!requirements||!(*requirements&nexrt::taskCodeDeclaredTask)||(*requirements&~(writes?nexrt::taskWriteProviderRequirementsMask:nexrt::taskProviderRequirementsMask)))fail("invalid captured task export");
     digest(row,"contract");digest(row,"signature");text(row,"accessor");
   }
   if(profiled){auto profile=o.getObject("profiling");auto sites=profile?profile->getArray("sites"):nullptr;
@@ -225,7 +227,7 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
     auto toolchain=inspectNativeToolchain(native);
     if(toolchain.hash!=text(record,"hash")||toolchain.manifest!=*record.get("manifest")||toolchain.inputs!=*record.get("identity"))throw Error("E_TASK_TOOLCHAIN","captured/current project toolchain data differs");
     ProjectBuildOptions options;options.kind="plan";options.component=text(object(capture),"component");options.configuration=configuration.str();options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;
-    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/4";
+    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/4"||linkage->getString("schema")=="nex.project-task-linkage/7";
     auto plan=buildProject(root.string(),(root/s.manifest).string(),readFile((root/s.manifest).string()),options);
     auto actual=object(plan).getArray("components"),entries=expected.getAsArray();if(!actual||!entries||actual->size()!=entries->size())fail("captured component selection changed");
     for(size_t i=0;i<entries->size();++i){

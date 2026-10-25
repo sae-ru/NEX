@@ -1,13 +1,12 @@
-# Explicit private022→023 history migration
+# Explicit022→023 history migration
 
-The ordinary CLI default remains022. Private023 source write integration and
-its execution ABI4 are separate from completed public023 publication. This
-stage shares `migration.h` origin/target preflight between the ordinary CLI
-and the explicit internal023 migration probe. No writable Store opens before
-origin integrity and complete reviewed target checking.
+`nex migrate` verifies a retained source revision with its original parser,
+checks the current023 target before opening a writable Store and appends a new
+semantic revision transactionally. The public source implementation is enabled
+in this candidate; complete release/SDK/platform acceptance remains pending.
 
 Origin validation rechecks genuine retained018/019/020/021/022 source with its
-own parser and canonical identity. The explicit023 target also admits023
+own parser and canonical identity. The current023 target also admits023
 origins. Earlier serializers remain explicitly unverified, while exact modern
 hashes, including private023, cannot evade verification by claiming a legacy
 language. Corrupt source/language/hash and unsupported versions fail preflight.
@@ -16,7 +15,8 @@ The target is a separately checked versioned program. Store.save appends its
 semantic revision with programLanguage, preserves original revisions and IDs,
 checks expected HEAD in its transaction and records the explicit migration.
 Source materialization is separate: migration does not rewrite physical source
-files or nex.json. This API does not implicitly enable public023 projects.
+files or nex.json. Public023 projects use the current checked target; changing physical metadata
+alone still cannot migrate a graph HEAD.
 
 Normal live CLI synchronization now checks existing HEAD language read-only
 before opening a writable Store, checks again while loading, and enforces the
@@ -46,10 +46,9 @@ does not trigger a physical schema upgrade; it is not a genuine old-language
 semantic fixture. Prior-compiler implicit HEAD switching has a retained red
 reproduction outside the project source.
 
-The next public step still requires public wiring and delivery of the new
-private static/shared write-provider contracts,
-explicit write requirements in build/runtime/dependency records, public version
-selection/CLI tooling and full SDK/platform acceptance. Wider resource/callable/
+Public source and versioned static/shared plan/capture/replay/package wiring
+are implemented in this development candidate. Matching complete regression,
+fresh sanitizers, installed SDK035 and current platform acceptance remain required. Wider resource/callable/
 import/model histories and combined debug/profile/provider workflows remain
 separate coverage requirements. No full-language or full-project completion
 follows from this migration stage.

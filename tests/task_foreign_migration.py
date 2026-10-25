@@ -24,7 +24,7 @@ class PublicMigrationChecks(MigrationChecks):
   return project,database,database_state(database),physical
 
  def run(self):
-  descriptor=self.cli('describe','describe');assert descriptor['version']=='0.22' and descriptor['task_foreign_prototype']['public_enabled']
+  descriptor=self.cli('describe','describe');assert descriptor['version']=='0.23' and descriptor['task_foreign_prototype']['public_enabled']
   for name,pin in PINS.items():
    path=ROOT/'tests/fixtures'/('language-0.21-sdk128-task-foreign-'+name+'.json');metadata=json.loads(path.read_text());sql=path.with_suffix('.sql').read_bytes()
    assert metadata['schema']=='nex.language-021-task-foreign-migration-fixture/1' and metadata['language']=='0.21'
@@ -43,13 +43,13 @@ class PublicMigrationChecks(MigrationChecks):
     stale=self.cli(label+'-stale','migrate','--revision',row['revision'],'--expected-revision','1'*64,cwd=project,ok=False)
     assert stale['code']=='E_CONFLICT' and database_state(database)==before
     changed=self.cli(label+'-migrate','migrate','--revision',row['revision'],'--expected-revision',head,cwd=project)
-    assert changed['origin_language']=='0.21' and changed['origin_verified'] and changed['language']=='0.22'
+    assert changed['origin_language']=='0.21' and changed['origin_verified'] and changed['language']=='0.23'
     assert changed['declared_original_revision']==row['revision'] and changed['previous_revision']==head
     assert changed['source_hash']==old['source_hash'] and not changed['materialized']
     head=changed['revision'];assert head!=row['revision'];retained_rows(before,database_state(database),head)
-    saved,language=read_revision(database,head);assert saved==row['bundle'] and language=='0.22'
+    saved,language=read_revision(database,head);assert saved==row['bundle'] and language=='0.23'
     graph=self.cli(label+'-graph','graph','--revision',head,cwd=project)
-    assert graph['bundle']==row['bundle'] and graph['language']=='0.22' and graph['revision']==head
+    assert graph['bundle']==row['bundle'] and graph['language']=='0.23' and graph['revision']==head
     evaluation=self.cli(label+'-eval','eval','--revision',head,cwd=project);assert evaluation['stdout']==old['stdout']
     native=self.cli(label+'-run','run','--revision',head,'--profile','release',cwd=project)
     assert native['exit_code']==0 and native['stdout']==old['stdout']
@@ -58,10 +58,10 @@ class PublicMigrationChecks(MigrationChecks):
     assert len(tests['tests'])==len(web['tests'])>=1
     stable=database_state(database)
     same=self.cli(label+'-idempotent','migrate','--revision',head,'--expected-revision',head,cwd=project)
-    assert same['revision']==head and same['origin_language']=='0.22' and same['origin_verified'] and database_state(database)==stable
+    assert same['revision']==head and same['origin_language']=='0.23' and same['origin_verified'] and database_state(database)==stable
     exported=self.output/(label+'-exported')
     self.cli(label+'-export','export','--revision',head,'--directory',exported,cwd=project)
-    assert json.loads((exported/'nex.json').read_text())['language']=='0.22'
+    assert json.loads((exported/'nex.json').read_text())['language']=='0.23'
     assert self.cli(label+'-export-check','check',cwd=exported)['revision']==head
     self.checks.append(label+'_public_CLI_migration_native_reference_TS_idempotency_export')
    retained_rows(initial,database_state(database),head)
@@ -73,7 +73,7 @@ class PublicMigrationChecks(MigrationChecks):
   for bad,revision,language in [('modern-origin',metadata['head'],'0.19'),('022-as-legacy',head,'0.1')]:
    corrupt=self.output/bad;(corrupt/'.nex').mkdir(parents=True);target=corrupt/'.nex/graph.db'
    with sqlite3.connect(database) as source,sqlite3.connect(target) as destination:source.backup(destination)
-   write_json(corrupt/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
+   write_json(corrupt/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'})
    with sqlite3.connect(target) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',(language,revision))
    before=database_state(target)
    rejected=self.cli(bad,'migrate','--revision',revision,cwd=corrupt,ok=False)
@@ -85,10 +85,10 @@ class PublicMigrationChecks(MigrationChecks):
   rejected=self.cli('invalid-current-target','migrate',invalid,cwd=project,ok=False)
   assert rejected['code']=='E_PARSE' and database_state(database)==before
   # An exported graph authenticates its one supplied origin, not an absent full DB history.
-  fresh=self.output/'exported-origin';fresh.mkdir();write_json(fresh/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
+  fresh=self.output/'exported-origin';fresh.mkdir();write_json(fresh/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'})
   graph=fresh/'old.graph.json';write_json(graph,{'schema':'nex.graph/2','language':'0.21','revision':row['revision'],'bundle':row['bundle']});raw=graph.read_bytes()
   changed=self.cli('exported021-origin','migrate',graph,'--expected-revision','EMPTY',cwd=fresh)
-  assert changed['origin_verified'] and changed['origin_language']=='0.21' and changed['language']=='0.22' and graph.read_bytes()==raw
+  assert changed['origin_verified'] and changed['origin_language']=='0.21' and changed['language']=='0.23' and graph.read_bytes()==raw
   self.checks.append('corrupt_modern_and_022_legacy_labels_invalid_target_and_exported_origin')
 
 def main():
@@ -96,8 +96,8 @@ def main():
  temporary=None;destination=args.output or os.environ.get('NEX_PUBLIC_TASK_MIGRATION_EVIDENCE')
  if destination:out=Path(destination).resolve();out.mkdir(parents=True,exist_ok=False)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-public022-migration-');out=Path(temporary.name)
- write_json(out/'nex.json',{'schema':'nex.project/1','language':'0.22','entry':'main.nex'})
- checks=PublicMigrationChecks(args.probe,args.compiler,out);report={'schema':'nex.public022-genuine021-CLI-migration/1','ok':False,'origin_language':'0.21','target_language':'0.22'};started=time.monotonic()
+ write_json(out/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'})
+ checks=PublicMigrationChecks(args.probe,args.compiler,out);report={'schema':'nex.public022-genuine021-CLI-migration/1','ok':False,'origin_language':'0.21','target_language':'0.23'};started=time.monotonic()
  try:
   checks.run();report.update(ok=True,genuine021_histories=5,original_revisions=15,original_tables_each=16,actual_native_programs=15,actual_reference_programs=15,actual_native_TS_test_pairs=15,public_CLI=True)
  finally:
