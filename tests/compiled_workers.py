@@ -39,7 +39,7 @@ pub fn make()->Bundle {
         self.assertEqual(staged.returncode,0,staged.stdout+staged.stderr);built=json.loads(staged.stdout)
         meta=json.loads(Path(built['metadata']).read_text());self.assertTrue(meta['deferred_link']);self.assertEqual(meta['kind'],'object_archive')
         compiler=self.cli('doctor')['native_compiler'];output=self.root/'compiled-worker-test'
-        command=[compiler,'-std=c++20','-g','-pthread','-DNEX_STRUCTURED_WORKERS','-DNEX_PROFILE_ENABLED','-I',str(harness.REPO/'runtime'),str(harness.REPO/'tests/compiled_workers.cpp'),str(harness.REPO/'runtime/runtime.cpp'),str(harness.REPO/'runtime/nex_files.cpp'),built['artifact'],'-o',str(output)]
+        command=[compiler,'-std=c++20','-g','-pthread','-DNEX_STRUCTURED_WORKERS','-DNEX_PROFILE_ENABLED','-I',str(harness.REPO/'runtime'),str(harness.REPO/'tests/compiled_workers.cpp'),str(harness.REPO/'runtime/runtime.cpp'),str(harness.REPO/'runtime/nex_files.cpp'),*[str(harness.REPO/'runtime'/name) for name in ('nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp')],built['artifact'],'-o',str(output)]
         sanitizer=os.environ.get('NEX_TEST_COMPILED_WORKER_SANITIZER','')
         self.assertIn(sanitizer,('','address,undefined','thread'))
         if sanitizer:command[1:1]=['-fsanitize='+sanitizer,'-fno-omit-frame-pointer','-O1']
