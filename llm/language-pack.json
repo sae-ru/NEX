@@ -1891,6 +1891,13 @@
     ],
     "opencl_success_reply_validation": "serialized_decode_and_physical_drain_on_fault",
     "opencl_unique_allocation_ids": true,
-    "fault_verification": "tools/owned-opencl/faults.py"
+    "fault_verification": "tools/owned-opencl/faults.py",
+    "log_verification": "tools/owned-opencl/logs.py",
+    "opencl_diagnostics": {
+      "transport": "drained_pipe",
+      "capture": "bounded_first_and_last",
+      "maximum_saved_bytes": 65536,
+      "process_file_size_limit": false
+    }
   }
 }

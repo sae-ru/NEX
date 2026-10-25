@@ -111,3 +111,19 @@ Its controlled cancellation/deadline cases enqueue a kernel behind a genuine
 OpenCL user event before cancelling or timing out, then verify physical
 completion and child-before-parent cleanup. Test gate/noise/trace environment
 variables are harness instrumentation, not the production device API.
+
+## Bounded driver diagnostics
+
+Toolchain0.132.3 drains child stdout/stderr through a private pipe. A Session
+retains bounded first/last diagnostic bytes and an omitted-byte count; the saved
+file is at most64KiB. The reader starts before spawn, joins before the owner
+is destroyed, and never receives NEX values, call tokens or source authority.
+Exit status/signal is recorded without turning arbitrary death into completion.
+
+No process-wide file-size limit is imposed for logging: such a limit also
+applies to vendor shader caches and can kill a worker with SIGXFSZ. Existing
+operator/OS limits still apply. The native provider remains trusted code; this
+is not total driver/process/disk accounting. `logs.py` checks9MiB cache writes
+and9MiB stdout independently and together on actual GPU native/reference runs.
+Its old-limit mode reproduces the former8MiB restriction in a separate test
+process and preserves the unproven-completion state before operator termination.

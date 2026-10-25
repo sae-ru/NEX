@@ -9,6 +9,7 @@
 #include <atomic>
 #include <chrono>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits>
 #include <map>
 #include <memory>
@@ -109,9 +110,23 @@ public:
 };
 int main(){
  if(std::getenv("NEX_OWNED_OPENCL_TEST_NOISE"))std::fputs("controlled worker stdout diagnostic\n",stdout);
- std::signal(SIGPIPE,SIG_IGN);rlimit noCore{0,0};setrlimit(RLIMIT_CORE,&noCore);rlimit logLimit{8388608,8388608};setrlimit(RLIMIT_FSIZE,&logLimit);
+ std::signal(SIGPIPE,SIG_IGN);rlimit noCore{0,0};setrlimit(RLIMIT_CORE,&noCore);
  std::unique_ptr<GPU> gpu;uint64_t expected=1;Frame request{};bool faulted=false;
  try{
+  if(const char *path=std::getenv("NEX_OWNED_OPENCL_TEST_CACHE_FILE")){
+   if(path[0]!='/'||std::strlen(path)>4096)throw Error("E_DEVICE_TEST","controlled cache path must be absolute and bounded");
+   int fd=::open(path,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC,0600);if(fd<0)throw Error("E_DEVICE_TEST","controlled cache file creation failed");
+   struct Close{int fd;~Close(){::close(fd);}} close{fd};char block[4096]={};std::fprintf(stderr,"NEXGPU_TEST_CACHE_BEGIN 9437184\n");
+   for(size_t written=0;written<9437184;){auto n=::write(fd,block,std::min(sizeof(block),size_t(9437184-written)));if(n<0&&errno==EINTR)continue;if(n<=0)throw Error("E_DEVICE_TEST","controlled cache write failed");written+=size_t(n);}
+   std::fprintf(stderr,"NEXGPU_TEST_CACHE_END 9437184\n");
+  }
+  if(const char *text=std::getenv("NEX_OWNED_OPENCL_TEST_NOISE_BYTES")){
+   auto length=std::strlen(text);if(!length||length>8||std::strspn(text,"0123456789")!=length)throw Error("E_DEVICE_TEST","invalid controlled log size");
+   auto count=std::strtoul(text,nullptr,10);if(count>16777216)throw Error("E_DEVICE_TEST","controlled log size exceeds16MiB");
+   char block[4096];std::memset(block,'#',sizeof(block));block[sizeof(block)-1]='\n';std::fprintf(stderr,"NEXGPU_TEST_NOISE_BEGIN %lu\n",count);
+   for(size_t n=0;n<count;){auto size=std::min(sizeof(block),size_t(count-n));if(std::fwrite(block,1,size,stdout)!=size)throw Error("E_DEVICE_TEST","controlled stdout write failed");n+=size;}
+   if(std::fflush(stdout))throw Error("E_DEVICE_TEST","controlled stdout flush failed");std::fprintf(stderr,"NEXGPU_TEST_NOISE_END %lu\n",count);
+  }
   const char *fault=std::getenv("NEX_OWNED_OPENCL_TEST_BAD_REPLY");
   if(fault&&std::strcmp(fault,"upload_truncated")&&std::strcmp(fault,"upload_wrong_size")&&std::strcmp(fault,"upload_reused_id")&&std::strcmp(fault,"affine_reused_id")&&std::strcmp(fault,"affine_truncated")&&std::strcmp(fault,"affine_trailing")&&std::strcmp(fault,"download_truncated")&&std::strcmp(fault,"download_wrong_size")&&std::strcmp(fault,"free_trailing")&&std::strcmp(fault,"close_truncated")&&std::strcmp(fault,"open_trailing"))throw Error("E_DEVICE_PROTOCOL","unknown controlled reply fault");
   auto wants=[&](const char *name){return !faulted&&fault&&std::strcmp(fault,name)==0;};

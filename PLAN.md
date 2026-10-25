@@ -1,3 +1,11 @@
+# Development0.132.3: bound diagnostic capture without limiting driver caches
+
+A private drained pipe captures at most64KiB of first/last worker diagnostics.
+The worker no longer sets a process-wide8MiB file-size limit that also restricted
+vendor shader caches. Controlled old-limit SIGXFSZ and real9MiB cache/stdout GPU
+probes verify the boundary. Matching frozen/SAN/SDK acceptance is separate.
+All remaining language/runtime/platform/NPU/UI/Studio requirements stay open.
+
 # Development0.132.2: validate complete device acknowledgements
 
 Successful worker replies are checked under the Session command lock before

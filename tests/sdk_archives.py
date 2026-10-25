@@ -183,6 +183,16 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk1323_requires_the_installed_owned_log_harness(self):
+        current=self.report();current.update(version='0.132.3',language='0.22',doctor={'version':'0.132.3'})
+        for value in [None,False,1,'true']:
+            damaged=copy.deepcopy(current);damaged['evidence']={'owned_device_contract':{'log_harness_installed':value}}
+            with self.subTest(value=value),self.assertRaisesRegex(RuntimeError,'installed owned device log harness'):
+                acceptance.validate_completed_report(damaged)
+        current['evidence']={'owned_device_contract':{'log_harness_installed':True}}
+        with self.assertRaisesRegex(RuntimeError,'installed owned device fault harness'):
+            acceptance.validate_completed_report(current)
+
     def test_sdk1322_requires_the_installed_owned_fault_harness(self):
         current=self.report();current.update(version='0.132.2',language='0.22',doctor={'version':'0.132.2'})
         for value in [None,False,1,'true']:

@@ -3,6 +3,7 @@
 #include "signatures.h"
 #include "third_party/json.hpp"
 #include <atomic>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +13,7 @@
 #include <fstream>
 #include <mutex>
 #include <spawn.h>
+#include <poll.h>
 #include <thread>
 #include <sys/wait.h>
 extern char **environ;
@@ -25,10 +27,43 @@ static void trace(const JSON &value)noexcept{try{if(auto p=std::getenv("NEX_OWNE
 static void checked(nex_ffi_status value){if(value!=NEX_FFI_OK)throw HostStatus{value};}
 static std::string workerPath(){Dl_info info{};if(!dladdr(reinterpret_cast<const void*>(&workerPath),&info)||!info.dli_fname)throw Error("E_DEVICE_ABI","module cannot resolve its pinned snapshot");return (std::filesystem::path(info.dli_fname).parent_path()/"worker").string();}
 
+struct BoundedLog {
+ static constexpr size_t part=32736;
+ std::array<char,part> first{},last{};size_t head=0,tail=0,next=0;uint64_t total=0;
+ void append(const char *data,size_t size)noexcept{
+  total=size>UINT64_MAX-total?UINT64_MAX:total+size;
+  auto prefix=std::min(size,part-head);std::memcpy(first.data()+head,data,prefix);head+=prefix;data+=prefix;size-=prefix;if(!size)return;
+  if(size>=part){std::memcpy(last.data(),data+size-part,part);next=0;tail=part;return;}
+  auto count=std::min(size,part-next);std::memcpy(last.data()+next,data,count);if(size>count)std::memcpy(last.data(),data+count,size-count);
+  next=(next+size)%part;tail=std::min(part,tail+size);
+ }
+ static void writeAll(int fd,const char *data,size_t size)noexcept{
+  while(size){auto n=::write(fd,data,size);if(n<0&&errno==EINTR)continue;if(n<=0)return;data+=n;size-=size_t(n);}
+ }
+ void flush(int fd)const noexcept{
+  writeAll(fd,first.data(),head);auto dropped=total-head-tail;
+  if(dropped){char marker[64];auto n=std::snprintf(marker,sizeof(marker),"\nNEXGPU_LOG_DROPPED %llu\n",static_cast<unsigned long long>(dropped));if(n>0&&size_t(n)<sizeof(marker))writeAll(fd,marker,size_t(n));}
+  auto start=tail==part?next:0,count=std::min(tail,part-start);writeAll(fd,last.data()+start,count);if(tail>count)writeAll(fd,last.data(),tail-count);
+ }
+};
+
 class Session {
  std::mutex mutex;int stream=-1;pid_t pid=-1;uint64_t sequence=0,nextBuffer=1;
  bool drained=false,failed=false;std::string directory;
  std::atomic<uint32_t> queued{0};
+ BoundedLog log;std::thread logReader;std::atomic<bool> logStop{false};
+ void startLog(int input,int output){
+  logReader=std::thread([this,input,output]{
+   struct Close{int a,b;~Close(){::close(a);::close(b);}} close{input,output};char buffer[4096];unsigned finalReads=0;
+   for(;;){bool stop=logStop.load();if(stop&&finalReads>=16)break;pollfd p{input,POLLIN,0};auto ready=::poll(&p,1,20);
+    if(ready<0&&errno==EINTR)continue;if(ready<0||(!ready&&stop))break;if(!ready)continue;
+    if(!(p.revents&(POLLIN|POLLHUP)))break;
+    auto n=::read(input,buffer,sizeof(buffer));if(n<0&&errno==EINTR)continue;if(n<=0)break;log.append(buffer,size_t(n));if(stop)++finalReads;
+   }
+   log.flush(output);
+  });
+ }
+ void stopLog()noexcept{logStop=true;if(logReader.joinable())logReader.join();}
  // Unknown vendor settlement is never converted to a completed resource fence.
  [[noreturn]] void retainUnsettled()noexcept{
   TRACE(JSON{{"event","unsettled"},{"session",identity},{"physical_completion_verified",false}});
@@ -38,7 +73,8 @@ class Session {
  void wait(const Poll &poll={}){
   if(pid<0)return;int status=0;
   for(;;){if(poll)poll();auto n=waitpid(pid,&status,WNOHANG);if(n==pid)break;if(n<0&&errno==EINTR)continue;if(n<0)retainUnsettled();std::this_thread::sleep_for(std::chrono::milliseconds(2));}
-  pid=-1;
+  auto reaped=pid;pid=-1;
+  TRACE(JSON{{"event","worker_exited"},{"session",identity},{"worker_pid",reaped},{"wait_status",status},{"exit_code",WIFEXITED(status)?WEXITSTATUS(status):-1},{"signal",WIFSIGNALED(status)?WTERMSIG(status):0}});
   // These exits are emitted by the pinned worker only after explicit queue
   // drainage and object release, including a failed protocol's EOF cleanup.
   if(!WIFEXITED(status)||(WEXITSTATUS(status)!=0&&WEXITSTATUS(status)!=20))retainUnsettled();
@@ -46,7 +82,7 @@ class Session {
  }
  void failedDrain(const Poll &poll={}){
   if(drained)return;
-  failed=true;if(stream>=0){::close(stream);stream=-1;}wait(poll);if(!drained&&pid>=0)retainUnsettled();
+  failed=true;if(stream>=0){::close(stream);stream=-1;}wait(poll);if(!drained&&pid>=0)retainUnsettled();stopLog();
   TRACE(JSON{{"event","failed_session_drained"},{"session",identity},{"physical_completion_verified",drained}});
  }
  Data callLocked(uint32_t operation,Data input,const Poll &poll){
@@ -86,13 +122,13 @@ public:
     if(!failed){try{Data empty;auto result=callLocked(Close,std::move(empty),{});if(result.get32()!=0)throw Error("E_DEVICE_PROTOCOL","nonempty session close acknowledgement");result.done();}catch(...){failedDrain();}}
     if(stream>=0){::close(stream);stream=-1;}wait();
    }
-   if(stream>=0)::close(stream);
+   if(stream>=0)::close(stream);stopLog();
    TRACE(JSON{{"event","session_destroyed"},{"session",identity},{"physical_completion_verified",drained||pid<0}});
    if(!directory.empty()){
-    if(std::getenv("NEX_OWNED_OPENCL_TRACE")){try{std::ifstream f(std::filesystem::path(directory)/"vendor.log",std::ios::binary);std::string raw(65536,'\0');f.read(raw.data(),raw.size());raw.resize(size_t(f.gcount()));std::string hex;hex.reserve(raw.size()*2);for(unsigned char c:raw){hex+="0123456789abcdef"[c>>4];hex+="0123456789abcdef"[c&15];}TRACE(JSON{{"event","worker_diagnostics"},{"session",identity},{"bytes",raw.size()},{"hex",hex}});}catch(...){}}
+    if(std::getenv("NEX_OWNED_OPENCL_TRACE")){try{std::ifstream f(std::filesystem::path(directory)/"vendor.log",std::ios::binary);std::string raw(65536,'\0');f.read(raw.data(),raw.size());raw.resize(size_t(f.gcount()));std::string hex;hex.reserve(raw.size()*2);for(unsigned char c:raw){hex+="0123456789abcdef"[c>>4];hex+="0123456789abcdef"[c&15];}TRACE(JSON{{"event","worker_diagnostics"},{"session",identity},{"bytes",raw.size()},{"received_bytes",log.total},{"bounded_capture",true},{"hex",hex}});}catch(...){}}
     std::error_code ec;std::filesystem::remove_all(directory,ec);
    }
-  }catch(...){if(pid>=0&&!drained)retainUnsettled();}
+  }catch(...){if(pid>=0&&!drained)retainUnsettled();stopLog();}
  }
  template<class Decode>auto call(uint32_t operation,Data input,Decode decode,const nex_ffi_api_v1 *api=nullptr,nex_ffi_call token=0){
   std::unique_lock lock(mutex,std::defer_lock);
@@ -110,21 +146,34 @@ public:
  void start(uint32_t ordinal,const nex_ffi_api_v1 *api,nex_ffi_call call){
   std::string pattern=(std::filesystem::temp_directory_path()/"nex-owned-opencl-XXXXXX").string();auto created=mkdtemp(pattern.data());if(!created)throw Error("E_DEVICE_PROCESS","private worker directory creation failed");directory=created;
   int sockets[2]={-1,-1};if(socketpair(AF_UNIX,SOCK_STREAM,0,sockets))throw Error("E_DEVICE_PROCESS","private worker socket creation failed");
-  struct FDs{int a,b,log=-1;~FDs(){if(a>=0)::close(a);if(b>=0)::close(b);if(log>=0)::close(log);}} fds{sockets[0],sockets[1]};
+  struct FDs{int a,b,log=-1,reader=-1,writer=-1;~FDs(){for(auto fd:{a,b,log,reader,writer})if(fd>=0)::close(fd);}} fds{sockets[0],sockets[1]};
   fcntl(fds.a,F_SETFD,FD_CLOEXEC);int elevated=fcntl(fds.b,F_DUPFD_CLOEXEC,10);if(elevated<0)throw Error("E_DEVICE_PROCESS","private protocol descriptor duplication failed");::close(fds.b);fds.b=elevated;
 #ifdef SO_NOSIGPIPE
   int enabled=1;if(setsockopt(fds.a,SOL_SOCKET,SO_NOSIGPIPE,&enabled,sizeof(enabled)))throw Error("E_DEVICE_PROCESS","private socket signal policy failed");
 #endif
   fds.log=::open((std::filesystem::path(directory)/"vendor.log").c_str(),O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC,0600);if(fds.log<0)throw Error("E_DEVICE_PROCESS","private worker log creation failed");
+  int logs[2];
+#ifdef __linux__
+  if(pipe2(logs,O_CLOEXEC))throw Error("E_DEVICE_PROCESS","private worker log pipe failed");
+#else
+  if(pipe(logs))throw Error("E_DEVICE_PROCESS","private worker log pipe failed");
+#endif
+  fds.reader=logs[0];fds.writer=logs[1];
+  if(fcntl(fds.reader,F_SETFD,FD_CLOEXEC)||fcntl(fds.writer,F_SETFD,FD_CLOEXEC))throw Error("E_DEVICE_PROCESS","private log descriptor policy failed");
+  startLog(fds.reader,fds.log);fds.reader=-1;fds.log=-1;
   posix_spawn_file_actions_t actions;if(posix_spawn_file_actions_init(&actions))throw Error("E_DEVICE_PROCESS","spawn actions initialization failed");
   struct Actions{posix_spawn_file_actions_t *p;~Actions(){posix_spawn_file_actions_destroy(p);}} guard{&actions};
   auto add=[&](int code){if(code)throw Error("E_DEVICE_PROCESS","private worker spawn action failed");};
-  add(posix_spawn_file_actions_adddup2(&actions,fds.log,1));add(posix_spawn_file_actions_adddup2(&actions,fds.log,2));
-  if(fds.log>2)add(posix_spawn_file_actions_addclose(&actions,fds.log));if(fds.a>2)add(posix_spawn_file_actions_addclose(&actions,fds.a));
+  add(posix_spawn_file_actions_adddup2(&actions,fds.writer,1));add(posix_spawn_file_actions_adddup2(&actions,fds.writer,2));
+  if(fds.writer>2)add(posix_spawn_file_actions_addclose(&actions,fds.writer));if(fds.a>2)add(posix_spawn_file_actions_addclose(&actions,fds.a));
   add(posix_spawn_file_actions_addopen(&actions,0,"/dev/null",O_RDONLY,0));add(posix_spawn_file_actions_adddup2(&actions,fds.b,3));add(posix_spawn_file_actions_addclose(&actions,fds.b));
-  auto worker=workerPath();char *argv[]={worker.data(),nullptr};pid_t child=-1;auto status=posix_spawn(&child,worker.c_str(),&actions,nullptr,argv,environ);
+  posix_spawnattr_t attributes;add(posix_spawnattr_init(&attributes));struct Attributes{posix_spawnattr_t *p;~Attributes(){posix_spawnattr_destroy(p);}} attributesGuard{&attributes};
+#ifdef POSIX_SPAWN_CLOEXEC_DEFAULT
+  add(posix_spawnattr_setflags(&attributes,POSIX_SPAWN_CLOEXEC_DEFAULT));
+#endif
+  auto worker=workerPath();char *argv[]={worker.data(),nullptr};pid_t child=-1;auto status=posix_spawn(&child,worker.c_str(),&actions,&attributes,argv,environ);
   if(status)throw Error("E_DEVICE_PROCESS","pinned worker spawn failed: "+std::to_string(status));
-  ::close(fds.b);fds.b=-1;::close(fds.log);fds.log=-1;
+  ::close(fds.b);fds.b=-1;::close(fds.writer);fds.writer=-1;
   pid=child;stream=fds.a;fds.a=-1;Data input;input.u32(ordinal);this->call(Open,std::move(input),[&](Data &response){
    auto receivedName=response.getText();auto receivedType=response.get64();auto limit=response.get32();response.done();
    if(receivedName.empty()||receivedName.size()>4096||!(receivedType&4)||receivedType&2||limit!=maximumElements)throw Error("E_DEVICE_ABI","physical GPU identity or limits differ");
