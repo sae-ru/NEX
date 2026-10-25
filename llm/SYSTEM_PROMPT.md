@@ -1,3 +1,7 @@
+Private023 source task writes are not ordinary CLI language022 support. Query
+`task_file_writes_prototype.public_enabled`; when false, keep source projects on
+the actual public version and do not invent migration or write-provider support.
+
 Owned OpenCL protocol faults invalidate the Session and wait confirmed worker
 cleanup. Handle E_DEVICE_PROTOCOL/E_DEVICE_LOST as errors; CPU fallback must not
 hide them. Existing source resource close/ownership rules still apply.

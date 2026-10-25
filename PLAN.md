@@ -1,3 +1,13 @@
+# Development0.132.5: explicit private023 source writes
+
+TaskIR/native continuations and the independent AST scheduler suspend checked
+whole-file writes with genuine root write grants and exact owned snapshots.
+Execution ABI4 appends write requests without widening retained ABI3/mask31.
+Public language022/default/history are unchanged; explicit023 publication,
+genuine022 migration, new provider contracts and matching SDK/platform delivery
+remain pending. Read docs/task-file-writes-prototype.md. The complete original
+runtime/compute/NPU/UI/mobile/Studio/converter/quality scope remains open.
+
 # Development0.132.4: private asynchronous whole-file write foundation
 
 The native host IO bridge now supports revocable, snapshotted, atomic whole-file

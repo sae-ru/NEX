@@ -88,7 +88,7 @@ void validateCodes(const TaskDebugCodeSite *codes,uint64_t count,MetadataBudget 
   for(uint64_t i=0;i<count;++i){const auto &code=codes[i];
     if(!code.code||address(code.code)%alignof(TaskCodeDescriptor)||!budget.descriptors.insert(code.code).second||code.pointCount<1||code.bindingCount<0||code.visibleCount<0||code.slotCount<0||code.slotCount>65536||!code.points||(!code.bindings&&code.bindingCount)||(!code.visibleBindings&&code.visibleCount))throw DataError("E_DEBUG_INIT","invalid task debugger function metadata");
     const auto &descriptor=*static_cast<const TaskCodeDescriptor*>(code.code);
-    if(descriptor.abi!=taskCodeABI||descriptor.slotCount!=code.slotCount)throw DataError("E_DEBUG_INIT","task debugger metadata differs from execution descriptor");
+    if(!validTaskCodeRequirements(descriptor.abi,descriptor.requirements)||descriptor.slotCount!=code.slotCount)throw DataError("E_DEBUG_INIT","task debugger metadata differs from execution descriptor");
     if(uint64_t(code.pointCount)>maximumTaskDebugPoints-budget.points||uint64_t(code.bindingCount)>maximumTaskDebugBindings-budget.bindings||uint64_t(code.visibleCount)>maximumTaskDebugVisibleBindings-budget.visible)throw DataError("E_DEBUG_INIT","task debugger metadata count exceeds its bound");
     budget.points+=size_t(code.pointCount);budget.bindings+=size_t(code.bindingCount);budget.visible+=size_t(code.visibleCount);
     budget.string(code.name);budget.string(code.file);budget.string(code.content);budget.string(code.functionHash);

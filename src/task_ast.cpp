@@ -196,7 +196,7 @@ struct TaskAstMachine::Impl {
               throw Error("E_FUNCTION","AST callable target differs from its checked signature",e->span);
             push(target,args,&closure);break;
           }
-          const bool read=e->kind==Expr::Call&&taskFileReadOperation(e->text);
+          const bool read=e->kind==Expr::Call&&(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text)));
           if(read&&(!supportsTaskFileReads(program)||frame.function->realm!="server"||
              !frame.function->effects.contains("task")||!frame.function->effects.contains("fs")))
             throw Error("E_TASK_UNIMPLEMENTED","AST file reads require a language020 server task/fs function",e->span);

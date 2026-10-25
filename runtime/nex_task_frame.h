@@ -39,6 +39,7 @@ struct TaskFrameHostContext {
   TaskFrameHostContext()=default;
 #ifndef _WIN32
   FileReadGrant fileReads;
+  FileWriteGrant fileWrites;
   explicit TaskFrameHostContext(FileReadGrant grant):fileReads(std::move(grant)){}
 #endif
 };

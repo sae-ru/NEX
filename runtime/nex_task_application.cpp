@@ -23,7 +23,7 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     // ordinary executable, regardless of whether its entry suspends.
     if(code.parameterCount||code.captureCount||(code.resultKind!=0&&code.resultKind!=4))
       throw DataError("E_ENTRY","task application entry must take no arguments and return i64 or unit");
-    if(code.abi!=taskCodeABI||(code.requirements&~taskCodeRequirementsMask))
+    if(!validTaskCodeRequirements(code.abi,code.requirements))
       throw DataError("E_TASK_STATE","invalid task application descriptor ABI/requirements");
 #ifdef NEX_TASK_PROFILE_ENABLED
     taskProfileEffectiveLimits(limits);
@@ -32,9 +32,10 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
     auto context=std::make_shared<TaskFrameHostContext>();
 #ifndef _WIN32
     std::unique_ptr<FileScope> files;
-    if(code.requirements&taskCodeImageFileRead){
+    if(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite)){
       if(!inFileScope())files=std::make_unique<FileScope>(true);
-      context->fileReads=captureFileReadGrant(true);
+      if(code.requirements&taskCodeImageFileRead)context->fileReads=captureFileReadGrant(true);
+      if(code.requirements&taskCodeImageFileWrite)context->fileWrites=captureFileWriteGrant(true);
     }
 #endif
     if(code.requirements&taskCodeImageForeign){
@@ -45,7 +46,7 @@ int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutio
       throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
 #endif
     }
-    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageForeign)));
+    TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign)));
     if(code.requirements&taskCodeImageForeign)group.enableResourceRegions({},true);
     auto environment=std::make_shared<Data>(Data::Closure);
     environment->taskCode=&code;

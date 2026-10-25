@@ -84,7 +84,7 @@ void validateNativeTaskFunction(const Program &p,const Function &function){
   if(supportsTaskFileReads(p)){checkType(function.result);for(const auto &parameter:function.params)checkType(parameter.type);for(const auto &capture:function.captures)checkType(capture.type);}
   std::function<void(E)> expression=[&](E value){if(!value)return;
     const bool fileOperation=taskFileReadOperation(value->text)||value->text=="file_write_text"||value->text=="file_write_bytes"||streamFileBuiltins().contains(value->text);
-    if(value->kind==Expr::Call&&fileOperation&&!(reads&&taskFileReadOperation(value->text)))throw Error("E_TASK_UNIMPLEMENTED","task filesystem support is limited to server task/fs file_read_text and file_read_bytes",value->span);
+    if(value->kind==Expr::Call&&fileOperation&&!(reads&&(taskFileReadOperation(value->text)||(supportsTaskFileWrites(p)&&taskFileWriteOperation(value->text)))))throw Error("E_TASK_UNIMPLEMENTED",supportsTaskFileWrites(p)?"task filesystem support is limited to checked server task/fs whole-file operations for the selected language":"task filesystem support is limited to server task/fs file_read_text and file_read_bytes",value->span);
     for(auto argument:value->args)expression(argument);
   };
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
@@ -763,7 +763,8 @@ class Emitter {
         static const std::map<std::string,nexrt::TaskRequestKind> requests={
           {"task_yield",nexrt::TaskRequestKind::Yield},{"with_tasks",nexrt::TaskRequestKind::WithTasks},{"task_spawn",nexrt::TaskRequestKind::Spawn},{"task_wait",nexrt::TaskRequestKind::Wait},
           {"channel_new",nexrt::TaskRequestKind::ChannelNew},{"task_send",nexrt::TaskRequestKind::Send},{"task_recv",nexrt::TaskRequestKind::Receive},{"task_close",nexrt::TaskRequestKind::Close},{"task_cancel",nexrt::TaskRequestKind::Cancel},{"current_task_scope",nexrt::TaskRequestKind::CurrentScope},
-          {"file_read_text",nexrt::TaskRequestKind::FileReadText},{"file_read_bytes",nexrt::TaskRequestKind::FileReadBytes}};
+          {"file_read_text",nexrt::TaskRequestKind::FileReadText},{"file_read_bytes",nexrt::TaskRequestKind::FileReadBytes},
+          {"file_write_text",nexrt::TaskRequestKind::FileWriteText},{"file_write_bytes",nexrt::TaskRequestKind::FileWriteBytes}};
         auto arguments=call("nex_list_new",{},Type::list(Type::I64),op.span);
         if(op.foreign){
           const auto &target=p.function(op.operation);
@@ -869,6 +870,7 @@ public:
         out<<"  func.func @"<<profileRegistryAccessor<<"() -> !llvm.ptr {\n";auto value=fresh();line(value+" = llvm.mlir.addressof @"+registry+" : !llvm.ptr",main.span);line("func.return "+value+" : !llvm.ptr",main.span);out<<"  }\n";
       }}
       const bool imageFileReads=taskImageFileReads||std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileReadOperation(op.operation);});});
+      const bool imageFileWrites=std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&taskFileWriteOperation(op.operation);});});
       const bool imageForeign=std::any_of(tasks->begin(),tasks->end(),[](const auto &ir){return std::any_of(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::Pause&&op.foreign;});});
       for(const auto &ir:*tasks){
         std::vector<int64_t> kinds,parameters(ir.parameters.begin(),ir.parameters.end()),captures(ir.captures.begin(),ir.captures.end());
@@ -879,11 +881,13 @@ public:
         if(source.effects.contains("fs"))requirements|=nexrt::taskCodeDeclaredFs;
         if(supportsTaskFileReads(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileRead;
         if(imageFileReads)requirements|=nexrt::taskCodeImageFileRead;
+        if(supportsTaskFileWrites(p)&&(requirements&7)==7)requirements|=nexrt::taskCodeFileWrite;
+        if(imageFileWrites)requirements|=nexrt::taskCodeImageFileWrite;
         if(source.effects.contains("ffi"))requirements|=nexrt::taskCodeDeclaredFfi;
         if(supportsTaskForeignCalls(p)&&source.realm=="server"&&source.effects.contains("task")&&source.effects.contains("ffi"))requirements|=nexrt::taskCodeForeign;
         if(imageForeign)requirements|=nexrt::taskCodeImageForeign;
         taskCodes[ir.name]=structureGlobal("nex_task_code_",{nativeSymbol(ir.name)+"__task_step",taskArray(kinds),taskArray(parameters),taskArray(captures),profiling?taskProfileSites.at(ir.name):""},
-          {nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
+          {supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI,int64_t(kinds.size()),int64_t(parameters.size()),int64_t(captures.size()),ir.result==Type::Unit?4:ir.result.heap()?3:scalarTag(ir.result),requirements});
       }
       if(taskDebug){taskDebugMetadata(*tasks);if(!debugRegistryAccessor.empty()){
         auto registry=metadataArray("nex_task_debug_registry_data_","!llvm.struct<(i64, !llvm.ptr, i64, !llvm.ptr)>",{{int64_t(1),taskDebugTable,int64_t(tasks->size()),rawGlobal(debugComponent)}});
@@ -1358,6 +1362,7 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
 void validateNativeBuildEntry(const Program &p,const BuildOptions &options) {
   rejectUnloweredTasks(p,"native entry preparation");
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
+  if(taskProviders&&supportsTaskFileWrites(p))throw Error("E_TASK_PROVIDER","language023 write task providers require their explicit new ABI contract; retained ABI3/mask31 is unchanged");
   bool server=options.target=="server";
   bool tasks=usesNativeTasks(p,options.entry);
   for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
@@ -1691,7 +1696,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp","nex_files.cpp"});
-    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h"});
+    headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h","nex_task_file_write.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
     if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
   }

@@ -1,5 +1,6 @@
 #include "nex_task_frame.h"
 #include "nex_task_file_read.h"
+#include "nex_task_file_write.h"
 #ifdef NEX_FOREIGN_ENABLED
 #include "nex_task_foreign.h"
 #endif
@@ -29,12 +30,12 @@ namespace {
 const TaskCodeDescriptor &checkedCode(const void *pointer){
   if(!pointer)throw DataError("E_TASK_STATE","missing compiled task code descriptor");
   const auto &d=*static_cast<const TaskCodeDescriptor*>(pointer);
-  if(d.abi!=taskCodeABI||!d.step||d.slotCount<0||d.slotCount>65536||d.parameterCount<0||d.parameterCount>d.slotCount||d.captureCount<0||d.captureCount>d.slotCount||d.resultKind<0||d.resultKind>4||(!d.kinds&&d.slotCount)||(!d.parameters&&d.parameterCount)||(!d.captures&&d.captureCount)||(d.requirements&~taskCodeRequirementsMask))throw DataError("E_TASK_STATE","invalid compiled task code descriptor");
+  if(!validTaskCodeRequirements(d.abi,d.requirements)||!d.step||d.slotCount<0||d.slotCount>65536||d.parameterCount<0||d.parameterCount>d.slotCount||d.captureCount<0||d.captureCount>d.slotCount||d.resultKind<0||d.resultKind>4||(!d.kinds&&d.slotCount)||(!d.parameters&&d.parameterCount)||(!d.captures&&d.captureCount))throw DataError("E_TASK_STATE","invalid compiled task code descriptor");
   if((d.requirements&taskCodeDeclaredFs)&&!(d.requirements&taskCodeDeclaredTask))
     throw DataError("E_TASK_STATE","a synchronous filesystem definition cannot be a task continuation");
-  if((d.requirements&taskCodeFileRead)&&
+  if((d.requirements&(taskCodeFileRead|taskCodeFileWrite))&&
       (d.requirements&(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))!=(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFs))
-    throw DataError("E_TASK_STATE","compiled file read descriptor requires an actual server task/fs declaration");
+      throw DataError("E_TASK_STATE",(d.requirements&taskCodeFileWrite)?"compiled file write descriptor requires an actual server task/fs declaration":"compiled file read descriptor requires an actual server task/fs declaration");
   if((d.requirements&taskCodeForeign)&&
       (d.requirements&(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFfi))!=(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredFfi))
     throw DataError("E_TASK_STATE","compiled foreign descriptor requires an actual server task/ffi declaration");
@@ -196,6 +197,35 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
         }catch(...){group.failHostOperation(std::current_exception());throw;}
         break;
       }
+      case TaskRequestKind::FileWriteText:case TaskRequestKind::FileWriteBytes:{
+        try{
+#ifdef _WIN32
+        checked([&]{throw DataError("E_TASK_TARGET","task file writes require macOS or Linux");});
+#else
+        std::optional<PreparedTaskFileWrite> prepared;
+        checked([&]{
+          if(!current.host||!(current.requirements&taskCodeFileWrite)||request.kind!=3||request.arguments.size()!=2)
+            throw DataError("E_TASK_STATE","compiled file write has no checked descriptor/host context");
+          const auto &path=request.arguments[0],&content=request.arguments[1];const bool text=request.operation==TaskRequestKind::FileWriteText;
+          if(path.tag!=Value::Object||!path.object||path.object->kind!=Data::String||content.tag!=Value::Object||!content.object||content.object->kind!=(text?Data::String:Data::Bytes))
+            throw DataError("E_TASK_STATE","compiled file write arguments have invalid concrete types");
+          auto bytes=text?std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(content.object->text.data()),content.object->text.size()):byteBuffer(content.object).view();
+          try{prepared.emplace(current.host->fileWrites,path.object->text,bytes,text);}
+          catch(const DataError &error){
+            if(!PreparedTaskFileWrite::ordinaryError(error.code))throw;result=failure(error.code,error.what());
+            try{current.host->fileWrites.check();}catch(const DataError &grantError){if(grantError.code!="CAPABILITY")throw;}
+          }
+        });
+        if(prepared){
+          auto ticket=checked([&]{return group.submitExternal(prepared->operation(),prepared->reservation());});
+          auto raw=co_await group.awaitExternal(ticket).at(request.location);
+          result=checked([&]{pollHostOperation(request.location);auto admitted=prepared->admit(std::move(raw));pollHostOperation(request.location);return admitted;});
+        }
+        checked([&]{pollHostOperation(request.location);});
+#endif
+        }catch(...){group.failHostOperation(std::current_exception());throw;}
+        break;
+      }
       case TaskRequestKind::FileReadText:case TaskRequestKind::FileReadBytes:{
         try{
 #ifdef _WIN32
@@ -288,10 +318,10 @@ void nex_task_closure_bind_at(nexrt::Handle *closure,void *code,const nexrt::Nat
 void nex_task_frame_pause_at(void *p,int64_t operation,nexrt::Handle *args,int64_t destination,int64_t kind,int64_t line,const nexrt::NativeSite *site){
   nexrt::hostOperation({line,site},[&]{
     auto &current=frame(p);
-    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::Foreign)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
+    if(current.completed||current.pendingCall||current.pendingRequest||operation<0||operation>int64_t(nexrt::TaskRequestKind::FileWriteBytes)||kind<0||kind>4||destination < -1||(destination>=0&&size_t(destination)>=current.slots.size()))throw nexrt::DataError("E_TASK_STATE","invalid compiled task request");
     if(!args)throw nexrt::DataError("E_TASK_STATE","missing compiled request arguments");
     auto values=nexrt::readHandle(args);if(values.tag!=nexrt::Value::Object||!values.object||values.object->kind!=nexrt::Data::List)throw nexrt::DataError("E_TASK_STATE","compiled request arguments are not a list");
-    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0,1,1};
+    static constexpr size_t counts[]={0,2,2,1,2,2,1,1,1,0,1,1,0,2,2};
     if(operation==int64_t(nexrt::TaskRequestKind::Foreign)){
       if(!(current.requirements&nexrt::taskCodeForeign)||values.object->values.empty()||values.object->values.size()>4097||
           (kind==4?destination!=-1:destination<0||current.kinds[destination]!=kind))
@@ -302,6 +332,13 @@ void nex_task_frame_pause_at(void *p,int64_t operation,nexrt::Handle *args,int64
         throw nexrt::DataError("E_TASK_STATE","compiled file read requires a server task/fs descriptor and result slot");
       const auto &path=values.object->values[0];if(path.tag!=nexrt::Value::Object||!path.object||path.object->kind!=nexrt::Data::String)
         throw nexrt::DataError("E_TASK_STATE","compiled file read path is not a string");
+    }
+    if(operation==int64_t(nexrt::TaskRequestKind::FileWriteText)||operation==int64_t(nexrt::TaskRequestKind::FileWriteBytes)){
+      if(!(current.requirements&nexrt::taskCodeFileWrite)||kind!=3||destination<0||current.kinds[destination]!=3)
+        throw nexrt::DataError("E_TASK_STATE","compiled file write requires an ABI4 server task/fs descriptor and result slot");
+      const auto &path=values.object->values[0],&content=values.object->values[1];
+      if(path.tag!=nexrt::Value::Object||!path.object||path.object->kind!=nexrt::Data::String||content.tag!=nexrt::Value::Object||!content.object||content.object->kind!=(operation==int64_t(nexrt::TaskRequestKind::FileWriteText)?nexrt::Data::String:nexrt::Data::Bytes))
+        throw nexrt::DataError("E_TASK_STATE","compiled file write arguments have invalid concrete types");
     }
     current.pendingRequest=nexrt::NativeTaskRequest{nexrt::TaskRequestKind(operation),values.object->values,destination,kind,{line,site}};
   });

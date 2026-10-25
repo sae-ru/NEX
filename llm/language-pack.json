@@ -263,7 +263,9 @@
     "resource_regions": "docs/resource-regions.md",
     "task_value_retirement": "docs/task-value-retirement.md",
     "task_foreign_source": "docs/task-foreign-prototype.md",
-    "device": "docs/device.md"
+    "device": "docs/device.md",
+    "task_file_writes_prototype": "docs/task-file-writes-prototype.md",
+    "task_file_writes_host": "docs/task-file-writes-host.md"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1926,6 +1928,42 @@
       "source frontend/reference/native/provider integration",
       "explicit history-preserving source migration",
       "matching full regression, installed SDK and platform acceptance",
+      "streams, networking, DB and task HTTP handlers"
+    ]
+  },
+  "task_file_writes_prototype": {
+    "status": "private_explicit023_source_integration",
+    "guide": "docs/task-file-writes-prototype.md",
+    "language": "0.23",
+    "public_language": "0.22",
+    "source_support": false,
+    "private_source_support": true,
+    "public_enabled": false,
+    "native": true,
+    "reference": true,
+    "typescript_server_files": false,
+    "execution_ABI": 4,
+    "retained_provider_ABI": 3,
+    "retained_provider_mask": 31,
+    "descriptor_bytes": 88,
+    "operations": [
+      "file_write_text(str,str) -> result<bool>",
+      "file_write_bytes(str,bytes) -> result<bool>"
+    ],
+    "function_effects": [
+      "task",
+      "fs"
+    ],
+    "realm": "server",
+    "explicit_write_grant": true,
+    "snapshot_inputs": true,
+    "physical_drain": true,
+    "postcommit_rollback": false,
+    "public_migration_complete": false,
+    "pending": [
+      "explicit genuine022 history-preserving public023 migration",
+      "new static/shared provider contract and replay/package",
+      "matching CLI/editor/debug/profile/SDK/platform delivery",
       "streams, networking, DB and task HTTP handlers"
     ]
   }

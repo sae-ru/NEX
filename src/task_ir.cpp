@@ -9,7 +9,7 @@ std::string taskSlotName(TaskSlotId slot){return "$task_slot_"+std::to_string(sl
 namespace {
 class Lowering {
   const Program &program;
-  bool fileReads=false;
+  bool fileReads=false,fileWrites=false;
   TaskFunctionIR result;
   std::vector<std::map<std::string,TaskSlotId>> scopes;
   std::vector<std::map<std::string,uint32_t>> debugScopes;
@@ -157,7 +157,7 @@ class Lowering {
     auto atom=std::make_shared<Expr>(*original);atom->args.clear();TaskInstruction op;op.kind=TaskInstruction::Eval;op.span=original->span;op.source=original.get();op.output=output;
     if(original->kind==Expr::Name){auto id=lookup(original->text,original->span);atom->text=taskSlotName(id);atom->localName.clear();op.inputs={id};}
     else for(auto argument:original->args){auto id=expr(argument);op.inputs.push_back(id);atom->args.push_back(reference(id,argument->span));}
-    if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes")))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
+    if(original->kind==Expr::Call&&(taskBuiltins().contains(original->text)||(fileReads&&(original->text=="file_read_text"||original->text=="file_read_bytes"))||(fileWrites&&taskFileWriteOperation(original->text)))){op.kind=TaskInstruction::Pause;op.operation=original->text;}
     else if(supportsTaskForeignCalls(program)&&original->kind==Expr::Call&&
         !builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).foreign){
       op.kind=TaskInstruction::Pause;op.foreign=true;op.operation=original->text;
@@ -197,6 +197,7 @@ class Lowering {
 public:
   Lowering(const Program &program,const Function &function,bool debugMetadata):program(program){
     fileReads=supportsTaskFileReads(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
+    fileWrites=fileReads&&supportsTaskFileWrites(program);
     result.name=function.name;result.result=function.result;if(debugMetadata)result.debug.emplace();enter();
     for(const auto &capture:function.captures){auto id=slot(capture.type,capture.span,capture.name,false);scopes.back()[capture.name]=id;binding(id,capture.name,capture.type,capture.span);result.captures.push_back(id);}
     for(const auto &parameter:function.params){auto id=slot(parameter.type,parameter.span,parameter.name,false);scopes.back()[parameter.name]=id;binding(id,parameter.name,parameter.type,parameter.span);result.parameters.push_back(id);}
@@ -222,6 +223,9 @@ void validateTaskIR(const TaskFunctionIR &function){
       if(op.foreign){
         if(op.operation.empty()||!op.atom||op.atom->kind!=Expr::Call||op.atom->text!=op.operation||op.inputs.size()!=op.atom->args.size())
           throw Error("E_TASK_STATE","invalid continuation foreign call operation",op.span);
+      }else if(taskFileWriteOperation(op.operation)){
+        if(op.inputs.size()!=2||function.slots[op.inputs[0]].type!=Type::Str||function.slots[op.inputs[1]].type!=(op.operation=="file_write_text"?Type(Type::Str):Type(Type::Bytes))||op.output==noTaskSlot||function.slots[op.output].type!=Type::result(Type::Bool))
+          throw Error("E_TASK_STATE","invalid continuation file write operation",op.span);
       }else if((op.operation!="file_read_text"&&op.operation!="file_read_bytes")||op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Str||op.output==noTaskSlot||function.slots[op.output].type!=Type::result(op.operation=="file_read_text"?Type(Type::Str):Type(Type::Bytes)))
         throw Error("E_TASK_STATE","invalid continuation file read operation",op.span);
     }

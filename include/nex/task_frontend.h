@@ -11,6 +11,9 @@ Program loadTaskPrototype(const std::string &entry,const std::string &root,
 const std::set<std::string> &taskBuiltins();
 bool isPublicTaskLanguage(const Program &program);
 bool supportsTaskFileReads(const Program &program);
+// Explicit private023 integration; public022 and historical execution stay intact.
+bool supportsTaskFileWrites(const Program &program);
+bool taskFileWriteOperation(const std::string &operation);
 // Private022 source prototype; current public language021 remains unchanged.
 bool supportsTaskForeignCalls(const Program &program);
 bool containsTaskAuthority(const Program &program,const Type &type);

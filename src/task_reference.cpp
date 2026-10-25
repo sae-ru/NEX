@@ -3,6 +3,7 @@
 #include "nex/operations.h"
 #include "nex_task_reference_value.h"
 #include "nex_task_file_read.h"
+#include "nex_task_file_write.h"
 #include "nex_task_foreign.h"
 #include "nex_host.h"
 #include <algorithm>
@@ -251,6 +252,7 @@ struct Reference {
     size_t externalScope=none;
 #ifndef _WIN32
     std::unique_ptr<nexrt::PreparedTaskFileRead> fileRead;
+    std::unique_ptr<nexrt::PreparedTaskFileWrite> fileWrite;
 #endif
   };
   struct Region {
@@ -294,6 +296,7 @@ struct Reference {
   nexrt::CapturedForeignScope foreignScope;
 #ifndef _WIN32
   nexrt::FileReadGrant fileGrant;
+  nexrt::FileWriteGrant writeGrant;
 #endif
 
   static nexrt::TaskExecutionLimits selectedLimits(uint64_t legacy,const nexrt::TaskExecutionLimits *requested){
@@ -306,7 +309,7 @@ struct Reference {
     nexrt::TaskExecutionLimits result;result.steps=legacy;return result;
   }
   Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested,
-      TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant)
+      TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant,const nexrt::FileWriteGrant *writes)
     :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
      deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),externalHost(host){
     if(supportsTaskFileReads(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
@@ -314,8 +317,10 @@ struct Reference {
     if(supportsTaskForeignCalls(program))foreignScope=nexrt::captureForeignScope(true);
 #ifndef _WIN32
     if(grant)fileGrant=*grant;
+    if(writes)writeGrant=*writes;
 #else
     (void)grant;
+    (void)writes;
 #endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
     if((host&&host->resourceRegions)||supportsTaskForeignCalls(program)){
@@ -591,11 +596,12 @@ struct Reference {
   }
   bool sourceHostRequest(const std::string &operation)const{
     if(supportsTaskFileReads(program)&&taskFileReadOperation(operation))return true;
+    if(supportsTaskFileWrites(program)&&taskFileWriteOperation(operation))return true;
     return supportsTaskForeignCalls(program)&&!operation.empty()&&!taskBuiltins().contains(operation)&&!taskFileBuiltin(operation)&&program.function(operation).foreign.has_value();
   }
   void dispatch(size_t i){
     auto &j=*jobs[i];const auto &r=j.request;charge(1,r.span);
-    if(supportsTaskForeignCalls(program)&&!taskBuiltins().contains(r.operation)&&!taskFileReadOperation(r.operation)&&program.function(r.operation).foreign){
+    if(supportsTaskForeignCalls(program)&&!taskBuiltins().contains(r.operation)&&!taskFileBuiltin(r.operation)&&program.function(r.operation).foreign){
       auto prepared=nexrt::PreparedTaskForeignCall(foreignScope,json(foreignBinding(program,program.function(r.operation)),false),r.arguments,[&]{checkControl(r.span);},{},foreignCleanup,[&]{return resourceAuthority(j);});
       if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,
           externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
@@ -603,6 +609,32 @@ struct Reference {
       j.foreignCall=std::move(prepared);j.external=ticket;j.externalScope=j.current;
       if(j.externalScope!=none)++regions.at(j.externalScope).external;
       return;
+    }
+    if(taskFileWriteOperation(r.operation)){
+      if(!supportsTaskFileWrites(program))throw Error("E_TASK_UNIMPLEMENTED","source task file writes require language023",r.span);
+      const bool text=r.operation=="file_write_text";
+      if(r.arguments.size()!=2||r.result!=Type::result(Type::Bool)||r.arguments[0].tag!=RV::Object||!r.arguments[0].object||r.arguments[0].object->kind!=RD::String||
+         r.arguments[1].tag!=RV::Object||!r.arguments[1].object||r.arguments[1].object->kind!=(text?RD::String:RD::Bytes))
+        throw Error("E_TASK_TYPE","reference file write has an invalid checked request shape",r.span);
+#ifdef _WIN32
+      throw Error("E_TASK_TARGET","task file writes require the macOS/Linux native host",r.span);
+#else
+      try{
+        const auto &content=r.arguments[1].object;
+        auto bytes=text?std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(content->text.data()),content->text.size()):nexrt::byteBuffer(content).view();
+        auto prepared=std::make_unique<nexrt::PreparedTaskFileWrite>(writeGrant,r.arguments[0].object->text,bytes,text);
+        auto operation=prepared->operation();checkControl(r.span);
+        if(!external)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,externalHost?externalHost->cancellation:std::stop_token{},externalHost?externalHost->limits:nexrt::TaskExternalLimits{});
+        auto ticket=external->submit(i,std::move(operation),prepared->reservation());
+        j.fileWrite=std::move(prepared);j.external=ticket;j.externalScope=j.current;
+        if(j.externalScope!=none)++regions.at(j.externalScope).external;
+        j.state=External;return;
+      }catch(const nexrt::DataError &error){
+        if(!nexrt::PreparedTaskFileWrite::ordinaryError(error.code))throw Error(error.code,error.what(),r.span);
+        try{writeGrant.check();}catch(const nexrt::DataError &grantError){if(grantError.code!="CAPABILITY")throw Error(grantError.code,grantError.what(),r.span);}
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+      }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file write preparation allocation failed",r.span);}
+#endif
     }
     if(taskFileReadOperation(r.operation)){
       if(!supportsTaskFileReads(program))throw Error("E_TASK_UNIMPLEMENTED","source task file reads require language020",r.span);
@@ -748,12 +780,13 @@ struct Reference {
       if(ticket->owner>=jobs.size()||!jobs[ticket->owner]->external||*jobs[ticket->owner]->external!=*ticket)
         throw Error("E_TASK_STATE","reference external completion has no matching source owner");
       auto i=ticket->owner;auto &job=*jobs[i];auto span=job.request.span;
-      const bool fileCompletion=taskFileReadOperation(job.request.operation);
+      const bool fileCompletion=taskFileReadOperation(job.request.operation)||taskFileWriteOperation(job.request.operation);
       auto raw=external->take(*ticket);job.external.reset();
       auto foreignPrepared=std::move(job.foreignCall);job.foreignCall.reset();
       const bool sourceHostCompletion=fileCompletion||foreignPrepared.has_value();
 #ifndef _WIN32
       auto prepared=std::move(job.fileRead);
+      auto preparedWrite=std::move(job.fileWrite);
 #endif
       if(job.externalScope!=none){
         auto &scope=regions.at(job.externalScope);
@@ -777,6 +810,14 @@ struct Reference {
           checkControl(span);answer(i,std::move(value));continue;
         }
 #ifndef _WIN32
+        if(preparedWrite){
+          if(physicalFailure)throw *physicalFailure;
+          auto value=preparedWrite->admit(std::move(raw));checkControl(span);
+          if(value.tag!=RV::Object||!value.object||(value.object->kind!=RD::Success&&value.object->kind!=RD::Failure)||
+             (value.object->kind==RD::Success&&(value.object->values.size()!=1||value.object->values[0].tag!=RV::Boolean)))
+            throw Error("E_TASK_TYPE","reference file write admission has an invalid concrete result",span);
+          answer(i,std::move(value));continue;
+        }
         if(prepared){
           // Fixed adapter and concrete result type only. No source Value or
           // AST/frame reaches the IO worker, and cancelled completions never
@@ -861,7 +902,7 @@ struct Reference {
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){
-          if(!reads||!taskFileReadOperation(e->text))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
+          if(!reads||!(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text))))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
 #ifdef _WIN32
           throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",e->span);
 #endif
@@ -917,12 +958,14 @@ struct Reference {
   }
 };
 }
-TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant){
+TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
   try{
     std::unique_ptr<nexrt::RequestScope> request;
     std::unique_ptr<nexrt::FileScope> files;
 #ifndef _WIN32
     nexrt::FileReadGrant captured;
+    nexrt::FileWriteGrant capturedWrite;
+    const bool explicitReadGrant=fileGrant!=nullptr;
     if(supportsTaskFileReads(p)){
       const auto limits=Reference::selectedLimits(limit,taskLimits);
       // The reference owns its exact source-work counter. This host scope
@@ -932,9 +975,13 @@ TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &en
         if(!nexrt::inFileScope())files=std::make_unique<nexrt::FileScope>(true);
         captured=nexrt::captureFileReadGrant();fileGrant=&captured;
       }
+      if(supportsTaskFileWrites(p)&&!writeGrant){
+        if(!explicitReadGrant)capturedWrite=nexrt::captureFileWriteGrant();
+        writeGrant=&capturedWrite;
+      }
     }
 #endif
-    Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant);
+    Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant);
     try{return scheduler.run(entry,arguments);}catch(Error &e){e.output=scheduler.output;annotateReferenceError(p,e);throw;}
   }catch(const nexrt::DataError &error){throw Error(error.code,error.what(),p.function(entry).span);}
   catch(const nexrt::Trap &error){throw Error(error.code,error.what(),p.function(entry).span);}

@@ -822,6 +822,18 @@ Toolchain 0.12 links external `nex.task/1` acceptance criteria to source candida
 
 Toolchain 0.15 derives typed parameter/block/statement/expression nodes from the checked program without changing source syntax, language 0.5 or semantic revision identity. Their local persistent IDs, content hashes and deterministic source sites are separate. See [operations.md](operations.md) for matching, lexical references, paged context, diagnostics, source hashes and migration.
 
+## Private source task write candidate (0.23)
+
+The ordinary project/CLI language remains0.22. An explicit internal0.23
+parse/bundle prototype suspends server task/fs `file_write_text` and
+`file_write_bytes` with their existing `result<bool>` types. It preserves strict
+UTF-8, immutable snapshots, left-to-right evaluation, lazy branches, local `?`,
+explicit revocable authority and physical cleanup. Public022 execution still
+rejects these task writes. The prototype's contract, ABI4 boundary and required
+explicit history-preserving migration are in
+[task-file-writes-prototype.md](task-file-writes-prototype.md). It is not public
+language enablement or completed SDK/platform/provider delivery.
+
 ## Text-file effects (0.12)
 
 `file_read_text(str) -> result<str>` and `file_write_text(str,str) -> result<bool>`
