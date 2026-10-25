@@ -27,4 +27,6 @@ inline bool validTaskCodeRequirements(int64_t abi,int64_t requirements)noexcept{
 inline constexpr int64_t taskProviderRequirementsMask=31;
 // Explicit023 provider records exclude standalone source FFI requirements.
 inline constexpr int64_t taskWriteProviderRequirementsMask=taskProviderRequirementsMask|taskCodeFileWrite|taskCodeImageFileWrite;
+// ABI5 source-provider files remain distinct from C FFI/external authority.
+inline constexpr int64_t taskStreamProviderRequirementsMask=taskWriteProviderRequirementsMask|taskCodeFileStream|taskCodeImageFileStream;
 }

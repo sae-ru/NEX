@@ -1,3 +1,4 @@
+(* Private024 ABI5 source-provider/file export records add no syntax or public023/history change. *)
 (* Toolchain0.133.5 private024 owning file finalizers add no syntax, canonical identity, public language or retained-history change. *)
 (* Toolchain0.133.4 private024 image/build read/write requirements add no syntax, canonical identity, public language or history change. *)
 (* Private024 uses this same syntax for source file stream suspension and

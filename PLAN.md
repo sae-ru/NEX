@@ -1,3 +1,18 @@
+# Development0.133.7: private024 native source file providers
+
+Private024 source providers have explicit ABI5 records8/9/10 and root stage3.
+Checked File parameters/results, including immutable aggregates, cross static
+and fixed shared source boundaries under the same application runtime and
+resource-region guards. File-bearing retained task values request the stream
+image flag independently of read/write operations. Image/component/root flags
+never grant OS authority. ABI3/4, public023 and provider masks31/799 stay strict;
+ABI5 provider mask3871 excludes standalone source FFI bits. Profile/debug source
+metadata accepts explicit024; full CLI project-plan/capture/replay/package/
+debug/profile and public024 delivery remain separate pending work. Compiler,
+source/provider conformance, full/SAN/SDK/platform acceptance must be verified.
+All original language/server/accelerator/UI/mobile/Studio/converter/measurement
+requirements remain in scope. There is no grammar or public language change.
+
 # Development0.133.6: private024 source control conformance
 
 Twelve actual compiled-NEX/independent-AST pairs pass across six native images:

@@ -79,11 +79,16 @@ Captured capture(const NativeImageInput &input){
     auto parsed=llvm::json::parse(bytes);if(!parsed)fail("invalid captured task provider JSON");provider=parseNativeTaskProvider(*parsed);
     if(provider.mode!=NativeTaskLinkageMode::SharedFixed||provider.artifact!=NativeTaskArtifactKind::PicStage||provider.component!=input.name||provider.image||!provider.ownerImage.empty()||
        json(nativeTaskProviderJSON(provider),false)!=json(nativeTaskProviderJSON(input.stage.taskProvider),false))fail("captured task PIC provider differs from checked stage");
-    if(provider.language=="0.23"){
+    if(provider.language=="0.23"||provider.language=="0.24"){
       auto requirements=meta.getObject("runtime_requirements");auto writes=meta.getBoolean("task_file_writes");
       if(!requirements||!writes||*writes!=provider.taskFileWrites||requirements->getBoolean("task_file_writes")!=*writes)fail("captured023 stage write requirements differ");
       auto selected=meta.get("task_application");if(!selected)fail("captured023 stage omitted task application selection");auto stage=parseNativeTaskApplicationStage(*selected);
-      if(stage.enabled&&(stage.executionABI!=nexrt::taskCodeWriteABI||stage.fileWrites!=provider.taskFileWrites))fail("captured023 root application write requirements differ");
+      if(stage.enabled&&(stage.executionABI!=(provider.language=="0.24"?nexrt::taskCodeStreamABI:nexrt::taskCodeWriteABI)||stage.fileWrites!=provider.taskFileWrites))fail("captured023 root application write requirements differ");
+      if(provider.language=="0.24"){
+        auto streams=meta.getBoolean("task_file_streams");
+        if(!streams||*streams!=provider.taskFileStreams||requirements->getBoolean("task_file_streams")!=*streams||
+           (stage.enabled&&stage.fileStreams!=provider.taskFileStreams))fail("captured024 stream requirements differ");
+      }
     }
     if(input.options.profile=="profile"){
       if(!provider.profiling)fail("profile task stage omitted its catalog");
@@ -179,7 +184,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
   const bool sharedTasks=effectiveNativeTaskLinkage(inputs.front().options)==NativeTaskLinkageMode::SharedFixed;
   const bool taskProfiling=sharedTasks&&inputs.front().options.profile=="profile";
   const bool taskDebugging=sharedTasks&&inputs.front().options.taskDebug;
-  bool tasks=false,taskReads=false,taskWrites=false;
+  bool tasks=false,taskReads=false,taskWrites=false,taskStreams=false;
   bool storage=false,foreign=false,profiling=false,wire=false,files=false,parallel=false,taskDebug=false;auto abi=inputs.front().stage.libraryABI;auto profile=inputs.front().options.profile;
   std::string foreignDefault;
   auto toolchainFingerprint=inspectNativeToolchain(inputs.front().options).hash;
@@ -203,7 +208,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     storage|=requirements->getBoolean("storage").value_or(false);foreign|=requirements->getBoolean("foreign").value_or(false);profiling|=requirements->getBoolean("profiling").value_or(false);
     wire|=requirements->getBoolean("wire").value_or(false);files|=requirements->getBoolean("files").value_or(false);
     parallel|=requirements->getBoolean("parallel").value_or(false);
-    if(sharedTasks){tasks|=requirements->getBoolean("tasks").value_or(false);taskReads|=requirements->getBoolean("task_file_reads").value_or(false);taskWrites|=requirements->getBoolean("task_file_writes").value_or(false);}
+    if(sharedTasks){tasks|=requirements->getBoolean("tasks").value_or(false);taskReads|=requirements->getBoolean("task_file_reads").value_or(false);taskWrites|=requirements->getBoolean("task_file_writes").value_or(false);taskStreams|=requirements->getBoolean("task_file_streams").value_or(false);}
     auto inventory=stage.build.getObject("runtime_inputs");if(!inventory)fail("missing captured runtime inventory");
     auto projection=fs::path(text(stage.build,"runtime_source_projection"));
     for(const auto &[name,value]:*inventory){
@@ -220,6 +225,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     {"cache",root.string()},{"cwd",fs::current_path().string()},{"inputs",std::move(runtimeInputs)},{"components",std::move(componentNames)},
     {"shared_profile_identity",profiling},{"task_debug",taskDebug},{"foreign",foreign},{"storage",storage},{"parallel",parallel},{"foreign_catalogue",foreignDefault}};
   if(sharedTasks){requirements["tasks"]=tasks;requirements["task_file_reads"]=taskReads;requirements["task_file_writes"]=taskWrites;runtimeSeed["task_linkage_mode"]="shared-fixed";runtimeSeed["tasks"]=tasks;runtimeSeed["task_file_reads"]=taskReads;runtimeSeed["task_file_writes"]=taskWrites;}
+  if(sharedTasks&&llvm::StringRef(programLanguage(*inputs.front().program))=="0.24"){requirements["task_file_streams"]=taskStreams;runtimeSeed["task_file_streams"]=taskStreams;}
   auto runtimeText=json(JSON(Object(runtimeSeed)),false),runtimeKey=hash(runtimeText);auto runtimeFolder=root/("runtime-"+runtimeKey);
   auto extension=darwin?".dylib":".so";auto runtime=runtimeFolder/("libnex_runtime_"+runtimeKey+extension);auto projection=runtimeFolder/"runtime-inputs";
   for(const auto &[name,data]:sources)writeFile((projection/name).string(),data);
@@ -290,6 +296,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
         for(const auto &name:info.definitions){if(!provider.definitions.insert(name).second)fail("duplicate task definition in final image: "+name);provider.definitionOwners[name]=info.definitionOwners.at(name);}
         for(const auto &[name,value]:info.componentFileReads){auto [old,inserted]=provider.componentFileReads.emplace(name,value);if(!inserted&&old->second!=value)fail("task component read flag changed");provider.taskFileReads|=value;}
         for(const auto &[name,value]:info.componentFileWrites){auto [old,inserted]=provider.componentFileWrites.emplace(name,value);if(!inserted&&old->second!=value)fail("task component write flag changed");provider.taskFileWrites|=value;}
+        for(const auto &[name,value]:info.componentFileStreams){auto [old,inserted]=provider.componentFileStreams.emplace(name,value);if(!inserted&&old->second!=value)fail("task component stream flag changed");provider.taskFileStreams|=value;}
         for(const auto &[name,value]:info.exports)if(!provider.exports.emplace(name,value).second)fail("duplicate task accessor in final image: "+name);
       };merge(stage);for(const auto &name:input.staticDependencies)merge(stages.at(name));
       if(taskProfiling){built.profileCatalog=localCatalog;provider.profiling=nativeTaskProfileInfo(localCatalog);}
@@ -452,7 +459,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
           auto path=folder/"application-entry.cpp";writeFile(path.string(),source);compile(tools,path,folder/"application-entry.o",compileFlags);linkInputs.push_back((folder/"application-entry.o").string());
         }
         Object applicationIdentity{{"schema","nex.native-application/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(*input.program)},{"revision",revision(*input.program)},{"source_hash",hash(json(sourceBundle(*input.program),false))},{"build_key",key},{"compiler_build",NEX_BUILD_ID}};
-        if(sharedTasks){auto selection=nativeTaskApplicationStageJSON(input.stage.taskApplication);applicationIdentity["task_limits"]=JSON(*selection.getAsObject()->get("configured"));applicationIdentity["task_file_reads"]=input.stage.taskApplication.fileReads;applicationIdentity["task_file_writes"]=input.stage.taskApplication.fileWrites;applicationIdentity["task_execution_abi"]=input.stage.taskApplication.executionABI;}
+        if(sharedTasks){auto selection=nativeTaskApplicationStageJSON(input.stage.taskApplication);applicationIdentity["task_limits"]=JSON(*selection.getAsObject()->get("configured"));applicationIdentity["task_file_reads"]=input.stage.taskApplication.fileReads;applicationIdentity["task_file_writes"]=input.stage.taskApplication.fileWrites;applicationIdentity["task_execution_abi"]=input.stage.taskApplication.executionABI;if(input.stage.taskApplication.executionABI==nexrt::taskCodeStreamABI)applicationIdentity["task_file_streams"]=input.stage.taskApplication.fileStreams;}
         auto identity=json(JSON(std::move(applicationIdentity)),false);
         auto path=folder/"application-identity.cpp";writeFile(path.string(),"extern \"C\" const char *nex_application_identity()noexcept{return "+json(identity,false)+";}\n");compile(tools,path,folder/"application-identity.o",compileFlags);linkInputs.push_back((folder/"application-identity.o").string());
         if(profiling){Object profileBuild{{"schema",taskProfiling?"nex.profile-build/2":"nex.profile-build/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(*input.program)},{"revision",revision(*input.program)},{"build_key",key},{"entry",input.program->function(input.options.entry).name},

@@ -83,10 +83,12 @@ try:
         ('whole_read', 'file_read_bytes("input");', (True, False, False)),
         ('whole_write', 'file_write_bytes("output",utf8_bytes("x"));', (False, True, False)),
         ('no_file_operation', 'task_yield();', (False, False, False)),
+        ('typed_file_transit', 'task_yield();', (False, False, True)),
     ]
     for name, body, expected in operations:
         source = root / (name + '.nex')
-        source.write_text('module requirements;server fn target(f:file)->unit !{task,fs}{' + body + '}\n')
+        parameter = 'f:file' if name in ['read','write','seek','size','flush','close','is_open','typed_file_transit'] else ''
+        source.write_text('module requirements;server fn target(' + parameter + ')->unit !{task,fs}{' + body + '}\n')
         flags = image_flags(invoke(name, 'emit', source, entry='target')['mlir'])
         assert flags == [expected], (name, flags, expected)
         report['operation_cases'].append({'name': name, 'flags': flags})

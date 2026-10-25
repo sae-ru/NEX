@@ -2149,12 +2149,12 @@
     "pending": [
       "explicit retained023 transactional history migration and public publication",
       "source conformance and rejection acceptance",
-      "ABI5 provider/capture/package/debug/profile contracts",
+      "ABI5 public project-plan/capture/replay/package and CLI debug/profile delivery",
       "matching full regression, fresh sanitizers, installed SDK and platform acceptance",
       "streaming network/DB and task HTTP handlers"
     ],
     "image_requirements": {
-      "scope": "reachable checked native task instructions",
+      "scope": "reachable checked native task instructions and retained file values",
       "read_operations": [
         "file_read_text",
         "file_read_bytes",
@@ -2181,7 +2181,8 @@
         "task_file_writes",
         "task_file_streams"
       ],
-      "declarations_grant_OS_authority": false
+      "declarations_grant_OS_authority": false,
+      "retained_file_values_require_stream_image": true
     },
     "file_cleanup": {
       "owning_executor": true,
@@ -2191,6 +2192,26 @@
       "quota_and_region_fence_until_settled": true,
       "source_open_requires_executor": true,
       "legacy_host_default_inline_unchanged": true
+    },
+    "source_providers": {
+      "private_enabled": true,
+      "public_enabled": false,
+      "schemas": [
+        "nex.native-task-provider/8",
+        "nex.native-task-provider/9",
+        "nex.native-task-provider/10"
+      ],
+      "schema_file": "llm/native-stream-task-provider.schema.json",
+      "requirements_mask": 3871,
+      "typed_file_exports": true,
+      "static": true,
+      "shared_fixed": true,
+      "root_application_schema": "nex.native-task-application/3",
+      "profile_debug_metadata": true,
+      "C_FFI_file_transport": false,
+      "wire_file_transport": false,
+      "CLI_plan_capture_package_debug_profile_delivery": false,
+      "guide": "docs/task-stream-providers.md"
     }
   }
 }
