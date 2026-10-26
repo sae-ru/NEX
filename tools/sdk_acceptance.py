@@ -5096,7 +5096,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
-        require(tuple(name for name, _ in actions) == acceptance_phases(report['doctor']['version']),
+        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES_024_TCP,
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:
             phase(name, action)

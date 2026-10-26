@@ -1,3 +1,11 @@
+SDK bootstrap202 / toolchain0.135.2 / language0.24 validates its fixed38
+registered workflow actions before discovery without reading an uninitialized
+doctor response. The source199 full214 Mac run passed; its SDK run retained a
+real KeyError before any phase. This is an acceptance-driver correction only:
+compiler/frontend/backends/runtime/root CMake/spec/grammar are unchanged. Full
+matching SDK38 retry remains required. The original broad objective, all older
+failures and primary081/016 history stay preserved.
+
 TCP sanitizer multiarch201 / toolchain0.135.2 / language0.24 selects exact
 OpenSSL include/crypto/SSL paths from the actual doctor response for the optional
 sanitizer host. Explicit root=/usr did not find libcrypto in Linux multiarch;
