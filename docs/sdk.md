@@ -514,3 +514,28 @@ executes both copied and packaged closures with loader tracing before replay.
 The phase body alone is a scoped proof; full matching installedSDK29 acceptance
 and supported platform gates are separately recorded. Static123's phase and
 provider1/completion4 contract remain required and unchanged.
+# Public task HTTP/TLS delivery (SDK0.134.4)
+
+The matching SDK workflow requires37 ordered phases, including
+`structured-task-http`. It executes the installed, indexed
+`tests/task_http_server.py` helper with the actual installed compiler. The
+helper builds debug/release task servers and retains148 checks,50 HTTP request
+outcomes,14 clean server exits, verified HTTPS certificates and exact
+E_CANCELLED diagnostics after real disconnects with an opened File. Compiler,
+helper, image and metadata hashes bind this evidence to the SDK. Native/AST
+Unicode and NUL behavior, authenticated principals, file grants, path limits,
+compiled ceilings, runtime control and source-absent app execution are checked.
+
+`validate_completed_report` keeps the older34/35/36-phase contracts for their
+original toolchains;0.134.0..0.134.3 still require36. A0.134.4 receipt cannot
+omit the37th phase, its declared phase list, indexed helper or actual request/
+cleanup evidence. Passing the isolated HTTP receipt check does not bypass any
+other SDK requirement. Archive/moved SDK, supported platform and whole-project
+acceptance remain separate. App-source absence is distinct from compiler-source
+fallback absence: promotion tests temporarily hide the exact compiled source
+prefix and pass it to `--forbid-source` throughout the installed workflow.
+
+The source/runtime implementation is unchanged from the188 HTTP cohort. This
+delivery update installs/indexes its extended helper and strengthens SDK receipt
+validation. It adds no source syntax, language migration, dependency or notice.
+

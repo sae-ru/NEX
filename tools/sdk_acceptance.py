@@ -36,10 +36,13 @@ ACCEPTANCE_PHASES = (
 
 ACCEPTANCE_PHASES_023 = ACCEPTANCE_PHASES[:ACCEPTANCE_PHASES.index('structured-task-file-reads')+1] + ('structured-task-file-writes',) + ACCEPTANCE_PHASES[ACCEPTANCE_PHASES.index('structured-task-file-reads')+1:]
 ACCEPTANCE_PHASES_024 = ACCEPTANCE_PHASES_023[:ACCEPTANCE_PHASES_023.index('structured-task-file-writes')+1] + ('structured-task-file-streams',) + ACCEPTANCE_PHASES_023[ACCEPTANCE_PHASES_023.index('structured-task-file-writes')+1:]
+ACCEPTANCE_PHASES_024_HTTP = ACCEPTANCE_PHASES_024[:ACCEPTANCE_PHASES_024.index('structured-task-file-streams')+1] + ('structured-task-http',) + ACCEPTANCE_PHASES_024[ACCEPTANCE_PHASES_024.index('structured-task-file-streams')+1:]
 
 
 def acceptance_phases(version):
     parts=version.split('.')
+    if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,134,4):
+        return ACCEPTANCE_PHASES_024_HTTP
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,134,0):
         return ACCEPTANCE_PHASES_024
     current=len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,133,0)
@@ -626,6 +629,69 @@ def _stream_host_contract():
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 
+def validate_task_http_evidence(report):
+    """Validate this gate's receipt shape; other SDK gates remain mandatory."""
+    http=report.get('evidence',{}).get('structured_task_http',{})
+    delivery=http.get('delivery',{}) if isinstance(http,dict) else {}
+    flags=('source_absent_execution','request_identity_preserved','TLS_verified','compiler_unchanged',
+           'task_whole_file_and_stream_IO','grant_denial_and_path_containment',
+           'trap_budget_deadline_disconnect_cleanup','public_HTTP_task_target')
+    helper='tests/task_http_server.py'
+    resources=report.get('resource_hashes',{})
+    digest=resources.get(helper) if isinstance(resources,dict) else None
+    require(report.get('language')=='0.24' and isinstance(http,dict) and isinstance(delivery,dict) and
+            http.get('installed_helper') is True and isinstance(digest,str) and
+            re.fullmatch('[0-9a-f]{64}',digest) and http.get('helper_sha256')==digest and
+            delivery.get('helper_sha256')==digest and
+            isinstance(http.get('delivery_report_sha256'),str) and
+            re.fullmatch('[0-9a-f]{64}',http['delivery_report_sha256']) and
+            delivery.get('schema')=='nex.task-http-server/1' and delivery.get('ok') is True and
+            delivery.get('state')=='passed' and delivery.get('language')=='0.24' and
+            isinstance(report.get('compiler_sha256'),str) and re.fullmatch('[0-9a-f]{64}',report['compiler_sha256']) and
+            delivery.get('compiler_sha256')==report['compiler_sha256'] and
+            all(delivery.get(key) is True for key in flags) and
+            delivery.get('async_network_DB_claimed') is False and delivery.get('full_objective_complete') is False and
+            all(type(delivery.get(key)) is int and delivery[key]==expected for key,expected in
+                [('checks',148),('profiles',2),('concurrent_requests_each',8),('compiled_limit_ceiling_rejections',14)]),
+            'SDK acceptance lacks actual installed public task HTTP/TLS execution')
+    servers=delivery.get('servers',[]);images=delivery.get('images',[]);cancels=delivery.get('cancel_observations',[])
+    require(isinstance(servers,list) and len(servers)==14 and all(isinstance(row,dict) for row in servers) and
+            {row.get('number') for row in servers}==set(range(1,15)) and
+            all(type(row.get('number')) is int and type(row.get('exit_code')) is int and row['exit_code']==0 and type(row.get('TLS')) is bool for row in servers) and
+            sum(row['TLS'] for row in servers)==2 and
+            isinstance(images,list) and len(images)==2 and all(isinstance(row,dict) for row in images) and {row.get('profile') for row in images}=={'debug','release'} and
+            all(all(isinstance(row.get(key),str) and re.fullmatch('[0-9a-f]{64}',row[key])
+                    for key in ('sha256','metadata_sha256')) and
+                row.get('task_limits')=={'steps':100000000,'timeout_ms':5000,'workers':4} for row in images) and
+            isinstance(cancels,list) and len(cancels)==2 and all(isinstance(row,dict) for row in cancels) and {row.get('profile') for row in cancels}=={'debug','release'} and
+            all(row.get('code')=='E_CANCELLED' and row.get('opened_file_and_marker_before_disconnect') is True and
+                row.get('sole_HTTP_worker_released_before_deadline') is True for row in cancels),
+            'SDK task HTTP cleanup, TLS or compiled ceiling evidence differs')
+    requests=delivery.get('requests',[])
+    require(isinstance(requests,list) and len(requests)==50 and all(isinstance(row,dict) for row in requests) and
+            all(type(row.get('TLS')) is bool and type(row.get('status')) is int for row in requests) and
+            {status:sum(row['status']==status for row in requests) for status in [200,401,403,429,500,504]}==
+            {200:34,401:2,403:6,429:2,500:4,504:2} and
+            sum(row['TLS'] for row in requests)==4,
+            'SDK task HTTP retained request outcomes differ')
+    require(all(isinstance(row.get('response'),dict) and isinstance(row['response'].get('error'),dict) and
+                row['response']['error'].get('code')=={401:'UNAUTHORIZED',429:'E_LIMIT',500:'E_DIV_ZERO',504:'E_TIMEOUT'}[row['status']]
+                for row in requests if row['status'] in (401,429,500,504)) and
+            all(row.get('response')==('VALIDATION' if row.get('path')=='/api/traversal' else 'CAPABILITY')
+                for row in requests if row['status']==403),
+            'SDK task HTTP control or file-authority diagnostics differ')
+    echoes=[row for row in requests if row.get('path')=='/api/echo' and row['status']==200]
+    require(len(echoes)==26 and sum(row['TLS'] for row in echoes)==2 and
+            all(isinstance(row.get('response'),dict) and
+                set(row['response'])=={'user','request_id','body','answer'} and
+                row['response']['user'] in ('alice','bob') and row['response']['answer']=='42' and
+                row['response']['body']==(row.get('input_body') or '') and
+                isinstance(row.get('request_id'),str) and re.fullmatch('[0-9]+',row['request_id']) and
+                row['response']['request_id']==row['request_id'] for row in echoes) and
+            all(row['input_body']=='A🌍\0β' for row in echoes if row['TLS']),
+            'SDK task HTTP authenticated identity or Unicode/NUL echo differs')
+
+
 def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -642,6 +708,10 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,4):
+        require(report.get('required_phases')==list(ACCEPTANCE_PHASES_024_HTTP),
+                'SDK required phase declaration differs from public task HTTP workflow')
+        validate_task_http_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,0):
         streams=report.get('evidence',{}).get('structured_task_file_streams',{})
         delivery=streams.get('delivery',{});history=streams.get('histories',{})
@@ -1057,7 +1127,7 @@ def main():
     logs.mkdir()
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
     report = {'schema': 'nex.sdk-acceptance/1', 'ok': False, 'sdk': str(sdk),
-              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES_023),
+              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES_024_HTTP),
               'phases': [], 'commands': [], 'evidence': {}}
     started = time.monotonic()
 
@@ -1966,6 +2036,23 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
                 feature['typed_one_shot_open'] is True and feature['worker_ambient_authority'] is False,
                 'installed private stream descriptor differs')
         proof['private_stream_host']=check_installed_task_streams(run,root,resources,report['doctor']['native_compiler'])
+
+    def structured_task_http():
+        feature=state['descriptor']['structured_tasks_runtime'].get('http_server',{})
+        require(feature.get('public_enabled') is True and feature.get('minimum_language')=='0.24' and
+                feature.get('profiles')==['debug','release'] and feature.get('async_network') is False and
+                feature.get('async_database') is False,'installed compiler task HTTP capability differs')
+        helper=resources/'tests/task_http_server.py'
+        require(helper.is_file(),'installed public task HTTP acceptance helper is missing')
+        digest=hashlib.sha256(helper.read_bytes()).hexdigest()
+        require(report['resource_hashes'].get('tests/task_http_server.py')==digest,
+                'installed public task HTTP helper is absent from its indexed resources')
+        destination=root/'public-task-http'
+        run([sys.executable,'-B',helper,compiler,'--output',destination],timeout=1200)
+        delivery=json.loads((destination/'report.json').read_text())
+        report['evidence']['structured_task_http']={'installed_helper':True,'helper_sha256':digest,
+            'delivery':delivery,'delivery_report_sha256':hashlib.sha256((destination/'report.json').read_bytes()).hexdigest()}
+        validate_task_http_evidence(report)
 
     def structured_task_file_streams():
         feature=state['descriptor']['task_file_streams']
@@ -4899,6 +4986,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('structured-task-file-reads', structured_task_file_reads),
                 ('structured-task-file-writes', structured_task_file_writes),
                 ('structured-task-file-streams', structured_task_file_streams),
+                ('structured-task-http', structured_task_http),
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),
                 ('static-task-providers', static_task_providers),
@@ -4907,7 +4995,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
-        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES_024,
+        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES_024_HTTP,
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:
             phase(name, action)

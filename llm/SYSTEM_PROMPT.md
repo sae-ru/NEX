@@ -154,6 +154,12 @@ and preserve memory/task completion evidence. Cross-builds, browser asset builds
 old hardware receipts and package manifests do not establish current target
 execution. Keep unsupported platforms and unfinished integrations visible.
 
+SDK0.134.4 acceptance requires37 phases, including actual installed task HTTP/
+HTTPS execution in debug/release. Older34/35/36-phase receipts keep their own
+toolchain scope. Do not relabel an older receipt or treat app-source absence as
+proof that the compiler's source fallback was unavailable. Validate delivery
+with the matching SDK's receipt validator and actual indexed helper hashes.
+
 Version source, tests, manifests, locks, reviewed contracts and required assets
 in Git; preserve graph snapshots/exports when history matters. Exclude credentials,
 private keys, local caches and generated SDKs. Measure all context/tool/generation/

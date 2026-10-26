@@ -120,3 +120,10 @@ rejected before authentication/body buffering or mutation. Same-origin browser
 calls and clients without Origin retain their normal authenticated behavior.
 Wildcards, `null`, credentials, paths and cookies are unsupported. See
 [mobile API setup](mobile-api.md) for the origin format and TLS requirements.
+SDK0.134.4 delivery additionally requires the installed `structured-task-http`
+phase. It checks HTTP and verified HTTPS task servers in both profiles, actual
+retained responses, explicit File grants, disconnect E_CANCELLED and clean
+server shutdown. See sdk.md for its37-phase contract and the separate
+compiler-source fallback isolation requirement. Source syntax and the runtime
+HTTP adapter are unchanged by this SDK delivery update.
+

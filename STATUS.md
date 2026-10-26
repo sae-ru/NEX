@@ -1,3 +1,11 @@
+Delivery189 / toolchain0.134.4 / language0.24 adds mandatory37-phase installed
+SDK acceptance for public task HTTP/verified HTTPS. The indexed helper retains
+148 checks,50 request outcomes,14 clean server exits and exact cancellation
+codes;45 archive/receipt guard tests pass. Compiler/runtime source and version
+are byte-identical to188. Installed source-absent37-phase, full188211 and matching
+platform delivery remain pending. Primary081/016 is preserved; the complete
+original objective remains open. Older entries retain their historical scopes.
+
 Development188 / toolchain0.134.4 / language0.24: public native task HTTP
 handlers now use a dedicated descriptor bridge in debug/release, inheriting
 request control and operator file grants. Actual HTTP preflight passed132

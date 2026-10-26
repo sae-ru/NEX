@@ -183,6 +183,71 @@ class DistributionWorkflow(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):
             acceptance.validate_completed_report(current)
 
+    def http_report(self):
+        current=self.report();current.update(version='0.134.4',language='0.24',doctor={'version':'0.134.4'},compiler_sha256='f'*64,
+            required_phases=list(acceptance.ACCEPTANCE_PHASES_024_HTTP),
+            resource_hashes={'tests/task_http_server.py':'a'*64})
+        current['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_024_HTTP]
+        delivery={'schema':'nex.task-http-server/1','ok':True,'state':'passed','language':'0.24','compiler_sha256':'f'*64,
+            'helper_sha256':'a'*64,'async_network_DB_claimed':False,'full_objective_complete':False,'checks':148,
+            'profiles':2,'concurrent_requests_each':8,'compiled_limit_ceiling_rejections':14,
+            **{k:True for k in ('source_absent_execution','request_identity_preserved','TLS_verified','compiler_unchanged',
+                'task_whole_file_and_stream_IO','grant_denial_and_path_containment','trap_budget_deadline_disconnect_cleanup','public_HTTP_task_target')},
+            'servers':[{'number':i,'exit_code':0,'TLS':i in (2,9)} for i in range(1,15)],
+            'images':[{'profile':p,'sha256':'c'*64,'metadata_sha256':'d'*64,'task_limits':{'steps':100000000,'timeout_ms':5000,'workers':4}} for p in ('debug','release')],
+            'cancel_observations':[{'profile':p,'code':'E_CANCELLED','opened_file_and_marker_before_disconnect':True,'sole_HTTP_worker_released_before_deadline':True} for p in ('debug','release')],
+            'requests':[]}
+        for i in range(26):
+            text='A🌍\0β' if i<2 else None;identifier=str(i+1)
+            delivery['requests'].append({'path':'/api/echo','status':200,'TLS':i<2,'input_body':text,'request_id':identifier,
+                'response':{'user':'alice','request_id':identifier,'body':text or '','answer':'42'}})
+        delivery['requests'] += [{'path':'/api/read','status':200,'TLS':False,'response':'value'} for _ in range(8)]
+        for status,code,count,path in [(401,'UNAUTHORIZED',2,'/api/echo'),(429,'E_LIMIT',2,'/api/limit'),(500,'E_DIV_ZERO',4,'/api/trap'),(504,'E_TIMEOUT',2,'/api/deadline')]:
+            delivery['requests'] += [{'path':path,'status':status,'TLS':status==500 and i<2,'response':{'error':{'code':code}}} for i in range(count)]
+        delivery['requests'] += [{'path':path,'status':403,'TLS':False,'response':code} for path,code in [('/api/traversal','VALIDATION'),('/api/read','CAPABILITY'),('/api/write','CAPABILITY')] for _ in range(2)]
+        current['evidence']={'structured_task_http':{'installed_helper':True,'helper_sha256':'a'*64,'delivery_report_sha256':'b'*64,'delivery':delivery}}
+        return current
+
+    def test_sdk1344_requires_complete_HTTP_phase_and_preserves_older_receipts(self):
+        for version,count in [('0.132.6',34),('0.133.5',35),('0.134.0',36),('0.134.2',36),('0.134.3',36),('0.134.4',37)]:
+            self.assertEqual(len(acceptance.acceptance_phases(version)),count)
+        current=self.http_report()
+        acceptance.validate_task_http_evidence(current)
+        # This synthetic shape passes only the HTTP gate; it cannot bypass
+        # real stream/migration and all other installed SDK requirements.
+        with self.assertRaisesRegex(RuntimeError,'public024 CLI stream execution'):
+            acceptance.validate_completed_report(current)
+        for mutate in (lambda d:d.update(phases=d['phases'][:-1]),
+                       lambda d:d.update(required_phases=list(acceptance.ACCEPTANCE_PHASES_024)),
+                       lambda d:d['evidence'].clear()):
+            bad=copy.deepcopy(current);mutate(bad)
+            with self.assertRaises(RuntimeError):acceptance.validate_completed_report(bad)
+
+    def test_task_HTTP_gate_rejects_missing_or_forged_runtime_outcomes(self):
+        current=self.http_report()
+        changes=[
+            lambda d:d['resource_hashes'].clear(),
+            lambda d:d.update(compiler_sha256='0'*64),
+            lambda d:d['evidence']['structured_task_http'].update(delivery=None),
+            lambda d:d['evidence']['structured_task_http'].update(installed_helper=1),
+            lambda d:d['evidence']['structured_task_http']['delivery'].update(ok=1),
+            lambda d:d['evidence']['structured_task_http']['delivery'].update(profiles=True),
+            lambda d:d['evidence']['structured_task_http']['delivery'].update(TLS_verified=False),
+            lambda d:d['evidence']['structured_task_http']['delivery'].update(async_network_DB_claimed=True),
+            lambda d:d['evidence']['structured_task_http']['delivery']['servers'][0].update(exit_code=False),
+            lambda d:d['evidence']['structured_task_http']['delivery']['images'][0].update(metadata_sha256='?'),
+            lambda d:d['evidence']['structured_task_http']['delivery'].update(cancel_observations=None),
+            lambda d:d['evidence']['structured_task_http']['delivery']['cancel_observations'][0].update(code='E_LIMIT'),
+            lambda d:d['evidence']['structured_task_http']['delivery']['requests'].pop(),
+            lambda d:d['evidence']['structured_task_http']['delivery']['requests'][0].update(TLS='true'),
+            lambda d:d['evidence']['structured_task_http']['delivery']['requests'][0]['response'].update(user='injected'),
+            lambda d:d['evidence']['structured_task_http']['delivery']['requests'][0]['response'].update(body='lost NUL'),
+            lambda d:d['evidence']['structured_task_http']['delivery']['requests'][-1].update(response='other'),
+        ]
+        for i,mutate in enumerate(changes):
+            bad=copy.deepcopy(current);mutate(bad)
+            with self.subTest(mutation=i),self.assertRaises(RuntimeError):acceptance.validate_task_http_evidence(bad)
+
     def test_sdk134_requires_public_streams_and_every_genuine_history(self):
         self.assertEqual(len(acceptance.acceptance_phases('0.134.0')),36)
         self.assertEqual(len(acceptance.acceptance_phases('0.133.5')),35)

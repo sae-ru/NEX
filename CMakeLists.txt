@@ -248,6 +248,7 @@ install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EX
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-opencl
