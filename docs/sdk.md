@@ -560,3 +560,15 @@ projection, both negative controls, selected runtime and unchanged installed
 library hashes. Existing full phase, resource inventory and kernel write-denial
 checks remain mandatory. This gate establishes library replay, not native model
 inference or general GPU/NPU execution.
+
+### C/C++ producer paths in relocated SDKs
+
+The installed source-resource and debugger gates encode marker paths as UTF-8
+bytes in fixed-width C octal escapes. JSON string encoding is not a C literal
+encoder: non-BMP characters become surrogate pairs which Clang rejects, and
+control characters can also produce invalid universal characters. The native
+regression compiles and runs both C11 and C++20 probes and checks the exact
+filesystem path containing emoji, quotes, a backslash, newline, tab and a digit
+after non-ASCII bytes. Paths are separate argv values, never shell fragments.
+SDK read/write isolation and all existing resource lifetime checks remain in
+force; this fixes producer preparation rather than changing NEX semantics.

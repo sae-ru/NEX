@@ -38,13 +38,15 @@ def main():
   pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()}
   (PROJECT/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n')
   bundle=PROJECT/'bundle';bundle.mkdir();module=bundle/'module.so';marker=OUT/'events'
-  run('compile-producer',[doctor['native_compiler'],'-x','c++','-std=c++20','-shared','-fPIC','-fvisibility=hidden','-I'+str(RESOURCE/'runtime'),'-I'+str(PROJECT),'-DNEX_RESOURCE_MARKER='+json.dumps(str(marker)),RESOURCE/'examples/source-resource-producer.c','-o',module])
+  sys.path.insert(0,str(RESOURCE/'tools'))
+  from sdk_source_resources import c_string_literal
+  run('compile-producer',[doctor['native_compiler'],'-x','c++','-std=c++20','-shared','-fPIC','-fvisibility=hidden','-I'+str(RESOURCE/'runtime'),'-I'+str(PROJECT),'-DNEX_RESOURCE_MARKER='+c_string_literal(marker),RESOURCE/'examples/source-resource-producer.c','-o',module])
   (bundle/'NOTICE').write_text('NEX actual resource debugger fixture\n')
   manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle/name)} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
   (bundle/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');pin=sha(bundle/'manifest.json')
   host=PROJECT/'operator \"quoted\" 🧠.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}},indent=2)+'\n')
   source.write_text(text.replace('PIN',pin))
-  import sys,re
+  import re
   sys.path.insert(0,str(RESOURCE/'tools'))
   from sdk_acceptance import DAP
   session=cli('prepare-DAP','debug','--kind','nex-dap','--foreign',host)

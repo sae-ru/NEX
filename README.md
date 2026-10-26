@@ -1,3 +1,12 @@
+SDK Unicode193 / toolchain0.134.4 / language0.24 encodes producer marker
+paths as UTF-8 bytes in C/C++ string literals. JSON surrogate pairs are not valid
+C universal characters; the exact readonly moved191 failure is retained. The
+source-resource and actual debugger producer paths share the corrected encoder.
+A real C11/C++20 compile/run regression covers emoji, quotes, backslashes,
+controls and adjacent digits. Linux192's direct <optional> fix is retained.
+No language/ABI changes. Matching moved/archive/platform acceptance is pending;
+primary081/016 and the original full objective remain preserved and open.
+
 Linux portability192 / toolchain0.134.4 / language0.24 adds the direct
 <optional> include required by the POSIX file runtime. The exact frozen191
 Linux ARM64 build failure is retained; macOS had supplied this standard header

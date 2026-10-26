@@ -7,6 +7,7 @@ import json
 import os
 import shlex
 import shutil
+import subprocess
 from pathlib import Path
 import sys
 import tarfile
@@ -21,6 +22,34 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_C_and_CPP_macro_paths_preserve_actual_UTF8_and_controls(self):
+        compiler=shutil.which('clang')
+        if not compiler or os.name!='posix':
+            self.skipTest('a POSIX Clang host is required for the actual path probe')
+        tools=Path(__file__).resolve().parents[1]/'tools'
+        previous=list(sys.path)
+        try:
+            sys.path.insert(0,str(tools))
+            spec=importlib.util.spec_from_file_location('sdk_resource_path_literals',tools/'sdk_source_resources.py')
+            literals=importlib.util.module_from_spec(spec);spec.loader.exec_module(literals)
+        finally:
+            sys.path[:]=previous
+        with tempfile.TemporaryDirectory(prefix='nex-C-paths-') as directory:
+            root=Path(directory)
+            marker=root/'marker, % 🧠7 "quote" \\ slash\n\tend'
+            source=root/'probe.c'
+            source.write_text('#include <stdio.h>\nint main(void){FILE *f=fopen(MARKER,"wb");if(!f)return 1;int ok=fputs("42",f)>=0;return fclose(f)==0&&ok?0:2;}\n')
+            for language,standard in (('c','c11'),('c++','c++20')):
+                with self.subTest(language=language):
+                    executable=root/('probe-'+standard)
+                    built=subprocess.run([compiler,'-x',language,'-std='+standard,
+                        '-DMARKER='+literals.c_string_literal(marker),str(source),'-o',str(executable)],
+                        capture_output=True,text=True,timeout=30)
+                    self.assertEqual(built.returncode,0,built.stderr)
+                    subprocess.run([str(executable)],check=True,timeout=10)
+                    self.assertEqual(marker.read_bytes(),b'42')
+                    marker.unlink()
+
     def test_explicit_wasm_linker_is_captured_without_a_compiled_default(self):
         spec=importlib.util.spec_from_file_location('wasm_bundle_selection',Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
         bundle=importlib.util.module_from_spec(spec);spec.loader.exec_module(bundle)

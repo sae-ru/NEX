@@ -17,6 +17,13 @@ SQL_PINS={
 }
 TOKENS=re.compile(r'//[^\n]*|"(?:\\.|[^"\\])*"|[A-Za-z_][A-Za-z0-9_]*')
 
+def c_string_literal(value):
+ # C universal characters cannot encode JSON's UTF-16 surrogate pairs or
+ # arbitrary controls. Fixed-width octal escapes preserve the UTF-8 bytes and
+ # cannot consume an adjacent digit from the path.
+ return '"'+''.join(chr(byte) if 32<=byte<127 and byte not in (34,92)
+                    else '\\%03o'%byte for byte in str(value).encode('utf-8'))+'"'
+
 def check_installed_source_resources(cli,run,last_command,root,resources,driver,*,compiler=None,live=False):
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
  feature=cli('describe','--field','source_resources')['value']
@@ -52,7 +59,7 @@ server fn main()->unit!{ffi,io}{BODY}
   (project/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n')
   bundle=project/'bundle';bundle.mkdir();module=bundle/'module.so'
   producer_compiler=Path(driver) if kind=='CPP20' else Path(driver).with_name('clang')
-  run([producer_compiler,'-x','c++' if kind=='CPP20' else 'c','-std=c++20' if kind=='CPP20' else '-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(resources/'runtime'),'-I'+str(project),'-DNEX_RESOURCE_MARKER='+json.dumps(str(marker)),resources/'examples/source-resource-producer.c','-o',module],cwd=project)
+  run([producer_compiler,'-x','c++' if kind=='CPP20' else 'c','-std=c++20' if kind=='CPP20' else '-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(resources/'runtime'),'-I'+str(project),'-DNEX_RESOURCE_MARKER='+c_string_literal(marker),resources/'examples/source-resource-producer.c','-o',module],cwd=project)
   (bundle/'NOTICE').write_text('NEX installed source resource conformance producer\n')
   host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
   manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so','files':[{'path':name,'sha256':_sha((bundle/name).read_bytes())} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
