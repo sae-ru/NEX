@@ -141,7 +141,8 @@ The identical C++ host/kernel/module sources pass all six macOS ARM64 and Linux
 ARM64 variants with192 check executions and216 actual connections. Reports
 retain compiler, runtime/header, provider, wrapper and binary hashes, commands,
 flags and diagnostics. The maintained wrapper additionally checks actual024
-source task/FFI discovery and selects its advertised OpenSSL prefix.
+source task/FFI discovery and selects its exact advertised OpenSSL include/crypto/SSL paths. A root prefix
+alone is insufficient for some Linux multiarch library layouts.
 
 This instruments the NEX C++ host/runtime and loaded provider, not the NEX
 compiler or generated LLVM IR. Linux additionally enables LeakSanitizer;

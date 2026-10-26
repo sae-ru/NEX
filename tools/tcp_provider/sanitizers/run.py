@@ -32,7 +32,7 @@ def main():
    env={**environment,**settings};folder=out/mode;folder.mkdir();driver=folder/'instrumented-cxx';driver.write_text('#!/usr/bin/python3\nimport os,sys\ncxx='+repr(doctor['native_compiler'])+'\nos.execv(cxx,[cxx,'+','.join(repr(f) for f in flags)+(',' if flags else '')+'*sys.argv[1:]])\n');driver.chmod(0o700)
    report.setdefault('compiler_driver_sha256',{})[mode]=sha(driver)
    build=folder/'host-build';cmake=['cmake','-S',HERE,'-B',build,'-DNEX_SOURCE='+str(source),'-DCMAKE_CXX_COMPILER='+doctor['native_compiler'],'-DCMAKE_BUILD_TYPE=RelWithDebInfo','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON','-DCMAKE_CXX_FLAGS='+' '.join(['-O1','-g',*flags]),'-DCMAKE_EXE_LINKER_FLAGS='+' '.join(flags)]
-   cmake+=['-DOPENSSL_ROOT_DIR='+str(Path(doctor['native_openssl_include']).parent)]
+   cmake+=['-DOPENSSL_INCLUDE_DIR='+doctor['native_openssl_include'],'-DOPENSSL_CRYPTO_LIBRARY='+doctor['native_openssl_crypto'],'-DOPENSSL_SSL_LIBRARY='+doctor['native_openssl_ssl']]
    run(mode+'-configure',cmake,env=env);run(mode+'-build',['cmake','--build',build,'-j','2'],env=env,timeout=1200);binary=build/'tcp_typed_host';report.setdefault('binary_sha256',{})[mode]=sha(binary)
    for capacity in (16,1):
     label=mode+'-'+str(capacity);targets=folder/(str(capacity)+'-targets.json');write(targets,{'schema':'nex.tcp-targets/1','maximum_connections':capacity,'endpoints':peers.endpoints});project=folder/(str(capacity)+'-project')

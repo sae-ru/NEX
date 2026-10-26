@@ -1,3 +1,12 @@
+TCP sanitizer multiarch201 / toolchain0.135.2 / language0.24 selects exact
+OpenSSL include/crypto/SSL paths from the actual doctor response for the optional
+sanitizer host. Explicit root=/usr did not find libcrypto in Linux multiarch;
+the source200 maintained-runner failure is preserved. The original six-variant
+C++ matrix remains valid under its original build settings. Compiler, runtime,
+root CMake, language/ABI and C++ case sources are unchanged. Matching maintained
+wrapper checks on Mac/Linux and installed delivery remain pending; main199
+full/SDK38 and the original broad objective stay open. Primary081 is preserved.
+
 TCP sanitizer200 / toolchain0.135.2 / language0.24 adds an optional installed
 typed-host sanitizer driver. Compiler/frontend/backends/runtime and source ABI
 are byte-identical to199. The actual C++ typed C API, copied task/FFI bridge,
