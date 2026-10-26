@@ -107,3 +107,44 @@ reactor multiplexing, finer copied-call reservations, async database drivers and
 dedicated network debug/profile integration remain pending. So do matching full,
 sanitizer, installed/moved SDK and broader platform acceptance for this provider.
 The original language/toolchain objective remains open.
+
+## Optional typed-host sanitizer matrix
+
+The installed `tools/tcp_provider/sanitizers/run.py` builds the actual pinned
+provider and a C++ host using the real typed C API, `PreparedTaskForeignCall`
+and `TaskExternalPool`. Supply matching compiler/resources and platform C++20,
+OpenSSL3, CMake and LLVM22.1 sanitizer runtimes:
+
+```sh
+python3 SDK/share/nex/tools/tcp_provider/sanitizers/run.py \
+  --source SDK/share/nex --compiler SDK/bin/nex --output NEW_REPORT
+```
+
+The default matrix runs normal, ASAN/UBSAN and TSAN twice. Each mode executes
+15 transport/authority cases and a separate capacity case per repetition:
+32 checks and36 actual peer connections per mode. It covers copied input
+snapshots, binary/IPv6/size boundaries, rejection before connection, overflow,
+reset, timeout/reuse, IO overlap, cancellation, original parent deadline,
+queued cancellation, physical grant revocation, late result admission and
+abandoned-pool drainage. Every process must retire all opened sockets.
+
+The test's operator catalogue explicitly permits two simultaneous lexical
+module authorizations. It keeps the product preparer's default of one intact.
+Scope destruction revokes both its logical context and physical domain; either
+of these concurrent checks may reject in-flight work first. A completed result
+must separately fail late admission with `E_FFI_SCOPE`. Revocation never becomes
+an ordinary successful/error result. The capacity case limits the provider to
+one live exchange, rejects an overlapping call without connecting, then checks
+cancelled physical retirement before reuse.
+
+The identical C++ host/kernel/module sources pass all six macOS ARM64 and Linux
+ARM64 variants with192 check executions and216 actual connections. Reports
+retain compiler, runtime/header, provider, wrapper and binary hashes, commands,
+flags and diagnostics. The maintained wrapper additionally checks actual024
+source task/FFI discovery and selects its advertised OpenSSL prefix.
+
+This instruments the NEX C++ host/runtime and loaded provider, not the NEX
+compiler or generated LLVM IR. Linux additionally enables LeakSanitizer;
+macOS LeakSanitizer is unsupported and remains disabled. Platform/runtime
+requirements and unsupported hosts are explicit. This optional matrix does not
+replace the complete compiler/installed SDK/distribution acceptance workflow.

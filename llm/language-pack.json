@@ -283,7 +283,10 @@
     "tcp_module": "tools/tcp_provider/module.cpp",
     "tcp_template": "tools/tcp_provider/main.nex.in",
     "tcp_conformance": "tools/tcp_provider/verify.py",
-    "tcp_delivery_conformance": "tools/tcp_provider/verify_delivery.py"
+    "tcp_delivery_conformance": "tools/tcp_provider/verify_delivery.py",
+    "tcp_sanitizer_driver": "tools/tcp_provider/sanitizers/host.cpp",
+    "tcp_sanitizer_build": "tools/tcp_provider/sanitizers/CMakeLists.txt",
+    "tcp_sanitizer_runner": "tools/tcp_provider/sanitizers/run.py"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",

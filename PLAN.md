@@ -1,3 +1,16 @@
+TCP sanitizer200 / toolchain0.135.2 / language0.24 adds an optional installed
+typed-host sanitizer driver. Compiler/frontend/backends/runtime and source ABI
+are byte-identical to199. The actual C++ typed C API, copied task/FFI bridge,
+loaded pinned TCP provider and IO pool pass Mac/Linux normal/ASAN-UBSAN/TSAN,
+192 case executions/216 real sockets. Flags and symbols are independently
+verified573 evidence pins. No compiler/generated LLVM IR instrumentation is
+claimed; Mac LSan is disabled and Linux LSan enabled. Two initial test-harness
+failures are retained: explicit two-context module quota and concurrent logical/
+physical revocation error precedence. The maintained wrapper's scoped discovery
+and OpenSSL selection are checked separately. Main199 full214/SDK38/Linux and
+Astra193 continue under their original source scopes. The original full objective
+and all broader unfinished integrations remain open; primary081/016 is preserved.
+
 TCP198 progress: bounded server TCP is available through the existing typed
 task/FFI bridge and an operator-prepared pinned std/tcp provider. It introduces
 no new source syntax, effect or language migration. DNS/TLS/HTTP protocols,
