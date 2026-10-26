@@ -1,0 +1,32 @@
+module std::tcp;
+
+pub struct Request { endpoint:str; body:bytes; reply_limit:i64; timeout_ms:i64; }
+pub struct Client { exchange:server fn(Request)->result<bytes> !{task,ffi}; }
+
+// A checked callback is not network authority. Actual native IO still requires
+// the operator's pinned provider and its compiled endpoint allowlist.
+pub server fn client_context(exchange:server fn(Request)->result<bytes> !{task,ffi})->Client {
+  return Client(exchange);
+}
+pub fn request(endpoint:str,body:bytes,reply_limit:i64,timeout_ms:i64)->Request {
+  return Request(endpoint,body,reply_limit,timeout_ms);
+}
+pub fn validate(value:Request)->result<bool> {
+  if len(value.endpoint)<1||len(value.endpoint)>64{return err("VALIDATION","TCP endpoint name must contain1..64 scalars");}
+  if len(value.body)>524288{return err("LIMIT","TCP provider request exceeds512KiB");}
+  if value.reply_limit<1||value.reply_limit>524288{return err("VALIDATION","TCP provider reply limit must be1..524288");}
+  if len(value.body)+value.reply_limit>1044480{return err("LIMIT","TCP copied request and declared reply exceed1020KiB");}
+  if value.timeout_ms<1||value.timeout_ms>30000{return err("VALIDATION","TCP timeout must be1..30000ms");}
+  return ok(true);
+}
+pub server fn execute(value:Client,request:Request)->result<bytes> !{task,ffi} {
+  let valid:bool=validate(request)?;
+  return value.exchange(request);
+}
+
+test fn request_validation()->unit {
+  let valid:Request=request("echo",utf8_bytes("Я"),64,1000);
+  assert(is_ok(validate(valid)));
+  assert(error_code(validate(request("echo",utf8_bytes(""),0,1000)))=="VALIDATION");
+  assert(error_code(validate(request("echo",utf8_bytes(""),64,0)))=="VALIDATION");
+}

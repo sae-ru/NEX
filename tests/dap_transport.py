@@ -1,5 +1,6 @@
 """DAP framing, reference separation and ownership on client disconnect."""
 import base64
+import errno
 import importlib.util
 import io
 import json
@@ -147,6 +148,29 @@ class Transport(harness.ToolchainCase):
             finally:
                 if process.poll() is None:process.kill();process.wait(timeout=5)
                 process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_dirty_backend_writer_cleanup_preserves_normal_eof(self):
+        read_end,write_end=os.pipe()
+        writer=os.fdopen(write_end,'wb')
+        output=io.BytesIO()
+        try:
+            writer.write(b'undelivered disconnect')
+            os.close(read_end);read_end=None
+            adapter.close_backend_pipes(SimpleNamespace(stdin=writer,stdout=output))
+            self.assertTrue(writer.closed)
+            self.assertTrue(output.closed)
+        finally:
+            if read_end is not None:os.close(read_end)
+            if not writer.closed:writer.close()
+
+    def test_backend_cleanup_keeps_other_io_failures_and_closes_output(self):
+        class FailedInput:
+            def close(self):raise OSError(errno.EIO,'fixture close failed')
+        output=io.BytesIO()
+        with self.assertRaises(OSError) as error:
+            adapter.close_backend_pipes(SimpleNamespace(stdin=FailedInput(),stdout=output))
+        self.assertEqual(error.exception.errno,errno.EIO)
+        self.assertTrue(output.closed)
 
     def test_signal_interrupts_partial_headers_and_bodies_and_joins_readers(self):
         marker=self.root/'disconnect.json'

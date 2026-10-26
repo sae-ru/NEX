@@ -82,7 +82,10 @@ Inspect limits and pending integrations before composing features.
 ## Tasks, resources and IO
 
 The private `task_network_transport` descriptor advertises a trusted C++ TCP
-kernel only. It does not enable source network calls or async/await.
+kernel only. The separate `tcp_provider` descriptor advertises std/tcp.nex
+and operator-prepared pinned task/FFI modules. These use existing server
+`task,ffi` calls, explicit foreign grants and compiled numeric endpoint policies.
+Read the tcp guide for limits; no network builtin or async/await is enabled.
 `std/net.nex` remains the browser command adapter; discover actual source
 network support before using any network syntax or effect.
 
@@ -116,8 +119,8 @@ C FFI/wire/browser exports cannot transport File authority; one application owns
 request and grants. Source is required for checking even when calls consume
 archives/images. Do not add provider FFI exports, callable/grant transport or
 arbitrary unloading. Task streams support open/read/write/append/seek/size/flush/close with physical
-settlement; read task-file-streams for shared cursor ordering and limits. Task
-network/DB remain pending. Native language0.24 HTTP handlers may declare task
+settlement; read task-file-streams for shared cursor ordering and limits. Task network builtins and async DB remain pending. The bounded TCP provider
+is separately available through existing task/FFI, as described above. Native language0.24 HTTP handlers may declare task
 and fs under debug/release `build --target server`. Their joined executor shares
 the original HTTP request budget/deadline/cancellation and explicitly captures
 operator-configured file/foreign grants; it creates no new request budget.

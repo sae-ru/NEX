@@ -39,8 +39,13 @@ ACCEPTANCE_PHASES_024 = ACCEPTANCE_PHASES_023[:ACCEPTANCE_PHASES_023.index('stru
 ACCEPTANCE_PHASES_024_HTTP = ACCEPTANCE_PHASES_024[:ACCEPTANCE_PHASES_024.index('structured-task-file-streams')+1] + ('structured-task-http',) + ACCEPTANCE_PHASES_024[ACCEPTANCE_PHASES_024.index('structured-task-file-streams')+1:]
 
 
+ACCEPTANCE_PHASES_024_TCP = ACCEPTANCE_PHASES_024_HTTP[:ACCEPTANCE_PHASES_024_HTTP.index('structured-task-http')+1] + ('structured-task-tcp',) + ACCEPTANCE_PHASES_024_HTTP[ACCEPTANCE_PHASES_024_HTTP.index('structured-task-http')+1:]
+
+
 def acceptance_phases(version):
     parts=version.split('.')
+    if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,135,1):
+        return ACCEPTANCE_PHASES_024_TCP
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,134,4):
         return ACCEPTANCE_PHASES_024_HTTP
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,134,0):
@@ -692,6 +697,47 @@ def validate_task_http_evidence(report):
             'SDK task HTTP authenticated identity or Unicode/NUL echo differs')
 
 
+def validate_task_tcp_evidence(report):
+    tcp=report.get('evidence',{}).get('structured_task_tcp',{})
+    require(isinstance(tcp,dict),'SDK TCP evidence is missing')
+    resources=report.get('resource_hashes',{})
+    for key,script,schema in [('source','verify.py','nex.task-tcp-source-conformance/1'),('delivery','verify_delivery.py','nex.tcp-provider-delivery/1')]:
+        observed=tcp.get(key,{})
+        require(isinstance(observed,dict) and observed.get('schema')==schema and observed.get('ok') is True and
+                observed.get('state')=='passed' and observed.get('language')==report.get('language')=='0.24' and
+                observed.get('toolchain')==report.get('version') and observed.get('compiler_sha256')==report.get('compiler_sha256') and
+                observed.get('source_projection') is False,
+                'SDK TCP evidence lacks installed matching compiler execution')
+        digest=resources.get('tools/tcp_provider/'+script)
+        require(isinstance(digest,str) and re.fullmatch('[0-9a-f]{64}',digest) and
+                observed.get('verification_source_sha256')==digest,
+                'SDK TCP evidence helper identity differs')
+    source=tcp['source'];delivery=tcp['delivery']
+    names={'binary','ipv6','boundary','denied','invalid','overflow','reset','own-timeout','progress','cancel','parent-deadline','capacity'}
+    cases=source.get('cases',[])
+    require(type(source.get('case_count')) is int and source['case_count']==36 and isinstance(cases,list) and len(cases)==36 and
+            all(isinstance(row,dict) and row.get('passed') is True for row in cases) and
+            {(row.get('name'),row.get('mode')) for row in cases}=={(name,mode) for name in names for mode in ('eval','debug','release')} and
+            all(row.get('expected_error')=={'cancel':'E_CANCELLED','parent-deadline':'E_TIMEOUT'}.get(row['name']) for row in cases),
+            'SDK TCP evidence lacks complete actual source cases')
+    require(all(isinstance(row.get('retired'),list) and row['retired'] and all(
+                type(r.get('opened')) is int and r['opened']>=0 and r.get('closed')==r['opened'] and r.get('live')==0
+                for r in row['retired']) for row in cases if row['name']!='invalid') and
+            all(row.get('peer_connections')==0 for row in cases if row['name'] in ('invalid','denied')),
+            'SDK TCP physical retirement or rejected connection evidence differs')
+    require(all(delivery.get(key) is True for key in ('client_server_pruning','source_deleted_package','relocated_package')) and
+            type(delivery.get('package_execution_network_connections')) is int and delivery['package_execution_network_connections']==1 and
+            type(delivery.get('target_rejections')) is int and delivery['target_rejections']==22 and
+            type(delivery.get('authority_rejections')) is int and delivery['authority_rejections']==18,
+            'SDK TCP relocated delivery or authority evidence is missing')
+    rows=delivery.get('rejections',[]);authorities=[row for row in rows if isinstance(row,dict) and 'mode' in row]
+    require(len(rows)==40 and len(authorities)==18 and
+            {(row.get('case'),row.get('mode')) for row in authorities}=={(name,mode) for name in
+                ('no-grant','no-export','wrong-pin','wrong-signature','changed-module','changed-target-file') for mode in ('eval','debug','release')} and
+            all(row.get('network_connections')==0 and row.get('code')=={'no-grant':'E_FFI_GRANT','no-export':'E_FFI_GRANT','wrong-pin':'E_FFI_HASH','wrong-signature':'E_FFI_SIGNATURE','changed-module':'E_FFI_HASH','changed-target-file':'E_FFI_HASH'}[row['case']] for row in authorities),
+            'SDK TCP rejected execution outcomes differ')
+
+
 def validate_completed_report(report):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -709,9 +755,11 @@ def validate_completed_report(report):
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,4):
-        require(report.get('required_phases')==list(ACCEPTANCE_PHASES_024_HTTP),
+        require(report.get('required_phases')==list(acceptance_phases(doctor_version or report.get('version','0.0.0'))),
                 'SDK required phase declaration differs from public task HTTP workflow')
         validate_task_http_evidence(report)
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,135,1):
+        validate_task_tcp_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,0):
         streams=report.get('evidence',{}).get('structured_task_file_streams',{})
         delivery=streams.get('delivery',{});history=streams.get('histories',{})
@@ -1127,7 +1175,7 @@ def main():
     logs.mkdir()
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
     report = {'schema': 'nex.sdk-acceptance/1', 'ok': False, 'sdk': str(sdk),
-              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES_024_HTTP),
+              'output': str(root), 'required_phases': list(ACCEPTANCE_PHASES_024_TCP),
               'phases': [], 'commands': [], 'evidence': {}}
     started = time.monotonic()
 
@@ -5009,6 +5057,24 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         report['evidence']['dependent_resource_ffi'].update(source_checks=37,source_report=dependent,
             source_report_sha256=hashlib.sha256((destination/'report.json').read_bytes()).hexdigest())
 
+    def structured_task_tcp():
+        descriptor=cli('describe','--field','tcp_provider')['value']
+        pack=json.loads((resources/'llm/language-pack.json').read_text())
+        require(descriptor==pack['tcp_provider'] and descriptor['source_support'] and
+                descriptor['source_ABI_changed'] is False and descriptor['browser_execution'] is False,
+                'installed TCP provider capability differs')
+        require(cli('guide','--kind','tcp')['text']==(resources/'docs/tcp-provider.md').read_text(),
+                'installed TCP provider guide differs')
+        evidence={}
+        for key,script in [('source','verify.py'),('delivery','verify_delivery.py')]:
+            tool=resources/'tools/tcp_provider'/script;destination=root/('TCP-'+key)
+            command=[sys.executable,'-B',tool,'--sdk',sdk,'--output',destination]
+            if key=='delivery' and args.package_notices:command+=['--package-notices',args.package_notices.resolve()]
+            run(command,timeout=1800)
+            evidence[key]=json.loads((destination/'report.json').read_text())
+        report['evidence']['structured_task_tcp']=evidence
+        validate_task_tcp_evidence(report)
+
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
                 ('reviewed-failure', baseline_failure), ('graph-repair-import', repair),
@@ -5021,6 +5087,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('structured-task-file-writes', structured_task_file_writes),
                 ('structured-task-file-streams', structured_task_file_streams),
                 ('structured-task-http', structured_task_http),
+                ('structured-task-tcp', structured_task_tcp),
                 ('structured-task-profile', structured_task_profile),
                 ('structured-task-debug', structured_task_debug),
                 ('static-task-providers', static_task_providers),
@@ -5029,7 +5096,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
-        require(tuple(name for name, _ in actions) == ACCEPTANCE_PHASES_024_HTTP,
+        require(tuple(name for name, _ in actions) == acceptance_phases(report['doctor']['version']),
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:
             phase(name, action)

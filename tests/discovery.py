@@ -96,6 +96,13 @@ class Discovery(harness.ToolchainCase):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
+        self.assertEqual(full['tcp_provider'], pack['tcp_provider'])
+        self.assertTrue(full['tcp_provider']['source_support'])
+        self.assertFalse(full['tcp_provider']['browser_execution'])
+        self.assertFalse(full['tcp_provider']['source_ABI_changed'])
+        self.assertEqual(self.cli('guide', '--kind', 'tcp')['text'], (harness.REPO / 'docs/tcp-provider.md').read_text())
+        for key in ('library', 'preparer', 'conformance', 'delivery_conformance', 'operator_schema'):
+            self.assertTrue((harness.REPO / full['tcp_provider'][key]).is_file())
         self.assertEqual(full['task_value_retirement'], pack['task_value_retirement'])
         self.assertTrue(full['task_value_retirement']['source_resource_transport'])
         self.assertEqual(full['resource_regions'], pack['resource_regions'])

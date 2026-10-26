@@ -1,3 +1,12 @@
+Toolchain0.135.1 adds a mandatory38th installed acceptance phase,
+`structured-task-tcp`. It runs the installed pinned-provider source and delivery
+helpers:36 actual AST/debug/release socket cases,22 target-policy rejections,
+18 authority/pin/integrity rejections, client pruning and moved source-deleted
+package execution. Reports and actual helper/compiler hashes must match. This
+phase does not replace the earlier37 gates. Toolchain0.134.4..0.135.0 receipts
+retain their37-phase contract. See [the TCP guide](tcp-provider.md). Complete
+matching current SDK and distribution acceptance remains pending.
+
 # Development0.133.3: SDK migration acceptance correction
 
 The SDK019-history gate now keeps current language separate from each migrated

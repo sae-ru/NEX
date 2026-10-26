@@ -1,3 +1,17 @@
+TCP198 / toolchain0.135.1 / language0.24 adds a checked std/tcp library and
+operator-prepared pinned native module using the existing copied task/FFI bridge.
+Actual NEX AST/debug/release calls pass36 loopback cases on the previous197
+compiler: binary IPv4/IPv6, limits/reset, own timeout/reuse, single-CPU progress,
+parent cancellation/deadline and ResourceDomain-backed provider call capacity.
+This adds no source syntax, effect, ABI or implicit migration. Exact targets are
+compiled into the pinned module; the explicit foreign catalogue still grants
+execution. Delivery negatives, matching full/SAN/Linux and installed SDK proof
+remain pending. A cleanup-only DAP BrokenPipeError fix preserves other errors;
+15 DAP tests pass. Primary081/016 and the original full objective stay preserved.
+Source197 exact Mac full212 and source196 Linux full211/live22/source-free SDK37
+have now passed independently checked logs, commands, resources and binaries.
+The old Mac196 full DAP failure remains recorded; it is not a pass.
+
 Network197 / toolchain0.135.0 / language0.24 adds a private trusted-host TCP
 kernel on the existing external IO pool: exact operator-granted IPv4/IPv6
 endpoints, copied binary inputs, nonblocking connect/send/read, queue-inclusive

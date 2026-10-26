@@ -1,3 +1,11 @@
+TCP198 progress: bounded server TCP is available through the existing typed
+task/FFI bridge and an operator-prepared pinned std/tcp provider. It introduces
+no new source syntax, effect or language migration. DNS/TLS/HTTP protocols,
+persistent streaming, reactor multiplexing, async DB and dedicated network
+profile/debug integration remain pending. Current installed acceptance now
+requires38 phases; matching full/platform/distribution proof is still required.
+This does not complete the network roadmap or the full original objective.
+
 Network197 / toolchain0.135.0 / language0.24 adds a private trusted-host TCP
 kernel on the existing external IO pool: exact operator-granted IPv4/IPv6
 endpoints, copied binary inputs, nonblocking connect/send/read, queue-inclusive

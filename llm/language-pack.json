@@ -275,7 +275,15 @@
     "task_http_server_acceptance": "tests/task_http_server.py",
     "task_network_transport": "docs/task-network-transport.md",
     "task_network_header": "runtime/nex_task_network.h",
-    "task_network_runtime": "runtime/nex_task_network.cpp"
+    "task_network_runtime": "runtime/nex_task_network.cpp",
+    "tcp_provider": "docs/tcp-provider.md",
+    "tcp_library": "lib/tcp.nex",
+    "tcp_targets_schema": "llm/tcp-targets.schema.json",
+    "tcp_preparer": "tools/tcp_provider/prepare.py",
+    "tcp_module": "tools/tcp_provider/module.cpp",
+    "tcp_template": "tools/tcp_provider/main.nex.in",
+    "tcp_conformance": "tools/tcp_provider/verify.py",
+    "tcp_delivery_conformance": "tools/tcp_provider/verify_delivery.py"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -2503,12 +2511,67 @@
     "socket_close_before_physical_publication": true,
     "automatic_retry": false,
     "pending": [
-      "public source syntax/effect/realm/ownership and explicit historical migration",
-      "native continuation and independent AST source bridges",
+      "native network builtins remain unimplemented; pinned task/FFI provider indexed separately as tcp_provider",
       "DNS/TLS/HTTP and connection reuse",
       "persistent streaming, backpressure and protocol integration",
-      "task provider/package/profile/debug and full SDK/platform acceptance",
+      "network debug/profile and full SDK/platform acceptance",
       "asynchronous database transport"
+    ]
+  },
+  "tcp_provider": {
+    "status": "development_pinned_task_FFI_TCP_provider",
+    "source_support": true,
+    "source_language": "0.24",
+    "new_source_syntax": false,
+    "source_ABI_changed": false,
+    "guide": "docs/tcp-provider.md",
+    "guide_kind": "tcp",
+    "library": "lib/tcp.nex",
+    "preparer": "tools/tcp_provider/prepare.py",
+    "conformance": "tools/tcp_provider/verify.py",
+    "delivery_conformance": "tools/tcp_provider/verify_delivery.py",
+    "operator_schema": "llm/tcp-targets.schema.json",
+    "realms": [
+      "server"
+    ],
+    "effects": [
+      "task",
+      "ffi"
+    ],
+    "native": true,
+    "independent_reference": true,
+    "browser_execution": false,
+    "explicit_foreign_grant": true,
+    "operator_targets_compiled_and_pinned": true,
+    "fresh_C_tokens_on_IO_worker": true,
+    "live_tokens_forwarded_to_other_pool": false,
+    "maximum_endpoints": 16,
+    "maximum_body_bytes": 524288,
+    "maximum_reply_bytes": 524288,
+    "maximum_combined_body_reply_bytes": 1044480,
+    "maximum_timeout_ms": 30000,
+    "provider_instance_capacity": {
+      "default": 16,
+      "minimum": 1,
+      "maximum": 64,
+      "physical_retirement_required": true,
+      "machine_wide_quota": false
+    },
+    "source_FFI_pool": {
+      "IO_workers": 2,
+      "maximum_reserved_bytes": 8388608,
+      "reserved_bytes_per_call": 4194304
+    },
+    "own_timeout_error": "E_NETWORK_TIMEOUT",
+    "capacity_error": "E_NETWORK_BUSY",
+    "original_parent_cancel_deadline_preserved": true,
+    "installed_SDK_accepted": false,
+    "pending": [
+      "matching full/sanitizer/installed/moved SDK/platform acceptance",
+      "DNS/TLS/HTTP and persistent streaming",
+      "reactor multiplexing and finer copied-call reservations",
+      "dedicated network debug/profile integration",
+      "asynchronous database drivers"
     ]
   }
 }

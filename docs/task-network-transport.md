@@ -3,7 +3,9 @@
 Toolchain0.135.0 adds a trusted C++ host kernel for asynchronous TCP work in
 `TaskExternalPool`. Public source language remains0.24. No network builtin,
 effect, async/await syntax, continuation instruction or migration is enabled.
-`std/net.nex` still describes browser commands. Discover the private boundary
+The separate [pinned TCP provider](tcp-provider.md) uses existing task/FFI source
+calls from toolchain0.135.1; no kernel builtin is implied. `std/net.nex` still
+describes browser commands. Discover the private boundary
 with `nex describe --field task_network_transport --json` and this guide with
 `nex guide --kind task-network-host --json`.
 
@@ -33,9 +35,9 @@ auto ticket = io.submit(1, work.operation(), work.reservation(), parentControl);
 auto result = work.admit(io.take(ticket), parentControl);
 ```
 
-`parentControl` is the owning host's existing request checkpoint. A later source
-bridge must capture its owned request control explicitly; it must not create a
-new budget or borrow a source frame. This example is C++, not NEX source syntax.
+`parentControl` is the owning host's existing request checkpoint. The pinned source provider captures the existing task/FFI request control;
+other bridges must likewise retain owned control without creating a new budget
+or borrowing a source frame. This example is C++, not NEX source syntax.
 
 ## Physical protocol and limits
 
@@ -84,8 +86,8 @@ Current retained Linux images may lack compiler-rt. The maintained Dockerfile
 installs the exact LLVM22.1.8 runtime package; `tools/linux/Sanitizers.Dockerfile`
 can derive a separate image from an existing verified image without replacing it.
 
-Public source signatures/effects/realms, native and independent AST lowering,
-history-preserving migration, DNS, TLS/HTTP, persistent sockets and streaming,
-provider/packaging/debug/profile integration and complete SDK/platform acceptance
-remain open. Asynchronous database IO is separate remaining work. This kernel
+The separate source provider reuses existing typed server task/FFI contracts
+and native/independent AST transport without a source language migration.
+DNS, TLS/HTTP, persistent sockets, streaming, dedicated debug/profile integration
+and complete matching SDK/platform acceptance remain open. Asynchronous database IO is separate remaining work. This kernel
 does not establish a finished async network language feature or the full goal.

@@ -547,6 +547,20 @@ class Bridge:
         self.emit(message)
 
 
+def close_backend_pipes(backend):
+    # A failed disconnect flush may leave buffered bytes. Closing that writer
+    # flushes again after the backend has already closed its read end. This
+    # expected cleanup EPIPE must neither turn normal EOF into failure nor mask
+    # the original protocol error. Always close the backend output as well.
+    try:
+        try:
+            backend.stdin.close()
+        except BrokenPipeError:
+            pass
+    finally:
+        backend.stdout.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--backend', required=True, help='trusted installed lldb-dap executable')
@@ -616,7 +630,7 @@ def main():
                     raise RuntimeError('DAP input reader did not stop')
             finally:
                 os.close(wake_read); os.close(wake_write)
-                backend.stdin.close(); backend.stdout.close()
+                close_backend_pipes(backend)
 
 
 if __name__ == '__main__':

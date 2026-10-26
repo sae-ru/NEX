@@ -238,8 +238,15 @@ class DistributionWorkflow(unittest.TestCase):
         return current
 
     def test_sdk1344_requires_complete_HTTP_phase_and_preserves_older_receipts(self):
-        for version,count in [('0.132.6',34),('0.133.5',35),('0.134.0',36),('0.134.2',36),('0.134.3',36),('0.134.4',37)]:
+        for version,count in [('0.132.6',34),('0.133.5',35),('0.134.0',36),('0.134.2',36),('0.134.3',36),('0.134.4',37),('0.135.0',37),('0.135.1',38)]:
             self.assertEqual(len(acceptance.acceptance_phases(version)),count)
+        tcp=self.http_report();tcp.update(version='0.135.1',doctor={'version':'0.135.1'},required_phases=list(acceptance.ACCEPTANCE_PHASES_024_TCP))
+        tcp['phases']=[{'name':name,'status':'passed'} for name in acceptance.ACCEPTANCE_PHASES_024_TCP]
+        with self.assertRaisesRegex(RuntimeError,'SDK TCP evidence'):
+            acceptance.validate_completed_report(tcp)
+        tcp['phases']=[row for row in tcp['phases'] if row['name']!='structured-task-tcp']
+        with self.assertRaisesRegex(RuntimeError,'complete workflow'):
+            acceptance.validate_completed_report(tcp)
         current=self.http_report()
         acceptance.validate_task_http_evidence(current)
         # This synthetic shape passes only the HTTP gate; it cannot bypass
