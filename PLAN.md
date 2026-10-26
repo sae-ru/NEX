@@ -1,3 +1,11 @@
+Linux portability192 / toolchain0.134.4 / language0.24 adds the direct
+<optional> include required by the POSIX file runtime. The exact frozen191
+Linux ARM64 build failure is retained; macOS had supplied this standard header
+transitively. No language, runtime semantics, ABI or dependencies change.
+Fresh matching Linux build/full/installed SDK acceptance is pending. MacOS191
+full and readonly moved/archive SDK checks remain separate live scopes.
+Primary081/016 and the original full objective remain preserved and open.
+
 Readonly SDK191 / toolchain0.134.4 / language0.24 corrects the model replay
 acceptance to use a private explicitly selected resource projection. Its model
 and compute sources are absent, fresh imports must fail, and the archived

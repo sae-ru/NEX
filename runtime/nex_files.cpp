@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <string_view>
 #include <fcntl.h>
 #include <sys/random.h>

@@ -155,3 +155,13 @@ packaging image adds patchelf; clean runtime and archive verification run withou
 LLVM/MLIR/Z3/Clang packages, source mounts or external network. The system GCC C/C++
 SDK and GNU runtime remain prerequisites. [The SDK guide](sdk.md) defines the
 copied closure, notice inventory, relocation/archive gates and scope limits.
+
+### POSIX file runtime standard headers
+
+The file runtime explicitly includes <optional> for its pending creation
+settlement guard. Linux libstdc++ must compile this code without depending on
+Apple libc++ transitive standard-library includes. This is a source portability
+correction, with unchanged file ownership, cancellation and physical-settlement
+semantics. The original frozen191 Linux compiler diagnostics are retained in
+the local linux191-arm64-v1/build.log; matching current Linux verification is a
+separate requirement from prior macOS or historical Linux receipts.
