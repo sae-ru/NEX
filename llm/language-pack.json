@@ -272,7 +272,10 @@
     "project_write_task_linkage_schema": "llm/project-write-task-linkage.schema.json",
     "task_file_streams_host_guide": "docs/task-file-stream-host.md",
     "task_file_streams": "docs/task-file-streams.md",
-    "task_http_server_acceptance": "tests/task_http_server.py"
+    "task_http_server_acceptance": "tests/task_http_server.py",
+    "task_network_transport": "docs/task-network-transport.md",
+    "task_network_header": "runtime/nex_task_network.h",
+    "task_network_runtime": "runtime/nex_task_network.cpp"
   },
   "document_access": "nex guide --kind source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -2475,5 +2478,37 @@
       "post_IO_rollback": false,
       "matching_platform_acceptance": false
     }
+  },
+  "task_network_transport": {
+    "status": "private_trusted_host_TCP_kernel",
+    "source_support": false,
+    "public_enabled": false,
+    "stable_host_abi": false,
+    "guide": "docs/task-network-transport.md",
+    "header": "runtime/nex_task_network.h",
+    "probe": "nex_task_network_probe",
+    "platforms": [
+      "macOS",
+      "Linux"
+    ],
+    "transport": "nonblocking IPv4/IPv6 TCP; one request/write EOF/bounded reply through peer EOF",
+    "authority": "explicit operator endpoint allowlist and revocable ResourceAccess; no worker TLS or environment grants",
+    "maximum_endpoints": 16,
+    "maximum_input_bytes": 1048576,
+    "maximum_reply_bytes": 1048576,
+    "maximum_timeout_ms": 30000,
+    "queue_time_in_deadline": true,
+    "parent_control_inherited": true,
+    "source_values_on_workers": false,
+    "socket_close_before_physical_publication": true,
+    "automatic_retry": false,
+    "pending": [
+      "public source syntax/effect/realm/ownership and explicit historical migration",
+      "native continuation and independent AST source bridges",
+      "DNS/TLS/HTTP and connection reuse",
+      "persistent streaming, backpressure and protocol integration",
+      "task provider/package/profile/debug and full SDK/platform acceptance",
+      "asynchronous database transport"
+    ]
   }
 }

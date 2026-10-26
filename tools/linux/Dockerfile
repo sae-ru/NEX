@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && apt-get update && apt-get install -y --no-install-recommends \
        clang-22="${LLVM_APT_VERSION}" llvm-22-dev="${LLVM_APT_VERSION}" \
        libmlir-22-dev="${LLVM_APT_VERSION}" mlir-22-tools="${LLVM_APT_VERSION}" \
-       lld-22="${LLVM_APT_VERSION}" lldb-22="${LLVM_APT_VERSION}" \
+       lld-22="${LLVM_APT_VERSION}" lldb-22="${LLVM_APT_VERSION}" libclang-rt-22-dev="${LLVM_APT_VERSION}" \
        cmake make g++ python3 libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
     && rm -rf /var/lib/apt/lists/* /tmp/llvm.asc
 RUN case "$TARGETARCH" in \

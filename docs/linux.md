@@ -1,5 +1,13 @@
 # Linux compiler and development chain
 
+Clang sanitizer builds require the matching `libclang-rt-22-dev` package, pinned
+to the same LLVM22.1.8 APT version as the compiler. The maintained development
+Dockerfile includes it. For an existing verified image, build the separate
+`tools/linux/Sanitizers.Dockerfile` with `TOOLCHAIN_IMAGE` set to its verified
+local tag, and record both immutable image IDs and the installed package version.
+The TCP experiment uses actual loopback IPv4/IPv6 with external network disabled;
+its normal, ASAN/UBSAN and TSAN scopes are separate from compiler/SDK acceptance.
+
 The live shared-image/core-capsule test places its temporary project under
 `/build/live-image-tmp`. On a host bind mount this exercises a filesystem distinct
 from container `/tmp`, with literal percent signs and Unicode in the fixture

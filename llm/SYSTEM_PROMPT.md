@@ -81,6 +81,11 @@ Inspect limits and pending integrations before composing features.
 
 ## Tasks, resources and IO
 
+The private `task_network_transport` descriptor advertises a trusted C++ TCP
+kernel only. It does not enable source network calls or async/await.
+`std/net.nex` remains the browser command adapter; discover actual source
+network support before using any network syntax or effect.
+
 Native structured tasks use an owned joined executor. Channels, scope/future
 lifetimes, deadlines, worker/step limits and backpressure are explicit. AST and
 TypeScript schedulers have their own execution guarantees; native threading

@@ -1,3 +1,17 @@
+Network197 / toolchain0.135.0 / language0.24 adds a private trusted-host TCP
+kernel on the existing external IO pool: exact operator-granted IPv4/IPv6
+endpoints, copied binary inputs, nonblocking connect/send/read, queue-inclusive
+deadlines, cancellation/revocation checks, bounded replies and socket settlement
+before completion.87 actual loopback checks pass on macOS normal/ASAN-UBSAN/TSAN
+and Linux normal/ASAN-UBSAN/TSAN. Each variant runs87 checks on actual sockets.
+The separate Linux image retains pinned compiler-rt22.1.8 and original image layers.
+CMake registers the same kernel as a separate conformance target. Discovery,
+language pack, host guide and LLM prompt explicitly keep source_support false.
+No source syntax, language migration, task ABI or existing source semantics change.
+Source/native/reference network bridges, DNS/TLS/HTTP/streaming, async DB and
+matching compiler/SDK/platform delivery remain open alongside the entire original
+objective. Primary081/016, previous SDKs and graph/Git history stay preserved.
+
 Capsule196 / toolchain0.134.5 / language0.24 creates core-capsule staging
 beside the destination using a literal POSIX path. The general LLVM temporary
 helper redirected percent-bearing parents to /tmp, breaking exclusive publication
