@@ -1,3 +1,15 @@
+Owned pthread199 / toolchain0.135.2 / language0.24 makes POSIX native
+owned-cleanup runtime linkage explicit even for fs/resource-only applications.
+Astra193's actual unchanged file diagnostic test failed before execution:
+ld.lld could not resolve pthread_create/pthread_join from nex_resource_executor.o.
+Newer glibc merges pthread into libc and had hidden this dependency locally.
+The owned executor compilation and final non-archive link now select -pthread;
+its runtime-object cache identity records the changed compilation setting.
+Source semantics, source version and task ABI stay unchanged. Actual current
+build/focused/full/SDK/platform verification remains pending; source198's full
+run and separate source193 stand receipt retain their original scopes.
+Primary081/016, original graph/Git state and the full objective stay preserved.
+
 TCP198 / toolchain0.135.1 / language0.24 adds a checked std/tcp library and
 operator-prepared pinned native module using the existing copied task/FFI bridge.
 Actual NEX AST/debug/release calls pass36 loopback cases on the previous197

@@ -2151,7 +2151,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   for(const auto &component:components){
     if(options.codeOnlyLibrary||options.deferredLink)continue;
-    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
+    auto source=(runtimeProjection/component).string();auto runtimeKey=hash("nex.runtime-object/2"+runtimeProjection.string()+runtimeIdentity+component+(component=="nex_resource_executor.cpp"&&!windows?"pthread/1":"")+compiler+identity.output+optimization+options.profile+std::to_string(options.positionIndependent)+target+toolchain.identity+toolchainFingerprint+compilerTarget+dataLayout+environment("SDKROOT")+environment("MACOSX_DEPLOYMENT_TARGET"));
     auto cache=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-cache"/runtimeKey);auto cached=cache/"runtime.o",marker=cache/"complete";
     std::filesystem::create_directories(cache);
     if(!std::filesystem::is_regular_file(cached)||!std::filesystem::is_regular_file(marker)||readFile(marker.string())!=hash(readFile(cached.string()))+"\n"){
@@ -2159,6 +2159,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       auto arguments=command({"-std=c++20","-c",source,"-I",runtimeProjection.string(),"-o",temporary.string(),"-g",optimization});
       if(foreign)arguments.insert(arguments.end(),{"-I",toolchain.opensslInclude,"-pthread","-DNEX_FOREIGN_ENABLED"});
       if(parallel||tasks)arguments.insert(arguments.end(),{"-pthread","-DNEX_STRUCTURED_WORKERS"});
+      if(component=="nex_resource_executor.cpp"&&!windows)arguments.push_back("-pthread");
       if(tasks)arguments.push_back("-DNEX_ASYNC_TASKS");
       if(options.taskDebug)arguments.push_back("-DNEX_TASK_DEBUG_ENABLED");
       if(!options.foreignCatalogue.empty())arguments.push_back("-DNEX_FOREIGN_DEFAULT="+json(options.foreignCatalogue,false));
@@ -2209,7 +2210,11 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   if(foreign&&!objectArchive){link.push_back(toolchain.opensslCrypto);link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
   if(profiling&&!objectArchive){link.push_back("-pthread");if(driverABI.isOSLinux())link.push_back("-ldl");}
-  if((parallel||tasks)&&!objectArchive)link.push_back("-pthread");
+  // Owned cleanup uses std::thread even when source has fs/resource effects
+  // without task or parallel operations. Older glibc needs explicit pthread
+  // linkage; newer glibc's merged libc must not hide this runtime dependency.
+  bool ownedRuntimeThreads=!windows&&std::find(components.begin(),components.end(),"nex_resource_executor.cpp")!=components.end();
+  if((parallel||tasks||ownedRuntimeThreads)&&!objectArchive)link.push_back("-pthread");
   // LLVM ELF/archive writers use '%' as a temporary-file template marker.
   // Stage their output in an independent directory so literal project paths
   // (including percent signs) are never interpreted as that template.
