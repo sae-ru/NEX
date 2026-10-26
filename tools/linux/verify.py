@@ -61,7 +61,10 @@ def main():
                 'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
             run('live-project-archives',['python3','/src/tests/project_build.py','/build/sdk/bin/nex','--live',
                 'Projects.test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources'])
-            run('live-project-images',['python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
+            # /build can be a different filesystem from /tmp. This real capsule
+            # fixture also includes literal percent signs and Unicode paths.
+            image_temp=root/'live-image-tmp';image_temp.mkdir()
+            run('live-project-images',['env','TMPDIR='+str(image_temp),'python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
                 'NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images'])
             run('live-project-actions',['python3','/src/tests/project_actions.py','/build/sdk/bin/nex','--live',
                 'Actions.test_live_project_debugger_and_built_web_preview'])

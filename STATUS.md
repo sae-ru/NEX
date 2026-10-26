@@ -1,3 +1,13 @@
+Capsule196 / toolchain0.134.5 / language0.24 creates core-capsule staging
+beside the destination using a literal POSIX path. The general LLVM temporary
+helper redirected percent-bearing parents to /tmp, breaking exclusive publication
+across filesystems in the actual Linux installed-live DSO test. The original193
+failure and direct filesystem controls are retained. Existing destinations remain
+protected by exclusive rename; OS publication errors now retain their reason.
+Language, runtime, grammar, graph identities and frontend semantics are unchanged.
+Matching build/full/live/SDK/platform acceptance is pending. Primary081/016 and
+the complete original objective remain preserved and open.
+
 Quality195 / toolchain0.134.4 / language0.24 adds explicit024 checked-core
 comparison and fixes inherited Python-driver RSS on Linux with a tiny C launcher.
 Both actual100M-step/five-repeat observations pass, independently verified271 pins.

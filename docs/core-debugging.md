@@ -61,6 +61,13 @@ unchanged completion/build/IR records, then reads the new capsule before an
 exclusive publication. Existing destinations are preserved. An interrupted or
 failed export cannot publish a partial capsule.
 
+Toolchain0.134.5 creates the private staging directory beside the destination,
+including literal percent signs and Unicode in its parent path. Publication
+therefore stays on that filesystem when a project lives on a container bind
+mount or another volume. The exclusive rename remains mandatory; unsupported
+atomic publication fails with its operating-system error rather than replacing
+an existing destination or copying a partial capsule into place.
+
 `capsule.json` follows `nex.core-capsule/1`; successful export returns
 `nex.core-capsule-export/1`. Both are described by
 [the capsule schema](../llm/core-capsule.schema.json). Read reports use the

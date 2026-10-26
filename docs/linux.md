@@ -1,5 +1,11 @@
 # Linux compiler and development chain
 
+The live shared-image/core-capsule test places its temporary project under
+`/build/live-image-tmp`. On a host bind mount this exercises a filesystem distinct
+from container `/tmp`, with literal percent signs and Unicode in the fixture
+path. Toolchain0.134.5 keeps capsule publication staging beside its destination;
+the test also verifies that a repeated export preserves the existing capsule.
+
 Native application packaging uses `readelf`, `ldd` and patchelf 0.18.0; the
 development recipe now installs the pinned patchelf package. Older retained
 images need that packaging dependency before running the new `packaging` suite.
