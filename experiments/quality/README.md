@@ -1,8 +1,43 @@
+## Current observation and resource accounting
+
+The [current024 observation](../../docs/evidence/checked-core-0.134.4-current.json)
+records fresh native/reference/TypeScript checks and NEX/checked-C++/Python
+measurements on macOS ARM64 and a Linux ARM64 VM. Linux is below the initial90%
+throughput target for this algorithm; broader parity and token cost remain open.
+
+Report schema2 uses a tiny C fork/exec/wait4 launcher on Linux, compiled with the
+already selected Clang driver from adjacent `usage_launcher.c`. This excludes the
+Python measurement driver's inherited memory peak. Bootstrap Linux RSS readings
+are flagged invalid and are excluded from comparison samples. macOS retains its
+direct wait4 byte accounting. CPU includes waited descendants; RSS is the largest
+process peak, not a sum of simultaneous processes or NEX heap allocations. The
+small launcher pre-exec floor is retained in its control observation. Timeouts
+terminate the owned command process group. Historical schema1 receipts remain.
+The source checkout must contain both the Python helper and its C companion.
+
+## Explicit current-language comparison
+
+Run the source-checkout helper against the actual installed current SDK:
+
+```sh
+python3 experiments/quality/checked_core.py --language 0.24 \
+  --compiler /path/to/current/sdk/bin/nex --output /new/current-comparison
+```
+
+The requested language must match both actual describe and doctor responses.
+This generates and checks a fresh project/revision; it does not relabel the old
+0.18 report. Legacy0.18 remains the default for historical reproducibility.
+The NEX, checked C++ and Python algorithms are unchanged, and all output,
+source/compiler/executable hashes, measurements and host load are retained.
+Host isolation, general parity and model/token cost are not established by this
+one algorithm. The helper remains source-checkout tooling; it is not installed
+under the SDK tools directory. Existing SDK/CTest and Q1–Q5 gates are unchanged.
+
 # Checked integer core comparison
 
 This retained language0.18 opt-in probe builds actual NEX and C++ release applications and retains the
 NEX/C++/Python input sources, hashes, commands, every observed output, timing,
-per-process CPU time and maximum RSS. It requires a matching language0.18 SDK,
+per-process CPU time and maximum RSS. The retained default requires a matching language0.18 SDK; explicit `--language 0.24` supports the current corpus. It also requires
 Clang-compatible C++20 driver, Python3, Node22.18+ and a new output directory. It works through
 the matching compiler's actual doctor/describe commands; it does not import a source tree
 or a private root-workspace verifier. Its recorded0.94 observations do not certify

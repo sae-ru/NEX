@@ -1,0 +1,333 @@
+{
+  "schema": "nex.checked-core-observation/2",
+  "date_utc": "2026-10-26T04:22:45.035985+00:00",
+  "toolchain": "0.134.4",
+  "language": "0.24",
+  "algorithm": "positive bounded checked-i64 modular recurrence",
+  "seed": 1234567,
+  "count": 10000000,
+  "rounds": 10,
+  "steps_per_invocation": 100000000,
+  "repetitions": 5,
+  "agreement_cases_per_platform": 5,
+  "additional_closed_form_oracle_vector": [
+    125,
+    4001,
+    5
+  ],
+  "platforms": {
+    "macos": {
+      "compiler_sha256": "84ba7d266a39337a45ea95d5a0d077fadd684e273915c5e4a369328a3323945a",
+      "revision": "d71072c4d56a66de9564103335e9ba7ef16020a7033e32eb9d6c089212052ffe",
+      "measurements": {
+        "nex": {
+          "samples": [
+            {
+              "seconds": 0.3162139580000023,
+              "user_seconds": 0.31243699999999996,
+              "system_seconds": 0.00156,
+              "maximum_rss_bytes": 2080768
+            },
+            {
+              "seconds": 0.31848316699999657,
+              "user_seconds": 0.315261,
+              "system_seconds": 0.0016699999999999998,
+              "maximum_rss_bytes": 2080768
+            },
+            {
+              "seconds": 0.32714849999999984,
+              "user_seconds": 0.323413,
+              "system_seconds": 0.001782,
+              "maximum_rss_bytes": 2064384
+            },
+            {
+              "seconds": 0.31454070799999556,
+              "user_seconds": 0.310706,
+              "system_seconds": 0.001797,
+              "maximum_rss_bytes": 2080768
+            },
+            {
+              "seconds": 0.2948222910000027,
+              "user_seconds": 0.29129,
+              "system_seconds": 0.001544,
+              "maximum_rss_bytes": 2080768
+            }
+          ],
+          "median_wall_seconds": 0.3162139580000023,
+          "median_user_seconds": 0.31243699999999996,
+          "maximum_rss_bytes": 2080768
+        },
+        "cpp_checked": {
+          "samples": [
+            {
+              "seconds": 0.31547183300000015,
+              "user_seconds": 0.312057,
+              "system_seconds": 0.001616,
+              "maximum_rss_bytes": 1867776
+            },
+            {
+              "seconds": 0.3219182909999958,
+              "user_seconds": 0.317951,
+              "system_seconds": 0.0018759999999999998,
+              "maximum_rss_bytes": 1867776
+            },
+            {
+              "seconds": 0.3147819169999977,
+              "user_seconds": 0.312089,
+              "system_seconds": 0.001274,
+              "maximum_rss_bytes": 1867776
+            },
+            {
+              "seconds": 0.31260300000000285,
+              "user_seconds": 0.30900299999999997,
+              "system_seconds": 0.0018809999999999999,
+              "maximum_rss_bytes": 1867776
+            },
+            {
+              "seconds": 0.30879908400000033,
+              "user_seconds": 0.30559,
+              "system_seconds": 0.001598,
+              "maximum_rss_bytes": 1867776
+            }
+          ],
+          "median_wall_seconds": 0.3147819169999977,
+          "median_user_seconds": 0.312057,
+          "maximum_rss_bytes": 1867776
+        },
+        "python": {
+          "samples": [
+            {
+              "seconds": 10.379369999999998,
+              "user_seconds": 10.357589,
+              "system_seconds": 0.017106,
+              "maximum_rss_bytes": 9879552
+            },
+            {
+              "seconds": 10.270905790999997,
+              "user_seconds": 10.246511,
+              "system_seconds": 0.018997,
+              "maximum_rss_bytes": 9912320
+            },
+            {
+              "seconds": 10.321267875000004,
+              "user_seconds": 10.300119,
+              "system_seconds": 0.016867,
+              "maximum_rss_bytes": 9879552
+            },
+            {
+              "seconds": 10.011507166999998,
+              "user_seconds": 9.986219,
+              "system_seconds": 0.019506,
+              "maximum_rss_bytes": 9895936
+            },
+            {
+              "seconds": 9.490225291000002,
+              "user_seconds": 9.468569,
+              "system_seconds": 0.016059999999999998,
+              "maximum_rss_bytes": 9879552
+            }
+          ],
+          "median_wall_seconds": 10.270905790999997,
+          "median_user_seconds": 10.246511,
+          "maximum_rss_bytes": 9912320
+        }
+      },
+      "binary_bytes": {
+        "nex": 471664,
+        "cpp_checked": 36680
+      },
+      "NEX_over_checked_CPP_wall_ratio": 1.004549311515898,
+      "checked_CPP_relative_throughput": 0.9954712909921435,
+      "initial_90percent_throughput_target_met_for_observation": true,
+      "host_load_before": [
+        3.7158203125,
+        4.05419921875,
+        4.2255859375
+      ],
+      "host_load_after": [
+        4.0859375,
+        4.10546875,
+        4.22998046875
+      ],
+      "machine": "arm64",
+      "python_version": "3.9.6 (default, Aug 17 2026, 12:07:42) \n[Clang 21.0.0 (clang-2100.3.34.1)]",
+      "clang_version": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm@22/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm@22/22.1.8/etc/clang/arm64-apple-darwin27.cfg\n",
+      "resource_launcher": null
+    },
+    "linux": {
+      "compiler_sha256": "62148ce3fb61ce93cd90ec849cea9b169a0f9e2bc0fa4ddabd44ce9561771471",
+      "revision": "d71072c4d56a66de9564103335e9ba7ef16020a7033e32eb9d6c089212052ffe",
+      "measurements": {
+        "nex": {
+          "samples": [
+            {
+              "seconds": 0.36169420898659155,
+              "user_seconds": 0.357573,
+              "system_seconds": 0.001001,
+              "maximum_rss_bytes": 3743744
+            },
+            {
+              "seconds": 0.35573025001212955,
+              "user_seconds": 0.350956,
+              "system_seconds": 0.001999,
+              "maximum_rss_bytes": 3760128
+            },
+            {
+              "seconds": 0.3664992499980144,
+              "user_seconds": 0.362704,
+              "system_seconds": 0.000999,
+              "maximum_rss_bytes": 3760128
+            },
+            {
+              "seconds": 0.36201225098920986,
+              "user_seconds": 0.359432,
+              "system_seconds": 0.0,
+              "maximum_rss_bytes": 3760128
+            },
+            {
+              "seconds": 0.34692250000080094,
+              "user_seconds": 0.343448,
+              "system_seconds": 0.001001,
+              "maximum_rss_bytes": 3760128
+            }
+          ],
+          "median_wall_seconds": 0.36169420898659155,
+          "median_user_seconds": 0.357573,
+          "maximum_rss_bytes": 3760128
+        },
+        "cpp_checked": {
+          "samples": [
+            {
+              "seconds": 0.32038891699630767,
+              "user_seconds": 0.316828,
+              "system_seconds": 0.000999,
+              "maximum_rss_bytes": 3198976
+            },
+            {
+              "seconds": 0.3065635830280371,
+              "user_seconds": 0.303274,
+              "system_seconds": 0.001,
+              "maximum_rss_bytes": 3198976
+            },
+            {
+              "seconds": 0.31792175001464784,
+              "user_seconds": 0.314421,
+              "system_seconds": 0.001001,
+              "maximum_rss_bytes": 3198976
+            },
+            {
+              "seconds": 0.30844666599296033,
+              "user_seconds": 0.305929,
+              "system_seconds": 0.0,
+              "maximum_rss_bytes": 3198976
+            },
+            {
+              "seconds": 0.306004666024819,
+              "user_seconds": 0.301595,
+              "system_seconds": 0.001997,
+              "maximum_rss_bytes": 3198976
+            }
+          ],
+          "median_wall_seconds": 0.30844666599296033,
+          "median_user_seconds": 0.305929,
+          "maximum_rss_bytes": 3198976
+        },
+        "python": {
+          "samples": [
+            {
+              "seconds": 8.534805128991138,
+              "user_seconds": 8.525187,
+              "system_seconds": 0.000999,
+              "maximum_rss_bytes": 9687040
+            },
+            {
+              "seconds": 8.527466544997878,
+              "user_seconds": 8.508226,
+              "system_seconds": 0.004998,
+              "maximum_rss_bytes": 9687040
+            },
+            {
+              "seconds": 10.915315004996955,
+              "user_seconds": 10.901572,
+              "system_seconds": 0.002999,
+              "maximum_rss_bytes": 9687040
+            },
+            {
+              "seconds": 8.379764462006278,
+              "user_seconds": 8.364998,
+              "system_seconds": 0.008,
+              "maximum_rss_bytes": 9687040
+            },
+            {
+              "seconds": 8.216359545011073,
+              "user_seconds": 8.20474,
+              "system_seconds": 0.007,
+              "maximum_rss_bytes": 9687040
+            }
+          ],
+          "median_wall_seconds": 8.527466544997878,
+          "median_user_seconds": 8.508226,
+          "maximum_rss_bytes": 9687040
+        }
+      },
+      "binary_bytes": {
+        "nex": 3967416,
+        "cpp_checked": 71200
+      },
+      "NEX_over_checked_CPP_wall_ratio": 1.1726312807506452,
+      "checked_CPP_relative_throughput": 0.8527829816716663,
+      "initial_90percent_throughput_target_met_for_observation": false,
+      "host_load_before": [
+        2.4814453125,
+        2.357421875,
+        2.68896484375
+      ],
+      "host_load_after": [
+        2.79931640625,
+        2.4873046875,
+        2.71142578125
+      ],
+      "machine": "aarch64",
+      "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "clang_version": "Ubuntu clang version 22.1.8 (++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80)\nTarget: aarch64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin\n",
+      "resource_launcher": {
+        "source_sha256": "67ed52f878d7b71e6f598d5590970456d09864909bb126042c67af40ab546854",
+        "executable_sha256": "5c71f365037f34c98e0650e502b1e32ea0184096ba1cbbc7f186310865eb1cf9",
+        "parent_peak_bytes": 89690112,
+        "small_child_peak_bytes": 905216
+      }
+    }
+  },
+  "helper_sha256": "25eb554b32ca068ebdc00175ae81f5742f85680890a97286159505ca90c12a80",
+  "launcher_source_sha256": "67ed52f878d7b71e6f598d5590970456d09864909bb126042c67af40ab546854",
+  "source_digests": {
+    "project/main.nex": "d914858c88690d62a98f5343b816be26e1be52ff20aee6dd5fbe4b44d88269c8",
+    "project/nex.json": "508fcc0c315dd38914bbaa50123a4a01dfc9a60e143e7272570d88242a53242d",
+    "baseline.cpp": "4770b3875a2a3729eb8b34358dde51b13dad78e1eaaa39867f4ce2da559ec82e",
+    "baseline.py": "c09008ef1ef6693706daec1477d75d1b68ada7e2b00be2de7a8ad0d5b81489f3"
+  },
+  "evidence_sha256": {
+    "Mac_report": "02786b1c49219b344fe3e046816ff5893e361f60a6edffb4d8bf2b267b5ab47a",
+    "Linux_VM_report": "a61c733db8ee4325fe2d3b6151f2762eb11cfb3f878f230e0287ba079649a18b",
+    "independent_verification": "66a1c34225dffc8d9a48ffc86b5ba3fa9c34867abe16d1204a460b66f5b33036"
+  },
+  "resource_measurement": {
+    "linux": "C fork/exec/wait4 launcher excludes Python driver peak",
+    "darwin": "direct wait4; maximum RSS is already in bytes",
+    "scope": "command and waited descendants: CPU sum and largest process RSS, not concurrent memory sum",
+    "linux_bootstrap_RSS_valid": false
+  },
+  "Linux_RSS_control": {
+    "source_sha256": "67ed52f878d7b71e6f598d5590970456d09864909bb126042c67af40ab546854",
+    "executable_sha256": "5c71f365037f34c98e0650e502b1e32ea0184096ba1cbbc7f186310865eb1cf9",
+    "parent_peak_bytes": 89690112,
+    "small_child_peak_bytes": 905216
+  },
+  "prior_Linux194_RSS_excluded": true,
+  "scope": "One algorithm on macOS ARM64 and a native Linux ARM64 Docker VM on the same ARM64 host. Host was not isolated. Wall time includes process startup. Checked C++ baseline has no NEX request cancellation/step-budget runtime.",
+  "Linux_initial90percent_target_met": false,
+  "general_Cpp_Python_parity_proved": false,
+  "model_token_cost_measured": false,
+  "large_application_and_other_platform_performance_proved": false,
+  "full_objective_complete": false
+}

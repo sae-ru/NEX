@@ -1,3 +1,19 @@
+Quality195 / toolchain0.134.4 / language0.24 adds explicit024 checked-core
+comparison and fixes inherited Python-driver RSS on Linux with a tiny C launcher.
+Both actual100M-step/five-repeat observations pass, independently verified271 pins.
+Mac NEX/checked-C++ medians0.316214/0.314782s; Linux ARM64 VM0.361694/0.308447s.
+Linux misses the initial90-percent throughput target in this observation; general
+parity, large-application quality and model/token savings remain open. Legacy018
+remains the helper default, with discovery/doctor agreement required.
+Mac193 moved/restored SDKs each passed37 phases/740 commands/302 indexed resources;
+11614 evidence pins and2996 normalized archive members are independently verified.
+Exact191 full211 passes;193's only raw core change is a direct optional include,
+with eight equal Darwin preprocessing pairs and current focused3/46guards/live
+Unicode DAP. Linux193 full211 passed; its stale023 smoke helper is corrected to
+actual checked023/024 discovery and passes on installed024. Linux live/source-free
+SDK recovery remains pending. Compiler/runtime/spec/grammar/pack/CMake match193.
+Primary081/016 and the complete original objective remain preserved and open.
+
 SDK Unicode193 / toolchain0.134.4 / language0.24 encodes producer marker
 paths as UTF-8 bytes in C/C++ string literals. JSON surrogate pairs are not valid
 C universal characters; the exact readonly moved191 failure is retained. The

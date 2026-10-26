@@ -165,3 +165,14 @@ correction, with unchanged file ownership, cancellation and physical-settlement
 semantics. The original frozen191 Linux compiler diagnostics are retained in
 the local linux191-arm64-v1/build.log; matching current Linux verification is a
 separate requirement from prior macOS or historical Linux receipts.
+
+### Current SDK smoke language and recovery output
+
+The smoke helper requires actual describe, doctor and installed language-pack
+versions to agree, supporting the reviewed023 and024 cohorts. Every new test
+project uses that discovered language rather than a stale023 literal. Its302
+unique indexed files (303 manifest references) still match the supplied source.
+Use `--source MATCHING_CHECKOUT --output-root NEW_EVIDENCE` to retain an earlier
+failed run while exercising an installed compiler. Defaults `/src` and `/build`
+preserve the container workflow. This helper correction does not change the
+compiler, existing graphs, runtime semantics or the separate source-free SDK gate.

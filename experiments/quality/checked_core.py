@@ -1,10 +1,12 @@
 """Actual checked-i64/native throughput probe; retain inputs and every result."""
-import argparse, datetime, hashlib, json, os, platform, resource, statistics, subprocess, sys, threading, time, traceback
+import argparse, datetime, hashlib, json, os, platform, resource, shutil, signal, statistics, subprocess, sys, threading, time, traceback
 from pathlib import Path
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--compiler',type=Path,required=True)
 parser.add_argument('--resources',type=Path)
+parser.add_argument('--language',choices=('0.18','0.24'),default='0.18',
+                    help='Explicit corpus language; must match actual compiler discovery (legacy default: 0.18)')
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--count',type=int,default=10000000)
 parser.add_argument('--rounds',type=int,default=10)
@@ -16,12 +18,18 @@ assert nex.is_file() and not out.exists()
 out.mkdir();project=out/'project';project.mkdir()
 compiler_digest=hashlib.sha256(nex.read_bytes()).hexdigest()
 started = time.monotonic()
-report = {'schema': 'nex.checked-core-comparison/1', 'ok': False, 'state': 'running',
-          'phase': 'prepare', 'toolchain': None, 'language': '0.18', 'commands': [],
+report = {'schema': 'nex.checked-core-comparison/2', 'ok': False, 'state': 'running',
+          'phase': 'prepare', 'toolchain': None, 'language': settings.language, 'commands': [],
           'full_objective_complete': False, 'runtime_cpp_parity_established': False,
           'model_cost_measured': False, 'isolated_host': False,
           'scope': 'One positive bounded checked-i64 modular recurrence. Host isolation is not established; process wall latency includes startup. No cross-platform/application/general-language parity claim.'}
 env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'}
+linux=sys.platform.startswith('linux')
+usage_launcher=None
+report['resource_measurement']={'linux':'C fork/exec/wait4 launcher excludes Python driver peak',
+    'darwin':'direct wait4; maximum RSS is already in bytes',
+    'scope':'command and waited descendants: CPU sum and largest process RSS, not concurrent memory sum',
+    'linux_bootstrap_RSS_valid':False}
 if settings.resources is not None:env['NEX_RESOURCE_DIR']=str(settings.resources.resolve())
 else:env.pop('NEX_RESOURCE_DIR',None)
 
@@ -33,7 +41,9 @@ def guard():
 
 def save():
     report.update(updated=datetime.datetime.now(datetime.timezone.utc).isoformat(), seconds=round(time.monotonic()-started, 3))
-    (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    temporary=out/'report.json.tmp'
+    temporary.write_text(json.dumps(report, indent=2) + '\n')
+    temporary.replace(out/'report.json')
 
 def command(label, args, inputs=None, timeout=120):
     report['phase'] = label
@@ -45,22 +55,49 @@ def command(label, args, inputs=None, timeout=120):
         local['NEX_BENCH_SEED'] = json.dumps(str(inputs[0]))
         local['NEX_BENCH_COUNT'] = json.dumps(str(inputs[1]))
         local['NEX_BENCH_ROUNDS'] = json.dumps(str(inputs[2]))
-    start = time.monotonic()
+    usage_path=out/(prefix+'.usage.json')
+    arguments=list(map(str,args))
+    launched=[str(usage_launcher),str(usage_path),*arguments] if usage_launcher else arguments
+    row={'name':label,'command':arguments,'inputs':inputs,'status':'running',
+         'stdout':prefix+'.stdout','stderr':prefix+'.stderr',
+         'maximum_rss_valid':not linux or usage_launcher is not None,
+         'resource_backend':'C-fork-exec-wait4' if usage_launcher else 'direct-wait4'}
+    if usage_launcher:row.update(launcher_command=launched,usage=usage_path.name)
+    report['commands'].append(row);save()
     with (out / (prefix + '.stdout')).open('wb') as stdout, (out / (prefix + '.stderr')).open('wb') as stderr:
-        p = subprocess.Popen(list(map(str, args)), cwd=project, env=local, stdout=stdout, stderr=stderr)
-        timer = threading.Timer(timeout, p.kill)
+        start=time.monotonic()
+        p = subprocess.Popen(launched, cwd=project, env=local, stdout=stdout, stderr=stderr,start_new_session=True)
+        row['pid']=p.pid;save();done=threading.Event()
+        def terminate():
+            if done.is_set():return
+            try:os.killpg(p.pid,signal.SIGKILL)
+            except ProcessLookupError:pass
+        timer = threading.Timer(timeout, terminate)
         timer.daemon = True
         timer.start()
         try:
             _, status, usage = os.wait4(p.pid, 0)
             p.returncode = os.waitstatus_to_exitcode(status)
+        except BaseException as error:
+            terminate()
+            try:os.wait4(p.pid,0)
+            except ChildProcessError:pass
+            row.update(status='interrupted',error=repr(error));save()
+            raise
         finally:
+            done.set()
             timer.cancel()
-    row = {'name': label, 'command': list(map(str, args)), 'inputs': inputs, 'exit_code': p.returncode,
+    row.update({'exit_code': p.returncode,
            'seconds': time.monotonic()-start, 'user_seconds': usage.ru_utime, 'system_seconds': usage.ru_stime,
            'maximum_rss_bytes': usage.ru_maxrss if sys.platform == 'darwin' else usage.ru_maxrss * 1024,
-           'stdout': prefix + '.stdout', 'stderr': prefix + '.stderr'}
-    report['commands'].append(row)
+           'status':'passed' if p.returncode==0 else 'failed'})
+    if usage_launcher:
+        if usage_path.is_file():
+            measured=json.loads(usage_path.read_text())
+            assert measured['exit_code']==p.returncode,'resource launcher exit differs from command'
+            row.update({key:measured[key] for key in ('user_seconds','system_seconds','maximum_rss_bytes')})
+            row['measured_pid']=measured['child_pid']
+        else:row['maximum_rss_valid']=False
     save()
     assert p.returncode == 0, (label, p.returncode, (out / row['stderr']).read_text()[-2000:])
     return (out / row['stdout']).read_text(), row
@@ -178,7 +215,7 @@ print(total)
 
 try:
     guard()
-    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.18', 'entry': 'main.nex'}) + '\n')
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': settings.language, 'entry': 'main.nex'}) + '\n')
     (project / 'main.nex').write_text(nex_text)
     (out / 'baseline.cpp').write_text(cpp_text)
     (out / 'baseline.py').write_text(python_text)
@@ -187,9 +224,13 @@ try:
         'overflow_possible_within_domain': False,
         'semantics': 'All integer operands stay nonnegative and within i64; Python arbitrary integers and floor remainder agree on this domain. C++ uses explicit checked add/multiply/remainder. NEX also includes its existing runtime polling, ownership and instrumentation costs; C++ baseline has no cancellation/step-budget runtime.'}
     capabilities, _ = command('capabilities',[nex,'describe','--json'])
-    assert json.loads(capabilities)['version']=='0.18','fixture requires explicit language0.18 support'
+    descriptor=json.loads(capabilities)
+    assert descriptor['version']==settings.language,'explicit corpus language must match actual compiler discovery'
     actual, _ = command('doctor', [nex,'doctor','--json'])
     doctor = json.loads(actual)
+    assert doctor['language']==settings.language,'doctor differs from the explicitly selected corpus language'
+    report['discovered_language']=descriptor['version']
+    report['host_load_average_before']=list(os.getloadavg())
     report['toolchain']=doctor.get('toolchain',doctor.get('version'))
     report['probe_sha256']=digest(Path(__file__).resolve())
     clang = Path(doctor['native_compiler'])
@@ -197,6 +238,16 @@ try:
     version, _ = command('clang-version', [clang,'--version'])
     report['compilers'] = {'nex_sha256': digest(nex), 'clang': str(clang), 'clang_version': version,
                            'python': sys.executable, 'python_version': sys.version, 'machine': platform.machine()}
+    if linux:
+        source=out/'usage-launcher.c'
+        shutil.copyfile(Path(__file__).with_name('usage_launcher.c'),source)
+        executable=out/'usage-launcher'
+        command('rss-launcher-build',[clang,'-x','c','-std=c11','-O2','-g0','-nostdlib++',source,'-o',executable])
+        usage_launcher=executable
+        _,control=command('rss-launcher-control',['/bin/true'])
+        report['resource_launcher']={'source_sha256':digest(source),'executable_sha256':digest(executable),
+            'parent_peak_bytes':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
+            'small_child_peak_bytes':control['maximum_rss_bytes']}
     checked, _ = command('check', [nex,'check','--json'])
     report['revision'] = json.loads(checked)['revision']
     command('native-tests', [nex,'test','--profile','release','--json'], timeout=300)
@@ -227,11 +278,13 @@ try:
         for language in order[iteration%3:]+order[:iteration%3]:
             observed, row = command('measure-'+language, programs[language], (seed,count,rounds))
             assert observed == expected
+            assert row['maximum_rss_valid'],'measurement lacks independent child RSS'
             samples[language].append({k:row[k] for k in ['seconds','user_seconds','system_seconds','maximum_rss_bytes']})
     summary = {name:{'samples':values,'median_wall_seconds':statistics.median(v['seconds'] for v in values),
                      'median_user_seconds':statistics.median(v['user_seconds'] for v in values),
                      'maximum_rss_bytes':max(v['maximum_rss_bytes'] for v in values)} for name,values in samples.items()}
     report.update(ok=True,state='passed',phase='complete',agreement_cases=len(cases),
+                  host_load_average_after=list(os.getloadavg()),
                   measured_seed=seed,measured_iterations=count,measured_rounds=rounds,total_recurrence_steps=count*rounds,repetitions=repeats,measurements=summary,
                   nex_over_cpp_checked_wall_ratio=summary['nex']['median_wall_seconds']/summary['cpp_checked']['median_wall_seconds'],
                   binary_bytes={'nex':binary.stat().st_size,'cpp_checked':cpp.stat().st_size},
