@@ -1350,23 +1350,57 @@ test fn examples() -> unit {
         built=cli('build','--profile','release',cwd=directory)
         copied=root/'model-standalone';shutil.copy2(built['executable'],copied)
         (directory/'main.nex').unlink()
-        held=[]
+        # Installed SDKs can be mounted read-only. Use an explicitly selected
+        # private resource projection to prove replay needs neither std source.
+        replay_resources=root/'model-replay-resources'
+        shutil.copytree(resources,replay_resources)
+        removed_libraries=('model.nex','compute.nex')
+        original_library_hashes={name:hashlib.sha256((resources/'lib'/name).read_bytes()).hexdigest()
+                                 for name in removed_libraries}
+        for name in removed_libraries:
+            (replay_resources/'lib'/name).unlink()
+        require(all(not (replay_resources/'lib'/name).exists() for name in removed_libraries),
+                'model replay resource projection still contains standard sources')
+        before=environment.get('NEX_RESOURCE_DIR')
+        negative_controls={}
         try:
-            for name in ('model.nex','compute.nex'):
-                original=resources/'lib'/name;temporary=root/('held-library-'+name)
-                original.rename(temporary);held.append((original,temporary))
+            environment['NEX_RESOURCE_DIR']=str(replay_resources)
+            selected=cli('doctor')
+            require(Path(selected['runtime']).resolve()==(replay_resources/'runtime/runtime.cpp').resolve(),
+                    'model replay did not select its source-free resource projection')
+            control=root/'model-replay-negative-control';control.mkdir()
+            (control/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
+                'language':report['doctor']['language'],'entry':'main.nex'}))
+            for name in removed_libraries:
+                (control/'main.nex').write_text('module replay_control;import "std/'+name+'" as missing;fn main()->unit{}\n')
+                rejected=cli('check',cwd=control,expected_success=False)
+                require(rejected.get('code')=='E_RESOURCE',
+                        'model replay resource projection fell back to an installed standard source')
+                negative_controls[name]=rejected['code']
+            # Force actual recompilation from the graph instead of reusing the
+            # executable built before the library sources became unavailable.
+            shutil.rmtree(directory/'.nex/build')
+            rebuilt=cli('build','--revision',built['revision'],'--profile','release',cwd=directory)
+            require(rebuilt.get('cached') is False and rebuilt['revision']==built['revision'],
+                    'model replay did not rebuild the archived revision without cache')
+            require(cli('eval','--revision',built['revision'],cwd=directory)['stdout']==expected,
+                    'model reference replay depends on physical standard library source')
             require(cli('run','--revision',built['revision'],'--profile','release',cwd=directory)['stdout']==expected,
                     'model replay depends on physical standard library source')
-            before=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']=str(root/'unavailable-model-resources')
-            try:require(run([copied],cwd=root)==expected,'model standalone output differs')
-            finally:
-                if before is None:environment.pop('NEX_RESOURCE_DIR',None)
-                else:environment['NEX_RESOURCE_DIR']=before
+            environment['NEX_RESOURCE_DIR']=str(root/'unavailable-model-resources')
+            require(run([copied],cwd=root)==expected,'model standalone output differs')
         finally:
-            for original,temporary in reversed(held):temporary.rename(original)
+            if before is None:environment.pop('NEX_RESOURCE_DIR',None)
+            else:environment['NEX_RESOURCE_DIR']=before
+        require(original_library_hashes=={name:hashlib.sha256((resources/'lib'/name).read_bytes()).hexdigest()
+                                         for name in removed_libraries},'model replay changed installed standard sources')
         report['evidence']['model_contract']={'descriptor':True,'native_reference':True,
             'typescript_reference':True,'source_deleted_replay':True,'standalone':True,
             'managed_memory_balanced':True,'preparer_installed':True,'physical_standard_sources_absent_for_replay':True,
+            'replay_resource_isolation':{'root':str(replay_resources),'removed_libraries':list(removed_libraries),
+                'negative_controls':negative_controls,'selected_runtime':selected['runtime'],
+                'rebuilt_without_cache':True,'reference_replay':True,'installed_libraries_unchanged':True,
+                'installed_library_sha256':original_library_hashes},
             'preparer_source_checked':True,'preparer_source_language':source_check['source_language'],'preparer_source_check':source_check,
             'library_sha256':hashlib.sha256((resources/'lib/model.nex').read_bytes()).hexdigest(),
             'revision':built['revision'],'native_model_inference_proved':False}

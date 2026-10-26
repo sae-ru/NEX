@@ -139,7 +139,7 @@ raise RuntimeError('SDK remained writable')
                        '--output', target, '--browser']
             if args.live:
                 command.append('--live')
-            run(label+'-workflow', command, environment)
+            run(label+'-workflow', command, environment, timeout=18000)
             accepted = json.loads((target/'report.json').read_text())
             sdk_acceptance.validate_completed_report(accepted)
             if accepted['compiler_sha256'] != sdk_archive.digest(prefix/'bin/nex'):
@@ -151,7 +151,7 @@ raise RuntimeError('SDK remained writable')
             sdk_archive.inventory(prefix, allow_python_cache=False)
             copied = output/(label+'-acceptance.json'); shutil.copyfile(target/'report.json', copied)
             return {'ok': True, 'report': str(copied), 'working_report': str(target/'report.json'),
-                    'phases': len(sdk_acceptance.ACCEPTANCE_PHASES), 'seconds': accepted['seconds'], 'live_debugger': args.live,
+                    'phases': len(accepted['phases']), 'seconds': accepted['seconds'], 'live_debugger': args.live,
                     'browser_build': True, 'compiler_sha256': accepted['compiler_sha256'],
                     'configured_read_roots_denied': True, 'sdk_write_denied': True,
                     'negative_read_controls': len(probes)}

@@ -539,3 +539,24 @@ The source/runtime implementation is unchanged from the188 HTTP cohort. This
 delivery update installs/indexes its extended helper and strengthens SDK receipt
 validation. It adds no source syntax, language migration, dependency or notice.
 
+The maintained macOS distribution wrapper gives each moved/restored full SDK
+workflow a bounded18000-second budget. Its summary counts the phases in the
+actually validated receipt, including37 for0.134.4, rather than the historical
+34-phase base tuple. Individual SDK operations retain their own shorter limits;
+this wrapper does not relax any receipt or isolation check.
+
+
+### Read-only standard-library replay acceptance
+
+The model-contract gate never renames files in the installed SDK. It copies its
+text resources into the writable evidence project and removes model.nex and
+compute.nex only from that private projection. NEX_RESOURCE_DIR explicitly selects
+that projection; doctor must identify its runtime, and fresh imports of each
+missing standard library must fail with E_RESOURCE. The original project source
+and native build cache are removed, then the archived revision must rebuild
+without a cache hit and agree in reference and native execution. A copied
+standalone binary also runs with resources unavailable. The receipt records the
+projection, both negative controls, selected runtime and unchanged installed
+library hashes. Existing full phase, resource inventory and kernel write-denial
+checks remain mandatory. This gate establishes library replay, not native model
+inference or general GPU/NPU execution.

@@ -1,3 +1,17 @@
+Readonly SDK191 / toolchain0.134.4 / language0.24 corrects the model replay
+acceptance to use a private explicitly selected resource projection. Its model
+and compute sources are absent, fresh imports must fail, and the archived
+revision is rebuilt after deleting native caches. Installed SDK sources remain
+unchanged. Frozen190's timeout/actual phase-count fixes are retained. The original
+190 kernel-isolated failure is retained. Actual readonly relocated/archive SDK
+acceptance is pending; primary081/016 and the full remaining objective remain.
+
+Distribution190 / toolchain0.134.4 / language0.24 corrects the maintained
+macOS moved/restored SDK workflow budget and its actual phase count. All
+compiler/runtime/core source and installed SDK189 input resources are unchanged.
+Actual kernel-isolated relocation/archive acceptance remains pending. Primary081
+and the entire original goal are preserved. Older entries retain their scopes.
+
 Delivery189 / toolchain0.134.4 / language0.24 adds mandatory37-phase installed
 SDK acceptance for public task HTTP/verified HTTPS. The indexed helper retains
 148 checks,50 request outcomes,14 clean server exits and exact cancellation
