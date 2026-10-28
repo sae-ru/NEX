@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.migration-candidate/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "origin_revision",
+    "origin_language",
+    "origin_source_hash",
+    "target_language",
+    "sources"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.migration-candidate/1"
+    },
+    "origin_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "origin_language": {
+      "type": "string"
+    },
+    "origin_source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "target_language": {
+      "const": "0.25"
+    },
+    "sources": {
+      "type": "object",
+      "required": [
+        "schema",
+        "entry",
+        "files"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "nex.sources/1"
+        },
+        "entry": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

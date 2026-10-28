@@ -6,7 +6,7 @@ p=argparse.ArgumentParser();p.add_argument('probe',type=Path);p.add_argument('co
 probe=a.probe.resolve();compiler=a.compiler.resolve();fixtures=a.fixtures.resolve();root=a.output.resolve();root.mkdir();started=time.monotonic()
 report={'schema':'nex.private024-stream-project-observability/1','ok':False,'state':'starting','commands':[],'profiles':[],'debug_sessions':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'public_language':'0.23','private_language':'0.24','public024_published':False,'full_objective_complete':False}
+ 'public_language':'0.25','private_language':'0.24','public025_delivery_accepted':False,'full_objective_complete':False}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n')
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
@@ -53,7 +53,7 @@ def dap_session(name,session,files,mode):
   try:adapter.close()
   finally:write(directory/'dap-protocol.json',{'trace':trace,'pending':adapter.pending})
 try:
- data=json.loads((fixtures/'report.json').read_text());assert data['ok'] and len(data['cases'])==8
+ data=json.loads((fixtures/'report.json').read_text());assert data['execution_matrix_complete'] and data['native_reference_pairs']==len(data['cases'])==8
  for mode in ['static','shared']:
   for debug in [False,True]:
    case=next(row for row in data['cases'] if row['mode']==mode and row['profile']==('debug' if debug else 'profile') and row['task_debug']==debug)

@@ -338,7 +338,7 @@ struct Reference {
       TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant,const nexrt::FileWriteGrant *writes,bool taskIR=false)
     :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
      deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),taskIR(taskIR),externalHost(host){
-    if(supportsTaskFileReads(program)||sourceExceptionTasksPrototype(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
+    if(supportsTaskFileReads(program)||supportsSourceExceptionTasks(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
     controlPoll=[this](Span span){checkControl(span);};
     if(supportsTaskForeignCalls(program))foreignScope=nexrt::captureForeignScope(true);
 #ifndef _WIN32
@@ -389,7 +389,7 @@ struct Reference {
   }
   void checkControl(Span span={}){
     if(controlFailure)throw *controlFailure;
-    if(supportsTaskFileReads(program)||sourceExceptionTasksPrototype(program))try{nexrt::pollHostOperation(span.line);}
+    if(supportsTaskFileReads(program)||supportsSourceExceptionTasks(program))try{nexrt::pollHostOperation(span.line);}
     catch(const nexrt::Trap &error){
       if(span.file.empty())span=rootSpan;
       controlFailure=std::make_shared<Error>(error.code,error.what(),span);throw *controlFailure;
@@ -570,7 +570,7 @@ struct Reference {
           if(!r.resourceRetirement->ready())continue;
         }
         for(auto i:r.members){auto &j=*jobs[i];
-          if(fatal(j.failure)||(!r.abort&&!j.observed&&!j.cancelled)||(sourceExceptionTasksPrototype(program)&&r.sourceFailure&&j.failure&&j.failure->code!="E_CANCELLED"))prefer(r.failure,j.failure);
+          if(fatal(j.failure)||(!r.abort&&!j.observed&&!j.cancelled)||(supportsSourceExceptionTasks(program)&&r.sourceFailure&&j.failure&&j.failure->code!="E_CANCELLED"))prefer(r.failure,j.failure);
           j.observed=true;j.result={};j.sourceFailure.reset();j.capability.reset();
         }
         for(auto p:r.pipes){closePipe(p);channelSlots-=pipes[p].capacity;pipes[p].capacity=0;pipes[p].buffer.clear();pipes[p].capability.reset();}
@@ -974,7 +974,7 @@ struct Reference {
         (function.effects.contains("task")||function.foreign);
       if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
         throw Error("E_EFFECT","reference task calls require an explicitly resumable task/fs helper",function.span);
-      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(sourceExceptionTasksPrototype(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
+      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){

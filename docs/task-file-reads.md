@@ -1,3 +1,14 @@
+# Current025 native task IO contract
+
+The025 candidate uses public task ABI6, including ordinary HTTP request hosting.
+File operations still require server task/fs declarations and explicit physical
+grants. with_tasks/task_wait additionally require a source throw effect or a
+lexical handler in025. Source-provider records are11/12/13; retained ABI3/4/5
+formats and old parser identities stay unchanged. See exceptions.md and
+source-exception-providers.md. Complete regression/SDK/platform acceptance remains
+pending. The versioned introduction and examples below describe their original
+024-or-earlier scope; inspect current examples and compiler capabilities.
+
 # Current source language0.24 (development0.134.0)
 
 Ordinary source/project commands select024. Server task/fs whole-file and opened

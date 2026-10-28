@@ -10,7 +10,7 @@ class Projects(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
         for name in ['core','app','bridge','browser']:(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x*3+7;}pub server fn secret()->str{return "NEX_SERVER_ONLY_POISON";}')
         (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}test fn check_value()->unit{assert(m::calculate(5)==22);}')
         (self.root/'bridge/main.nex').write_text('module bridge;import "../core/value.nex" as m;pub fn answer()->i64{return m::calculate(5);}')
@@ -68,9 +68,10 @@ client fn title()->str{return "Project browser";}
         self.cli('test','--target','web')
         library=artifacts['bridge'];debug=json.loads(Path(library['debug_manifest']).read_text())
         symbol=next(f['native_symbol'] for f in debug['functions'] if f['name']=='bridge::answer')
-        host=self.root/'host.cpp';host.write_text('extern "C" long long '+symbol+'();int main(){return '+symbol+'()==22?0:1;}')
+        host=self.root/'host.cpp';host.write_text('#include "nex_host.h"\nextern "C" long long '+symbol+'();int main(){nexrt::RequestScope scope;return '+symbol+'()==22?0:1;}')
         compiler=self.cli('doctor')['native_compiler'];exe=self.root/'host'
-        linked=subprocess.run([compiler,'-std=c++20',str(host),library['artifact'],'-o',str(exe)],capture_output=True,text=True,timeout=30)
+        runtime=json.loads((Path(library['artifact']).parent/'build.json').read_text())['runtime_source_projection']
+        linked=subprocess.run([compiler,'-std=c++20','-I',runtime,str(host),library['artifact'],'-o',str(exe)],capture_output=True,text=True,timeout=30)
         self.assertEqual(linked.returncode,0,linked.stdout+linked.stderr)
         self.assertEqual(subprocess.run([str(exe)],timeout=10).returncode,0)
         warm=self.plan('--kind','build','--configuration','release',timeout=60)

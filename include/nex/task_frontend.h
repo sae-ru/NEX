@@ -11,6 +11,7 @@ Program loadTaskPrototype(const std::string &entry,const std::string &root,
 const std::set<std::string> &taskBuiltins();
 bool isPublicTaskLanguage(const Program &program);
 bool sourceExceptionTasksPrototype(const Program &program);
+bool supportsSourceExceptionTasks(const Program &program);
 // Explicit unarchived source context; never accepted by public bundle/migration APIs.
 llvm::json::Object sourceExceptionTaskContext(const Program &);
 Program loadSourceExceptionTaskContext(const llvm::json::Object &);

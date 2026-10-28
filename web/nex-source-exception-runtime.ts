@@ -1,4 +1,4 @@
-// Compiler-private source exceptions. Public024 emission does not import this module.
+// Branded language025 source errors. Retained024 emission does not import this module.
 import * as nex from './nex-runtime.ts';
 export type Details = Readonly<{code: string; message: string; site: nex.Site}>;
 // Only this class enters a source catch. NexError, host failures and Result

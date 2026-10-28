@@ -3,6 +3,7 @@ import hashlib,json,os,subprocess,sys,tempfile,threading,unittest
 from pathlib import Path
 
 COMPILER=str(Path(sys.argv.pop(1)).resolve())
+CURRENT_LANGUAGE=json.loads(subprocess.check_output([COMPILER,'describe','--kind','index','--json'],text=True))['language']
 PROBE=str(Path(sys.argv.pop(1)).resolve())
 
 class FrontendIO(unittest.TestCase):
@@ -81,7 +82,7 @@ class FrontendIO(unittest.TestCase):
         raw+=b'test fn edge()->unit{assert(len(text())==1);assert(len(utf8_bytes(text()))==4);}\n'
         self.assertEqual(raw.index(emoji),65534)
         source=self.root/'boundary.nex';source.write_bytes(raw)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'boundary.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':CURRENT_LANGUAGE,'entry':'boundary.nex'}))
         for args in [('check',),('eval',),('run','--profile','release'),('test',),('test','--target','web')]:
             with self.subTest(command=args):
                 p=subprocess.run([COMPILER,*args,'--json'],cwd=self.root,capture_output=True,text=True,timeout=60)

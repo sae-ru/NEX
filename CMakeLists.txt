@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.135.30 LANGUAGES C CXX)
+project(NEX VERSION 0.136.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1228,3 +1228,23 @@ target_link_libraries(nex_store_transactions_probe PRIVATE SQLite::SQLite3 Threa
 target_compile_options(nex_store_transactions_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME store_transactions_native COMMAND nex_store_transactions_probe)
 set_tests_properties(store_transactions_native PROPERTIES TIMEOUT 30)
+
+add_test(NAME source_exceptions_public COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_public.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exceptions_public PROPERTIES TIMEOUT 1800)
+add_test(NAME source_exceptions_migration COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_migration.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exceptions_migration PROPERTIES TIMEOUT 120)
+add_test(NAME source_exceptions_http_public COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_http_public.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exceptions_http_public PROPERTIES TIMEOUT 1800)
+add_executable(nex_source_exception_provider_records_probe tests/source_exception_provider_records.cpp)
+target_link_libraries(nex_source_exception_provider_records_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+add_test(NAME source_exception_provider_records COMMAND nex_source_exception_provider_records_probe)
+set_tests_properties(source_exception_provider_records PROPERTIES TIMEOUT 60)
+add_test(NAME source_exceptions_projects COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_projects.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exceptions_projects PROPERTIES TIMEOUT 2400)
+add_test(NAME source_exceptions_projects_debug COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_projects.py $<TARGET_FILE:nex> --debug-only)
+set_tests_properties(source_exceptions_projects_debug PROPERTIES TIMEOUT 1800)

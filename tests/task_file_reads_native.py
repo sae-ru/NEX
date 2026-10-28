@@ -66,7 +66,13 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
     configured.pop('NEX_RESOURCE_DIR', None)
     configured.pop('NEX_FILES_WRITE', None)
     absent = {key: value for key, value in configured.items() if key != 'NEX_FILES_ROOT'}
+    language=cli(root,configured,'describe')['version'];assert language=='0.25'
     for name, body, stdout, grant in cases:
+        if name in ('scope-indirect','generic-record-callable','propagate-abort'):
+            body=body.replace('server fn main()->i64 !{task,fs}', 'server fn main()->i64 !{task,fs,throw}')
+            body=body.replace('server fn work()->result<i64> !{task,fs}', 'server fn work()->result<i64> !{task,fs,throw}')
+            for result in ('i64','result<i64>'):
+                body=body.replace('server fn(s:task_scope)->'+result+' !{task,fs}', 'server fn(s:task_scope)->'+result+' !{task,fs,throw}')
         source = root / (name + '.nex')
         source.write_text('module native_reads;\n' + body + '\n')
         env = configured if grant else absent
@@ -133,7 +139,7 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
     project = root / 'source-project'
     (project / 'core').mkdir(parents=True)
     (project / 'app').mkdir()
-    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language='0.24', entry='app/main.nex')))
+    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language=language, entry='app/main.nex')))
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},

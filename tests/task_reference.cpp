@@ -82,7 +82,11 @@ void selfTest(){
 }
 int main(int argc,char **argv)try{
   if(argc==1){selfTest();std::cout<<json(llvm::json::Object{{"ok",true},{"cases",int64_t(cases)},{"independent_ast_scheduler",true},{"reference_dispatch_uses_native_scheduler",false},{"native_family_fixture",true},{"public_source_tasks",false}})<<'\n';return 0;}
-  auto path=std::filesystem::absolute(argv[1]);auto p=loadTaskPrototype(path.string(),path.parent_path().string());
+  auto path=std::filesystem::absolute(argv[1]);
+  // Public backend agreement must use the ordinary checked loader. Private
+  // prototype fixtures retain their independent parser and self-tests.
+  const bool ordinary=argc>2&&std::string(argv[2])=="ordinary";
+  auto p=ordinary?loadProgram(path.string(),path.parent_path().string(),false):loadTaskPrototype(path.string(),path.parent_path().string());
   std::vector<nexrt::Value> arguments;if(argc>2&&std::string(argv[2])=="parameter")arguments.emplace_back(21);
   TaskReferenceObserver observer;
   if(argc>2&&std::string(argv[2])=="cancel")observer=[](size_t job,const TaskTransition &r){if(job==0&&r.operation=="task_yield"&&r.callDepth>1)throw Error("E_CANCELLED","host canceled reference job before resume",r.span);};

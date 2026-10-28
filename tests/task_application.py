@@ -11,18 +11,18 @@ cases = [
     ('yield', 'fn main()->i64 !{task,io}{print(7);task_yield();return 42;}', 42, '7\n', None),
     ('negative-exit', 'fn main()->i64 !{task}{task_yield();return -1;}', 255, '', None),
     ('unit', 'fn main()->unit !{task}{task_yield();}', 0, '', None),
-    ('unused-ffi', 'server fn main()->i64 !{task,ffi}{return with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi}{let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return 42;});return task_wait(child);});}', 42, '', None),
+    ('unused-ffi', 'server fn main()->i64 !{task,ffi,throw}{return with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi,throw}{let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return 42;});return task_wait(child);});}', 42, '', None),
     ('calls', 'fn item(n:i64)->i64 !{task,io}{print(n);task_yield();return n;}fn sum(a:i64,b:i64)->i64 !{task}{task_yield();return a+b;}fn main()->i64 !{task,io}{return sum(item(20),item(22));}', 42, '20\n22\n', None),
     ('short', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task}{if true||false{return 42;}return 0;}', 42, '', None),
     ('short-call', 'fn bad()->bool !{task,io}{print(99);task_yield();return true;}fn main()->i64 !{task,io}{let value:bool=(true||bad())&&(false&&bad());assert(!value);return 42;}', 42, '', None),
     ('snapshot', 'fn main()->i64 !{task}{var base:i64=40;let f:fn(i64)->i64 !{task}=fn(n:i64)->i64 !{task}{task_yield();return base+n;};base=99;return f(2);}', 42, '', None),
     ('heap-return', 'fn text()->list<str> !{task}{let value:list<str>=["A🧠\\u0000"];task_yield();return value;}fn main()->i64 !{task,io}{print(text());return 42;}', 42, '["A🧠\\u0000"]\n', None),
-    ('scope', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let a:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});return task_wait(a)+task_wait(b);});}', 42, '', None),
-    ('internal-task-signatures', 'fn keep_scope(s:task_scope)->task_scope{return s;}fn keep_callback(f:fn()->i64 !{task})->(fn()->i64 !{task}){return f;}fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{assert(keep_scope(s)==s);let callback:fn()->i64 !{task}=keep_callback(fn()->i64 !{task}{task_yield();return 42;});return callback();});}', 42, '', None),
-    ('channel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<str>=channel_new<str>(s,0);let writer:task<unit>=task_spawn(s,fn()->unit !{task}{assert(task_send(q,"A🧠\\u0000"));assert(task_close(q));});let value:str=unwrap(task_recv(q));task_wait(writer);assert(!is_ok(task_recv(q)));assert(len(value)==3);return 42;});}', 42, '', None),
-    ('cancel', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{let held:list<str>=["retained🧠"];while true{task_yield();}return len(held);});task_yield();assert(task_cancel(t));return 42;});}', 42, '', None),
-    ('propagate-cleanup', 'fn work()->result<i64> !{task}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<str>=task_spawn(s,fn()->str !{task}{let held:str="retained🧠";while true{task_yield();}return held;});task_yield();let bad:result<str>=err<str>("E_STOP","stop");let value:str=bad?;return ok(len(value));});}fn main()->i64 !{task}{return unwrap(work());}', 70, '', 'E_RESULT'),
-    ('unobserved', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 1/0;});return 42;});}', 70, '', 'E_DIV_ZERO'),
+    ('scope', 'fn main()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task,throw}{let a:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});let b:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});return task_wait(a)+task_wait(b);});}', 42, '', None),
+    ('internal-task-signatures', 'fn keep_scope(s:task_scope)->task_scope{return s;}fn keep_callback(f:fn()->i64 !{task})->(fn()->i64 !{task}){return f;}fn main()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{assert(keep_scope(s)==s);let callback:fn()->i64 !{task}=keep_callback(fn()->i64 !{task}{task_yield();return 42;});return callback();});}', 42, '', None),
+    ('channel', 'fn main()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task,throw}{let q:channel<str>=channel_new<str>(s,0);let writer:task<unit>=task_spawn(s,fn()->unit !{task}{assert(task_send(q,"A🧠\\u0000"));assert(task_close(q));});let value:str=unwrap(task_recv(q));task_wait(writer);assert(!is_ok(task_recv(q)));assert(len(value)==3);return 42;});}', 42, '', None),
+    ('cancel', 'fn main()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{let held:list<str>=["retained🧠"];while true{task_yield();}return len(held);});task_yield();assert(task_cancel(t));return 42;});}', 42, '', None),
+    ('propagate-cleanup', 'fn work()->result<i64> !{task,throw}{return with_tasks(1,fn(s:task_scope)->result<i64> !{task}{let t:task<str>=task_spawn(s,fn()->str !{task}{let held:str="retained🧠";while true{task_yield();}return held;});task_yield();let bad:result<str>=err<str>("E_STOP","stop");let value:str=bad?;return ok(len(value));});}fn main()->i64 !{task,throw}{return unwrap(work());}', 70, '', 'E_RESULT'),
+    ('unobserved', 'fn main()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 1/0;});return 42;});}', 70, '', 'E_DIV_ZERO'),
     ('overflow', 'fn main()->i64 !{task,io}{let held:list<str>=["retained🧠"];print(7);task_yield();let x:i64=9223372036854775807;return x+len(held);}', 70, '7\n', 'E_OVERFLOW'),
     ('owner', 'fn main()->i64 !{task}{let absent:task_scope=current_task_scope();return 42;}', 70, '', 'E_TASK_SCOPE'),
 ]
@@ -35,6 +35,7 @@ def cli(root, *args, success=True):
 
 with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as temporary:
     root = Path(temporary)
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'yield.nex'}))
     executable_root = root / 'standalone'
     executable_root.mkdir()
     results = []
@@ -104,7 +105,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     # A clean primary entry does not make an additional public ABI export safe.
     exports = root / 'export-project'
     (exports / 'library').mkdir(parents=True)
-    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'library/main.nex'}))
+    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.25', 'entry': 'library/main.nex'}))
     (exports / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -116,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     project = root / 'source-project'
     (project / 'app').mkdir(parents=True)
     (project / 'core').mkdir()
-    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'app/main.nex'}))
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.25', 'entry': 'app/main.nex'}))
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -125,8 +126,8 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
             'app': {'kind': 'executable', 'root': 'app', 'entry': 'app/main.nex', 'dependencies': {'core': 'source'}},
         },
     }))
-    (project / 'core/work.nex').write_text('module core;pub fn work()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}')
-    (project / 'app/main.nex').write_text('module app;import "../core/work.nex" as core;fn main()->unit !{task,io}{print(core::work());}')
+    (project / 'core/work.nex').write_text('module core;pub fn work()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task,throw}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}')
+    (project / 'app/main.nex').write_text('module app;import "../core/work.nex" as core;fn main()->unit !{task,io,throw}{print(core::work());}')
     planned = cli(project, 'project', '--kind', 'build', '--component', 'app')
     app = next(artifact for artifact in planned['artifacts'] if artifact['component'] == 'app')
     metadata = json.loads(Path(app['metadata']).read_text())

@@ -95,7 +95,7 @@ struct TaskAstMachine::Impl {
     const bool files=supportsTaskFileReads(program)&&function.realm=="server"&&
       function.effects.contains("task")&&function.effects.contains("fs");
     const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
-    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(sourceExceptionTasksPrototype(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
+    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
     auto unsupported=[&](const Type &type){return !supportsTaskFileStreams(program)&&(supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type));};
     if(function.foreign||unsupported(Type::function({},function.result))||
@@ -183,10 +183,10 @@ struct TaskAstMachine::Impl {
         case Action::Statement:
           switch(s->kind){
       case Stmt::Try:
-            if(!sourceExceptionTasksPrototype(program))throw Error("E_EXCEPTION_BACKEND","AST exception handlers require the private task parser",s->span);
+            if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","AST exception handlers require the private task parser",s->span);
             frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndTry});block(s->body,true);break;
           case Stmt::Throw:
-            if(!sourceExceptionTasksPrototype(program))throw Error("E_EXCEPTION_BACKEND","AST throws require the private task parser",s->span);
+            if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","AST throws require the private task parser",s->span);
             if(s->expr){add({Action::Raise,{},s});evaluate(s->expr->args[1]);evaluate(s->expr->args[0]);}
             else{if(frame.caught.empty())throw Error("E_TASK_STATE","AST rethrow lost its lexical handler",s->span);raise(*frame.caught.back());}break;
           case Stmt::Let:case Stmt::Var:add({Action::Bind,{},s});evaluate(s->expr);break;
@@ -336,7 +336,7 @@ void TaskAstMachine::resume(uint64_t ticket,AV value){
   impl->frames.back().values.push_back(std::move(value));impl->waiting=false;
 }
 void TaskAstMachine::resumeSourceException(uint64_t ticket,const SourceException &error){
-  if(!sourceExceptionTasksPrototype(impl->program)||!impl->waiting||ticket!=impl->ticket)throw Error("E_TASK_STATE","AST source-error response ticket differs");
+  if(!supportsSourceExceptionTasks(impl->program)||!impl->waiting||ticket!=impl->ticket)throw Error("E_TASK_STATE","AST source-error response ticket differs");
   impl->incomingSource=std::make_shared<SourceException>(error);impl->waiting=false;
 }
 bool TaskAstMachine::finished()const{return impl->done;}

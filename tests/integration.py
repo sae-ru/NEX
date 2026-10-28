@@ -33,7 +33,7 @@ class Toolchain(harness.ToolchainCase):
         self.assertTrue(external['reference']['source_io_lowering'])
         reads = descriptor['task_file_reads']
         self.assertEqual(reads, pack['task_file_reads'])
-        self.assertEqual(reads['language'], '0.24')
+        self.assertEqual(reads['language'], harness.CURRENT_LANGUAGE)
         self.assertTrue(reads['source_support'] and reads['reference'] and reads['physical_drain'])
         self.assertEqual(reads['function_effects'], ['task', 'fs'])
         self.assertEqual(reads['realm'], 'server')
@@ -53,20 +53,21 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(shared,pack['task_shared_providers'])
         self.assertIs(shared['public_enabled'],True)
         self.assertEqual((shared['record_schema'],shared['plan_schema'],shared['completion_schema']),
-            ('nex.native-task-provider/8','nex.project-task-linkage/8','nex.native-completion/5'))
-        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(5,88,40))
+            ('nex.native-task-provider/11','nex.project-task-linkage/11','nex.native-completion/5'))
+        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(6,88,40))
         for field in ('authority_transport','callable_transport','imported_function_values','profiling',
                       'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
             self.assertIs(shared[field],False)
-        for field in ('typescript', 'windows', 'wasm', 'http_task_handlers'):
+        self.assertTrue(reads['http_task_handlers'])
+        for field in ('typescript', 'windows', 'wasm'):
             self.assertFalse(reads[field])
         profiled=descriptor['task_provider_profiling']
         self.assertEqual(profiled,pack['task_provider_profiling'])
-        self.assertEqual((profiled['language'],profiled['configuration']),('0.24','profile'))
+        self.assertEqual((profiled['language'],profiled['configuration']),(harness.CURRENT_LANGUAGE,'profile'))
         self.assertEqual((profiled['execution_task_abi'],profiled['descriptor_bytes'],profiled['registry_abi'],profiled['registry_bytes']),
-            (5,88,1,32))
-        for field,value in {'record_schema':'nex.native-task-provider/9','catalog_schema':'nex.task-profile-catalog/1',
-                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/9',
+            (6,88,1,32))
+        for field,value in {'record_schema':'nex.native-task-provider/12','catalog_schema':'nex.task-profile-catalog/1',
+                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/12',
                 'retained_build_schema':'nex.retained-native-task-build/3','runtime_schema':'nex.profile-runtime/3',
                 'report_schema':'nex.profile/3','session_schema':'nex.profile-session/3','build_schema':'nex.profile-build/2'}.items():
             self.assertEqual(profiled[field],value)
@@ -83,20 +84,21 @@ class Toolchain(harness.ToolchainCase):
             self.assertIs(profiled[field],False)
         debugging=descriptor['task_provider_debugging']
         self.assertEqual(debugging,pack['task_provider_debugging'])
-        self.assertEqual((debugging['language'],debugging['configuration']),('0.24','debug'))
+        self.assertEqual((debugging['language'],debugging['configuration']),(harness.CURRENT_LANGUAGE,'debug'))
         self.assertEqual((debugging['execution_task_abi'],debugging['descriptor_bytes'],debugging['registry_abi'],
-            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(5,88,1,32,2,200))
+            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(6,88,1,32,2,200))
         self.assertEqual(debugging['maximum_total_registries_including_root'],128)
         self.assertEqual((debugging['record_schema'],debugging['catalog_schema'],debugging['source_union_schema'],
             debugging['completion_schema'],debugging['manifest_schema'],debugging['view_schema'],debugging['frame_schema']),
-            ('nex.native-task-provider/10','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
+            ('nex.native-task-provider/13','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
              'nex.native-completion/7','nex.debug/3','nex.task-debug-view/2','nex.debug-frame/4'))
         self.assertEqual(debugging['source_support'],debugging['public_enabled'])
         self.assertEqual(debugging['guide'],pack['documents']['task_provider_debugging'])
         self.assertEqual(self.cli('guide','--kind','task-provider-debug')['text'],(REPO/debugging['guide']).read_text())
         if debugging['public_enabled']:self.assertEqual(debugging['supported_actions'],['plan','build','debug','package'])
         else:self.assertEqual(debugging['supported_actions'],[])
-        for field in ('ordinary_pure_helper_logical_frames','combined_debug_profile','runtime_load_unload',
+        self.assertTrue(debugging['ordinary_pure_helper_logical_frames'])
+        for field in ('combined_debug_profile','runtime_load_unload',
                       'authority_transport','callable_transport','foreign','binary_only','http_task_handlers',
                       'reference','typescript','windows','wasm','language_migration_required'):
             self.assertIs(debugging[field],False)
@@ -309,7 +311,7 @@ test fn branches() -> unit {
 
     def test_pack_and_discovery_match_executable_example(self):
         descriptor = self.cli("describe")
-        self.assertEqual(descriptor["version"], "0.24")
+        self.assertEqual(descriptor["version"], harness.CURRENT_LANGUAGE)
         pack = json.loads((REPO / "llm/language-pack.json").read_text())
         self.assertEqual(pack["language_version"], descriptor["version"])
         self.assertIn("web_ui", descriptor["features"])
@@ -489,11 +491,11 @@ fn main() -> unit !{io} { print(response().message); }
             db.execute("INSERT INTO head VALUES(1,?)", (old,))
         self.assertEqual(self.cli("graph", ok=False)["code"], "E_LANGUAGE_VERSION")
         migrated = self.cli("migrate")
-        self.assertEqual(migrated["language"], "0.24")
+        self.assertEqual(migrated["language"], harness.CURRENT_LANGUAGE)
         self.assertEqual(migrated["declared_original_revision"], old)
         self.assertNotEqual(migrated["revision"], old)
         history = self.cli("history")
-        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.24"})
+        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", harness.CURRENT_LANGUAGE})
         self.cli("export", "--revision", old, "-o", self.root / "legacy.nex")
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")

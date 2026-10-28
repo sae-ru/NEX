@@ -44,7 +44,7 @@ struct Analysis {
     Env result=baseline;for(auto &[id,value]:result.values){auto found=state.values.find(id);if(found!=state.values.end())value=found->second;}return result;
   }
   void sourceEdge(const Env &env){
-    if(!sourceExceptionTasksPrototype(p))return;
+    if(!supportsSourceExceptionTasks(p))return;
     ++report.exceptionalEdges;
     if(handlers.empty()){escaping=true;return;}
     auto &handler=*handlers.back();auto state=project(env,handler.baseline);
@@ -292,7 +292,7 @@ struct Analysis {
       tick();if(ended)break;
       switch(s->kind){
       case Stmt::Try:{
-        if(!sourceExceptionTasksPrototype(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
+        if(!supportsSourceExceptionTasks(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
         ++report.handlers;HandlerInput handler{env,{}};auto normal=env;handlers.push_back(&handler);bool bodyEnds;
         try{bodyEnds=block(s->body,normal,current);}catch(...){handlers.pop_back();throw;}handlers.pop_back();
         std::optional<Env> continuation;if(!bodyEnds)continuation=normal;
@@ -305,7 +305,7 @@ struct Analysis {
         break;
       }
       case Stmt::Throw:{
-        if(!sourceExceptionTasksPrototype(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
+        if(!supportsSourceExceptionTasks(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
         bool ready=true;if(s->expr)for(auto arg:s->expr->args)if(!expression(arg,env,current)){ready=false;break;}
         if(ready)sourceEdge(env);ended=true;break;
       }

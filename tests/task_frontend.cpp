@@ -127,6 +127,9 @@ server fn main(s:task_scope,f:file)->unit !{task}{
     require(loaded.taskPrototype&&loaded.functions.size()>=3&&loaded.units.size()==2,"task module assembly lost its mode or imports");
     require(loaded.function("app::main").effects.contains("task"),"task effect lost during module binding");++cases;
     rejects("E_TASK_UNIMPLEMENTED",[&]{sourceBundle(loaded);});
+    // The public025 copy declares error delivery at both join boundaries;
+    // the private018 source above retains its original semantics.
+    writeFile((directory/"main.nex").string(),"module app; import \"./worker.nex\" as w; fn main()->i64 !{task,throw}{return with_tasks(2,fn(s:task_scope)->i64 !{task,throw}{let p:task<i64>=task_spawn(s,w::compute);return task_wait(p);});}");
     auto publicProgram=loadProgram((directory/"main.nex").string(),directory.string());
     require(publicProgram.sourceLanguage==currentSourceLanguage&&publicProgram.taskPrototype&&std::string(programLanguage(publicProgram))==languageVersion,"ordinary loader did not select the current public source syntax");++cases;
     require(evaluate(publicProgram,"app::main",10000).value==llvm::json::Value(int64_t(42)),"public020 reference execution lost task module semantics");++cases;

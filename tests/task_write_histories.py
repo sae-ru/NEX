@@ -1,5 +1,5 @@
 """Public022->023 migration of genuine resources/callables/imports/task/model histories."""
-import argparse,base64,hashlib,json,lzma,os,sqlite3,subprocess,tempfile,time
+import argparse,base64,copy,hashlib,json,lzma,os,re,sqlite3,subprocess,tempfile,time
 from collections import Counter
 from contextlib import closing
 from pathlib import Path
@@ -17,7 +17,7 @@ if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex023 histories 🧠 ');root=Path(temporary.name).resolve()
 env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
 for key in ['NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_PROFILE_OUTPUT','NEX_TRACY']:env.pop(key,None)
-started=time.monotonic();report={'schema':'nex.public-task-write-histories/1','ok':False,'state':'starting','language':'0.24','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'origin_SDK_sha256':SDK,'origins':[],'migrations':[],'commands':[],'actual_opaque_resource_operations':False,'actual_GPU_NPU_execution':False,'full_objective_complete':False}
+started=time.monotonic();report={'schema':'nex.public-task-write-histories/1','ok':False,'state':'starting','language':'0.25','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'origin_SDK_sha256':SDK,'origins':[],'migrations':[],'commands':[],'actual_opaque_resource_operations':False,'actual_GPU_NPU_execution':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
 def cli(name,project,*args,expected=0):
  report['state']=name;save();label='%03d-'%(len(report['commands'])+1)+name
@@ -35,8 +35,17 @@ def retained(before,after):
  for name,rows in before['tables'].items():
   if name!='head':assert not (Counter(rows)-Counter(after['tables'][name])),name
  assert before['tables']['metadata']==after['tables']['metadata']
+def reviewed_delivery_sources(sources):
+ target=copy.deepcopy(sources)
+ for name,text in target['files'].items():
+  masked=re.sub(r'//[^\n]*|"(?:\\.|[^"\\])*"',lambda m:' '*len(m[0]),text)
+  edits=[m.end(1) for m in re.finditer(r'!\{([^{}]*)\}',masked)
+         if 'task' in {v.strip() for v in m[1].split(',')} and 'throw' not in {v.strip() for v in m[1].split(',')}]
+  for end in reversed(edits):text=text[:end]+',throw'+text[end:]
+  target['files'][name]=text
+ return target
 try:
- assert cli('describe',root,'describe')['version']=='0.24'
+ assert cli('describe',root,'describe')['version']=='0.25'
  for name,pin in PINS.items():
   fixture=resources/'examples/task-write-history'/('language-0.22-sdk1326-'+name+'.json')
   if not fixture.exists():fixture=resources/'tests/fixtures'/fixture.name
@@ -57,12 +66,23 @@ try:
     path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
    manifest=project/'nex.json';manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':row['bundle']['entry']}));physical=manifest.read_bytes();before=state(database)
    assert len(before['tables'])==16 and {n:len(v) for n,v in before['tables'].items()}==metadata['tables']
-   manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':row['bundle']['entry']}))
+   manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':row['bundle']['entry']}))
    try:
     refused=cli(label+'-HEAD-guard',project,'check',expected=1);assert refused['code']=='E_LANGUAGE_VERSION' and state(database)==before
    finally:manifest.write_bytes(physical)
-   migrated=cli(label+'-migrate',project,'migrate','--revision',row['revision'],'--expected-revision',metadata['head'])
-   assert migrated['origin_verified'] and migrated['origin_language']=='0.22' and migrated['language']=='0.24' and not migrated['materialized'] and migrated['revision']!=row['revision']
+   arguments=['migrate','--revision',row['revision']]
+   plan=cli(label+'-plan',project,*arguments,'--kind','plan');assert plan['origin_verified'] and state(database)==before
+   expected_sources=row['bundle'];reviewed=not plan['target_valid']
+   if reviewed:
+    assert plan['target_diagnostic']['code']=='E_EFFECT'
+    refused=cli(label+'-missing-delivery',project,*arguments,expected=1);assert refused['code']=='E_EFFECT' and state(database)==before
+    candidate=copy.deepcopy(plan['candidate']);assert candidate['sources']==row['bundle']
+    candidate['sources']=reviewed_delivery_sources(candidate['sources']);expected_sources=candidate['sources'];candidate_path=root/(label+'-reviewed-target.json');candidate_path.write_text(json.dumps(candidate))
+    arguments.extend(['--candidate',candidate_path])
+    valid=cli(label+'-reviewed-plan',project,*arguments,'--kind','plan');assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used'] and state(database)==before
+   migrated=cli(label+'-migrate',project,*arguments,'--expected-revision',metadata['head'])
+   assert migrated['origin_verified'] and migrated['origin_language']=='0.22' and migrated['language']=='0.25' and not migrated['materialized'] and migrated['revision']!=row['revision']
+   assert migrated['candidate_used']==reviewed and migrated['declared_original_revision']==row['revision']
    after=state(database);retained(before,after);assert manifest.read_bytes()==physical and after['tables']['head']==[(1,migrated['revision'])]
    reference=cli(label+'-eval',project,'eval','--revision',migrated['revision']);native=cli(label+'-run',project,'run','--revision',migrated['revision'])
    assert reference['value']==row['value'] and reference['stdout']==native['stdout']==row['stdout'] and native['exit_code']==0
@@ -70,7 +90,8 @@ try:
    repeated=cli(label+'-idempotent',project,'migrate','--revision',migrated['revision']);assert repeated['revision']==migrated['revision'] and state(database)==after
    with closing(sqlite3.connect(database)) as db:
     raw,language=db.execute('SELECT source,language FROM revisions WHERE hash=?',(row['revision'],)).fetchone();assert language=='0.22' and json.loads(raw)==row['bundle']
-   report['migrations'].append({'name':label,'origin_revision':row['revision'],'revision':migrated['revision'],'all16_tables_schema_rows_ids_preserved':True,'native_reference':True,'retained_web_tests':True,'implicit_HEAD_upgrade_rejected':True,'physical_manifest_unchanged':True,'idempotent':True});save()
+    raw,language=db.execute('SELECT source,language FROM revisions WHERE hash=?',(migrated['revision'],)).fetchone();assert language=='0.25' and json.loads(raw)==expected_sources
+   report['migrations'].append({'name':label,'origin_revision':row['revision'],'revision':migrated['revision'],'all16_tables_schema_rows_ids_preserved':True,'native_reference':True,'retained_web_tests':True,'implicit_HEAD_upgrade_rejected':True,'physical_manifest_unchanged':True,'reviewed_delivery_candidate':reviewed,'idempotent':True});save()
  report.update(ok=True,state='passed',genuine022_histories=6,genuine022_revisions=18,all16_tables_schema_rows_ids_preserved=True,native_reference=True,retained_web_tests=True)
 except BaseException as error:report.update(state='failed',error=repr(error));raise
 finally:save()

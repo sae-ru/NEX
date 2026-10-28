@@ -3,6 +3,7 @@ import argparse
 import copy
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -17,7 +18,20 @@ SQL_PINS = {
     'tasks': '135e47e4f6de69a9e0035d071a740d58e11d88ae361144e399f04cf334724a98',
     'fs-helper': '4ec772a7c2dbc47496c9ee5b8d2e85bbbd9d6106cef622d92e752def387b7640',
 }
-TARGET = '0.24'
+TARGET = '0.25'
+RETAINED_TARGET = '0.24'
+
+
+def reviewed_delivery_effects(sources):
+    """A separately reviewed candidate; grant no new task/IO authority."""
+    target=copy.deepcopy(sources)
+    for name,text in target['files'].items():
+        masked=re.sub(r'//[^\n]*|"(?:\\.|[^"\\])*"',lambda m:' '*len(m[0]),text)
+        edits=[m.end(1) for m in re.finditer(r'!\{([^{}]*)\}',masked)
+               if 'task' in {v.strip() for v in m[1].split(',')} and 'throw' not in {v.strip() for v in m[1].split(',')}]
+        for end in reversed(edits):text=text[:end]+',throw'+text[end:]
+        target['files'][name]=text
+    return target
 
 
 class FileMigrationChecks(MigrationChecks):
@@ -68,22 +82,40 @@ class FileMigrationChecks(MigrationChecks):
                 old = self.probe(name+'-genuine019-'+str(index), row['bundle'], '0.19')
                 assert old['revision'] == row['revision'] and old['public_source_tasks']
                 assert old['supports_task_file_reads'] is False
-                new = self.probe(name+'-explicit020-'+str(index), row['bundle'], TARGET)
-                assert new['revision'] != old['revision'] and new['source_hash'] == old['source_hash']
+                retained=self.probe(name+'-retained024-'+str(index),row['bundle'],RETAINED_TARGET)
+                assert retained['revision']!=old['revision'] and retained['source_hash']==old['source_hash']
+                reviewed=reviewed_delivery_effects(row['bundle'])
+                new = self.probe(name+'-current025-'+str(index), reviewed, TARGET)
+                assert new['revision'] != old['revision']
+                assert (new['source_hash']==old['source_hash'])==(reviewed==row['bundle'])
                 assert new['public_source_tasks'] and new['supports_task_file_reads']
                 selected[row['revision']] = new['revision']
                 saved, language = read_revision(database, row['revision'])
                 assert saved == row['bundle'] and language == '0.19'
                 if name == 'tasks':
-                    for version in ('0.19', TARGET):
-                        run = self.probe(name+'-reference-'+version, saved, version, mode='run-reference', entry='solve')
+                    for version in ('0.19', RETAINED_TARGET, TARGET):
+                        observed_sources=reviewed if version==TARGET else saved
+                        run = self.probe(name+'-reference-'+version, observed_sources, version, mode='run-reference', entry='solve')
                         assert run['representation'] == '42' and run['stdout'] == ''
             assert database_state(database) == before
             for operation in ('check', 'eval', 'run', 'test', 'build'):
                 rejected = self.cli(name+'-physical019-'+operation, operation, cwd=project, ok=False)
                 assert rejected['code'] == 'E_LANGUAGE_VERSION'
                 assert database_state(database) == before
-            changed = self.cli(name+'-public-migrate', 'migrate', '--expected-revision', metadata['head'], cwd=project)
+            migration=['migrate']
+            plan=self.cli(name+'-current-plan','migrate','--kind','plan',cwd=project)
+            reviewed=reviewed_delivery_effects(next(row['bundle'] for row in metadata['revisions'] if row['revision']==metadata['head']))
+            if not plan['target_valid']:
+                assert plan['origin_verified'] and plan['target_diagnostic']['code']=='E_EFFECT'
+                rejected=self.cli(name+'-unrepaired-current','migrate',cwd=project,ok=False)
+                assert rejected['code']=='E_EFFECT' and database_state(database)==before
+                candidate=copy.deepcopy(plan['candidate']);candidate['sources']=reviewed
+                candidate_path=self.output/(name+'-reviewed-delivery-effects.json');write_json(candidate_path,candidate)
+                migration+=['--candidate',candidate_path]
+                valid=self.cli(name+'-reviewed-current-plan',*migration,'--kind','plan',cwd=project)
+                assert valid['target_valid'] and valid['candidate_used'] and valid['origin_verified']
+            assert database_state(database)==before
+            changed = self.cli(name+'-public-migrate',*migration,'--expected-revision',metadata['head'],cwd=project)
             current = selected[metadata['head']]
             assert changed['revision'] == current and changed['language'] == TARGET
             assert changed['origin_language'] == '0.19' and changed['origin_verified'] is True
@@ -97,15 +129,15 @@ class FileMigrationChecks(MigrationChecks):
             assert graph['identity_namespace'] == old_namespace
             archived, language = read_revision(database, current)
             old_bundle, _ = read_revision(database, metadata['head'])
-            assert archived == old_bundle and language == TARGET
+            assert archived == reviewed and old_bundle==next(row['bundle'] for row in metadata['revisions'] if row['revision']==metadata['head']) and language == TARGET
             journal = self.cli(name+'-journal', 'changes', cwd=project)
             event = journal['changes'][0]
             assert event['language'] == TARGET and event['previous_revision'] == metadata['head']
             assert all(json.loads(row[3])['language'] == '0.19' for row in before['tables']['change_journal'])
             self.cli(name+'-idempotent-current', 'migrate', '--revision', current, cwd=project)
             assert database_state(database) == after
-            conflict = self.cli(name+'-head-conflict', 'migrate', '--revision', metadata['head'],
-                                '--expected-revision', metadata['head'], cwd=project, ok=False)
+            conflict = self.cli(name+'-head-conflict',*migration,'--revision',metadata['head'],
+                                '--expected-revision',metadata['head'],cwd=project,ok=False)
             assert conflict['code'] == 'E_CONFLICT' and database_state(database) == after
             old_export = self.output/(name+'-old-export')
             self.cli(name+'-export019', 'export', '--revision', metadata['head'], '--directory', old_export, cwd=project)
@@ -172,7 +204,9 @@ server fn main()->result<str> !{task,fs}{
 }''')
         rejected = self.probe('019-callback-rule-retained', source, '0.19', ok=False)
         assert rejected['code'] == 'E_EFFECT'
-        accepted = self.probe('020-callback-read-recheck', source, TARGET)
+        accepted = self.probe('020-callback-read-recheck',source,RETAINED_TARGET)
+        current=self.probe('025-callback-read-recheck',reviewed_delivery_effects(source),TARGET)
+        assert current['supports_task_file_reads']
         assert accepted['supports_task_file_reads']
         self.checks.append('genuine019_callback_effect_rule_distinct_from020_without_reserved_name_repair')
 
@@ -197,9 +231,13 @@ server fn main()->result<str> !{task,fs}{
         repaired = copy.deepcopy(graph)
         text = graph['source'].replace('legacy()->result<str> !{fs}', 'legacy()->result<str> !{task,fs}')
         assert text != graph['source']
-        repaired['source'] = text; repaired['bundle'] = bundle(text)
-        path = self.output/'reviewed-helper-effect.graph.json'; write_json(path, repaired)
-        accepted = self.cli('reviewed-explicit-helper-effect-migrate', 'migrate', path, cwd=project)
+        repaired['bundle']=reviewed_delivery_effects(bundle(text));repaired['source']=repaired['bundle']['files']['main.nex']
+        plan=self.cli('helper-current-plan','migrate','--revision',old['revision'],'--kind','plan',cwd=project)
+        assert plan['origin_verified'] and not plan['target_valid'] and database_state(database)==before
+        candidate=copy.deepcopy(plan['candidate']);candidate['sources']=repaired['bundle']
+        path=self.output/'reviewed-helper-effect.candidate.json';write_json(path,candidate)
+        accepted=self.cli('reviewed-explicit-helper-effect-migrate','migrate','--revision',old['revision'],
+                          '--candidate',path,'--expected-revision',metadata['head'],cwd=project)
         assert accepted['origin_verified'] and accepted['origin_language'] == '0.19'
         assert accepted['revision'] == self.probe('reviewed-helper020', repaired['bundle'], TARGET)['revision']
         retained_rows(before, database_state(database), accepted['revision'])
@@ -212,7 +250,7 @@ server fn main()->result<str> !{task,fs}{
         assert sha256(sql) == meta['sql_sha256']
         source, _ = repaired_source(meta['source']); candidate = bundle(source)
         revisions = {}
-        for language in ('0.19', TARGET):
+        for language in ('0.19', RETAINED_TARGET):
             directory = self.output/('from018-'+language)/'.nex'; directory.mkdir(parents=True)
             with sqlite3.connect(directory/'graph.db') as db: db.executescript(sql.decode())
             before = database_state(directory/'graph.db')
@@ -221,11 +259,11 @@ server fn main()->result<str> !{task,fs}{
             self.envelopes(result, language, result['revision'])
             retained_rows(before, database_state(directory/'graph.db'), result['revision'])
             revisions[language] = result['revision']
-        assert revisions['0.19'] != revisions[TARGET]
+        assert revisions['0.19'] != revisions[RETAINED_TARGET]
         directory = self.output/'from018-0.19/.nex'; before = database_state(directory/'graph.db')
-        result = self.probe('explicit018-019-020-chain', candidate, TARGET, mode='migrate',
+        result = self.probe('explicit018-019-020-chain', candidate, RETAINED_TARGET, mode='migrate',
                             store_directory=str(directory), expected_head=revisions['0.19'], original_revision=revisions['0.19'])
-        assert result['revision'] == revisions[TARGET]
+        assert result['revision'] == revisions[RETAINED_TARGET]
         retained_rows(before, database_state(directory/'graph.db'), result['revision'])
         self.checks.append('explicit018_019_and018_020_targets_and_sequential_history_preserved')
 

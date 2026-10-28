@@ -69,8 +69,8 @@ class Discovery(harness.ToolchainCase):
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
             (self.root / 'nex.json').write_text(text)
-            self.assertEqual(self.cli('describe', '--field', 'version')['value'], '0.24')
-            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], '0.24')
+            self.assertEqual(self.cli('describe', '--field', 'version')['value'], harness.CURRENT_LANGUAGE)
+            self.assertEqual(self.cli('describe', '--kind', 'index')['language'], harness.CURRENT_LANGUAGE)
             self.assertFalse((self.root / '.nex').exists())
 
     def test_existing_graph_rows_ids_and_readonly_inputs_stay_unchanged(self):
@@ -132,7 +132,7 @@ class Discovery(harness.ToolchainCase):
         self.assertFalse(full['model']['source_task_bridge'])
         self.assertEqual(full['structured_tasks_runtime'], pack['structured_tasks_runtime'])
         http = full['structured_tasks_runtime']['http_request_host_prototype']
-        self.assertEqual(http['execution_task_abi'], 5)
+        self.assertEqual(http['execution_task_abi'], 6)
         self.assertTrue(http['caller_request_required'])
         self.assertTrue(http['inherits_step_budget_deadline_cancellation'])
         self.assertTrue(http['joined_completion'])
@@ -151,9 +151,9 @@ class Discovery(harness.ToolchainCase):
         self.assertTrue(full['task_profile_collector']['public_profile_enabled'])
         self.assertEqual(full['task_profiling'], pack['task_profiling'])
         self.assertTrue(full['task_profiling']['source_support'])
-        self.assertEqual(full['task_profiling']['cli_language'], '0.24')
-        self.assertEqual(full['task_profiling']['execution_task_abi'], 5)
-        self.assertEqual(full['task_debugging']['execution_task_abi'], 5)
+        self.assertEqual(full['task_profiling']['cli_language'], harness.CURRENT_LANGUAGE)
+        self.assertEqual(full['task_profiling']['execution_task_abi'], 6)
+        self.assertEqual(full['task_debugging']['execution_task_abi'], 6)
         self.assertEqual(full['task_debugging'], pack['task_debugging'])
         self.assertEqual(full['task_profiling']['report_schema'], 'nex.profile/2')
         self.assertFalse(full['task_profiling']['tracy'])

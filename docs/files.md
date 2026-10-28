@@ -1,9 +1,11 @@
 # Text and binary files
 
-Language0.20 additionally supports the two whole-file reads in explicit server
-`!{task,fs}` functions; see [task file reads](task-file-reads.md). Ordinary
-fs-only functions retain the synchronous contract below. Writes/streaming/task
-HTTP handlers/browser filesystem remain outside that task subset.
+The public025 candidate supports whole-file reads/writes and owned streams in
+explicit server task/fs functions, including ordinary HTTP handlers. Scope/join
+operations additionally need throw or a lexical source-error handler. Ordinary
+fs-only functions retain the synchronous contract below. See task-file-reads.md,
+task-file-streams.md and server.md for their separate execution and grant rules.
+Browser filesystem remains unsupported.
 
 Whole-text intrinsics were introduced in language 0.12, binary intrinsics in
 0.13 and owned streaming files in 0.14. This guide describes their current
@@ -56,14 +58,13 @@ filesystem transaction or a power-loss durability guarantee: the parent director
 is not synced. Host filesystem operations can block despite cooperative polling.
 Other software's in-place changes are not immutable read snapshots.
 
-Native HTTP requests do **not** inherit `NEX_FILES_ROOT`/`NEX_FILES_WRITE`.
-Without a trusted host `FileScope`, these calls return `CAPABILITY`, including
-when the process environment configures standalone access. A C++ host can
-explicitly scope a `TextFiles` capability with `FileScope`; it owns authorization,
-partitioning and lifetime. The standard server currently has no file-grant flag.
-File writes are not part of SQLite rollback. Do not describe them as transactional
-request mutations. This rule prevents an inherited CLI environment from silently
-granting handlers file access.
+Native synchronous HTTP handlers do not inherit the CLI environment capability.
+The public025 ordinary server accepts an explicit `--files-root` directory grant
+and optional `--files-write 0|1` (read-only by default), pinned before startup and
+installed as a separate `nexrt::FileScope` for each request. It also supplies that
+scope to task handlers. The retained task host environment bridge and trusted
+C++ hosts may explicitly configure their own grant. File mutations do not join
+SQLite rollback. See [server.md](server.md) for launch and acceptance boundaries.
 
 The interpreter and native runtime use the same adapter. Native builds link it
 only for reachable file operations and do not require SQLite/OpenSSL for file

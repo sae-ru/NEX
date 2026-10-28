@@ -12,12 +12,12 @@
 namespace nexrt { struct TaskExecutionLimits; }
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.24";
-inline constexpr const char *taskCandidateLanguageVersion = "0.24";
+inline constexpr const char *languageVersion = "0.25";
+inline constexpr const char *taskCandidateLanguageVersion = "0.25";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype };
-inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TaskStreams024;
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025 };
+inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::SourceExceptions025;
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -193,6 +193,7 @@ struct Program {
 // The checked program's semantic version, separate from the installed public
 // compiler default. Historical programs retain their explicit identity.
 const char *programLanguage(SourceLanguage language);
+bool supportsSourceExceptions(const Program &);
 const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
 // Compiler-private frontend/reference experiment. Normal source/project parsing

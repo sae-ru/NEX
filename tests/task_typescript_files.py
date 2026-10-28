@@ -1,4 +1,4 @@
-"""020/retained019 TS task execution and server-file reachability boundary."""
+"""025/retained019 TS task execution and server-file reachability boundary."""
 import argparse,hashlib,json,os,shutil,subprocess,tempfile
 from pathlib import Path
 
@@ -27,7 +27,8 @@ def emit(path,name,mode='emit',entry='main',error=None):
         assert 'UNREACHABLE_ASYNC_FILE_SECRET' not in text and 'SERVER_PRIVATE_PATH' not in text and 'server_file_read' not in text
     (folder/'package.json').write_text('{"type":"module"}\n')
     if value['asynchronous']:
-        runner="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';process.stdout.write(String(await task.run(task.call(()=>entry())))+'\\n');\n"
+        executor='runSourceErrors' if value['language']=='0.25' else 'run'
+        runner="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';process.stdout.write(String(await task."+executor+"(task.call(()=>entry())))+'\\n');\n"
     else:runner="import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n"
     (folder/'run.mjs').write_text(runner)
     assert command([node,'--experimental-strip-types','--no-warnings',folder/'run.mjs'])=='42\n'
@@ -37,13 +38,13 @@ def emit(path,name,mode='emit',entry='main',error=None):
 try:
     secret='server fn server_file_read()->result<str> !{task,fs}{return file_read_text("SERVER_PRIVATE_PATH/UNREACHABLE_ASYNC_FILE_SECRET");}\n'
     path=out/'task.nex';path.write_text('module ts_file_boundary;fn main()->i64 !{task}{task_yield();return 42;}\n'+secret)
-    current,_=emit(path,'current020');old,_=emit(path,'retained019','retained019')
-    assert current['language']=='0.24' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
+    current,_=emit(path,'current025');old,_=emit(path,'retained019','retained019')
+    assert current['language']=='0.25' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
     assert current['revision']!=old['revision'] and current['source_hash']==old['source_hash']
-    emit(path,'server020',entry='server_file_read',error='E_REALM')
+    emit(path,'server025',entry='server_file_read',error='E_REALM')
     emit(path,'server019','retained019',entry='server_file_read',error='E_REALM')
     path=out/'pure.nex';path.write_text('module ts_file_boundary;fn main()->i64{return 42;}\n'+secret)
-    pure,_=emit(path,'pure020');assert not pure['asynchronous'] and pure['language']=='0.24'
+    pure,_=emit(path,'pure025');assert not pure['asynchronous'] and pure['language']=='0.25'
     for realm in ['shared','client']:
         path=out/(realm+'.nex');path.write_text('module bad_file_realm;'+realm+' fn main()->result<str> !{task,fs}{return file_read_text("bad");}\n')
         emit(path,realm+'-fs',error='E_REALM')

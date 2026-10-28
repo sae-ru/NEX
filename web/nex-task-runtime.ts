@@ -651,9 +651,13 @@ class Driver {
 }
 export async function run<T extends Item>(root: Call<T>, options: Options = {}): Promise<T> { return await new Driver(options).drive(root); }
 
-// Compiler-private entry point; classification is per driver, never ambient.
-// Public run() keeps the ordinary host-error path and imports no source-error helper.
-export async function runSourceExceptionPrototype<T extends Item>(root: Call<T>, sourceClassifier: (error: unknown) => boolean, options: Options = {}): Promise<T> {
-  if (typeof sourceClassifier !== 'function') fail('E_TASK_STATE', 'private source-error classifier is required');
+// Language025 selects a branded classifier per driver; host errors and traps
+// retain their ordinary cancellation path. No ambient scheduler mode is changed.
+export async function runSourceErrors<T extends Item>(root: Call<T>, sourceClassifier: (error: unknown) => boolean, options: Options = {}): Promise<T> {
+  if (typeof sourceClassifier !== 'function') fail('E_TASK_STATE', 'source-error classifier is required');
   return await new Driver(options, sourceClassifier).drive(root);
+}
+// Retained entry for explicitly private025 experiments.
+export async function runSourceExceptionPrototype<T extends Item>(root: Call<T>, sourceClassifier: (error: unknown) => boolean, options: Options = {}): Promise<T> {
+  return await runSourceErrors(root, sourceClassifier, options);
 }

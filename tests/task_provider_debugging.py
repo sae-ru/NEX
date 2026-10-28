@@ -34,7 +34,7 @@ fn observe(queue:channel<i64>,scope:task_scope)->i64!{task}{
  let answer:i64=unwrap(task_recv(queue));
  return answer+1;
 }
-pub fn exchange()->i64!{task}{return with_tasks(1,fn(scope:task_scope)->i64!{task}{
+pub fn exchange()->i64!{task,throw}{return with_tasks(1,fn(scope:task_scope)->i64!{task,throw}{
  let queue:channel<i64>=channel_new<i64>(scope,0);
  let child:task<unit>=task_spawn(scope,fn()->unit!{task}{sender(queue);});
  let answer:i64=observe(queue,scope);
@@ -48,9 +48,9 @@ pub fn work(input:i64)->i64!{task}{
  task_yield();
  return answer;
 }
-pub fn exchange()->i64!{task}{return leaf::exchange();}
+pub fn exchange()->i64!{task,throw}{return leaf::exchange();}
 '''
-APP='module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(41));}'
+APP='module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(41));}'
 
 
 def encoded(command,**arguments):
@@ -79,8 +79,8 @@ class TaskProviderDebugging(harness.ToolchainCase):
         for name in ('pure','unused','leaf','mid','app','other'):(self.root/name).mkdir()
         for name,text in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(text)
         self.file=self.root/'app/main.nex';self.file.write_text(APP)
-        (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(1));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(1));}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         self.description={'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -213,19 +213,29 @@ class TaskProviderDebugging(harness.ToolchainCase):
             adapter.request('continue',{'threadId':selected});adapter.event('exited')
         self.dap(session,'debug_mid::work',body)
 
-    def test_pure_zero_code_provider_and_independent_actual_image_closures(self):
+    def test_pure_helper_provider_and_independent_actual_image_closures(self):
         self.mixed();_,session,_,manifest=self.prepare();view=manifest['task_debug']
-        self.assertEqual(next(r['code_count'] for r in view['registries'] if r['component']=='unused'),0)
+        self.assertEqual(next(r['code_count'] for r in view['registries'] if r['component']=='unused'),2)
         source=next(c for c in view['source_union']['components'] if c['component']=='unused')
         self.assertEqual({d['name'] for d in source['definitions']},{'debug_unused::unused','debug_unused::identity<str>'})
         function=next(f for f in manifest['functions'] if f['name']=='debug_unused::identity<str>')
-        self.assertIsNone(function['task_debug']);self.assertIsNone(function['node_id'])
+        self.assertIsNotNone(function['task_debug']);self.assertIsNone(function['node_id'])
+        self.assertTrue(function['native_symbol'].endswith('__task_step'))
         owner=next(image for image in view['images'] if image['component']=='unused')
-        self.assertTrue(self.symbols(owner['path']).get(function['native_symbol'],set())&{'T','W'})
+        # A retained step is compiler-private; its actual owner image must
+        # contain its local code symbol, without exporting the step as an API.
+        symbols=self.process(['nm','-a',owner['path']])
+        self.assertEqual(symbols.returncode,0,symbols.stderr)
+        owned=[line.split() for line in symbols.stdout.splitlines()
+               if len(line.split())>=2 and line.split()[-2] in ('t','T','w','W')
+               and line.split()[-1].lstrip('_')==function['native_symbol']]
+        self.assertEqual(len(owned),1,owned)
+        self.assertIn(owned[0][-2],('t','T','w','W'))
+        self.assertFalse(self.symbols(owner['path']).get(function['native_symbol'],set())&{'T','W'})
         run,rows=self.lldb(session,['nex-task-break function debug_unused::identity<str>',
             'nex-task-break function debug_leaf::work','run','nex-task-stack','continue'])
         unverified=next(row for row in rows if 'breakpoints' in row)['breakpoints'][0]
-        self.assertFalse(unverified['verified']);self.assertIn('exited with status = 0',run.stdout)
+        self.assertTrue(unverified['verified']);self.assertIn('exited with status = 0',run.stdout)
         _,other,_,second=self.prepare('other')
         self.assertEqual({c['component'] for c in second['task_debug']['source_union']['components']},{'pure','leaf','mid','other'})
         self.assertNotIn('app',{i['component'] for i in second['task_debug']['images']})
@@ -264,7 +274,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
             reject(frame,altered,'E_DEBUG_BUILD')
 
     def test_provider_channel_dependency_progress_unicode_and_opaque_authority(self):
-        self.mixed();self.file.write_text('module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::exchange());}')
+        self.mixed();self.file.write_text('module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::exchange());}')
         _,session,_,_=self.prepare('app','--','--nex-task-workers','1')
         run,rows=self.lldb(session,['nex-task-break function debug_leaf::observe','run','nex-task-values',
             'nex-task-next','nex-task-next','nex-task-next','nex-task-values','nex-eval len(label)',
@@ -321,7 +331,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertIs(command['output_limit'],False)
         captured=self.artifacts(command['response'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/10',json.dumps(source_capture))
+        self.assertIn('nex.project-task-linkage/13',json.dumps(source_capture))
         spec=importlib.util.spec_from_file_location('debug_completion_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in check['components']:
@@ -346,7 +356,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
                 key=copied.relative_to(receipt.parent/'artifacts/prepare-provider').as_posix()
                 self.assertEqual(check['artifacts'][key],{'hash':row['hash'],'bytes':row['bytes']})
             own=json.loads((receipt.parent/files['task-provider.json']['retained']).read_text())
-            self.assertEqual(own['schema'],'nex.native-task-provider/10')
+            self.assertEqual(own['schema'],'nex.native-task-provider/13')
             self.assertEqual(metadata['task_provider_hash'],files['task-provider.json']['hash'])
         app=next(c for c in check['components'] if c['component']=='app')
         retained_session=json.loads((receipt.parent/app['debug_session']).read_text())
@@ -410,11 +420,11 @@ class TaskProviderDebugging(harness.ToolchainCase):
     def test_source_only_explicit_artifacts_and_inherent_debug_keep_distinct_formats(self):
         self.file.write_text('''module source_debug;
 fn child(input:i64)->i64!{task}{task_yield();return input+1;}
-fn main()->unit!{task,io}{print(child(41));}
+fn main()->unit!{task,io,throw}{print(child(41));}
 ''')
         self.description['components']={'app':{'kind':'executable','root':'app','entry':'app/main.nex'}};self.save()
         planned=self.cli('project','--kind','plan','--component','app','--task-debug')
-        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/10')
+        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/13')
         self.assertFalse((self.root/'.nex/build').exists())
         built=self.cli('project','--kind','build','--component','app','--task-debug')
         explicit=built['debug_sessions']['app'];manifest=json.loads(Path(explicit['manifest']).read_text())

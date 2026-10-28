@@ -54,7 +54,7 @@ class ResourceMigrationChecks(MigrationChecks):
   for name,raw in physical.items():assert (project/name).read_bytes()==raw,name
 
  def run(self):
-  descriptor=self.cli('describe','describe');assert descriptor['version']=='0.24'
+  descriptor=self.cli('describe','describe');self.current_language=descriptor['version'];assert self.current_language=='0.25'
   assert descriptor['source_resources']==json.loads((REPO/'llm/language-pack.json').read_text())['source_resources']
   for name in PINS:
    metadata,sql=self.fixture(name)
@@ -90,10 +90,10 @@ class ResourceMigrationChecks(MigrationChecks):
    else:arguments=['migrate']
    migrated=self.cli(name+'-migrate',*arguments,'--expected-revision',metadata['head'],cwd=project)
    current=migrated['revision']
-   assert migrated['language']=='0.24' and migrated['origin_language']=='0.20' and migrated['origin_verified'] is True
+   assert migrated['language']==self.current_language and migrated['origin_language']=='0.20' and migrated['origin_verified'] is True
    assert migrated['previous_revision']==metadata['head'] and migrated['materialized'] is False
    after=database_state(database);retained_rows(before,after,current);self.unchanged(project,physical)
-   self.envelopes({'graph':self.cli(name+'-graph','graph','--revision','HEAD',cwd=project),'identities':self.cli(name+'-ids','identities','--revision','HEAD',cwd=project),'changes':self.cli(name+'-changes','changes',cwd=project),'materialized':False,'source_hash':migrated['source_hash']},'0.24',current)
+   self.envelopes({'graph':self.cli(name+'-graph','graph','--revision','HEAD',cwd=project),'identities':self.cli(name+'-ids','identities','--revision','HEAD',cwd=project),'changes':self.cli(name+'-changes','changes',cwd=project),'materialized':False,'source_hash':migrated['source_hash']},self.current_language,current)
    self.cli(name+'-idempotent','migrate','--revision',current,cwd=project)
    assert database_state(database)==after
    for row in metadata['revisions']:
@@ -102,7 +102,7 @@ class ResourceMigrationChecks(MigrationChecks):
    self.cli(name+'-typescript','test','--revision','HEAD','--target','web',cwd=project)
    exported=self.output/(name+'-exported')
    self.cli(name+'-export','export','--revision','HEAD','--directory',exported,cwd=project)
-   assert json.loads((exported/'nex.json').read_text())['language']=='0.24'
+   assert json.loads((exported/'nex.json').read_text())['language']==self.current_language
    self.cli(name+'-export-check','check',cwd=exported)
    self.unchanged(project,physical)
    self.checks.append(name+'_genuine020_history_explicit021_native_reference_TS_export')
@@ -116,20 +116,20 @@ class ResourceMigrationChecks(MigrationChecks):
   empty=self.output/'empty-destination';empty.mkdir()
   # Even an empty destination needs a project boundary when evidence is saved
   # inside another checkout. Never let projectRoot select an ancestor store.
-  write_json(empty/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
+  write_json(empty/'nex.json',{'schema':'nex.project/1','language':self.current_language,'entry':'main.nex'})
   bad=empty/'bad.graph.json';write_json(bad,{'schema':'nex.graph/2','language':'0.20','revision':'2'*64,'bundle':data['revisions'][0]['bundle']})
   error=self.cli('unverified-new-origin','migrate',bad,cwd=empty,ok=False)
   assert error['code']=='E_REVISION' and not (empty/'.nex').exists()
   graph=empty/'valid.graph.json';row=data['revisions'][0]
   write_json(graph,{'schema':'nex.graph/2','language':'0.20','revision':row['revision'],'bundle':row['bundle']})
   imported=self.cli('fresh-exported-origin','migrate',graph,cwd=empty)
-  assert imported['origin_verified'] and imported['language']=='0.24'
+  assert imported['origin_verified'] and imported['language']==self.current_language
   self.checks.append('corrupt_stale_and_unverified_origins_rejected_before_mutation')
   self.graph_editor()
 
  def graph_editor(self):
   project=self.output/'resource-graph';project.mkdir()
-  write_json(project/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
+  write_json(project/'nex.json',{'schema':'nex.project/1','language':self.current_language,'entry':'main.nex'})
   main='''module owned_graph;
 import "./types.nex" as api;
 pub server resource resource<T>;
@@ -177,7 +177,7 @@ def main():
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-resource-migration-');output=Path(temporary.name)
  checks=ResourceMigrationChecks(args.probe,args.compiler,output);started=time.monotonic()
  report={'schema':'nex.resource-migration-tests/1','ok':False,'compiler_sha256':sha256(checks.compiler.read_bytes()),'probe_sha256':sha256(checks.probe_binary.read_bytes()),'genuine020_fixtures':5,'original_revisions':15,'tables_each':16}
- try:checks.run();report.update(ok=True,language='0.24')
+ try:checks.run();report.update(ok=True,language=checks.current_language)
  except BaseException as error:report['error']=repr(error);raise
  finally:
   report.update(checks=checks.checks,requests=checks.sequence,observations=checks.records,seconds=time.monotonic()-started);write_json(output/'report.json',report)

@@ -143,6 +143,8 @@ static void destroy(void *pointer){
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+from source_resource_cli import fixture_for_current_cli
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe',type=Path);parser.add_argument('--context-probe',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--compiler',type=Path);args=parser.parse_args()
  temporary=None
@@ -151,6 +153,8 @@ def main():
  else:temporary=tempfile.TemporaryDirectory(prefix='nex source task resources ');out=Path(temporary.name)
  probe=args.probe.resolve();env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic()
  report={'ok':False,'private_language':'0.24','public_language':'0.24','public_enabled':True,'commands':[],'checks':[],'probe_sha256':sha(probe)}
+ public_language=json.loads(subprocess.check_output([str(args.compiler.resolve()),'describe','--kind','index','--json'],text=True))['language'] if args.compiler else '0.24'
+ report['public_language']=public_language
  report['public_cli_execution']=bool(args.compiler)
  if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,marker=None):
@@ -164,11 +168,14 @@ def main():
   return '\n'.join(lines)+'\n'+body+'\n'
  def bundle(label,body,pin='0'*64):
   path=out/(label+'.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source(pin,body)}});return path
- def command(action,path,value='-',language='0.24'):
-  if args.compiler and language=='0.24':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,value,language]
+ def command(action,path,value='-',language=None):
+  language=public_language if language is None else language
+  if args.compiler and language==public_language:
+   authored=fixture_for_current_cli(path,out,language)
+   return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,authored,out,value,language]
   return [probe,action,path,out,value,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':public_language,'entry':'main.nex'})
   template=bundle('signature-template',CASES['aliases_and_closed_owner']);api=json.loads(run('signatures',command('check',template)).stdout)
   signatures=api['signatures'];assert set(signatures)==set(DECLARATIONS)
   module=(REPO/'tests/typed_resource_module.c').read_text().replace('#include <stdint.h>','#include <stdint.h>\n#include <time.h>')
@@ -232,7 +239,7 @@ def main():
   }.items():
    path=bundle(name,body)
    checked=json.loads(run(name+'-public024-accepted',command('check',path)).stdout)
-   assert checked['ok'] and checked['language']=='0.24',checked
+   assert checked['ok'] and checked['language']==public_language,checked
    error=json.loads(run(name+'-retained023-rejected',command('check',path,language='0.23'),1).stdout)
    assert error['code']=='E_TASK_TYPE',error
    report['checks'].append(name+'_public024_accepted_retained023_rejected')

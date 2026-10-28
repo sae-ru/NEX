@@ -5,11 +5,25 @@ import support as harness
 
 
 class SourceExceptionDiscovery(harness.ToolchainCase):
-    def test_actual_descriptor_pack_and_guide_keep_public_support_off(self):
+    def test_private_descriptor_pack_and_guide_stay_separate_from_public025(self):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         actual = self.cli('describe', '--field', 'source_exception_prototype')
         self.assertEqual(actual['value'], pack['source_exception_prototype'])
-        self.assertEqual(actual['language'], '0.24')
+        self.assertEqual(actual['language'], '0.25')
+        public=self.cli('describe','--field','source_exceptions')
+        self.assertEqual(public['value'],pack['source_exceptions'])
+        self.assertEqual(public['value']['source_language'],'0.25')
+        self.assertTrue(public['value']['frontend'] and public['value']['reference'])
+        grants=self.cli('describe','--field','structured_tasks_runtime.http_server.file_grants')['value']
+        self.assertEqual(grants,pack['structured_tasks_runtime']['http_server']['file_grants'])
+        self.assertEqual(grants['root_option'],'--files-root')
+        self.assertEqual(grants['write_option'],'--files-write')
+        self.assertFalse(grants['writable_default'])
+        self.assertTrue(grants['root_pinned_before_workers'] and grants['per_request_lexical_scope'])
+        self.assertTrue(grants['synchronous_handlers'] and grants['task_handlers'])
+        self.assertFalse(grants['complete_delivery_accepted'])
+        self.assertEqual(self.cli('guide','--kind','exception')['text'],
+                         (harness.REPO/'docs/exceptions.md').read_text())
         self.assertIs(actual['value']['source_support'], False)
         self.assertIs(actual['value']['native'], False)
         self.assertIs(actual['value']['private_native_sequential_experiment'], True)
@@ -104,18 +118,24 @@ class SourceExceptionDiscovery(harness.ToolchainCase):
 
     def test_retained024_contextual_words_and_canonical_definitions(self):
         fixture = json.loads((harness.REPO / 'tests/fixtures/source-exceptions/retained-024.json').read_text())
-        (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}))
-        self.source(fixture['source'])
-        self.cli('check')
-        graph = self.cli('graph')
+        exported=harness.REPO/'tests/fixtures/source-exceptions/retained-024-graph.json'
+        graph=json.loads(exported.read_text())
         nodes = {node['name']: {'hash': node['hash'], 'definition': node['definition']} for node in graph['nodes']}
         self.assertEqual(nodes, fixture['functions'])
-        self.assertEqual(self.cli('eval')['value'], 42)
-        self.assertEqual(self.cli('run', ok=False)['exit_code'], 42)
+        (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}))
+        self.source(fixture['source'])
+        self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
+        plan=self.cli('migrate',exported,'--kind','plan')
+        self.assertTrue(plan['origin_verified'] and plan['graph_read_only'])
+        self.assertEqual(plan['origin_revision'],graph['revision'])
+        self.assertEqual(plan['origin_language'],'0.24')
+        self.assertFalse(plan['target_valid'])
+        self.assertEqual(plan['target_diagnostic']['code'],'E_PARSE')
+        self.assertFalse((self.root/'.nex').exists())
 
     def test_private_identity_cannot_enable_a_public_project_or_store(self):
         self.source('module x;fn main()->i64{return 42;}')
-        for language in ('0.25', '0.25-prototype'):
+        for language in ('0.26', '0.25-prototype'):
             (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}))
             rejected = self.cli('check', ok=False)
             self.assertEqual(rejected['code'], 'E_LANGUAGE_VERSION')

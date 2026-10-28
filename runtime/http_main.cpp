@@ -5,6 +5,9 @@
 #include "nex_io.h"
 #include "nex_json.h"
 #include "nex_auth.h"
+#ifdef NEX_HTTP_FILES_ENABLED
+#include "nex_files.h"
+#endif
 #ifdef NEX_PRIVATE_TASK_PROFILE_HTTP
 #include "nex_profile.h"
 #endif
@@ -93,7 +96,8 @@ bool corsHeaders(const httplib::Request &request){
   }while(begin<=value.size());return true;
 }
 struct Config {
-  std::string host="127.0.0.1",auth,database,assets,cert,key,foreign;
+  std::string host="127.0.0.1",auth,database,assets,cert,key,foreign,filesRoot;
+  bool filesWritable=false,filesWriteSpecified=false;
   std::set<std::string> cors;
   int port=8080,workers=8,queue=64;uint64_t budget=1000000,timeout=5000;
 #ifdef NEX_ASYNC_TASKS
@@ -114,7 +118,13 @@ Config config(int argc,char **argv){
     // arguments and immutable ceilings before the server opens any resources.
     if(option.starts_with("--nex-task-"))continue;
 #endif
-    if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;else if(option=="--foreign")c.foreign=value;
+    if(option=="--files-root"){
+      if(!c.filesRoot.empty()||value.empty()||!fs::path(value).is_absolute())throw std::runtime_error("--files-root requires one absolute directory");
+      c.filesRoot=value;
+    }else if(option=="--files-write"){
+      if(c.filesWriteSpecified||(value!="0"&&value!="1"))throw std::runtime_error("--files-write requires one0 or1 value");
+      c.filesWriteSpecified=true;c.filesWritable=value=="1";
+    }else if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;else if(option=="--foreign")c.foreign=value;
     else if(option=="--cors-origin"){if(!corsOrigin(value)||!c.cors.insert(value).second||c.cors.size()>16)throw std::runtime_error("CORS requires1..16 distinct exact origins; wildcard, null, credentials and paths are unsupported");}
     else{
       uint64_t number=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),number);if(parsed.ec!=std::errc()||parsed.ptr!=value.data()+value.size())throw std::runtime_error("invalid numeric server option");
@@ -129,6 +139,10 @@ Config config(int argc,char **argv){
 #ifdef NEX_ASYNC_TASKS
   c.budget=std::min(c.budget,c.taskLimits.steps);
   c.timeout=std::min(c.timeout,c.taskLimits.timeoutMs);
+#endif
+  if(c.filesWriteSpecified&&c.filesRoot.empty())throw std::runtime_error("--files-write requires --files-root");
+#ifndef NEX_HTTP_FILES_ENABLED
+  if(!c.filesRoot.empty())throw std::runtime_error("server image has no filesystem adapter");
 #endif
   if(c.auth.empty()||c.database.empty())throw std::runtime_error("server requires --auth FILE and --database FILE");
   if(c.cert.empty()!=c.key.empty())throw std::runtime_error("TLS requires both --cert FILE and --key FILE");
@@ -147,6 +161,12 @@ std::string mime(const fs::path &path){
 int main(int argc,char **argv){
   try{
     auto c=config(argc,argv);
+#ifdef NEX_HTTP_FILES_ENABLED
+    // The operator chooses this capability explicitly. Pin its physical root
+    // before workers start; each request receives a separate lexical child.
+    std::unique_ptr<nexrt::TextFiles> configuredFiles;
+    if(!c.filesRoot.empty())configuredFiles=std::make_unique<nexrt::TextFiles>(c.filesRoot,c.filesWritable);
+#endif
 #ifdef NEX_PRIVATE_TASK_PROFILE_HTTP
     // The collector is prepared by the private host before workers start.
     // These are common per-request limits, not a process-wide execution budget.
@@ -204,6 +224,10 @@ int main(int argc,char **argv){
       auto user=authenticate(request,auth);if(!user){error(response,401,"UNAUTHORIZED",id);return;}
       try{
         nexrt::RequestScope scope(c.budget,c.timeout);scope.setCancellation([&]{return interrupted||request.is_connection_closed();});scope.poll();
+#ifdef NEX_HTTP_FILES_ENABLED
+        std::unique_ptr<nexrt::FileScope> filesScope;
+        if(configuredFiles)filesScope=std::make_unique<nexrt::FileScope>(*configuredFiles);
+#endif
 #ifdef NEX_FOREIGN_ENABLED
         std::unique_ptr<nexrt::ForeignScope> foreignScope;if(foreign)foreignScope=std::make_unique<nexrt::ForeignScope>(foreign);
 #endif
@@ -228,9 +252,7 @@ int main(int argc,char **argv){
         else db.rollback();
         response.status=int(status);response.set_content(std::move(body),contentType);
       }
-#ifdef NEX_SOURCE_EXCEPTION_HTTP
       catch(const nexrt::NativeSourceException &failure){error(response,500,"E_SOURCE_EXCEPTION",id);nexrt::printNativeSourceException(failure,id.c_str());}
-#endif
       catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));if(auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap))nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located->source,id.c_str());}
       catch(const nexrt::DataError &failure){error(response,failure.code=="E_UTF8"?400:503,failure.code,id);}
       catch(const std::exception &){error(response,500,"E_RUNTIME",id);}

@@ -1,3 +1,70 @@
+# Source exceptions — public025 integration candidate
+
+The ordinary candidate frontend selects language0.25. The accepted source233
+and stable SDK209 remain separate0.24 tools. This candidate is not yet accepted
+for native/provider/debug/profile/SDK delivery; inspect source_exceptions.
+
+`throw(code,message);` evaluates two str expressions once, left to right.
+`try { ... } catch(code,message) { ... }` handles only explicit source exceptions.
+Its immutable lexical bindings preserve strict UTF-8, Unicode scalars and NUL.
+`throw;` is a lexical rethrow within the current function's catch; it preserves
+the original payload/source site. A new throw has its own payload and site.
+Functions/lambdas have independent effect and catch boundaries.
+
+Throwing or calling a throw-effect function requires !{throw} unless a lexical
+handler covers that expression. A catch does not handle its own new throw.
+with_tasks/task_wait can deliver child errors and require throw or a lexical
+handler. Runtime bounds/arithmetic/assertion traps, cancellation, deadlines,
+allocation failures and Result errors never become catchable source errors.
+Postfix ? still returns a Result error from its current function.
+
+The ordinary native build now lowers sequential source errors and structured
+task errors with public descriptor ABI6 (0x4e45585400000006). The descriptor keeps
+its88-byte layout and ABI offset40. ABI3/4/5 and private2501/2502 retain their
+meanings. Native task calls reject mixed source-error descriptor families.
+TypeScript emits synchronous or resumable functions with ordinary public revision
+maps; its scheduler classifies branded source errors separately from host traps.
+Pure parallel_map callbacks may catch their own source errors; escaping throw
+remains incompatible with a pure callback signature.
+
+The Mac ARM64 development checks execute nine observable scenarios in native
+debug/release and TypeScript, plus original uncaught payload/site and fatal trap
+checks. Four normal-CLI HTTP images (sync/task, debug/release) pass24 real POST
+requests; uncaught and rethrown source errors return HTTP500/E_SOURCE_EXCEPTION.
+The server records the original source site and request ID and keeps the payload
+out of the HTTP error body. Request cleanup and subsequent requests pass.
+Explicit HTTP `--files-root` grants now feed synchronous/task handlers; read-only
+is the default and `--files-write 1` grants writes. The expanded Mac regression
+passes36 exception/file requests plus eight explicit grant requests and24 rejected
+startup configurations; see server.md. Full delivery remains open.
+These checks establish this development scope, not full delivery acceptance.
+
+Ordinary ABI6 source providers now support static/shared/mixed project images,
+profile catalogs, pure-helper logical frames and source-absent captured replay.
+See source-exception-providers.md. Complete debugger controls, full regression,
+installed SDK and platform acceptance remain pending. Wasm rejects reachable
+source try/throw until its transport is implemented. The broader regression
+suite also needs its current-language fixtures updated; retained origins must
+keep their original source versions and canonical identities.
+
+See examples/exceptions. From that project run nex check, nex test and
+nex test --target web with the025 candidate. Installed024 SDKs use their own
+advertised language and cannot check this025 project directly.
+
+024-to025 migration rechecks the archived024 program under its retained parser
+and original canonical revision before checking025. try/catch/throw were valid
+contextual identifiers in024 and become reserved in025. Conflicts or missing new
+throw effects fail before mutable destination access. Repair an exported copy
+explicitly; do not rewrite the old manifest or retag old revisions. Successful
+migration appends the new revision and retains every old row/schema/local ID.
+Physical source/manifest changes remain a separate explicit export operation.
+
+Typed payloads, handler filters/finally and general algebraic effects remain
+unfinished requirements. Broader platforms including native Windows still need
+actual acceptance; cross-builds and Wine are separate evidence.
+
+---
+
 # HTTP storage transaction start233
 
 Toolchain0.135.30 starts an HTTP SQL transaction at the first storage operation.

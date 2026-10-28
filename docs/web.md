@@ -1,3 +1,11 @@
+Language0.25 integration emits explicit source errors through a branded helper
+and keeps ordinary public revision/source maps. Standalone task tests and task
+workers select a per-scheduler classifier; runtime traps and Result propagation
+keep separate boundaries. Synchronous UI entries keep their existing pure
+contract and may catch source errors internally. Public025 installed/browser
+acceptance is still pending; see exceptions.md. Browser dependencies, npm lock
+and runtime notices have not changed.
+
 Language0.20 task file reads are server-only native/reference operations.
 TypeScript/Node and the browser have no source filesystem bridge. Reachable
 server functions remain rejected, and unreachable server readers remain absent

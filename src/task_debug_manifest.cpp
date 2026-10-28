@@ -57,7 +57,10 @@ NativeTaskDebugCheckedSources validateNativeTaskDebugSources(const NativeTaskDeb
     auto value=parse(raw->second);if(hash(json(value,false))!=source.sourceHash)fail("debug component semantic source hash differs");
     auto p=loadVersionedBundle(value,"<task-debug:"+source.component+">",source.language);
     if(programLanguage(p)!=source.language||revision(p)!=source.revision)fail("debug component language/revision differs");
-    p.function(source.entry);bool retainedStage=isPublicTaskLanguage(p)&&usesTaskEffects(p,source.entry);for(const auto &name:source.exports){if(!p.function(name).exported)fail("debug source export is not public");retainedStage|=isPublicTaskLanguage(p)&&usesTaskEffects(p,name);}
+    // Public025 task-provider cohorts lower pure component helpers as retained
+    // continuations too. A component's source effects alone do not reveal that
+    // physical calling convention; retained historical cohorts keep their rule.
+    p.function(source.entry);bool retainedStage=supportsSourceExceptionTasks(p)||(isPublicTaskLanguage(p)&&usesTaskEffects(p,source.entry));for(const auto &name:source.exports){if(!p.function(name).exported)fail("debug source export is not public");retainedStage|=isPublicTaskLanguage(p)&&usesTaskEffects(p,name);}
     std::map<std::string,std::string> contracts;for(const auto &unit:planNative(p,source.entry,source.exports,true).units){auto value=parse(unit.contract);auto o=value.getAsObject();if(!o)fail("invalid checked debug native contract");o->erase("unit");contracts.emplace(unit.identity,hash(json(Object(*o),false)));}
     std::map<std::string,const NativeTaskDebugCode*> codes;for(const auto &registry:catalog.registries)if(registry.component==source.component)for(const auto &code:registry.codes)codes.emplace(code.name,&code);
     for(const auto &entry:source.definitions){

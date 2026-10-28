@@ -10,7 +10,7 @@ class HTTPStreamLibrary(harness.ToolchainCase):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         capability = self.cli('describe', '--field', 'http_response_streams')
         self.assertEqual(capability['value'], pack['http_response_streams'])
-        self.assertEqual(capability['language'], '0.24')
+        self.assertEqual(capability['language'], harness.CURRENT_LANGUAGE)
         self.assertIs(capability['value']['source_ABI_changed'], False)
         self.assertIs(capability['value']['installed_SDK_accepted'], False)
         self.assertEqual(self.cli('guide', '--kind', 'http-stream')['kind'], 'http-stream')

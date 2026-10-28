@@ -1,0 +1,638 @@
+{
+  "bundle": {
+    "entry": "main.nex",
+    "files": {
+      "main.nex": "module retained;fn throw(value:i64)->i64{return value;}fn main()->i64{let catch:i64=throw(42);return catch;}\n"
+    },
+    "schema": "nex.sources/1"
+  },
+  "declaration_graph": {
+    "identity_policy": "nex.graph-identity/1",
+    "language": "0.24",
+    "namespace": "72d7e997a6b767f9f345a9c15579926e",
+    "nodes": [
+      {
+        "context_hash": "fa7c896a735d61e59422560cb65ad72a8a444188aea3ce3cfaa9e5829016985b",
+        "definition": {
+          "format": "nex.module/1",
+          "imports": [],
+          "members": [
+            {
+              "hash": "16b4ee406e959e02f158ecb180fc85af5496d07020c92f4d53aec32718d78732",
+              "kind": "function",
+              "symbol": "retained::main"
+            },
+            {
+              "hash": "01ef2d91c14786b86b02c403994035f995452257635b30450b41fd7ed7c269c9",
+              "kind": "function",
+              "symbol": "retained::throw"
+            }
+          ],
+          "name": "retained"
+        },
+        "definition_bytes": 309,
+        "definition_omitted": false,
+        "derived": false,
+        "editable": false,
+        "file": "main.nex",
+        "hash": "969ec828425d46d50f4543b017184e274a3ebdf59e65237f4d991e8b7a5ff7ef",
+        "id": "38c1c9f5d591fe8bee7beb72d90bcda1",
+        "kind": "module",
+        "module": "retained",
+        "path": "",
+        "reference_count": 2,
+        "references": [
+          {
+            "context_hash": "31241d4932b95a4ac40f9f9b9fe55777c38f7bbdc1896b1ca37f92cea2e4ee61",
+            "hash": "16b4ee406e959e02f158ecb180fc85af5496d07020c92f4d53aec32718d78732",
+            "id": "ca27afe6b22372a663d7413bff3905b0",
+            "kind": "function",
+            "path": "",
+            "symbol": "retained::main"
+          },
+          {
+            "context_hash": "1df5ee1f408bb629c5166e04b139f95afc6bd778a084904b780665c1ef626993",
+            "hash": "01ef2d91c14786b86b02c403994035f995452257635b30450b41fd7ed7c269c9",
+            "id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+            "kind": "function",
+            "path": "",
+            "symbol": "retained::throw"
+          }
+        ],
+        "references_truncated": false,
+        "source": "",
+        "source_bytes": 0,
+        "source_truncated": false,
+        "symbol": "retained"
+      }
+    ],
+    "offset": 0,
+    "revision": "7a1838aa5ea4deedacaef357da398571803e256a8db209c6b4bc84585f1a0e25",
+    "schema": "nex.declarations/1",
+    "total": 1,
+    "truncated": false
+  },
+  "endpoints": [],
+  "identity_namespace": "72d7e997a6b767f9f345a9c15579926e",
+  "language": "0.24",
+  "module": "retained",
+  "modules": [
+    {
+      "context_hash": "fa7c896a735d61e59422560cb65ad72a8a444188aea3ce3cfaa9e5829016985b",
+      "file": "main.nex",
+      "hash": "969ec828425d46d50f4543b017184e274a3ebdf59e65237f4d991e8b7a5ff7ef",
+      "id": "38c1c9f5d591fe8bee7beb72d90bcda1",
+      "imports": [],
+      "name": "retained"
+    }
+  ],
+  "nodes": [
+    {
+      "definition": {
+        "body": [
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [],
+              "kind": 2,
+              "operator": "value",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 4,
+            "name": "",
+            "type": "unknown"
+          }
+        ],
+        "effects": [],
+        "format": "nex.function/13",
+        "name": "retained::throw",
+        "owner": "retained",
+        "parameters": [
+          {
+            "name": "value",
+            "type": "i64"
+          }
+        ],
+        "public": false,
+        "realm": "shared",
+        "result": "i64",
+        "template": "",
+        "test": false,
+        "type_arguments": [],
+        "type_bounds": {},
+        "type_parameter_kinds": [],
+        "type_parameters": []
+      },
+      "dependencies": [],
+      "file": "main.nex",
+      "hash": "01ef2d91c14786b86b02c403994035f995452257635b30450b41fd7ed7c269c9",
+      "id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+      "line": 1,
+      "local_name": "throw",
+      "module": "retained",
+      "name": "retained::throw",
+      "native_symbol": "nex_8_retained_5_throw",
+      "source": "fn throw(value:i64)->i64{return value;}"
+    },
+    {
+      "definition": {
+        "body": [
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [
+                {
+                  "args": [],
+                  "kind": 0,
+                  "operator": "",
+                  "type": "i64",
+                  "value": 42
+                }
+              ],
+              "kind": 5,
+              "operator": "retained::throw",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 0,
+            "name": "catch",
+            "type": "i64"
+          },
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [],
+              "kind": 2,
+              "operator": "catch",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 4,
+            "name": "",
+            "type": "unknown"
+          }
+        ],
+        "effects": [],
+        "format": "nex.function/13",
+        "name": "retained::main",
+        "owner": "retained",
+        "parameters": [],
+        "public": false,
+        "realm": "shared",
+        "result": "i64",
+        "template": "",
+        "test": false,
+        "type_arguments": [],
+        "type_bounds": {},
+        "type_parameter_kinds": [],
+        "type_parameters": []
+      },
+      "dependencies": [
+        {
+          "id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+          "name": "retained::throw"
+        }
+      ],
+      "file": "main.nex",
+      "hash": "16b4ee406e959e02f158ecb180fc85af5496d07020c92f4d53aec32718d78732",
+      "id": "ca27afe6b22372a663d7413bff3905b0",
+      "line": 1,
+      "local_name": "main",
+      "module": "retained",
+      "name": "retained::main",
+      "native_symbol": "nex_8_retained_4_main",
+      "source": "fn main()->i64{let catch:i64=throw(42);return catch;}"
+    }
+  ],
+  "operation_graph": {
+    "identity_policy": "nex.operation-identity/1",
+    "identity_scope": "local_store",
+    "language": "0.24",
+    "nodes": [
+      {
+        "child_count": 0,
+        "children": [],
+        "children_truncated": false,
+        "definition": {
+          "kind": "parameter",
+          "name": "value",
+          "type": "i64"
+        },
+        "definition_bytes": 48,
+        "definition_omitted": false,
+        "function": "retained::throw",
+        "function_id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "hash": "7f3efcaec63e1cd9cfbaeceb3507458b9005bf0b3cccfecb1ed15429ea0c149d",
+        "id": "43558bfd893f34f87d5153137790a0f1",
+        "kind": "parameter",
+        "location": {
+          "byte_begin": 25,
+          "byte_end": 30,
+          "column": 26,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "path": "parameter/0",
+        "references": [],
+        "role": "parameter",
+        "site": "21e92e80ddf3e18cc4d5c38d2e3bb2e97fcc0d4304970b16bb0ef822a389f27f",
+        "source_range": null
+      },
+      {
+        "child_count": 1,
+        "children": [
+          {
+            "id": "f5283bfe92cf7482908e42f3a04331d9",
+            "ordinal": 0,
+            "role": "statement",
+            "site": "1a37a1015c794208b8be5d63381e86b0f99f73cb5aac00f57e85cf6ba5880c2c"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "block"
+        },
+        "definition_bytes": 16,
+        "definition_omitted": false,
+        "function": "retained::throw",
+        "function_id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "hash": "dc776587b7ca89588ea95001656d3aff64a1c8531e9ad20f4600cb38b812b831",
+        "id": "1231283bd371dfb02145e68c6c26da94",
+        "kind": "block",
+        "location": {
+          "byte_begin": 16,
+          "byte_end": 55,
+          "column": 17,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "path": "body",
+        "references": [],
+        "role": "body",
+        "site": "3d9191e1a52c8ee36581dc9e559cd028a89ceff5c74c9bc073a18b886af5f436",
+        "source_range": null
+      },
+      {
+        "child_count": 1,
+        "children": [
+          {
+            "id": "966422da63bf349cb2384acd48881c42",
+            "ordinal": 0,
+            "role": "expression",
+            "site": "db2b7516d1fc8ce5a3938343eeb75d93f819a24870cbf909508b2339cd843ae7"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "statement.return",
+          "name": "",
+          "type": "unknown"
+        },
+        "definition_bytes": 54,
+        "definition_omitted": false,
+        "function": "retained::throw",
+        "function_id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "hash": "d41a5966355bc4926a35415c48e6bc6417603d0ba91b5d4b9846df2007f9d277",
+        "id": "f5283bfe92cf7482908e42f3a04331d9",
+        "kind": "statement.return",
+        "location": {
+          "byte_begin": 41,
+          "byte_end": 47,
+          "column": 42,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "1231283bd371dfb02145e68c6c26da94",
+        "path": "body/statement/0",
+        "references": [],
+        "role": "statement",
+        "site": "1a37a1015c794208b8be5d63381e86b0f99f73cb5aac00f57e85cf6ba5880c2c",
+        "source_range": {
+          "byte_begin": 41,
+          "byte_end": 54,
+          "editable": true,
+          "kind": "statement"
+        }
+      },
+      {
+        "child_count": 0,
+        "children": [],
+        "children_truncated": false,
+        "definition": {
+          "kind": "expression.name",
+          "number": "0",
+          "text": "value",
+          "type": "i64"
+        },
+        "definition_bytes": 67,
+        "definition_omitted": false,
+        "function": "retained::throw",
+        "function_id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+        "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+        "id": "966422da63bf349cb2384acd48881c42",
+        "kind": "expression.name",
+        "location": {
+          "byte_begin": 48,
+          "byte_end": 53,
+          "column": 49,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "f5283bfe92cf7482908e42f3a04331d9",
+        "path": "body/statement/0/expression/0",
+        "references": [
+          {
+            "id": "43558bfd893f34f87d5153137790a0f1",
+            "role": "binding"
+          }
+        ],
+        "role": "expression",
+        "site": "db2b7516d1fc8ce5a3938343eeb75d93f819a24870cbf909508b2339cd843ae7",
+        "source_range": {
+          "byte_begin": 48,
+          "byte_end": 53,
+          "editable": true,
+          "kind": "expression"
+        }
+      },
+      {
+        "child_count": 2,
+        "children": [
+          {
+            "id": "435512ec5cfaafd20bfae4bd017ea273",
+            "ordinal": 0,
+            "role": "statement",
+            "site": "297c0ee06b5c8de8aeacea933dee8dee3972ad8e79f0044bbdf4b7ec7c1b5120"
+          },
+          {
+            "id": "1598476a2e3ae53d59b71bceae3e4037",
+            "ordinal": 1,
+            "role": "statement",
+            "site": "dd02f7636a85e60f9d3688119f1adf2577c3a7bb5cdda054810b1539b1699896"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "block"
+        },
+        "definition_bytes": 16,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "a3b90c5e8365fd3d99c52e7586b1a73b40251faa318220b2cdd2502c75a0b852",
+        "id": "8c11b02526768da555188605ad9f648e",
+        "kind": "block",
+        "location": {
+          "byte_begin": 55,
+          "byte_end": 108,
+          "column": 56,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "ca27afe6b22372a663d7413bff3905b0",
+        "path": "body",
+        "references": [],
+        "role": "body",
+        "site": "9e0103799ac0678c7c81b2299294cf9f8be7ae864150e208729ea50964524744",
+        "source_range": null
+      },
+      {
+        "child_count": 1,
+        "children": [
+          {
+            "id": "30056287c0a71cfff7544a2803462622",
+            "ordinal": 0,
+            "role": "expression",
+            "site": "5457252ac0c5b71e8974a33241c0b56fff3548303dd59080d8f4cd408cee5231"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "statement.let",
+          "name": "catch",
+          "type": "i64"
+        },
+        "definition_bytes": 52,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "3131407da7202b309662fbd5bab02bb17325904014bab39d535e0bde71858d42",
+        "id": "435512ec5cfaafd20bfae4bd017ea273",
+        "kind": "statement.let",
+        "location": {
+          "byte_begin": 70,
+          "byte_end": 73,
+          "column": 71,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "8c11b02526768da555188605ad9f648e",
+        "path": "body/statement/0",
+        "references": [],
+        "role": "statement",
+        "site": "297c0ee06b5c8de8aeacea933dee8dee3972ad8e79f0044bbdf4b7ec7c1b5120",
+        "source_range": {
+          "byte_begin": 70,
+          "byte_end": 94,
+          "editable": true,
+          "kind": "statement"
+        }
+      },
+      {
+        "child_count": 1,
+        "children": [
+          {
+            "id": "9b7932b3312d7527bc1e6321bb2992a9",
+            "ordinal": 0,
+            "role": "argument",
+            "site": "75d1cae498dee3b8df1ac59ac568e11321443baf847be9a62034c482e41e3dcd"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "expression.call",
+          "number": "0",
+          "text": "retained::throw",
+          "type": "i64"
+        },
+        "definition_bytes": 77,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "6be3436d89ce39534171710cdd4d7325e4a0bbeeff1515beaaa5a20d728a11ff",
+        "id": "30056287c0a71cfff7544a2803462622",
+        "kind": "expression.call",
+        "location": {
+          "byte_begin": 84,
+          "byte_end": 89,
+          "column": 85,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "435512ec5cfaafd20bfae4bd017ea273",
+        "path": "body/statement/0/expression/0",
+        "references": [
+          {
+            "id": "c94eec0c84f7b63c5f03edb0b0c99e54",
+            "role": "callee",
+            "symbol": "retained::throw"
+          }
+        ],
+        "role": "expression",
+        "site": "5457252ac0c5b71e8974a33241c0b56fff3548303dd59080d8f4cd408cee5231",
+        "source_range": {
+          "byte_begin": 84,
+          "byte_end": 93,
+          "editable": true,
+          "kind": "expression"
+        }
+      },
+      {
+        "child_count": 0,
+        "children": [],
+        "children_truncated": false,
+        "definition": {
+          "kind": "expression.integer",
+          "number": "42",
+          "text": "",
+          "type": "i64"
+        },
+        "definition_bytes": 66,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+        "id": "9b7932b3312d7527bc1e6321bb2992a9",
+        "kind": "expression.integer",
+        "location": {
+          "byte_begin": 90,
+          "byte_end": 92,
+          "column": 91,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "30056287c0a71cfff7544a2803462622",
+        "path": "body/statement/0/expression/0/argument/0",
+        "references": [],
+        "role": "argument",
+        "site": "75d1cae498dee3b8df1ac59ac568e11321443baf847be9a62034c482e41e3dcd",
+        "source_range": {
+          "byte_begin": 90,
+          "byte_end": 92,
+          "editable": true,
+          "kind": "expression"
+        }
+      },
+      {
+        "child_count": 1,
+        "children": [
+          {
+            "id": "5903364fdc67c86050e03a91b867952f",
+            "ordinal": 0,
+            "role": "expression",
+            "site": "0978a26af8ac187a82b8a9fb846868503031297aabcbc80711c7248999e6466c"
+          }
+        ],
+        "children_truncated": false,
+        "definition": {
+          "kind": "statement.return",
+          "name": "",
+          "type": "unknown"
+        },
+        "definition_bytes": 54,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "b93eae2f2c3134527d63dec293e3f9b98c7abb5710e8ab8630b3ee27573afac2",
+        "id": "1598476a2e3ae53d59b71bceae3e4037",
+        "kind": "statement.return",
+        "location": {
+          "byte_begin": 94,
+          "byte_end": 100,
+          "column": 95,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 1,
+        "parent": "8c11b02526768da555188605ad9f648e",
+        "path": "body/statement/1",
+        "references": [],
+        "role": "statement",
+        "site": "dd02f7636a85e60f9d3688119f1adf2577c3a7bb5cdda054810b1539b1699896",
+        "source_range": {
+          "byte_begin": 94,
+          "byte_end": 107,
+          "editable": true,
+          "kind": "statement"
+        }
+      },
+      {
+        "child_count": 0,
+        "children": [],
+        "children_truncated": false,
+        "definition": {
+          "kind": "expression.name",
+          "number": "0",
+          "text": "catch",
+          "type": "i64"
+        },
+        "definition_bytes": 67,
+        "definition_omitted": false,
+        "function": "retained::main",
+        "function_id": "ca27afe6b22372a663d7413bff3905b0",
+        "hash": "79e6bd1f8d6b540bcc3493de0f8a132a8d3b01364a68fc7c2e92db854ea40e8f",
+        "id": "5903364fdc67c86050e03a91b867952f",
+        "kind": "expression.name",
+        "location": {
+          "byte_begin": 101,
+          "byte_end": 106,
+          "column": 102,
+          "file": "main.nex",
+          "line": 1
+        },
+        "ordinal": 0,
+        "parent": "1598476a2e3ae53d59b71bceae3e4037",
+        "path": "body/statement/1/expression/0",
+        "references": [
+          {
+            "id": "435512ec5cfaafd20bfae4bd017ea273",
+            "role": "binding"
+          }
+        ],
+        "role": "expression",
+        "site": "0978a26af8ac187a82b8a9fb846868503031297aabcbc80711c7248999e6466c",
+        "source_range": {
+          "byte_begin": 101,
+          "byte_end": 106,
+          "editable": true,
+          "kind": "expression"
+        }
+      }
+    ],
+    "offset": 0,
+    "revision": "7a1838aa5ea4deedacaef357da398571803e256a8db209c6b4bc84585f1a0e25",
+    "schema": "nex.operations/1",
+    "source_hash": "1f098ec63e30e8e289ae7b0cf843248adffbd33d67a5e9dc179f1a521edfa767",
+    "total": 10,
+    "truncated": false
+  },
+  "path": "/Users/sae/projects/NEX/build/public025-234-retained024-export-v1/main.nex",
+  "revision": "7a1838aa5ea4deedacaef357da398571803e256a8db209c6b4bc84585f1a0e25",
+  "schema": "nex.graph/2",
+  "source": "module retained;fn throw(value:i64)->i64{return value;}fn main()->i64{let catch:i64=throw(42);return catch;}\n",
+  "structures": []
+}

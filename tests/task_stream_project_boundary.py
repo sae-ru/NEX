@@ -4,7 +4,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('probe',type=Path);p.add_argument('fixtures',type=Path);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
 probe=a.probe.resolve();fixtures=a.fixtures.resolve();root=a.output.resolve();root.mkdir();started=time.monotonic()
 report={'schema':'nex.private024-project-boundary/1','ok':False,'state':'starting','commands':[],'rejections':[],'legacy':[],
- 'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public024_published':False,'full_objective_complete':False}
+ 'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public025_delivery_accepted':False,'full_objective_complete':False}
 def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n')
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def invoke(name,request,expected=0,env=None):
@@ -15,7 +15,7 @@ def invoke(name,request,expected=0,env=None):
  assert raw.returncode==expected,(name,raw.stdout,raw.stderr);return json.loads(raw.stdout)
 def linkage(capture):return next(row['task_linkage'] for entries in capture['expectations'].values() for row in entries if row['name']=='app')
 try:
- data=json.loads((fixtures/'report.json').read_text());assert data['ok'] and len(data['cases'])==8
+ data=json.loads((fixtures/'report.json').read_text());assert data['execution_matrix_complete'] and data['native_reference_pairs']==len(data['cases'])==8
  for case in data['cases']:
   name=case['name'];original=json.loads(Path(case['capture']).read_text())
   def reject(label,edit,restore=False,public=False):

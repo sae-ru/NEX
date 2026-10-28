@@ -1,3 +1,10 @@
+# Current025 result and exception boundaries
+
+The current candidate keeps postfix Result propagation and explicit source
+exceptions separate. Discover result_propagation and source_exceptions before
+using an installed SDK. The016/017 history notes below retain their original
+scope; current projects and graph migrations select the actual compiler version.
+
 # Result propagation (language0.17 candidate)
 
 Postfix `?` removes repeated result forwarding while preserving typed errors:
@@ -25,9 +32,10 @@ bounded to4096 in the native backend; existing interpreter limits still apply.
 
 `?` does not handle arithmetic, bounds, assertion, cancellation or limit traps.
 Those retain their checked failure behavior. `unwrap(error)` still traps with
-E_RESULT. Source `try/catch/throw`, arbitrary exception recovery and structured
-error payloads beyond code/message remain pending. Handle a recoverable error
-explicitly with result patterns when a fallback or translation is needed.
+E_RESULT. Language0.25 adds explicit source `try/catch/throw` as described in
+[the exception contract](exceptions.md); a source catch does not intercept `?`.
+Typed payloads beyond code/message, handler filters/finally and arbitrary trap
+recovery remain unfinished. Result patterns still provide explicit fallbacks.
 
 Generic bodies are checked even when unused. Applying `?` to a non-result is
 E_TYPE; using it in a function without a result return is E_RESULT_RETURN.

@@ -164,7 +164,7 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.kind==Type::Function){
     if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);
     for(const auto &argument:type.arguments)if(argument==Type::Unit||argument==Type::Unknown)throw Error("E_TYPE","function parameters require non-unit types",span);
-    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&effect=="throw"))throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
+    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(supportsSourceExceptions(p)&&effect=="throw"))throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
     if(type.effects.contains("db")&&type.realm!="server")throw Error("E_REALM","db callable effect requires server realm",span);
     if(type.effects.contains("ffi")&&type.realm!="server")throw Error("E_REALM","ffi callable effect requires server realm",span);
     if(type.effects.contains("fs")&&type.realm!="server")throw Error("E_REALM","fs callable effect requires server realm",span);

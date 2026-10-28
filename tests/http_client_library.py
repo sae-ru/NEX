@@ -10,7 +10,7 @@ class HTTPClientLibrary(harness.ToolchainCase):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         capability = self.cli('describe', '--field', 'http_client_provider')
         self.assertEqual(capability['value'], pack['http_client_provider'])
-        self.assertEqual(capability['language'], '0.24')
+        self.assertEqual(capability['language'], harness.CURRENT_LANGUAGE)
         self.assertIs(capability['value']['source_ABI_changed'], False)
         self.assertIs(capability['value']['native_provider_process_sandbox'], False)
         self.assertIs(capability['value']['public_URL_private_IP_filter'], False)

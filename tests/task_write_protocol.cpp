@@ -13,7 +13,7 @@ static_assert(sizeof(TaskCodeDescriptor)==88&&offsetof(TaskCodeDescriptor,abi)==
 int main(){try{
   require(validTaskCodeRequirements(taskCodeABI,255));require(!validTaskCodeRequirements(taskCodeABI,taskCodeFileWrite));
   require(validTaskCodeRequirements(taskCodeWriteABI,1023));require(!validTaskCodeRequirements(taskCodeWriteABI,1024));
-  require(!validTaskCodeRequirements(taskCodeStreamABI+1,0));require(!validTaskCodeRequirements(taskCodeWriteABI,-1));
+  require(!validTaskCodeRequirements(taskCodeSourceExceptionABI+1,0));require(!validTaskCodeRequirements(taskCodeWriteABI,-1));
   TaskCodeDescriptor d{step,nullptr,nullptr,nullptr,nullptr,taskCodeWriteABI,0,0,0,0,7|taskCodeFileWrite|taskCodeImageFileWrite};
   {NativeTaskFrame frame(d,{},Value{});require(bool(frame.requirements&taskCodeFileWrite));}
   auto invalid=d;invalid.abi=taskCodeABI;rejected(invalid);

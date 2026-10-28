@@ -3,7 +3,7 @@
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The current development language is0.24; discover the actual SDK before choosing
+The current integration candidate language is0.25; accepted source233 is0.24; discover the actual SDK before choosing
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
 ## Discover only the context needed
@@ -54,12 +54,12 @@ instead of inferring C++/Python semantics.
 
 Ordinary failures use `result<T>` and explicit handling. Postfix `?` returns an
 error from its current function; `unwrap` can trap. `bytes(list<i64>)` returns a
-result and must be handled. General source `try`/`catch`/`throw` is unavailable. The private source_exception_prototype descriptor documents separate frontend/reference/native/TypeScript experiments; do not enable0.25 by editing a manifest. Publication requires complete lowering and explicit migration.
+result and must be handled. Discover source_exceptions before using try/catch/throw. The025 candidate supports ordinary frontend/reference, native sequential/tasks/HTTP and TypeScript source errors within the development scope in docs/exceptions.md. Read source_exceptions.source_providers for ABI6 source/static/shared project contracts and pure-helper continuations; complete debug/profile and SDK/platform acceptance remain pending. Use explicit migration with retained024 origins. Merely editing a version field does not migrate a project. The source_exception_prototype descriptor still describes separate private, unarchived experiments.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in
 clients; server credentials, filesystem operations and opaque host authority
-must not enter browser/wire/JSON data. Effects do not grant OS authority. Callers
+must not enter browser/wire/JSON data. Effects do not grant OS authority. For ordinary025 HTTP file access, discover structured_tasks_runtime.http_server.file_grants and the server guide: operators explicitly pass --files-root and optionally --files-write 1; the default is read-only. Keep standalone environment grants and the retained task host bridge distinct. Callers
 must declare every required effect.
 
 ## Route to relevant documentation
@@ -130,7 +130,7 @@ TypeScript schedulers have their own execution guarantees; native threading
 does not imply threads in a browser or reference execution. Use the separate
 checked browser Worker boundary only as advertised.
 
-Language0.24 server functions declaring task and fs support bounded whole-file
+Public025 server functions declaring task and fs support bounded whole-file
 reads and writes. Write calls are `file_write_text(str,str)->result<bool>` and
 `file_write_bytes(str,bytes)->result<bool>`. Resumable helpers must declare task;
 an fs-only helper cannot silently become asynchronous. Supply an explicit
@@ -138,6 +138,10 @@ operator-selected filesystem root and writable grant. Read-only authority
 cannot be upgraded. Preserve strict paths, payload limits, exact snapshots and
 physical IO drainage. Cancellation can suppress delivery after a complete
 rename; it promises neither rollback nor directory crash durability.
+Scope/join operations that can deliver source errors require throw in025;
+ordinary file Result operations alone do not. Preserve retained024 semantics
+when reading old histories. In a migration, inspect the readonly plan and use
+an explicit guarded candidate for needed effect changes; keep original rows.
 
 Opaque server resources are constructed by trusted, pinned typed providers.
 Source metadata, a textual ID or pure forwarding cannot create host authority.
@@ -147,15 +151,16 @@ retain borrowed source frames or C call/type/value tokens on IO workers.
 No opaque authority crosses wire/browser/file/unstructured-parallel boundaries.
 
 Source task/ffi resource transport differs from binary task-provider exports.
-Current0.24 static/fixed-shared images use ABI5 records8/9/10 and explicit
-component/image/root read/write/stream requirements. Retained ABI3/4 masks31/799
-keep their meaning. Checked File values retain genuine owners and original grants;
+Current025 static/fixed-shared images use ABI6 records11/12/13, requirement
+mask7967 and explicit component/image/root read/write/stream requirements.
+Retained024 images keep ABI5 records8/9/10 and mask3871; retained ABI3/4
+masks31/799 keep their meaning. Checked File values retain genuine owners and original grants;
 C FFI/wire/browser exports cannot transport File authority; one application owns the executor,
 request and grants. Source is required for checking even when calls consume
 archives/images. Do not add provider FFI exports, callable/grant transport or
 arbitrary unloading. Task streams support open/read/write/append/seek/size/flush/close with physical
 settlement; read task-file-streams for shared cursor ordering and limits. Task network builtins and async DB remain pending. The bounded TCP provider
-is separately available through existing task/FFI, as described above. Native language0.24 HTTP handlers may declare task
+is separately available through existing task/FFI, as described above. Native025 HTTP handlers may declare task
 and fs under debug/release `build --target server`. Their joined executor shares
 the original HTTP request budget/deadline/cancellation and explicitly captures
 operator-configured file/foreign grants; it creates no new request budget.
@@ -197,11 +202,12 @@ and preserve memory/task completion evidence. Cross-builds, browser asset builds
 old hardware receipts and package manifests do not establish current target
 execution. Keep unsupported platforms and unfinished integrations visible.
 
-SDK0.134.4 acceptance requires37 phases, including actual installed task HTTP/
+Retained024 SDK0.134.4 acceptance requires37 phases, including actual installed task HTTP/
 HTTPS execution in debug/release. Older34/35/36-phase receipts keep their own
 toolchain scope. Do not relabel an older receipt or treat app-source absence as
 proof that the compiler's source fallback was unavailable. Validate delivery
 with the matching SDK's receipt validator and actual indexed helper hashes.
+The025 integration candidate has not completed matching installed SDK acceptance.
 
 Version source, tests, manifests, locks, reviewed contracts and required assets
 in Git; preserve graph snapshots/exports when history matters. Exclude credentials,

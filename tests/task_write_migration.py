@@ -52,6 +52,8 @@ def invoke(name,request,expected=0,env=None):
 def candidate(name,source):
  p=root/(name+'.sources.json');p.write_text(json.dumps({'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source}}));return str(p)
 try:
+ current_language=json.loads(run('describe',[compiler,'describe','--json'],os.environ,root).stdout)['version']
+ assert current_language=='0.25'
  for index,row in enumerate(metadata['revisions']):
   name='positive-'+str(index);project,database,before,physical=restore(name);files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
   manifest=project/'nex.json';raw_manifest=manifest.read_bytes()
@@ -62,7 +64,7 @@ try:
   finally:manifest.write_bytes(raw_manifest)
   request={'project':str(project),'origin_revision':row['revision'],'expected_revision':metadata['head'],'execute':True}
   result=invoke(name,request,env=env)
-  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']=='0.24'
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.23' and result['public_default']==current_language
   assert result['revision']!=row['revision'] and result['previous_revision']==metadata['head']
   after=state(database);retained(before,after);assert after['tables']['head']==[(1,result['revision'])]
   assert len(after['tables']['revisions'])==4
@@ -82,12 +84,59 @@ try:
   assert repeated['revision']==result['revision'];again=state(database);retained(after,again);assert len(again['tables']['revisions'])==4
   report['checks'].append({'name':name,'all16_tables_schema_rows_ids_preserved':True,'original_revision':row['revision'],'revision':result['revision'],
    'native_reference':True,'executable':str(executable),'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),'physical_sources_unchanged':True,'idempotent_target':True,'implicit_cross_version_HEAD_rejected':True});save()
- # Ordinary CLI publishes exactly the same checked023 target as the shared preflight.
+ # Current migration preserves the genuine022 origin. A separately reviewed
+ # candidate supplies the025 task delivery effect; the retained023 path above
+ # must continue to use the unchanged archived source and semantics.
  for index,row in enumerate(metadata['revisions']):
-  name='public024-'+str(index);project,database,before,physical=restore(name)
-  result=json.loads(run(name,[compiler,'migrate','--revision',row['revision'],'--expected-revision',metadata['head'],'--json'],os.environ,project).stdout)
-  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']=='0.24' and result['revision']!=row['revision']
-  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'explicit_public024':True});save()
+  name='public025-'+str(index);project,database,before,physical=restore(name)
+  arguments=[compiler,'migrate','--revision',row['revision']]
+  plan=json.loads(run(name+'-plan',[*arguments,'--kind','plan','--json'],os.environ,project).stdout)
+  assert plan['origin_verified'] and state(database)==before
+  expected_sources=copy.deepcopy(row['bundle']);task=any('!{task' in text for text in expected_sources['files'].values())
+  needs_delivery=not plan['target_valid']
+  if needs_delivery:
+   assert not plan['target_valid'] and plan['target_diagnostic']['code']=='E_EFFECT'
+   rejected=json.loads(run(name+'-missing-delivery-effect',[*arguments,'--json'],os.environ,project,1).stdout)
+   assert rejected['code']=='E_EFFECT' and state(database)==before
+   reviewed=copy.deepcopy(plan['candidate']);assert reviewed['sources']==expected_sources
+   text=reviewed['sources']['files'][expected_sources['entry']];assert text.count('!{task,fs}')==2
+   reviewed['sources']['files'][expected_sources['entry']]=text.replace('!{task,fs}','!{task,fs,throw}')
+   expected_sources=reviewed['sources'];path=root/(name+'-reviewed-delivery.json');path.write_text(json.dumps(reviewed))
+   arguments.extend(['--candidate',path])
+   valid=json.loads(run(name+'-reviewed-plan',[*arguments,'--kind','plan','--json'],os.environ,project).stdout)
+   assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used'] and state(database)==before
+  else:assert plan['target_valid']
+  result=json.loads(run(name,[*arguments,'--expected-revision',metadata['head'],'--json'],os.environ,project).stdout)
+  assert result['origin_verified'] and result['origin_language']=='0.22' and result['language']==current_language and result['revision']!=row['revision']
+  assert result['candidate_used']==needs_delivery and result['previous_revision']==metadata['head'] and not result['materialized']
+  after=state(database);retained(before,after);untouched(project,physical)
+  assert len(after['tables']['revisions'])==4 and after['tables']['head']==[(1,result['revision'])]
+  with sqlite3.connect(database) as db:
+   original=db.execute('SELECT source,language FROM revisions WHERE hash=?',(row['revision'],)).fetchone();assert json.loads(original[0])==row['bundle'] and original[1]=='0.22'
+   selected=db.execute('SELECT source,language FROM revisions WHERE hash=?',(result['revision'],)).fetchone();assert json.loads(selected[0])==expected_sources and selected[1]==current_language
+  files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
+  observed=json.loads(run(name+'-reference',[compiler,'eval','--revision',result['revision'],'--json'],env,project).stdout)
+  expected_value=42 if task else 0;expected_stdout='' if task else '42\n'
+  assert observed['value']==expected_value and observed['stdout']==expected_stdout
+  built=json.loads(run(name+'-build',[compiler,'build','--revision',result['revision'],'--profile','release','--json'],env,project).stdout)
+  executable=Path(built['executable']);native_files=root/(name+'-native-files');native_files.mkdir()
+  hidden=[]
+  for source_name in row['bundle']['files']:
+   source=project/source_name;renamed=source.with_name(source.name+'.hidden');source.rename(renamed);hidden.append((source,renamed))
+  try:
+   native=run(name+'-source-absent-native',[executable],{'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(native_files),'NEX_FILES_WRITE':'1'},root,expected_value)
+   assert native.stdout==expected_stdout and not native.stderr
+  finally:
+   for source,renamed in hidden:renamed.rename(source)
+  if task:assert (files/'output.txt').read_text()==(native_files/'output.txt').read_text()=='NEX asynchronous write\n'
+  if index==0:assert (files/'synchronous.txt').read_text()==(native_files/'synchronous.txt').read_text()=='old synchronous write\n'
+  stable=state(database);same=json.loads(run(name+'-idempotent',[compiler,'migrate','--revision',result['revision'],'--expected-revision',result['revision'],'--json'],env,project).stdout)
+  assert same['revision']==result['revision'] and not same['changed'] and state(database)==stable
+  exported=root/(name+'-export');run(name+'-export',[compiler,'export','--revision',result['revision'],'--directory',exported,'--json'],env,project)
+  assert json.loads((exported/'nex.json').read_text())['language']==current_language
+  assert json.loads(run(name+'-export-check',[compiler,'check','--json'],env,exported).stdout)['revision']==result['revision']
+  untouched(project,physical)
+  report['checks'].append({'name':name,'ordinary_CLI_shared_preflight':True,'explicit_public025':True,'reviewed_delivery_candidate':needs_delivery,'all16_tables_schema_rows_ids_preserved':True,'physical_sources_unchanged':True,'native_reference':True,'source_absent_native':True,'idempotent_target':True,'exported_current_project_checked':True});save()
  # Negative target preflight must not create even an empty destination Store.
  origin,_,_,_=restore('read-only-origin');origin_revision=metadata['head']
  invalid=candidate('invalid-target','module wrong;fn main()->i64{return "wrong type";}')
@@ -145,6 +194,7 @@ try:
  assert rejected['code']=='E_LANGUAGE_VERSION' and state(database)==before
  report['checks'].append({'name':'schema1-readonly-control','synthetic_schema_control':True,'no_implicit_schema_upgrade':True});save()
  report.update(ok=True,state='passed',checks_passed=len(report['checks']),positive_migrations=3,native_reference_migrations=3,
-  retained022_interpretation=True,all16_tables_schema_rows_ids_preserved=True,invalid_preflight_no_destination=True,conflict_rollback=True)
+  retained022_interpretation=True,all16_tables_schema_rows_ids_preserved=True,invalid_preflight_no_destination=True,conflict_rollback=True,
+  public_language=current_language,public_migrations=3,public_native_reference_migrations=3)
 except BaseException as error:report.update(state='failed',error=repr(error));raise
 finally:save();print(json.dumps({k:report.get(k) for k in ['ok','state','checks_passed','error']}),flush=True)

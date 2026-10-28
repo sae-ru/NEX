@@ -30,8 +30,8 @@ class SharedTaskProviders(harness.ToolchainCase):
         (self.root/'leaf/value.nex').write_text(fixture.LEAF)
         (self.root/'mid/value.nex').write_text(fixture.MID)
         self.file.write_text(fixture.APP)
-        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -91,9 +91,9 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.assertEqual(set(value),{'schema','mode','descriptor_abi','descriptor_size','abi_offset','compiler_build',
             'language','component','cohort','code_only','task_file_reads','task_file_writes','definitions','exports','artifact_kind',
             'owner_image','definition_owners','component_file_reads','component_file_writes','task_file_streams','component_file_streams','image'})
-        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/8','shared-fixed'))
-        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000005,88,40))
-        self.assertEqual((value['language'],value['component']),('0.24',component))
+        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/11','shared-fixed'))
+        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000006,88,40))
+        self.assertEqual((value['language'],value['component']),(harness.CURRENT_LANGUAGE,component))
         self.assertEqual(set(value['definitions']),set(value['definition_owners']))
         self.assertEqual(value['task_file_reads'],any(value['component_file_reads'].values()))
         self.assertEqual(value['task_file_writes'],any(value['component_file_writes'].values()))
@@ -141,7 +141,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         by_name={row['name']:row['task_linkage'] for row in plan['components']}
         self.assertEqual([row['component'] for row in by_name['app']['load_closure']['images']],['leaf','mid','app'])
         for name,linkage in by_name.items():
-            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/8','shared-fixed',5))
+            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/11','shared-fixed',6))
             self.assertTrue(all(row['function'].startswith('provider_'+name+'::') for row in linkage['definitions']))
         self.assertEqual(self.cli('eval')['stdout'],fixture.OUTPUT)
         for mode in ('debug','release'):
@@ -193,7 +193,7 @@ class SharedTaskProviders(harness.ToolchainCase):
     def test_mixed_static_frontiers_have_exact_final_image_owners(self):
         (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}')
         (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}')
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(41));}')
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
         del self.description['components']['other']
         for name in ('leaf','mid'):self.description['components'][name]['exports']=[]
         self.description['components']['leaf']['exports']=['read']
@@ -222,7 +222,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(x:i64)->i64!{task}{task_yield();return x+1;}')
         (self.root/'mid/value.nex').write_text('module provider_mid;pub fn answer(x:i64)->i64!{task}{task_yield();return x;}')
         for name in ('app','other'):
-            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::answer(leaf::answer(41)));}')
+            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(leaf::answer(41)));}')
             self.description['components'][name]['dependencies']={'leaf':'static','mid':'dynamic'}
         self.description['components']['leaf'].update(kind='static_library',exports=[])
         self.description['components']['mid'].pop('dependencies');self.description['components']['mid']['exports']=[]
@@ -264,7 +264,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.simple('''pub fn answer()->i64!{task}{task_yield();return 42;}
 pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);}
 pub server fn data(path:str)->result<bytes>!{task,fs}{return file_read_bytes(path);}''',
-            'fn main()->unit!{task,io}{print(leaf::answer());}',exports=['read','data'])
+            'fn main()->unit!{task,io,throw}{print(leaf::answer());}',exports=['read','data'])
         built=self.project();artifacts=self.artifacts(built)
         record=self.provider(artifacts['leaf'],'leaf')
         self.assertTrue(record['task_file_reads'])
@@ -309,11 +309,11 @@ server fn main()->unit!{task,fs,io}{
 
     def test_cache_repairs_changed_images_sidecars_runtime_and_selected_exports(self):
         self.simple('pub fn helper(x:i64)->i64!{task}{task_yield();return x+1;}pub fn answer(x:i64)->i64!{task}{return helper(x);}',
-            'fn main()->unit!{task,io}{print(leaf::answer(41));}')
+            'fn main()->unit!{task,io,throw}{print(leaf::answer(41));}')
         first=self.artifacts(self.project())
         self.assertNotIn('provider_leaf::helper',self.provider(first['leaf'],'leaf')['exports'])
         self.description['components']['leaf']['exports']=['helper'];self.save()
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(leaf::helper(41));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}')
         second=self.artifacts(self.project())
         self.assertNotEqual(first['leaf']['build_key'],second['leaf']['build_key'])
         export=self.provider(second['leaf'],'leaf')['exports']['provider_leaf::helper']
@@ -366,7 +366,7 @@ server fn main()->unit!{task,fs,io}{
             profile_plan=self.project('plan',configuration='profile')
             self.assertFalse(profile_plan['external_tools_invoked'])
             for row in profile_plan['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/9')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/12')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
@@ -374,7 +374,7 @@ server fn main()->unit!{task,fs,io}{
         if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
             planned=self.project('plan','app','debug','--task-debug')
             for row in planned['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/10')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/13')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
@@ -391,7 +391,7 @@ server fn main()->unit!{task,fs,io}{
 
     def test_checked_failure_matches_reference_without_resuming_source(self):
         self.simple('pub fn answer(x:i64)->i64!{task}{let held:list<str>=["owned🌍"];task_yield();return x+len(held);}',
-            'fn main()->unit!{task,io}{print(leaf::answer(9223372036854775807));print("AFTER_FAILURE");}')
+            'fn main()->unit!{task,io,throw}{print(leaf::answer(9223372036854775807));print("AFTER_FAILURE");}')
         self.assertEqual(self.cli('eval',ok=False)['code'],'E_OVERFLOW')
         app=self.artifacts(self.project())['app'];observed=self.process([app['artifact']])
         self.assertEqual((observed.returncode,observed.stdout),(70,''));self.assertIn('E_OVERFLOW',observed.stderr)
@@ -408,7 +408,7 @@ server fn main()->unit!{task,fs,io}{
         self.assertTrue(accepted['ok']);receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
         native=next(row for row in saved['checks'] if row['id']=='build-native')
         captured=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/8',json.dumps(captured))
+        self.assertIn('nex.project-task-linkage/11',json.dumps(captured))
         spec=importlib.util.spec_from_file_location('shared_core_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in native['components']:

@@ -32,7 +32,7 @@ pub fn ordinary()->result<i64>!{task}{task_yield();return err<i64>("E_PROVIDER",
 pub fn transform(value:Packet)->Packet!{task}{task_yield();return Packet(value.text+"🧠",value.data,value.values);}
 fn producer(queue:channel<i64>)->unit!{task}{var i:i64=0;while i<3{task_yield();assert(task_send(queue,i));i=i+1;}assert(task_close(queue));}
 fn consumer(queue:channel<i64>)->i64!{task}{var i:i64=0;var total:i64=0;while i<3{total=total+helper(unwrap(task_recv(queue)));i=i+1;}return total;}
-pub fn exchange()->i64!{task}{return with_tasks(2,fn(scope:task_scope)->i64!{task}{
+pub fn exchange()->i64!{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64!{task,throw}{
  let queue:channel<i64>=channel_new<i64>(scope,0);
  let a:task<unit>=task_spawn(scope,fn()->unit!{task}{producer(queue);});
  let b:task<i64>=task_spawn(scope,fn()->i64!{task}{return consumer(queue);});
@@ -45,11 +45,11 @@ pub fn work(n:i64)->i64!{task}{return leaf::work(n);}
 pub fn recurse(n:i64)->i64!{task}{return leaf::recurse(n);}
 pub fn ordinary()->result<i64>!{task}{let value:i64=leaf::ordinary()?;return ok(value+1);}
 pub fn transform(value:leaf::Packet)->leaf::Packet!{task}{return leaf::transform(value);}
-pub fn exchange()->i64!{task}{return leaf::exchange();}
+pub fn exchange()->i64!{task,throw}{return leaf::exchange();}
 '''
 APP=r'''module profile_app;import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;
 fn local(n:i64)->i64!{task}{let callback:fn(i64)->i64!{task}=fn(value:i64)->i64!{task}{return mid::work(value);};return callback(n);}
-fn main()->unit!{task,io}{
+fn main()->unit!{task,io,throw}{
  let original:leaf::Packet=leaf::Packet("A🌍\u0000λ",utf8_bytes("A\u0000β"),[3,4]);
  let copied:leaf::Packet=mid::transform(original);
  assert(original.text=="A🌍\u0000λ");assert(copied.data==original.data);assert(copied.values==[3,4]);
@@ -80,8 +80,8 @@ class TaskProviderProfiles(harness.ToolchainCase):
         for name in ('pure','unused','leaf','mid','app','other'):(self.root/name).mkdir()
         for name,source in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(source)
         self.file=self.root/'app/main.nex';self.file.write_text(APP)
-        (self.root/'other/main.nex').write_text('module profile_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (self.root/'other/main.nex').write_text('module profile_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(41));}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         self.description={'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile','task_limits':LIMITS},'release':{'profile':'release','task_limits':LIMITS}},
             'components':{
@@ -319,7 +319,7 @@ class TaskProviderProfiles(harness.ToolchainCase):
         self.description['components']['leaf']['dependencies']={'pure':'static'}
         self.description['components']['mid']['dependencies']={'leaf':'static'}
         self.description['components']['app']['dependencies']={'mid':'dynamic','unused':'dynamic'}
-        self.file.write_text('module profile_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work(41));}')
+        self.file.write_text('module profile_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(41));}')
         self.save()
         expected={name:0 for name in COUNTS if name!='profile_app::local'}
         for name in ('profile_app::main','profile_mid::work','profile_leaf::work','profile_leaf::helper','profile_pure::offset'):expected[name]=1
@@ -365,7 +365,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.description['components']['leaf'].update(exports=[],dependencies={})
         self.description['components']['app']['dependencies']={'leaf':'static'}
         (self.root/'leaf/value.nex').write_text('module profile_leaf;fn divide(n:i64)->i64{let held:list<str>=["owned🧠"];return len(held)/n;}pub fn work()->i64!{task}{task_yield();return divide(0);}')
-        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(leaf::work());print("AFTER_FAILURE");}')
+        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::work());print("AFTER_FAILURE");}')
         self.save();reference=self.cli('eval',ok=False);self.assertEqual(reference['code'],'E_DIV_ZERO')
         result=self.project('profile',ok=False);session=result['observation'];saved=json.loads(Path(session['output']).read_text())
         self.assertEqual(session['exit_code'],70);self.assertEqual(session['stdout'],'');self.assertIn('E_DIV_ZERO',session['stderr'])
@@ -389,14 +389,14 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.description['components']['leaf'].update(exports=[],dependencies={})
         self.description['components']['app']['dependencies']={'leaf':'static'}
         (self.root/'leaf/value.nex').write_text('module profile_leaf;pub fn helper(n:i64)->i64!{task}{task_yield();return n+1;}pub fn work(n:i64)->i64!{task}{return helper(n);}')
-        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(leaf::work(41));}');self.save()
+        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::work(41));}');self.save()
         first=self.artifacts(self.project());folder=Path(first['leaf']['artifact']).parent
         before=json.loads((folder/'task-provider.json').read_text())
-        self.assertEqual(before['schema'],'nex.native-task-provider/9')
+        self.assertEqual(before['schema'],'nex.native-task-provider/12')
         self.assertNotIn('profile_leaf::helper',before['exports'])
         self.assertTrue(all(row['cached'] for row in self.project()['artifacts']))
         self.description['components']['leaf']['exports']=['helper'];self.save()
-        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(leaf::helper(41));}')
+        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}')
         second=self.artifacts(self.project());folder=Path(second['leaf']['artifact']).parent
         after=json.loads((folder/'task-provider.json').read_text())
         self.assertEqual(after['profiling']['catalog_hash'],before['profiling']['catalog_hash'])
@@ -432,14 +432,14 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.assertEqual(measured['build_key'],captured['app']['build_key'])
         self.assertEqual(saved['build_key'],captured['app']['build_key'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/9',json.dumps(source_capture))
+        self.assertIn('nex.project-task-linkage/12',json.dumps(source_capture))
         profiled_components=[]
         for component in source_capture['expectations']['measured']:
             linkage=component.get('task_linkage')
             if not linkage:
                 continue
-            self.assertEqual(linkage['schema'],'nex.project-task-linkage/9')
-            self.assertEqual(linkage['execution_abi'],5)
+            self.assertEqual(linkage['schema'],'nex.project-task-linkage/12')
+            self.assertEqual(linkage['execution_abi'],6)
             profiled_components.append(component['name'])
         self.assertTrue({'leaf','mid','app'}<=set(profiled_components))
         spec=importlib.util.spec_from_file_location('profile_completion_capsule',harness.REPO/'tools/core_capsule.py')
@@ -471,7 +471,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
                     key=copied.relative_to(receipt.parent/'artifacts/measure-provider').as_posix()
                     self.assertEqual(check['artifacts'][key],{'hash':row['hash'],'bytes':row['bytes']})
                 provider=json.loads((receipt.parent/files['task-provider.json']['retained']).read_text())
-                self.assertEqual(provider['schema'],'nex.native-task-provider/9')
+                self.assertEqual(provider['schema'],'nex.native-task-provider/12')
                 self.assertEqual(metadata['task_provider_hash'],files['task-provider.json']['hash'])
                 self.assertRegex((receipt.parent/files['complete']['retained']).read_bytes(),b'^[0-9a-f]{64}\n$')
         # Packaging is a separate checked build action in the original CWD. Its
@@ -532,7 +532,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.description['components']['leaf'].update(exports=[],dependencies={})
         self.description['components']['app']['dependencies']={'leaf':'static'}
         (self.root/'leaf/value.nex').write_text('module profile_leaf;pub fn work(value:i64)->i64!{task}{task_yield();return value+1;}')
-        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io}{print(leaf::work(41));}')
+        self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::work(41));}')
         self.save();physical=self.root/'physical cache';physical.mkdir();physical=physical.resolve()
         alias=self.root/'cache alias';alias.symlink_to(physical,target_is_directory=True)
         options=['--build-directory',str(alias/'selected')]
@@ -564,7 +564,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
 pub fn answer()->i64!{task}{task_yield();return 42;}
 ''')
         self.file.write_text('''module profile_matrix_app;import "../leaf/value.nex" as leaf;
-fn main()->unit!{task,io}{print("WRONG_MAIN");assert(false);}
+fn main()->unit!{task,io,throw}{print("WRONG_MAIN");assert(false);}
 test fn answer()->unit!{task,io}{assert(leaf::answer()==42);print("selected-test42");}
 ''')
         self.description['components']={

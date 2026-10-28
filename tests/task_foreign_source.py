@@ -88,6 +88,8 @@ NEX_FFI_MODULE_EXPORT const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
 
+from source_resource_cli import fixture_for_current_cli
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('probe');parser.add_argument('--context-probe');parser.add_argument('--output',type=Path);parser.add_argument('--compiler',type=Path);args=parser.parse_args()
  if not args.output and os.environ.get('NEX_TASK_FOREIGN_EVIDENCE'):args.output=Path(os.environ['NEX_TASK_FOREIGN_EVIDENCE'])/'source'
@@ -98,6 +100,8 @@ def main():
  report={'schema':'nex.private-source-task-foreign-tests/1','ok':False,'private_language':'0.24','public_language':'0.24',
          'probe_sha256':sha(probe),'source_resource_transport':False,'commands':[],'checks':[]}
  started=time.monotonic()
+ public_language=json.loads(subprocess.check_output([str(args.compiler.resolve()),'describe','--kind','index','--json'],text=True))['language'] if args.compiler else '0.24'
+ report['public_language']=public_language
  report['public_cli_execution']=bool(args.compiler)
  if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,cwd=out):
@@ -108,11 +112,14 @@ def main():
   return result
  def bundle(label,body,pin=PIN):
   path=out/(label+'.bundle.json');write(path,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':DECLARATIONS.replace('@PIN@',pin)+body+'\n'}});return path
- def command(action,path,output='-',language='0.24'):
-  if args.compiler and language=='0.24':return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,path,out,output,language]
+ def command(action,path,output='-',language=None):
+  language=public_language if language is None else language
+  if args.compiler and language==public_language:
+   authored=fixture_for_current_cli(path,out,language)
+   return [sys.executable,REPO/'tests/source_resource_cli.py','--compiler',args.compiler.resolve(),action,authored,out,output,language]
   return [probe,action,path,out,output,language]
  try:
-  write(out/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'main.nex'})
+  write(out/'nex.json',{'schema':'nex.project/1','language':public_language,'entry':'main.nex'})
   template=bundle('template',CASES['direct'])
   checked=json.loads(run('signatures',command('check',template)).stdout)
   signatures=checked['signatures'];assert set(signatures)=={'add','barrier','echo','unit','bad','callable','blocking','started'}
@@ -151,7 +158,7 @@ def main():
    for name,body in CASES.items():
     path=bundle(dialect+'-'+name,body,pin)
     reference=json.loads(run(dialect+'-'+name+'-reference',command('reference',path,host)).stdout)
-    assert reference['output']=='42\n' and reference['language']=='0.24',reference
+    assert reference['output']=='42\n' and reference['language']==public_language,reference
     built=json.loads(run(dialect+'-'+name+'-build',command('native',path,directory/'native')).stdout)
     if not args.compiler:assert built['foreign_calls'] is True
     native=run(dialect+'-'+name+'-native',[built['executable'],'--nex-foreign',host])
@@ -201,7 +208,7 @@ def main():
       ('phantom_file_callback','struct Box<T>{id:i64;}server fn helper(owner:Box<file>)->unit !{task}{with_tasks(1,server fn(s:task_scope)->unit !{task}{assert(owner.id==42);});}fn main()->unit{}')):
    path=bundle(name,body)
    checked=json.loads(run(name+'-public024-accepted',command('check',path)).stdout)
-   assert checked['ok'] and checked['language']=='0.24',checked
+   assert checked['ok'] and checked['language']==public_language,checked
    error=json.loads(run(name+'-retained023-rejected',command('check',path,language='0.23'),1).stdout)
    assert error['code']=='E_TASK_TYPE',error
    report['checks'].append(name+'_public024_accepted_retained023_rejected')

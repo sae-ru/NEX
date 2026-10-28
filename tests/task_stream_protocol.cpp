@@ -11,7 +11,11 @@ int main(){try{
  size_t cases=0;auto check=[&](bool b){require(b);++cases;};
  check(validTaskCodeRequirements(taskCodeStreamABI,4095));check(!validTaskCodeRequirements(taskCodeStreamABI,4096));
  check(!validTaskCodeRequirements(taskCodeStreamABI,-1));check(!validTaskCodeRequirements(taskCodeWriteABI,taskCodeFileStream));
- check(!validTaskCodeRequirements(taskCodeABI,taskCodeFileStream));check(!validTaskCodeRequirements(taskCodeStreamABI+1,0));
+ check(!validTaskCodeRequirements(taskCodeABI,taskCodeFileStream));check(!validTaskCodeRequirements(taskCodeSourceExceptionABI+1,0));
+ check(taskCodeSourceExceptionABI==INT64_C(0x4e45585400000006));
+ check(validTaskCodeRequirements(taskCodeSourceExceptionABI,taskCodeStreamRequirementsMask|taskCodeDeclaredThrow));
+ check(!validTaskCodeRequirements(taskCodeSourceExceptionABI,8192));check(!validTaskCodeRequirements(taskCodeSourceExceptionABI,-1));
+ check(sourceExceptionTaskABI(taskCodeSourceExceptionABI)&&fileStreamTaskABI(taskCodeSourceExceptionABI));
  int64_t kinds[]={3};TaskCodeDescriptor code{step,kinds,nullptr,nullptr,nullptr,taskCodeStreamABI,1,0,0,0,7|taskCodeFileStream|taskCodeImageFileStream};
  {NativeTaskFrame frame(code,{},Value{});check(frame.abi==taskCodeStreamABI&&bool(frame.requirements&taskCodeFileStream));}
  auto reject=[&](TaskCodeDescriptor d){try{NativeTaskFrame frame(d,{},Value{});}catch(const DataError &e){check(e.code=="E_TASK_STATE");return;}throw std::runtime_error("invalid stream descriptor accepted");};

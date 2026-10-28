@@ -242,8 +242,33 @@ class MigrationChecks:
         for name, content in physical.items(): assert (project/name).read_bytes() == content
         task_project = self.output/'modular-task-channel'
         write_json(task_project/'nex.json', {'schema':'nex.project/1','language':TASK_LANGUAGE,'entry':'main.nex'})
-        task = self.cli('public-current-task-migrate', 'migrate', cwd=task_project)
-        assert task['origin_verified'] and task['origin_language'] == TASK_LANGUAGE
+        # Retain the019 graph and physical source. Public025 child-error
+        # delivery needs reviewed effects in a separately guarded candidate.
+        task_database=task_project/'.nex/graph.db'
+        task_before=database_state(task_database)
+        task_physical={p.name:p.read_bytes() for p in task_project.glob('*.nex') if p.is_file()}
+        task_manifest=(task_project/'nex.json').read_bytes()
+        planned=self.cli('public-current-task-plan','migrate','--kind','plan',cwd=task_project)
+        assert planned['origin_verified'] and planned['origin_language']==TASK_LANGUAGE
+        assert not planned['target_valid'] and planned['target_diagnostic']['code']=='E_EFFECT'
+        assert database_state(task_database)==task_before
+        rejected=self.cli('public-current-task-unrepaired','migrate',cwd=task_project,ok=False)
+        assert rejected['code']=='E_EFFECT' and database_state(task_database)==task_before
+        reviewed=copy.deepcopy(planned['candidate'])
+        files=reviewed['sources']['files']
+        files['main.nex']=files['main.nex'].replace('fn main()->i64 !{task}', 'fn main()->i64 !{task,throw}')
+        files['worker.nex']=files['worker.nex'].replace('pub fn solve()->i64 !{task}', 'pub fn solve()->i64 !{task,throw}').replace('fn(scope:task_scope)->i64 !{task}', 'fn(scope:task_scope)->i64 !{task,throw}')
+        reviewed_path=self.output/'reviewed-current-task-effects.json';write_json(reviewed_path,reviewed)
+        valid=self.cli('public-current-task-reviewed-plan','migrate','--candidate',reviewed_path,'--kind','plan',cwd=task_project)
+        assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used']
+        assert database_state(task_database)==task_before
+        task = self.cli('public-current-task-migrate', 'migrate','--candidate',reviewed_path,
+                        '--expected-revision',task_before['tables']['head'][0][1],cwd=task_project)
+        assert task['origin_verified'] and task['origin_language'] == TASK_LANGUAGE and task['candidate_used']
+        retained_rows(task_before,database_state(task_database),task['revision'])
+        assert (task_project/'nex.json').read_bytes()==task_manifest
+        for name,raw in task_physical.items():assert (task_project/name).read_bytes()==raw
+        self.checks.append('public_current019_task_effect_repair_preserves_origin_all_rows_and_physical_sources')
         assert self.cli('public-current-task-eval', 'eval', '--revision', task['revision'], cwd=task_project)['value'] == 42
         public = self.output/'public-current-from018'; (public/'.nex').mkdir(parents=True)
         with sqlite3.connect(public/'.nex/graph.db') as db: db.executescript(sql_bytes.decode())

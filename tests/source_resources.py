@@ -117,8 +117,9 @@ try:
   if cli.nex:
    sources=json.loads(compiled_bundle.read_text())
    for name,text in sources['files'].items():(root/name).write_text(text)
-   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':sources['entry']})+'\n')
    compiler=cli.nex.resolve()
+   language=command('public-language-'+kind,[compiler,'describe','--kind','index','--json'],cwd=root)['language']
+   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':sources['entry']})+'\n')
    checked=command('public-check-'+kind,[compiler,'check','main.nex','--json'],cwd=root)
    exported=command('public-ffi-'+kind,[compiler,'ffi','main.nex','--symbol','fixture::create','--json'],cwd=root)
    assert exported==api['signatures']['create']

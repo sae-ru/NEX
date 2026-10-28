@@ -55,7 +55,7 @@ class Generator {
     if(t.kind==Type::Record&&structures.insert(t.name).second)for(auto field:p.structure(t.name).members())needed(field->type);
   }
   void visit(const Function &f){
-    if(exceptionPrototype&&(usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[&](const auto &effect){return effect!="io"&&effect!="throw"&&!(taskMode&&sourceExceptionTasksPrototype(p)&&effect=="task");})))throw Error("E_EXCEPTION_STAGE","TypeScript exception experiment supports pure/io/throw and dedicated task mode; parallel_map and host-resource effects remain pending",f.span);
+    if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&(usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[&](const auto &effect){return effect!="io"&&effect!="throw"&&!(taskMode&&sourceExceptionTasksPrototype(p)&&effect=="task");})))throw Error("E_EXCEPTION_STAGE","TypeScript exception experiment supports pure/io/throw and dedicated task mode; parallel_map and host-resource effects remain pending",f.span);
     if(f.foreign)throw Error("E_REALM","external functions cannot enter a browser module",f.span);
     if(!f.typeParameters.empty()||std::any_of(f.typeArguments.begin(),f.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","browser entry/closure must be concrete",f.span);
     if(f.realm=="server")throw Error("E_REALM","server function cannot be emitted to the browser: "+f.name,f.span);
@@ -207,7 +207,7 @@ class Generator {
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions){
+  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||p.sourceLanguage==SourceLanguage::SourceExceptions025){
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
@@ -222,7 +222,7 @@ public:
       visit(p.function(name));
     }
     write("// Generated from checked NEX "+std::string(programLanguage(p))+"; edit NEX sources.\nimport * as nex from './nex-runtime.ts';\n\n");
-    if(privateSource||exceptionPrototype)write("// Private staging only; this module has no public source revision.\n");
+    if(privateSource||p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)write("// Private staging only; this module has no public source revision.\n");
     if(exceptionPrototype)write("import * as sourceException from './nex-source-exception-runtime.ts';\n\n");
     if(taskMode)write("import * as task from './nex-task-runtime.ts';\n\n");
     for(const auto &name:functions)if(usesParallelMap(p.function(name)))parallelEnabled=true;
@@ -253,9 +253,11 @@ public:
       else included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
-    if(exceptionPrototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
+    if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
-    return {out.str(),llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}},taskMode};
+    auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
+    if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
+    return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
   }
 };
 }

@@ -27,11 +27,11 @@ def main():
         if run.returncode:raise RuntimeError('command failed: '+str(argv)+'\n'+run.stderr+'\n'+run.stdout)
         return run.stdout
     try:
-        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24'})+'\n')
+        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':json.loads(command([compiler,'describe','--kind','index','--json']))['language']})+'\n')
         for name in ('leaf','mid','app'):(root/name).mkdir()
         (root/'leaf/value.nex').write_text('module shared_leaf;pub fn work()->i64!{task}{let held:list<str>=["owned🧠"];task_yield();return 40+len(held);}\n')
-        (root/'mid/value.nex').write_text('module shared_middle;import "../leaf/value.nex" as leaf;pub fn work()->i64!{task}{task_yield();return with_tasks(1,fn(scope:task_scope)->i64!{task}{let child:task<i64>=task_spawn(scope,fn()->i64!{task}{return leaf::work()+1;});return task_wait(child);});}\n')
-        (root/'app/main.nex').write_text('module lifetime_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io}{print(mid::work());}\n')
+        (root/'mid/value.nex').write_text('module shared_middle;import "../leaf/value.nex" as leaf;pub fn work()->i64!{task,throw}{task_yield();return with_tasks(1,fn(scope:task_scope)->i64!{task,throw}{let child:task<i64>=task_spawn(scope,fn()->i64!{task}{return leaf::work()+1;});return task_wait(child);});}\n')
+        (root/'app/main.nex').write_text('module lifetime_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work());}\n')
         manifest={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'profile','task_limits':{'steps':1000000,'timeout_ms':5000,'workers':1}}},'components':{'leaf':{'kind':'shared_library','root':'leaf','entry':'leaf/value.nex','entry_function':'work'},'mid':{'kind':'shared_library','root':'mid','entry':'mid/value.nex','entry_function':'work','dependencies':{'leaf':'dynamic'}},'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'mid':'dynamic'}}}}
         (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n')
         built=json.loads(command([compiler,'project','--kind','build','--component','app','--json']))
@@ -76,7 +76,7 @@ def main():
             if (f['calls'],f['completed'],f['aborted'])!=(4,completed,aborted):raise RuntimeError('source invocation count/fatal boundary mismatch')
         if any(p['live'] for p in profile['memory']):raise RuntimeError('profiled managed memory not retired')
         report['private_profile']={'path':str(root/'private-profile.json'),'sha256':sha(root/'private-profile.json'),'functions':functions,'strict_public_reader_claim':False,'identity_scope':'private controlled host; generated provider catalogs and original image pins independently checked'}
-        if not result.get('ok') or result.get('execution_abi')!=5 or result.get('cases')!=4 or result.get('runtime_mappings')!=1 or result.get('live_objects')!=0:raise RuntimeError('private mapped driver invariants failed')
+        if not result.get('ok') or result.get('execution_abi')!=6 or result.get('cases')!=4 or result.get('runtime_mappings')!=1 or result.get('live_objects')!=0:raise RuntimeError('private mapped driver invariants failed')
         if Path(result['runtime_image_path']).resolve()!=runtime.resolve():raise RuntimeError('driver mapped the wrong runtime instrumentation image')
         if runtime_hashes!={name:sha(projection/name) for name in meta['runtime_inputs']} or sha(captured_driver)!=report['driver_source_sha256']:raise RuntimeError('probe inputs changed')
         report.update(state='passed',result=result,artifacts={k:{'path':v['artifact'],'sha256':sha(v['artifact']),'metadata_sha256':sha(Path(v['artifact']).parent/'build.json'),'provider_record_sha256':sha(Path(v['artifact']).parent/'task-provider.json')} for k,v in artifacts.items()},runtime={'path':str(runtime),'sha256':sha(runtime)},runtime_inputs=meta['runtime_inputs'],driver_sha256=sha(binary),compiler_unchanged=sha(compiler)==report['compiler_sha256'])

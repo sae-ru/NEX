@@ -1,0 +1,16 @@
+{
+  "language": "0.24",
+  "origin_compiler_sha256": "2415470b00914e388a154ead6d0a496156ab570a89df9fccd2df8ee1fb3536e9",
+  "origin_toolchain": "0.135.30",
+  "manifest": {
+    "schema": "nex.project/1",
+    "language": "0.24",
+    "entry": "main.nex"
+  },
+  "source": "module retained;fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{return 42;});}",
+  "revisions": [
+    "a965b879a3c0629851b66c2d489ea905ea625834ded38caa48f7a57f0ba6510d"
+  ],
+  "head": "a965b879a3c0629851b66c2d489ea905ea625834ded38caa48f7a57f0ba6510d",
+  "sql_sha256": "fddeacad0b436b81f7e8c23e5d2f60b7f308f4d388cb411e91ec31a8c640fc24"
+}

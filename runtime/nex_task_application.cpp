@@ -97,7 +97,7 @@ static Handle *executeTaskHttpRequestImpl(const TaskCodeDescriptor &code,Handle 
   });
 }
 Handle *executeTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,
-    std::shared_ptr<const TaskFrameHostContext> host,unsigned workers){return executeTaskHttpRequestImpl(code,request,std::move(host),workers,false);}
+    std::shared_ptr<const TaskFrameHostContext> host,unsigned workers){return executeTaskHttpRequestImpl(code,request,std::move(host),workers,code.abi==taskCodeSourceExceptionABI);}
 Handle *executeSourceExceptionTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,
     std::shared_ptr<const TaskFrameHostContext> host,unsigned workers){return executeTaskHttpRequestImpl(code,request,std::move(host),workers,true);}
 Handle *executeConfiguredSourceExceptionTaskHttpRequest(const TaskCodeDescriptor &code,Handle *request,unsigned workers){
@@ -144,7 +144,7 @@ static int64_t executeTaskApplicationImpl(const TaskCodeDescriptor &code,const T
     return result.scalar;
   });
 }
-int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutionLimits &limits,SourceLocation location){return executeTaskApplicationImpl(code,limits,location,false);}
+int64_t executeTaskApplication(const TaskCodeDescriptor &code,const TaskExecutionLimits &limits,SourceLocation location){return executeTaskApplicationImpl(code,limits,location,code.abi==taskCodeSourceExceptionABI);}
 int64_t executeSourceExceptionTaskApplication(const TaskCodeDescriptor &code,const TaskExecutionLimits &limits,SourceLocation location){return executeTaskApplicationImpl(code,limits,location,true);}
 }
 extern "C" {

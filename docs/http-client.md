@@ -1,3 +1,11 @@
+# Public025 integration candidate
+
+Preparation accepts matching public0.24/0.25 compiler, doctor and language-pack
+cohorts and computes fresh FFI signature pins for that cohort. It does not
+migrate or retag archived source. Generated025 scope/join regressions explicitly
+declare throw;024 fixtures retain their original effects. Source preparation,
+actual networking and complete installed delivery remain separate gates.
+
 # Task HTTP client
 
 The development HTTP adapter uses ordinary language0.24 server `task,ffi`

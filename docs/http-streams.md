@@ -1,3 +1,11 @@
+# Public025 integration candidate
+
+Preparation accepts matching public0.24/0.25 compiler, doctor and language-pack
+cohorts and computes fresh FFI signature pins for that cohort. It does not
+migrate or retag archived source. Generated025 scope/join regressions explicitly
+declare throw;024 fixtures retain their original effects. Source preparation,
+actual networking and complete installed delivery remain separate gates.
+
 # HTTP response streams (source prototype)
 
 `std/http_stream.nex` is an ordinary server resource library for language0.24.

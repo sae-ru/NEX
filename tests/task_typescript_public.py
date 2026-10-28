@@ -1,5 +1,5 @@
 """Ordinary019 TypeScript emission, maps, runner and synchronous UI boundaries."""
-import argparse, ast, json, os, shutil, subprocess, tempfile
+import argparse, ast, json, os, re, shutil, subprocess, tempfile
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -46,9 +46,10 @@ def mapping(folder, result):
 
 runner = """import * as task from './nex-task-runtime.ts';
 import * as nex from './nex-runtime.ts';
+import * as sourceException from './nex-source-exception-runtime.ts';
 import { entry } from './program.ts';
 const logs=[];console.log=value=>logs.push(String(value));let statistics,result;
-try{const value=await task.run(task.call(()=>entry()),{complete:s=>{statistics=s;}});result={ok:true,representation:value===undefined?'0':nex.representation(value)};}
+try{const value=await task.runSourceErrors(task.call(()=>entry()),error=>sourceException.details(error)!==undefined,{complete:s=>{statistics=s;}});result={ok:true,representation:value===undefined?'0':nex.representation(value)};}
 catch(error){result={ok:false,code:error.code,line:error.site?.[1]??0,site:error.site?.[3]};}
 if(!statistics?.completed||statistics.activeCalls||statistics.retainedFrames)throw new Error('public generator cleanup failed');
 process.stdout.write(JSON.stringify({...result,stdout:logs.join('\\n')+(logs.length?'\\n':''),statistics})+'\\n');
@@ -68,10 +69,18 @@ fixtures += [
     ('cancel-receiver', 'fn main()->i64 !{task}{return with_tasks(1,fn(s:task_scope)->i64 !{task}{let q:channel<str>=channel_new<str>(s,0);let a:task<str>=task_spawn(s,fn()->str !{task}{return unwrap(task_recv(q));});task_yield();assert(task_cancel(a));let b:task<str>=task_spawn(s,fn()->str !{task}{return unwrap(task_recv(q));});assert(task_send(q,"live"));assert(task_wait(b)=="live");return 42;});}', '42', '', 0),
 ]
 
+# The private native/AST fixture bytes above retain their original language.
+# The ordinary025 copies explicitly declare possible child delivery at scope
+# and join boundaries; spawned task-only callbacks retain their effects.
+fixtures=[(name,re.sub(r'(fn(?: main\(\)|\([a-z]+:task_scope\))->(?:i64|str|result<i64>) !)\{task\}',
+                       r'\1{task,throw}',body),expected,prefix,workers)
+          for name,body,expected,prefix,workers in fixtures]
+(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'scope-spawn.nex'}))
+
 try:
     for name, body, expected, prefix, _ in fixtures:
         path = out/(name+'.nex'); path.write_text('module public_typescript;\n'+body+'\nserver fn server_secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}\n')
-        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.24'
+        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.25'
         data = mapping(folder, result); assert (folder/'nex-task-runtime.ts').is_file()
         assert 'yield' in (folder/'program.ts').read_text()
         (folder/'package.json').write_text('{"type":"module"}\n'); (folder/'run.mjs').write_text(runner)
@@ -90,7 +99,7 @@ try:
     for name in ['ordinary-runner', 'relocated\\runner']:
         folder = out/name; result = emit(path, folder, 'test'); mapping(folder, result)
         assert result['exit_code'] == 0 and result['stdout'] == 'awaited019\n', result
-        assert 'await task.run(task.call(() => entry()))' in (folder/'test.ts').read_text()
+        assert 'await task.runSourceErrors(task.call(() => entry()), error => sourceException.details(error) !== undefined)' in (folder/'test.ts').read_text()
     failed = out/'runner-failure.nex'; failed.write_text('module runner_failure;fn main()->unit !{task}{task_yield();assert(false);}')
     result = emit(failed, out/'failed-runner', 'test'); assert result['exit_code'] != 0 and 'E_ASSERT' in result['stderr'], result
     emit(path, out/'raw-private', 'private', code='E_TASK_UNIMPLEMENTED')
@@ -137,7 +146,7 @@ try:
     # Pure019 UI and existing browser-worker contracts keep synchronous exports.
     for example in ['web', 'workers']:
         path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text)
-        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.24'
+        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.25'
         assert 'function*' not in (folder/'src/program.ts').read_text() and not (folder/'src/nex-task-runtime.ts').exists()
         path = out/(example+'-task.nex')
         target = 'client fn initial() -> State {' if example == 'web' else 'client fn worker_compute(input: Input) -> Output {'
@@ -152,7 +161,7 @@ try:
             emit(path, folder, 'ui')
             assert 'function*' not in (folder/'src/program.ts').read_text()
             assert (folder/'src/nex-task-runtime.ts').is_file()
-            assert 'task.run(task.call(' in (folder/'src/worker-program.ts').read_text()
+            assert 'task.runSourceErrors(task.call(' in (folder/'src/worker-program.ts').read_text()
     path = out/'task-state.nex'
     path.write_text('module task_state;import "std/web.nex" as web;struct State{callback:fn()->i64 !{task};}client fn title()->str{return "pending";}client fn initial()->State{return State(fn()->i64 !{task}{task_yield();return 42;});}client fn update(state:State,event:web::Event)->State{return state;}client fn view(state:State)->web::View{return web::text("ready");}')
     emit(path, out/'task-state-ui', 'ui', code='E_TASK_UNIMPLEMENTED')
@@ -164,7 +173,7 @@ try:
         for name in ['scope-spawn', 'scope-error-cancels']:
             text = (out/(name+'.nex')).read_text()
             assertion = 'assert(main()==42);' if name == 'scope-spawn' else 'assert(error_code(main())=="E_STOP");'
-            path = out/(name+'-agreement.nex'); path.write_text(text+'test fn agreement()->unit !{task,io}{'+assertion+'print("agreement019");}')
+            path = out/(name+'-agreement.nex'); path.write_text(text+'test fn agreement()->unit !{task,io,throw}{'+assertion+'print("agreement019");}')
             for target in ['native', 'web']:
                 command = [compiler, 'test', path, '--build-directory', out/'native-web-agreement', '--json']
                 if target == 'web': command += ['--target', 'web']

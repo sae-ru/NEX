@@ -164,8 +164,8 @@ class Lowering {
         !builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&program.function(original->text).foreign){
       op.kind=TaskInstruction::Pause;op.foreign=true;op.operation=original->text;
     }
-    else if(original->kind==Expr::Invoke&&(sourceExceptionTasksPrototype(program)||original->args[0]->type.effects.contains("task"))){op.kind=TaskInstruction::Call;op.indirect=true;}
-    else if(original->kind==Expr::Call&&!builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&(sourceExceptionTasksPrototype(program)||program.function(original->text).effects.contains("task"))){op.kind=TaskInstruction::Call;op.operation=original->text;}
+    else if(original->kind==Expr::Invoke&&(supportsSourceExceptionTasks(program)||original->args[0]->type.effects.contains("task"))){op.kind=TaskInstruction::Call;op.indirect=true;}
+    else if(original->kind==Expr::Call&&!builtinNames(true,supportsExternalResources(program)).contains(original->text)&&!program.hasStructure(original->text)&&!program.variant(original->text)&&(supportsSourceExceptionTasks(program)||program.function(original->text).effects.contains("task"))){op.kind=TaskInstruction::Call;op.operation=original->text;}
     bool sourceCall=original->kind==Expr::Call||original->kind==Expr::Invoke;
     bool resumes=op.kind==TaskInstruction::Pause||op.kind==TaskInstruction::Call;
     if(sourceCall)point(TaskDebugPointIR::Call,original->span,original.get());
@@ -179,7 +179,7 @@ class Lowering {
       if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
       case Stmt::Try:{
-        if(!sourceExceptionTasksPrototype(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
+        if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
         TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();auto start=emit(std::move(install));
         bool bodyEnds=block(s->body);size_t skip=0;
         if(!bodyEnds){TaskInstruction pop;pop.kind=TaskInstruction::PopHandler;pop.span=s->span;emit(std::move(pop));skip=jump(s->span);}
@@ -191,7 +191,7 @@ class Lowering {
         if(!bodyEnds)result.code[skip].yes=result.code.size();returned=bodyEnds&&catchEnds;break;
       }
       case Stmt::Throw:{
-        if(!sourceExceptionTasksPrototype(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
+        if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
         TaskInstruction raised;raised.kind=s->expr?TaskInstruction::Raise:TaskInstruction::Rethrow;raised.span=s->span;raised.source=s.get();
         if(s->expr){raised.inputs.push_back(expr(s->expr->args[0]));raised.inputs.push_back(expr(s->expr->args[1]));}
         emit(std::move(raised));returned=true;break;

@@ -4,6 +4,7 @@ import argparse
 import http.server
 import hashlib
 import json
+import re
 import os
 from pathlib import Path
 import shutil
@@ -13,6 +14,19 @@ import sys
 import threading
 import time
 import tempfile
+
+
+def source_for_selected_sdk(program, sdk):
+    """Author fresh025 scope/join fixtures; retain matching024 fixture effects."""
+    language = json.loads((sdk/'share/nex/llm/language-pack.json').read_text())['language_version']
+    if language != '0.25':
+        return program
+    program = re.sub(r'(fn\([^)]*:task_scope\)->[^{}]*!)\{(task,ffi(?:,fs)?)\}',
+                     r'\1{\2,throw}', program)
+    for effects in ['task,ffi,fs,io', 'task,ffi,io']:
+        program = program.replace('server fn main()->unit !{'+effects+'}',
+                                  'server fn main()->unit !{'+effects+',throw}')
+    return program
 
 
 def main():
@@ -231,7 +245,7 @@ def main():
             assert set(args.case) <= set(cases), 'unknown functional case'
             cases = {name: body for name, body in cases.items() if name in args.case}
         for name, body in cases.items():
-            program = prefix + 'server fn main()->unit !{task,ffi,fs,io}{' + body + '}\n'
+            program = source_for_selected_sdk(prefix + 'server fn main()->unit !{task,ffi,fs,io}{' + body + '}\n', sdk)
             if name == 'concurrent-reads':
                 program = program.replace('/data"', '/concurrent"')
             (out / (name + '.nex')).write_text(program)
@@ -264,7 +278,7 @@ def main():
                     report['cases'][-1]['native_executable_launched_directly'] = mode != 'eval'
                 save()
         if args.package:
-            program = prefix + 'server fn main()->unit !{task,ffi,fs,io}{'
+            program = source_for_selected_sdk(prefix + 'server fn main()->unit !{task,ffi,fs,io}{', sdk)
             program += 'let total:i64=unwrap(hs::download(make_client(),source_request(),"download-package.bin"));'
             program += 'assert(total==' + str(amount) + ');print(total);}\n'
             (project / 'main.nex').write_text(program)

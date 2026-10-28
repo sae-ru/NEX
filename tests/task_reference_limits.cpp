@@ -19,7 +19,7 @@ template<class F>Error rejected(const std::string &code,F run){
   throw std::runtime_error("expected "+code);
 }
 const std::string finite=R"(
-fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
  let queue:channel<str>=channel_new<str>(scope,0);
  let held:list<str>=["owned","🧠"];
  let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();assert(task_send(queue,held[1]));return 40;});
@@ -69,7 +69,7 @@ fn main()->i64 !{io,task}{print("before");return spin();}
   auto atomLoop=source("fn spin(seed:i64)->i64{var n:i64=seed;while true{n=n+1;}return n;}fn main()->i64 !{task}{let values:list<i64>=parallel_map([1],spin,1);return values[0];}");
   rejected("E_TIMEOUT",[&]{evaluateTaskReference(atomLoop,"main",{},timed.steps,{},&timed);});
 
-  auto nested=source("fn main()->i64 !{task}{return with_tasks(1,fn(outer:task_scope)->i64 !{task}{return with_tasks(1,fn(inner:task_scope)->i64{return 42;});});}");
+  auto nested=source("fn main()->i64 !{task,throw}{return with_tasks(1,fn(outer:task_scope)->i64 !{task,throw}{return with_tasks(1,fn(inner:task_scope)->i64{return 42;});});}");
   auto shared=nexrt::TaskExecutionLimits{nexrt::maximumTaskExecutionSteps,200,1};unsigned scopes=0;
   rejected("E_TIMEOUT",[&]{evaluateTaskReference(nested,"main",{},shared.steps,[&](size_t,const TaskTransition &request){
     if(request.operation=="with_tasks"){++scopes;std::this_thread::sleep_for(std::chrono::milliseconds(125));}
@@ -77,7 +77,7 @@ fn main()->i64 !{io,task}{print("before");return spin();}
   require(scopes==2,"nested scope deadline fixture did not reach its inner request");
 
   auto priority=source(R"(
-fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
  let failed:task<i64>=task_spawn(scope,fn()->i64{return 1/0;});
  let pending:task<str>=task_spawn(scope,fn()->str !{task}{let held:list<str>=["owned","🧠"];while true{task_yield();}return held[0];});
  return 42;
@@ -85,7 +85,7 @@ fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
 )");
   rejected("E_TIMEOUT",[&]{evaluateTaskReference(priority,"main",{},timed.steps,{},&timed);});
 
-  auto errorResult=source("fn main()->result<i64> !{task}{return with_tasks(1,fn(scope:task_scope)->result<i64> !{task}{let pending:task<unit>=task_spawn(scope,fn()->unit !{task}{while true{task_yield();}});return err<i64>(\"E_EXPECTED\",\"expected\");});}");
+  auto errorResult=source("fn main()->result<i64> !{task,throw}{return with_tasks(1,fn(scope:task_scope)->result<i64> !{task}{let pending:task<unit>=task_spawn(scope,fn()->unit !{task}{while true{task_yield();}});return err<i64>(\"E_EXPECTED\",\"expected\");});}");
   bool observed=false;auto resultLimit=nexrt::TaskExecutionLimits{nexrt::maximumTaskExecutionSteps,50,1};
   rejected("E_TIMEOUT",[&]{evaluateTaskReference(errorResult,"main",{},resultLimit.steps,[&](size_t,const TaskTransition &request){
     if(request.kind==TaskTransition::Done&&!observed){observed=true;std::this_thread::sleep_for(std::chrono::milliseconds(75));}

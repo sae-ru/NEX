@@ -76,7 +76,7 @@ bool inside(const fs::path &path,const fs::path &base){
 }
 struct Symbols{std::map<std::string,bool> functions,structures,variants,traits,projections;std::set<std::string> enumerations,traitMethods;};
 template<class Units> std::string resolveSymbol(const Units &units,const std::map<std::string,Symbols> &symbols,const std::string &key,const std::string &name,bool type,Span span){
-  if(!type&&builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025Prototype||units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024)).contains(name))return name;
+  if(!type&&builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025Prototype||units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025)).contains(name))return name;
   auto target=key,local=name;auto separator=name.find("::");bool external=separator!=std::string::npos;
   if(external&&(symbols.at(key).enumerations.contains(name.substr(0,separator))||symbols.at(key).traits.contains(name.substr(0,separator)))){external=false;}
   else if(external){auto alias=name.substr(0,separator);local=name.substr(separator+2);bool found=false;
@@ -104,7 +104,7 @@ template<class Units> void bindValueName(const Units &units,const std::map<std::
   const auto &name=expression->text;bool qualified=name.find("::")!=std::string::npos;
   if(!qualified)expression->localName=name;
   const auto &local=symbols.at(key);
-  if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024)).contains(name)||local.structures.contains(name)||local.variants.contains(name))))
+  if(qualified||local.functions.contains(name)||(expression->kind==Expr::Call&&(builtinNames(units.at(key).taskPrototype,(units.at(key).sourceLanguage==SourceLanguage::OwnedResources021||units.at(key).sourceLanguage==SourceLanguage::TaskForeign022||units.at(key).sourceLanguage==SourceLanguage::TaskWrites023||units.at(key).sourceLanguage==SourceLanguage::TaskStreams024||units.at(key).sourceLanguage==SourceLanguage::SourceExceptions025)).contains(name)||local.structures.contains(name)||local.variants.contains(name))))
     expression->text=resolveSymbol(units,symbols,key,name,false,expression->span);
 }
 class Loader {
@@ -235,7 +235,7 @@ class Loader {
   }
 public:
   Loader(fs::path root,std::string entry,bool frozen,std::map<std::string,std::string> sources={},std::map<std::string,std::string> overlays={},bool editorNames=false,bool editorDetails=false,bool tasks=false,SourceLanguage version=SourceLanguage::Language018,SourceLanguage metadataLanguage=currentSourceLanguage,bool exceptions=false)
-      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),privateExceptions(exceptions),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks,(exceptions||version==SourceLanguage::OwnedResources021||version==SourceLanguage::TaskForeign022||version==SourceLanguage::TaskWrites023||version==SourceLanguage::TaskStreams024))){
+      :root(fs::weakly_canonical(root)),frozen(frozen),captureNames(editorNames||editorDetails),captureDetails(editorDetails),taskPrototype(tasks),privateExceptions(exceptions),sourceVersion(version),entry(std::move(entry)),overlays(std::move(overlays)),texts(std::move(sources)),builtins(builtinNames(tasks,(exceptions||version==SourceLanguage::OwnedResources021||version==SourceLanguage::TaskForeign022||version==SourceLanguage::TaskWrites023||version==SourceLanguage::TaskStreams024||version==SourceLanguage::SourceExceptions025))){
     if(!frozen&&fs::is_regular_file(this->root/"nex.json")){
       auto value=decoded(readFile((this->root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","nex.json must be an object");
       projectVersion(*obj,"nex.json",metadataLanguage);
@@ -305,7 +305,8 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.22")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskForeign022);
   if(language=="0.23")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskWrites023);
   if(language=="0.24")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskStreams024);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23 and0.24");
+  if(language=="0.25")return bundleProgram(bundle,root,true,true,SourceLanguage::SourceExceptions025);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24 and0.25");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){

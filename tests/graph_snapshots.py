@@ -133,7 +133,7 @@ class GraphSnapshots(harness.ToolchainCase):
 
     def test_multi_module_and_frozen_library_source_survive_deletion(self):
         library=self.root/'library';library.mkdir();(library/'math.nex').write_text('module numbers;pub fn answer()->i64{return 42;}')
-        (self.root/'nex.json').write_text(json.dumps({'language':'0.24','entry':'main.nex','libraries':{'numbers':'./library'}}))
+        (self.root/'nex.json').write_text(json.dumps({'language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'numbers':'./library'}}))
         self.source('module app;import "numbers/math.nex" as n;fn main()->unit!{io}{print(n::answer());}')
         self.cli('check');archive,_,_=self.snapshot();self.file.unlink();shutil.rmtree(library)
         recovered,_=self.recover(archive)

@@ -13,13 +13,27 @@ import unittest
 
 NEX = str(Path(sys.argv.pop(1)).resolve())
 REPO = Path(__file__).resolve().parents[1]
+def __getattr__(name):
+    # DAP clients reuse debugging.py from private host/probe processes. Import
+    # alone must not execute that probe as if it were the compiler CLI. Actual
+    # language tests discover their selected compiler when first needed.
+    if name != 'CURRENT_LANGUAGE':
+        raise AttributeError(name)
+    language=json.loads(subprocess.check_output(
+        [NEX,'describe','--kind','index','--json'],text=True))['language']
+    globals()['CURRENT_LANGUAGE']=language
+    return language
 
 
 def database_rows(path):
     """Complete logical graph state, including local IDs and task history."""
     # SQLite can need WAL sidecars even for SELECTs after the writer exits.
     # Open an existing DB, then prohibit SQL writes while comparing every row.
-    connection=sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True)
+    # These are private, quiescent test stores. Require an existing file before
+    # opening it: the embedded Mac Python SQLite rejects file: URI paths.
+    path=path.resolve()
+    if not path.is_file():raise FileNotFoundError(path)
+    connection=sqlite3.connect(str(path))
     connection.execute('PRAGMA query_only=ON')
     try:
         schema=connection.execute('SELECT * FROM sqlite_master ORDER BY name').fetchall()
@@ -35,6 +49,15 @@ class ToolchainCase(unittest.TestCase):
         self.file = self.root / "main.nex"
 
     def tearDown(self):
+        destination=os.environ.get('NEX_TEST_FAILURE_ROOT')
+        result=getattr(getattr(self,'_outcome',None),'result',None)
+        failed=result and any(test is self or getattr(test,'test_case',None) is self
+                             for test,_ in list(result.errors)+list(result.failures))
+        if destination and failed:
+            target=Path(destination)/(self.id()+'-'+self.root.name.replace(' ','_'))
+            target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.move(str(self.root),str(target))
+            print('Preserved failed fixture: '+str(target),file=sys.stderr)
         self.temp.cleanup()
 
     def cli(self, *args, ok=True, machine=True, cwd=None, env=None, timeout=60):
@@ -55,6 +78,10 @@ class ToolchainCase(unittest.TestCase):
         return result
 
     def source(self, body):
+        manifest=self.root/'nex.json'
+        if not manifest.exists():
+            manifest.write_text(json.dumps({'schema':'nex.project/1','language':getattr(sys.modules[__name__],'CURRENT_LANGUAGE'),
+                                            'entry':self.file.relative_to(self.root).as_posix()})+'\n')
         self.file.write_text(body)
         return self.file
 

@@ -1,3 +1,12 @@
+# Public025 provider integration candidate
+
+Ordinary025 providers use ABI6 and records11/12/13; project plans use static4
+or shared/profile/debug11/12/13. Pure helpers have real continuations and logical
+frames. Source errors and File cleanup cross checked static/shared/mixed images.
+Read [the025 provider contract](source-exception-providers.md) and query the actual
+compiler. Complete regression, SDK/platform acceptance and unfinished interfaces
+remain open. Notes below retain their stated historical scope.
+
 # Current source language0.24 (development0.134.0)
 
 Ordinary source/project commands select024. Server task/fs whole-file and opened

@@ -1,3 +1,12 @@
+# Public025 provider integration candidate
+
+Ordinary025 providers use ABI6 and records11/12/13; project plans use static4
+or shared/profile/debug11/12/13. Pure helpers have real continuations and logical
+frames. Source errors and File cleanup cross checked static/shared/mixed images.
+Read [the025 provider contract](source-exception-providers.md) and query the actual
+compiler. Complete regression, SDK/platform acceptance and unfinished interfaces
+remain open. Notes below retain their stated historical scope.
+
 # Development0.134.1: acceptance-task source union
 
 The profile check in `nex task` includes checked component sources for current

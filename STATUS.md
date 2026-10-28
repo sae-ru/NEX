@@ -1,3 +1,16 @@
+# Public025 integration candidate — not accepted for delivery
+
+This working tree advances the ordinary language default to0.25 and retains
+explicit024 parsing/canonical identities for history-preserving migration.
+Mac development checks now pass retained-origin migration, nine cases across
+native debug/release and TypeScript, and24 live HTTP POSTs across four normal
+sync/task server images. Public task emission uses ABI6; retained ABIs stay distinct.
+ABI6 providers now have versioned static/shared/mixed project records, File
+cleanup, profiling and captured replay. Pure-helper logical frames were exercised
+in actual LLDB sessions. Full regression, complete debug/profile, Linux/provider
+and installed SDK acceptance remain pending before replacing source233 or SDK209.
+Primary081/016 and all original graph/Git history stay unchanged.
+
 # HTTP storage transaction start233
 
 Toolchain0.135.30 starts an HTTP SQL transaction at the first storage operation.

@@ -98,6 +98,19 @@ class DNS:
         for server in (self.udp,self.tcp):server.shutdown();server.server_close()
         for thread in self.threads:thread.join(timeout=3)
 
+def source_for_selected_sdk(program, sdk):
+    """Author fresh025 scope/join fixtures; retain matching024 fixture effects."""
+    language = json.loads((sdk/'share/nex/llm/language-pack.json').read_text())['language_version']
+    if language != '0.25':
+        return program
+    program = re.sub(r'(fn\([^)]*:task_scope\)->[^{}]*!)\{(task,ffi(?:,fs)?)\}',
+                     r'\1{\2,throw}', program)
+    for effects in ['task,ffi,fs,io', 'task,ffi,io']:
+        program = program.replace('server fn main()->unit !{'+effects+'}',
+                                  'server fn main()->unit !{'+effects+',throw}')
+    return program
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--cares-prefix',type=Path,required=True);parser.add_argument('--output',type=Path)
     args=parser.parse_args();out=args.output.absolute() if args.output else Path(tempfile.mkdtemp(prefix='nex-dns-source-'));temporary=args.output is None
@@ -155,7 +168,7 @@ def main():
                 label=name+'-'+mode;selected=ipv6_project if name.startswith('ipv6-') else capacity if name=='capacity' else project;source_prefix=ipv6_prefix if name.startswith('ipv6-') else capacity_prefix if name=='capacity' else prefix;active_peer=ipv6 if name.startswith('ipv6-') else peer
                 # Gate names are the actual queried FQDN, so the server proves IO started.
                 domain=('held-progress-' if name=='progress' else 'held-cancel-' if name=='cancel' else 'held-capacity-')+label+'.example.test'
-                text=body.replace('@LABEL@',label).replace('@GATE@',digest(domain.encode()));(selected/'main.nex').write_text(source_prefix+'server fn main()->unit !{task,ffi,fs,io}{'+text+('print(42);' if not error else '')+'}\n')
+                text=body.replace('@LABEL@',label).replace('@GATE@',digest(domain.encode()));(selected/'main.nex').write_text(source_for_selected_sdk(source_prefix+'server fn main()->unit !{task,ffi,fs,io}{'+text+('print(42);' if not error else '')+'}\n', sdk))
                 before=active_peer.count();args_run=[compiler,'eval' if mode=='eval' else 'run','--foreign',selected/'foreign.json','--task-workers','1','--task-steps','4000000','--task-timeout-ms','2000' if name=='parent-deadline' else '10000','--json']
                 if mode!='eval':args_run+=['--profile',mode]
                 result=run(label,args_run,cwd=selected,env=env,expected=(1 if mode=='eval' else 70) if error else 0)

@@ -49,10 +49,10 @@ struct TaskMachine::Impl {
   }
   void push(const std::string &name,const std::vector<TV> &arguments,const TV *environment,TaskSlotId returned){
     const auto &source=program.function(name);
-    for(const auto &effect:source.effects)if(effect!="task"&&effect!="io"&&!(effect=="throw"&&sourceExceptionTasksPrototype(program))&&!(effect=="ffi"&&sourceExceptionTasksPrototype(program)&&supportsTaskForeignCalls(program)&&source.realm=="server"&&source.effects.contains("task"))&&!(effect=="fs"&&supportsTaskFileReads(program)&&source.realm=="server"&&source.effects.contains("task")))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness has no host resource bridge",source.span);
-    if(!sourceExceptionTasksPrototype(program)&&(containsNonTaskResource(program,Type::function({},source.result))||std::any_of(source.params.begin(),source.params.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);})))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness cannot carry file authority",source.span);
+    for(const auto &effect:source.effects)if(effect!="task"&&effect!="io"&&!(effect=="throw"&&supportsSourceExceptionTasks(program))&&!(effect=="ffi"&&supportsSourceExceptionTasks(program)&&supportsTaskForeignCalls(program)&&source.realm=="server"&&source.effects.contains("task"))&&!(effect=="fs"&&supportsTaskFileReads(program)&&source.realm=="server"&&source.effects.contains("task")))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness has no host resource bridge",source.span);
+    if(!supportsSourceExceptionTasks(program)&&(containsNonTaskResource(program,Type::function({},source.result))||std::any_of(source.params.begin(),source.params.end(),[&](const auto &p){return containsNonTaskResource(program,p.type);})))throw Error("E_TASK_UNIMPLEMENTED","continuation semantic harness cannot carry file authority",source.span);
     if(frames.size()+outerDepth>=256)throw Error("E_LIMIT","continuation call depth exceeds256",source.span);
-    auto found=functions.find(name);if(found==functions.end())found=functions.emplace(name,lowerTaskFunction(program,source,sourceExceptionTasksPrototype(program))).first;
+    auto found=functions.find(name);if(found==functions.end())found=functions.emplace(name,lowerTaskFunction(program,source,supportsSourceExceptionTasks(program))).first;
     const auto &function=found->second;
     if(arguments.size()!=function.parameters.size()||(!function.captures.empty()&&(!environment||!environment->object||environment->object->kind!=nexrt::Data::Closure||environment->object->values.size()!=function.captures.size())))throw Error("E_TASK_STATE","continuation arguments/captures do not match",source.span);
     if(function.slots.size()>maximumState-retained())throw Error("E_LIMIT","continuation retained state limit exceeded",source.span);
@@ -160,7 +160,7 @@ void TaskMachine::resume(uint64_t ticket,TV value){
   impl->write(impl->frames.back(),impl->response,std::move(value),{});impl->waiting=false;
 }
 void TaskMachine::resumeSourceException(uint64_t ticket,const SourceException &error){
-  if(!sourceExceptionTasksPrototype(impl->program)||!impl->waiting||ticket!=impl->ticket||impl->failed||impl->done)throw Error("E_TASK_STATE","stale or invalid continuation source-error response");
+  if(!supportsSourceExceptionTasks(impl->program)||!impl->waiting||ticket!=impl->ticket||impl->failed||impl->done)throw Error("E_TASK_STATE","stale or invalid continuation source-error response");
   impl->incomingSource=std::make_shared<const SourceException>(error);impl->waiting=false;
 }
 void TaskMachine::restrictBudget(uint64_t remaining){impl->limit=impl->used+std::min(remaining,impl->limit-impl->used);}

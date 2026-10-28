@@ -12,7 +12,8 @@ struct WebModule {
   // Resumable exports return task.Step<T>; invoke them through task.call/run.
   // Pure modules retain their ordinary synchronous function signatures.
   bool asynchronous=false;
-  // Only dedicated compiler-private exception emission requests this helper.
+  // Source-error helper requested by public025 and retained private emitters.
+  // The historical member name is retained for existing C++ callers.
   bool privateSourceExceptions=false;
 };
 // Only the reachable client/shared closure is emitted. Export names are caller supplied.

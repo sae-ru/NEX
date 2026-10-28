@@ -65,6 +65,8 @@ CASES={
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+from source_resource_cli import fixture_for_current_cli
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--compiler',type=Path,required=True);parser.add_argument('--output',type=Path);args=parser.parse_args()
  compiler=args.compiler.resolve();destination=args.output or os.environ.get('NEX_DEPENDENT_RESOURCE_EVIDENCE')
@@ -72,8 +74,9 @@ def main():
  if destination:out=Path(destination).resolve();out.mkdir(parents=True)
  else:temporary=tempfile.TemporaryDirectory(prefix='nex dependent resources ');out=Path(temporary.name)
  env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic()
+ language=json.loads(subprocess.check_output([str(compiler),'describe','--kind','index','--json'],text=True))['language']
  report={'schema':'nex.dependent-resource-source/1','ok':False,'commands':[],'checks':[],
-  'compiler_sha256':sha(compiler),'language':'0.24','actual_GPU_NPU_resources':False}
+  'compiler_sha256':sha(compiler),'language':language,'actual_GPU_NPU_resources':False}
  def save():report['seconds']=round(time.monotonic()-started,3);write(out/'report.json',report)
  def run(label,argv,expected=0,marker=None,cwd=out):
   row={'label':label,'argv':list(map(str,argv)),'cwd':str(cwd)};report['commands'].append(row);save()
@@ -87,7 +90,8 @@ def main():
  def bundle(label,body,pin='0'*64):
   p=out/(label+'.json');write(p,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source(pin,body)}});return p
  def command(action,path,output='-'):
-  return [sys.executable,ROOT/'tests/source_resource_cli.py','--compiler',compiler,action,path,out,output,'0.24']
+  authored=fixture_for_current_cli(path,out,language)
+  return [sys.executable,ROOT/'tests/source_resource_cli.py','--compiler',compiler,action,authored,out,output,language]
  try:
   template=bundle('signatures',CASES['closed_parent_storage'][0]);api=json.loads(run('signatures',command('check',template)).stdout)
   signatures=api['signatures'];assert set(signatures)==set(DECLARATIONS)

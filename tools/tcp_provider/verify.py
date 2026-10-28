@@ -63,6 +63,19 @@ class Peers:
   for thread in self.threads:thread.join(timeout=3)
  def count(self):
   with self.lock:return len(self.events)
+def source_for_selected_sdk(program, sdk):
+    """Author fresh025 scope/join fixtures; retain matching024 fixture effects."""
+    language = json.loads((sdk/'share/nex/llm/language-pack.json').read_text())['language_version']
+    if language != '0.25':
+        return program
+    program = re.sub(r'(fn\([^)]*:task_scope\)->[^{}]*!)\{(task,ffi(?:,fs)?)\}',
+                     r'\1{\2,throw}', program)
+    for effects in ['task,ffi,fs,io', 'task,ffi,io']:
+        program = program.replace('server fn main()->unit !{'+effects+'}',
+                                  'server fn main()->unit !{'+effects+',throw}')
+    return program
+
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--output',type=Path)
  args=parser.parse_args();out=args.output.absolute() if args.output else Path(tempfile.mkdtemp(prefix='nex-tcp-source-'));temporary=args.output is None
@@ -108,7 +121,7 @@ def main():
     label=name+'-'+mode
     # Start from the original case for every mode; labels identify real peer gates.
     case_project=capacity_project if name=='capacity' else project;case_prefix=capacity_prefix if name=='capacity' else prefix;case_host=case_project/'foreign.json'
-    original=next(text for key,text,code in cases if key==name);body=original.replace('@LABEL@',label).replace('@GATE@',digest(label.encode())+'.ready');(case_project/'main.nex').write_text(case_prefix+'server fn main()->unit !{task,ffi,fs,io}{'+body+('print(42);' if not error else '')+'}\n')
+    original=next(text for key,text,code in cases if key==name);body=original.replace('@LABEL@',label).replace('@GATE@',digest(label.encode())+'.ready');(case_project/'main.nex').write_text(source_for_selected_sdk(case_prefix+'server fn main()->unit !{task,ffi,fs,io}{'+body+('print(42);' if not error else '')+'}\n', sdk))
     before=peers.count();arguments=[compiler,'eval' if mode=='eval' else 'run','--foreign',case_host,'--task-workers','1','--task-steps','4000000','--task-timeout-ms','2000' if name=='parent-deadline' else '10000','--json']
     if mode!='eval':arguments+=['--profile',mode]
     observed=run(label,arguments,cwd=case_project,env=env,expected=(1 if mode=='eval' else 70) if error else 0)

@@ -2,7 +2,9 @@
 
 The dedicated0.25-prototype emitter and trusted HTTP host are documented in
 [source-exception-http.md](source-exception-http.md). They retain separate private
-entry points. Ordinary public024 server builds retain the contract below.
+entry points. The public025 candidate now supports ordinary sequential/task source exceptions;
+private experiment records retain their separate identities. Retained024 tools
+keep their original contracts.
 
 # NEX native server and runtime capabilities
 
@@ -23,10 +25,33 @@ excessive values fail before startup. Existing HTTP `--budget` and
 still sizes the request thread pool, separately from each joined task executor.
 Ambient `NEX_TASK_*` variables do not select these limits.
 
-Filesystem effects confer no root or write authority: the operator configures
-`NEX_FILES_ROOT` and, for writes, `NEX_FILES_WRITE=1`. Capture occurs inside the
-original request and retains its revocation/cleanup lineage. Missing/read-only
-grants fail on attempted IO, not merely because an unused branch declares fs.
+In the public025 candidate, grant HTTP handlers file access explicitly with
+`--files-root /absolute/existing/directory`. The server pins that directory before
+workers start and creates a separate lexical FileScope inside each authenticated
+request. It supplies the same capability to synchronous handlers and joined task
+execution. Access is read-only by default; add `--files-write 1` to grant writes
+or `--files-write 0` to require read-only access explicitly. A write option needs
+one root option; duplicate/malformed options and non-directory roots fail before
+listening. Images without a filesystem adapter reject a root grant.
+
+For example, launch a matching file-enabled server image with:
+
+```sh
+./app --auth /private/auth.json --database /private/data.sqlite \
+  --files-root /private/app-data --files-write 0
+```
+
+The explicit capability takes precedence over ambient `NEX_FILES_ROOT` and
+`NEX_FILES_WRITE`. Effects alone grant no OS root. Without these flags,
+synchronous HTTP handlers do not inherit CLI environment authority; the retained
+task host's explicitly configured environment bridge remains available for its
+original callers. Missing/read-only grants return Result errors at attempted IO,
+including after a source exception. File writes do not share SQLite rollback.
+
+The Mac development regression executes four debug/release sync/task images,
+36 exception/read/read-only requests and eight explicit write-grant requests.
+It also rejects24 invalid startup configurations. This establishes the tested
+candidate scope, not installed SDK or cross-platform acceptance.
 File effects cannot acquire socket/database authority. The existing HTTP
 transport and SQLite transaction wrapper remain blocking; async network/DB,
 streaming network responses, task-provider image linking into servers, task

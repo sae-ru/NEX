@@ -12,19 +12,22 @@ const char *programLanguage(SourceLanguage language){
   case SourceLanguage::TaskWrites023:return "0.23";
   case SourceLanguage::TaskStreams024:return "0.24";
   case SourceLanguage::SourceExceptions025Prototype:return "0.25-prototype";
+  case SourceLanguage::SourceExceptions025:return "0.25";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
 const char *programLanguage(const Program &program){return programLanguage(program.sourceLanguage);}
 bool sourceExceptionTasksPrototype(const Program &program){return program.taskPrototype&&program.sourceLanguage==SourceLanguage::SourceExceptions025Prototype;}
+bool supportsSourceExceptions(const Program &program){return program.sourceLanguage==SourceLanguage::SourceExceptions025||program.sourceLanguage==SourceLanguage::SourceExceptions025Prototype;}
+bool supportsSourceExceptionTasks(const Program &program){return program.taskPrototype&&supportsSourceExceptions(program);}
 bool isPublicTaskLanguage(const Program &program){
-  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024;
+  return program.sourceLanguage==SourceLanguage::Tasks019||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024||program.sourceLanguage==SourceLanguage::SourceExceptions025;
 }
-bool supportsTaskFileReads(const Program &program){return sourceExceptionTasksPrototype(program)||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024;}
-bool supportsTaskFileWrites(const Program &program){return sourceExceptionTasksPrototype(program)||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024;}
-bool supportsTaskFileStreams(const Program &program){return sourceExceptionTasksPrototype(program)||program.sourceLanguage==SourceLanguage::TaskStreams024;}
+bool supportsTaskFileReads(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskFiles020||program.sourceLanguage==SourceLanguage::OwnedResources021||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024||program.sourceLanguage==SourceLanguage::SourceExceptions025;}
+bool supportsTaskFileWrites(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024||program.sourceLanguage==SourceLanguage::SourceExceptions025;}
+bool supportsTaskFileStreams(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskStreams024||program.sourceLanguage==SourceLanguage::SourceExceptions025;}
 bool taskFileWriteOperation(const std::string &operation){return operation=="file_write_text"||operation=="file_write_bytes";}
-bool supportsTaskForeignCalls(const Program &program){return sourceExceptionTasksPrototype(program)||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024;}
+bool supportsTaskForeignCalls(const Program &program){return supportsSourceExceptionTasks(program)||program.sourceLanguage==SourceLanguage::TaskForeign022||program.sourceLanguage==SourceLanguage::TaskWrites023||program.sourceLanguage==SourceLanguage::TaskStreams024||program.sourceLanguage==SourceLanguage::SourceExceptions025;}
 bool usesTaskEffects(const Program &program,const std::string &entry){
   std::vector<std::string> pending{entry};std::set<std::string> seen;
   while(!pending.empty()){

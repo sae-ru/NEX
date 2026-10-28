@@ -1,4 +1,4 @@
-"""Actual DAP stops and complete profiler reports for ABI4 write providers."""
+"""Actual DAP stops and complete profiler reports for current ABI6 write providers."""
 import argparse,hashlib,json,os,sys,tempfile,time,traceback,unittest
 from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--compiler',type=Path,required=True);p.add_argument('--resources',type=Path);p.add_argument('--output',type=Path);a=p.parse_args()

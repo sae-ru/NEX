@@ -1,3 +1,11 @@
+# Public025 preparation candidate
+
+The source preparer now accepts matching compiler/doctor/language-pack cohorts
+for public0.24 and0.25. It generates the selected cohort's project and computes
+its actual FFI signature hashes. It does not relabel an old project or pin.
+The current `--check-sdk` checks are distinct from provider initialization,
+network execution, packaging and complete installed SDK acceptance.
+
 # Task DNS provider
 
 Development toolchain0.135.6 adds `std/dns.nex` and a pinned native c-ares

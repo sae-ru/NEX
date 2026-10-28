@@ -267,17 +267,18 @@ def task_package_inputs(request, binary, owned_inputs):
                 identity = provider_identities[image]
             else:
                 shared = provider.get('mode') == 'shared-fixed'
-                stream_provider = provider.get('schema') in ('nex.native-task-provider/8', 'nex.native-task-provider/9')
+                source_provider = provider.get('schema') in ('nex.native-task-provider/11', 'nex.native-task-provider/12')
+                stream_provider = source_provider or provider.get('schema') in ('nex.native-task-provider/8', 'nex.native-task-provider/9')
                 write_provider = stream_provider or provider.get('schema') in ('nex.native-task-provider/5', 'nex.native-task-provider/6')
                 expected = provider_fields if shared else provider_fields - {'artifact_kind', 'owner_image', 'definition_owners', 'component_file_reads', 'image'}
                 if profile:
                     expected = expected | {'profiling'}
                 if write_provider:
                     expected = expected | {'task_file_writes'} | ({'component_file_writes'} if shared else set())
-                    if (provider.get('descriptor_abi') != (0x4e45585400000005 if stream_provider else 0x4e45585400000004) or
-                            provider.get('language') != ('0.24' if stream_provider else '0.23') or
+                    if (provider.get('descriptor_abi') != (0x4e45585400000006 if source_provider else 0x4e45585400000005 if stream_provider else 0x4e45585400000004) or
+                            provider.get('language') != ('0.25' if source_provider else '0.24' if stream_provider else '0.23') or
                             type(provider.get('task_file_writes')) is not bool):
-                        raise ValueError('invalid raw ABI4 task write contract')
+                        raise ValueError('invalid raw task write descriptor/language contract')
                     if shared:
                         flags = provider.get('component_file_writes')
                         reads = provider.get('component_file_reads')
@@ -287,8 +288,8 @@ def task_package_inputs(request, binary, owned_inputs):
                             raise ValueError('invalid raw ABI4 component write requirements')
                 if stream_provider:
                     expected = expected | {'task_file_streams'} | ({'component_file_streams'} if shared else set())
-                    if type(provider.get('task_file_streams')) is not bool or request['language'] != '0.24':
-                        raise ValueError('invalid raw ABI5 task stream contract')
+                    if type(provider.get('task_file_streams')) is not bool or request['language'] != ('0.25' if source_provider else '0.24'):
+                        raise ValueError('invalid raw task stream descriptor/language contract')
                     if shared:
                         flags = provider.get('component_file_streams')
                         reads = provider.get('component_file_reads')
@@ -296,7 +297,7 @@ def task_package_inputs(request, binary, owned_inputs):
                                 any(type(value) is not bool for value in flags.values()) or
                                 any(flags.values()) != provider['task_file_streams']):
                             raise ValueError('invalid raw ABI5 component stream requirements')
-                expected_schema = ('nex.native-task-provider/9' if profile else 'nex.native-task-provider/8') if stream_provider else ('nex.native-task-provider/6' if profile else 'nex.native-task-provider/5') if write_provider else ('nex.native-task-provider/3' if profile else 'nex.native-task-provider/2')
+                expected_schema = ('nex.native-task-provider/12' if profile else 'nex.native-task-provider/11') if source_provider else ('nex.native-task-provider/9' if profile else 'nex.native-task-provider/8') if stream_provider else ('nex.native-task-provider/6' if profile else 'nex.native-task-provider/5') if write_provider else ('nex.native-task-provider/3' if profile else 'nex.native-task-provider/2')
                 if (set(provider) != expected or provider.get('schema') != expected_schema or
                         (not shared and (not profile or provider.get('mode') != 'static' or not application)) or provider.get('component') != row['component'] or
                         (shared and (provider.get('owner_image') != row['component'] or provider.get('artifact_kind') != ('application' if application else 'shared-image')))):

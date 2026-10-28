@@ -25,6 +25,19 @@ def write(path, value):
     Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
 
 
+def source_for_selected_sdk(program, sdk):
+    """Author fresh025 scope/join fixtures; retain matching024 fixture effects."""
+    language = json.loads((sdk/'share/nex/llm/language-pack.json').read_text())['language_version']
+    if language != '0.25':
+        return program
+    program = re.sub(r'(fn\([^)]*:task_scope\)->[^{}]*!)\{(task,ffi(?:,fs)?)\}',
+                     r'\1{\2,throw}', program)
+    for effects in ['task,ffi,fs,io', 'task,ffi,io']:
+        program = program.replace('server fn main()->unit !{'+effects+'}',
+                                  'server fn main()->unit !{'+effects+',throw}')
+    return program
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', type=Path)
@@ -200,7 +213,7 @@ def main():
                 project, prefix = projects[item['project']]
                 path = item['started_path'].replace('@LABEL@', label) if item['started_path'] else None
                 body = item['body'].replace('@LABEL@', label).replace('@GATE@', digest(path) if path else '')
-                program = prefix + 'server fn main()->unit !{task,ffi,fs,io}{' + body + ('print(42);' if not fatal else '') + '}\n'
+                program = source_for_selected_sdk(prefix + 'server fn main()->unit !{task,ffi,fs,io}{' + body + ('print(42);' if not fatal else '') + '}\n', sdk)
                 (out / (label + '.nex')).write_text(program)
                 (project / 'main.nex').write_text(program)
                 before_dns, before_http = peer.dns.count(), len(peer.events)

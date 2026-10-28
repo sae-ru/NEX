@@ -1,5 +1,5 @@
 """Private024 actual component plan/build/capture/replay/package contracts."""
-import argparse,hashlib,json,os,subprocess,sys,tempfile,time
+import argparse,hashlib,json,os,shutil,subprocess,sys,tempfile,time
 from pathlib import Path
 
 parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('compiler',type=Path);parser.add_argument('reference',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--complete-tooling',action='store_true');parser.add_argument('--notices',type=Path);a=parser.parse_args()
@@ -9,8 +9,8 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex stream project ');root=Pa
 probe=a.probe.resolve();compiler=a.compiler.resolve();reference=a.reference.resolve();start=time.monotonic()
 report={'schema':'nex.private024-stream-project/1','ok':False,'state':'starting','commands':[],'cases':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.24','private_language':'0.24',
- 'public024_enabled':True,'full_objective_complete':False}
+ 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.25','private_language':'0.24',
+ 'retained024_enabled':True,'public025_delivery_accepted':False,'full_objective_complete':False}
 LEAF='''module leaf;
 pub struct Box<T>{value:T;}
 pub server fn opened()->Box<file> !{task,fs}{return Box(unwrap(file_open_read("input")));}
@@ -49,18 +49,20 @@ def invoke(name,request,expected=0,env=None):
  return json.loads(run(name,[probe,p],env,expected).stdout)
 def executable(result):
  return Path(next(row['artifact'] for row in result['artifacts'] if row['component']=='app'))
-def check_plan(plan,mode,profile,debug):
- assert plan['ok'] and plan['language']=='0.24' and plan['source_checked'] and not plan['graph_store_opened']
+def check_plan(plan,mode,profile,debug,language='0.24'):
+ assert plan['ok'] and plan['language']==language and plan['source_checked'] and not plan['graph_store_opened']
  assert not plan['external_tools_invoked']
  rows={row['name']:row for row in plan['components']};assert set(rows)=={'leaf','app'}
- schema='nex.project-task-linkage/'+('10' if debug else '9' if profile=='profile' else '8') if mode=='shared' or profile=='profile' or debug else 'nex.project-static-task-linkage/3'
+ current=language=='0.25';abi=6 if current else 5;mask=7967 if current else 3871
+ schema='nex.project-task-linkage/'+(('13' if debug else '12' if profile=='profile' else '11') if current else ('10' if debug else '9' if profile=='profile' else '8')) if mode=='shared' or profile=='profile' or debug else 'nex.project-static-task-linkage/'+('4' if current else '3')
  for row in rows.values():
-  linkage=row['task_linkage'];assert linkage['schema']==schema and linkage['execution_abi']==5
+  linkage=row['task_linkage'];assert linkage['schema']==schema and linkage['execution_abi']==abi
   assert tuple(linkage[k] for k in ['task_file_reads','task_file_writes','task_file_streams'])==(True,False,True)
-  assert all(export['requirements']&~3871==0 for export in linkage['exports'].values())
- assert all(row['calling_mode']=='task-code/5' for row in rows['app']['task_linkage']['imports'])
+  assert all(export['requirements']&~mask==0 for export in linkage['exports'].values())
+ assert all(row['calling_mode']=='task-code/'+str(abi) for row in rows['app']['task_linkage']['imports'])
  return rows
 try:
+ assert json.loads(run('describe',[compiler,'describe','--json']).stdout)['version']=='0.25'
  for mode in ['static','shared']:
   for profile,debug in [('debug',False),('release',False),('profile',False),('debug',True)]:
    name=mode+'-'+profile+('-logical' if debug else '');case=root/name;case.mkdir();project=case/'project';project.mkdir()
@@ -73,12 +75,18 @@ try:
     'configurations':{profile:{'profile':profile,'target':'native','task_limits':{'steps':1000000,'timeout_ms':60000,'workers':1}}},'default_configuration':profile}
    write(project/'nex.build.json',architecture);base={'root':str(project),'configuration':profile,'task_debug':debug}
    files=case/'files';files.mkdir();(files/'input').write_bytes(b'abcdef');env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
-   public=invoke(name+'-public-plan',{'action':'plan','public_api':True,**base});check_plan(public,mode,profile,debug)
+   current_project=case/'current025-project';shutil.copytree(project,current_project)
+   write(current_project/'nex.json',{'schema':'nex.project/1','language':'0.25','entry':'app/main.nex'})
+   public_base={**base,'root':str(current_project),'public_api':True}
+   public=invoke(name+'-public-plan',{'action':'plan',**public_base});check_plan(public,mode,profile,debug,'0.25')
+   public_capture=invoke(name+'-public-capture',{'action':'capture',**public_base});public_capture_file=case/'current025-capture.json';write(public_capture_file,public_capture)
+   assert public_capture['language']=='0.25' and not (current_project/'.nex').exists()
+   accepted=invoke(name+'-public-validate',{'action':'validate','capture':str(public_capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.25'
    plan=invoke(name+'-plan',{'action':'plan',**base});rows=check_plan(plan,mode,profile,debug)
    assert not (project/'.nex').exists()
    capture=invoke(name+'-capture',{'action':'capture',**base});capture_file=case/'capture.json';write(capture_file,capture)
    assert capture['language']=='0.24'
-   accepted=invoke(name+'-public-capture',{'action':'validate','capture':str(capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.24'
+   refused=invoke(name+'-public-retained-capture',{'action':'validate','capture':str(capture_file),'public_api':True},1);assert refused['code']=='E_PROJECT_CAPTURE'
    built=invoke(name+'-build',{'action':'build','directory':str(case/'native'),**base},env=env);binary=executable(built)
    metadata=json.loads((binary.parent/'build.json').read_text());assert metadata['task_provider']['language']=='0.24' and metadata['task_execution_abi']==0x4e45585400000005
    assert metadata['task_file_streams'] is True and metadata['task_file_writes'] is False
@@ -121,7 +129,7 @@ try:
    report['cases'].append({'name':name,'mode':mode,'profile':profile,'task_debug':debug,'native_reference':True,'source_absent_replay':True,
     'executable':str(binary),'executable_sha256':sha(binary),'replay_executable':str(replay_binary),'replay_executable_sha256':sha(replay_binary),
     'capture':str(capture_file),'capture_sha256':sha(capture_file),'package':package});save()
- report.update(ok=True,state='passed',native_reference_pairs=len(report['cases']),source_absent_replay=True,public023_refuses_private024=True,
+ report.update(ok=not a.complete_tooling,state='tooling-pending' if a.complete_tooling else 'passed',execution_matrix_complete=True,native_reference_pairs=len(report['cases']),source_absent_replay=True,public025_refuses_retained024_capture=True,current025_plan_capture_modes=len(report['cases']),
   graph_store_never_opened=True,ABI3_ABI4_acceptance_separate=True)
  if notices:report.update(missing_notice_rejections=len(report['cases']),packaged_runtime_and_license_checks=len(report['cases']))
  save()
@@ -131,6 +139,6 @@ try:
   boundary=json.loads((root/'boundary/report.json').read_text());assert boundary['ok'] and boundary['rejected_captures']==84
   run('tooling-observability',[sys.executable,'-B',scripts/'task_stream_project_observability.py',probe,compiler,root,'--output',root/'observability'])
   observed=json.loads((root/'observability/report.json').read_text());assert observed['ok'] and observed['actual_profiles']==2 and observed['actual_LLDB_DAP_sessions']==2
-  report.update(state='passed',captured_plan_rejections=84,retained_public_ABI4_modes=2,actual_profiles=2,actual_LLDB_DAP_sessions=2)
+  report.update(ok=True,state='passed',captured_plan_rejections=84,retained_public_ABI4_modes=2,actual_profiles=2,actual_LLDB_DAP_sessions=2)
 except BaseException as error:report.update(ok=False,state='failed',error=repr(error));raise
 finally:save();print(json.dumps({k:report.get(k) for k in ['ok','state','native_reference_pairs','error']}),flush=True)
